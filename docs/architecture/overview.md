@@ -351,6 +351,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 | `crm-scheduled-send` | campanhas de e-mail agendadas | a cada 5 min |
 | `crm-campaigns` | campanhas multicanal ([ADR 0025](../adr/0025-crm-multichannel-campaign-execution.md)): `dispatch` (atrasado até o início do canal ou a abertura da janela de envio) enfileira lotes de `send` espaçados por canal/provedor; `send` reivindica o destinatário (`PENDING → SENDING`) e envia um e-mail ou WhatsApp; `tick` inicia agendadas, refaz o dispatch, libera linhas presas e fecha as concluídas | sob demanda + a cada 5 min |
 | `crm-workflow-schedule` | workflows `on-a-schedule` | a cada 1 min |
+| `crm-workflow-delay` | etapa **Atraso** dos workflows: o run fica `WAITING` com escopo e etapas pendentes em `run.state`; o job atrasado (`resume`) retoma do passo seguinte quando o prazo vence (se disparar antes, reagenda o restante) | sob demanda (job atrasado) |
 | `crm-competitor-sync` | métricas e posts públicos de concorrentes (e da conta própria) para a análise comparativa | cron 04:00 |
 | `crm-proposal-expiry` | expira propostas com validade vencida e avisa o responsável | cron 00:05 |
 | `crm-task-reminders` | avisa na caixa de entrada o responsável por tarefas do CRM que vencem em até 1 h ou acabaram de atrasar (uma vez cada, por `dedupeKey`) | cron a cada 15 min |

@@ -26,6 +26,15 @@ import {
   type CrmWorkflowTrigger,
   type CrmWorkflowTriggerData,
 } from '@/src/schemas/crm-workflow.schema'
+import {
+  WORKFLOW_DELAY_UNIT_LABELS,
+  WORKFLOW_ENTITY_LABELS,
+  WORKFLOW_FORM_FIELD_TYPE_LABELS,
+  WORKFLOW_OPERATOR_LABELS,
+  WORKFLOW_TRIGGER_LABELS,
+  webhookTriggerPath,
+  workflowNodeLabel,
+} from './workflow-labels'
 
 export function WorkflowConfigPanel({
   selectedId,
@@ -59,10 +68,10 @@ export function WorkflowConfigPanel({
   if (node) {
     return (
       <PanelShell
-        title={node.data.label || node.data.type}
+        title={node.data.label || workflowNodeLabel(node.data.type)}
         onClose={onClose}
         onDelete={() => onDeleteNode(node.id)}
-        deleteLabel='Excluir node'
+        deleteLabel='Excluir etapa'
       >
         <NodeForm
           node={node}
@@ -128,11 +137,7 @@ const TRIGGER_ENTITY_LABELS: Record<
   (typeof CRM_WORKFLOW_TRIGGER_ENTITIES)[number],
   string
 > = {
-  company: 'Empresa',
-  person: 'Pessoa',
-  opportunity: 'Oportunidade',
-  task: 'Tarefa',
-  note: 'Nota',
+  ...WORKFLOW_ENTITY_LABELS,
   lead: 'Lead',
 }
 
@@ -152,14 +157,14 @@ function TriggerForm({
   if (!data) {
     return (
       <p className='text-muted-foreground text-sm'>
-        Selecione um tipo de gatilho no menu "Add a node".
+        Selecione um tipo de gatilho no menu "Adicionar etapa".
       </p>
     )
   }
   return (
     <div className='space-y-4'>
       <Field label='Tipo'>
-        <ReadOnlyValue>{data.type}</ReadOnlyValue>
+        <ReadOnlyValue>{WORKFLOW_TRIGGER_LABELS[data.type]}</ReadOnlyValue>
       </Field>
       {(data.type === 'record-is-created' ||
         data.type === 'record-is-deleted' ||
@@ -232,19 +237,20 @@ function TriggerForm({
       )}
       {data.type === 'launch-manually' && (
         <p className='text-muted-foreground text-sm'>
-          Sem configuração — disparado pelo botão "Test" ou pelo trigger manual.
+          Sem configuração: dispare pelo botão "Testar" ou por um disparo
+          manual.
         </p>
       )}
       {data.type === 'on-a-schedule' && (
         <>
-          <Field label='Cron'>
+          <Field label='Agenda (cron)'>
             <Input
               value={data.cron}
               onChange={(e) => onChange({ ...data, cron: e.target.value })}
               placeholder='0 9 * * *'
             />
           </Field>
-          <Field label='Timezone'>
+          <Field label='Fuso horário'>
             <Input
               value={data.timezone}
               onChange={(e) => onChange({ ...data, timezone: e.target.value })}
@@ -256,7 +262,7 @@ function TriggerForm({
       {data.type === 'webhook' && (
         <Field
           label='Token do webhook'
-          hint='URL: POST /api/crm/workflows/<token>/trigger'
+          hint={`Endereço: POST ${webhookTriggerPath('<token>')}`}
         >
           <Input
             value={data.token}
@@ -375,7 +381,7 @@ function renderBody(
       return (
         <>
           <EntityField data={data} onChange={onChange} />
-          <Field label='Campo de lookup'>
+          <Field label='Campo de busca'>
             <Input
               value={data.lookupField}
               onChange={(e) =>
@@ -384,7 +390,7 @@ function renderBody(
               placeholder='domain'
             />
           </Field>
-          <Field label='Valor de lookup (expressão)'>
+          <Field label='Valor de busca (expressão)'>
             <Input
               value={data.lookupValue}
               onChange={(e) =>
@@ -430,7 +436,7 @@ function renderBody(
     case 'if-else':
       return (
         <ConditionsEditor
-          label='Condições (true se todas baterem)'
+          label='Condições (segue por "sim" se todas baterem)'
           value={data.conditions}
           onChange={(conditions) => onChange({ ...data, conditions })}
         />
@@ -452,7 +458,7 @@ function renderBody(
               value={data.unit}
               options={CRM_WORKFLOW_DELAY_UNITS.map((u) => ({
                 value: u,
-                label: u,
+                label: WORKFLOW_DELAY_UNIT_LABELS[u],
               }))}
               onChange={(unit) =>
                 onChange({
@@ -468,7 +474,7 @@ function renderBody(
     case 'draft-email':
       return (
         <>
-          <Field label='Para (email/expressão)'>
+          <Field label='Para (e-mail/expressão)'>
             <Input
               value={data.to}
               onChange={(e) => onChange({ ...data, to: e.target.value })}
@@ -558,7 +564,10 @@ function EntitySelect({
   return (
     <NativeSelect
       value={value}
-      options={CRM_WORKFLOW_ENTITIES.map((e) => ({ value: e, label: e }))}
+      options={CRM_WORKFLOW_ENTITIES.map((e) => ({
+        value: e,
+        label: WORKFLOW_ENTITY_LABELS[e],
+      }))}
       onChange={(v) => onChange(v as (typeof CRM_WORKFLOW_ENTITIES)[number])}
     />
   )
@@ -651,6 +660,7 @@ function FieldMapEditor({
             />
             <Button
               size='icon-xs'
+              aria-label='Remover campo'
               variant='ghost'
               onClick={() => commit(draft.filter((_, idx) => idx !== i))}
             >
@@ -711,7 +721,7 @@ function ConditionsEditor({
                 value={row.operator}
                 options={CRM_WORKFLOW_FILTER_OPERATORS.map((o) => ({
                   value: o,
-                  label: o,
+                  label: WORKFLOW_OPERATOR_LABELS[o],
                 }))}
                 onChange={(v) =>
                   update(i, {
@@ -729,6 +739,7 @@ function ConditionsEditor({
             />
             <Button
               size='icon-xs'
+              aria-label='Remover condição'
               variant='ghost'
               className='col-span-1'
               onClick={() => onChange(value.filter((_, idx) => idx !== i))}
@@ -794,7 +805,7 @@ function FormFieldsEditor({
                   value={f.type ?? 'text'}
                   options={CRM_WORKFLOW_FORM_FIELD_TYPES.map((t) => ({
                     value: t,
-                    label: t,
+                    label: WORKFLOW_FORM_FIELD_TYPE_LABELS[t],
                   }))}
                   onChange={(v) =>
                     update(i, {
@@ -805,6 +816,7 @@ function FormFieldsEditor({
               </div>
               <Button
                 size='icon-xs'
+                aria-label='Remover campo'
                 variant='ghost'
                 onClick={() =>
                   onChange({

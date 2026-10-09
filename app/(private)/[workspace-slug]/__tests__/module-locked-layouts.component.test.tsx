@@ -12,7 +12,10 @@ vi.mock('next/navigation', () => ({
   usePathname: () => pathname.current,
 }))
 
-const guard = vi.hoisted(() => ({ hasModuleAccess: vi.fn() }))
+const guard = vi.hoisted(() => ({
+  hasModuleAccess: vi.fn(),
+  isWorkspacePrivileged: vi.fn(),
+}))
 vi.mock('@/src/lib/module-access-guard', () => guard)
 
 const params = Promise.resolve({ 'workspace-slug': 'acme' })
@@ -24,6 +27,7 @@ function hrefOf(label: string) {
 describe('module-locked layouts', () => {
   beforeEach(() => {
     pathname.current = '/'
+    guard.isWorkspacePrivileged.mockResolvedValue(false)
   })
 
   it('404s the CRM when the workspace lacks the CRM module', async () => {
@@ -51,6 +55,21 @@ describe('module-locked layouts', () => {
     expect(hrefOf('Oportunidades')).toBe('/acme/crm/opportunities')
     expect(hrefOf('Empresas')).toBe('/acme/crm/companies')
     expect(hrefOf('Pessoas')).toBe('/acme/crm/people')
+  })
+
+  it('links e-mail sync for everyone and API keys only for OWNER/ADMIN', async () => {
+    guard.hasModuleAccess.mockResolvedValue(true)
+    const { unmount } = render(
+      await CrmLayout({ children: <p>conteúdo</p>, params }),
+    )
+    expect(hrefOf('E-mail e agenda')).toBe('/acme/crm/email-sync')
+    expect(screen.queryByText('Chaves de API')).toBeNull()
+    expect(guard.isWorkspacePrivileged).toHaveBeenCalledWith('acme')
+    unmount()
+
+    guard.isWorkspacePrivileged.mockResolvedValue(true)
+    render(await CrmLayout({ children: <p>conteúdo</p>, params }))
+    expect(hrefOf('Chaves de API')).toBe('/acme/crm/integration-keys')
   })
 
   it('renders the WhatsApp navigation and highlights the active item', async () => {

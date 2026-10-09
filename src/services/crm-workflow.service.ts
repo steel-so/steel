@@ -493,11 +493,13 @@ export const CrmWorkflowService = {
     }
     const run = runFound.value
     if (run.status !== 'WAITING' || !run.waitingStepId || !run.state) {
-      return err(crmWorkflowExecutionFailed('Run não está aguardando input'))
+      return err(
+        crmWorkflowExecutionFailed('A execução não está aguardando resposta'),
+      )
     }
     const waitingStep = run.steps.find((s) => s.id === run.waitingStepId)
     if (!waitingStep) {
-      return err(crmWorkflowExecutionFailed('Step pausado não encontrado'))
+      return err(crmWorkflowExecutionFailed('Etapa pausada não encontrada'))
     }
 
     const versionFound = await CrmWorkflowVersionRepository.findById(
@@ -509,7 +511,7 @@ export const CrmWorkflowService = {
     const definition = parseCrmWorkflowDefinition(versionFound.value.definition)
     const pausedNode = definition.nodes.find((n) => n.id === waitingStep.nodeId)
     if (pausedNode?.data.type !== 'form') {
-      return err(crmWorkflowExecutionFailed('Node pausado inválido'))
+      return err(crmWorkflowExecutionFailed('Etapa pausada inválida'))
     }
     const outputAlias = pausedNode.data.outputAlias ?? pausedNode.id
 

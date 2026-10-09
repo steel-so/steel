@@ -2,7 +2,6 @@ import {
   AlarmClockIcon,
   BookOpen01Icon,
   Building02Icon,
-  BulbChargingIcon,
   ChartRelationshipIcon,
   Notification01Icon,
   SparklesIcon,
@@ -52,9 +51,6 @@ export default async function SettingsLayout({
         <NavGroup>
           <NavItem href={`${base}/integrations`} icon={ChartRelationshipIcon}>
             Integrações
-          </NavItem>
-          <NavItem href={`${base}/initiatives`} icon={BulbChargingIcon}>
-            Iniciativas
           </NavItem>
           <NavItem href={`${base}/wiki`} icon={BookOpen01Icon}>
             Wiki

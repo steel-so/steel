@@ -37,6 +37,7 @@ export const QueueName = {
   WorkspaceExport: 'workspace-export',
   WorkspaceIntegrations: 'workspace-integrations',
   CrmCampaigns: 'crm-campaigns',
+  CrmWorkflowDelay: 'crm-workflow-delay',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -725,4 +726,20 @@ export type CrmCampaignsJobPayload = {
     channel: 'EMAIL' | 'WHATSAPP'
   }
   [CrmCampaignsJob.Tick]: Record<string, never>
+}
+
+/**
+ * CRM workflow "Atraso" (delay) step: a delayed job that resumes the paused
+ * run when the delay is over. The run is persisted as WAITING with its scope
+ * and pending steps (`run.state`), so nothing is held in memory meanwhile.
+ */
+export const CrmWorkflowDelayJob = {
+  Resume: 'resume',
+} as const
+
+export type CrmWorkflowDelayJob =
+  (typeof CrmWorkflowDelayJob)[keyof typeof CrmWorkflowDelayJob]
+
+export type CrmWorkflowDelayJobPayload = {
+  [CrmWorkflowDelayJob.Resume]: { runId: string; stepId: string }
 }

@@ -136,6 +136,8 @@ const routes: RouteConfig[] = [
       'Registra o envio e cria o registro configurado no formulário (`action`): pessoa, empresa ou lead. Leads passam pelo mesmo pipeline da criação manual (dedupe contra leads em aberto, score e roteamento).',
       '',
       '`values` é chaveado pela `key` de cada campo: `checkbox` → boolean, os demais → string. O `Referer` da requisição é gravado como origem.',
+      '',
+      "O servidor valida cada valor contra a definição do campo: obrigatórios (checkbox obrigatório precisa ser `true`), e-mail, telefone (8 a 15 dígitos, `+` opcional), número, URL http(s), data `AAAA-MM-DD`, opção de `select` e tamanho (1.000 caracteres; 10.000 em `textarea`). Chaves que não são campos do formulário são descartadas. Erros voltam em `422 VALIDATION_ERROR`, com um item por campo em `error.details` (`path: ['values', <key>]`).",
     ].join('\n'),
     params: { publicToken: 'Token público do formulário.' },
     body: {

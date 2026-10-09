@@ -292,7 +292,7 @@ export const crmWorkflowsRoutes: RouteConfig[] = [
       },
       {
         code: 'CRM_WORKFLOW_EXECUTION_FAILED',
-        message: 'Run não está aguardando input',
+        message: 'A execução não está aguardando resposta',
         when: 'Execução não está em WAITING',
       },
       {

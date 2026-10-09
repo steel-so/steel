@@ -52,7 +52,7 @@ const INFO_DESCRIPTION = `API do **Steel**, a plataforma multi-tenant da Stratus
 ## Autenticação
 
 - **Sessão (cookie)** — quase todas as rotas usam o cookie \`better-auth.session_token\` (\`__Secure-better-auth.session_token\` em HTTPS), emitido pelo login em \`/auth/sign-in/email\`. Rotas sem sessão retornam \`401 UNAUTHORIZED\` (para \`/api/*\` o proxy responde 401 antes mesmo da rota).
-- **Chave de API de integração** — a entrada de leads (\`POST /crm/integrations/leads\`) usa \`Authorization: Bearer crm_live_...\`, gerada em CRM > Configurações > Integrações.
+- **Chave de API de integração** — a entrada de leads (\`POST /crm/integrations/leads\`) usa \`Authorization: Bearer crm_live_...\`, gerada no menu lateral do CRM, em **Chaves de API**.
 - **Tokens no path** — formulários, propostas, landing pages, workflows por webhook e descadastro são públicos: o token opaco no path é o acesso.
 - **Webhooks** — AbacatePay (\`x-webhook-secret\`), Meta (\`X-Hub-Signature-256\`) e Z-API (\`?secret=\`).
 
@@ -86,7 +86,7 @@ const SECURITY_SCHEMES: Record<string, JsonSchema> = {
     scheme: 'bearer',
     bearerFormat: 'crm_live_<token>',
     description:
-      'Chave de API de integração do CRM (`Authorization: Bearer crm_live_...`). Criada por OWNER/ADMIN em CRM > Configurações > Integrações; o valor completo só é exibido na criação. Chaves revogadas respondem `401 CRM_INTEGRATION_KEY_INVALID`.',
+      'Chave de API de integração do CRM (`Authorization: Bearer crm_live_...`). Criada por OWNER/ADMIN no menu lateral do CRM, em Chaves de API; o valor completo só é exibido na criação. Chaves revogadas respondem `401 CRM_INTEGRATION_KEY_INVALID`.',
   },
   abacatePayWebhookSecret: {
     type: 'apiKey',

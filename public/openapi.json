@@ -3,7 +3,7 @@
   "info": {
     "title": "Steel API",
     "version": "2026.08.31",
-    "description": "API do **Steel**, a plataforma multi-tenant da Stratus Telecom que reúne ServiceDesk, CRM e Comunicação (WhatsApp Business) num mesmo workspace.\n\n## Autenticação\n\n- **Sessão (cookie)** — quase todas as rotas usam o cookie `better-auth.session_token` (`__Secure-better-auth.session_token` em HTTPS), emitido pelo login em `/auth/sign-in/email`. Rotas sem sessão retornam `401 UNAUTHORIZED` (para `/api/*` o proxy responde 401 antes mesmo da rota).\n- **Chave de API de integração** — a entrada de leads (`POST /crm/integrations/leads`) usa `Authorization: Bearer crm_live_...`, gerada em CRM > Configurações > Integrações.\n- **Tokens no path** — formulários, propostas, landing pages, workflows por webhook e descadastro são públicos: o token opaco no path é o acesso.\n- **Webhooks** — AbacatePay (`x-webhook-secret`), Meta (`X-Hub-Signature-256`) e Z-API (`?secret=`).\n\n## Envelope de resposta\n\nToda rota do Steel responde no envelope padrão (`types/http-response.d.ts`):\n\n- sucesso: `{ \"success\": true, \"statusCode\": 200, \"data\": ... }`\n- erro: `{ \"success\": false, \"statusCode\": 404, \"message\": \"...\", \"error\": { \"code\": \"CRM_FORM_NOT_FOUND\", \"details\": ... } }`\n\nExceções, marcadas em cada rota: `/auth/*` (payloads do Better Auth), downloads binários e redirects. Trate erros pelo `error.code` (lista completa no schema `ErrorCode`), nunca pela mensagem. Falhas inesperadas respondem `500` com `DATABASE_ERROR` ou `INTERNAL_SERVER_ERROR`.\n\n## Multi-tenancy\n\nRotas `/workspaces/{id}/...` exigem que o usuário seja membro do workspace (`403 FORBIDDEN` caso contrário) e que o workspace não esteja suspenso (`403 WORKSPACE_SUSPENDED`). Rotas dos módulos também exigem o módulo habilitado (`403 MODULE_DISABLED`).\n\n## Versão\n\nCalVer (`YYYY.MM.DD[.N]`, ADR 0003): `info.version` é a última release sincronizada. Este arquivo é **gerado** por `pnpm openapi:generate` a partir de `src/openapi/` — não edite `public/openapi.json` à mão (ver `docs/api.md`).",
+    "description": "API do **Steel**, a plataforma multi-tenant da Stratus Telecom que reúne ServiceDesk, CRM e Comunicação (WhatsApp Business) num mesmo workspace.\n\n## Autenticação\n\n- **Sessão (cookie)** — quase todas as rotas usam o cookie `better-auth.session_token` (`__Secure-better-auth.session_token` em HTTPS), emitido pelo login em `/auth/sign-in/email`. Rotas sem sessão retornam `401 UNAUTHORIZED` (para `/api/*` o proxy responde 401 antes mesmo da rota).\n- **Chave de API de integração** — a entrada de leads (`POST /crm/integrations/leads`) usa `Authorization: Bearer crm_live_...`, gerada no menu lateral do CRM, em **Chaves de API**.\n- **Tokens no path** — formulários, propostas, landing pages, workflows por webhook e descadastro são públicos: o token opaco no path é o acesso.\n- **Webhooks** — AbacatePay (`x-webhook-secret`), Meta (`X-Hub-Signature-256`) e Z-API (`?secret=`).\n\n## Envelope de resposta\n\nToda rota do Steel responde no envelope padrão (`types/http-response.d.ts`):\n\n- sucesso: `{ \"success\": true, \"statusCode\": 200, \"data\": ... }`\n- erro: `{ \"success\": false, \"statusCode\": 404, \"message\": \"...\", \"error\": { \"code\": \"CRM_FORM_NOT_FOUND\", \"details\": ... } }`\n\nExceções, marcadas em cada rota: `/auth/*` (payloads do Better Auth), downloads binários e redirects. Trate erros pelo `error.code` (lista completa no schema `ErrorCode`), nunca pela mensagem. Falhas inesperadas respondem `500` com `DATABASE_ERROR` ou `INTERNAL_SERVER_ERROR`.\n\n## Multi-tenancy\n\nRotas `/workspaces/{id}/...` exigem que o usuário seja membro do workspace (`403 FORBIDDEN` caso contrário) e que o workspace não esteja suspenso (`403 WORKSPACE_SUSPENDED`). Rotas dos módulos também exigem o módulo habilitado (`403 MODULE_DISABLED`).\n\n## Versão\n\nCalVer (`YYYY.MM.DD[.N]`, ADR 0003): `info.version` é a última release sincronizada. Este arquivo é **gerado** por `pnpm openapi:generate` a partir de `src/openapi/` — não edite `public/openapi.json` à mão (ver `docs/api.md`).",
     "contact": {
       "name": "Stratus Telecom",
       "email": "suporte@stratustelecom.com.br"
@@ -4163,7 +4163,7 @@
         "tags": ["CRM público · Formulários"],
         "summary": "Enviar formulário",
         "operationId": "postCrmFormsByPublicTokenSubmit",
-        "description": "Registra o envio e cria o registro configurado no formulário (`action`): pessoa, empresa ou lead. Leads passam pelo mesmo pipeline da criação manual (dedupe contra leads em aberto, score e roteamento).\n\n`values` é chaveado pela `key` de cada campo: `checkbox` → boolean, os demais → string. O `Referer` da requisição é gravado como origem.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Registra o envio e cria o registro configurado no formulário (`action`): pessoa, empresa ou lead. Leads passam pelo mesmo pipeline da criação manual (dedupe contra leads em aberto, score e roteamento).\n\n`values` é chaveado pela `key` de cada campo: `checkbox` → boolean, os demais → string. O `Referer` da requisição é gravado como origem.\n\nO servidor valida cada valor contra a definição do campo: obrigatórios (checkbox obrigatório precisa ser `true`), e-mail, telefone (8 a 15 dígitos, `+` opcional), número, URL http(s), data `AAAA-MM-DD`, opção de `select` e tamanho (1.000 caracteres; 10.000 em `textarea`). Chaves que não são campos do formulário são descartadas. Erros voltam em `422 VALIDATION_ERROR`, com um item por campo em `error.details` (`path: ['values', <key>]`).\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "name": "publicToken",
@@ -91963,7 +91963,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "crm_live_<token>",
-        "description": "Chave de API de integração do CRM (`Authorization: Bearer crm_live_...`). Criada por OWNER/ADMIN em CRM > Configurações > Integrações; o valor completo só é exibido na criação. Chaves revogadas respondem `401 CRM_INTEGRATION_KEY_INVALID`."
+        "description": "Chave de API de integração do CRM (`Authorization: Bearer crm_live_...`). Criada por OWNER/ADMIN no menu lateral do CRM, em Chaves de API; o valor completo só é exibido na criação. Chaves revogadas respondem `401 CRM_INTEGRATION_KEY_INVALID`."
       },
       "abacatePayWebhookSecret": {
         "type": "apiKey",
@@ -112982,7 +112982,7 @@
                 "value": {
                   "success": false,
                   "statusCode": 500,
-                  "message": "Run não está aguardando input",
+                  "message": "A execução não está aguardando resposta",
                   "error": {
                     "code": "CRM_WORKFLOW_EXECUTION_FAILED"
                   }

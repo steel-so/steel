@@ -1149,3 +1149,105 @@ describe('CrmFormService.submit() notifications', () => {
     )
   })
 })
+
+describe('CrmFormService.submit() server-side validation', () => {
+  const fields = [
+    {
+      key: 'nome',
+      label: 'Nome',
+      type: 'text',
+      required: true,
+      mapping: { target: 'lead', attribute: 'name' },
+    },
+    {
+      key: 'email',
+      label: 'E-mail',
+      type: 'email',
+      required: true,
+      mapping: { target: 'lead', attribute: 'email' },
+    },
+    {
+      key: 'telefone',
+      label: 'Telefone',
+      type: 'phone',
+      required: false,
+      mapping: { target: 'lead', attribute: 'phone' },
+    },
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockLeadIntake()
+    mockedModuleAccess.isEnabled.mockResolvedValue(ok(true))
+    mockedFormRepo.findPublishedByPublicToken.mockResolvedValue(
+      ok(leadForm(fields)),
+    )
+    mockedLeadRepo.create.mockResolvedValue(
+      ok(createFakeCrmLead({ id: 'lead1', ownerId: 'owner1' })),
+    )
+    mockedSubmissionRepo.create.mockResolvedValue(
+      ok(fakeSubmission('lead1') as never),
+    )
+  })
+
+  it('should reject a submission missing required fields with field errors', async () => {
+    const error = expectErr(
+      await CrmFormService.submit('tok', '1.2.3.4', undefined, {
+        values: { telefone: '11 99999-0000' },
+      }),
+      'VALIDATION_ERROR',
+    )
+    expect(error.details).toEqual([
+      {
+        code: 'custom',
+        path: ['values', 'nome'],
+        message: 'Campo obrigatório',
+      },
+      {
+        code: 'custom',
+        path: ['values', 'email'],
+        message: 'Campo obrigatório',
+      },
+    ])
+    expect(mockedLeadRepo.create).not.toHaveBeenCalled()
+    expect(mockedSubmissionRepo.create).not.toHaveBeenCalled()
+  })
+
+  it('should reject a malformed e-mail and phone', async () => {
+    const error = expectErr(
+      await CrmFormService.submit('tok', '1.2.3.4', undefined, {
+        values: { nome: 'Ana', email: 'ana@', telefone: 'abc' },
+      }),
+      'VALIDATION_ERROR',
+    )
+    expect(error.details).toEqual([
+      { code: 'custom', path: ['values', 'email'], message: 'E-mail inválido' },
+      {
+        code: 'custom',
+        path: ['values', 'telefone'],
+        message: 'Telefone inválido',
+      },
+    ])
+    expect(mockedSubmissionRepo.create).not.toHaveBeenCalled()
+  })
+
+  it('should store only the form fields, trimmed, and drop unknown keys', async () => {
+    expectOk(
+      await CrmFormService.submit('tok', '1.2.3.4', undefined, {
+        values: {
+          nome: '  Ana  ',
+          email: 'ana@acme.com',
+          is_admin: 'true',
+        },
+      }),
+    )
+    expect(mockedSubmissionRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: { nome: 'Ana', email: 'ana@acme.com' },
+      }),
+    )
+    expect(mockedLeadRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Ana' }),
+    )
+  })
+})

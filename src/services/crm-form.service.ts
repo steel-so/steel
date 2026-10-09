@@ -22,6 +22,7 @@ import type {
   SubmitCrmFormDTO,
   UpdateCrmFormDTO,
 } from '@/src/schemas/crm-form.schema'
+import { validateCrmFormSubmission } from '@/src/schemas/crm-form-submission.schema'
 import type {
   CrmFormDTO,
   CrmFormPublicDTO,
@@ -334,7 +335,12 @@ export const CrmFormService = {
     if (!moduleEnabled.ok) return moduleEnabled
 
     const fields = (form.value.fields as unknown as CrmFormFieldDTO[]) ?? []
-    const byTarget = groupByTarget(fields, dto.values)
+    // The endpoint is public: never trust the browser's own validation.
+    const checked = validateCrmFormSubmission(fields, dto.values)
+    if (checked.issues.length > 0) {
+      return err(validationError('Dados inválidos', checked.issues))
+    }
+    const byTarget = groupByTarget(fields, checked.values)
 
     let createdCompanyId: string | undefined
     let createdPersonId: string | undefined
@@ -404,7 +410,7 @@ export const CrmFormService = {
 
     const result = await CrmFormSubmissionRepository.create({
       formId: form.value.id,
-      values: dto.values as unknown as Prisma.InputJsonValue,
+      values: checked.values as unknown as Prisma.InputJsonValue,
       action: form.value.action,
       createdCompanyId,
       createdPersonId,

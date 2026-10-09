@@ -1,7 +1,12 @@
 import type { Prisma } from '@prisma/client'
 import { sendEmail } from '@/src/lib/mail/send'
 import { prisma } from '@/src/lib/prisma'
-import { CrmWorkflowRunRepository } from '@/src/repositories/crm-workflow.repository'
+import { enqueueCrmWorkflowResume } from '@/src/lib/queue/crm-workflow-delay'
+import { parseCrmWorkflowDefinition } from '@/src/mappers/crm-workflow.mapper'
+import {
+  CrmWorkflowRunRepository,
+  CrmWorkflowVersionRepository,
+} from '@/src/repositories/crm-workflow.repository'
 import type {
   CrmWorkflowCondition,
   CrmWorkflowDefinition,
@@ -21,8 +26,9 @@ import {
  *  - create/update/delete/search/create-or-update-record (5 entidades CRM)
  *  - filter (continua/para)
  *  - if-else (segue branch por sourceHandle "true"/"false")
- *  - delay (resolve fixo em segundos; delays longos/test só registram
- *    `scheduledMs` sem pausar de verdade — mesma limitação do original)
+ *  - delay (pauses the run as WAITING, persists scope + pending steps in
+ *    `run.state` and schedules a delayed BullMQ job that resumes it —
+ *    `resumeCrmWorkflowAfterDelay`; a test run only records the delay)
  *  - send-email (via lib de mail já existente do Steel)
  *  - draft-email (não persiste nada — apenas retorna o rascunho resolvido)
  *  - iterator (relata tamanho/amostra da fonte; não expande o loop)
@@ -38,6 +44,8 @@ type RunContext = {
   /** Dados disponíveis pra expression resolver. */
   scope: Record<string, unknown>
   testMode: boolean
+  /** Injected clock: when a delay ends is computed from it. */
+  now: () => Date
 }
 
 export type RunCrmWorkflowParams = {
@@ -48,7 +56,11 @@ export type RunCrmWorkflowParams = {
   triggerType: CrmWorkflowTriggerType
   triggerPayload: unknown
   testMode: boolean
+  /** Clock override (tests). Defaults to the system clock. */
+  now?: () => Date
 }
+
+const systemClock = () => new Date()
 
 const ENTITY_DELEGATE = {
   company: 'crmCompany',
@@ -190,7 +202,13 @@ function withScopeFields(
 async function executeNode(
   node: CrmWorkflowNode,
   ctx: RunContext,
-): Promise<{ output: unknown; sourceHandle?: string; pause?: boolean }> {
+): Promise<{
+  output: unknown
+  sourceHandle?: string
+  pause?: boolean
+  /** Set by a delay step: pause the run for this long. */
+  delayMs?: number
+}> {
   const { data } = node
   const scope = ctx.scope
   switch (data.type) {
@@ -306,14 +324,10 @@ async function executeNode(
     }
     case 'delay': {
       const ms = delayToMs(data.amount, data.unit)
-      if (ctx.testMode || ms > 60_000) {
-        // Delays longos (ou em test mode) só registram a intenção — não há
-        // resumo assíncrono real ainda (mesma limitação documentada do
-        // original).
-        return { output: { scheduledMs: ms } }
-      }
-      await new Promise((resolve) => setTimeout(resolve, ms))
-      return { output: { waitedMs: ms } }
+      // A test run previews the flow: it records the delay and moves on.
+      if (ctx.testMode) return { output: { simulated: true, delayMs: ms } }
+      // The loop pauses the run and schedules the resume (delayed job).
+      return { output: { delayMs: ms }, delayMs: ms }
     }
     case 'send-email': {
       const to = String(resolveExpression(data.to, scope) ?? '')
@@ -425,6 +439,7 @@ export async function runCrmWorkflow(
     triggerType: params.triggerType,
     triggerPayload: params.triggerPayload,
     testMode: params.testMode,
+    now: params.now ?? systemClock,
     scope: {
       trigger: {
         type: params.triggerType,
@@ -476,6 +491,7 @@ export type ResumeCrmWorkflowParams = {
 export async function resumeCrmWorkflow(
   p: ResumeCrmWorkflowParams,
 ): Promise<void> {
+  const { scope, resume } = splitPausedState(p.scope)
   const ctx: RunContext = {
     runId: p.runId,
     workspaceId: p.workspaceId,
@@ -483,10 +499,11 @@ export async function resumeCrmWorkflow(
     triggerType: p.triggerType,
     triggerPayload: p.triggerPayload,
     testMode: false,
+    now: systemClock,
     scope: {
-      ...p.scope,
+      ...scope,
       steps: {
-        ...((p.scope.steps as Record<string, unknown>) ?? {}),
+        ...((scope.steps as Record<string, unknown>) ?? {}),
         [p.outputAlias]: { output: p.submission },
       },
     },
@@ -502,8 +519,11 @@ export async function resumeCrmWorkflow(
 
   const adj = buildAdjacency(p.definition)
   const byId = nodeMap(p.definition)
-  const queue = nextNodes(p.pausedNodeId, undefined, adj, byId)
-  const visited = new Set<string>([p.pausedNodeId])
+  const queue = [
+    ...nextNodes(p.pausedNodeId, undefined, adj, byId),
+    ...pendingNodes(resume, byId),
+  ]
+  const visited = new Set<string>([...(resume?.visited ?? []), p.pausedNodeId])
   await processQueue({
     params: {
       runId: p.runId,
@@ -561,7 +581,7 @@ async function processQueue(args: {
           startedAt,
         })
         await CrmWorkflowRunRepository.pause(params.runId, {
-          state: ctx.scope as Prisma.InputJsonValue,
+          state: pausedState(ctx, queue, visited),
           waitingStepId: stepId,
         })
         await CrmWorkflowRunRepository.setStatus(params.runId, 'WAITING')
@@ -576,6 +596,41 @@ async function processQueue(args: {
           formTitle: waiting.title ?? 'Formulário',
           assigneeId: waiting.assigneeId ?? null,
         })
+        break
+      }
+
+      // Delay step: persist the run and hand it to a delayed job. Nothing
+      // is held in memory, so a 1-day delay survives restarts and deploys.
+      if (result.delayMs !== undefined) {
+        if (!stepId) throw new Error('delay: the step row could not be created')
+        const resumeAt = new Date(ctx.now().getTime() + result.delayMs)
+        const output = {
+          delayMs: result.delayMs,
+          resumeAt: resumeAt.toISOString(),
+        }
+        ;(ctx.scope.steps as Record<string, unknown>)[alias] = { output }
+        await CrmWorkflowRunRepository.updateStep(stepId, {
+          status: 'RUNNING',
+          output,
+          startedAt,
+        })
+        await CrmWorkflowRunRepository.pause(params.runId, {
+          state: pausedState(ctx, queue, visited),
+          waitingStepId: stepId,
+        })
+        await CrmWorkflowRunRepository.setStatus(params.runId, 'WAITING')
+        try {
+          await enqueueCrmWorkflowResume(
+            { runId: params.runId, stepId },
+            result.delayMs,
+          )
+        } catch (cause) {
+          await CrmWorkflowRunRepository.clearPause(params.runId)
+          throw new Error(
+            `delay: ${cause instanceof Error ? cause.message : String(cause)}`,
+          )
+        }
+        paused = true
         break
       }
 
@@ -673,4 +728,150 @@ async function notifyRunOutcome(
     assigneeId: outcome.assigneeId,
     actorId,
   })
+}
+
+/* ======================= pause / resume state ========================== */
+
+/** Key of `run.state` holding what a resume needs besides the scope. */
+const RESUME_KEY = '$resume'
+
+type ResumeState = {
+  /** Nodes still queued (other branches) when the run paused. */
+  queue: string[]
+  visited: string[]
+  workspaceId: string
+  actingUserId: string
+  triggerType: CrmWorkflowTriggerType
+}
+
+function pausedState(
+  ctx: RunContext,
+  queue: CrmWorkflowNode[],
+  visited: Set<string>,
+): Prisma.InputJsonValue {
+  const resume: ResumeState = {
+    queue: queue.map((n) => n.id),
+    visited: [...visited],
+    workspaceId: ctx.workspaceId,
+    actingUserId: ctx.actingUserId,
+    triggerType: ctx.triggerType,
+  }
+  return { ...ctx.scope, [RESUME_KEY]: resume } as Prisma.InputJsonValue
+}
+
+/** Splits `run.state` into the expression scope and the resume info (absent
+ * in runs paused before the info was stored). */
+function splitPausedState(state: Record<string, unknown>): {
+  scope: Record<string, unknown>
+  resume: ResumeState | null
+} {
+  const { [RESUME_KEY]: resume, ...scope } = state
+  return { scope, resume: (resume as ResumeState | undefined) ?? null }
+}
+
+function pendingNodes(
+  resume: ResumeState | null,
+  byId: Map<string, CrmWorkflowNode>,
+): CrmWorkflowNode[] {
+  return (resume?.queue ?? [])
+    .map((id) => byId.get(id))
+    .filter((n): n is CrmWorkflowNode => Boolean(n))
+}
+
+export type CrmWorkflowDelayOutcome =
+  | 'resumed'
+  | 'rescheduled'
+  | 'stale'
+  | 'failed'
+
+/**
+ * Continues a run paused on a delay step, called by the `crm-workflow-delay`
+ * job. Idempotent: a run that is no longer waiting on this step (canceled,
+ * already resumed) is left alone ("stale"). A job that fires before the
+ * stored `resumeAt` (clock skew) is scheduled again for the remaining time.
+ * Throws only on database errors, so BullMQ retries.
+ */
+export async function resumeCrmWorkflowAfterDelay(
+  payload: { runId: string; stepId: string },
+  clock: () => Date = systemClock,
+): Promise<CrmWorkflowDelayOutcome> {
+  const { runId, stepId } = payload
+  const found = await CrmWorkflowRunRepository.findById(runId)
+  if (!found.ok) throw new Error(`crm workflow delay: ${found.error.message}`)
+  const run = found.value
+  if (run?.status !== 'WAITING' || run.waitingStepId !== stepId) {
+    return 'stale'
+  }
+  const step = run.steps.find((s) => s.id === stepId)
+  if (step?.nodeType !== 'delay' || !run.state) return 'stale'
+
+  const output = (step.output ?? {}) as { delayMs?: number; resumeAt?: string }
+  const now = clock()
+  const resumeAtMs = output.resumeAt ? Date.parse(output.resumeAt) : Number.NaN
+  if (resumeAtMs > now.getTime()) {
+    await enqueueCrmWorkflowResume(payload, resumeAtMs - now.getTime())
+    return 'rescheduled'
+  }
+
+  const { scope, resume } = splitPausedState(
+    run.state as Record<string, unknown>,
+  )
+  const version = await CrmWorkflowVersionRepository.findById(run.versionId)
+  if (!version.ok) {
+    throw new Error(`crm workflow delay: ${version.error.message}`)
+  }
+  if (!resume || !version.value) {
+    const error = 'Não foi possível retomar a execução após o atraso.'
+    await CrmWorkflowRunRepository.updateStep(stepId, {
+      status: 'FAILED',
+      error,
+      finishedAt: now,
+    })
+    await CrmWorkflowRunRepository.clearPause(runId)
+    await CrmWorkflowRunRepository.setStatus(runId, 'FAILED', {
+      error,
+      finishedAt: now,
+    })
+    return 'failed'
+  }
+
+  const definition = parseCrmWorkflowDefinition(version.value.definition)
+  await CrmWorkflowRunRepository.updateStep(stepId, {
+    status: 'COMPLETED',
+    output: { ...output, resumedAt: now.toISOString() },
+    finishedAt: now,
+  })
+  await CrmWorkflowRunRepository.clearPause(runId)
+  await CrmWorkflowRunRepository.setStatus(runId, 'RUNNING')
+
+  const params: RunCrmWorkflowParams = {
+    runId,
+    workspaceId: resume.workspaceId,
+    actingUserId: resume.actingUserId,
+    definition,
+    triggerType: resume.triggerType,
+    triggerPayload: run.triggerPayload,
+    testMode: false,
+    now: clock,
+  }
+  const byId = nodeMap(definition)
+  await processQueue({
+    params,
+    ctx: {
+      runId,
+      workspaceId: resume.workspaceId,
+      actingUserId: resume.actingUserId,
+      triggerType: resume.triggerType,
+      triggerPayload: run.triggerPayload,
+      testMode: false,
+      now: clock,
+      scope,
+    },
+    queue: [
+      ...nextNodes(step.nodeId, undefined, buildAdjacency(definition), byId),
+      ...pendingNodes(resume, byId),
+    ],
+    visited: new Set(resume.visited),
+  })
+  return 'resumed'
 }

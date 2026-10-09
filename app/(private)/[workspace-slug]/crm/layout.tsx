@@ -12,8 +12,10 @@ import {
   FunnelIcon,
   GoogleIcon,
   InstagramIcon,
+  Key01Icon,
   Linkedin01Icon,
   Mail01Icon,
+  MailReceive01Icon,
   MailSend01Icon,
   Megaphone01Icon,
   MegaphoneIcon,
@@ -43,7 +45,10 @@ import {
 } from '@/app/_components/navigation/sidebar-context'
 import { NavGroupAccordion } from '@/app/_components/navigation/sidebar-context/navigation-sidebar-context-accordion'
 import { RouteShortcuts } from '@/app/_components/shortcuts/route-shortcuts'
-import { hasModuleAccess } from '@/src/lib/module-access-guard'
+import {
+  hasModuleAccess,
+  isWorkspacePrivileged,
+} from '@/src/lib/module-access-guard'
 
 export default async function CrmLayout({
   children,
@@ -55,6 +60,8 @@ export default async function CrmLayout({
   const { 'workspace-slug': slug } = await params
   if (!(await hasModuleAccess(slug, 'CRM'))) notFound()
   const base = `/${slug}/crm`
+  // API keys are managed by OWNER/ADMIN only (the service enforces it too).
+  const canManageKeys = await isWorkspacePrivileged(slug)
 
   return (
     <>
@@ -172,6 +179,14 @@ export default async function CrmLayout({
           </NavItem>
         </NavGroup>
         <NavGroup>
+          <NavItem href={`${base}/email-sync`} icon={MailReceive01Icon}>
+            E-mail e agenda
+          </NavItem>
+          {canManageKeys ? (
+            <NavItem href={`${base}/integration-keys`} icon={Key01Icon}>
+              Chaves de API
+            </NavItem>
+          ) : null}
           <NavItem href={`${base}/settings`} icon={Settings02Icon}>
             Configurações
           </NavItem>

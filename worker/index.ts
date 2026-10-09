@@ -18,6 +18,7 @@ import { processCrmScheduledSend } from '../src/lib/queue/processors/crm-schedul
 import { processCrmSocialPostsTick } from '../src/lib/queue/processors/crm-social-posts-tick'
 import { processCrmSocialPublish } from '../src/lib/queue/processors/crm-social-publish'
 import { processCrmTaskReminders } from '../src/lib/queue/processors/crm-task-reminders'
+import { processCrmWorkflowDelay } from '../src/lib/queue/processors/crm-workflow-delay'
 import { processCrmWorkflowSchedule } from '../src/lib/queue/processors/crm-workflow-schedule'
 import { processDataExport } from '../src/lib/queue/processors/data-export'
 import { processDataRetention } from '../src/lib/queue/processors/data-retention'
@@ -181,6 +182,9 @@ async function main(): Promise<void> {
     registerWorker(QueueName.CrmScheduledSend, processCrmScheduledSend),
   )
   workers.push(registerWorker(QueueName.CrmCampaigns, processCrmCampaigns))
+  workers.push(
+    registerWorker(QueueName.CrmWorkflowDelay, processCrmWorkflowDelay),
+  )
   workers.push(
     registerWorker(QueueName.CrmWorkflowSchedule, processCrmWorkflowSchedule),
   )

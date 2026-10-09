@@ -20,6 +20,7 @@ import { authErrorMessage } from '@/src/lib/auth-error-messages'
 import { rememberTwoFactorMethod } from '@/src/lib/two-factor-method-hint'
 import { useCookieConsent } from '../../cookie-consent/provider'
 import { UserModalAccountSection } from './user-modal-account-section'
+import { UserModalDataExport } from './user-modal-data-export'
 import { UserModalSecurityTotp } from './user-modal-security-totp'
 
 export function UserModalSecurityTab({ tab }: { tab: string }) {
@@ -339,6 +340,9 @@ export function UserModalSecurityTab({ tab }: { tab: string }) {
             />
           </Field>
         </div>
+
+        {/* LGPD: personal data export (link arrives by e-mail) */}
+        <UserModalDataExport />
 
         {/* Legal acceptances + account deletion */}
         <UserModalAccountSection />

@@ -20,6 +20,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+/** Same support inbox the contact page and the manual publish. */
+export const SUPPORT_MAILTO = 'mailto:suporte@stratustelecom.com.br'
+
 export function UserDropdownHelper() {
   const shortcuts = useShortcuts()
   return (
@@ -44,14 +47,14 @@ export function UserDropdownHelper() {
               Documentação
             </DropdownMenuItem>
           </Link>
-          <Link href='https://google.com' target='_blank'>
+          <Link href={SUPPORT_MAILTO}>
             <DropdownMenuItem className='text-xs'>
               <SteelIcon
                 icon={MessageMultiple01Icon}
                 strokeWidth={2}
                 size={20}
               />
-              Suporte por mensagens
+              Falar com o suporte
             </DropdownMenuItem>
           </Link>
           <Link href='mailto:sales@stratustelecom.com.br' target='_blank'>
@@ -72,9 +75,11 @@ export function UserDropdownHelper() {
               <ShortcutKbd id='global.shortcuts' />
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem className='text-xs'>
-            O que há de novo?
-          </DropdownMenuItem>
+          <Link href='/changelog'>
+            <DropdownMenuItem className='text-xs'>
+              O que há de novo?
+            </DropdownMenuItem>
+          </Link>
           <Link href='/status'>
             <DropdownMenuItem className='text-xs'>
               Status do sistema

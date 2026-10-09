@@ -9,6 +9,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { SteelIcon } from '@/components/icon/icon'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { isPrivilegedRole } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
@@ -31,6 +32,8 @@ export default async function CrmIntegrationKeysPage({
     slug,
   )
   if (!membership.ok || !membership.value) notFound()
+  // Same rule as the sidebar entry and the service: OWNER/ADMIN only.
+  if (!isPrivilegedRole(membership.value.role)) notFound()
 
   return (
     <div className='flex h-full w-full min-h-0 flex-col'>

@@ -26,8 +26,22 @@ uma sequência de **ações**.
 | **Comunicação** | Enviar e-mail e rascunho de e-mail |
 | **Humano** | Formulário: o workflow pausa até alguém responder |
 
+O **Atraso** pausa a execução pelo tempo escolhido (segundos, minutos, horas ou
+dias) e depois continua sozinho a partir da etapa seguinte. Enquanto espera, a
+execução aparece como **Aguardando** no histórico, com o horário em que vai
+continuar. No **Testar**, o atraso só é registrado e o teste segue direto.
+
 ## Ciclo de vida
 
-Um workflow fica **Rascunho**, **Ativo** ou **Desativado**. Teste antes de
-ativar. O **Histórico de execuções** mostra cada execução, e as que pararam podem
-ser retomadas.
+Um workflow fica **Rascunho**, **Ativo** ou **Desativado**. Na barra do editor:
+
+- **Adicionar etapa** abre a lista de gatilhos e ações.
+- **Testar** roda o rascunho sem gravar nada no CRM.
+- **Descartar** volta o rascunho para a última versão ativa.
+- **Ativar** publica o rascunho.
+- **Ver execuções** abre o **Histórico de execuções**, com a situação de cada
+  execução e de cada etapa. As que pararam num **Formulário** podem ser
+  retomadas ali.
+
+Em telas estreitas, os botões mostram só o ícone; passe o mouse ou toque e
+segure para ver o nome.

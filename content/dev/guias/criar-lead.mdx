@@ -223,6 +223,35 @@ const body = await response.json()
 console.log(body.success ? `Envio ${body.data.id}` : body.error.code)
 ```
 
+O Steel valida as respostas no servidor, com as regras de cada campo do
+formulário, mesmo que o seu site já valide no navegador:
+
+- campos **obrigatórios** precisam vir preenchidos (um `checkbox` obrigatório
+  precisa ser `true`);
+- `email` precisa ser um e-mail válido; `phone`, de 8 a 15 dígitos, com `+`
+  opcional (espaços, parênteses e hífens são ignorados); `number`, um número;
+  `url`, um endereço `http` ou `https`; `date`, no formato `AAAA-MM-DD`;
+  `select`, um dos valores das opções;
+- textos têm até 1.000 caracteres (10.000 em `textarea`);
+- chaves que não são campos do formulário são descartadas.
+
+Quando algo não passa, a resposta é `422 VALIDATION_ERROR`, com um item por
+campo em `error.details`:
+
+```json
+{
+  "success": false,
+  "statusCode": 422,
+  "message": "Dados inválidos",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "details": [
+      { "code": "custom", "path": ["values", "email"], "message": "E-mail inválido" }
+    ]
+  }
+}
+```
+
 A resposta `201` traz o envio registrado, com o id do lead, da pessoa ou da
 empresa criada (`createdLeadId`, `createdPersonId`, `createdCompanyId`). O
 `Referer` fica gravado como a origem do envio.
@@ -232,7 +261,7 @@ empresa criada (`createdLeadId`, `createdPersonId`, `createdCompanyId`). O
 | `404` | `RESOURCE_NOT_FOUND` | Token desconhecido ou formulário excluído |
 | `403` | `MODULE_DISABLED` | O CRM foi desabilitado no workspace do formulário |
 | `422` | `CRM_FORM_NOT_PUBLISHED` | O formulário não está publicado |
-| `422` | `VALIDATION_ERROR` | Corpo sem `values`, ou lead sem e-mail nem telefone |
+| `422` | `VALIDATION_ERROR` | Corpo sem `values`, campo obrigatório vazio, valor fora do tipo do campo, ou lead sem e-mail nem telefone |
 | `429` | `RATE_LIMITED` | Mais de 100 chamadas por minuto do mesmo IP |
 
 ## Antes de ir para produção

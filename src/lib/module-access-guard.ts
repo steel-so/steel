@@ -1,5 +1,6 @@
 import type { ModuleKind } from '@prisma/client'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { isPrivilegedRole } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
 import { WorkspaceModuleAccessService } from '@/src/services/workspace-module-access.service'
 
@@ -30,4 +31,23 @@ export async function hasModuleAccess(
     module,
   )
   return access.ok && access.value
+}
+
+/**
+ * Whether the signed-in user is OWNER/ADMIN of the workspace — used by
+ * layouts to show admin-only entries (the services enforce the same rule).
+ */
+export async function isWorkspacePrivileged(slug: string): Promise<boolean> {
+  const session = await getAuthSession()
+  if (!session.ok) return false
+
+  const membership = await MembershipService.getByUserAndSlug(
+    session.value.user.id,
+    slug,
+  )
+  return (
+    membership.ok &&
+    !!membership.value &&
+    isPrivilegedRole(membership.value.role)
+  )
 }

@@ -21,6 +21,8 @@ import {
   type CrmSocialPublishJobPayload,
   type CrmTaskRemindersJob,
   type CrmTaskRemindersJobPayload,
+  type CrmWorkflowDelayJob,
+  type CrmWorkflowDelayJobPayload,
   type CrmWorkflowScheduleJob,
   type CrmWorkflowScheduleJobPayload,
   type DatabaseBackupJob,
@@ -125,6 +127,7 @@ let aiUsageWeeklyEmailQueue: Queue | null = null
 let workspaceExportQueue: Queue | null = null
 let workspaceIntegrationsQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
+let crmWorkflowDelayQueue: Queue | null = null
 
 export function getDataRetentionQueue(): Queue<
   DataRetentionJobPayload[DataRetentionJob],
@@ -959,6 +962,24 @@ export function getCrmCampaignsQueue(): Queue<
   >
 }
 
+export function getCrmWorkflowDelayQueue(): Queue<
+  CrmWorkflowDelayJobPayload[CrmWorkflowDelayJob],
+  unknown,
+  CrmWorkflowDelayJob
+> {
+  if (!crmWorkflowDelayQueue) {
+    crmWorkflowDelayQueue = new Queue(QueueName.CrmWorkflowDelay, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmWorkflowDelayQueue as Queue<
+    CrmWorkflowDelayJobPayload[CrmWorkflowDelayJob],
+    unknown,
+    CrmWorkflowDelayJob
+  >
+}
+
 // Typed as a full record so a new queue without an entry fails the build.
 const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DataRetention]: getDataRetentionQueue,
@@ -1000,6 +1021,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WorkspaceExport]: getWorkspaceExportQueue,
   [QueueName.WorkspaceIntegrations]: getWorkspaceIntegrationsQueue,
   [QueueName.CrmCampaigns]: getCrmCampaignsQueue,
+  [QueueName.CrmWorkflowDelay]: getCrmWorkflowDelayQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */

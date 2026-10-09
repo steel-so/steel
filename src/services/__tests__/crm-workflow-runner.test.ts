@@ -871,44 +871,28 @@ describe('runCrmWorkflow() — node executors', () => {
   })
 
   describe('delay', () => {
+    // Real (non-test) delays pause the run: see crm-workflow-delay.test.ts.
     it.each([
-      ['test mode', { amount: 1, unit: 'seconds' }, true, 1000],
-      ['longer than a minute', { amount: 2, unit: 'hours' }, false, 7_200_000],
-      ['days', { amount: 1, unit: 'days' }, false, 86_400_000],
+      ['seconds', { amount: 1, unit: 'seconds' }, 1000],
+      ['days', { amount: 1, unit: 'days' }, 86_400_000],
       [
         'unknown unit (defaults to minutes)',
         { amount: 2, unit: 'weeks' },
-        false,
         120_000,
       ],
-    ])('should only schedule for %s', async (_label, data, testMode, ms) => {
-      await runCrmWorkflow({
-        ...baseParams(def([{ id: 'd1', data: { type: 'delay', ...data } }])),
-        testMode,
-      })
-      expect(stepOutputs()[0]).toEqual({ scheduledMs: ms })
-    })
-
-    it('should actually wait for short delays', async () => {
-      vi.useFakeTimers()
-      try {
-        const done = runCrmWorkflow(
-          baseParams(
-            def([
-              { id: 'd1', data: { type: 'delay', amount: 2, unit: 'seconds' } },
-            ]),
-          ),
-        )
-        await vi.advanceTimersByTimeAsync(2000)
-        await done
-      } finally {
-        vi.useRealTimers()
-      }
-      expect(stepOutputs()[0]).toEqual({ waitedMs: 2000 })
-      expect(lastSetStatus()?.[1]).toBe('COMPLETED')
-    })
+    ])(
+      'should only record a %s delay in test mode',
+      async (_label, data, ms) => {
+        await runCrmWorkflow({
+          ...baseParams(def([{ id: 'd1', data: { type: 'delay', ...data } }])),
+          testMode: true,
+        })
+        expect(stepOutputs()[0]).toEqual({ simulated: true, delayMs: ms })
+        expect(mockedRunRepo.pause).not.toHaveBeenCalled()
+        expect(lastSetStatus()?.[1]).toBe('COMPLETED')
+      },
+    )
   })
-
   describe('send-email / draft-email', () => {
     const mail = (to: string, body = '<p>x</p>') => ({
       id: 'm1',

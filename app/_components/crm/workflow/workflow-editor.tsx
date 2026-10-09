@@ -50,6 +50,10 @@ import {
   useState,
 } from 'react'
 import { WorkflowConfigPanel } from '@/app/_components/crm/workflow/workflow-config-panel'
+import {
+  WORKFLOW_NODE_LABELS,
+  WORKFLOW_TRIGGER_LABELS,
+} from '@/app/_components/crm/workflow/workflow-labels'
 import { WorkflowRunsDrawer } from '@/app/_components/crm/workflow/workflow-runs-drawer'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -93,38 +97,38 @@ const TRIGGER_META: Record<
   { label: string; description: string; icon: IconType }
 > = {
   'record-is-created': {
-    label: 'Registro criado',
+    label: WORKFLOW_TRIGGER_LABELS['record-is-created'],
     description: 'Dispara quando um registro é criado',
     icon: PlusSignIcon,
   },
   'record-is-updated': {
-    label: 'Registro atualizado',
+    label: WORKFLOW_TRIGGER_LABELS['record-is-updated'],
     description: 'Dispara quando um registro é atualizado',
     icon: Edit02Icon,
   },
   'record-is-deleted': {
-    label: 'Registro excluído',
+    label: WORKFLOW_TRIGGER_LABELS['record-is-deleted'],
     description: 'Dispara quando um registro é excluído',
     icon: Delete01Icon,
   },
   'record-is-created-or-updated': {
-    label: 'Registro criado/atualizado',
+    label: WORKFLOW_TRIGGER_LABELS['record-is-created-or-updated'],
     description: 'Dispara em criação ou atualização',
     icon: DatabaseSync01Icon,
   },
   'launch-manually': {
-    label: 'Disparo manual',
+    label: WORKFLOW_TRIGGER_LABELS['launch-manually'],
     description: 'Disparado por um botão',
     icon: PlayIcon,
   },
   'on-a-schedule': {
-    label: 'Agendado',
-    description: 'Em horários (cron)',
+    label: WORKFLOW_TRIGGER_LABELS['on-a-schedule'],
+    description: 'Em horários definidos (cron)',
     icon: Calendar03Icon,
   },
   webhook: {
-    label: 'Webhook',
-    description: 'POST em URL pública',
+    label: WORKFLOW_TRIGGER_LABELS.webhook,
+    description: 'Chamada POST em um endereço público',
     icon: WebhookIcon,
   },
 }
@@ -134,74 +138,74 @@ const NODE_META: Record<
   { label: string; description: string; icon: IconType; group: string }
 > = {
   'create-record': {
-    label: 'Criar registro',
+    label: WORKFLOW_NODE_LABELS['create-record'],
     description: 'Cria um registro do CRM',
     icon: Database01Icon,
     group: 'Registros',
   },
   'update-record': {
-    label: 'Atualizar registro',
+    label: WORKFLOW_NODE_LABELS['update-record'],
     description: 'Atualiza um registro existente',
     icon: Edit02Icon,
     group: 'Registros',
   },
   'delete-record': {
-    label: 'Excluir registro',
+    label: WORKFLOW_NODE_LABELS['delete-record'],
     description: 'Marca como excluído',
     icon: Delete01Icon,
     group: 'Registros',
   },
   'search-records': {
-    label: 'Buscar registros',
+    label: WORKFLOW_NODE_LABELS['search-records'],
     description: 'Lista registros que batem com filtros',
     icon: Search01Icon,
     group: 'Registros',
   },
   'create-or-update-record': {
-    label: 'Upsert de registro',
-    description: 'Cria ou atualiza pelo campo de lookup',
+    label: WORKFLOW_NODE_LABELS['create-or-update-record'],
+    description: 'Cria ou atualiza pelo campo de busca',
     icon: DatabaseSync01Icon,
     group: 'Registros',
   },
   iterator: {
-    label: 'Iterar',
-    description: 'Executa o branch pra cada item',
+    label: WORKFLOW_NODE_LABELS.iterator,
+    description: 'Executa o ramo para cada item',
     icon: WaterPumpIcon,
     group: 'Controle',
   },
   filter: {
-    label: 'Filtro',
-    description: 'Para o branch se a condição falha',
+    label: WORKFLOW_NODE_LABELS.filter,
+    description: 'Interrompe o ramo se a condição falhar',
     icon: FilterIcon,
     group: 'Controle',
   },
   'if-else': {
-    label: 'If / Else',
-    description: 'Bifurca em true/false',
+    label: WORKFLOW_NODE_LABELS['if-else'],
+    description: 'Divide o fluxo em sim e não',
     icon: GitBranchIcon,
     group: 'Controle',
   },
   delay: {
-    label: 'Atraso',
+    label: WORKFLOW_NODE_LABELS.delay,
     description: 'Pausa por uma duração',
     icon: Time04Icon,
     group: 'Controle',
   },
   'send-email': {
-    label: 'Enviar email',
-    description: 'Dispara via lib de e-mail do Steel',
+    label: WORKFLOW_NODE_LABELS['send-email'],
+    description: 'Envia pelo e-mail do Steel',
     icon: Mail01Icon,
     group: 'Comunicação',
   },
   'draft-email': {
-    label: 'Rascunho de email',
+    label: WORKFLOW_NODE_LABELS['draft-email'],
     description: 'Retorna o rascunho resolvido',
     icon: ClipboardIcon,
     group: 'Comunicação',
   },
   form: {
-    label: 'Formulário',
-    description: 'Pausa pedindo input humano',
+    label: WORKFLOW_NODE_LABELS.form,
+    description: 'Pausa até alguém responder',
     icon: BulbIcon,
     group: 'Humano',
   },
@@ -557,10 +561,10 @@ function WorkflowEditorInner({
   const onTest = async () => {
     try {
       await triggerWorkflow.mutateAsync({ workflowId, test: true, payload: {} })
-      notify.success('Run de teste iniciada')
+      notify.success('Execução de teste iniciada')
       setRunsOpen(true)
     } catch {
-      notify.error('Falha ao iniciar a run de teste.')
+      notify.error('Não foi possível iniciar a execução de teste.')
     }
   }
 
@@ -597,7 +601,7 @@ function WorkflowEditorInner({
 
   return (
     <div className='flex h-full flex-col'>
-      <TopBar
+      <WorkflowTopBar
         name={workflow.name}
         status={workflow.status}
         onBack={() => router.push(`/${slug}/crm/workflows`)}
@@ -634,7 +638,7 @@ function WorkflowEditorInner({
         }}
       >
         <SheetContent
-          className='!w-[420px] !max-w-[420px] overflow-auto p-0'
+          className='!w-full overflow-auto p-0 sm:!w-[420px] sm:!max-w-[420px]'
           side='right'
         >
           <WorkflowConfigPanel
@@ -661,7 +665,7 @@ function WorkflowEditorInner({
 
 /* =============================== top bar ================================ */
 
-function TopBar({
+export function WorkflowTopBar({
   name,
   status,
   onBack,
@@ -690,14 +694,14 @@ function TopBar({
         variant='ghost'
         size='icon-sm'
         onClick={onBack}
-        aria-label='Voltar'
+        aria-label='Voltar para os workflows'
       >
         <SteelIcon icon={WorkflowCircle01Icon} strokeWidth={2} size={18} />
       </Button>
       <div className='min-w-0 truncate font-semibold text-sm'>{name}</div>
       <span
         className={cn(
-          'ml-2 rounded-full border px-2 py-0.5 text-xs',
+          'shrink-0 rounded-full border px-2 py-0.5 text-xs',
           status === 'ACTIVE'
             ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600'
             : 'border-amber-500/40 bg-amber-500/10 text-amber-600',
@@ -705,22 +709,34 @@ function TopBar({
       >
         {status === 'ACTIVE' ? 'Ativo' : 'Rascunho'}
       </span>
-      <div className='ml-auto flex items-center gap-1.5'>
-        <Button size='sm' variant='ghost' onClick={onShowRuns}>
+      {/* Below `lg` the buttons collapse to icons (with an accessible name)
+          so the bar fits a phone without clipping "Ativar". */}
+      <div className='ml-auto flex shrink-0 items-center gap-1'>
+        <Button
+          size='sm'
+          variant='ghost'
+          onClick={onShowRuns}
+          aria-label='Ver execuções'
+        >
           <SteelIcon icon={CallReceivedIcon} strokeWidth={2} />
-          Ver runs
+          <span className='hidden lg:inline'>Ver execuções</span>
         </Button>
-        <Button size='sm' variant='ghost' onClick={onTest}>
+        <Button size='sm' variant='ghost' onClick={onTest} aria-label='Testar'>
           <SteelIcon icon={PlayIcon} strokeWidth={2} />
-          Test
+          <span className='hidden lg:inline'>Testar</span>
         </Button>
-        <Button size='sm' variant='ghost' onClick={onDiscard}>
+        <Button
+          size='sm'
+          variant='ghost'
+          onClick={onDiscard}
+          aria-label='Descartar alterações'
+        >
           <SteelIcon icon={Cancel01Icon} strokeWidth={2} />
-          Discard
+          <span className='hidden lg:inline'>Descartar</span>
         </Button>
-        <Button size='sm' onClick={onActivate}>
+        <Button size='sm' onClick={onActivate} aria-label='Ativar'>
           <SteelIcon icon={CheckmarkCircle02Icon} strokeWidth={2} />
-          Active
+          <span className='hidden lg:inline'>Ativar</span>
         </Button>
         <AddMenu
           onPickTrigger={onPickTrigger}
@@ -758,9 +774,9 @@ function AddMenu({
       <DropdownMenuTrigger
         nativeButton={true}
         render={
-          <Button size='sm' variant='outline'>
+          <Button size='sm' variant='outline' aria-label='Adicionar etapa'>
             <SteelIcon icon={Add01Icon} strokeWidth={2} />
-            Add a node
+            <span className='hidden lg:inline'>Adicionar etapa</span>
           </Button>
         }
       />

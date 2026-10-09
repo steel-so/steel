@@ -113,14 +113,17 @@ A chamada espera o workflow rodar e responde `201` com a execução:
 O exemplo está resumido. Em `status`:
 
 - **`COMPLETED`**: todos os passos rodaram.
-- **`WAITING`**: o workflow parou num passo **Formulário** e espera alguém
-  responder no Steel. A execução continua sozinha depois da resposta.
+- **`WAITING`**: o workflow parou num passo **Formulário**, e espera alguém
+  responder no Steel, ou num passo **Atraso**, e espera o prazo. Nos dois casos
+  a execução continua sozinha depois.
 - **`FAILED`**: um passo falhou; `error` e o `error` do passo dizem por quê. A
   execução aparece no **Histórico de execuções** do workflow.
 
-Um passo **Atraso** de até um minuto segura a resposta por esse tempo; use um
-timeout de pelo menos 90 segundos no seu cliente. Atrasos maiores ainda não
-pausam a execução: o passo fica registrado e o workflow segue em frente.
+Um passo **Atraso** não segura a resposta: a execução volta com `status`
+`WAITING` assim que chega nele, e o passo traz em `output.resumeAt` quando ela
+continua. A partir daí o Steel retoma sozinho, em segundo plano, do passo
+seguinte, seja o atraso de alguns segundos ou de vários dias. Consulte a
+execução depois no **Histórico de execuções** se precisar do resultado final.
 
 ## Erros
 
