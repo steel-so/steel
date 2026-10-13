@@ -27,6 +27,8 @@ async function setup() {
   return { owner, workspace }
 }
 
+// Validity starts in the future so the expected next run never depends on
+// the day the suite runs (a fixed past date broke once "now" passed it).
 const ROUTINE = {
   name: 'Vistoria mensal do nobreak',
   description: 'Checar baterias e registrar',
@@ -35,7 +37,7 @@ const ROUTINE = {
   byMonthday: 10,
   atTime: '08:00',
   timezone: 'America/Sao_Paulo',
-  startsAt: '2026-10-01T03:00:00.000Z',
+  startsAt: '2030-01-01T03:00:00.000Z',
 }
 
 async function createRoutine(
@@ -91,11 +93,11 @@ describe('/api/workspaces/[id]/servicedesk/recurring-tickets', () => {
       active: true,
       runCount: 0,
       // Dia 10 às 08:00 em São Paulo, menos 1 h de antecedência.
-      nextRunAt: '2026-10-10T10:00:00.000Z',
+      nextRunAt: '2030-01-10T10:00:00.000Z',
     })
     expect(routine.upcoming.slice(0, 2)).toEqual([
-      '2026-10-10T11:00:00.000Z',
-      '2026-11-10T11:00:00.000Z',
+      '2030-01-10T11:00:00.000Z',
+      '2030-02-10T11:00:00.000Z',
     ])
 
     const list = await getJson(rules(workspace.id), owner.cookie)
@@ -108,7 +110,7 @@ describe('/api/workspaces/[id]/servicedesk/recurring-tickets', () => {
     ['an unknown timezone', { timezone: 'Mars/Olympus' }],
     [
       'a validity window that never fires',
-      { endsAt: '2026-10-05T03:00:00.000Z' },
+      { endsAt: '2030-01-05T03:00:00.000Z' },
     ],
   ])('refuses %s with SD_RECURRING_SCHEDULE_INVALID', async (_label, patch) => {
     const { owner, workspace } = await setup()
