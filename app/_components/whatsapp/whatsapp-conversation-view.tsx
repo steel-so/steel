@@ -22,9 +22,7 @@ import { MessageScroller } from '@/components/ui/chat/message-scroller'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -46,6 +44,7 @@ import {
   useStartWhatsAppPhoneCall,
   useWhatsAppAssignableMembers,
   useWhatsAppConversationEvents,
+  useWhatsAppPhoneCall,
 } from '@/src/hooks/use-whatsapp-conversations'
 import {
   useDeleteWhatsAppMessage,
@@ -66,6 +65,7 @@ import {
 } from './whatsapp-composer'
 import { WhatsappConversationEventChip } from './whatsapp-conversation-event-chip'
 import { WhatsappHandoffBanner } from './whatsapp-handoff-banner'
+import { WhatsappPhoneCallBanner } from './whatsapp-phone-call-banner'
 import { WhatsappVideoCallDialog } from './whatsapp-video-call-dialog'
 
 const STATUS_LABEL: Record<WhatsAppConversationDTO['status'], string> = {
@@ -125,6 +125,7 @@ export function WhatsappConversationView({
   const reopenConversation = useReopenWhatsAppConversation(workspaceId)
   const canEdit = useCan('conversations', 'EDIT')
   const startPhoneCall = useStartWhatsAppPhoneCall(workspaceId)
+  const phoneCall = useWhatsAppPhoneCall(workspaceId, conversation.id)
   const hasPabx = Boolean(
     currentUser.data?.pabxExtension && currentUser.data?.pabxDeviceId,
   )
@@ -216,14 +217,15 @@ export function WhatsappConversationView({
     }
   }, [conversation.id])
 
-  async function handlePhoneCall(mode: 'DIRECT' | 'RECORDING') {
+  async function handlePhoneCall() {
+    if (!hasPabx) {
+      notify.error('Configure seu ramal e device no perfil para ligar.')
+      return
+    }
     try {
-      const call = await startPhoneCall.mutateAsync({
-        conversationId: conversation.id,
-        mode,
-      })
+      const call = await startPhoneCall.mutateAsync(conversation.id)
       notify.success(
-        `Ligando para ${call.destination}. Atenda no ramal ${call.extension}.`,
+        `Atenda o ramal ${call.extension} para falar com o contato.`,
       )
     } catch (error) {
       notify.error(
@@ -351,41 +353,20 @@ export function WhatsappConversationView({
             }}
           />
           {canEdit && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant='ghost'
-                    size='icon-sm'
-                    aria-label='Ligar para o contato'
-                    disabled={startPhoneCall.isPending}
-                  >
-                    <SteelIcon icon={Call02Icon} size={18} />
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align='end' className='w-56'>
-                {hasPabx ? (
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>
-                      Ligar pelo ramal {currentUser.data?.pabxExtension}
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handlePhoneCall('DIRECT')}>
-                      Ligar agora
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePhoneCall('RECORDING')}
-                    >
-                      Ligar com gravação
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                ) : (
-                  <DropdownMenuItem disabled>
-                    Configure seu ramal e device no perfil para ligar
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Ligar para o contato'
+              title={
+                hasPabx
+                  ? `Ligar pelo ramal ${currentUser.data?.pabxExtension}`
+                  : 'Configure seu ramal e device no perfil para ligar'
+              }
+              disabled={startPhoneCall.isPending}
+              onClick={handlePhoneCall}
+            >
+              <SteelIcon icon={Call02Icon} size={18} />
+            </Button>
           )}
           <Button
             variant='ghost'
@@ -431,7 +412,6 @@ export function WhatsappConversationView({
           </DropdownMenu>
         </div>
       </div>
-
       {isClosed && (
         <div className='border-b bg-muted px-4 py-2 text-muted-foreground text-sm'>
           Conversa fechada
@@ -439,6 +419,8 @@ export function WhatsappConversationView({
           IA não responde até a conversa ser reaberta.
         </div>
       )}
+
+      <WhatsappPhoneCallBanner call={phoneCall.data} />
 
       {!isClosed && conversation.aiActive && (
         <WhatsappAiBanner
@@ -468,7 +450,6 @@ export function WhatsappConversationView({
           ),
         )}
       </MessageScroller>
-
       <WhatsappComposer
         workspaceId={workspaceId}
         conversationId={conversation.id}
@@ -477,14 +458,12 @@ export function WhatsappConversationView({
         replyTarget={replyTarget}
         onClearReply={() => setReplyTarget(null)}
       />
-
       <WhatsappCloseConversationDialog
         open={closeOpen}
         onOpenChange={setCloseOpen}
         onConfirm={handleClose}
         isPending={closeConversation.isPending}
       />
-
       <WhatsappVideoCallDialog
         open={callOpen}
         onOpenChange={setCallOpen}

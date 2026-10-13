@@ -11,7 +11,6 @@ import {
   SendWhatsAppTemplateMessageSchema,
   SendWhatsAppTextMessageSchema,
 } from '@/src/schemas/whatsapp-message.schema'
-import { StartWhatsAppPhoneCallSchema } from '@/src/schemas/whatsapp-phone-call.schema'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   DeletedIdDTO,
@@ -68,13 +67,37 @@ const StatusQuery = z.object({
 })
 
 const WhatsAppPhoneCallDTO = z.object({
+  id: z.string(),
   conversationId: z.string(),
-  extension: z.string().meta({ description: 'Ramal que vai tocar.' }),
+  userId: z.string().nullable(),
+  extension: z.string().meta({ description: 'Ramal que toca primeiro.' }),
   destination: z.string().meta({
     description: 'Número discado pelo PABX (DDD + número, sem o 55).',
   }),
-  mode: z.enum(['DIRECT', 'RECORDING']),
+  status: z
+    .enum([
+      'QUEUED',
+      'DIALING',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'BUSY',
+      'NO_ANSWER',
+      'CANCELED',
+      'EXTENSION_NO_ANSWER',
+      'FAILED',
+    ])
+    .meta({
+      description:
+        '`QUEUED` (ramal tocando) → `DIALING` (ramal atendeu, discando o contato) → `IN_PROGRESS` (contato atendeu) → final.',
+    }),
+  answeredAt: z.string().nullable(),
+  endedAt: z.string().nullable(),
+  durationSeconds: z.number().int().nullable(),
+  createdAt: z.string(),
 })
+
+const PHONE_CALL_REALTIME =
+  'Cada mudança de status é publicada no SSE `GET /whatsapp/events` (`phone-call.updated`).'
 
 const AssignSchema = z.object({
   assignedUserId: z.string().min(1).nullable().meta({
@@ -157,12 +180,11 @@ export const conversationRoutes: RouteConfig[] = [
     path: `${BASE}/call`,
     tags: [TAG],
     summary: 'Ligar para o contato',
-    description: `Click-to-call pelo PABX: toca o ramal do usuário (configurado no perfil, com o device) e liga para o número do contato. \`DIRECT\` liga direto; \`RECORDING\` começa com a gravação de apresentação. Auditado. ${perm('conversations', 'EDIT')}`,
+    description: `Click-to-call pelo PABX do device do usuário (ramal e device no perfil; endereço e token do PABX vêm do \`steel.device\`): toca o ramal e liga para o número do contato. O dialplan informa cada passo em \`POST /pabx/calls/webhook\`. ${PHONE_CALL_REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
     params: PARAMS,
-    body: StartWhatsAppPhoneCallSchema,
     responses: {
       201: {
-        description: 'Ligação enviada ao PABX.',
+        description: 'Ligação enfileirada no PABX (`QUEUED`).',
         schema: WhatsAppPhoneCallDTO,
       },
     },
@@ -174,14 +196,33 @@ export const conversationRoutes: RouteConfig[] = [
         when: 'O usuário não tem ramal e device no perfil',
       },
       {
+        code: 'PABX_DEVICE_NOT_FOUND',
+        when: 'O device do perfil não existe, está inativo ou não tem endereço de PABX',
+      },
+      {
         code: 'PABX_NOT_CONFIGURED',
-        when: '`PABX_CALL_URL`/`PABX_CALL_TOKEN` ausentes no servidor',
+        when: '`PABX_DEVICE_DB_URL` ausente no servidor',
       },
       {
         code: 'PABX_CALL_FAILED',
         when: 'O PABX recusou ou não respondeu',
       },
     ],
+  },
+  {
+    method: 'get',
+    path: `${BASE}/call`,
+    tags: [TAG],
+    summary: 'Última ligação da conversa',
+    description: `Status da ligação mais recente da conversa (ou \`null\`). ${PHONE_CALL_REALTIME} ${perm('conversations', 'VIEW')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Última ligação, ou `null`.',
+        schema: WhatsAppPhoneCallDTO.nullable(),
+      },
+    },
+    errors: [...permErrors('conversations', 'VIEW')],
   },
   {
     method: 'patch',

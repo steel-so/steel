@@ -1,14 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
-  StartWhatsAppPhoneCallDTO,
-  WhatsAppPhoneCallDTO,
-} from '@/src/schemas/whatsapp-phone-call.schema'
-import type {
   WhatsAppAssignableMemberDTO,
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
   WhatsAppConversationStatusDTO,
 } from '@/types/whatsapp-conversation'
+import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
 import { apiFetch } from './_fetch'
 
 const CONVERSATIONS_KEY = (
@@ -323,21 +320,44 @@ export function useReopenWhatsAppConversation(workspaceId: string) {
   })
 }
 
+export const WHATSAPP_PHONE_CALL_KEY = (
+  workspaceId: string,
+  conversationId: string,
+) => ['whatsapp-phone-call', workspaceId, conversationId] as const
+
+/** Latest click-to-call of the conversation; SSE keeps it live. */
+export function useWhatsAppPhoneCall(
+  workspaceId: string,
+  conversationId: string,
+) {
+  return useQuery({
+    queryKey: WHATSAPP_PHONE_CALL_KEY(workspaceId, conversationId),
+    queryFn: () =>
+      apiFetch<WhatsAppPhoneCallDTO | null>(
+        `/api/workspaces/${workspaceId}/whatsapp/conversations/${conversationId}/call`,
+        undefined,
+        'Erro ao buscar a ligação',
+      ),
+    enabled: Boolean(workspaceId && conversationId),
+  })
+}
+
 /** Click-to-call through the PABX: rings the user's extension, then the contact. */
 export function useStartWhatsAppPhoneCall(workspaceId: string) {
+  const queryClient = useQueryClient()
+
   return useMutation({
-    mutationFn: (data: {
-      conversationId: string
-      mode: StartWhatsAppPhoneCallDTO['mode']
-    }) =>
+    mutationFn: (conversationId: string) =>
       apiFetch<WhatsAppPhoneCallDTO>(
-        `/api/workspaces/${workspaceId}/whatsapp/conversations/${data.conversationId}/call`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode: data.mode }),
-        },
+        `/api/workspaces/${workspaceId}/whatsapp/conversations/${conversationId}/call`,
+        { method: 'POST' },
         'Erro ao iniciar a ligação',
       ),
+    onSuccess: (call) => {
+      queryClient.setQueryData(
+        WHATSAPP_PHONE_CALL_KEY(workspaceId, call.conversationId),
+        call,
+      )
+    },
   })
 }

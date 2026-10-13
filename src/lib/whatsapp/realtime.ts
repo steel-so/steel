@@ -3,6 +3,7 @@ import { logger } from '@/lib/axiom/logger'
 import { getQueueConnection } from '@/src/lib/queue/connection'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
+import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
 
 export type WhatsAppRealtimeEvent =
   | {
@@ -19,6 +20,7 @@ export type WhatsAppRealtimeEvent =
   | { type: 'conversation.updated'; conversation: WhatsAppConversationDTO }
   | { type: 'conversation.deleted'; conversationId: string }
   | { type: 'group-message.created'; groupId: string }
+  | { type: 'phone-call.updated'; call: WhatsAppPhoneCallDTO }
 
 function channelForWorkspace(workspaceId: string): string {
   return `whatsapp:workspace:${workspaceId}`

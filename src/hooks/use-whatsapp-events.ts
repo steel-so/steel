@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
+import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
 
 type WhatsAppRealtimeEvent =
   | {
@@ -18,6 +19,7 @@ type WhatsAppRealtimeEvent =
   | { type: 'conversation.updated'; conversation: WhatsAppConversationDTO }
   | { type: 'conversation.deleted'; conversationId: string }
   | { type: 'group-message.created'; groupId: string }
+  | { type: 'phone-call.updated'; call: WhatsAppPhoneCallDTO }
 
 export function useWhatsAppRealtimeEvents(workspaceId: string) {
   const queryClient = useQueryClient()
@@ -68,6 +70,13 @@ export function useWhatsAppRealtimeEvents(workspaceId: string) {
             parsed.conversation.id,
           ],
         })
+      }
+
+      if (parsed.type === 'phone-call.updated') {
+        queryClient.setQueryData(
+          ['whatsapp-phone-call', workspaceId, parsed.call.conversationId],
+          parsed.call,
+        )
       }
 
       if (parsed.type === 'group-message.created') {

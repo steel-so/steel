@@ -72,6 +72,7 @@ model User {
   whatsappGroupMessagesSent           WhatsAppGroupMessage[]        @relation("WhatsAppGroupMessageSender")
   whatsappAiKnowledgeDocumentsCreated WhatsAppAiKnowledgeDocument[] @relation("WhatsAppAiKnowledgeDocumentCreatedBy")
   whatsappConversationEventsActed     WhatsAppConversationEvent[]   @relation("WhatsAppConversationEventActor")
+  whatsappPhoneCalls                  WhatsAppPhoneCall[]
   notifications                       Notification[]
   notificationPreferences             NotificationPreference[]
   notificationDeliverySettings        NotificationDeliverySetting[]
@@ -417,6 +418,7 @@ model Workspace {
   whatsappConnections          WhatsAppConnection[]
   whatsappContacts             WhatsAppContact[]
   whatsappConversations        WhatsAppConversation[]
+  whatsappPhoneCalls           WhatsAppPhoneCall[]
   whatsappMessages             WhatsAppMessage[]
   whatsappQuickReplies         WhatsAppQuickReply[]
   whatsappBroadcastLists       WhatsAppBroadcastList[]
@@ -1185,6 +1187,7 @@ model WhatsAppConversation {
   assignedUser User?                       @relation("WhatsAppConversationAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
   messages     WhatsAppMessage[]
   events       WhatsAppConversationEvent[]
+  phoneCalls   WhatsAppPhoneCall[]
   sdTickets    SdTicket[]
 
   @@index([workspaceId, status, lastMessageAt])
@@ -1193,6 +1196,56 @@ model WhatsAppConversation {
   @@index([contactId])
   @@index([assignedUserId])
   @@map("whatsapp_conversations")
+}
+
+/// Lifecycle of a click-to-call placed through the user's PABX device.
+enum WhatsAppPhoneCallStatus {
+  /// Queued on the PABX; the user's extension is ringing.
+  QUEUED
+  /// The user answered the extension; the PABX is dialing the contact.
+  DIALING
+  /// The contact answered.
+  IN_PROGRESS
+  COMPLETED
+  BUSY
+  NO_ANSWER
+  /// The user hung up before the contact answered.
+  CANCELED
+  /// The user's extension did not answer.
+  EXTENSION_NO_ANSWER
+  FAILED
+}
+
+/// Click-to-call from a WhatsApp conversation. The PABX dialplan reports each
+/// step to the webhook, authenticated by the per-call callback token (only its
+/// SHA-256 is stored).
+model WhatsAppPhoneCall {
+  id                String                  @id @default(cuid())
+  workspaceId       String                  @map("workspace_id")
+  conversationId    String                  @map("conversation_id")
+  userId            String?                 @map("user_id")
+  deviceId          String                  @map("device_id") @db.VarChar(20)
+  extension         String                  @db.VarChar(20)
+  destination       String                  @db.VarChar(20)
+  /// Call-file job id returned by the PABX.
+  job               String?                 @db.VarChar(80)
+  callbackTokenHash String                  @unique @map("callback_token_hash") @db.Char(64)
+  status            WhatsAppPhoneCallStatus @default(QUEUED)
+  /// Raw Asterisk DIALSTATUS of the final report.
+  dialStatus        String?                 @map("dial_status") @db.VarChar(20)
+  answeredAt        DateTime?               @map("answered_at")
+  endedAt           DateTime?               @map("ended_at")
+  durationSeconds   Int?                    @map("duration_seconds")
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@index([workspaceId])
+  @@map("whatsapp_phone_calls")
 }
 
 enum WhatsAppConversationEventKind {

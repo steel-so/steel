@@ -492,6 +492,244 @@ describe('<WhatsappConversationView />', () => {
     expect(screen.queryByTestId('video-call')).toBeNull()
   })
 
+  it('places a PABX call and shows its live status', async () => {
+    const fetchSpy = setup([
+      {
+        match: '/api/users/me',
+        data: {
+          id: 'u_1',
+          name: 'Eu',
+          pabxExtension: '200',
+          pabxDeviceId: '0',
+        },
+      },
+      {
+        method: 'POST',
+        match: `${API}/conversations/cv_1/call`,
+        data: {
+          id: 'call_1',
+          conversationId: 'cv_1',
+          userId: 'u_1',
+          extension: '200',
+          destination: '11999999999',
+          status: 'QUEUED',
+          answeredAt: null,
+          endedAt: null,
+          durationSeconds: null,
+          createdAt: new Date().toISOString(),
+        },
+      },
+      { match: `${API}/conversations/cv_1/call`, data: null },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+
+    const call = screen.getByRole('button', { name: 'Ligar para o contato' })
+    await waitFor(() =>
+      expect(call.getAttribute('title')).toBe('Ligar pelo ramal 200'),
+    )
+    fireEvent.click(call)
+
+    expect(await screen.findByText('Chamando seu ramal 200…')).toBeTruthy()
+    expect(notify.success).toHaveBeenCalledWith(
+      'Atenda o ramal 200 para falar com o contato.',
+    )
+    expect(
+      fetchSpy.mock.calls.some(
+        ([url, init]) =>
+          String(url).endsWith('/conversations/cv_1/call') &&
+          init?.method === 'POST',
+      ),
+    ).toBe(true)
+  })
+
+  it('asks for the extension and device before calling', async () => {
+    const fetchSpy = setup([
+      { match: `${API}/conversations/cv_1/call`, data: null },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Ligar para o contato' }),
+    )
+
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        'Configure seu ramal e device no perfil para ligar.',
+      ),
+    )
+    expect(
+      fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
+    ).toBe(false)
+  })
+
+  it('reports a PABX refusal', async () => {
+    setup([
+      {
+        match: '/api/users/me',
+        data: {
+          id: 'u_1',
+          name: 'Eu',
+          pabxExtension: '200',
+          pabxDeviceId: '0',
+        },
+      },
+      {
+        method: 'POST',
+        match: `${API}/conversations/cv_1/call`,
+        status: 502,
+        error: 'O PABX recusou a ligação: Token ou dispositivo inválido.',
+      },
+      { match: `${API}/conversations/cv_1/call`, data: null },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+
+    const call = screen.getByRole('button', { name: 'Ligar para o contato' })
+    await waitFor(() =>
+      expect(call.getAttribute('title')).toBe('Ligar pelo ramal 200'),
+    )
+    fireEvent.click(call)
+
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        'O PABX recusou a ligação: Token ou dispositivo inválido.',
+      ),
+    )
+  })
+
+  it('places a PABX call and shows its live status', async () => {
+    const fetchSpy = setup([
+      {
+        match: '/api/users/me',
+        data: {
+          id: 'u_1',
+          name: 'Eu',
+          pabxExtension: '200',
+          pabxDeviceId: '0',
+        },
+      },
+      {
+        method: 'POST',
+        match: `${API}/conversations/cv_1/call`,
+        data: {
+          id: 'call_1',
+          conversationId: 'cv_1',
+          userId: 'u_1',
+          extension: '200',
+          destination: '11999999999',
+          status: 'QUEUED',
+          answeredAt: null,
+          endedAt: null,
+          durationSeconds: null,
+          createdAt: new Date().toISOString(),
+        },
+      },
+      { match: `${API}/conversations/cv_1/call`, data: null },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+
+    const call = screen.getByRole('button', { name: 'Ligar para o contato' })
+    await waitFor(() =>
+      expect(call.getAttribute('title')).toBe('Ligar pelo ramal 200'),
+    )
+    fireEvent.click(call)
+
+    expect(await screen.findByText('Chamando seu ramal 200…')).toBeTruthy()
+    expect(notify.success).toHaveBeenCalledWith(
+      'Atenda o ramal 200 para falar com o contato.',
+    )
+    expect(
+      fetchSpy.mock.calls.some(
+        ([url, init]) =>
+          String(url).endsWith('/conversations/cv_1/call') &&
+          init?.method === 'POST',
+      ),
+    ).toBe(true)
+  })
+
+  it('asks for the extension and device before calling', async () => {
+    const fetchSpy = setup([
+      { match: `${API}/conversations/cv_1/call`, data: null },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Ligar para o contato' }),
+    )
+
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        'Configure seu ramal e device no perfil para ligar.',
+      ),
+    )
+    expect(
+      fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
+    ).toBe(false)
+  })
+
+  it('reports a PABX refusal', async () => {
+    setup([
+      {
+        match: '/api/users/me',
+        data: {
+          id: 'u_1',
+          name: 'Eu',
+          pabxExtension: '200',
+          pabxDeviceId: '0',
+        },
+      },
+      {
+        method: 'POST',
+        match: `${API}/conversations/cv_1/call`,
+        status: 502,
+        error: 'O PABX recusou a ligação: Token ou dispositivo inválido.',
+      },
+      { match: `${API}/conversations/cv_1/call`, data: null },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+
+    const call = screen.getByRole('button', { name: 'Ligar para o contato' })
+    await waitFor(() =>
+      expect(call.getAttribute('title')).toBe('Ligar pelo ramal 200'),
+    )
+    fireEvent.click(call)
+
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        'O PABX recusou a ligação: Token ou dispositivo inválido.',
+      ),
+    )
+  })
+
   it('sets the reply target from the message context menu', async () => {
     setup()
     renderWithQuery(

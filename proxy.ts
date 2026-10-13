@@ -28,7 +28,7 @@ const PUBLIC_ROUTES = [
   '/apple-icon',
   // Old address of the API reference: redirects to /dev/api
   '/reference',
-  '/api/whatsapp/webhook', '/api/crm/proposals', '/api/crm/forms',
+  '/api/whatsapp/webhook', '/api/pabx/calls/webhook', '/api/crm/proposals', '/api/crm/forms',
   '/api/crm/integrations', '/api/crm/workflows', '/api/crm/landing-pages',
   '/f', '/p', '/l', '/api/social/blob',
   // Descadastro LGPD de campanhas de e-mail: link sem sessão (token HMAC)

@@ -1,18 +1,32 @@
 import { z } from 'zod'
 
-export const StartWhatsAppPhoneCallSchema = z.object({
-  // DIRECT: the PABX rings the contact right away; RECORDING: plays the
-  // greeting audio first.
-  mode: z.enum(['DIRECT', 'RECORDING']).default('DIRECT'),
+/** Steps the PABX dialplan reports for a call (see docs/pabx). */
+export const PABX_CALL_EVENTS = [
+  // The user answered the extension; the PABX is dialing the contact.
+  'EXTENSION_ANSWERED',
+  // The contact answered.
+  'ANSWERED',
+  // The call ended (`dialstatus` + `answeredtime` describe how).
+  'HANGUP',
+  // The extension never answered, so the contact was not dialed.
+  'EXTENSION_FAILED',
+] as const
+
+const optionalText = z.preprocess(
+  (v) => (v === '' || v === null ? undefined : v),
+  z.string().max(40).optional(),
+)
+
+/** Form body the PABX dialplan posts to the status webhook. */
+export const PabxCallWebhookSchema = z.object({
+  token: z.string().min(16).max(128),
+  event: z.enum(PABX_CALL_EVENTS),
+  job: optionalText,
+  dialstatus: optionalText,
+  answeredtime: z.preprocess(
+    (v) => (v === '' || v === null ? undefined : v),
+    z.coerce.number().int().min(0).max(86_400).optional(),
+  ),
 })
 
-export type StartWhatsAppPhoneCallDTO = z.infer<
-  typeof StartWhatsAppPhoneCallSchema
->
-
-export interface WhatsAppPhoneCallDTO {
-  conversationId: string
-  extension: string
-  destination: string
-  mode: StartWhatsAppPhoneCallDTO['mode']
-}
+export type PabxCallWebhookDTO = z.infer<typeof PabxCallWebhookSchema>

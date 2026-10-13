@@ -264,6 +264,15 @@ export const pabxExtensionRequired = (): AppError =>
 export const pabxNotConfigured = (): AppError =>
   appError('PABX_NOT_CONFIGURED', 'Ligações não estão configuradas no servidor')
 
+export const pabxDeviceNotFound = (): AppError =>
+  appError(
+    'PABX_DEVICE_NOT_FOUND',
+    'Device do PABX não encontrado ou inativo. Confira o device no seu perfil.',
+  )
+
+export const pabxCallbackInvalid = (): AppError =>
+  appError('PABX_CALLBACK_INVALID', 'Callback de ligação inválido')
+
 export const pabxCallFailed = (
   message = 'Não foi possível iniciar a ligação',
 ): AppError => appError('PABX_CALL_FAILED', message)

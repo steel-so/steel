@@ -1,25 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import { pabxNotConfigured } from '@/src/errors'
+import { err, ok } from '@/src/lib/result'
 
-const env = vi.hoisted(() => ({
-  PABX_CALL_URL: 'http://pabx.test/steel_call_endpoint.php' as
-    | string
-    | undefined,
-  PABX_CALL_TOKEN: 'device-token' as string | undefined,
-  PABX_CALL_AUDIO: 'apresentacao.wav',
+vi.mock('@/lib/env/server', () => ({
+  PABX_ENDPOINT_TEMPLATE: 'http://{host}:4561/steel_call_endpoint.php',
 }))
-
-vi.mock('@/lib/env/server', () => env)
+vi.mock('../pabx/device-directory', () => ({ findPabxDevice: vi.fn() }))
 
 import { placePabxCall, toPabxDestination } from '../pabx/click-to-call'
+import { findPabxDevice } from '../pabx/device-directory'
 
+const mockedFindDevice = vi.mocked(findPabxDevice)
 const fetchMock = vi.fn()
 
 const input = {
   deviceId: '123',
   extension: '200',
   destination: '5511999999999',
-  mode: 'DIRECT' as const,
+  callbackUrl: 'https://steel.test/api/pabx/calls/webhook',
+  callbackToken: 'callback-token-123456',
 }
 
 function jsonResponse(status: number, body: unknown) {
@@ -43,8 +43,9 @@ describe('toPabxDestination', () => {
 
 describe('placePabxCall', () => {
   beforeEach(() => {
-    env.PABX_CALL_URL = 'http://pabx.test/steel_call_endpoint.php'
-    env.PABX_CALL_TOKEN = 'device-token'
+    mockedFindDevice.mockResolvedValue(
+      ok({ id: '123', host: '172.20.28.248', token: 'device-token' }),
+    )
     fetchMock.mockReset()
     vi.stubGlobal('fetch', fetchMock)
   })
@@ -53,51 +54,63 @@ describe('placePabxCall', () => {
     vi.unstubAllGlobals()
   })
 
-  it('posts the form expected by the dialer and returns the destination', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }))
+  it("posts a direct call to the device's own PABX with the callback", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(202, { ok: true, job: 'steel_api_123_abc' }),
+    )
 
     const result = await placePabxCall(input)
 
-    expect(expectOk(result)).toEqual({ destination: '11999999999' })
+    expect(expectOk(result)).toEqual({
+      destination: '11999999999',
+      job: 'steel_api_123_abc',
+    })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('http://pabx.test/steel_call_endpoint.php')
+    expect(url).toBe('http://172.20.28.248:4561/steel_call_endpoint.php')
     expect(init.method).toBe('POST')
     expect(Object.fromEntries(init.body as URLSearchParams)).toEqual({
       iddevice: '123',
       ramal: '200',
       destino: '11999999999',
       tipo: '1',
-      audio: 'apresentacao.wav',
       token: 'device-token',
+      callback_url: 'https://steel.test/api/pabx/calls/webhook',
+      callback_token: 'callback-token-123456',
     })
   })
 
-  it('sends tipo=2 for a call that starts with the recording', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }))
+  it('returns a null job when the PABX does not send one', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(202, { ok: true }))
 
-    await placePabxCall({ ...input, mode: 'RECORDING' })
-
-    const body = fetchMock.mock.calls[0][1].body as URLSearchParams
-    expect(body.get('tipo')).toBe('2')
+    expect(expectOk(await placePabxCall(input)).job).toBeNull()
   })
 
-  it('fails with PABX_NOT_CONFIGURED without URL or token', async () => {
-    env.PABX_CALL_TOKEN = undefined
+  it('fails with PABX_DEVICE_NOT_FOUND for an unknown or inactive device', async () => {
+    mockedFindDevice.mockResolvedValue(ok(null))
+
+    expectErr(await placePabxCall(input), 'PABX_DEVICE_NOT_FOUND')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('propagates the device lookup failure', async () => {
+    mockedFindDevice.mockResolvedValue(err(pabxNotConfigured()))
 
     expectErr(await placePabxCall(input), 'PABX_NOT_CONFIGURED')
-    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('surfaces the dialer message when it refuses the call', async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse(422, { ok: false, mensagem: 'Parâmetros inválidos.' }),
+      jsonResponse(401, {
+        ok: false,
+        mensagem: 'Token ou dispositivo inválido.',
+      }),
     )
 
     const error = expectErr(await placePabxCall(input), 'PABX_CALL_FAILED')
-    expect(error.message).toContain('Parâmetros inválidos.')
+    expect(error.message).toContain('Token ou dispositivo inválido.')
   })
 
-  it('fails when the dialer answers 200 without ok=true', async () => {
+  it('fails when the dialer answers without ok=true', async () => {
     fetchMock.mockResolvedValue(new Response('not json', { status: 200 }))
 
     const error = expectErr(await placePabxCall(input), 'PABX_CALL_FAILED')

@@ -379,6 +379,9 @@ importers:
       maxmind:
         specifier: ^5.0.7
         version: 5.0.7
+      mysql2:
+        specifier: 3.24.4
+        version: 3.24.4(@types/node@25.9.4)
       next:
         specifier: '>=16.3.6'
         version: 16.3.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@25.9.4)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

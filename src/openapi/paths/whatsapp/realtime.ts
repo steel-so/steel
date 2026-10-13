@@ -184,6 +184,63 @@ ${WEBHOOK_EFFECTS} ${WEBHOOK_NOTE}`,
     autoErrors: false,
   },
 
+  /* ---------------------------------- PABX --------------------------------- */
+  {
+    method: 'post',
+    path: '/pabx/calls/webhook',
+    tags: [TAG],
+    summary: 'Status da ligação (PABX)',
+    description:
+      'Chamado pelo dialplan do PABX (`CURL()` do Asterisk) a cada passo do click-to-call iniciado em `POST /workspaces/{id}/whatsapp/conversations/{conversationId}/call`. O `token` é o segredo **por ligação** que o Steel enviou ao PABX como `callback_token`; ele autentica e identifica a ligação (só o SHA-256 fica gravado). Relatos depois do status final são ignorados. A ligação atualizada é publicada no SSE `GET /whatsapp/events` (`phone-call.updated`).',
+    auth: 'public',
+    body: {
+      contentType: 'application/x-www-form-urlencoded',
+      schema: {
+        type: 'object',
+        required: ['token', 'event'],
+        properties: {
+          token: { type: 'string', description: 'callback_token da ligação.' },
+          event: {
+            type: 'string',
+            enum: [
+              'EXTENSION_ANSWERED',
+              'ANSWERED',
+              'HANGUP',
+              'EXTENSION_FAILED',
+            ],
+          },
+          job: { type: 'string', description: 'Job do call file no PABX.' },
+          dialstatus: {
+            type: 'string',
+            description:
+              '`DIALSTATUS` do Asterisk no `HANGUP` (`ANSWER`, `BUSY`, `NOANSWER`, `CANCEL`, ...).',
+          },
+          answeredtime: {
+            type: 'integer',
+            description: 'Segundos falados (`ANSWEREDTIME`) no `HANGUP`.',
+          },
+        },
+      },
+      example: {
+        token: '<callback_token>',
+        event: 'HANGUP',
+        dialstatus: 'ANSWER',
+        answeredtime: 42,
+      },
+    },
+    responses: {
+      200: {
+        description:
+          'Relato aplicado (ou ignorado por já estar no status final).',
+        schema: z.object({ status: z.string() }),
+      },
+    },
+    errors: [
+      { code: 'PABX_CALLBACK_INVALID', when: 'Token de callback desconhecido' },
+      'VALIDATION_ERROR',
+      'RATE_LIMITED',
+    ],
+  },
   /* ---------------------------------- Z-API -------------------------------- */
   {
     method: 'get',
