@@ -23,6 +23,11 @@ model User {
   /// ofereceria a etapa do autenticador a quem nunca escaneou nada.
   twoFactorTotpEnabled Boolean              @default(false) @map("two_factor_totp_enabled")
   isPlatformAdmin      Boolean              @default(false) @map("is_platform_admin")
+  /// PABX extension used by click-to-call from a WhatsApp conversation. Set by
+  /// the user in the profile modal, together with `pabxDeviceId`.
+  pabxExtension        String?              @map("pabx_extension") @db.VarChar(20)
+  /// PABX device (`iddevice` of the dialer endpoint) bound to the extension.
+  pabxDeviceId         String?              @map("pabx_device_id") @db.VarChar(20)
   deletionScheduledAt  DateTime?            @map("deletion_scheduled_at")
   acceptedTermsAt      DateTime?            @map("accepted_terms_at")
   acceptedPrivacyAt    DateTime?            @map("accepted_privacy_at")

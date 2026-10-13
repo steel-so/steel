@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  StartWhatsAppPhoneCallDTO,
+  WhatsAppPhoneCallDTO,
+} from '@/src/schemas/whatsapp-phone-call.schema'
+import type {
   WhatsAppAssignableMemberDTO,
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
@@ -316,5 +320,24 @@ export function useReopenWhatsAppConversation(workspaceId: string) {
         queryKey: WHATSAPP_CONVERSATION_EVENTS_KEY(workspaceId, conversationId),
       })
     },
+  })
+}
+
+/** Click-to-call through the PABX: rings the user's extension, then the contact. */
+export function useStartWhatsAppPhoneCall(workspaceId: string) {
+  return useMutation({
+    mutationFn: (data: {
+      conversationId: string
+      mode: StartWhatsAppPhoneCallDTO['mode']
+    }) =>
+      apiFetch<WhatsAppPhoneCallDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/conversations/${data.conversationId}/call`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: data.mode }),
+        },
+        'Erro ao iniciar a ligação',
+      ),
   })
 }

@@ -124,6 +124,8 @@ export const UserRepository = {
       username?: string
       image?: string
       coverImage?: string
+      pabxExtension?: string | null
+      pabxDeviceId?: string | null
     },
   ): Promise<Result<User>> {
     try {

@@ -10,6 +10,8 @@ export function toUserDTO(user: UserWithMemberships): UserDTO {
     emailVerified: user.emailVerified,
     image: user.image,
     coverImage: user.coverImage,
+    pabxExtension: user.pabxExtension,
+    pabxDeviceId: user.pabxDeviceId,
     createdAt: user.createdAt.toISOString(),
     deletionScheduledAt: user.deletionScheduledAt?.toISOString() ?? null,
     acceptedTermsAt: user.acceptedTermsAt?.toISOString() ?? null,

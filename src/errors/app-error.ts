@@ -255,6 +255,19 @@ export const whatsappProviderError = (
   message = 'Falha ao comunicar com o provedor do WhatsApp',
 ): AppError => appError('WHATSAPP_PROVIDER_ERROR', message)
 
+export const pabxExtensionRequired = (): AppError =>
+  appError(
+    'PABX_EXTENSION_REQUIRED',
+    'Configure seu ramal e device no perfil para fazer ligações',
+  )
+
+export const pabxNotConfigured = (): AppError =>
+  appError('PABX_NOT_CONFIGURED', 'Ligações não estão configuradas no servidor')
+
+export const pabxCallFailed = (
+  message = 'Não foi possível iniciar a ligação',
+): AppError => appError('PABX_CALL_FAILED', message)
+
 export const whatsappWebhookUnauthorized = (): AppError =>
   appError('WHATSAPP_WEBHOOK_UNAUTHORIZED', 'Assinatura do webhook inválida')
 

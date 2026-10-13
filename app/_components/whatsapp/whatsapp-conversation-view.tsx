@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft01Icon,
+  Call02Icon,
   CheckmarkCircle02Icon,
   ComputerVideoCallIcon,
   RefreshIcon,
@@ -21,7 +22,9 @@ import { MessageScroller } from '@/components/ui/chat/message-scroller'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -40,6 +43,7 @@ import {
   useReopenWhatsAppConversation,
   useResumeWhatsAppConversationAi,
   useStartWhatsAppConversation,
+  useStartWhatsAppPhoneCall,
   useWhatsAppAssignableMembers,
   useWhatsAppConversationEvents,
 } from '@/src/hooks/use-whatsapp-conversations'
@@ -120,6 +124,10 @@ export function WhatsappConversationView({
   const closeConversation = useCloseWhatsAppConversation(workspaceId)
   const reopenConversation = useReopenWhatsAppConversation(workspaceId)
   const canEdit = useCan('conversations', 'EDIT')
+  const startPhoneCall = useStartWhatsAppPhoneCall(workspaceId)
+  const hasPabx = Boolean(
+    currentUser.data?.pabxExtension && currentUser.data?.pabxDeviceId,
+  )
   const isClosed = conversation.status === 'CLOSED'
 
   // Conversation shortcuts (registry `zap.*`).
@@ -207,6 +215,22 @@ export function WhatsappConversationView({
       markRead.mutate(conversation.id)
     }
   }, [conversation.id])
+
+  async function handlePhoneCall(mode: 'DIRECT' | 'RECORDING') {
+    try {
+      const call = await startPhoneCall.mutateAsync({
+        conversationId: conversation.id,
+        mode,
+      })
+      notify.success(
+        `Ligando para ${call.destination}. Atenda no ramal ${call.extension}.`,
+      )
+    } catch (error) {
+      notify.error(
+        error instanceof Error ? error.message : 'Erro ao iniciar a ligação',
+      )
+    }
+  }
 
   async function handleStartCall() {
     try {
@@ -326,6 +350,43 @@ export function WhatsappConversationView({
               label: conversation.contactName ?? conversation.contactWaId,
             }}
           />
+          {canEdit && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    aria-label='Ligar para o contato'
+                    disabled={startPhoneCall.isPending}
+                  >
+                    <SteelIcon icon={Call02Icon} size={18} />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align='end' className='w-56'>
+                {hasPabx ? (
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>
+                      Ligar pelo ramal {currentUser.data?.pabxExtension}
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => handlePhoneCall('DIRECT')}>
+                      Ligar agora
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handlePhoneCall('RECORDING')}
+                    >
+                      Ligar com gravação
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                ) : (
+                  <DropdownMenuItem disabled>
+                    Configure seu ramal e device no perfil para ligar
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant='ghost'
             size='icon-sm'

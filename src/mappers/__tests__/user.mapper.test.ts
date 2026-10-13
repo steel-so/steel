@@ -21,6 +21,8 @@ describe('toUserDTO()', () => {
         emailVerified: true,
         image: 'https://example.com/avatar.png',
         coverImage: null,
+        pabxExtension: '200',
+        pabxDeviceId: '123',
       }),
       [
         {
@@ -62,6 +64,8 @@ describe('toUserDTO()', () => {
       emailVerified: true,
       image: 'https://example.com/avatar.png',
       coverImage: null,
+      pabxExtension: '200',
+      pabxDeviceId: '123',
       createdAt: user.createdAt.toISOString(),
       deletionScheduledAt: null,
       acceptedTermsAt: null,

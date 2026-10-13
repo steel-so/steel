@@ -35,6 +35,9 @@ const serverEnv = {
   RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET,
   WHATSAPP_META_VERIFY_TOKEN: process.env.WHATSAPP_META_VERIFY_TOKEN,
   JITSI_DOMAIN: process.env.JITSI_DOMAIN,
+  PABX_CALL_URL: process.env.PABX_CALL_URL,
+  PABX_CALL_TOKEN: process.env.PABX_CALL_TOKEN,
+  PABX_CALL_AUDIO: process.env.PABX_CALL_AUDIO,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
@@ -218,6 +221,17 @@ export const serverEnvSchema = z.object({
   ),
   WHATSAPP_META_VERIFY_TOKEN: z.string().min(8).max(255).optional(),
   JITSI_DOMAIN: z.string().min(1).max(255).default('meet.jit.si'),
+  // Click-to-call from a WhatsApp conversation through the PABX dialer
+  // endpoint. Without URL and token the call button answers 503.
+  PABX_CALL_URL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.url().optional(),
+  ),
+  PABX_CALL_TOKEN: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(1).max(255).optional(),
+  ),
+  PABX_CALL_AUDIO: z.string().min(1).max(255).default('apresentacao.wav'),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
@@ -378,6 +392,9 @@ export const {
   RESEND_WEBHOOK_SECRET,
   WHATSAPP_META_VERIFY_TOKEN,
   JITSI_DOMAIN,
+  PABX_CALL_URL,
+  PABX_CALL_TOKEN,
+  PABX_CALL_AUDIO,
   OPENAI_API_KEY,
   OPENAI_MODEL,
   ANTHROPIC_API_KEY,

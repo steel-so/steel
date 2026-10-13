@@ -2,6 +2,31 @@ import { describe, expect, it } from 'vitest'
 import { UpdateUserSchema } from '@/src/schemas/user.schema'
 
 describe('UpdateUserSchema', () => {
+  it('should accept the PABX extension and device as digits', () => {
+    const result = UpdateUserSchema.safeParse({
+      pabxExtension: ' 200 ',
+      pabxDeviceId: '123',
+    })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ pabxExtension: '200', pabxDeviceId: '123' })
+  })
+
+  it('should clear the PABX fields with an empty string', () => {
+    const result = UpdateUserSchema.safeParse({
+      pabxExtension: '',
+      pabxDeviceId: null,
+    })
+    expect(result.data).toEqual({ pabxExtension: null, pabxDeviceId: null })
+  })
+
+  it('should reject a non-numeric PABX extension', () => {
+    const result = UpdateUserSchema.safeParse({ pabxExtension: '20a' })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0].message).toBe(
+      'Ramal deve conter apenas números',
+    )
+  })
+
   it('should accept valid name and email', () => {
     const result = UpdateUserSchema.safeParse({
       name: 'John Doe',

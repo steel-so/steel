@@ -20,6 +20,17 @@ export const UserGoalValues = [
 
 const usernameRegex = /^[a-z0-9._-]+$/
 
+// PABX extension/device: digits only. An empty string clears the field.
+const pabxNumber = (label: string) =>
+  z.preprocess(
+    (v) => (typeof v === 'string' ? v.trim() || null : v),
+    z
+      .string()
+      .regex(/^\d{1,20}$/, `${label} deve conter apenas números`)
+      .nullable()
+      .optional(),
+  )
+
 export const UpdateUserSchema = z.object({
   name: z
     .string()
@@ -43,6 +54,8 @@ export const UpdateUserSchema = z.object({
       'URL de capa inválida',
     )
     .optional(),
+  pabxExtension: pabxNumber('Ramal'),
+  pabxDeviceId: pabxNumber('Device'),
 })
 
 export const SaveRoleSchema = z.object({

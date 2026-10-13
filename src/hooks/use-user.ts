@@ -26,6 +26,8 @@ export function useUpdateUser() {
       name?: string
       username?: string
       coverImage?: string
+      pabxExtension?: string
+      pabxDeviceId?: string
     }) =>
       apiFetch<UserDTO>(
         BASE_API_ROUTE,

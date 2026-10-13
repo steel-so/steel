@@ -11,6 +11,7 @@ import {
   SendWhatsAppTemplateMessageSchema,
   SendWhatsAppTextMessageSchema,
 } from '@/src/schemas/whatsapp-message.schema'
+import { StartWhatsAppPhoneCallSchema } from '@/src/schemas/whatsapp-phone-call.schema'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   DeletedIdDTO,
@@ -64,6 +65,15 @@ const StatusQuery = z.object({
     .string()
     .optional()
     .meta({ description: 'Filtra por conexão.' }),
+})
+
+const WhatsAppPhoneCallDTO = z.object({
+  conversationId: z.string(),
+  extension: z.string().meta({ description: 'Ramal que vai tocar.' }),
+  destination: z.string().meta({
+    description: 'Número discado pelo PABX (DDD + número, sem o 55).',
+  }),
+  mode: z.enum(['DIRECT', 'RECORDING']),
 })
 
 const AssignSchema = z.object({
@@ -140,6 +150,37 @@ export const conversationRoutes: RouteConfig[] = [
     errors: [
       ...permErrors('conversations', 'DELETE'),
       'WHATSAPP_CONVERSATION_NOT_FOUND',
+    ],
+  },
+  {
+    method: 'post',
+    path: `${BASE}/call`,
+    tags: [TAG],
+    summary: 'Ligar para o contato',
+    description: `Click-to-call pelo PABX: toca o ramal do usuário (configurado no perfil, com o device) e liga para o número do contato. \`DIRECT\` liga direto; \`RECORDING\` começa com a gravação de apresentação. Auditado. ${perm('conversations', 'EDIT')}`,
+    params: PARAMS,
+    body: StartWhatsAppPhoneCallSchema,
+    responses: {
+      201: {
+        description: 'Ligação enviada ao PABX.',
+        schema: WhatsAppPhoneCallDTO,
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'EDIT'),
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
+      {
+        code: 'PABX_EXTENSION_REQUIRED',
+        when: 'O usuário não tem ramal e device no perfil',
+      },
+      {
+        code: 'PABX_NOT_CONFIGURED',
+        when: '`PABX_CALL_URL`/`PABX_CALL_TOKEN` ausentes no servidor',
+      },
+      {
+        code: 'PABX_CALL_FAILED',
+        when: 'O PABX recusou ou não respondeu',
+      },
     ],
   },
   {

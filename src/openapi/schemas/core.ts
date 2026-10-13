@@ -48,6 +48,14 @@ export const UserDTO = dto(
       emailVerified: z.boolean(),
       image: z.string().nullable(),
       coverImage: z.string().nullable(),
+      pabxExtension: z.string().nullable().meta({
+        description: 'Ramal do PABX usado no "Ligar" da conversa.',
+        example: '200',
+      }),
+      pabxDeviceId: z.string().nullable().meta({
+        description: 'Device do PABX ligado ao ramal.',
+        example: '123',
+      }),
       createdAt: dateTime(),
       deletionScheduledAt: nullableDateTime().meta({
         description: 'Preenchido quando a exclusão da conta está agendada.',

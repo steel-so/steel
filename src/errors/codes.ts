@@ -118,6 +118,12 @@ export const ERROR_CODES = {
     status: 404,
   },
   WHATSAPP_PROVIDER_ERROR: { code: 'WHATSAPP_PROVIDER_ERROR', status: 502 },
+  // Click-to-call: the actor has no PABX extension/device in the profile.
+  PABX_EXTENSION_REQUIRED: { code: 'PABX_EXTENSION_REQUIRED', status: 422 },
+  // Click-to-call: PABX_CALL_URL/PABX_CALL_TOKEN are not set on the server.
+  PABX_NOT_CONFIGURED: { code: 'PABX_NOT_CONFIGURED', status: 503 },
+  // Click-to-call: the PABX dialer refused or did not answer.
+  PABX_CALL_FAILED: { code: 'PABX_CALL_FAILED', status: 502 },
   WHATSAPP_WEBHOOK_UNAUTHORIZED: {
     code: 'WHATSAPP_WEBHOOK_UNAUTHORIZED',
     status: 401,

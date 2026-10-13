@@ -31,6 +31,8 @@ export interface UserDTO {
   emailVerified: boolean
   image: string | null
   coverImage: string | null
+  pabxExtension: string | null
+  pabxDeviceId: string | null
   createdAt: string
   deletionScheduledAt: string | null
   acceptedTermsAt: string | null

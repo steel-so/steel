@@ -51,9 +51,16 @@ export function UserModalProfileTab({ tab }: { tab: string }) {
 
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
+  const [pabxExtension, setPabxExtension] = useState(user?.pabxExtension || '')
+  const [pabxDeviceId, setPabxDeviceId] = useState(user?.pabxDeviceId || '')
 
+  const pabxDirty =
+    pabxExtension !== (user?.pabxExtension ?? '') ||
+    pabxDeviceId !== (user?.pabxDeviceId ?? '')
   const dirty =
-    name !== (user?.name ?? '') || username !== (user?.username ?? '')
+    name !== (user?.name ?? '') ||
+    username !== (user?.username ?? '') ||
+    pabxDirty
 
   async function handleSave(e: React.SubmitEvent) {
     e.preventDefault()
@@ -62,6 +69,7 @@ export function UserModalProfileTab({ tab }: { tab: string }) {
       await updateUser.mutateAsync({
         ...(name !== user?.name ? { name } : {}),
         ...(username !== user?.username ? { username } : {}),
+        ...(pabxDirty ? { pabxExtension, pabxDeviceId } : {}),
       })
       await refetchSession?.()
       notify.success('Perfil atualizado')
@@ -163,6 +171,35 @@ export function UserModalProfileTab({ tab }: { tab: string }) {
                 <Button variant='link' size='xs'>
                   Alterar e-mail
                 </Button>
+              </FieldDescription>
+            </Field>
+            <div />
+            <Field>
+              <FieldLabel>Ramal</FieldLabel>
+              <Input
+                inputMode='numeric'
+                placeholder='Ex.: 200'
+                value={pabxExtension}
+                onChange={(e) =>
+                  setPabxExtension(e.target.value.replace(/\D/g, ''))
+                }
+              />
+              <FieldDescription>
+                Ramal que toca quando você liga para um contato do WhatsApp.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel>Device do PABX</FieldLabel>
+              <Input
+                inputMode='numeric'
+                placeholder='Ex.: 123'
+                value={pabxDeviceId}
+                onChange={(e) =>
+                  setPabxDeviceId(e.target.value.replace(/\D/g, ''))
+                }
+              />
+              <FieldDescription>
+                Identificador do aparelho ligado ao seu ramal.
               </FieldDescription>
             </Field>
           </FieldGroup>
