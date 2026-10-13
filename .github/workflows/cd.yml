@@ -265,9 +265,10 @@ jobs:
           if [ -n "${SLACK_ALERTS_WEBHOOK_URL}" ] && ! grep -q '^SLACK_ALERTS_WEBHOOK_URL=' "${DEPLOY_DIR}/.env"; then
             printf 'SLACK_ALERTS_WEBHOOK_URL=%s\n' "${SLACK_ALERTS_WEBHOOK_URL}" >> "${DEPLOY_DIR}/.env"
           fi
-          # PABX click-to-call (WhatsApp "Ligar" button). Same reason as
-          # above; sops wins if it ever defines the variables itself.
-          for var in PABX_CALL_URL PABX_CALL_TOKEN; do
+          # PABX click-to-call (WhatsApp "Ligar" button): read access to the
+          # central steel.device table. Same reason as above; sops wins if it
+          # ever defines the variable itself.
+          for var in PABX_DEVICE_DB_URL; do
             if [ -n "${!var}" ] && ! grep -q "^${var}=" "${DEPLOY_DIR}/.env"; then
               printf '%s=%s\n' "${var}" "${!var}" >> "${DEPLOY_DIR}/.env"
             fi
@@ -276,8 +277,7 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
           AXIOM_QUERY_TOKEN: ${{ secrets.AXIOM_QUERY_TOKEN }}
           SLACK_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_ALERTS_WEBHOOK_URL }}
-          PABX_CALL_URL: ${{ secrets.PABX_CALL_URL }}
-          PABX_CALL_TOKEN: ${{ secrets.PABX_CALL_TOKEN }}
+          PABX_DEVICE_DB_URL: ${{ secrets.PABX_DEVICE_DB_URL }}
 
       - name: Deploy versioned image
         env:
