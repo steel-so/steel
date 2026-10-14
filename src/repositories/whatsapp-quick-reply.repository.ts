@@ -1,4 +1,4 @@
-import type { WhatsAppQuickReply } from '@prisma/client'
+import { Prisma, type WhatsAppQuickReply } from '@prisma/client'
 import { whatsappQuickReplyConflict } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -39,6 +39,7 @@ export const WhatsAppQuickReplyRepository = {
     title: string
     body: string
     mediaUrl?: string
+    buttons?: Prisma.InputJsonValue
   }): Promise<Result<WhatsAppQuickReply>> {
     try {
       const quickReply = await prisma.whatsAppQuickReply.create({ data })
@@ -58,12 +59,20 @@ export const WhatsAppQuickReplyRepository = {
       title?: string
       body?: string
       mediaUrl?: string
+      /** `null` removes the buttons. */
+      buttons?: Prisma.InputJsonValue | null
     },
   ): Promise<Result<WhatsAppQuickReply>> {
     try {
+      const { buttons, ...rest } = data
       const quickReply = await prisma.whatsAppQuickReply.update({
         where: { id },
-        data,
+        data: {
+          ...rest,
+          ...(buttons === undefined
+            ? {}
+            : { buttons: buttons === null ? Prisma.DbNull : buttons }),
+        },
       })
       return ok(quickReply)
     } catch (error) {

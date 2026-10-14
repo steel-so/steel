@@ -10,6 +10,7 @@ const { client } = vi.hoisted(() => ({
     sendTemplate: vi.fn(),
     sendContact: vi.fn(),
     sendReaction: vi.fn(),
+    sendButtons: vi.fn(),
   },
 }))
 
@@ -77,6 +78,15 @@ describe('WhatsAppSend — monthly Communication limits', () => {
           to: '55',
           name: 'Ana',
           waId: '5511',
+        }),
+    ],
+    [
+      'buttons',
+      () =>
+        WhatsAppSend.buttons(communication, {
+          to: '55',
+          text: 'Confirma?',
+          buttons: [{ type: 'REPLY', id: 'stl:q:q1:b1', label: 'Sim' }],
         }),
     ],
   ] as const)(

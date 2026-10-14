@@ -12,6 +12,7 @@ export function createFakeWhatsAppQuickReply(
     title: 'Saudação',
     body: 'Olá! Como posso ajudar?',
     mediaUrl: null,
+    buttons: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

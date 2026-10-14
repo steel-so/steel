@@ -23,6 +23,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
     broadcastList: { workspaceId: ws },
   }),
   whatsAppGroupParticipant: (ws) => ({ group: { workspaceId: ws } }),
+  whatsAppTeamMember: (ws) => ({ team: { workspaceId: ws } }),
   crmPipelineStage: (ws) => ({ pipeline: { workspaceId: ws } }),
   crmOpportunityLineItem: (ws) => ({ opportunity: { workspaceId: ws } }),
   crmLeadInterestProduct: (ws) => ({ lead: { workspaceId: ws } }),

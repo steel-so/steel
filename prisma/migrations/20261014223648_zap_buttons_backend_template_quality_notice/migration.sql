@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "NotificationKind" ADD VALUE 'WHATSAPP_TEMPLATE_QUALITY';

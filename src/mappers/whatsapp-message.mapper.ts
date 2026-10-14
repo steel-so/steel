@@ -1,4 +1,5 @@
 import type { WhatsAppMessage } from '@prisma/client'
+import { parseMessageButtons } from '@/src/lib/whatsapp/buttons'
 import type {
   WhatsAppMessageContactPayload,
   WhatsAppMessageDTO,
@@ -23,6 +24,8 @@ export function toWhatsAppMessageDTO(
     reactedByContact: message.reactedByContact,
     contactPayload:
       (message.contactPayload as WhatsAppMessageContactPayload | null) ?? null,
+    buttons: parseMessageButtons(message.buttons),
+    buttonPayload: message.buttonPayload,
     createdAt: message.createdAt.toISOString(),
   }
 }

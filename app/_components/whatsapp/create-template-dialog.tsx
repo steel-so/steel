@@ -166,7 +166,28 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
               )
             : undefined,
         footer: footer.trim() || undefined,
-        buttons: buttons.length > 0 ? buttons.map(toMetaButton) : undefined,
+        // Contract shim until the UI slice rewrites this dialog: phone
+        // buttons are no longer offered (product cap is 2 reply/link).
+        buttons:
+          buttons.length > 0
+            ? buttons
+                .filter((b) => b.type !== 'PHONE_NUMBER')
+                .map((b, index) =>
+                  b.type === 'URL'
+                    ? {
+                        id: `b${index + 1}`,
+                        type: 'URL' as const,
+                        label: b.text,
+                        url: b.url ?? '',
+                      }
+                    : {
+                        id: `b${index + 1}`,
+                        type: 'REPLY' as const,
+                        label: b.text,
+                        actions: [],
+                      },
+                )
+            : undefined,
       })
       notify.success('Template enviado para aprovação da Meta')
       setOpen(false)

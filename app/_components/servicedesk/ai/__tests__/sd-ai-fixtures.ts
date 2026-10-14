@@ -103,6 +103,8 @@ export function waMessage(
     reactionEmoji: null,
     reactedByContact: null,
     contactPayload: null,
+    buttons: null,
+    buttonPayload: null,
     createdAt: '2026-09-21T12:00:00.000Z',
     ...overrides,
   }

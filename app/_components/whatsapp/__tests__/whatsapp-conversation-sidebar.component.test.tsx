@@ -32,6 +32,8 @@ function conversation(
     contactAvatarUrl: null,
     status: 'IN_PROGRESS',
     assignedUserId: null,
+    teamId: null,
+    team: null,
     aiActive: false,
     aiHandoff: false,
     unreadCount: 0,

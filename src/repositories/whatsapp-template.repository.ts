@@ -56,6 +56,13 @@ export const WhatsAppTemplateRepository = {
     category: string
     status: WhatsAppTemplate['status']
     components: Prisma.InputJsonValue
+    quality?: WhatsAppTemplate['quality']
+    qualityUpdatedAt?: Date | null
+    statusReason?: string | null
+    headerFormat?: WhatsAppTemplate['headerFormat']
+    headerMediaUrl?: string | null
+    /** Only on create from Steel — a sync never overwrites the actions. */
+    buttons?: Prisma.InputJsonValue
   }): Promise<Result<WhatsAppTemplate>> {
     try {
       const template = await prisma.whatsAppTemplate.upsert({
@@ -71,11 +78,41 @@ export const WhatsAppTemplateRepository = {
           category: data.category,
           status: data.status,
           components: data.components,
+          ...(data.quality !== undefined ? { quality: data.quality } : {}),
+          ...(data.qualityUpdatedAt !== undefined
+            ? { qualityUpdatedAt: data.qualityUpdatedAt }
+            : {}),
+          ...(data.statusReason !== undefined
+            ? { statusReason: data.statusReason }
+            : {}),
+          ...(data.headerFormat !== undefined
+            ? { headerFormat: data.headerFormat }
+            : {}),
+          ...(data.headerMediaUrl !== undefined
+            ? { headerMediaUrl: data.headerMediaUrl }
+            : {}),
+          ...(data.buttons !== undefined ? { buttons: data.buttons } : {}),
         },
       })
       return ok(template)
     } catch (error) {
       return err(dbError('Failed to upsert whatsapp template', error))
+    }
+  },
+
+  /** Partial update (button actions, status/quality from the webhook). */
+  async update(
+    id: string,
+    data: Prisma.WhatsAppTemplateUpdateInput,
+  ): Promise<Result<WhatsAppTemplate>> {
+    try {
+      const template = await prisma.whatsAppTemplate.update({
+        where: { id },
+        data,
+      })
+      return ok(template)
+    } catch (error) {
+      return err(dbError('Failed to update whatsapp template', error))
     }
   },
 }

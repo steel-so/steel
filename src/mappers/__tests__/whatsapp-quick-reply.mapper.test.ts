@@ -20,6 +20,7 @@ describe('toWhatsAppQuickReplyDTO()', () => {
       title: 'Saudação',
       body: 'Olá! Como posso ajudar?',
       mediaUrl: null,
+      buttons: [],
       createdAt: quickReply.createdAt.toISOString(),
       updatedAt: quickReply.updatedAt.toISOString(),
     })

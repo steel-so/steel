@@ -1,6 +1,7 @@
 import 'server-only'
 import { logger } from '@/lib/axiom/logger'
 import type {
+  WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
@@ -100,6 +101,45 @@ function documentExtension(fileName?: string, mediaUrl?: string): string {
   return 'pdf'
 }
 
+/**
+ * Z-API request for a message with buttons. Only reply buttons and no media:
+ * `/send-button-list`; anything else (a link, an image): `/send-button-actions`
+ * (REPLY and URL mixed — CALL never). Video/document media is not supported
+ * by the button endpoints: the caller sends it first as its own message.
+ */
+export function buildZapiButtons(input: WhatsAppOutboundButtons): {
+  path: string
+  body: Record<string, unknown>
+} {
+  const image = input.media?.type === 'image' ? input.media.url : undefined
+  const onlyReplies = input.buttons.every((b) => b.type === 'REPLY')
+  if (onlyReplies && !image) {
+    return {
+      path: '/send-button-list',
+      body: {
+        phone: input.to,
+        message: input.text,
+        buttonList: {
+          buttons: input.buttons.map((b) => ({ id: b.id, label: b.label })),
+        },
+      },
+    }
+  }
+  return {
+    path: '/send-button-actions',
+    body: {
+      phone: input.to,
+      message: input.text,
+      ...(image ? { image } : {}),
+      buttonActions: input.buttons.map((b) =>
+        b.type === 'URL'
+          ? { id: b.id, type: 'URL', label: b.label, url: b.url }
+          : { id: b.id, type: 'REPLY', label: b.label },
+      ),
+    },
+  }
+}
+
 export function createZapiClient(
   credentials: ZapiCredentials,
 ): ZapiProviderClient {
@@ -180,6 +220,18 @@ export function createZapiClient(
             contactPhone: waId,
           }),
         },
+      )
+      return { providerMessageId: result.messageId }
+    },
+
+    async sendButtons(
+      input: WhatsAppOutboundButtons,
+    ): Promise<WhatsAppSendResult> {
+      const { path, body } = buildZapiButtons(input)
+      const result = await zapiRequest<{ messageId: string }>(
+        credentials,
+        path,
+        { method: 'POST', body: JSON.stringify(body) },
       )
       return { providerMessageId: result.messageId }
     },

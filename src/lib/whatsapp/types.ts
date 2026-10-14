@@ -44,6 +44,25 @@ export interface WhatsAppOutboundContact {
   waId: string
 }
 
+/** A button as the provider sends it; `id` is the click payload of a reply
+ * button (`stl:q:...`). */
+export type WhatsAppOutboundButton =
+  | { type: 'REPLY'; id: string; label: string }
+  | { type: 'URL'; id: string; label: string; url: string }
+
+/** Message with up to 2 buttons (quick replies). Meta: interactive message
+ * (24h window); Z-API: button actions / button list. */
+export interface WhatsAppOutboundButtons {
+  to: string
+  text: string
+  buttons: WhatsAppOutboundButton[]
+  media?: {
+    url: string
+    type: 'image' | 'video' | 'document'
+    fileName?: string
+  }
+}
+
 export interface WhatsAppQrCode {
   status: 'connected' | 'awaiting_scan'
   qrCodeBase64?: string
@@ -54,6 +73,7 @@ export interface WhatsAppProviderClient {
   sendMedia(input: WhatsAppOutboundMedia): Promise<WhatsAppSendResult>
   sendTemplate(input: WhatsAppOutboundTemplate): Promise<WhatsAppSendResult>
   sendContact(input: WhatsAppOutboundContact): Promise<WhatsAppSendResult>
+  sendButtons(input: WhatsAppOutboundButtons): Promise<WhatsAppSendResult>
   sendReaction(input: WhatsAppOutboundReaction): Promise<void>
   getConnectionStatus(): Promise<{ connected: boolean }>
 }

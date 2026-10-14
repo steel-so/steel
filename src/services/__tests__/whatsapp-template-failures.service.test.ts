@@ -190,13 +190,16 @@ describe('WhatsAppTemplateService.create() failures and components', () => {
     arrangeMeta()
     mockedCreate.mockResolvedValue(metaItem('promo_setembro', 'APPROVED'))
     const buttons = [{ type: 'QUICK_REPLY' as const, text: 'Quero saber' }]
+    const inputButtons = [
+      { id: 'b1', type: 'REPLY' as const, label: 'Quero saber', actions: [] },
+    ]
 
     expectOk(
       await WhatsAppTemplateService.create('u1', 'ws1', {
         ...input,
         headerText: 'Promoção',
         footer: 'Responda SAIR para não receber',
-        buttons,
+        buttons: inputButtons,
       }),
     )
 
@@ -216,7 +219,7 @@ describe('WhatsAppTemplateService.create() failures and components', () => {
 
   it('should omit the buttons block for an empty button list and default unknown statuses to PENDING', async () => {
     arrangeMeta()
-    mockedCreate.mockResolvedValue(metaItem('promo_setembro', 'PAUSED'))
+    mockedCreate.mockResolvedValue(metaItem('promo_setembro', 'IN_APPEAL'))
 
     expectOk(
       await WhatsAppTemplateService.create('u1', 'ws1', {
@@ -280,7 +283,9 @@ describe('WhatsAppTemplateService.sync() · rejection notice', () => {
       fetched.map(([name, status]) => metaItem(name, status)),
     )
     mockedTemplateRepo.upsertSynced.mockImplementation(async (data) =>
-      ok(createFakeWhatsAppTemplate({ ...data, components: [] })),
+      ok(
+        createFakeWhatsAppTemplate({ ...data, components: [], buttons: null }),
+      ),
     )
   }
 

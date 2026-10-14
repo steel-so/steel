@@ -139,6 +139,10 @@ Módulo **Comunicação** habilitado e permissão \`conversations\` × \`VIEW\`.
 
 **Assinatura:** o header \`X-Hub-Signature-256: sha256=<hex>\` precisa ser o HMAC-SHA256 do **corpo bruto** com o App Secret (\`WHATSAPP_META_APP_SECRET\`), comparado em tempo constante; sem o segredo configurado, tudo é recusado com \`401\`. A conexão é localizada por \`value.metadata.phone_number_id\`.
 
+**Templates:** os campos \`message_template_status_update\` (aprovado, reprovado, pausado, desativado — com o motivo) e \`message_template_quality_update\` (verde/amarelo/vermelho) chegam por WABA (\`entry[0].id\`) e atualizam o template salvo; quando a qualidade cai para vermelho ou o template é pausado/desativado (ou reprovado), os OWNER/ADMIN são notificados. Responde \`TEMPLATE_UPDATE_RECEIVED\`.
+
+**Botões:** um clique (\`type: button\` de template ou \`interactive.button_reply\`) é salvo como mensagem \`BUTTON\` com o payload em \`buttonPayload\`; payloads do Steel (\`stl:<t|q>:...\`) geram o evento \`BUTTON_CLICKED\` e enfileiram as ações do botão (\`whatsapp-button-actions\`) — e nesse caso a IA não responde à mensagem.
+
 ${WEBHOOK_EFFECTS} ${WEBHOOK_NOTE}`,
     auth: 'metaWebhook',
     body: {
@@ -155,7 +159,7 @@ ${WEBHOOK_EFFECTS} ${WEBHOOK_NOTE}`,
     responses: {
       200: {
         ...text(
-          'Evento aceito: `EVENT_RECEIVED`, `STATUS_RECEIVED`, `REACTION_RECEIVED`, ou ignorado sem erro (`SEM_PHONE_NUMBER_ID`, `SEM_MENSAGEM`).',
+          'Evento aceito: `EVENT_RECEIVED`, `STATUS_RECEIVED`, `REACTION_RECEIVED`, `TEMPLATE_UPDATE_RECEIVED`, ou ignorado sem erro (`SEM_PHONE_NUMBER_ID`, `SEM_MENSAGEM`).',
           'EVENT_RECEIVED',
         ),
       },
@@ -262,7 +266,7 @@ ${WEBHOOK_EFFECTS} ${WEBHOOK_NOTE}`,
 
 **Verificação:** a conexão é localizada pelo \`instanceId\` do corpo e o \`secret\` da query precisa ser igual ao \`webhookSecret\` dela (comparação em tempo constante); senão \`401\`.
 
-${WEBHOOK_EFFECTS} Também processa mensagens de grupos (\`isGroup\`) e mensagens enviadas pelo próprio aparelho pareado (\`fromMe\`), que entram como saída na conversa. ${WEBHOOK_NOTE}`,
+${WEBHOOK_EFFECTS} Também processa mensagens de grupos (\`isGroup\`) e mensagens enviadas pelo próprio aparelho pareado (\`fromMe\`), que entram como saída na conversa. Cliques em botões (\`buttonsResponseMessage.buttonId\` e \`listResponseMessage.selectedRowId\`) viram mensagens \`BUTTON\` e, com payload do Steel, disparam as ações do botão. ${WEBHOOK_NOTE}`,
     auth: 'zapiWebhook',
     body: {
       schema: {

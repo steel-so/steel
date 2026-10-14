@@ -15,6 +15,7 @@ import {
   resolveBroadcastMediaKind,
 } from '@/src/lib/whatsapp/broadcast-media'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
+import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import {
   buildMetaSendComponents,
   extractTemplateFillableFields,
@@ -431,7 +432,8 @@ export const WhatsAppBroadcastService = {
         to: recipient.contact.waId,
         templateName: template.value.name,
         language: template.value.language,
-        components,
+        components: applyTemplateSendExtras(template.value, components)
+          .components,
       })
     } else {
       sendResult = list.mediaUrl

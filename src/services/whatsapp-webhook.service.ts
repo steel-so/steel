@@ -39,6 +39,7 @@ import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.r
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
+import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
@@ -53,6 +54,8 @@ export interface InboundWhatsAppMessage {
   rawMediaUrl?: string
   quotedProviderMessageId?: string
   contactPayload?: { name: string; waId: string }
+  /** Button click (type BUTTON): the raw payload/id of the clicked button. */
+  buttonPayload?: string
 }
 
 /**
@@ -299,6 +302,7 @@ export const WhatsAppWebhookService = {
       status: 'DELIVERED',
       replyToMessageId,
       contactPayload: input.contactPayload,
+      buttonPayload: input.buttonPayload,
     })
     if (!message.ok) return message
     void indexSearchDocument('zap-conversation', workspaceId, conversationId)
@@ -333,6 +337,27 @@ export const WhatsAppWebhookService = {
       new Date(),
     )
 
+    // Click on one of our reply buttons: timeline event + configured actions.
+    // When the button has actions they own the answer — the AI stays quiet.
+    let buttonHandled = false
+    if (input.type === 'BUTTON' && input.buttonPayload) {
+      const click = await WhatsAppButtonActionService.handleClick({
+        workspaceId,
+        conversationId,
+        messageId: message.value.id,
+        payload: input.buttonPayload,
+      })
+      if (!click.ok) {
+        logger.warn('whatsapp.button.click_failed', {
+          workspaceId,
+          conversationId,
+          reason: click.error.code,
+        })
+      } else {
+        buttonHandled = click.value.actions > 0
+      }
+    }
+
     const isOptOut =
       input.type === 'TEXT' && isWhatsAppOptOutKeyword(input.text)
     if (isOptOut) {
@@ -344,7 +369,7 @@ export const WhatsAppWebhookService = {
     }
 
     // A confirmação do descadastro já é a resposta — a IA não responde.
-    if (aiActive && !isOptOut) {
+    if (aiActive && !isOptOut && !buttonHandled) {
       await getWhatsappAiReplyQueue().add(WhatsappAiReplyJob.GenerateAiReply, {
         conversationId,
         messageId: message.value.id,

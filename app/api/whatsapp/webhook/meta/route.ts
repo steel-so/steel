@@ -12,6 +12,7 @@ import {
   metaConnectionError,
   WhatsAppConnectionHealthService,
 } from '@/src/services/whatsapp-connection-health.service'
+import { WhatsAppTemplateService } from '@/src/services/whatsapp-template.service'
 import { WhatsAppWebhookService } from '@/src/services/whatsapp-webhook.service'
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { parseJson } from '@/utils/http-request'
@@ -45,10 +46,11 @@ interface MetaMessage {
   sticker?: unknown
   location?: unknown
   reaction?: { message_id?: string; emoji?: string }
-  button?: { text?: string }
+  button?: { text?: string; payload?: string }
   interactive?: {
-    button_reply?: { title?: string }
-    list_reply?: { title?: string }
+    type?: string
+    button_reply?: { id?: string; title?: string }
+    list_reply?: { id?: string; title?: string }
   }
   contacts?: {
     name?: { formatted_name?: string }
@@ -59,6 +61,12 @@ interface MetaMessage {
 }
 
 interface MetaWebhookValue {
+  // Template webhooks (message_template_status_update / _quality_update).
+  event?: string
+  reason?: string | null
+  new_quality_score?: string
+  message_template_name?: string
+  message_template_language?: string
   metadata?: { phone_number_id?: string }
   contacts?: { wa_id?: string; profile?: { name?: string } }[]
   messages?: MetaMessage[]
@@ -74,6 +82,7 @@ function extractMessageContent(message: MetaMessage): {
   text?: string
   rawMediaUrl?: string
   contactPayload?: { name: string; waId: string }
+  buttonPayload?: string
 } {
   switch (message.type) {
     case 'text':
@@ -106,14 +115,23 @@ function extractMessageContent(message: MetaMessage): {
       return { type: 'STICKER' }
     case 'location':
       return { type: 'LOCATION' }
+    // Template quick-reply button: `payload` is what we sent with it.
     case 'button':
-      return { type: 'BUTTON', text: message.button?.text }
+      return {
+        type: 'BUTTON',
+        text: message.button?.text,
+        buttonPayload: message.button?.payload,
+      }
+    // Interactive reply button / list row: `id` is our payload.
     case 'interactive':
       return {
         type: 'BUTTON',
         text:
           message.interactive?.button_reply?.title ??
           message.interactive?.list_reply?.title,
+        buttonPayload:
+          message.interactive?.button_reply?.id ??
+          message.interactive?.list_reply?.id,
       }
     case 'contacts': {
       const shared = message.contacts?.[0]
@@ -175,14 +193,36 @@ export const POST = withAxiom(async (request: NextRequest) => {
     return new Response('Entrada inválida', { status: 400 })
   }
   const json = parsedBody.value as {
-    entry?: { changes?: { field?: string; value?: MetaWebhookValue }[] }[]
+    entry?: {
+      id?: string
+      changes?: { field?: string; value?: MetaWebhookValue }[]
+    }[]
   } | null
 
-  const change = json?.entry?.[0]?.changes?.[0]
+  const entry = json?.entry?.[0]
+  const change = entry?.changes?.[0]
   const value = change?.value
 
   if (!value) {
     return new Response('Entrada inválida', { status: 400 })
+  }
+
+  // Template review/quality changes come per WABA (`entry.id`), with no
+  // phone number: they update the stored template and warn the admins.
+  if (
+    change.field === 'message_template_status_update' ||
+    change.field === 'message_template_quality_update'
+  ) {
+    if (!entry?.id) return new Response('SEM_WABA_ID', { status: 200 })
+    const applied = await WhatsAppTemplateService.applyWebhookUpdate({
+      wabaId: entry.id,
+      field: change.field,
+      value,
+    })
+    if (!applied.ok) {
+      return new Response('Erro interno', { status: 500 })
+    }
+    return new Response('TEMPLATE_UPDATE_RECEIVED', { status: 200 })
   }
 
   const phoneNumberId = value.metadata?.phone_number_id

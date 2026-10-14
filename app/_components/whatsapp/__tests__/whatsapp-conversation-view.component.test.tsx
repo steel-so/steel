@@ -58,6 +58,8 @@ function conversation(
     contactAvatarUrl: null,
     status: 'IN_PROGRESS',
     assignedUserId: 'u_2',
+    teamId: null,
+    team: null,
     aiActive: false,
     aiHandoff: false,
     unreadCount: 0,
@@ -91,6 +93,8 @@ function message(overrides: Partial<WhatsAppMessageDTO>): WhatsAppMessageDTO {
     reactionEmoji: null,
     reactedByContact: null,
     contactPayload: null,
+    buttons: null,
+    buttonPayload: null,
     createdAt: '2026-01-01T12:00:00.000Z',
     ...overrides,
   }

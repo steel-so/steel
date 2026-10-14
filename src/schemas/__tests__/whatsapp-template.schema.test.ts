@@ -22,8 +22,13 @@ describe('CreateWhatsAppTemplateSchema', () => {
       headerText: 'Confirmação de exame',
       footer: 'Responda em até 24h',
       buttons: [
-        { type: 'QUICK_REPLY', text: 'Confirmar' },
-        { type: 'QUICK_REPLY', text: 'Remarcar' },
+        {
+          id: 'b1',
+          type: 'REPLY',
+          label: 'Confirmar',
+          actions: [{ kind: 'REPLY', text: 'Obrigado!' }],
+        },
+        { id: 'b2', type: 'URL', label: 'Remarcar', url: 'https://x.test' },
       ],
     })
 
@@ -57,20 +62,19 @@ describe('CreateWhatsAppTemplateSchema', () => {
   it('should reject a URL button without a valid url', () => {
     const result = CreateWhatsAppTemplateSchema.safeParse({
       ...base,
-      buttons: [{ type: 'URL', text: 'Ver mais', url: 'not-a-url' }],
+      buttons: [{ id: 'b1', type: 'URL', label: 'Ver mais', url: 'not-a-url' }],
     })
 
     expect(result.success).toBe(false)
   })
 
-  it('should reject more than 3 buttons', () => {
+  it('should reject more than 2 buttons', () => {
     const result = CreateWhatsAppTemplateSchema.safeParse({
       ...base,
       buttons: [
-        { type: 'QUICK_REPLY', text: 'A' },
-        { type: 'QUICK_REPLY', text: 'B' },
-        { type: 'QUICK_REPLY', text: 'C' },
-        { type: 'QUICK_REPLY', text: 'D' },
+        { id: 'a', type: 'REPLY', label: 'A' },
+        { id: 'b', type: 'REPLY', label: 'B' },
+        { id: 'c', type: 'REPLY', label: 'C' },
       ],
     })
 

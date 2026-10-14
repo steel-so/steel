@@ -30,6 +30,8 @@ describe('toWhatsAppMessageDTO()', () => {
       reactionEmoji: null,
       reactedByContact: null,
       contactPayload: null,
+      buttons: null,
+      buttonPayload: null,
       createdAt: message.createdAt.toISOString(),
     })
   })
