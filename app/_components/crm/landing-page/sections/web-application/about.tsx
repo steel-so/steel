@@ -4,10 +4,12 @@ import { ArrowRight01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type AboutContent = Extract<CrmLandingPageSectionContent, { type: 'ABOUT' }>
@@ -49,9 +51,8 @@ export function aboutCollageDefaultContent(): AboutContent {
 /**
  * O schema ABOUT (`src/schemas/crm-landing-page-section.schema.ts`) não tem
  * campo de CTA (só eyebrow/title/description/imageUrl/imageUrls) — o Figma
- * tem um link "Start a free trial →" embaixo de cada bloco Content. Sem
- * poder estender o schema (fora de escopo), o link fica fixo/não editável,
- * apontando pro rodapé da própria página.
+ * tem um link "Start a free trial →" embaixo de cada bloco Content. Texto e
+ * destino ficam nos overrides `texts.cta`/`hrefs.cta`; estes são os padrões.
  */
 const CTA_LABEL = 'Start a free trial'
 const CTA_HREF = '#footer'
@@ -145,14 +146,22 @@ export function WebApplicationAbout({
             as='p'
             className='max-w-md text-[#161c2d]/70 text-[19px] leading-[1.7]'
           />
-          <a
-            href={readOnly ? CTA_HREF : undefined}
+          <GhostLink
+            href={hrefOf(content, 'cta', CTA_HREF)}
+            onHrefChange={(v) => onChange?.(withHref(content, 'cta', v))}
+            readOnly={readOnly}
             data-cta
             className='inline-flex items-center gap-2 font-bold text-[#473bf0] text-[21px] tracking-[-1.2px] hover:opacity-80'
           >
-            {CTA_LABEL}
+            <GhostInput
+              value={textOf(content, 'cta', CTA_LABEL)}
+              onCommit={(v) => onChange?.(withText(content, 'cta', v))}
+              placeholder='Texto do link'
+              readOnly={readOnly}
+              className='text-inherit'
+            />
             <SteelIcon icon={ArrowRight01Icon} strokeWidth={2.5} size={18} />
-          </a>
+          </GhostLink>
         </div>
       </div>
     </section>

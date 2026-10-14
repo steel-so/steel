@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
 import { GhostLink } from '@/components/ui/ghost-link'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -273,7 +274,18 @@ export function WebApplicationFooter({
 
       <div className='mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 border-white/10 border-t py-6 sm:flex-row'>
         <p className='text-white/40 text-xs'>
-          © {new Date().getFullYear()} Copyright, All Right Reserved.
+          © {new Date().getFullYear()}{' '}
+          <GhostInput
+            value={textOf(
+              content,
+              'copyright',
+              'Copyright, All Right Reserved.',
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+            placeholder='Texto de copyright'
+            readOnly={readOnly}
+            className='field-sizing-content w-auto text-inherit'
+          />
         </p>
         <div className='flex items-center gap-4'>
           {content.socialLinks.map((social, index) => {
