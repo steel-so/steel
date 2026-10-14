@@ -54,6 +54,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { useUser } from '@/src/hooks/use-user'
 import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import { useWhatsAppContacts } from '@/src/hooks/use-whatsapp-contacts'
 import {
@@ -64,8 +65,70 @@ import {
   useStartWhatsAppConversation,
   useWhatsAppConversations,
 } from '@/src/hooks/use-whatsapp-conversations'
+import {
+  useWhatsAppConversationScope,
+  useWhatsAppTeams,
+} from '@/src/hooks/use-whatsapp-teams'
 import type { WhatsAppConnectionDTO } from '@/types/whatsapp-connection'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
+import {
+  matchesInboxFilter,
+  type WhatsAppInboxFilter,
+} from './whatsapp-team-access'
+import { WhatsappTeamBadge } from './whatsapp-team-badge'
+
+/** "Todas / Minhas / Fila / Equipe X" — the teams listed are the viewer's. */
+function InboxFilterSelect({
+  workspaceId,
+  value,
+  onChange,
+}: {
+  workspaceId: string
+  value: WhatsAppInboxFilter
+  onChange: (value: WhatsAppInboxFilter) => void
+}) {
+  const teams = useWhatsAppTeams(workspaceId)
+  const scope = useWhatsAppConversationScope(workspaceId)
+  const visibleTeams = (teams.data ?? []).filter(
+    (team) =>
+      scope.data?.mode === 'ALL' || scope.data?.memberTeamIds.includes(team.id),
+  )
+  const labels: Record<string, string> = {
+    all: 'Todas as conversas',
+    mine: 'Minhas conversas',
+    queue: 'Fila (sem responsável)',
+    ...Object.fromEntries(
+      visibleTeams.map((team) => [`team:${team.id}`, `Equipe ${team.name}`]),
+    ),
+  }
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => onChange((next ?? 'all') as WhatsAppInboxFilter)}
+    >
+      <SelectTrigger
+        size='sm'
+        className='w-full'
+        aria-label='Filtrar conversas por responsável ou equipe'
+      >
+        <SelectValue>{labels[value] ?? labels.all}</SelectValue>
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false}>
+        <SelectGroup>
+          <SelectItem value='all'>Todas</SelectItem>
+          <SelectItem value='mine'>Minhas</SelectItem>
+          <SelectItem value='queue'>Fila</SelectItem>
+          {visibleTeams.map((team) => (
+            <SelectItem key={team.id} value={`team:${team.id}`}>
+              Equipe {team.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
+}
 
 function NewConversationDialog({
   workspaceId,
@@ -225,6 +288,8 @@ export function WhatsappConversationSidebar({
   const [search, setSearch] = useState('')
   // Ativas = abertas (NEW/IN_PROGRESS); fechadas saem da caixa de entrada.
   const [tab, setTab] = useState<'active' | 'closed' | 'archived'>('active')
+  const [inboxFilter, setInboxFilter] = useState<WhatsAppInboxFilter>('all')
+  const currentUser = useUser()
   const [clearTargetId, setClearTargetId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const conversations = useWhatsAppConversations(
@@ -241,6 +306,9 @@ export function WhatsappConversationSidebar({
   const canDeleteConversation = useCan('conversations', 'DELETE')
 
   const filtered = (conversations.data ?? []).filter((conversation) => {
+    if (!matchesInboxFilter(conversation, inboxFilter, currentUser.data?.id)) {
+      return false
+    }
     if (!search) return true
     const term = search.toLowerCase()
     return (
@@ -314,7 +382,7 @@ export function WhatsappConversationSidebar({
               )
             }
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className='w-full' aria-label='Filtrar por conexão'>
               <SelectValue placeholder='Todas as conexões' />
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
@@ -365,6 +433,13 @@ export function WhatsappConversationSidebar({
           </TabsTrigger>
         </TabsList>
       </Tabs>
+      <div className='px-3 pt-2 pb-1'>
+        <InboxFilterSelect
+          workspaceId={workspaceId}
+          value={inboxFilter}
+          onChange={setInboxFilter}
+        />
+      </div>
       <div className='flex-1 overflow-y-auto'>
         {filtered.length === 0 ? (
           <p className='px-3 py-6 text-center text-muted-foreground text-sm'>
@@ -421,6 +496,10 @@ export function WhatsappConversationSidebar({
                     <span className='truncate text-muted-foreground text-xs'>
                       {conversation.lastMessagePreview ?? 'Sem mensagens'}
                     </span>
+                    <WhatsappTeamBadge
+                      team={conversation.team}
+                      className='ml-auto'
+                    />
                     {conversation.unreadCount > 0 && (
                       <Badge className='shrink-0'>
                         {conversation.unreadCount}

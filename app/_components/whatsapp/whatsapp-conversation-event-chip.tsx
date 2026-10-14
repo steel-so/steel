@@ -5,6 +5,18 @@ import { ptBR } from 'date-fns/locale'
 import type { WhatsAppConversationEventDTO } from '@/types/whatsapp-conversation'
 
 function describeEvent(event: WhatsAppConversationEventDTO): string {
+  const by = event.actorName ? ` por ${event.actorName}` : ''
+  // Equipes: `reason` carries the assignee / team name (null = removed).
+  if (event.kind === 'ASSIGNED') {
+    return event.reason
+      ? `Conversa atribuída a ${event.reason}${by}`
+      : `Conversa devolvida para a fila${by}`
+  }
+  if (event.kind === 'TEAM_CHANGED') {
+    return event.reason
+      ? `Conversa movida para a equipe ${event.reason}${by}`
+      : `Conversa tirada da equipe${by}`
+  }
   if (event.kind === 'SENTIMENT_ALERT') {
     return 'Sentimento negativo: supervisores avisados'
   }
@@ -35,7 +47,9 @@ export function WhatsappConversationEventChip({
             locale: ptBR,
           })}
         </p>
-        {event.reason ? (
+        {event.reason &&
+        event.kind !== 'ASSIGNED' &&
+        event.kind !== 'TEAM_CHANGED' ? (
           <p className='mt-0.5 italic'>
             {event.kind === 'SENTIMENT_ALERT'
               ? event.reason

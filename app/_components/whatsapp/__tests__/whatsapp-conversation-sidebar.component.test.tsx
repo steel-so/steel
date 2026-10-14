@@ -16,6 +16,9 @@ vi.setConfig({ testTimeout: 20_000 })
 
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
+vi.mock('@/src/hooks/use-user', () => ({
+  useUser: () => ({ data: { id: 'u_me' } }),
+}))
 
 const API = '/api/workspaces/ws_1/whatsapp'
 
@@ -234,7 +237,7 @@ describe('<WhatsappConversationSidebar />', () => {
     setup()
     const { onConnectionChange, unmount } = renderSidebar()
     await screen.findByText('Ana Souza')
-    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.queryByRole('combobox', { name: /conex/ })).toBeNull()
     unmount()
 
     setup()
@@ -242,7 +245,7 @@ describe('<WhatsappConversationSidebar />', () => {
       connections: [connection('1', 'Suporte'), connection('2', 'Vendas')],
     })
     await screen.findByText('Ana Souza')
-    fireEvent.click(screen.getByRole('combobox'))
+    fireEvent.click(screen.getByRole('combobox', { name: /conex/ }))
     const option = within(await screen.findByRole('listbox')).getByRole(
       'option',
       { name: /Vendas/ },
@@ -332,5 +335,118 @@ describe('<WhatsappConversationSidebar />', () => {
       contactId: 'c1',
       connectionId: 'conn_1',
     })
+  })
+})
+
+describe('WhatsappConversationSidebar · Equipes', () => {
+  const teamRows = [
+    conversation({
+      id: 'cv_mine',
+      contactName: 'Minha Cliente',
+      assignedUserId: 'u_me',
+    }),
+    conversation({
+      id: 'cv_queue',
+      contactName: 'Fila Geral',
+      assignedUserId: null,
+    }),
+    conversation({
+      id: 'cv_sales',
+      contactName: 'Lead Vendas',
+      assignedUserId: null,
+      teamId: 'tm_sales',
+      team: { id: 'tm_sales', name: 'Vendas' },
+    }),
+  ]
+
+  function setupTeams() {
+    return mockFetch([
+      {
+        match: `${API}/teams/me`,
+        data: { mode: 'SCOPED', leadsTeamIds: [], memberTeamIds: ['tm_sales'] },
+      },
+      {
+        match: `${API}/teams`,
+        data: [
+          {
+            id: 'tm_sales',
+            workspaceId: 'ws_1',
+            name: 'Vendas',
+            description: null,
+            members: [],
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+          {
+            id: 'tm_other',
+            workspaceId: 'ws_1',
+            name: 'Outra',
+            description: null,
+            members: [],
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+      { match: /\/conversations\?status=OPEN$/, data: teamRows },
+      { match: `${API}/contacts`, data: [] },
+      { match: `${API}/connections`, data: [connection('conn_1', 'Suporte')] },
+    ])
+  }
+
+  async function pickFilter(name: RegExp) {
+    fireEvent.click(
+      screen.getByRole('combobox', {
+        name: 'Filtrar conversas por responsável ou equipe',
+      }),
+    )
+    const option = within(await screen.findByRole('listbox')).getByRole(
+      'option',
+      { name },
+    )
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+  }
+
+  it('shows the team badge of a routed conversation', async () => {
+    setupTeams()
+    renderSidebar()
+    await screen.findByText('Lead Vendas')
+    expect(screen.getByTitle('Equipe Vendas')).toBeTruthy()
+  })
+
+  it('filters mine, the queue and one of the viewer teams', async () => {
+    setupTeams()
+    renderSidebar()
+    await screen.findByText('Lead Vendas')
+
+    await pickFilter(/^Minhas$/)
+    await waitFor(() => expect(screen.queryByText('Fila Geral')).toBeNull())
+    expect(screen.getByText('Minha Cliente')).toBeTruthy()
+
+    await pickFilter(/^Fila$/)
+    await screen.findByText('Fila Geral')
+    expect(screen.queryByText('Minha Cliente')).toBeNull()
+    expect(screen.getByText('Lead Vendas')).toBeTruthy()
+
+    await pickFilter(/Equipe Vendas/)
+    await waitFor(() => expect(screen.queryByText('Fila Geral')).toBeNull())
+    expect(screen.getByText('Lead Vendas')).toBeTruthy()
+  })
+
+  it('lists only the teams of a scoped viewer', async () => {
+    setupTeams()
+    renderSidebar()
+    await screen.findByText('Lead Vendas')
+    fireEvent.click(
+      screen.getByRole('combobox', {
+        name: 'Filtrar conversas por responsável ou equipe',
+      }),
+    )
+    const listbox = await screen.findByRole('listbox')
+    await within(listbox).findByRole('option', { name: /Equipe Vendas/ })
+    expect(
+      within(listbox).queryByRole('option', { name: /Equipe Outra/ }),
+    ).toBeNull()
   })
 })
