@@ -8,6 +8,8 @@ import { getAuthSession } from './auth-session'
 export interface WikiContext {
   userId: string
   userName: string
+  /** Avatar shown to the others in the page's presence list. */
+  userImage: string | null
   workspaceId: string
   workspaceSlug: string
 }
@@ -32,6 +34,7 @@ export const getWikiContext = cache(
     return {
       userId: session.value.user.id,
       userName: session.value.user.name,
+      userImage: session.value.user.image ?? null,
       workspaceId: membership.value.workspaceId,
       workspaceSlug,
     }

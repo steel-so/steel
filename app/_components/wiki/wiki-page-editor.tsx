@@ -1,5 +1,6 @@
 'use client'
 
+import { useQueryClient } from '@tanstack/react-query'
 import type { Value } from 'platejs'
 import type { PlateEditor } from 'platejs/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -13,6 +14,7 @@ import {
   type WikiSyncStatus,
 } from '@/components/editor/wiki-editor'
 import { notify } from '@/lib/notify'
+import { ApiError } from '@/src/hooks/_fetch'
 import {
   useUpdateWikiPage,
   useWikiAi,
@@ -89,7 +91,19 @@ export function WikiPageEditor({
   const editorRef = useRef<PlateEditor | null>(null)
 
   const locked = Boolean(page.lockedAt)
-  const readOnly = locked && !(page.canManageLock ?? false)
+  const readOnly = locked && !page.canManageLock
+  const queryClient = useQueryClient()
+
+  // A lock/unlock closes every open editor's socket so it reconnects with
+  // the new permission (see docs/runbooks/realtime-wiki.md). Refetch the
+  // page on each reconnect so the screen follows `lockedAt` too.
+  const previousStatus = useRef<WikiSyncStatus>(status)
+  useEffect(() => {
+    if (previousStatus.current === 'offline' && status === 'synced') {
+      queryClient.invalidateQueries({ queryKey: ['wiki-pages', workspaceId] })
+    }
+    previousStatus.current = status
+  }, [status, queryClient, workspaceId])
   const column = preferences.fullWidth ? COLUMN.full : COLUMN.normal
 
   // `E`: put the cursor in the page body.
@@ -116,7 +130,20 @@ export function WikiPageEditor({
     contentRef.current = content
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     saveTimeoutRef.current = setTimeout(() => {
-      updateWikiPage.mutate({ content: contentRef.current })
+      if (readOnly) return
+      updateWikiPage.mutate(
+        { content: contentRef.current },
+        {
+          // Locked meanwhile: refetch so the page turns read-only.
+          onError: (error) => {
+            if (error instanceof ApiError && error.status === 423) {
+              queryClient.invalidateQueries({
+                queryKey: ['wiki-pages', workspaceId],
+              })
+            }
+          },
+        },
+      )
     }, AUTOSAVE_DELAY_MS)
     if (panelTimeoutRef.current) clearTimeout(panelTimeoutRef.current)
     panelTimeoutRef.current = setTimeout(() => {

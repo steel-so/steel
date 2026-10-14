@@ -37,6 +37,14 @@ function buildPage(overrides: Partial<WikiPageDTO> = {}): WikiPageDTO {
     archivedAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+    publishedAt: null,
+    publicToken: null,
+    lockedAt: null,
+    lockedById: null,
+    canManageLock: true,
+    isFavorite: false,
+    createdBy: null,
+    updatedBy: null,
     ...overrides,
   }
 }
@@ -171,8 +179,8 @@ describe('<WikiPageTopBar /> lock', () => {
     ).toBe(true)
   })
 
-  it('keeps the lock disabled while the backend does not say who manages it', () => {
-    renderBar()
+  it('keeps the lock disabled for who cannot manage it', () => {
+    renderBar(buildPage({ canManageLock: false }))
     expect(
       screen
         .getByRole('button', { name: 'Bloquear edição' })
