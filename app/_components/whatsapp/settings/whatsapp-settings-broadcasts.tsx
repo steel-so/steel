@@ -51,6 +51,7 @@ import {
   validateBroadcastMedia,
 } from '@/src/lib/whatsapp/broadcast-media'
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
+import { TemplateNameWithQuality } from '../template-quality-badge'
 import { BroadcastMediaPreview } from './broadcast-media-preview'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -449,17 +450,36 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
             <div className='space-y-1.5'>
               <Label htmlFor='importTemplate'>Template (aprovado)</Label>
               <Select
-                value={templateId}
+                value={templateId ?? null}
                 onValueChange={(value) => setTemplateId(value ?? undefined)}
               >
                 <SelectTrigger id='importTemplate' className='w-full'>
-                  <SelectValue placeholder='Selecione o template' />
+                  <SelectValue>
+                    {(value: string | null) => {
+                      const selected = approvedTemplates.find(
+                        (t) => t.id === value,
+                      )
+                      return selected ? (
+                        <TemplateNameWithQuality
+                          name={selected.name}
+                          quality={selected.quality}
+                        />
+                      ) : (
+                        <span className='text-muted-foreground'>
+                          Selecione o template
+                        </span>
+                      )
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
                     {approvedTemplates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
-                        {template.name}
+                        <TemplateNameWithQuality
+                          name={template.name}
+                          quality={template.quality}
+                        />
                       </SelectItem>
                     ))}
                   </SelectGroup>
