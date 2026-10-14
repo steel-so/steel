@@ -1128,3 +1128,25 @@ describe('WikiPageService.duplicate()', () => {
     )
   })
 })
+
+describe('WikiPageService.create() — sub-page', () => {
+  it('should create under a parent of the same workspace', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'p1', workspaceId: 'ws1' })),
+    )
+    mockedWikiPage.create.mockResolvedValue(
+      ok(createFakeWikiPage({ workspaceId: 'ws1', parentId: 'p1' })),
+    )
+
+    const dto = expectOk(
+      await WikiPageService.create('actor', 'ws1', {
+        title: 'Filha',
+        parentId: 'p1',
+      }),
+    )
+
+    expect(dto.parentId).toBe('p1')
+    expect(dto.canManageLock).toBe(true)
+    expect(dto.isFavorite).toBe(false)
+  })
+})

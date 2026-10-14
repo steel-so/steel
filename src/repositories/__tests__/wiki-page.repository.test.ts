@@ -381,3 +381,89 @@ describe('WikiPageRepository — revamp', () => {
     })
   })
 })
+
+describe('WikiPageRepository — move, members and failures', () => {
+  it('move() should change parent and position', async () => {
+    const workspace = await seedWorkspace()
+    const user = await seedUser()
+    const parent = await seedWikiPage(workspace.id, user.id)
+    const page = await seedWikiPage(workspace.id, user.id)
+
+    const moved = expectOk(
+      await WikiPageRepository.move(page.id, {
+        parentId: parent.id,
+        position: 3,
+        updatedById: user.id,
+      }),
+    )
+
+    expect(moved.parentId).toBe(parent.id)
+    expect(moved.position).toBe(3)
+  })
+
+  it('listMembers() should search members by name', async () => {
+    const workspace = await seedWorkspace()
+    const ana = await seedUser({ name: 'Ana Lima' })
+    const bruno = await seedUser({ name: 'Bruno Melo' })
+    await prisma.membership.createMany({
+      data: [
+        { userId: ana.id, workspaceId: workspace.id, role: 'MEMBER' },
+        { userId: bruno.id, workspaceId: workspace.id, role: 'MEMBER' },
+      ],
+    })
+
+    const all = expectOk(await WikiPageRepository.listMembers(workspace.id, ''))
+    expect(all.map((m) => m.name)).toEqual(['Ana Lima', 'Bruno Melo'])
+
+    const found = expectOk(
+      await WikiPageRepository.listMembers(workspace.id, 'brU'),
+    )
+    expect(found).toEqual([
+      { userId: bruno.id, name: 'Bruno Melo', image: bruno.image },
+    ])
+  })
+
+  it('should return DATABASE_ERROR when writes and reads throw', async () => {
+    vi.spyOn(prisma.wikiPage, 'findMany').mockRejectedValueOnce(
+      new Error('boom'),
+    )
+    expectErr(await WikiPageRepository.listByWorkspace('ws'), 'DATABASE_ERROR')
+
+    expectErr(
+      await WikiPageRepository.create({
+        workspaceId: 'missing-ws',
+        parentId: null,
+        title: 'x',
+        createdById: 'missing-user',
+      }),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await WikiPageRepository.update('missing', { updatedById: 'u' }),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await WikiPageRepository.move('missing', {
+        parentId: null,
+        position: 0,
+        updatedById: 'u',
+      }),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await WikiPageRepository.archive('missing', 'u'),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await WikiPageRepository.updateYjsState('missing', {
+        yjsState: new Uint8Array([1]),
+        updatedById: 'u',
+      }),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.membership, 'findMany').mockRejectedValueOnce(
+      new Error('boom'),
+    )
+    expectErr(await WikiPageRepository.listMembers('ws', ''), 'DATABASE_ERROR')
+  })
+})
