@@ -117,10 +117,13 @@ assina esse canal e, para o documento aberto:
 1. manda aos editores uma mensagem *stateless*
    `{"type":"wiki-page-lock-changed","wikiPageId":…,"lockedAt":…}` (o
    front recarrega a página);
-2. fecha as conexões do documento. O provider reconecta na hora e o
-   `onAuthenticate` decide de novo: quem não pode gerenciar o bloqueio entra
-   com `readOnly` (o Hocuspocus descarta as alterações dele e o provider
-   recebe o escopo `read-only`).
+2. fecha os sockets desses editores (código 4205, "Reset Connection"). O
+   provider reconecta em ~1 s e o `onAuthenticate` decide de novo: quem não
+   pode gerenciar o bloqueio entra com `readOnly` (o Hocuspocus descarta as
+   alterações dele e o provider recebe o escopo `readonly`; os demais,
+   `read-write`). Fecha o socket, e não só o documento
+   (`closeConnections()`), porque o fechamento por documento não faz o
+   provider se autenticar de novo.
 
 Logs: `realtime.lock.applied` (por documento aberto) e
 `realtime.authenticate.success` com `readOnly: true|false`. Se o canal cair

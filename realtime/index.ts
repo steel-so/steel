@@ -155,8 +155,11 @@ server.listen()
 
 // Edit-lock changes published by the app (`publishWikiLockChange`): tell the
 // page's open editors (stateless message, so the UI refetches the page) and
-// close their connections — the provider reconnects at once and
-// `onAuthenticate` hands each one the new permission.
+// close their sockets — the provider reconnects about a second later and
+// `onAuthenticate` hands each one the new permission. The raw socket is
+// closed on purpose: `closeConnections()` only sends a per-document close
+// message over the (multiplexed) socket, and the provider never
+// re-authenticates after it.
 const lockSubscriber = getQueueConnection().duplicate()
 lockSubscriber.subscribe(WIKI_LOCK_CHANNEL).catch((error: Error) => {
   logger.error('realtime.lock.subscribe_failed', {
@@ -171,7 +174,10 @@ lockSubscriber.on('message', (channel: string, payload: string) => {
   const document = server.hocuspocus.documents.get(message.wikiPageId)
   if (!document) return
   document.broadcastStateless(wikiLockStatelessPayload(message))
-  server.hocuspocus.closeConnections(message.wikiPageId)
+  for (const socket of document.connections.keys()) {
+    // 4205 = Hocuspocus "Reset Connection": the provider retries.
+    socket.close(4205, 'Wiki page lock changed')
+  }
   logger.info('realtime.lock.applied', {
     component: 'Realtime',
     documentName: message.wikiPageId,
