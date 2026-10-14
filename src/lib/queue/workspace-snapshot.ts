@@ -75,6 +75,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   // Wiki: comments and page labels reach the workspace through the page.
   wikiComment: (ws) => ({ wikiPage: { workspaceId: ws } }),
   wikiPageLabel: (ws) => ({ wikiPage: { workspaceId: ws } }),
+  wikiPageFavorite: (ws) => ({ wikiPage: { workspaceId: ws } }),
   // Whiteboard: the version history reaches the workspace through the board.
   whiteboardVersion: (ws) => ({ whiteboard: { workspaceId: ws } }),
 }

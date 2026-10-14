@@ -47,6 +47,8 @@ model User {
   stickyNotes              StickyNote[]
   createdWikiPages         WikiPage[]                  @relation("WikiPageAuthor")
   updatedWikiPages         WikiPage[]                  @relation("WikiPageEditor")
+  lockedWikiPages          WikiPage[]                  @relation("WikiPageLocker")
+  wikiPageFavorites        WikiPageFavorite[]
   wikiComments             WikiComment[]               @relation("WikiCommentAuthor")
   resolvedWikiComments     WikiComment[]               @relation("WikiCommentResolver")
   createdWhiteboards       Whiteboard[]                @relation("WhiteboardAuthor")
@@ -4007,6 +4009,7 @@ enum AiUsageFeature {
   SERVICEDESK_TRIAGE
   STEEL_ASSISTANT
   STEEL_AGENT
+  WIKI_ASSISTANT
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -7159,17 +7162,42 @@ model WikiPage {
   archivedAt  DateTime? @map("archived_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
+  /// Secret of the public read-only link `/w/<publicToken>` (192 random
+  /// bits, base64url). Null while the page is not published; unpublishing
+  /// clears it, so the old link 404s.
+  publicToken String?   @unique @map("public_token")
+  publishedAt DateTime? @map("published_at")
+  /// Edit lock: while set, only the author and workspace OWNER/ADMIN edit.
+  lockedAt    DateTime? @map("locked_at")
+  lockedById  String?   @map("locked_by_id")
 
-  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  parent    WikiPage?       @relation("WikiPageTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children  WikiPage[]      @relation("WikiPageTree")
-  createdBy User?           @relation("WikiPageAuthor", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User?           @relation("WikiPageEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parent    WikiPage?          @relation("WikiPageTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  WikiPage[]         @relation("WikiPageTree")
+  createdBy User?              @relation("WikiPageAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?              @relation("WikiPageEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  lockedBy  User?              @relation("WikiPageLocker", fields: [lockedById], references: [id], onDelete: SetNull)
   comments  WikiComment[]
   labels    WikiPageLabel[]
+  favorites WikiPageFavorite[]
 
   @@index([workspaceId, archivedAt])
   @@map("wiki_pages")
+}
+
+/// Per-user favorite wiki page (the sidebar's "Favoritos").
+model WikiPageFavorite {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  wikiPageId String   @map("wiki_page_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wikiPage WikiPage @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, wikiPageId])
+  @@index([wikiPageId])
+  @@map("wiki_page_favorites")
 }
 
 model WikiComment {

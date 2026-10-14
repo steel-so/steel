@@ -54,6 +54,9 @@ const PUBLIC_ROUTES = [
   // Portal do contato externo do ServiceDesk: link mágico + sessão própria
   // no cookie `sd.portal_session` (sem Better Auth; escopo no service)
   '/suporte', '/api/servicedesk/portal',
+  // Published wiki pages: read-only link and its media, no session (the
+  // random token in the URL is the credential; unpublishing revokes it).
+  '/w', '/api/wiki/public',
   // Proxy reverso do PostHog (o next.config.ts reescreve direto para o
   // PostHog). Analytics é coletado nas páginas públicas também, onde ninguém
   // tem sessão, então o gate de autenticação responderia cada beacon com um

@@ -16,6 +16,7 @@ import {
   ListWikiMentionableMembersSchema,
   MoveWikiPageSchema,
   UpdateWikiPageSchema,
+  WikiAiSchema,
 } from '@/src/schemas/wiki-page.schema'
 import {
   dto,
@@ -31,6 +32,9 @@ import type { ErrorEntry, OpenApiRegistry, RouteConfig } from '../registry'
  */
 
 const dateTime = () => z.iso.datetime()
+const WikiPerson = z
+  .object({ id: z.string(), name: z.string(), image: z.string().nullable() })
+  .nullable()
 const PlateValue = z
   .array(z.record(z.string(), z.unknown()))
   .meta({ description: 'Documento Plate (array de blocos).' })
@@ -52,6 +56,26 @@ const WikiPageDTO = dto(
     createdById: z.string().nullable(),
     updatedById: z.string().nullable(),
     archivedAt: dateTime().nullable(),
+    publishedAt: dateTime()
+      .nullable()
+      .meta({ description: 'Publicada na web (link `/w/<publicToken>`).' }),
+    publicToken: z
+      .string()
+      .nullable()
+      .meta({ description: 'Segredo do link público; null sem publicação.' }),
+    lockedAt: dateTime()
+      .nullable()
+      .meta({ description: 'Edição bloqueada desde.' }),
+    lockedById: z.string().nullable(),
+    canManageLock: z.boolean().meta({
+      description:
+        'Relativo a quem lê: autor da página ou OWNER/ADMIN. Com `lockedAt` e sem isto, a página é só leitura.',
+    }),
+    isFavorite: z
+      .boolean()
+      .meta({ description: 'Relativo a quem lê: está nos favoritos.' }),
+    createdBy: WikiPerson,
+    updatedBy: WikiPerson,
     createdAt: dateTime(),
     updatedAt: dateTime(),
   }),
@@ -127,6 +151,11 @@ const PAGE_ERRORS: ErrorEntry[] = [
   { code: 'WIKI_PAGE_FORBIDDEN', when: 'Página de outro workspace' },
 ]
 const COMMENT_ERRORS: ErrorEntry[] = [...PAGE_ERRORS, 'WIKI_COMMENT_NOT_FOUND']
+const LOCKED: ErrorEntry = {
+  code: 'WIKI_PAGE_LOCKED',
+  when: 'Edição bloqueada e quem chama não é o autor nem OWNER/ADMIN',
+}
+const EDIT_ERRORS: ErrorEntry[] = [...PAGE_ERRORS, LOCKED]
 
 const routes: RouteConfig[] = [
   {
@@ -174,7 +203,7 @@ const routes: RouteConfig[] = [
     consent: true,
     body: UpdateWikiPageSchema,
     responses: { 200: { description: 'Página salva.', schema: WikiPageDTO } },
-    errors: PAGE_ERRORS,
+    errors: EDIT_ERRORS,
   },
   {
     method: 'patch',
@@ -185,7 +214,7 @@ const routes: RouteConfig[] = [
     consent: true,
     body: MoveWikiPageSchema,
     responses: { 200: { description: 'Página movida.', schema: WikiPageDTO } },
-    errors: PAGE_ERRORS,
+    errors: EDIT_ERRORS,
   },
   {
     method: 'patch',
@@ -198,7 +227,7 @@ const routes: RouteConfig[] = [
     responses: {
       200: { description: 'Página arquivada.', schema: WikiPageDTO },
     },
-    errors: PAGE_ERRORS,
+    errors: EDIT_ERRORS,
   },
   {
     method: 'put',
@@ -214,8 +243,156 @@ const routes: RouteConfig[] = [
       200: { description: 'Página com as etiquetas.', schema: WikiPageDTO },
     },
     errors: [
-      ...PAGE_ERRORS,
+      ...EDIT_ERRORS,
       { code: 'WIKI_LABEL_NOT_FOUND', when: 'Etiqueta de outro workspace' },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/publish',
+    tags: ['Wiki'],
+    summary: 'Publicar na web',
+    description:
+      'Cria o link público somente leitura `/w/<publicToken>` (token aleatório de 192 bits) e marca `publishedAt`. Idempotente: uma página já publicada mantém o link.',
+    params: PAGE,
+    consent: true,
+    responses: {
+      200: { description: 'Página publicada.', schema: WikiPageDTO },
+    },
+    errors: EDIT_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/publish',
+    tags: ['Wiki'],
+    summary: 'Cancelar publicação',
+    description: 'Revoga o link público: o endereço antigo passa a dar 404.',
+    params: PAGE,
+    consent: true,
+    responses: {
+      200: { description: 'Publicação cancelada.', schema: WikiPageDTO },
+    },
+    errors: EDIT_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/lock',
+    tags: ['Wiki'],
+    summary: 'Bloquear edição',
+    description:
+      'Só o autor da página ou OWNER/ADMIN. Enquanto bloqueada, os demais recebem `WIKI_PAGE_LOCKED` ao editar e entram no editor colaborativo como somente leitura; editores já abertos reconectam em segundos com a nova permissão.',
+    params: PAGE,
+    consent: true,
+    responses: {
+      200: { description: 'Edição bloqueada.', schema: WikiPageDTO },
+    },
+    errors: [
+      ...PAGE_ERRORS,
+      { code: 'WIKI_LOCK_FORBIDDEN', when: 'Não é o autor nem OWNER/ADMIN' },
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/lock',
+    tags: ['Wiki'],
+    summary: 'Desbloquear edição',
+    description: 'Só o autor da página ou OWNER/ADMIN.',
+    params: PAGE,
+    consent: true,
+    responses: {
+      200: { description: 'Edição desbloqueada.', schema: WikiPageDTO },
+    },
+    errors: [
+      ...PAGE_ERRORS,
+      { code: 'WIKI_LOCK_FORBIDDEN', when: 'Não é o autor nem OWNER/ADMIN' },
+    ],
+  },
+  {
+    method: 'put',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/favorite',
+    tags: ['Wiki'],
+    summary: 'Favoritar página',
+    description: 'Favorito por usuário. Idempotente.',
+    params: PAGE,
+    consent: true,
+    responses: { 200: { description: 'Página.', schema: WikiPageDTO } },
+    errors: PAGE_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/favorite',
+    tags: ['Wiki'],
+    summary: 'Remover dos favoritos',
+    params: PAGE,
+    consent: true,
+    responses: { 200: { description: 'Página.', schema: WikiPageDTO } },
+    errors: PAGE_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/duplicate',
+    tags: ['Wiki'],
+    summary: 'Duplicar página',
+    description:
+      'Cópia logo depois da original (mesmo pai): título com " (cópia)", ícone, capa, conteúdo, estado colaborativo (Yjs) e etiquetas. Sub-páginas não são copiadas; a cópia nasce sem publicação nem bloqueio.',
+    params: PAGE,
+    consent: true,
+    responses: { 201: { description: 'Cópia criada.', schema: WikiPageDTO } },
+    errors: PAGE_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/wiki/{wikiPageId}/ai',
+    tags: ['Wiki'],
+    summary: 'IA no editor',
+    description:
+      'Reescreve `text` (parafrasear, simplificar, desenvolver, resumir ou sugerir título) com o provedor e o modelo de Ajustes › Steel IA, dentro da cota mensal (ADR 0007). Uso registrado como `WIKI_ASSISTANT`.',
+    params: PAGE,
+    rateLimit: 'user',
+    body: WikiAiSchema,
+    responses: {
+      200: {
+        description: 'Texto gerado.',
+        schema: z.object({ text: z.string() }),
+      },
+    },
+    errors: [
+      ...PAGE_ERRORS,
+      { code: 'AI_DISABLED', when: 'Steel IA desligada no workspace' },
+      'AI_PROVIDER_UNAVAILABLE',
+      'AI_QUOTA_EXCEEDED',
+      { code: 'WIKI_AI_FAILED', when: 'O provedor falhou ou não respondeu' },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/wiki/public/{token}/media',
+    tags: ['Wiki'],
+    summary: 'Mídia de página publicada',
+    description:
+      'Serve, sem login, uma imagem/arquivo referenciado pela página publicada em `/w/<token>`. Só chaves que a página usa; revogar a publicação corta o acesso.',
+    auth: 'public',
+    rateLimit: 'ip',
+    params: { token: 'Token do link público.' },
+    query: z.object({
+      key: z.string().meta({ description: 'Chave do objeto no bucket.' }),
+    }),
+    queryValidationError: false,
+    responses: {
+      200: {
+        description: 'Conteúdo do arquivo.',
+        envelope: false,
+        contentType: 'application/octet-stream',
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+    errors: [
+      'VALIDATION_ERROR',
+      {
+        code: 'WIKI_PAGE_NOT_FOUND',
+        when: 'Token inválido/revogado ou chave que a página não usa',
+      },
+      'STORAGE_ERROR',
     ],
   },
   {

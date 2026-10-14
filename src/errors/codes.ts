@@ -739,6 +739,14 @@ export const ERROR_CODES = {
   },
   WIKI_LABEL_NOT_FOUND: { code: 'WIKI_LABEL_NOT_FOUND', status: 404 },
   WIKI_LABEL_CONFLICT: { code: 'WIKI_LABEL_CONFLICT', status: 409 },
+  // The page's editing is locked and the actor is neither its author nor a
+  // workspace OWNER/ADMIN. 423 Locked: the resource exists and the request is
+  // well-formed, it just cannot change until someone unlocks it.
+  WIKI_PAGE_LOCKED: { code: 'WIKI_PAGE_LOCKED', status: 423 },
+  // Only the page's author or a workspace OWNER/ADMIN may lock/unlock it.
+  WIKI_LOCK_FORBIDDEN: { code: 'WIKI_LOCK_FORBIDDEN', status: 403 },
+  // The AI provider failed or answered nothing usable for the wiki rewrite.
+  WIKI_AI_FAILED: { code: 'WIKI_AI_FAILED', status: 502 },
 
   // Quadro-branco (Excalidraw). Off switch in Ajustes › Quadro-branco.
   WHITEBOARD_DISABLED: { code: 'WHITEBOARD_DISABLED', status: 403 },

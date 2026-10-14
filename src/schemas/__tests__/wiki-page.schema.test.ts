@@ -3,6 +3,9 @@ import {
   CreateWikiPageSchema,
   MoveWikiPageSchema,
   UpdateWikiPageSchema,
+  WIKI_AI_MAX_TEXT,
+  WikiAiSchema,
+  WikiPublicTokenSchema,
 } from '../wiki-page.schema'
 
 function makeContentOfSize(targetBytes: number) {
@@ -77,5 +80,49 @@ describe('MoveWikiPageSchema', () => {
     })
 
     expect(result.success).toBe(false)
+  })
+})
+
+describe('WikiAiSchema', () => {
+  it('accepts every action with trimmed text', () => {
+    for (const action of [
+      'paraphrase',
+      'simplify',
+      'elaborate',
+      'summarize',
+      'title',
+    ] as const) {
+      expect(WikiAiSchema.parse({ action, text: '  oi  ' })).toEqual({
+        action,
+        text: 'oi',
+      })
+    }
+  })
+
+  it('rejects an unknown action, empty text and text over the cap', () => {
+    expect(
+      WikiAiSchema.safeParse({ action: 'translate', text: 'x' }).success,
+    ).toBe(false)
+    expect(
+      WikiAiSchema.safeParse({ action: 'title', text: '  ' }).success,
+    ).toBe(false)
+    expect(
+      WikiAiSchema.safeParse({
+        action: 'summarize',
+        text: 'x'.repeat(WIKI_AI_MAX_TEXT + 1),
+      }).success,
+    ).toBe(false)
+  })
+})
+
+describe('WikiPublicTokenSchema', () => {
+  it('accepts 32 base64url chars only', () => {
+    expect(
+      WikiPublicTokenSchema.safeParse(`${'aZ09_-'.repeat(5)}ab`).success,
+    ).toBe(true)
+    expect(WikiPublicTokenSchema.safeParse('a'.repeat(31)).success).toBe(false)
+    expect(WikiPublicTokenSchema.safeParse(`${'a'.repeat(31)}/`).success).toBe(
+      false,
+    )
   })
 })

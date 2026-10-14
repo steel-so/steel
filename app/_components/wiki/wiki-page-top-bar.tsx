@@ -152,12 +152,12 @@ export function WikiPageTopBar({
 
   const published = Boolean(page.publishedAt && page.publicToken)
   const locked = Boolean(page.lockedAt)
-  const canManageLock = page.canManageLock ?? false
-  const [isFavorite, setIsFavorite] = useState(page.isFavorite ?? false)
+  const canManageLock = page.canManageLock
+  const [isFavorite, setIsFavorite] = useState(page.isFavorite)
   const statusCopy = STATUS_COPY[status]
 
   useEffect(() => {
-    setIsFavorite(page.isFavorite ?? false)
+    setIsFavorite(page.isFavorite)
   }, [page.isFavorite])
 
   function togglePublish() {

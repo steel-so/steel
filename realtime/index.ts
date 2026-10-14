@@ -10,7 +10,16 @@ import { Server } from '@hocuspocus/server'
 import { Redis } from '@hocuspocus/extension-redis'
 import { WikiPageRepository } from '@/src/repositories/wiki-page.repository'
 import { auth } from '@/src/lib/auth'
-import { assertWikiMember } from '@/src/services/_wiki-access'
+import {
+  assertWikiMember,
+  isWikiPageReadOnlyFor
+} from '@/src/services/_wiki-access'
+import { getQueueConnection } from '@/src/lib/queue/connection'
+import {
+  parseWikiLockMessage,
+  WIKI_LOCK_CHANNEL,
+  wikiLockStatelessPayload
+} from '@/src/lib/wiki-lock-channel'
 import * as Y from 'yjs'
 
 const redisUrl = new URL(REDIS_URL)
@@ -35,7 +44,7 @@ const server = new Server({
     })
   ],
 
-  async onAuthenticate({ documentName, requestHeaders }) {
+  async onAuthenticate({ documentName, requestHeaders, connectionConfig }) {
     const cookie = requestHeaders.cookie
     if (!cookie) {
       logger.warn('realtime.authenticate.failed', {
@@ -83,10 +92,20 @@ const server = new Server({
       throw new Error('Forbidden')
     }
 
+    // Edit lock: whoever can't manage it joins read-only — Hocuspocus drops
+    // their document updates and tells the provider (`authorizedScope`).
+    const readOnly = isWikiPageReadOnlyFor(
+      page.value,
+      session.user.id,
+      membership.value.isPrivileged
+    )
+    connectionConfig.readOnly = readOnly
+
     logger.info('realtime.authenticate.success', {
       component: 'Realtime',
       documentName,
-      userId: session.user.id
+      userId: session.user.id,
+      readOnly
     })
 
     return { userId: session.user.id }
@@ -134,6 +153,38 @@ const server = new Server({
 
 server.listen()
 
+// Edit-lock changes published by the app (`publishWikiLockChange`): tell the
+// page's open editors (stateless message, so the UI refetches the page) and
+// close their sockets — the provider reconnects about a second later and
+// `onAuthenticate` hands each one the new permission. The raw socket is
+// closed on purpose: `closeConnections()` only sends a per-document close
+// message over the (multiplexed) socket, and the provider never
+// re-authenticates after it.
+const lockSubscriber = getQueueConnection().duplicate()
+lockSubscriber.subscribe(WIKI_LOCK_CHANNEL).catch((error: Error) => {
+  logger.error('realtime.lock.subscribe_failed', {
+    component: 'Realtime',
+    message: error.message
+  })
+})
+lockSubscriber.on('message', (channel: string, payload: string) => {
+  if (channel !== WIKI_LOCK_CHANNEL) return
+  const message = parseWikiLockMessage(payload)
+  if (!message) return
+  const document = server.hocuspocus.documents.get(message.wikiPageId)
+  if (!document) return
+  document.broadcastStateless(wikiLockStatelessPayload(message))
+  for (const socket of document.connections.keys()) {
+    // 4205 = Hocuspocus "Reset Connection": the provider retries.
+    socket.close(4205, 'Wiki page lock changed')
+  }
+  logger.info('realtime.lock.applied', {
+    component: 'Realtime',
+    documentName: message.wikiPageId,
+    locked: message.lockedAt !== null
+  })
+})
+
 logger.info('realtime.server.started', {
   component: 'Realtime',
   port: REALTIME_PORT
@@ -146,6 +197,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   })
 
   try {
+    await lockSubscriber.quit().catch(() => undefined)
     await server.destroy()
     await logger.flush()
   } catch (err) {

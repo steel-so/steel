@@ -21,3 +21,27 @@ export async function assertWikiMember(
 
   return membership
 }
+
+/**
+ * Who may lock/unlock a page's editing — and keeps editing while it is
+ * locked: the page's author or a workspace OWNER/ADMIN.
+ */
+export function canManageWikiPageLock(
+  page: { createdById: string | null },
+  actorId: string,
+  isPrivileged: boolean,
+): boolean {
+  return isPrivileged || page.createdById === actorId
+}
+
+/** Read-only for this actor: the page is locked and they can't manage it. */
+export function isWikiPageReadOnlyFor(
+  page: { createdById: string | null; lockedAt: Date | null },
+  actorId: string,
+  isPrivileged: boolean,
+): boolean {
+  return (
+    page.lockedAt !== null &&
+    !canManageWikiPageLock(page, actorId, isPrivileged)
+  )
+}

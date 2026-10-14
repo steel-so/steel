@@ -21,6 +21,7 @@ export const ERROR_STATUS_TITLES: Record<number, string> = {
   ...STATUS_TITLES,
   413: 'Conteúdo grande demais',
   415: 'Formato não suportado',
+  423: 'Recurso bloqueado',
 }
 
 export interface ErrorCatalogEntry {

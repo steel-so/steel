@@ -22,6 +22,12 @@ export function createFakeWikiPage(overrides?: Partial<WikiPage>): WikiPage {
     createdById: createId(),
     updatedById: null,
     archivedAt: null,
+    publicToken: null,
+    publishedAt: null,
+    lockedAt: null,
+    lockedById: null,
+    createdBy: null,
+    updatedBy: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -46,6 +52,14 @@ export function createFakeWikiPageDTO(
     createdById: createId(),
     updatedById: null,
     archivedAt: null,
+    publishedAt: null,
+    publicToken: null,
+    lockedAt: null,
+    lockedById: null,
+    canManageLock: true,
+    isFavorite: false,
+    createdBy: null,
+    updatedBy: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -61,6 +75,13 @@ export async function seedWikiPage(
     icon: string | null
     content: Prisma.InputJsonValue
     position: number
+    publicToken: string | null
+    publishedAt: Date | null
+    lockedAt: Date | null
+    lockedById: string | null
+    archivedAt: Date | null
+    coverImage: string | null
+    yjsState: Uint8Array<ArrayBuffer> | null
   }>,
 ) {
   const content: Prisma.InputJsonValue = [

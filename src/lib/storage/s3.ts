@@ -160,6 +160,7 @@ export async function getPresignedDownloadUrl(
 export async function getObjectStream(input: GetObjectInput): Promise<{
   body: ReadableStream<Uint8Array>
   contentLength: number | undefined
+  contentType: string | undefined
 }> {
   const s3 = getS3Client()
   const result = await s3.send(
@@ -169,6 +170,7 @@ export async function getObjectStream(input: GetObjectInput): Promise<{
   return {
     body: result.Body.transformToWebStream() as ReadableStream<Uint8Array>,
     contentLength: result.ContentLength,
+    contentType: result.ContentType,
   }
 }
 

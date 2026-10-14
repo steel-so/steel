@@ -1325,6 +1325,18 @@ export const wikiLabelConflict = (
   message = 'Já existe uma etiqueta com esse nome',
 ): AppError => appError('WIKI_LABEL_CONFLICT', message)
 
+export const wikiPageLocked = (
+  message = 'Esta página está bloqueada para edição',
+): AppError => appError('WIKI_PAGE_LOCKED', message)
+
+export const wikiLockForbidden = (
+  message = 'Só o autor da página ou um administrador pode bloquear ou desbloquear a edição',
+): AppError => appError('WIKI_LOCK_FORBIDDEN', message)
+
+export const wikiAiFailed = (
+  message = 'A IA não conseguiu responder agora — tente de novo em instantes',
+): AppError => appError('WIKI_AI_FAILED', message)
+
 export const workspaceExportNotFound = (): AppError =>
   appError('WORKSPACE_EXPORT_NOT_FOUND', 'Exportação não encontrada')
 
