@@ -11,6 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  NEXT_PUBLIC_GA_ID,
+  NEXT_PUBLIC_POSTHOG_HOST,
+  NEXT_PUBLIC_POSTHOG_KEY,
+  NEXT_PUBLIC_SENTRY_DSN,
+} from '@/lib/env/env'
 import { PRIVACY_VERSION } from '@/lib/legal/versions'
 import { isBillingEnabled } from '@/src/lib/billing'
 import { publicPageMetadata } from '@/src/lib/seo/metadata'
@@ -21,7 +27,29 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/legals/subprocessors',
 })
 
-const SUBPROCESSORS = [
+/**
+ * Optional providers are listed only while their key is configured: a
+ * provider that processes nothing is not a subprocessor.
+ */
+type Condition = 'billing' | 'sentry' | 'posthog' | 'analytics'
+
+interface Subprocessor {
+  name: string
+  purpose: string
+  data: string
+  location: string
+  when?: Condition
+}
+
+/** Sentry and PostHog store data in the region their DSN/host points at. */
+const sentryLocation = /\.de\.sentry\.io/.test(NEXT_PUBLIC_SENTRY_DSN ?? '')
+  ? 'Alemanha (UE)'
+  : 'Estados Unidos'
+const posthogLocation = NEXT_PUBLIC_POSTHOG_HOST.includes('eu.i.posthog.com')
+  ? 'União Europeia'
+  : 'Estados Unidos'
+
+const SUBPROCESSORS: Subprocessor[] = [
   {
     name: 'Meta Platforms, Inc.',
     purpose:
@@ -36,6 +64,12 @@ const SUBPROCESSORS = [
     location: 'Brasil',
   },
   {
+    name: '8x8, Inc. (Jitsi Meet)',
+    purpose: 'Chamadas de vídeo iniciadas pelo módulo Comunicação',
+    data: 'Áudio e vídeo da chamada, nome exibido dos participantes',
+    location: 'Estados Unidos',
+  },
+  {
     name: 'Google LLC',
     purpose:
       'Login social, Google Ads e Google Analytics (conexões de marketing do CRM)',
@@ -43,9 +77,31 @@ const SUBPROCESSORS = [
     location: 'Estados Unidos',
   },
   {
+    name: 'Google LLC (Google Analytics no site)',
+    purpose:
+      'Medição de audiência do site público, só com consentimento de cookies',
+    data: 'Páginas visitadas, dados do navegador e do dispositivo, identificador de cookie',
+    location: 'Estados Unidos',
+    when: 'analytics',
+  },
+  {
     name: 'GitHub, Inc. (Microsoft)',
-    purpose: 'Login social',
-    data: 'Nome, e-mail',
+    purpose:
+      'Login social e integração de repositórios (issues e pull requests vinculados a chamados)',
+    data: 'Nome, e-mail (login); título, descrição e status dos chamados vinculados',
+    location: 'Estados Unidos',
+  },
+  {
+    name: 'GitLab Inc.',
+    purpose:
+      'Integração de repositórios no gitlab.com (issues e merge requests vinculados a chamados)',
+    data: 'Título, descrição e status dos chamados vinculados',
+    location: 'Estados Unidos',
+  },
+  {
+    name: 'Slack Technologies, LLC (Salesforce)',
+    purpose: 'Notificações e abertura de chamados pelo Slack (ServiceDesk)',
+    data: 'Dados dos chamados (título, solicitante, status), mensagens enviadas ao app',
     location: 'Estados Unidos',
   },
   {
@@ -75,24 +131,23 @@ const SUBPROCESSORS = [
   {
     name: 'OpenAI, L.L.C.',
     purpose:
-      'Recursos de inteligência artificial (assistente de IA, resposta automática, análise de sentimento)',
-    data: 'Conteúdo de conversas e prompts submetidos pelo usuário',
+      'Recursos de inteligência artificial (Steel AI, resposta automática, análise de sentimento, sugestões de texto)',
+    data: 'Conteúdo de conversas, textos e prompts submetidos pelo usuário',
     location: 'Estados Unidos',
   },
   {
     name: 'Anthropic, PBC',
     purpose:
-      'Recursos de inteligência artificial (assistente de IA, resposta automática, análise de sentimento)',
-    data: 'Conteúdo de conversas e prompts submetidos pelo usuário',
+      'Recursos de inteligência artificial (Steel AI, resposta automática, análise de sentimento, sugestões de texto)',
+    data: 'Conteúdo de conversas, textos e prompts submetidos pelo usuário',
     location: 'Estados Unidos',
   },
   {
-    // Listed only while billing is on (`BILLING_ENABLED`): a provider that
-    // processes nothing is not a subprocessor.
     name: 'AbacatePay',
     purpose: 'Processamento de pagamentos e cobrança de assinaturas',
     data: 'Nome, endereço de cobrança, dados de cartão',
     location: 'Brasil',
+    when: 'billing',
   },
   {
     name: 'Resend',
@@ -107,20 +162,40 @@ const SUBPROCESSORS = [
     location: 'Estados Unidos',
   },
   {
+    name: 'Functional Software, Inc. (Sentry)',
+    purpose:
+      'Monitoramento de erros da aplicação; no navegador, só com consentimento de cookies',
+    data: 'Dados técnicos do erro, endereço da página, navegador e sistema',
+    location: sentryLocation,
+    when: 'sentry',
+  },
+  {
+    name: 'PostHog, Inc.',
+    purpose: 'Análise de uso do produto, só com consentimento de cookies',
+    data: 'Páginas visitadas, eventos de uso, identificador do usuário',
+    location: posthogLocation,
+    when: 'posthog',
+  },
+  {
     name: 'Open Datacenter Brasil Ltda',
     purpose:
       'Hospedagem da aplicação, banco de dados e armazenamento de arquivos',
     data: 'Todos os dados processados pela plataforma',
     location: 'Brasil',
   },
-] as const
+]
 
 export default async function SubprocessorsPage() {
   // Per request, so the list follows the billing flag without a rebuild.
   await connection()
-  const billingEnabled = isBillingEnabled()
+  const active: Record<Condition, boolean> = {
+    billing: isBillingEnabled(),
+    sentry: Boolean(NEXT_PUBLIC_SENTRY_DSN),
+    posthog: Boolean(NEXT_PUBLIC_POSTHOG_KEY),
+    analytics: Boolean(NEXT_PUBLIC_GA_ID),
+  }
   const subprocessors = SUBPROCESSORS.filter(
-    (sp) => billingEnabled || sp.name !== 'AbacatePay',
+    (sp) => !sp.when || active[sp.when],
   )
 
   return (
