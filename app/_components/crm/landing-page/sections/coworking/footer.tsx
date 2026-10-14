@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
 import { GhostLink } from '@/components/ui/ghost-link'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -227,9 +228,18 @@ export function CoworkingFooter({
       <div className='mx-auto max-w-6xl border-[#161c2d]/10 border-t' />
 
       <div className='mx-auto flex max-w-6xl flex-col-reverse items-center justify-between gap-4 py-6 sm:flex-row'>
-        <p className='text-[#161c2d] text-[15px]'>
-          © {new Date().getFullYear()} Copyright, All Right Reserved.
-        </p>
+        <GhostInput
+          as='p'
+          value={textOf(
+            content,
+            'copyright',
+            `© ${new Date().getFullYear()} Copyright, All Right Reserved.`,
+          )}
+          onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+          placeholder='Texto de copyright'
+          readOnly={readOnly}
+          className='text-[#161c2d] text-[15px]'
+        />
         <div className='flex items-center gap-4'>
           {content.socialLinks.map((social, index) => {
             const icon = SOCIAL_ICONS[social.platform.toLowerCase()]

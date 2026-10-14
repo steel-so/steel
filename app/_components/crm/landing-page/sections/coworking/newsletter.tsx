@@ -1,8 +1,10 @@
 'use client'
 
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type NewsletterContent = Extract<
@@ -51,14 +53,31 @@ export function CoworkingNewsletter({
         ) : null}
 
         <div className='mt-4 flex w-full flex-col gap-4'>
-          <input
-            type='email'
+          {readOnly ? (
+            <input
+              type='email'
+              readOnly
+              placeholder={content.placeholder || 'Enter your email'}
+              className='w-full rounded-[8px] border border-[#e7e9ed] bg-white px-[22px] py-[15px] text-[#161c2d] text-[17px] tracking-[-0.2px] outline-none placeholder:text-[#161c2d]/70 focus-visible:ring-2 focus-visible:ring-ring/50'
+            />
+          ) : (
+            // Edit mode: the field's placeholder is the visible copy, so it
+            // becomes the editable text inside an identical-looking box.
+            <div className='w-full rounded-[8px] border border-[#e7e9ed] bg-white px-[22px] py-[15px] text-left'>
+              <GhostInput
+                value={content.placeholder ?? ''}
+                onCommit={(v) =>
+                  onChange?.({ ...content, placeholder: v || undefined })
+                }
+                placeholder='Enter your email'
+                className='text-[#161c2d]/70 text-[17px] tracking-[-0.2px]'
+              />
+            </div>
+          )}
+          <GhostLink
+            href={hrefOf(content, 'cta', '#')}
+            onHrefChange={(v) => onChange?.(withHref(content, 'cta', v))}
             readOnly={readOnly}
-            placeholder={content.placeholder || 'Enter your email'}
-            className='w-full rounded-[8px] border border-[#e7e9ed] bg-white px-[22px] py-[15px] text-[#161c2d] text-[17px] tracking-[-0.2px] outline-none placeholder:text-[#161c2d]/70 focus-visible:ring-2 focus-visible:ring-ring/50'
-          />
-          <a
-            href={readOnly ? '#' : undefined}
             data-cta
             className='inline-flex w-full items-center justify-center rounded-[8px] bg-[#473bf0] px-8 py-4 font-bold text-[17px] text-white tracking-[-0.6px] transition-opacity hover:opacity-90'
           >
@@ -71,14 +90,21 @@ export function CoworkingNewsletter({
               readOnly={readOnly}
               className='text-inherit text-center'
             />
-          </a>
+          </GhostLink>
         </div>
 
-        <p className='text-[#161c2d]/70 text-[15px] leading-[1.7]'>
-          We&apos;ll never share your details with third parties.
-          <br />
-          View our Privacy Policy for more info.
-        </p>
+        <GhostTextarea
+          value={textOf(
+            content,
+            'disclaimer',
+            "We'll never share your details with third parties.\nView our Privacy Policy for more info.",
+          )}
+          onCommit={(v) => onChange?.(withText(content, 'disclaimer', v))}
+          placeholder='Aviso de privacidade'
+          readOnly={readOnly}
+          as='p'
+          className='whitespace-pre-line text-center text-[#161c2d]/70 text-[15px] leading-[1.7]'
+        />
       </div>
     </section>
   )

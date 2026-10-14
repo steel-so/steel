@@ -23,6 +23,7 @@ import {
 } from '@/src/hooks/use-crm-landing-page'
 import { coworkingLogoFont } from '@/src/lib/landing-page-templates/coworking/fonts'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -169,14 +170,16 @@ export function CoworkingHero({
 
       <div className='relative mx-auto flex max-w-[1600px] flex-col items-center px-6 py-10 sm:px-10 lg:px-[123px] lg:py-16'>
         <div className='flex w-full items-center justify-between'>
-          <span
+          <GhostInput
+            value={textOf(content, 'logo', 'Brainwave.io')}
+            onCommit={(v) => onChange?.(withText(content, 'logo', v))}
+            placeholder='Nome da marca'
+            readOnly={readOnly}
             className={cn(
               coworkingLogoFont.className,
               'font-bold text-[24px] text-white',
             )}
-          >
-            Brainwave.io
-          </span>
+          />
           <nav className='hidden items-center gap-8 font-bold text-[15px] text-white tracking-[-0.1px] sm:flex'>
             {navLinks.map((link, index) => (
               <div
@@ -289,8 +292,10 @@ export function CoworkingHero({
             ) : null}
           </div>
 
-          <a
-            href='#facts'
+          <GhostLink
+            href={hrefOf(content, 'tour', '#facts')}
+            onHrefChange={(v) => onChange?.(withHref(content, 'tour', v))}
+            readOnly={readOnly}
             className='mt-6 inline-flex items-center gap-2 font-bold text-[17px] text-white tracking-[-0.2px] hover:opacity-80'
           >
             <img
@@ -299,17 +304,25 @@ export function CoworkingHero({
               aria-hidden
               className='h-[19px] w-[19px]'
             />
-            Take virtual tour of our spaces
-          </a>
+            <GhostInput
+              value={textOf(content, 'tour', 'Take virtual tour of our spaces')}
+              onCommit={(v) => onChange?.(withText(content, 'tour', v))}
+              placeholder='Texto do link'
+              readOnly={readOnly}
+              className='field-sizing-content text-inherit'
+            />
+          </GhostLink>
         </div>
 
-        <a
-          href='#facts'
+        <GhostLink
+          href={hrefOf(content, 'scrollDown', '#facts')}
+          onHrefChange={(v) => onChange?.(withHref(content, 'scrollDown', v))}
+          readOnly={readOnly}
           aria-label='Rolar para baixo'
           className='mb-4 flex size-10 items-center justify-center rounded-full border border-white/40 hover:bg-white/10'
         >
           <img src={CHEVRON_DOWN_ICON} alt='' className='h-[6px] w-[12px]' />
-        </a>
+        </GhostLink>
       </div>
     </section>
   )
