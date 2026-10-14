@@ -53,6 +53,27 @@ cd /var/www/steel && docker compose restart steel-realtime
 Os editores abertos reconectam sozinhos; o documento vem do Redis/Postgres
 (`wiki_pages.yjs_state`).
 
+## 4. Bloqueio de edição (canal Redis `wiki:page-lock`)
+
+Quando o autor ou um OWNER/ADMIN bloqueia/desbloqueia uma página, o app grava
+`wiki_pages.locked_at` e publica `{ wikiPageId, lockedAt }` no canal Redis
+`wiki:page-lock` (mesmo Redis/DB lógico do `REDIS_URL`). O `steel-realtime`
+assina esse canal e, para o documento aberto:
+
+1. manda aos editores uma mensagem *stateless*
+   `{"type":"wiki-page-lock-changed","wikiPageId":…,"lockedAt":…}` (o
+   front recarrega a página);
+2. fecha as conexões do documento. O provider reconecta na hora e o
+   `onAuthenticate` decide de novo: quem não pode gerenciar o bloqueio entra
+   com `readOnly` (o Hocuspocus descarta as alterações dele e o provider
+   recebe o escopo `read-only`).
+
+Logs: `realtime.lock.applied` (por documento aberto) e
+`realtime.authenticate.success` com `readOnly: true|false`. Se o canal cair
+(`realtime.lock.subscribe_failed` ou `wiki.lock.publish_failed` no app), o
+bloqueio continua valendo na API (`423 WIKI_PAGE_LOCKED`) e no próximo
+reconectar; para forçar, reinicie o `steel-realtime` (seção 3).
+
 ## Local
 
 `pnpm realtime:dev` (porta `REALTIME_PORT`, padrão 1235 — a 1234 é do realtime

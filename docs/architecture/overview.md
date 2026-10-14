@@ -188,6 +188,45 @@ por OWNER/ADMIN e usadas por todos os módulos:
   tempo constante antes de qualquer gravação; o caminho antigo do GitHub
   continua aceito.
 
+## Wiki: publicação, bloqueio, favoritos e IA
+
+A Wiki (`/[slug]/wiki`, ligada em **Ajustes > Wiki**) edita em tempo real
+pelo `steel-realtime` (Hocuspocus, ver `docs/runbooks/realtime-wiki.md`).
+Gate único em `src/services/_wiki-access.ts`: membro do workspace + Wiki
+ligada. Além do CRUD, cada página tem:
+
+- **Publicar na web** (`POST/DELETE .../wiki/[wikiPageId]/publish`): gera
+  `wiki_pages.public_token` (24 bytes aleatórios, base64url — 32 caracteres)
+  e `published_at`. A página pública é `app/(public)/w/[token]`, sem login,
+  `noindex`, renderizada com o mesmo leitor estático da base de conhecimento
+  (`KbRichViewer`). Token inválido, revogado, página arquivada ou Wiki
+  desligada dão o mesmo 404. As imagens do conteúdo são URLs pré-assinadas do
+  bucket privado `wiki-media` (vencem em 1 h e podem apontar para um host que
+  o visitante não alcança): a página pública as reescreve para
+  `/api/wiki/public/<token>/media?key=…`, que serve o objeto só enquanto a
+  página está publicada e só para chaves que ela referencia
+  (`src/lib/wiki-public-media.ts`, `WikiPublicService`). Cancelar a
+  publicação apaga o token — o link antigo passa a dar 404.
+- **Bloquear edição** (`POST/DELETE .../lock`): só o autor da página ou
+  OWNER/ADMIN (`WIKI_LOCK_FORBIDDEN`, 403). Bloqueada, a página é só leitura
+  para os demais: PATCH (título, ícone, capa, conteúdo), etiquetas, mover,
+  arquivar e publicar respondem `WIKI_PAGE_LOCKED` (**423**), e o realtime os
+  conecta com `readOnly`. O DTO traz `lockedAt` e `canManageLock` (relativo a
+  quem lê): `lockedAt !== null && !canManageLock` = só leitura. A mudança
+  chega aos editores já abertos em segundos pelo canal Redis
+  `wiki:page-lock` (`src/lib/wiki-lock-channel.ts` → `realtime/index.ts`).
+- **Favoritos** por usuário (`wiki_page_favorites`, `PUT/DELETE
+  .../favorite`); a lista marca `isFavorite` com uma consulta só.
+- **Duplicar** (`POST .../duplicate`): cópia logo depois da original, com o
+  estado Yjs (abre igual no editor colaborativo) e as etiquetas.
+- **IA no editor** (`POST .../ai`, `{action, text}` → `{text}`): parafrasear,
+  simplificar, desenvolver, resumir e sugerir título, pelo provedor/modelo de
+  Ajustes > Steel IA, respeitando o interruptor da Steel IA e a cota mensal
+  (ADR 0007). Consumo lançado como `WIKI_ASSISTANT`.
+
+Auditoria (`auditMutation`, entidade `wiki_page`): `publish`, `unpublish`,
+`lock`, `unlock`, `duplicate`, além de create/update/move/archive.
+
 ## Quadro-branco (Excalidraw)
 
 Item **Quadro-branco** logo abaixo da Wiki no menu lateral (atalho
