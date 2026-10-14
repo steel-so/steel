@@ -9,6 +9,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { cn } from '@/lib/utils'
 import { agencyLogoFont } from '@/src/lib/landing-page-templates/agency/fonts'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -307,9 +308,19 @@ export function AgencyFooter({
         ))}
       </div>
 
-      <p className='border-white/10 border-t py-6 text-center text-white/40 text-xs'>
-        © {new Date().getFullYear()} — Todos os direitos reservados.
-      </p>
+      <div className='flex justify-center border-white/10 border-t py-6'>
+        <GhostInput
+          as='p'
+          value={textOf(
+            content,
+            'copyright',
+            `© ${new Date().getFullYear()} — Todos os direitos reservados.`,
+          )}
+          onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+          readOnly={readOnly}
+          className='text-center text-white/40 text-xs'
+        />
+      </div>
     </footer>
   )
 }

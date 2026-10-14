@@ -9,9 +9,11 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type WorksContent = Extract<CrmLandingPageSectionContent, { type: 'WORKS' }>
@@ -174,13 +176,21 @@ export function AgencyWorks({
       </div>
 
       <div className='mt-14 flex justify-center'>
-        <a
-          href='#works'
+        <GhostLink
+          href={hrefOf(content, 'more', '#works')}
+          onHrefChange={(v) => onChange?.(withHref(content, 'more', v))}
+          readOnly={readOnly}
           className='inline-flex items-center gap-2 font-bold text-[#473bf0] text-[21px] tracking-[-1.2px] hover:opacity-80'
         >
-          See all works
+          <GhostInput
+            value={textOf(content, 'more', 'See all works')}
+            onCommit={(v) => onChange?.(withText(content, 'more', v))}
+            placeholder='Texto do link'
+            readOnly={readOnly}
+            className='field-sizing-content w-auto text-inherit'
+          />
           <SteelIcon icon={ArrowRight01Icon} strokeWidth={2.5} size={18} />
-        </a>
+        </GhostLink>
       </div>
     </section>
   )

@@ -6,6 +6,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type TestimonialContent = Extract<
@@ -81,9 +82,13 @@ export function AgencyTestimonial({
         />
 
         <div className='relative mx-auto flex max-w-2xl flex-col items-center gap-6'>
-          <span className='font-bold text-[#68d585] text-[13px] uppercase tracking-[1.6px]'>
-            Testimonial
-          </span>
+          <GhostInput
+            value={textOf(content, 'badge', 'Testimonial')}
+            onCommit={(v) => onChange?.(withText(content, 'badge', v))}
+            placeholder='Texto de destaque'
+            readOnly={readOnly}
+            className='text-center font-bold text-[#68d585] text-[13px] uppercase tracking-[1.6px]'
+          />
 
           <GhostTextarea
             value={content.quote}
