@@ -7,7 +7,7 @@ import {
 import type { Value } from 'platejs'
 import type { EditorMentionableMember } from '@/components/editor/editor-document-context'
 import type { WikiLabelDTO, WikiSettingsDTO } from '@/types/wiki-label'
-import type { WikiPageDTO } from '@/types/wiki-page'
+import type { WikiAiAction, WikiPageDTO } from '@/types/wiki-page'
 import { apiFetch, apiFetchJson, apiSend } from './_fetch'
 
 function wikiPagesKey(workspaceId: string) {
@@ -119,6 +119,126 @@ export function useArchiveWikiPage(workspaceId: string, wikiPageId: string) {
         (old) => old && withoutSubtree(old, wikiPageId),
       )
     },
+  })
+}
+
+/** Public read-only path of a published page. */
+export function wikiPublicPath(publicToken: string) {
+  return `/w/${publicToken}`
+}
+
+function useReplacePageMutation(
+  workspaceId: string,
+  request: () => Promise<WikiPageDTO>,
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: request,
+    onSuccess: (updated) => {
+      queryClient.setQueryData<WikiPageDTO[]>(
+        wikiPagesKey(workspaceId),
+        (old) => old?.map((p) => (p.id === updated.id ? updated : p)),
+      )
+    },
+  })
+}
+
+/** Creates the public link (`publicToken`) and stamps `publishedAt`. */
+export function usePublishWikiPage(workspaceId: string, wikiPageId: string) {
+  return useReplacePageMutation(workspaceId, () =>
+    apiFetchJson<WikiPageDTO>(
+      `${baseRoute(workspaceId)}/${wikiPageId}/publish`,
+      'POST',
+      {},
+      'Erro ao publicar a página',
+    ),
+  )
+}
+
+/** Revokes the public link: the old URL stops working. */
+export function useUnpublishWikiPage(workspaceId: string, wikiPageId: string) {
+  return useReplacePageMutation(workspaceId, () =>
+    apiFetch<WikiPageDTO>(
+      `${baseRoute(workspaceId)}/${wikiPageId}/publish`,
+      { method: 'DELETE' },
+      'Erro ao cancelar a publicação',
+    ),
+  )
+}
+
+export function useLockWikiPage(workspaceId: string, wikiPageId: string) {
+  return useReplacePageMutation(workspaceId, () =>
+    apiFetchJson<WikiPageDTO>(
+      `${baseRoute(workspaceId)}/${wikiPageId}/lock`,
+      'POST',
+      {},
+      'Erro ao bloquear a edição',
+    ),
+  )
+}
+
+export function useUnlockWikiPage(workspaceId: string, wikiPageId: string) {
+  return useReplacePageMutation(workspaceId, () =>
+    apiFetch<WikiPageDTO>(
+      `${baseRoute(workspaceId)}/${wikiPageId}/lock`,
+      { method: 'DELETE' },
+      'Erro ao desbloquear a edição',
+    ),
+  )
+}
+
+/** `true` favorites the page for the viewer, `false` removes it. */
+export function useFavoriteWikiPage(workspaceId: string, wikiPageId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (favorite: boolean) =>
+      apiFetch<WikiPageDTO>(
+        `${baseRoute(workspaceId)}/${wikiPageId}/favorite`,
+        { method: favorite ? 'PUT' : 'DELETE' },
+        'Erro ao atualizar os favoritos',
+      ),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<WikiPageDTO[]>(
+        wikiPagesKey(workspaceId),
+        (old) => old?.map((p) => (p.id === updated.id ? updated : p)),
+      )
+    },
+  })
+}
+
+/** Copies the page (title, icon, content, labels) next to the original. */
+export function useDuplicateWikiPage(workspaceId: string, wikiPageId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      apiFetchJson<WikiPageDTO>(
+        `${baseRoute(workspaceId)}/${wikiPageId}/duplicate`,
+        'POST',
+        {},
+        'Erro ao duplicar a página',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: wikiPagesKey(workspaceId) })
+    },
+  })
+}
+
+/**
+ * Rewrites `text` with the workspace's AI provider. `summarize` over the whole
+ * page's markdown is the toolbar's "Resumo com IA".
+ */
+export function useWikiAi(workspaceId: string, wikiPageId: string) {
+  return useMutation({
+    mutationFn: (data: { action: WikiAiAction; text: string }) =>
+      apiFetchJson<{ text: string }>(
+        `${baseRoute(workspaceId)}/${wikiPageId}/ai`,
+        'POST',
+        data,
+        'Erro ao gerar o texto com IA',
+      ),
   })
 }
 
