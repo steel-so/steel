@@ -5,10 +5,12 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { SimpleCarousel } from '@/components/ui/simple-carousel'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type ProductsContent = Extract<
@@ -170,9 +172,30 @@ export function EcommerceProducts({
                 className='size-full object-contain p-4'
               />
               {index < 4 ? (
-                <span className='absolute bottom-4 left-1/2 inline-flex -translate-x-1/2 items-center justify-center rounded-lg bg-[#473bf0] px-6 py-3 font-bold text-[15px] text-white tracking-[-0.5px]'>
-                  + Add to cart
-                </span>
+                <div className='absolute bottom-4 left-1/2 -translate-x-1/2'>
+                  <GhostLink
+                    href={hrefOf(content, `product.${index}.cta`, '#')}
+                    onHrefChange={(v) =>
+                      onChange?.(withHref(content, `product.${index}.cta`, v))
+                    }
+                    readOnly={readOnly}
+                    className='inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-[#473bf0] px-6 py-3 font-bold text-[15px] text-white tracking-[-0.5px]'
+                  >
+                    <GhostInput
+                      value={textOf(
+                        content,
+                        `product.${index}.cta`,
+                        '+ Add to cart',
+                      )}
+                      onCommit={(v) =>
+                        onChange?.(withText(content, `product.${index}.cta`, v))
+                      }
+                      placeholder='Texto do botão'
+                      readOnly={readOnly}
+                      className='field-sizing-content text-inherit'
+                    />
+                  </GhostLink>
+                </div>
               ) : null}
             </div>
 
