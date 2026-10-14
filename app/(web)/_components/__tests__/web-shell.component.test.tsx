@@ -172,6 +172,7 @@ const OUT = [
   '(public)/f/',
   '(public)/l/',
   '(public)/p/',
+  '(public)/w/',
   '(public)/servicedesk/approval/',
   '(public)/suporte/',
   '(public)/unsubscribe/',
