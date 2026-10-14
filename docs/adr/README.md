@@ -43,3 +43,5 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0022 | [Steel AI: memória salva sem confirmação, com guarda e desfazer](./0022-steel-ai-memory-saved-without-confirmation.md) | Aceita | 2026-10-08 |
 | 0023 | [Steel AI: modo Teste simula as escritas no servidor](./0023-steel-ai-test-mode-simulates-writes-server-side.md) | Aceita | 2026-10-08 |
 | 0024 | [Integrações (Slack, GitHub, GitLab) no nível do workspace](./0024-workspace-level-integrations.md) | Aceita | 2026-10-08 |
+| 0025 | [Campanha multicanal: e-mail + WhatsApp opcional, sem grafo de etapas](./0025-crm-multichannel-campaign-execution.md) | Aceita | 2026-10-09 |
+| 0026 | [Steel Canvas: um motor de arrastar e soltar para e-mail e sites](./0026-steel-canvas-shared-drag-and-drop-engine.md) | Aceita | 2026-10-14 |
