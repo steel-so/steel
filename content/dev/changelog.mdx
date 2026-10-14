@@ -16,6 +16,19 @@ order: 1
 - **Produto:** as novidades de tela ficam no [changelog do produto](/changelog),
   que também tem [RSS](/changelog/rss.xml).
 
+## 14/10/2026: limites mensais do WhatsApp
+
+- Novo `GET /api/workspaces/{id}/whatsapp/usage`, com o uso do mês e os limites
+  de conversas e de mensagens enviadas do módulo Comunicação, e
+  `PATCH /api/workspaces/{id}/whatsapp/usage` para defini-los (donos e
+  administradores; `null` é sem limite, o padrão).
+- Com o limite atingido, o envio de mensagens (texto, mídia, contato e modelo, em
+  conversas e grupos) responde `402 WHATSAPP_MESSAGE_LIMIT_REACHED`, e abrir ou
+  reabrir uma conversa responde `402 WHATSAPP_CONVERSATION_LIMIT_REACHED`. O mês
+  segue o calendário de São Paulo.
+- Reações não contam e não são bloqueadas. Mensagens recebidas continuam
+  chegando, e os webhooks não mudam.
+
 ## 09/10/2026: site de desenvolvedores
 
 - Guias em `/dev`: começando, autenticação e chaves, formato de resposta e erros,
