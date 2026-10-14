@@ -270,6 +270,46 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     expect(auditMutation).not.toHaveBeenCalled()
   })
 
+  it('answers a button AI instruction even with the AI off', async () => {
+    arrange({ conversation: { aiActive: false }, aiConfigActive: false })
+    const chat = vi.fn(async () => response('Temos o plano Pro!'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+        instruction: 'Ofereça o plano Pro',
+      }),
+    )
+
+    expect(outcome).toMatchObject({ status: 'sent' })
+    const call = (chat.mock.calls[0] as unknown as [{ system: string }])[0]
+    expect(call.system).toContain('Prompt base.')
+    expect(call.system).toContain(
+      'Instrução para esta resposta (o cliente clicou num botão): Ofereça o plano Pro',
+    )
+  })
+
+  it('answers a button AI instruction without any AI config', async () => {
+    arrange()
+    mockedAiConfigRepo.findByWorkspace.mockResolvedValue(ok(null))
+    const chat = vi.fn(async () => response('Claro!'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+        instruction: 'Seja breve',
+      }),
+    )
+
+    expect(outcome).toMatchObject({ status: 'sent' })
+    const call = (chat.mock.calls[0] as unknown as [{ system: string }])[0]
+    expect(call.system.startsWith('\n\nSe o cliente pedir')).toBe(true)
+  })
+
   it('should hand off to a human when the marker is present', async () => {
     arrange()
     const chat = vi.fn(async () =>
