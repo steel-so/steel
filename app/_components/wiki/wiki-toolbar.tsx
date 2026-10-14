@@ -135,13 +135,15 @@ export function WikiToolbar({
     >
       <div
         className={cn(
-          'scrollbar-hide min-w-0 flex-1 overflow-x-auto',
+          // One swipeable row up to tablets, wrapping from `lg` up so no
+          // button is ever cut off.
+          'scrollbar-hide min-w-0 flex-1 max-lg:overflow-x-auto',
           readOnly && 'invisible',
         )}
         aria-hidden={readOnly || undefined}
       >
         {!readOnly && (
-          <div className='flex w-max flex-nowrap items-center'>
+          <div className='flex w-max flex-nowrap items-center gap-y-1 lg:w-auto lg:flex-wrap'>
             <ToolbarGroup>
               <TurnIntoToolbarButton />
             </ToolbarGroup>

@@ -153,10 +153,12 @@ export function WikiPageHeader({
           </div>
         )
       )}
-      <input
+      {/* A textarea so a long title wraps; Enter still leaves the field. */}
+      <textarea
         value={title}
+        rows={1}
         readOnly={readOnly}
-        onChange={(e) => onTitleChange(e.target.value)}
+        onChange={(e) => onTitleChange(e.target.value.replace(/\n/g, ' '))}
         onBlur={onTitleCommit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -167,7 +169,7 @@ export function WikiPageHeader({
         }}
         placeholder='Sem título'
         aria-label='Título da página'
-        className='w-full bg-transparent font-semibold text-3xl tracking-tight outline-none placeholder:text-muted-foreground/60 sm:text-4xl'
+        className='block w-full resize-none overflow-hidden bg-transparent font-semibold text-3xl tracking-tight outline-none [field-sizing:content] placeholder:text-muted-foreground/60 sm:text-4xl'
       />
       <WikiPageLabels
         workspaceId={workspaceId}

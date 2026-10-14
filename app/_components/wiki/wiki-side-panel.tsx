@@ -9,7 +9,6 @@ import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Value } from 'platejs'
 import { useEffect, useMemo, useState } from 'react'
-import { useIsMobile } from '@/components/hooks/use-mobile'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -37,6 +36,20 @@ import {
 } from './wiki-page-content'
 
 const NUMBER = new Intl.NumberFormat('pt-BR')
+/** Below this the panel would squeeze the text column: it becomes a sheet. */
+const INLINE_PANEL_MIN_WIDTH = 1024
+
+function useInlinePanel() {
+  const [inline, setInline] = useState(true)
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${INLINE_PANEL_MIN_WIDTH}px)`)
+    const update = () => setInline(window.innerWidth >= INLINE_PANEL_MIN_WIDTH)
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return inline
+}
 
 /** Id of the last heading scrolled past the top of the page's scroller. */
 function useActiveHeading(
@@ -351,16 +364,17 @@ function PanelTabs({
 
 /**
  * The page's right-hand panel: outline, info (stats, labels, who edited) and
- * resources (images and files). A sheet on phones.
+ * resources (images and files). A sheet below 1024px, where an inline
+ * panel would leave the text too narrow.
  */
 export function WikiSidePanel({
   open,
   onOpenChange,
   ...props
 }: WikiSidePanelProps) {
-  const isMobile = useIsMobile()
+  const inline = useInlinePanel()
 
-  if (isMobile) {
+  if (!inline) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side='right' className='w-[85vw] gap-2 p-4'>

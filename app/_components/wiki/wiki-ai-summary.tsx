@@ -78,10 +78,11 @@ export function WikiAiSummaryButton({
         size='sm'
         disabled={disabled}
         onClick={run}
+        title='Resumo com IA'
         className='shrink-0'
       >
         <SteelIcon icon={SparklesIcon} strokeWidth={2} />
-        <span className='max-sm:sr-only'>Resumo com IA</span>
+        <span className='max-lg:sr-only'>Resumo com IA</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className='sm:max-w-lg'>

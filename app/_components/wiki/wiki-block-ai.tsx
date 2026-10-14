@@ -124,7 +124,11 @@ export function WikiAiMenu({
       <PopoverContent
         align='start'
         side='bottom'
-        className='w-[min(22rem,calc(100vw-2rem))] p-1'
+        className={
+          state.step === 'menu'
+            ? 'w-48 p-1'
+            : 'w-[min(22rem,calc(100vw-2rem))] p-1'
+        }
         aria-label='IA neste bloco'
       >
         {state.step === 'menu' && (

@@ -345,7 +345,7 @@ export function WikiPageTopBar({
           aria-label={published ? 'Cancelar publicação' : 'Publicar'}
         >
           <SteelIcon icon={Globe02Icon} strokeWidth={2} />
-          <span className='max-sm:hidden'>
+          <span className='max-lg:hidden'>
             {published ? 'Cancelar publicação' : 'Publicar'}
           </span>
         </Button>
