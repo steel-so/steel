@@ -61,6 +61,23 @@ export const WhatsAppConnectionRepository = {
     }
   },
 
+  /** Meta connections of a WhatsApp Business Account (template webhooks
+   * carry the WABA id, not a phone number id). */
+  async listByMetaWabaId(
+    metaWabaId: string,
+  ): Promise<Result<WhatsAppConnection[]>> {
+    try {
+      const connections = await prisma.whatsAppConnection.findMany({
+        where: { metaWabaId, provider: 'META' },
+      })
+      return ok(connections)
+    } catch (error) {
+      return err(
+        dbError('Failed to list whatsapp connections by meta waba id', error),
+      )
+    }
+  },
+
   async findByMetaPhoneNumberId(
     metaPhoneNumberId: string,
   ): Promise<Result<WhatsAppConnection | null>> {

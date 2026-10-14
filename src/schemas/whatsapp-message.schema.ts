@@ -54,3 +54,17 @@ export const ListWhatsAppMessagesSchema = z.object({
 })
 
 export type ListWhatsAppMessagesDTO = z.infer<typeof ListWhatsAppMessagesSchema>
+
+// POST .../messages/quick-reply — sends a saved quick reply (body, media and
+// buttons) through the provider. `variables` overrides `{token}` values
+// (e.g. `{ nome_cliente: 'Ana' }`); the rest are resolved on the server.
+export const SendWhatsAppQuickReplyMessageSchema = z.object({
+  quickReplyId: z.string().min(1, 'Mensagem pronta é obrigatória'),
+  variables: z
+    .record(z.string().regex(/^\w{1,50}$/), z.string().max(1000))
+    .optional(),
+})
+
+export type SendWhatsAppQuickReplyMessageDTO = z.infer<
+  typeof SendWhatsAppQuickReplyMessageSchema
+>

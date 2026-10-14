@@ -40,6 +40,7 @@ import { processSteelAgents } from '../src/lib/queue/processors/steel-agents'
 import { processUsageRollup } from '../src/lib/queue/processors/usage-rollup'
 import { processWhatsappAiReply } from '../src/lib/queue/processors/whatsapp-ai-reply'
 import { processWhatsappBroadcast } from '../src/lib/queue/processors/whatsapp-broadcast'
+import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsapp-button-actions'
 import { processWhatsappConversationLifecycle } from '../src/lib/queue/processors/whatsapp-conversation-lifecycle'
 import { processWhatsappMedia } from '../src/lib/queue/processors/whatsapp-media'
 import { processWhatsappSentiment } from '../src/lib/queue/processors/whatsapp-sentiment'
@@ -184,6 +185,12 @@ async function main(): Promise<void> {
   workers.push(registerWorker(QueueName.CrmCampaigns, processCrmCampaigns))
   workers.push(
     registerWorker(QueueName.CrmWorkflowDelay, processCrmWorkflowDelay),
+  )
+  workers.push(
+    registerWorker(
+      QueueName.WhatsappButtonActions,
+      processWhatsappButtonActions,
+    ),
   )
   workers.push(
     registerWorker(QueueName.CrmWorkflowSchedule, processCrmWorkflowSchedule),

@@ -10,6 +10,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
+import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppMessageDTO } from '@/src/mappers/whatsapp-message.mapper'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
@@ -19,6 +20,7 @@ import {
   type WhatsAppConversationWithPreview,
 } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppTemplateRepository } from '@/src/repositories/whatsapp-template.repository'
 import type {
   ListWhatsAppMessagesDTO,
   ReactToWhatsAppMessageDTO,
@@ -27,6 +29,7 @@ import type {
   SendWhatsAppTemplateMessageDTO,
   SendWhatsAppTextMessageDTO,
 } from '@/src/schemas/whatsapp-message.schema'
+import type { WhatsAppMessageButtonDTO } from '@/types/whatsapp-button'
 import type {
   WhatsAppMessageDTO,
   WhatsAppMessageTypeDTO,
@@ -76,6 +79,7 @@ async function finalizeOutboundMessage(input: {
   providerMessageId: string
   replyToMessageId?: string
   contactPayload?: { name: string; waId: string }
+  buttons?: WhatsAppMessageButtonDTO[]
 }): Promise<Result<WhatsAppMessageDTO>> {
   const message = await WhatsAppMessageRepository.create({
     workspaceId: input.workspaceId,
@@ -89,6 +93,7 @@ async function finalizeOutboundMessage(input: {
     senderUserId: input.actorId,
     replyToMessageId: input.replyToMessageId,
     contactPayload: input.contactPayload,
+    ...(input.buttons?.length ? { buttons: input.buttons } : {}),
   })
   if (!message.ok) return message
   void indexSearchDocument(
@@ -271,11 +276,23 @@ export const WhatsAppMessageService = {
     const loaded = await loadSendableConversation(workspaceId, conversationId)
     if (!loaded.ok) return loaded
 
+    // Media header + reply-button payloads come from the stored template;
+    // an unknown template (not synced yet) goes out as the agent built it.
+    const template = await WhatsAppTemplateRepository.findByConnectionAndName(
+      loaded.value.connection.id,
+      dto.templateName,
+      dto.language,
+    )
+    const extras =
+      template.ok && template.value
+        ? applyTemplateSendExtras(template.value, dto.components)
+        : { components: dto.components, buttons: [] }
+
     const sendResult = await WhatsAppSend.template(loaded.value.connection, {
       to: loaded.value.conversation.contact.waId,
       templateName: dto.templateName,
       language: dto.language,
-      components: dto.components,
+      components: extras.components,
     })
     if (!sendResult.ok) return sendResult
 
@@ -286,6 +303,7 @@ export const WhatsAppMessageService = {
       type: 'TEMPLATE',
       text: dto.templateName,
       providerMessageId: sendResult.value.providerMessageId,
+      buttons: extras.buttons,
     })
   },
 

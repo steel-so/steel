@@ -4499,6 +4499,8 @@ enum NotificationKind {
   WHATSAPP_CONNECTION_LOST
   WHATSAPP_BROADCAST_FINISHED
   WHATSAPP_TEMPLATE_REJECTED
+  /// Communication: a Meta template's quality dropped to RED or it was paused/disabled.
+  WHATSAPP_TEMPLATE_QUALITY
   /// Steel Agents: a run proposed a write that waits for approval.
   AGENT_APPROVAL_REQUESTED
   /// Steel Agents: a run failed.

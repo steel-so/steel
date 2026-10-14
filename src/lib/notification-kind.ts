@@ -419,6 +419,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'template',
     color: 'rose',
   },
+  WHATSAPP_TEMPLATE_QUALITY: {
+    module: 'COMMUNICATION',
+    label: 'Qualidade do template em risco',
+    icon: 'template',
+    color: 'amber',
+  },
   WHATSAPP_USAGE_WARNING: {
     module: 'COMMUNICATION',
     label: 'Limite mensal do WhatsApp em 50% / 80%',
