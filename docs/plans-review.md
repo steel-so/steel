@@ -67,6 +67,25 @@ Outros valores relacionados, fora do catálogo:
 | Assentos na compra | 1 a 10.000 | `src/schemas/subscription.schema.ts` |
 | Upload de mídia (genérico / vídeo de landing page) | 5 MB / 25 MB | `src/services/media/_media.ts`, `media/crm-landing-page-media.service.ts` — iguais para todos os planos |
 
+## Limites mensais da Comunicação (por workspace, fora do plano)
+
+Desde 14/10/2026 o OWNER/ADMIN define em **Ajustes › Comunicação** dois
+limites mensais, independentes do plano (`WhatsAppSettings.monthlyConversationLimit`
+e `monthlyMessageLimit`; vazio = ilimitado, o padrão):
+
+| Limite | Conta | Em 100% | Onde é aplicado |
+| ------ | ----- | ------- | --------------- |
+| Conversas / mês | conversas abertas ou reabertas (recebidas e iniciadas) | a equipe não inicia nem reabre conversas (`WHATSAPP_CONVERSATION_LIMIT_REACHED`, 402); as recebidas continuam chegando | `WhatsAppConversationService.start`/`reopen`; contagem também no webhook |
+| Mensagens / mês | mensagens enviadas (atendimento, IA, transmissões, campanhas; reações não) | envios recusados (`WHATSAPP_MESSAGE_LIMIT_REACHED`, 402); recebidas continuam | `WhatsAppSend` (`src/lib/whatsapp/send.ts`), ponto único de envio |
+
+- Contadores em `whatsapp_usage_monthly` (mês no fuso America/Sao_Paulo).
+- Só conexões do módulo Comunicação; o WhatsApp do ServiceDesk não conta.
+- A confirmação de descadastro (LGPD) sai sempre e não conta.
+- Todos os membros recebem aviso no inbox em 50%, 80% e 100%, uma vez por
+  mês para cada limite e patamar.
+- Se a consulta ao banco falhar, o envio é liberado (não para o atendimento);
+  envios simultâneos bem no limite podem ultrapassá-lo em poucas unidades.
+
 ## Features e capabilities (`FEATURE_MIN_TIER`, `CAPABILITIES`)
 
 - **Features** (booleanas, monotônicas por tier): `projects`, `workItems`,
