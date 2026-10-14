@@ -9,6 +9,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -91,13 +92,24 @@ export function SaasSubscriptionHero({
               <SteelIcon icon={ArrowRight01Icon} strokeWidth={2.5} size={16} />
             </GhostLink>
           ) : null}
-          <a
-            href={readOnly ? '#' : undefined}
-            aria-label='Learn more about the product'
+          <GhostLink
+            href={hrefOf(content, 'cta.secondary', '#')}
+            onHrefChange={(v) =>
+              onChange?.(withHref(content, 'cta.secondary', v))
+            }
+            readOnly={readOnly}
             className='inline-flex items-center px-4 py-4 font-bold text-[#161c2d] text-[17px] tracking-[-0.6px] hover:opacity-70'
           >
-            Learn more
-          </a>
+            <GhostInput
+              value={textOf(content, 'cta.secondary', 'Learn more')}
+              onCommit={(v) =>
+                onChange?.(withText(content, 'cta.secondary', v))
+              }
+              placeholder='Texto do link'
+              readOnly={readOnly}
+              className='text-inherit'
+            />
+          </GhostLink>
         </div>
       </div>
 

@@ -4,10 +4,12 @@ import { ArrowRight01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type AboutContent = Extract<CrmLandingPageSectionContent, { type: 'ABOUT' }>
@@ -28,10 +30,8 @@ export function aboutDefaultContent(): AboutContent {
 /**
  * Mapeia a seção "Content" do Figma (foto + texto + CTA num bloco roxo
  * full-bleed). O schema de ABOUT não tem campo de CTA (só HERO/FEATURES/
- * FOOTER têm) — como o botão "Start shopping" aqui é só reforço visual do
- * layout e não conteúdo de negócio distinto, ele fica estático/decorativo
- * (mesmo tratamento dado ao ícone de carrinho do header), sem virar campo
- * novo no schema.
+ * FOOTER têm) — the "Start shopping" link keeps its label and destination
+ * in the section's `texts`/`hrefs` overrides (slot `cta`) instead.
  */
 export function EcommerceAbout({
   content,
@@ -97,13 +97,21 @@ export function EcommerceAbout({
             className='max-w-md text-[19px] text-white/65 leading-[1.7]'
           />
 
-          <span
-            aria-hidden
+          <GhostLink
+            href={hrefOf(content, 'cta', '#produtos')}
+            onHrefChange={(v) => onChange?.(withHref(content, 'cta', v))}
+            readOnly={readOnly}
             className='inline-flex w-fit items-center gap-2 font-bold text-[17px] text-white tracking-[-0.6px]'
           >
-            Start shopping
+            <GhostInput
+              value={textOf(content, 'cta', 'Start shopping')}
+              onCommit={(v) => onChange?.(withText(content, 'cta', v))}
+              placeholder='Texto do botão'
+              readOnly={readOnly}
+              className='field-sizing-content text-inherit'
+            />
             <SteelIcon icon={ArrowRight01Icon} strokeWidth={2.5} size={16} />
-          </span>
+          </GhostLink>
         </div>
       </div>
     </section>

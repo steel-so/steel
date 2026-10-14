@@ -7,6 +7,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -134,13 +135,25 @@ export function ProductHero({
             </GhostLink>
           ) : null}
 
-          <a
-            href='#pricing'
+          <GhostLink
+            href={hrefOf(content, 'cta.secondary', '#pricing')}
+            onHrefChange={(v) =>
+              onChange?.(withHref(content, 'cta.secondary', v))
+            }
+            readOnly={readOnly}
             className='inline-flex items-center gap-2 font-bold text-[#161c2d] text-[13px] uppercase tracking-[1.6px] hover:opacity-70'
           >
             <PlayIcon />
-            Watch in action
-          </a>
+            <GhostInput
+              value={textOf(content, 'cta.secondary', 'Watch in action')}
+              onCommit={(v) =>
+                onChange?.(withText(content, 'cta.secondary', v))
+              }
+              placeholder='Texto do link'
+              readOnly={readOnly}
+              className='text-inherit'
+            />
+          </GhostLink>
         </div>
       </div>
     </section>

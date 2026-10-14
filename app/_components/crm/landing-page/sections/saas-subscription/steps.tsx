@@ -5,11 +5,13 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type StepsContent = Extract<CrmLandingPageSectionContent, { type: 'STEPS' }>
@@ -18,8 +20,8 @@ const BASE = '/landing-page-templates/saas-subscription'
 
 /**
  * "Content 01" do Figma (texto + imagem + CTA, sem lista numerada) — `items`
- * vazio. STEPS não tem campo de CTA próprio, então o botão abaixo é chrome
- * fixo (mesmo texto/link do Hero), não editável via schema.
+ * vazio. STEPS não tem campo de CTA próprio, então o botão abaixo usa os
+ * overrides `texts.cta`/`hrefs.cta` (padrão: mesmo texto/link do Hero).
  */
 export function stepsGettingStartedDefaultContent(): StepsContent {
   return {
@@ -245,13 +247,21 @@ export function SaasSubscriptionSteps({
         </div>
       ) : (
         <>
-          <a
-            href={readOnly ? '#footer' : undefined}
+          <GhostLink
+            href={hrefOf(content, 'cta', '#footer')}
+            onHrefChange={(v) => onChange?.(withHref(content, 'cta', v))}
+            readOnly={readOnly}
             data-cta
             className='inline-flex w-fit items-center justify-center rounded-lg bg-[#473bf0] px-8 py-4 font-bold text-[17px] text-white tracking-[-0.6px] transition-opacity hover:opacity-90'
           >
-            Get started for free
-          </a>
+            <GhostInput
+              value={textOf(content, 'cta', 'Get started for free')}
+              onCommit={(v) => onChange?.(withText(content, 'cta', v))}
+              placeholder='Texto do botão'
+              readOnly={readOnly}
+              className='text-inherit'
+            />
+          </GhostLink>
           {!readOnly ? (
             <button
               type='button'

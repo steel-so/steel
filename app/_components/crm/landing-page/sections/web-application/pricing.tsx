@@ -14,6 +14,7 @@ import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { cn } from '@/lib/utils'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type PricingContent = Extract<CrmLandingPageSectionContent, { type: 'PRICING' }>
@@ -165,30 +166,24 @@ export function WebApplicationPricing({
             Alterna qual par (price/period ou yearlyPrice/yearlyPeriod) fica
             visível e editável em cada card abaixo. */}
         <div className='mt-2 inline-flex items-center gap-1 rounded-full border border-[#e7e9ed] bg-white p-1'>
-          <button
-            type='button'
-            onClick={() => setBilling('monthly')}
-            className={cn(
-              'rounded-full px-5 py-2 font-bold text-[15px] transition-colors',
-              !isYearly
-                ? 'bg-[#473bf0] text-white'
-                : 'text-[#161c2d]/60 hover:text-[#161c2d]',
-            )}
-          >
-            Monthly
-          </button>
-          <button
-            type='button'
-            onClick={() => setBilling('yearly')}
-            className={cn(
-              'rounded-full px-5 py-2 font-bold text-[15px] transition-colors',
-              isYearly
-                ? 'bg-[#473bf0] text-white'
-                : 'text-[#161c2d]/60 hover:text-[#161c2d]',
-            )}
-          >
-            Yearly
-          </button>
+          <BillingOption
+            active={!isYearly}
+            label={textOf(content, 'toggle.monthly', 'Monthly')}
+            onSelect={() => setBilling('monthly')}
+            onLabelCommit={(v) =>
+              onChange?.(withText(content, 'toggle.monthly', v))
+            }
+            readOnly={readOnly}
+          />
+          <BillingOption
+            active={isYearly}
+            label={textOf(content, 'toggle.yearly', 'Yearly')}
+            onSelect={() => setBilling('yearly')}
+            onLabelCommit={(v) =>
+              onChange?.(withText(content, 'toggle.yearly', v))
+            }
+            readOnly={readOnly}
+          />
         </div>
       </div>
 
@@ -204,6 +199,8 @@ export function WebApplicationPricing({
             ? 'yearlyPeriod'
             : 'period'
           const hasYearly = Boolean(plan.yearlyPrice)
+          const billingNoteKey =
+            isYearly && hasYearly ? 'billing.yearly' : 'billing.monthly'
           const displayPrice = isYearly
             ? (plan.yearlyPrice ?? plan.price)
             : plan.price
@@ -240,7 +237,13 @@ export function WebApplicationPricing({
                 className='font-bold text-[#473bf0] text-[13px] uppercase tracking-[1.6px]'
               />
               <div className='flex items-baseline gap-1'>
-                <span className='font-bold text-[#161c2d] text-[24px]'>$</span>
+                <GhostInput
+                  value={textOf(content, 'currency', '$')}
+                  onCommit={(v) => onChange?.(withText(content, 'currency', v))}
+                  placeholder='$'
+                  readOnly={readOnly}
+                  className='field-sizing-content w-auto font-bold text-[#161c2d] text-[24px]'
+                />
                 <GhostInput
                   value={displayPrice.replace(/^\$/, '')}
                   onCommit={(v) =>
@@ -264,9 +267,23 @@ export function WebApplicationPricing({
                   />
                 ) : null}
               </div>
-              <p className='text-[#161c2d]/70 text-[15px]'>
-                {isYearly && hasYearly ? 'billed yearly' : 'billed monthly'}
-              </p>
+              <GhostInput
+                key={billingNoteKey}
+                as='p'
+                value={textOf(
+                  content,
+                  billingNoteKey,
+                  billingNoteKey === 'billing.yearly'
+                    ? 'billed yearly'
+                    : 'billed monthly',
+                )}
+                onCommit={(v) =>
+                  onChange?.(withText(content, billingNoteKey, v))
+                }
+                placeholder='Cobrança'
+                readOnly={readOnly}
+                className='text-[#161c2d]/70 text-[15px]'
+              />
 
               <ul className='flex flex-col gap-3'>
                 {plan.features.map((feature, featureIndex) => (
@@ -351,9 +368,20 @@ export function WebApplicationPricing({
                 </GhostLink>
               ) : null}
 
-              <p className='text-center text-[#161c2d]/50 text-[13px]'>
-                No credit card required
-              </p>
+              <GhostInput
+                as='p'
+                value={textOf(
+                  content,
+                  `plan.${planIndex}.note`,
+                  'No credit card required',
+                )}
+                onCommit={(v) =>
+                  onChange?.(withText(content, `plan.${planIndex}.note`, v))
+                }
+                placeholder='Observação'
+                readOnly={readOnly}
+                className='text-center text-[#161c2d]/50 text-[13px]'
+              />
             </div>
           )
         })}
@@ -369,5 +397,50 @@ export function WebApplicationPricing({
         ) : null}
       </div>
     </section>
+  )
+}
+
+/**
+ * One pill of the monthly/yearly switch. A `<button>` can't host an
+ * `<input>`, so in edit mode the pill is a plain element that still switches
+ * the period on click/focus while its label stays editable in place.
+ */
+function BillingOption({
+  active,
+  label,
+  onSelect,
+  onLabelCommit,
+  readOnly,
+}: {
+  active: boolean
+  label: string
+  onSelect: () => void
+  onLabelCommit: (value: string) => void
+  readOnly?: boolean
+}) {
+  const className = cn(
+    'rounded-full px-5 py-2 font-bold text-[15px] transition-colors',
+    active
+      ? 'bg-[#473bf0] text-white'
+      : 'text-[#161c2d]/60 hover:text-[#161c2d]',
+  )
+
+  if (readOnly) {
+    return (
+      <button type='button' onClick={onSelect} className={className}>
+        {label}
+      </button>
+    )
+  }
+
+  return (
+    <div onClick={onSelect} onFocusCapture={onSelect} className={className}>
+      <GhostInput
+        value={label}
+        onCommit={onLabelCommit}
+        placeholder='Rótulo'
+        className='field-sizing-content w-auto text-inherit'
+      />
+    </div>
   )
 }

@@ -6,6 +6,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type TestimonialContent = Extract<
@@ -30,8 +31,8 @@ export function testimonialDefaultContent(): TestimonialContent {
  * Fiel ao frame "Content 02" — bloco roxo (título + depoimento) ao lado de
  * uma foto full-bleed. O título/descrição de marketing acima do depoimento
  * ("Comfortable buds with better sound.") não existe no schema TESTIMONIAL
- * (só quote/authorName/authorRole/avatarUrl/style), então fica fixo — gap
- * reportado no final da tarefa.
+ * (só quote/authorName/authorRole/avatarUrl/style), então usa os overrides
+ * `texts.heading`/`texts.description`.
  */
 export function ProductTestimonial({
   content,
@@ -52,13 +53,30 @@ export function ProductTestimonial({
     <section className='grid grid-cols-1 lg:grid-cols-2'>
       <div className='flex flex-col justify-center gap-10 bg-[#473bf0] px-6 py-16 sm:px-10 sm:py-24 lg:px-16'>
         <div className='flex flex-col gap-3'>
-          <h2 className='text-balance font-bold text-[32px] text-white leading-tight tracking-[-1.2px] sm:text-[40px]'>
-            Comfortable buds with better sound.
-          </h2>
-          <p className='max-w-md text-[17px] text-white/65 leading-[1.7]'>
-            We share common trends and strategies for improving your rental
-            income.
-          </p>
+          <GhostInput
+            as='h2'
+            value={textOf(
+              content,
+              'heading',
+              'Comfortable buds with better sound.',
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'heading', v))}
+            placeholder='Título da seção'
+            readOnly={readOnly}
+            className='text-balance font-bold text-[32px] text-white leading-tight tracking-[-1.2px] sm:text-[40px]'
+          />
+          <GhostTextarea
+            value={textOf(
+              content,
+              'description',
+              'We share common trends and strategies for improving your rental income.',
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'description', v))}
+            placeholder='Descrição de apoio'
+            readOnly={readOnly}
+            as='p'
+            className='max-w-md text-[17px] text-white/65 leading-[1.7]'
+          />
         </div>
 
         <div className='flex flex-col gap-4'>

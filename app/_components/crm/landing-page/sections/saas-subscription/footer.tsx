@@ -9,6 +9,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { cn } from '@/lib/utils'
 import { saasSubscriptionLogoFont } from '@/src/lib/landing-page-templates/saas-subscription/fonts'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -172,13 +173,24 @@ export function SaasSubscriptionFooter({
         </div>
 
         <div className='flex shrink-0 items-center gap-4'>
-          <a
-            href={readOnly ? '#' : undefined}
-            aria-label='Learn more about the plans'
+          <GhostLink
+            href={hrefOf(content, 'cta.secondary', '#')}
+            onHrefChange={(v) =>
+              onChange?.(withHref(content, 'cta.secondary', v))
+            }
+            readOnly={readOnly}
             className='inline-flex items-center justify-center rounded-lg bg-[#473bf0]/8 px-6 py-4 font-bold text-[#473bf0] text-[17px] tracking-[-0.6px] hover:opacity-90'
           >
-            Learn more
-          </a>
+            <GhostInput
+              value={textOf(content, 'cta.secondary', 'Learn more')}
+              onCommit={(v) =>
+                onChange?.(withText(content, 'cta.secondary', v))
+              }
+              placeholder='Texto do botão'
+              readOnly={readOnly}
+              className='text-inherit'
+            />
+          </GhostLink>
           {content.ctaLabel || !readOnly ? (
             <GhostLink
               href={content.ctaHref}
@@ -314,7 +326,14 @@ export function SaasSubscriptionFooter({
       </div>
 
       <p className='border-[#161c2d]/10 border-t py-6 text-center text-[#161c2d]/40 text-xs'>
-        © {new Date().getFullYear()} — Todos os direitos reservados.
+        © {new Date().getFullYear()} —{' '}
+        <GhostInput
+          value={textOf(content, 'copyright', 'Todos os direitos reservados.')}
+          onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+          placeholder='Texto de copyright'
+          readOnly={readOnly}
+          className='field-sizing-content w-auto text-inherit'
+        />
       </p>
     </footer>
   )

@@ -12,6 +12,7 @@ import { GhostLink } from '@/components/ui/ghost-link'
 import { cn } from '@/lib/utils'
 import { ecommerceLogoFont } from '@/src/lib/landing-page-templates/ecommerce/fonts'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeaderContent = Extract<CrmLandingPageSectionContent, { type: 'HEADER' }>
@@ -31,9 +32,8 @@ export function headerDefaultContent(): HeaderContent {
 
 /**
  * O frame Figma não tem botão de CTA no header (diferente do Agency) — só
- * logo, nav e um ícone de carrinho com badge, ambos decorativos/estáticos
- * (o schema de HEADER não tem campo pra contagem do carrinho, e isso é só
- * chrome visual, não conteúdo editável).
+ * logo, nav e um ícone de carrinho com badge. The badge count has no typed
+ * field, so it lives in the `texts` override map (slot `cartCount`).
  */
 export function EcommerceHeader({
   content,
@@ -124,10 +124,17 @@ export function EcommerceHeader({
         ) : null}
       </nav>
 
-      <div className='relative shrink-0 text-[#161c2d]' aria-hidden>
+      <div className='relative shrink-0 text-[#161c2d]'>
         <SteelIcon icon={ShoppingCart01Icon} strokeWidth={2} size={20} />
         <span className='-top-2 -right-2 absolute flex size-[18px] items-center justify-center rounded-full bg-[#473bf0] font-bold text-[10px] text-white'>
-          2
+          <GhostInput
+            value={textOf(content, 'cartCount', '2')}
+            onCommit={(v) => onChange?.(withText(content, 'cartCount', v))}
+            readOnly={readOnly}
+            maxLength={3}
+            aria-label='Quantidade no carrinho'
+            className='mx-0 px-0 text-center'
+          />
         </span>
       </div>
     </header>
