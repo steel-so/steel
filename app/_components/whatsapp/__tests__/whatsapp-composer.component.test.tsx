@@ -746,6 +746,35 @@ describe('<WhatsappComposer /> quick replies with buttons', () => {
     expect(screen.queryByText(/Mensagem rápida com botões/)).toBeNull()
   })
 
+  it('explains the Meta length limit for buttons', async () => {
+    setupButtons([
+      {
+        method: 'POST',
+        match: QUICK_REPLY_SEND,
+        handler: () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              statusCode: 422,
+              message: 'unsupported',
+              error: { code: 'WHATSAPP_BUTTONS_UNSUPPORTED' },
+            }),
+            { status: 422, headers: { 'content-type': 'application/json' } },
+          ),
+      },
+    ])
+    renderComposer()
+
+    fireEvent.change(textarea(), { target: { value: '/pesquisa' } })
+    await screen.findByRole('listbox')
+    fireEvent.click(sendButton())
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.stringContaining('mais de 1024 caracteres'),
+      ),
+    )
+  })
+
   it('keeps the staged reply when the send fails', async () => {
     setupButtons([
       { method: 'POST', match: QUICK_REPLY_SEND, status: 422, error: 'x' },

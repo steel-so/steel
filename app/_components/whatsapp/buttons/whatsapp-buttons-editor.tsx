@@ -668,11 +668,15 @@ function WorkflowPicker({
       </PickerEmpty>
     )
   }
-  const list = (workflows.data ?? []).filter((workflow) => !workflow.deletedAt)
+  // Only active workflows run on a click (the trigger must be "launch
+  // manually", which the list endpoint does not expose — hence the hint).
+  const list = (workflows.data ?? []).filter(
+    (workflow) => !workflow.deletedAt && workflow.status === 'ACTIVE',
+  )
   if (list.length === 0) {
     return (
       <PickerEmpty>
-        Nenhum workflow no CRM. Crie um em CRM › Workflows.
+        Nenhum workflow ativo no CRM. Ative um em CRM › Workflows.
       </PickerEmpty>
     )
   }
@@ -684,15 +688,13 @@ function WorkflowPicker({
         placeholder='Escolha o workflow'
         options={list.map((workflow) => ({
           value: workflow.id,
-          label:
-            workflow.status === 'ACTIVE'
-              ? workflow.name
-              : `${workflow.name} (inativo)`,
+          label: workflow.name,
         }))}
         onChange={onChange}
       />
       <p className='text-muted-foreground text-xs'>
-        O workflow precisa estar ativo e usar o gatilho “Iniciar manualmente”.
+        Use um workflow com o gatilho “Iniciar manualmente”: o clique entra como
+        dados de entrada.
       </p>
     </div>
   )

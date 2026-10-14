@@ -303,7 +303,7 @@ describe('<WhatsappButtonsEditor />', () => {
     expect(await screen.findByText(/Nenhuma equipe criada ainda/)).toBeTruthy()
   })
 
-  it('lists CRM workflows, flags inactive ones and hides deleted ones', async () => {
+  it('lists only active CRM workflows', async () => {
     const spy = vi.fn()
     mockFetch([
       {
@@ -321,7 +321,7 @@ describe('<WhatsappButtonsEditor />', () => {
     const trigger = await screen.findByLabelText('Workflow')
     fireEvent.click(trigger)
     const listbox = await screen.findByRole('listbox')
-    expect(within(listbox).getByText('Rascunho (inativo)')).toBeTruthy()
+    expect(within(listbox).queryByText('Rascunho')).toBeNull()
     expect(within(listbox).queryByText('Antigo')).toBeNull()
     const option = within(listbox).getByRole('option', {
       name: 'Qualificar lead',
@@ -350,7 +350,7 @@ describe('<WhatsappButtonsEditor />', () => {
     mockFetch([{ match: `${API}/crm/workflows`, data: [] }])
     renderWithQuery(<Harness initial={[replyButton]} />)
     await addAction(1, /Iniciar workflow do CRM/)
-    expect(await screen.findByText(/Nenhum workflow no CRM/)).toBeTruthy()
+    expect(await screen.findByText(/Nenhum workflow ativo no CRM/)).toBeTruthy()
   })
 
   it('locks labels, types and links of an approved template', () => {

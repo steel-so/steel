@@ -56,6 +56,7 @@ import {
 } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
+import { isApiErrorCode } from '@/src/hooks/_fetch'
 import { useUser } from '@/src/hooks/use-user'
 import { useWhatsAppContacts } from '@/src/hooks/use-whatsapp-contacts'
 import { useUploadWhatsAppMedia } from '@/src/hooks/use-whatsapp-media-upload'
@@ -295,6 +296,12 @@ export function WhatsappComposer({
       setStagedQuickReply(null)
       setText('')
     } catch (error) {
+      if (isApiErrorCode(error, 'WHATSAPP_BUTTONS_UNSUPPORTED')) {
+        notify.error(
+          'A Meta não aceita botões em mensagens com mais de 1024 caracteres. Encurte o texto da mensagem rápida para enviar com botões.',
+        )
+        return
+      }
       notify.error(error, 'Erro ao enviar mensagem rápida')
     }
   }
