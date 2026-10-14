@@ -120,6 +120,14 @@ const sendQuickReply = (variables?: Record<string, string>) =>
   })
 
 describe('WhatsAppQuickReplyService.send()', () => {
+  it('answers 404 for a conversation hidden by the Equipes rule', async () => {
+    conversationRepo.findById.mockResolvedValueOnce(
+      ok({ ...conversation, assignedUserId: 'someone-else' }),
+    )
+    expectErr(await sendQuickReply(), 'WHATSAPP_CONVERSATION_NOT_FOUND')
+    expect(send.text).not.toHaveBeenCalled()
+  })
+
   it('renders the variables and sends plain text without buttons', async () => {
     const dto = expectOk(await sendQuickReply({ codigo: '#42' }))
 

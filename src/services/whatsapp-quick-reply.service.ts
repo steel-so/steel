@@ -4,7 +4,6 @@ import {
   whatsappButtonsUnsupported,
   whatsappConnectionNotFound,
   whatsappConversationAiHandling,
-  whatsappConversationNotFound,
   whatsappQuickReplyNotFound,
 } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -47,6 +46,7 @@ import type {
 } from '@/types/whatsapp-message'
 import type { WhatsAppQuickReplyDTO } from '@/types/whatsapp-quick-reply'
 import { assertModuleMember } from './authz'
+import { loadConversationForViewer } from './whatsapp-conversation-scope.service'
 
 const TOKEN_PATTERN = /\{(\w+)\}/g
 
@@ -366,12 +366,14 @@ export const WhatsAppQuickReplyService = {
     )
     if (!membership.ok) return membership
 
-    const conversation = await WhatsAppConversationRepository.findById(
-      conversationId,
+    // Equipes: a conversation the actor cannot see answers 404.
+    const visible = await loadConversationForViewer(
+      { userId: actorId, role: membership.value.role },
       workspaceId,
+      conversationId,
     )
-    if (!conversation.ok) return conversation
-    if (!conversation.value) return err(whatsappConversationNotFound())
+    if (!visible.ok) return visible
+    const conversation = { value: visible.value.conversation }
     if (conversation.value.aiActive) {
       return err(whatsappConversationAiHandling())
     }
