@@ -3,6 +3,10 @@ import { logger } from '@/lib/axiom/logger'
 import { NEXT_PUBLIC_URL } from '@/lib/env/env'
 import { sendWhatsAppSentimentAlertEmail } from '@/src/lib/mail/workspace/send-whatsapp-sentiment-alert'
 import { ok, type Result } from '@/src/lib/result'
+import {
+  canSeeConversation,
+  scopeFromSnapshot,
+} from '@/src/lib/whatsapp/conversation-scope'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -11,6 +15,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { isPrivilegedRole } from './authz'
 import { NotificationService } from './notification.service'
+import { loadWhatsAppTeamSnapshot } from './whatsapp-conversation-scope.service'
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -83,7 +88,7 @@ export const WhatsAppSentimentAlertService = {
     )
     if (!members.ok) return members
     const configured = new Set(rule.sentimentAlertRecipientIds)
-    const recipients = members.value.filter((member) =>
+    const candidates = members.value.filter((member) =>
       configured.size > 0
         ? configured.has(member.userId)
         : isPrivilegedRole(member.role),
@@ -94,6 +99,21 @@ export const WhatsAppSentimentAlertService = {
     const shouldAssign =
       supervisor !== undefined && !conversation.value.assignedUserId
     const assignedToId = shouldAssign && supervisor ? supervisor.userId : null
+
+    // Equipes: someone who cannot see the conversation is never told about
+    // it (the notice carries the contact name and a link).
+    const snapshot = await loadWhatsAppTeamSnapshot(input.workspaceId)
+    if (!snapshot.ok) return snapshot
+    const target = {
+      assignedUserId: assignedToId ?? conversation.value.assignedUserId,
+      teamId: conversation.value.teamId,
+    }
+    const recipients = candidates.filter((member) =>
+      canSeeConversation(
+        scopeFromSnapshot(member.userId, member.role, snapshot.value),
+        target,
+      ),
+    )
     if (recipients.length === 0 && !shouldAssign) {
       return ok({ alerted: false, reason: 'no_recipients' })
     }

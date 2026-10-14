@@ -30,6 +30,27 @@ vi.mock('@/src/lib/search/index-hooks', () => ({
   removeSearchDocument: vi.fn(async () => undefined),
 }))
 
+// Equipes (Comunicação): the conversation visibility reads the team snapshot
+// through Redis. Unit default = cache miss + a workspace without teams;
+// `whatsapp-team*.test.ts` drive these mocks to exercise the rule.
+vi.mock('@/src/cache/whatsapp-team.cache', () => ({
+  WhatsAppTeamSnapshotCache: {
+    get: vi.fn(async () => null),
+    set: vi.fn(async () => undefined),
+    invalidate: vi.fn(async () => undefined),
+  },
+}))
+vi.mock('@/src/repositories/whatsapp-team.repository', () => ({
+  WhatsAppTeamRepository: {
+    listByWorkspace: vi.fn(async () => ok([])),
+    findById: vi.fn(async () => ok(null)),
+    listMembershipSnapshot: vi.fn(async () => ok([])),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(async () => ok(undefined)),
+  },
+}))
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.clearAllMocks()

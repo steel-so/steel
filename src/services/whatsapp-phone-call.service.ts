@@ -3,21 +3,17 @@ import type { WhatsAppPhoneCall, WhatsAppPhoneCallStatus } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL, PABX_CALLBACK_URL } from '@/lib/env/server'
-import {
-  pabxCallbackInvalid,
-  pabxExtensionRequired,
-  whatsappConversationNotFound,
-} from '@/src/errors'
+import { pabxCallbackInvalid, pabxExtensionRequired } from '@/src/errors'
 import { placePabxCall } from '@/src/lib/pabx/click-to-call'
 import { err, ok, type Result } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { toWhatsAppPhoneCallDTO } from '@/src/mappers/whatsapp-phone-call.mapper'
 import { UserRepository } from '@/src/repositories/user.repository'
-import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppPhoneCallRepository } from '@/src/repositories/whatsapp-phone-call.repository'
 import type { PabxCallWebhookDTO } from '@/src/schemas/whatsapp-phone-call.schema'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
 import { assertModuleMember } from './authz'
+import { loadConversationForViewer } from './whatsapp-conversation-scope.service'
 
 const FINAL_STATUSES: ReadonlySet<WhatsAppPhoneCallStatus> = new Set([
   'COMPLETED',
@@ -106,12 +102,13 @@ export const WhatsAppPhoneCallService = {
     )
     if (!membership.ok) return membership
 
-    const conversation = await WhatsAppConversationRepository.findById(
-      conversationId,
+    const visible = await loadConversationForViewer(
+      { userId: actorId, role: membership.value.role },
       workspaceId,
+      conversationId,
     )
-    if (!conversation.ok) return conversation
-    if (!conversation.value) return err(whatsappConversationNotFound())
+    if (!visible.ok) return visible
+    const { contact } = visible.value.conversation
 
     const actor = await UserRepository.findById(actorId)
     if (!actor.ok) return actor
@@ -125,7 +122,7 @@ export const WhatsAppPhoneCallService = {
       userId: actorId,
       deviceId: pabxDeviceId,
       extension: pabxExtension,
-      destination: conversation.value.contact.waId,
+      destination: contact.waId,
       callbackTokenHash: hashToken(callbackToken),
     })
     if (!created.ok) return created
@@ -133,7 +130,7 @@ export const WhatsAppPhoneCallService = {
     const queued = await placePabxCall({
       deviceId: pabxDeviceId,
       extension: pabxExtension,
-      destination: conversation.value.contact.waId,
+      destination: contact.waId,
       callbackUrl: callbackUrl(),
       callbackToken,
     })
@@ -186,6 +183,13 @@ export const WhatsAppPhoneCallService = {
       { resource: 'conversations', action: 'VIEW' },
     )
     if (!membership.ok) return membership
+
+    const visible = await loadConversationForViewer(
+      { userId: actorId, role: membership.value.role },
+      workspaceId,
+      conversationId,
+    )
+    if (!visible.ok) return visible
 
     const call = await WhatsAppPhoneCallRepository.findLatestByConversation(
       conversationId,

@@ -16,6 +16,20 @@ vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
+vi.mock('@/src/repositories/whatsapp-conversation-event.repository', () => ({
+  WhatsAppConversationEventRepository: {
+    create: vi.fn(async () => ({ ok: true, value: { id: 'evt1' } })),
+    listByConversation: vi.fn(async () => ({ ok: true, value: [] })),
+  },
+}))
+vi.mock('@/src/repositories/user.repository', () => ({
+  UserRepository: {
+    findById: vi.fn(async (id: string) => ({
+      ok: true,
+      value: { id, name: 'Bruno Agente' },
+    })),
+  },
+}))
 vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
 }))
@@ -51,9 +65,11 @@ describe('WhatsAppConversationService', () => {
         connectionId: 'conn1',
       })
 
+      // A member outside any team is scoped (Equipes).
       expect(mockedConversationRepo.listByWorkspace).toHaveBeenCalledWith(
         'ws1',
         { connectionId: 'conn1' },
+        expect.objectContaining({ userId: 'u1' }),
       )
     })
 
@@ -69,6 +85,7 @@ describe('WhatsAppConversationService', () => {
       expect(mockedConversationRepo.listByWorkspace).toHaveBeenCalledWith(
         'ws1',
         {},
+        expect.objectContaining({ userId: 'u1' }),
       )
     })
   })
@@ -337,7 +354,7 @@ describe('WhatsAppConversationService', () => {
   describe('assign()', () => {
     it('should assign the conversation to a valid workspace member', async () => {
       mockedMembershipRepo.findByUserAndWorkspace
-        .mockResolvedValueOnce(ok(createFakeMembership({ role: 'MEMBER' })))
+        .mockResolvedValueOnce(ok(createFakeMembership({ role: 'ADMIN' })))
         .mockResolvedValueOnce(
           ok(createFakeMembership({ userId: 'u2', role: 'MEMBER' })),
         )
@@ -363,7 +380,7 @@ describe('WhatsAppConversationService', () => {
 
     it('should reject assigning to a user outside the workspace', async () => {
       mockedMembershipRepo.findByUserAndWorkspace
-        .mockResolvedValueOnce(ok(createFakeMembership({ role: 'MEMBER' })))
+        .mockResolvedValueOnce(ok(createFakeMembership({ role: 'ADMIN' })))
         .mockResolvedValueOnce(ok(null))
       const conversation = createFakeWhatsAppConversationWithPreview({
         id: 'conv1',
@@ -383,7 +400,7 @@ describe('WhatsAppConversationService', () => {
 
     it('should allow unassigning by passing null', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
-        ok(createFakeMembership({ role: 'MEMBER' })),
+        ok(createFakeMembership({ role: 'ADMIN' })),
       )
       const conversation = createFakeWhatsAppConversationWithPreview({
         id: 'conv1',
@@ -401,7 +418,8 @@ describe('WhatsAppConversationService', () => {
       expectOk(result)
       expect(mockedConversationRepo.update).toHaveBeenCalledWith('conv1', {
         assignedUserId: null,
-        status: 'IN_PROGRESS',
+        // Back to the queue.
+        status: 'NEW',
       })
     })
   })
@@ -602,7 +620,7 @@ describe('WhatsAppConversationService.assign() · notice', () => {
 
   function arrange(currentAssignee: string | null) {
     mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
-      ok(createFakeMembership({ role: 'MEMBER' })),
+      ok(createFakeMembership({ role: 'ADMIN' })),
     )
     const conversation = createFakeWhatsAppConversationWithPreview({
       id: 'conv1',

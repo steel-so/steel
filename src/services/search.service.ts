@@ -1,4 +1,4 @@
-import type { ModuleKind } from '@prisma/client'
+import type { ModuleKind, Role } from '@prisma/client'
 import { logger } from '@/lib/axiom/logger'
 import { can } from '@/src/lib/permissions'
 import { ok, type Result } from '@/src/lib/result'
@@ -10,9 +10,11 @@ import {
 } from '@/src/lib/search/search-entities'
 import { parseSearchQuery } from '@/src/lib/search/search-query'
 import { rankSearchHits } from '@/src/lib/search/search-ranking'
+import { canSeeConversation } from '@/src/lib/whatsapp/conversation-scope'
 import { toSearchResultDTO } from '@/src/mappers/search-document.mapper'
 import { SearchDocumentRepository } from '@/src/repositories/search-document.repository'
 import { SearchSourceRepository } from '@/src/repositories/search-source.repository'
+import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import {
@@ -22,6 +24,7 @@ import {
 import type { SearchResponseDTO } from '@/types/search'
 import { assertMember } from './authz'
 import { SdAccess } from './sd-access'
+import { resolveConversationScope } from './whatsapp-conversation-scope.service'
 
 /**
  * Global search (Ctrl+K). Authorization is decided here, per entity type,
@@ -42,6 +45,8 @@ export interface SearchAccess {
   types: SearchEntityType[]
   isSdAgent: boolean
   slug: string
+  /** Workspace role — the Comunicação conversation scope (Equipes). */
+  role: Role
 }
 
 /** Fetched before the TypeScript blend; enough room for the boosts. */
@@ -93,7 +98,12 @@ export const SearchService = {
       return permissions !== null && can(permissions, meta.resource, 'VIEW')
     })
 
-    return ok({ types, isSdAgent, slug: workspace.value.slug })
+    return ok({
+      types,
+      isSdAgent,
+      slug: workspace.value.slug,
+      role: membership.value.role,
+    })
   },
 
   async search(
@@ -136,9 +146,17 @@ export const SearchService = {
     )
     if (!visible.ok) return visible
 
+    const allowed = await SearchService.dropUnviewableConversations(
+      actorId,
+      workspaceId,
+      access.value.role,
+      visible.value,
+    )
+    if (!allowed.ok) return allowed
+
     const now = new Date()
     const ranked = rankSearchHits(
-      visible.value.map((hit) => ({
+      allowed.value.map((hit) => ({
         ...hit,
         signals: {
           exact: hit.exact,
@@ -205,6 +223,42 @@ export const SearchService = {
     return ok(
       hits.filter(
         (h) => h.entityType !== 'sd-ticket' || allowed.has(h.entityId),
+      ),
+    )
+  },
+  /**
+   * Equipes gate for Comunicação conversations: a scoped viewer only finds
+   * the conversations they can open (checked against the live assignee and
+   * team, never the index).
+   */
+  async dropUnviewableConversations(
+    actorId: string,
+    workspaceId: string,
+    role: Role,
+    hits: SearchDocumentHit[],
+  ): Promise<Result<SearchDocumentHit[]>> {
+    const ids = hits
+      .filter((h) => h.entityType === 'zap-conversation')
+      .map((h) => h.entityId)
+    if (ids.length === 0) return ok(hits)
+
+    const scope = await resolveConversationScope(actorId, workspaceId, role)
+    if (!scope.ok) return scope
+    if (scope.value.mode === 'ALL') return ok(hits)
+
+    const rows = await WhatsAppConversationRepository.listVisibilityTargets(
+      workspaceId,
+      ids,
+    )
+    if (!rows.ok) return rows
+    const allowed = new Set(
+      rows.value
+        .filter((row) => canSeeConversation(scope.value, row))
+        .map((row) => row.id),
+    )
+    return ok(
+      hits.filter(
+        (h) => h.entityType !== 'zap-conversation' || allowed.has(h.entityId),
       ),
     )
   },
