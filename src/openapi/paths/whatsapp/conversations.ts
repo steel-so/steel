@@ -140,6 +140,10 @@ export const conversationRoutes: RouteConfig[] = [
       ...permErrors('conversations', 'CREATE'),
       'WHATSAPP_CONTACT_NOT_FOUND',
       'WHATSAPP_CONNECTION_NOT_FOUND',
+      {
+        code: 'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+        when: 'Conversa nova com o limite mensal de conversas do workspace atingido (reaproveitar a ativa não conta)',
+      },
     ],
   },
   {
@@ -342,6 +346,10 @@ export const conversationRoutes: RouteConfig[] = [
       ...permErrors('conversations', 'EDIT'),
       'WHATSAPP_CONVERSATION_NOT_FOUND',
       'WHATSAPP_CONVERSATION_NOT_CLOSED',
+      {
+        code: 'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+        when: 'O limite mensal de conversas do workspace foi atingido',
+      },
     ],
   },
   {

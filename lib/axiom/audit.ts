@@ -33,6 +33,7 @@ export type AuditEntity =
   | 'whatsapp_template'
   | 'whatsapp_ai_config'
   | 'whatsapp_settings'
+  | 'whatsapp_usage_limits'
   | 'notification'
   | 'whatsapp_ai_knowledge_document'
   | 'whatsapp_group'

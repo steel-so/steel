@@ -109,6 +109,21 @@ export async function workspaceOwnerIds(
   return ids.value
 }
 
+/** Every member of the workspace; empty (and logged) on failure. */
+export async function workspaceMemberIds(
+  workspaceId: string,
+): Promise<string[]> {
+  const ids = await NotificationRecipientRepository.listMemberIds(workspaceId)
+  if (!ids.ok) {
+    logger.warn(
+      'notifications.emit.members_lookup_failed',
+      logFields({ component: 'NotificationEmitter', workspaceId }),
+    )
+    return []
+  }
+  return ids.value
+}
+
 function logEmitFailure(input: EmitNotificationInput, reason: string) {
   logger.warn(
     'notifications.emit.failed',

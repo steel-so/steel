@@ -1,16 +1,49 @@
 import { z } from 'zod'
 import { UpdateWhatsAppSettingsSchema } from '@/src/schemas/whatsapp-settings.schema'
+import { UpdateWhatsAppUsageLimitsSchema } from '@/src/schemas/whatsapp-usage.schema'
 import type { RouteConfig } from '../../registry'
 import { MediaUrlDTO } from '../../schemas/core'
 import {
   WhatsAppAssignableMemberDTO,
   WhatsAppSettingsDTO,
+  WhatsAppUsageDTO,
 } from '../../schemas/whatsapp'
 import { PRIVILEGED, PRIVILEGED_ERRORS, perm, permErrors } from './shared'
 
 const TAG = 'Comunicação · Configurações' as const
 
 export const settingsRoutes: RouteConfig[] = [
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/usage',
+    tags: [TAG],
+    summary: 'Consumo e limites mensais',
+    description:
+      'Conversas abertas/reabertas e mensagens enviadas no mês corrente (America/Sao_Paulo), com os limites mensais do workspace. Qualquer membro do workspace — todos recebem os avisos de 50%, 80% e 100% no inbox.',
+    responses: {
+      200: { description: 'Consumo do mês.', schema: WhatsAppUsageDTO },
+    },
+    errors: [
+      { code: 'FORBIDDEN', when: 'Usuário não é membro do workspace' },
+      'WORKSPACE_SUSPENDED',
+    ],
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/whatsapp/usage',
+    tags: [TAG],
+    summary: 'Definir limites mensais',
+    description:
+      'Upsert parcial (omitido = mantém; `null` = ilimitado, o padrão). Ao atingir 100%, envios (`WHATSAPP_MESSAGE_LIMIT_REACHED`) e conversas iniciadas ou reabertas pela equipe (`WHATSAPP_CONVERSATION_LIMIT_REACHED`) são recusados com 402 até virar o mês; mensagens e conversas recebidas continuam chegando. Vale só para as conexões do módulo Comunicação (não para o WhatsApp do ServiceDesk). Auditado. Restrito a OWNER/ADMIN do workspace.',
+    body: UpdateWhatsAppUsageLimitsSchema,
+    responses: {
+      200: { description: 'Limites salvos.', schema: WhatsAppUsageDTO },
+    },
+    errors: [
+      { code: 'FORBIDDEN', when: 'Não é membro ou não é OWNER/ADMIN' },
+      'WORKSPACE_SUSPENDED',
+    ],
+  },
   {
     method: 'get',
     path: '/workspaces/{id}/whatsapp/settings',

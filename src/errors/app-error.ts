@@ -725,6 +725,26 @@ export const aiQuotaExceeded = (usedUsd: number, quotaUsd: number): AppError =>
     { usedUsd, quotaUsd },
   )
 
+export const whatsappConversationLimitReached = (
+  used: number,
+  limit: number,
+): AppError =>
+  appError(
+    'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+    `O limite mensal de conversas da Comunicação foi atingido (${used.toLocaleString('pt-BR')} de ${limit.toLocaleString('pt-BR')}). Conversas recebidas continuam chegando; para iniciar novas, peça a um administrador para ajustar o limite em Ajustes > Comunicação ou aguarde o próximo mês.`,
+    { used, limit },
+  )
+
+export const whatsappMessageLimitReached = (
+  used: number,
+  limit: number,
+): AppError =>
+  appError(
+    'WHATSAPP_MESSAGE_LIMIT_REACHED',
+    `O limite mensal de mensagens da Comunicação foi atingido (${used.toLocaleString('pt-BR')} de ${limit.toLocaleString('pt-BR')}). Mensagens recebidas continuam chegando; para enviar, peça a um administrador para ajustar o limite em Ajustes > Comunicação ou aguarde o próximo mês.`,
+    { used, limit },
+  )
+
 export const aiModelNotEnabled = (): AppError =>
   appError(
     'AI_MODEL_NOT_ENABLED',

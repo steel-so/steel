@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../notification-emitter', () => ({
   emitNotification: vi.fn(),
   workspaceAdminIds: vi.fn(),
+  workspaceMemberIds: vi.fn(),
   workspaceOwnerIds: vi.fn(),
 }))
 
 import {
   emitNotification,
   workspaceAdminIds,
+  workspaceMemberIds,
   workspaceOwnerIds,
 } from '../notification-emitter'
 import {
@@ -18,6 +20,7 @@ import {
   notifyDataExportReady,
   notifyMemberJoined,
   notifyTrialEnded,
+  notifyWhatsAppUsage,
 } from '../platform-notifications'
 
 const mockedEmit = vi.mocked(emitNotification)
@@ -31,6 +34,7 @@ beforeEach(() => {
   mockedEmit.mockResolvedValue(1)
   vi.mocked(workspaceAdminIds).mockResolvedValue(['o1', 'a1'])
   vi.mocked(workspaceOwnerIds).mockResolvedValue(['o1'])
+  vi.mocked(workspaceMemberIds).mockResolvedValue(['o1', 'a1', 'm1'])
 })
 
 describe('platform notifications', () => {
@@ -150,6 +154,60 @@ describe('platform notifications', () => {
         kind: 'AI_QUOTA_EXCEEDED',
         title: 'A cota mensal de IA acabou',
         dedupeKey: 'ai-quota:ws1:2026-10:exceeded',
+      }),
+    )
+  })
+
+  it('WhatsApp usage: every member, once per month per metric and threshold', async () => {
+    await notifyWhatsAppUsage({
+      workspaceId: 'ws1',
+      metric: 'messages',
+      threshold: 50,
+      period: '2026-10',
+      used: 5000,
+      limit: 10000,
+    })
+    expect(lastCall()).toEqual({
+      workspaceId: 'ws1',
+      recipients: ['o1', 'a1', 'm1'],
+      kind: 'WHATSAPP_USAGE_WARNING',
+      title: 'Mensagens do WhatsApp: 50% do limite mensal',
+      body: '5.000 de 10.000 mensagens enviadas neste mês.',
+      path: '/settings/communication',
+      dedupeKey: 'whatsapp-usage:ws1:2026-10:messages:50',
+    })
+
+    await notifyWhatsAppUsage({
+      workspaceId: 'ws1',
+      metric: 'conversations',
+      threshold: 80,
+      period: '2026-10',
+      used: 800,
+      limit: 1000,
+    })
+    expect(lastCall()).toEqual(
+      expect.objectContaining({
+        kind: 'WHATSAPP_USAGE_WARNING',
+        title: 'Conversas do WhatsApp: 80% do limite mensal',
+        body: '800 de 1.000 conversas abertas neste mês.',
+        dedupeKey: 'whatsapp-usage:ws1:2026-10:conversations:80',
+      }),
+    )
+
+    await notifyWhatsAppUsage({
+      workspaceId: 'ws1',
+      metric: 'messages',
+      threshold: 100,
+      period: '2026-10',
+      used: 10000,
+      limit: 10000,
+    })
+    expect(lastCall()).toEqual(
+      expect.objectContaining({
+        kind: 'WHATSAPP_USAGE_LIMIT_REACHED',
+        title: 'Mensagens do WhatsApp: limite mensal atingido',
+        body: 'Os envios ficam bloqueados até o próximo mês ou até um administrador aumentar o limite. Mensagens recebidas continuam chegando.',
+        dedupeKey: 'whatsapp-usage:ws1:2026-10:messages:100',
       }),
     )
   })

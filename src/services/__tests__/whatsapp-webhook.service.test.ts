@@ -12,6 +12,12 @@ import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-me
 import { expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { ok } from '@/src/lib/result'
 
+vi.mock('@/src/services/whatsapp-usage.service', () => ({
+  WhatsAppUsageService: {
+    assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
+    record: vi.fn(async () => undefined),
+  },
+}))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -50,6 +56,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppUsageService } from '../whatsapp-usage.service'
 import { WhatsAppWebhookService } from '../whatsapp-webhook.service'
 
 const mockedAiConfigRepo = vi.mocked(WhatsAppAiConfigRepository)
@@ -60,6 +67,7 @@ const mockedGroupRepo = vi.mocked(WhatsAppGroupRepository)
 const mockedGroupMessageRepo = vi.mocked(WhatsAppGroupMessageRepository)
 const mockedMessageRepo = vi.mocked(WhatsAppMessageRepository)
 const mockedSend = vi.mocked(WhatsAppSend)
+const mockedUsage = vi.mocked(WhatsAppUsageService)
 
 const connection = createFakeWhatsAppConnection({
   id: 'conn1',
@@ -174,6 +182,8 @@ describe('WhatsAppWebhookService', () => {
         'generate-ai-reply',
         expect.objectContaining({ conversationId: 'closed1' }),
       )
+      // A reopened conversation is a new attendance: counts in the month.
+      expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
     })
 
     it('should reopen without AI when the workspace AI is off', async () => {
@@ -250,6 +260,9 @@ describe('WhatsAppWebhookService', () => {
       expect(mockedConversationRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ aiActive: true, status: 'NEW' }),
       )
+      // Inbound is counted but never blocked by the monthly limit.
+      expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
+      expect(mockedUsage.assertCanSend).not.toHaveBeenCalled()
       expect(aiReplyAdd).toHaveBeenCalledWith(
         'generate-ai-reply',
         expect.objectContaining({ conversationId: 'conv1' }),
@@ -300,10 +313,15 @@ describe('WhatsAppWebhookService', () => {
           'contact1',
           { at: expect.any(Date), source: 'KEYWORD' },
         )
-        expect(mockedSend.text).toHaveBeenCalledWith(connection, {
-          to: '5511988887777',
-          text: expect.stringMatching(/não receberá mais/),
-        })
+        // Compliance reply: always sent, never metered.
+        expect(mockedSend.text).toHaveBeenCalledWith(
+          connection,
+          {
+            to: '5511988887777',
+            text: expect.stringMatching(/não receberá mais/),
+          },
+          { unmetered: true },
+        )
         expect(mockedMessageRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({ direction: 'OUT', status: 'SENT' }),
         )
@@ -590,6 +608,34 @@ describe('WhatsAppWebhookService', () => {
           unreadCount: 0,
         }),
       )
+      expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
+    })
+
+    it('should not count ServiceDesk conversations in the Communication usage', async () => {
+      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+      mockedContactRepo.upsertByWaId.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1' })),
+      )
+      mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
+      const created = createFakeWhatsAppConversationWithPreview({ id: 'conv1' })
+      mockedConversationRepo.create.mockResolvedValue(ok(created))
+      mockedConversationRepo.findById.mockResolvedValue(ok(created))
+      mockedMessageRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppMessage({ conversationId: 'conv1' })),
+      )
+
+      await WhatsAppWebhookService.ingestOutboundDeviceMessage(
+        baseInbound({
+          connection: createFakeWhatsAppConnection({
+            id: 'sd-conn',
+            workspaceId: 'ws1',
+            module: 'SERVICE_DESK',
+          }),
+        }),
+      )
+
+      expect(mockedConversationRepo.create).toHaveBeenCalled()
+      expect(mockedUsage.record).not.toHaveBeenCalled()
     })
   })
 

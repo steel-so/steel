@@ -15,6 +15,7 @@ import { NotificationService } from '../notification.service'
 import {
   emitNotification,
   workspaceAdminIds,
+  workspaceMemberIds,
   workspaceOwnerIds,
 } from '../notification-emitter'
 
@@ -126,17 +127,21 @@ describe('workspace audiences', () => {
   it('should list admins and owners', async () => {
     mockedRecipients.listPrivilegedIds.mockResolvedValue(ok(['o1', 'a1']))
     mockedRecipients.listOwnerIds.mockResolvedValue(ok(['o1']))
+    mockedRecipients.listMemberIds.mockResolvedValue(ok(['o1', 'a1', 'm1']))
 
     expect(await workspaceAdminIds('ws1')).toEqual(['o1', 'a1'])
     expect(await workspaceOwnerIds('ws1')).toEqual(['o1'])
+    expect(await workspaceMemberIds('ws1')).toEqual(['o1', 'a1', 'm1'])
   })
 
   it('should degrade to nobody on a lookup failure', async () => {
     mockedRecipients.listPrivilegedIds.mockResolvedValue(err(DB_ERROR))
     mockedRecipients.listOwnerIds.mockResolvedValue(err(DB_ERROR))
+    mockedRecipients.listMemberIds.mockResolvedValue(err(DB_ERROR))
 
     expect(await workspaceAdminIds('ws1')).toEqual([])
     expect(await workspaceOwnerIds('ws1')).toEqual([])
-    expect(mockedLogger.warn).toHaveBeenCalledTimes(2)
+    expect(await workspaceMemberIds('ws1')).toEqual([])
+    expect(mockedLogger.warn).toHaveBeenCalledTimes(3)
   })
 })

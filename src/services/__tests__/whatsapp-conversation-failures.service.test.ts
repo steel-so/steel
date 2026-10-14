@@ -13,6 +13,12 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import type { AppError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 
+vi.mock('@/src/services/whatsapp-usage.service', () => ({
+  WhatsAppUsageService: {
+    assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
+    record: vi.fn(async () => undefined),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')

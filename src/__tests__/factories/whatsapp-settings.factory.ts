@@ -16,6 +16,8 @@ export function createFakeWhatsAppSettings(
     sentimentAlertRecipientIds: [],
     sentimentAlertAssignToId: null,
     sentimentAlertCooldownHours: 6,
+    monthlyConversationLimit: null,
+    monthlyMessageLimit: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
