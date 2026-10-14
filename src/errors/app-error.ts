@@ -584,9 +584,9 @@ export const crmWorkflowWebhookInvalid = (): AppError =>
     'Webhook inválido ou workflow inativo',
   )
 
-export const crmLandingPageAiFailed = (): AppError =>
+export const crmTextAiFailed = (): AppError =>
   appError(
-    'CRM_LANDING_PAGE_AI_FAILED',
+    'CRM_TEXT_AI_FAILED',
     'A IA não conseguiu responder agora — tente de novo em instantes',
   )
 

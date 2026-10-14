@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,17 +27,18 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { GhostAiProvider } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import {
   isCrmSocialReconnectError,
   useCrmLinkedinOverview,
   useDeleteCrmLinkedinPost,
   usePublishCrmLinkedinPost,
 } from '@/src/hooks/use-crm-social-linkedin'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type { CrmLinkedinOverview } from '@/src/schemas/crm-social-linkedin.schema'
 
 const POST_MAX = 3000
@@ -165,6 +167,9 @@ function PostComposer({
   overview: CrmLinkedinOverview
 }) {
   const publish = usePublishCrmLinkedinPost(workspaceId)
+  const assistText = useCrmTextAi(workspaceId, 'SOCIAL', () => ({
+    platform: 'LinkedIn',
+  }))
   const deletePost = useDeleteCrmLinkedinPost(workspaceId)
   const [text, setText] = useState('')
   const [image, setImage] = useState<File | null>(null)
@@ -202,41 +207,44 @@ function PostComposer({
           Publicar no LinkedIn
         </h3>
         <Card className='p-4 sm:p-6'>
-          <form onSubmit={handleSubmit} className='flex flex-col gap-3'>
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder='O que você quer compartilhar?'
-              rows={6}
-              maxLength={POST_MAX}
-              className='resize-none'
-            />
-            <div className='space-y-1.5'>
-              <Label htmlFor='li-image'>Imagem (opcional)</Label>
-              <Input
-                id='li-image'
-                type='file'
-                accept='image/jpeg,image/png,image/webp,image/gif'
-                onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+          <GhostAiProvider assist={assistText}>
+            <form onSubmit={handleSubmit} className='flex flex-col gap-3'>
+              <AiTextarea
+                aiLabel='Texto do post'
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder='O que você quer compartilhar?'
+                rows={6}
+                maxLength={POST_MAX}
+                className='resize-none'
               />
-              <p className='text-muted-foreground text-xs'>
-                JPEG, PNG, WebP ou GIF, até 10 MB.
-              </p>
-            </div>
-            <div className='flex items-center justify-between'>
-              <span className='text-muted-foreground text-xs'>
-                {text.length}/{POST_MAX}
-              </span>
-              <Button
-                type='submit'
-                size='sm'
-                disabled={!text.trim() || publish.isPending}
-              >
-                <SteelIcon icon={Share01Icon} size={14} className='mr-1.5' />
-                {publish.isPending ? 'Publicando…' : 'Publicar'}
-              </Button>
-            </div>
-          </form>
+              <div className='space-y-1.5'>
+                <Label htmlFor='li-image'>Imagem (opcional)</Label>
+                <Input
+                  id='li-image'
+                  type='file'
+                  accept='image/jpeg,image/png,image/webp,image/gif'
+                  onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+                />
+                <p className='text-muted-foreground text-xs'>
+                  JPEG, PNG, WebP ou GIF, até 10 MB.
+                </p>
+              </div>
+              <div className='flex items-center justify-between'>
+                <span className='text-muted-foreground text-xs'>
+                  {text.length}/{POST_MAX}
+                </span>
+                <Button
+                  type='submit'
+                  size='sm'
+                  disabled={!text.trim() || publish.isPending}
+                >
+                  <SteelIcon icon={Share01Icon} size={14} className='mr-1.5' />
+                  {publish.isPending ? 'Publicando…' : 'Publicar'}
+                </Button>
+              </div>
+            </form>
+          </GhostAiProvider>
         </Card>
 
         {lastPostUrn && (

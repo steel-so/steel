@@ -1,7 +1,7 @@
 'use client'
 
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Textarea } from '@/components/ui/textarea'
 import type { CrmProposalSectionContent } from '@/src/schemas/crm-proposal.schema'
 
 export type CommercialTermsContent = Extract<
@@ -27,8 +27,9 @@ export function CommercialTermsEditor({
     <div className='flex flex-col gap-4'>
       <Field>
         <FieldLabel htmlFor='payment-terms'>Condições de pagamento</FieldLabel>
-        <Textarea
+        <AiTextarea
           id='payment-terms'
+          aiLabel='Condições de pagamento'
           rows={4}
           value={content.paymentTerms}
           onChange={(e) =>
@@ -38,8 +39,9 @@ export function CommercialTermsEditor({
       </Field>
       <Field>
         <FieldLabel htmlFor='delivery-terms'>Prazo de entrega</FieldLabel>
-        <Textarea
+        <AiTextarea
           id='delivery-terms'
+          aiLabel='Prazo de entrega'
           rows={3}
           value={content.deliveryTerms ?? ''}
           onChange={(e) =>
@@ -52,8 +54,9 @@ export function CommercialTermsEditor({
       </Field>
       <Field>
         <FieldLabel htmlFor='commercial-notes'>Observações</FieldLabel>
-        <Textarea
+        <AiTextarea
           id='commercial-notes'
+          aiLabel='Observações comerciais'
           rows={3}
           value={content.notes ?? ''}
           onChange={(e) =>

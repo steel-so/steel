@@ -1,8 +1,8 @@
 'use client'
 
 import { ImageUploadField } from '@/app/_components/crm/proposal/proposal-image-upload'
+import { AiInput } from '@/components/ui/ai-text-field'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import type { CrmProposalSectionContent } from '@/src/schemas/crm-proposal.schema'
 
 export type CoverContent = Extract<CrmProposalSectionContent, { type: 'COVER' }>
@@ -26,8 +26,9 @@ export function CoverEditor({
     <div className='flex flex-col gap-4'>
       <Field>
         <FieldLabel htmlFor='cover-title'>Título</FieldLabel>
-        <Input
+        <AiInput
           id='cover-title'
+          aiLabel='Título da capa'
           value={content.title}
           onChange={(e) => onChange({ ...content, title: e.target.value })}
           placeholder='Proposta Comercial'
@@ -39,8 +40,9 @@ export function CoverEditor({
       </Field>
       <Field>
         <FieldLabel htmlFor='cover-subtitle'>Subtítulo</FieldLabel>
-        <Input
+        <AiInput
           id='cover-subtitle'
+          aiLabel='Subtítulo da capa'
           value={content.subtitle ?? ''}
           onChange={(e) =>
             onChange({ ...content, subtitle: e.target.value || undefined })

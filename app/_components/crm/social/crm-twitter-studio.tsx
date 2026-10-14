@@ -10,6 +10,7 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +25,11 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { GhostAiProvider } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import {
   isCrmSocialReconnectError,
   useCrmTwitterOverview,
@@ -36,6 +37,7 @@ import {
   useDeleteCrmTweet,
   usePublishCrmTweet,
 } from '@/src/hooks/use-crm-social-twitter'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type { CrmTweet } from '@/src/schemas/crm-social-twitter.schema'
 
 const TWEET_MAX = 280
@@ -323,6 +325,9 @@ function TweetComposer({
   onImageChange: (f: File | undefined) => void
 }) {
   const publish = usePublishCrmTweet(workspaceId)
+  const assistText = useCrmTextAi(workspaceId, 'SOCIAL', () => ({
+    platform: 'X (Twitter)',
+  }))
 
   const remaining = TWEET_MAX - text.length
   const canSubmit =
@@ -359,50 +364,53 @@ function TweetComposer({
 
   return (
     <Card className='p-4 sm:p-6'>
-      <form className='space-y-4' onSubmit={handleSubmit}>
-        <div className='space-y-1.5'>
-          <div className='flex items-center justify-between'>
-            <Label htmlFor='tw-text'>Tweet</Label>
-            <span
-              className={`text-xs tabular-nums ${
-                remaining < 0 ? 'text-destructive' : 'text-muted-foreground'
-              }`}
-            >
-              {remaining}
-            </span>
+      <GhostAiProvider assist={assistText}>
+        <form className='space-y-4' onSubmit={handleSubmit}>
+          <div className='space-y-1.5'>
+            <div className='flex items-center justify-between'>
+              <Label htmlFor='tw-text'>Tweet</Label>
+              <span
+                className={`text-xs tabular-nums ${
+                  remaining < 0 ? 'text-destructive' : 'text-muted-foreground'
+                }`}
+              >
+                {remaining}
+              </span>
+            </div>
+            <AiTextarea
+              id='tw-text'
+              aiLabel='Texto do post'
+              name='text'
+              rows={5}
+              maxLength={TWEET_MAX}
+              placeholder='O que está acontecendo?'
+              value={text}
+              onChange={(e) => onTextChange(e.target.value)}
+            />
           </div>
-          <Textarea
-            id='tw-text'
-            name='text'
-            rows={5}
-            maxLength={TWEET_MAX}
-            placeholder='O que está acontecendo?'
-            value={text}
-            onChange={(e) => onTextChange(e.target.value)}
-          />
-        </div>
 
-        <div className='space-y-1.5'>
-          <Label htmlFor='tw-image'>Imagem (opcional)</Label>
-          <Input
-            id='tw-image'
-            name='image'
-            type='file'
-            accept='image/jpeg,image/png,image/webp,image/gif'
-            onChange={(e) => onImageChange(e.target.files?.[0])}
-          />
-          <p className='text-muted-foreground text-xs'>
-            JPEG, PNG, WebP ou GIF, até 10 MB. O upload de mídia depende do
-            nível de acesso do app no X.
-          </p>
-        </div>
+          <div className='space-y-1.5'>
+            <Label htmlFor='tw-image'>Imagem (opcional)</Label>
+            <Input
+              id='tw-image'
+              name='image'
+              type='file'
+              accept='image/jpeg,image/png,image/webp,image/gif'
+              onChange={(e) => onImageChange(e.target.files?.[0])}
+            />
+            <p className='text-muted-foreground text-xs'>
+              JPEG, PNG, WebP ou GIF, até 10 MB. O upload de mídia depende do
+              nível de acesso do app no X.
+            </p>
+          </div>
 
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={!canSubmit}>
-            {publish.isPending ? 'Publicando…' : 'Publicar'}
-          </Button>
-        </div>
-      </form>
+          <div className='flex justify-end'>
+            <Button type='submit' disabled={!canSubmit}>
+              {publish.isPending ? 'Publicando…' : 'Publicar'}
+            </Button>
+          </div>
+        </form>
+      </GhostAiProvider>
     </Card>
   )
 }

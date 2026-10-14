@@ -1,6 +1,6 @@
 'use client'
 
-import { Textarea } from '@/components/ui/textarea'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import type { CrmProposalSectionContent } from '@/src/schemas/crm-proposal.schema'
 
 export type TermsConditionsContent = Extract<
@@ -20,7 +20,8 @@ export function TermsConditionsEditor({
   onChange: (content: TermsConditionsContent) => void
 }) {
   return (
-    <Textarea
+    <AiTextarea
+      aiLabel='Termos e condições'
       rows={16}
       value={content.text}
       onChange={(e) => onChange({ ...content, text: e.target.value })}

@@ -4,9 +4,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { aiQuotaExceeded, featureNotEnabled } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 import {
-  type CrmLandingPageAiAssistDTO,
-  CrmLandingPageAiAssistSchema,
-} from '@/src/schemas/crm-landing-page-ai.schema'
+  type CrmTextAiAssistDTO,
+  CrmTextAiAssistSchema,
+} from '@/src/schemas/crm-text-ai.schema'
 
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/services/ai-usage.service')
@@ -16,10 +16,7 @@ import { logger } from '@/lib/axiom/logger'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { AiUsageService } from '@/src/services/ai-usage.service'
 import { assertFeature } from '@/src/services/feature-flag.service'
-import {
-  buildLandingPageAiSystem,
-  CrmLandingPageAiService,
-} from '../crm-landing-page-ai.service'
+import { buildTextAiSystem, CrmTextAiService } from '../crm-text-ai.service'
 
 const membership = vi.mocked(MembershipRepository)
 const ai = vi.mocked(AiUsageService)
@@ -40,14 +37,13 @@ function chat(text: string) {
 
 const provider = { id: 'anthropic' as const, chat: vi.fn() }
 
-function dto(
-  overrides: Partial<CrmLandingPageAiAssistDTO> = {},
-): CrmLandingPageAiAssistDTO {
-  return CrmLandingPageAiAssistSchema.parse({
+function dto(overrides: Partial<CrmTextAiAssistDTO> = {}): CrmTextAiAssistDTO {
+  return CrmTextAiAssistSchema.parse({
+    surface: 'LANDING_PAGE',
     text: 'Internet rápida pra sua empresa',
     messages: [{ role: 'user', content: 'Deixe mais persuasivo' }],
     field: { label: 'Título principal', maxLength: 60 },
-    page: { title: 'Fibra empresarial', section: 'Destaque' },
+    context: { title: 'Fibra empresarial', section: 'Destaque' },
     ...overrides,
   })
 }
@@ -81,42 +77,73 @@ beforeEach(() => {
   )
 })
 
-describe('buildLandingPageAiSystem()', () => {
+describe('buildTextAiSystem()', () => {
   it('describes the field, the page and the current text', () => {
-    const system = buildLandingPageAiSystem(dto())
+    const system = buildTextAiSystem(dto())
     expect(system).toContain('uma linha só')
     expect(system).toContain('no máximo 60 caracteres')
     expect(system).toContain('Campo: Título principal.')
-    expect(system).toContain('Seção da página: Destaque.')
-    expect(system).toContain('Título da página: Fibra empresarial.')
+    expect(system).toContain('Seção: Destaque.')
+    expect(system).toContain('Título: Fibra empresarial.')
     expect(system).toContain('Internet rápida pra sua empresa')
   })
 
   it('asks to write from scratch when the field is empty', () => {
-    const system = buildLandingPageAiSystem(
-      dto({ text: '', field: { multiline: true }, page: {} }),
+    const system = buildTextAiSystem(
+      dto({ text: '', field: { multiline: true }, context: {} }),
     )
     expect(system).toContain('O campo está vazio')
-    expect(system).toContain('um parágrafo')
+    expect(system).toContain('várias linhas')
     expect(system).not.toContain('Campo:')
     expect(system).not.toContain('no máximo')
   })
 })
 
-describe('CrmLandingPageAiService.assist()', () => {
+describe('buildTextAiSystem() per surface', () => {
+  it('writes proposals as a B2B document without inventing terms', () => {
+    const system = buildTextAiSystem(dto({ surface: 'DOCUMENT' }))
+    expect(system).toContain('propostas comerciais B2B')
+    expect(system).toContain('Não invente valores')
+  })
+
+  it('writes social copy for the given network', () => {
+    const system = buildTextAiSystem(
+      dto({ surface: 'SOCIAL', context: { platform: 'Instagram · Reels' } }),
+    )
+    expect(system).toContain('social media')
+    expect(system).toContain('Rede social: Instagram · Reels.')
+  })
+})
+
+describe('CrmTextAiService.assist()', () => {
+  it.each([
+    ['LANDING_PAGE', 'landing-pages', 'EDIT'],
+    ['DOCUMENT', 'documents', 'EDIT'],
+    ['SOCIAL', 'social', 'CREATE'],
+  ] as const)(
+    'requires the %s permission',
+    async (surface, resource, action) => {
+      membership.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      const authz = await import('@/src/services/authz')
+      const spy = vi.spyOn(authz, 'assertModuleMember')
+      await CrmTextAiService.assist(ACTOR, WS, dto({ surface }))
+      expect(spy).toHaveBeenCalledWith(ACTOR, WS, 'CRM', { resource, action })
+      spy.mockRestore()
+    },
+  )
+
   it('returns FORBIDDEN for a non-member', async () => {
     membership.findByUserAndWorkspace.mockResolvedValue(ok(null))
-    expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-      'FORBIDDEN',
-    )
+    expectErr(await CrmTextAiService.assist(ACTOR, WS, dto()), 'FORBIDDEN')
     expect(ai.prepare).not.toHaveBeenCalled()
   })
 
   it('respects the plan feature gate', async () => {
     feature.mockResolvedValue(err(featureNotEnabled()))
     expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
+      await CrmTextAiService.assist(ACTOR, WS, dto()),
       'FEATURE_NOT_ENABLED',
     )
     expect(feature).toHaveBeenCalledWith(WS, 'crm.aiAssistant')
@@ -126,16 +153,14 @@ describe('CrmLandingPageAiService.assist()', () => {
   it('propagates the AI quota error', async () => {
     ai.prepare.mockResolvedValue(err(aiQuotaExceeded(50, 50)))
     expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
+      await CrmTextAiService.assist(ACTOR, WS, dto()),
       'AI_QUOTA_EXCEEDED',
     )
     expect(provider.chat).not.toHaveBeenCalled()
   })
 
   it('answers with a suggestion and records the usage under CRM', async () => {
-    const reply = expectOk(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-    )
+    const reply = expectOk(await CrmTextAiService.assist(ACTOR, WS, dto()))
     expect(reply).toEqual({
       reply: 'Foquei no benefício principal.',
       suggestion: 'Fibra que não para a sua empresa',
@@ -149,14 +174,14 @@ describe('CrmLandingPageAiService.assist()', () => {
     })
     const request = provider.chat.mock.calls[0][0]
     expect(request.model).toBe('claude-x')
-    expect(request.jsonSchema.name).toBe('landing_page_copy')
+    expect(request.jsonSchema.name).toBe('crm_field_copy')
     expect(request.messages).toEqual([
       { role: 'user', content: 'Deixe mais persuasivo' },
     ])
   })
 
   it('passes the chat history through in order', async () => {
-    await CrmLandingPageAiService.assist(
+    await CrmTextAiService.assist(
       ACTOR,
       WS,
       dto({
@@ -183,9 +208,7 @@ describe('CrmLandingPageAiService.assist()', () => {
         }),
       ),
     )
-    const reply = expectOk(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-    )
+    const reply = expectOk(await CrmTextAiService.assist(ACTOR, WS, dto()))
     expect(reply.suggestion).not.toContain('\n')
     expect(reply.suggestion?.startsWith('Primeira linha segunda')).toBe(true)
     expect(reply.suggestion?.length).toBeLessThanOrEqual(60)
@@ -197,7 +220,7 @@ describe('CrmLandingPageAiService.assist()', () => {
       chat(JSON.stringify({ reply: 'Ok', suggestion: 'Linha 1\nLinha 2' })),
     )
     const reply = expectOk(
-      await CrmLandingPageAiService.assist(
+      await CrmTextAiService.assist(
         ACTOR,
         WS,
         dto({ field: { multiline: true } }),
@@ -215,9 +238,7 @@ describe('CrmLandingPageAiService.assist()', () => {
         }),
       ),
     )
-    const reply = expectOk(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-    )
+    const reply = expectOk(await CrmTextAiService.assist(ACTOR, WS, dto()))
     expect(reply).toEqual({
       reply: 'Títulos curtos convertem mais.',
       suggestion: null,
@@ -228,45 +249,43 @@ describe('CrmLandingPageAiService.assist()', () => {
     provider.chat.mockResolvedValue(
       chat(JSON.stringify({ reply: ' ', suggestion: 'Novo texto' })),
     )
-    const reply = expectOk(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-    )
+    const reply = expectOk(await CrmTextAiService.assist(ACTOR, WS, dto()))
     expect(reply.reply).toBe('Aqui está uma sugestão:')
   })
 
-  it('fails with CRM_LANDING_PAGE_AI_FAILED on invalid output', async () => {
+  it('fails with CRM_TEXT_AI_FAILED on invalid output', async () => {
     const warn = vi.spyOn(logger, 'warn')
     provider.chat.mockResolvedValue(chat('not json'))
     expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-      'CRM_LANDING_PAGE_AI_FAILED',
+      await CrmTextAiService.assist(ACTOR, WS, dto()),
+      'CRM_TEXT_AI_FAILED',
     )
     expect(warn).toHaveBeenCalledWith(
-      'crm_landing_page.ai_invalid_output',
+      'crm_text_ai.invalid_output',
       expect.anything(),
     )
   })
 
-  it('fails with CRM_LANDING_PAGE_AI_FAILED on an empty answer', async () => {
+  it('fails with CRM_TEXT_AI_FAILED on an empty answer', async () => {
     provider.chat.mockResolvedValue(
       chat(JSON.stringify({ reply: '', suggestion: '' })),
     )
     expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-      'CRM_LANDING_PAGE_AI_FAILED',
+      await CrmTextAiService.assist(ACTOR, WS, dto()),
+      'CRM_TEXT_AI_FAILED',
     )
   })
 
-  it('fails with CRM_LANDING_PAGE_AI_FAILED when the provider throws', async () => {
+  it('fails with CRM_TEXT_AI_FAILED when the provider throws', async () => {
     const error = vi.spyOn(logger, 'error')
     provider.chat.mockRejectedValue(new Error('boom'))
     expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-      'CRM_LANDING_PAGE_AI_FAILED',
+      await CrmTextAiService.assist(ACTOR, WS, dto()),
+      'CRM_TEXT_AI_FAILED',
     )
     expect(ai.record).not.toHaveBeenCalled()
     expect(error).toHaveBeenCalledWith(
-      'crm_landing_page.ai_provider_failed',
+      'crm_text_ai.provider_failed',
       expect.objectContaining({ message: 'boom' }),
     )
   })
@@ -275,19 +294,20 @@ describe('CrmLandingPageAiService.assist()', () => {
     const error = vi.spyOn(logger, 'error')
     provider.chat.mockRejectedValue('offline')
     expectErr(
-      await CrmLandingPageAiService.assist(ACTOR, WS, dto()),
-      'CRM_LANDING_PAGE_AI_FAILED',
+      await CrmTextAiService.assist(ACTOR, WS, dto()),
+      'CRM_TEXT_AI_FAILED',
     )
     expect(error).toHaveBeenCalledWith(
-      'crm_landing_page.ai_provider_failed',
+      'crm_text_ai.provider_failed',
       expect.objectContaining({ message: 'offline' }),
     )
   })
 })
 
-describe('CrmLandingPageAiAssistSchema', () => {
+describe('CrmTextAiAssistSchema', () => {
   it('requires the last turn to come from the user', () => {
-    const parsed = CrmLandingPageAiAssistSchema.safeParse({
+    const parsed = CrmTextAiAssistSchema.safeParse({
+      surface: 'SOCIAL',
       messages: [{ role: 'assistant', content: 'Oi' }],
     })
     expect(parsed.success).toBe(false)
@@ -295,18 +315,20 @@ describe('CrmLandingPageAiAssistSchema', () => {
 
   it('rejects an empty conversation', () => {
     expect(
-      CrmLandingPageAiAssistSchema.safeParse({ messages: [] }).success,
+      CrmTextAiAssistSchema.safeParse({ surface: 'SOCIAL', messages: [] })
+        .success,
     ).toBe(false)
   })
 
   it('defaults the text, field and page', () => {
-    const parsed = CrmLandingPageAiAssistSchema.parse({
+    const parsed = CrmTextAiAssistSchema.parse({
+      surface: 'DOCUMENT',
       messages: [{ role: 'user', content: 'Escreva um título' }],
     })
     expect(parsed).toMatchObject({
       text: '',
       field: { multiline: false },
-      page: {},
+      context: {},
     })
   })
 })

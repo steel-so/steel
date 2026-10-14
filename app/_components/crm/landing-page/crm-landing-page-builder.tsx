@@ -43,11 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  type GhostAiAssist,
-  GhostAiProvider,
-  GhostAiSection,
-} from '@/components/ui/ghost-ai'
+import { GhostAiProvider, GhostAiSection } from '@/components/ui/ghost-ai'
 import { GhostLinkTargetsProvider } from '@/components/ui/ghost-link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
@@ -55,10 +51,10 @@ import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
   useCrmLandingPage,
-  useCrmLandingPageAiAssist,
   useSetCrmLandingPagePublished,
   useUpdateCrmLandingPage,
 } from '@/src/hooks/use-crm-landing-page'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
 import type {
   CrmLandingPageDTO,
@@ -137,7 +133,6 @@ function CrmLandingPageBuilderInner({
   const router = useRouter()
   const updatePage = useUpdateCrmLandingPage(workspaceId, initial.id)
   const setPublished = useSetCrmLandingPagePublished(workspaceId, initial.id)
-  const aiAssist = useCrmLandingPageAiAssist(workspaceId)
 
   const [title, setTitle] = React.useState(initial.title)
   const [status, setStatus] = React.useState<CrmLandingPageStatusDTO>(
@@ -153,17 +148,7 @@ function CrmLandingPageBuilderInner({
       : ''
 
   const online = status === 'PUBLISHED'
-  const titleRef = React.useRef(title)
-  titleRef.current = title
-  const { mutateAsync: requestAi } = aiAssist
-  const assist = React.useCallback<GhostAiAssist>(
-    ({ section, ...request }) =>
-      requestAi({
-        ...request,
-        page: { title: titleRef.current.trim() || undefined, section },
-      }),
-    [requestAi],
-  )
+  const assist = useCrmTextAi(workspaceId, 'LANDING_PAGE', () => ({ title }))
   const linkTargets = React.useMemo(
     () => sectionAnchors(sections.filter((s) => s.enabled)),
     [sections],

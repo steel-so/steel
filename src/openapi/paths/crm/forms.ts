@@ -9,12 +9,10 @@ import {
   ReorderCrmLandingPagesSchema,
   UpdateCrmLandingPageSchema,
 } from '@/src/schemas/crm-landing-page.schema'
-import { CrmLandingPageAiAssistSchema } from '@/src/schemas/crm-landing-page-ai.schema'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import { MediaUrlDTO } from '../../schemas/core'
 import {
   CrmFormDTO,
-  CrmLandingPageAiReplyDTO,
   CrmLandingPageDTO,
   CrmLandingPageViewDTO,
 } from '../../schemas/crm/forms'
@@ -302,44 +300,6 @@ export const crmFormsRoutes: RouteConfig[] = [
     },
     responses: { 201: { description: 'Vídeo salvo.', schema: MediaUrlDTO } },
     errors: uploadErrors('25 MB', 'MP4 ou WebM'),
-  },
-  {
-    method: 'post',
-    path: '/workspaces/{id}/crm/landing-pages/ai',
-    tags: TAG,
-    summary: 'Ajustar texto de um campo com IA',
-    description: describe(
-      'Uma rodada do mini chat de IA de um campo de texto do construtor. Sem estado: o cliente envia o texto atual do campo e o histórico curto (até 12 mensagens, terminando no usuário) a cada rodada. Usa a IA do workspace (mesmo modelo do assistente do CRM) e consome a cota mensal de IA. Limite de taxa das mensagens de IA.',
-      crmAccess('landing-pages', 'EDIT'),
-    ),
-    body: CrmLandingPageAiAssistSchema,
-    responses: {
-      200: { description: 'Resposta da IA.', schema: CrmLandingPageAiReplyDTO },
-    },
-    errors: [
-      ...CRM_ERRORS,
-      {
-        code: 'FEATURE_NOT_ENABLED',
-        when: 'Feature `crm.aiAssistant` desligada para o workspace',
-      },
-      {
-        code: 'AI_QUOTA_EXCEEDED',
-        when: 'Cota mensal de IA do workspace esgotada',
-      },
-      {
-        code: 'AI_PROVIDER_UNAVAILABLE',
-        when: 'Nenhum modelo habilitado com provedor configurado',
-      },
-      {
-        code: 'CRM_LANDING_PAGE_AI_FAILED',
-        when: 'Falha do provedor ou resposta fora do formato',
-      },
-      {
-        code: 'VALIDATION_ERROR',
-        message: 'Dados inválidos',
-        when: 'Histórico vazio, longo demais ou sem terminar no usuário',
-      },
-    ],
   },
   {
     method: 'get',

@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Checkbox } from '@/components/ui/checkbox'
+import { GhostAiProvider, GhostAiSection } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import {
   Popover,
@@ -39,6 +40,7 @@ import {
   sendCrmProposal,
   useCrmProposal,
 } from '@/src/hooks/use-crm-proposal'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import { useCrmWorkspaceLookups } from '@/src/hooks/use-crm-workspace-lookups'
 import {
   type CrmProposalSectionContent,
@@ -381,6 +383,10 @@ export function ProposalBuilder({
     content: s.content,
   }))
 
+  const assistText = useCrmTextAi(workspaceId, 'DOCUMENT', () => ({
+    title: meta.name,
+  }))
+
   if (!isNew && isLoading) {
     return (
       <div className='flex h-full flex-col gap-3 p-4'>
@@ -658,13 +664,19 @@ export function ProposalBuilder({
               {(() => {
                 const { Editor } = SECTION_REGISTRY[selectedSection.type]
                 return (
-                  <Editor
-                    content={selectedSection.content}
-                    onChange={(content: CrmProposalSectionContent) =>
-                      updateSection(selectedSection.type, { content })
-                    }
-                    workspaceId={workspaceId}
-                  />
+                  <GhostAiProvider assist={assistText}>
+                    <GhostAiSection
+                      value={SECTION_REGISTRY[selectedSection.type].label}
+                    >
+                      <Editor
+                        content={selectedSection.content}
+                        onChange={(content: CrmProposalSectionContent) =>
+                          updateSection(selectedSection.type, { content })
+                        }
+                        workspaceId={workspaceId}
+                      />
+                    </GhostAiSection>
+                  </GhostAiProvider>
                 )
               })()}
             </>

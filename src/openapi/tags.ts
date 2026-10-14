@@ -151,7 +151,8 @@ export const TAG_GROUPS = [
       },
       {
         name: 'CRM · IA',
-        description: 'Hook Vault e análise de concorrentes com IA.',
+        description:
+          'Hook Vault, análise de concorrentes e o mini chat de IA dos campos de texto.',
       },
       {
         name: 'CRM · Integrações',

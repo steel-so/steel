@@ -116,8 +116,8 @@ export const CrmLandingPageViewDTO = dto(
     .meta({ description: 'Visualização registrada de uma landing page.' }),
 )
 
-export const CrmLandingPageAiReplyDTO = dto(
-  'CrmLandingPageAiReply',
+export const CrmTextAiReplyDTO = dto(
+  'CrmTextAiReply',
   z
     .object({
       reply: z.string().meta({ description: 'Resposta curta da IA.' }),

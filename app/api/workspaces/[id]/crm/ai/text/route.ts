@@ -2,8 +2,8 @@ import type { NextRequest } from 'next/server'
 import { withAxiom } from '@/lib/axiom/server'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { aiMessageLimiter, consume } from '@/src/lib/rate-limit'
-import { CrmLandingPageAiAssistSchema } from '@/src/schemas/crm-landing-page-ai.schema'
-import { CrmLandingPageAiService } from '@/src/services/crm-landing-page-ai.service'
+import { CrmTextAiAssistSchema } from '@/src/schemas/crm-text-ai.schema'
+import { CrmTextAiService } from '@/src/services/crm-text-ai.service'
 import { readJsonBody } from '@/utils/http-request'
 import {
   handleError,
@@ -13,7 +13,10 @@ import {
 
 type Params = { params: Promise<{ id: string }> }
 
-/** One turn of the per-field AI chat in the landing-page builder. */
+/**
+ * One turn of the per-field AI chat of the CRM text fields (landing pages,
+ * documents, social posts).
+ */
 export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()
   if (!auth.ok) return handleError(auth.error)
@@ -24,7 +27,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   const { id } = await ctx.params
   const json = await readJsonBody(request)
   if (!json.ok) return handleError(json.error)
-  const parsed = CrmLandingPageAiAssistSchema.safeParse(json.value)
+  const parsed = CrmTextAiAssistSchema.safeParse(json.value)
   if (!parsed.success) {
     return standardError(
       'VALIDATION_ERROR',
@@ -33,7 +36,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     )
   }
 
-  const result = await CrmLandingPageAiService.assist(
+  const result = await CrmTextAiService.assist(
     auth.value.user.id,
     id,
     parsed.data,

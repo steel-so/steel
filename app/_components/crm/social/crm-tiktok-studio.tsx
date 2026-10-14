@@ -15,9 +15,11 @@ import {
 import type { ChangeEvent, SyntheticEvent } from 'react'
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { GhostAiProvider } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -30,7 +32,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import {
   type CrmSocialApiError,
@@ -39,6 +40,7 @@ import {
   useCrmTiktokVideos,
   usePublishCrmTiktokVideo,
 } from '@/src/hooks/use-crm-social-tiktok'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type {
   CrmTiktokPrivacy,
   CrmTiktokVideo,
@@ -558,6 +560,9 @@ function UploadForm({
   onDisableStitchChange: (v: boolean) => void
   onPreview?: (p: TikTokFilePreview | null) => void
 }) {
+  const assistText = useCrmTextAi(workspaceId, 'SOCIAL', () => ({
+    platform: 'TikTok',
+  }))
   const publish = usePublishCrmTiktokVideo(workspaceId)
   const [filePreview, setFilePreview] = useState<TikTokFilePreview | null>(null)
 
@@ -600,96 +605,100 @@ function UploadForm({
 
   return (
     <Card className='p-4 sm:p-6'>
-      <form className='space-y-4' onSubmit={handleSubmit}>
-        <div className='space-y-1.5'>
-          <Label htmlFor='tt-title'>Legenda</Label>
-          <Textarea
-            id='tt-title'
-            name='title'
-            rows={4}
-            maxLength={2200}
-            placeholder='Escreva uma legenda (opcional)'
-            value={caption}
-            onChange={(e) => onCaptionChange(e.target.value)}
-          />
-        </div>
-
-        <div className='grid gap-4 sm:grid-cols-2'>
+      <GhostAiProvider assist={assistText}>
+        <form className='space-y-4' onSubmit={handleSubmit}>
           <div className='space-y-1.5'>
-            <Label htmlFor='tt-privacy'>Privacidade</Label>
-            <Select
-              value={privacy}
-              onValueChange={(v) => onPrivacyChange(v as CrmTiktokPrivacy)}
-            >
-              <SelectTrigger id='tt-privacy'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PRIVACY_OPTIONS.map((o) => (
-                  <SelectItem
-                    key={o.value}
-                    value={o.value}
-                    disabled={o.auditRequired}
-                  >
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className='space-y-1.5'>
-            <Label htmlFor='tt-file'>Arquivo de vídeo</Label>
-            <TikTokVideoFileInput onPreview={handlePreview} />
-          </div>
-        </div>
-
-        {filePreview && (
-          <div className='relative overflow-hidden rounded-lg border border-border/60 bg-black'>
-            <video
-              src={filePreview.objectUrl}
-              className='mx-auto max-h-48 object-contain'
-              muted
-              preload='metadata'
+            <Label htmlFor='tt-title'>Legenda</Label>
+            <AiTextarea
+              id='tt-title'
+              aiLabel='Legenda'
+              name='title'
+              rows={4}
+              maxLength={2200}
+              placeholder='Escreva uma legenda (opcional)'
+              value={caption}
+              onChange={(e) => onCaptionChange(e.target.value)}
             />
-            {filePreview.duration && (
-              <div className='absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs'>
-                {filePreview.duration}
-              </div>
-            )}
           </div>
-        )}
 
-        <div className='space-y-3 rounded-lg border border-border/70 p-3'>
-          <ToggleRow
-            label='Desativar comentários'
-            checked={disableComment}
-            onCheckedChange={onDisableCommentChange}
-          />
-          <ToggleRow
-            label='Desativar Duet'
-            checked={disableDuet}
-            onCheckedChange={onDisableDuetChange}
-          />
-          <ToggleRow
-            label='Desativar Stitch'
-            checked={disableStitch}
-            onCheckedChange={onDisableStitchChange}
-          />
-        </div>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <div className='space-y-1.5'>
+              <Label htmlFor='tt-privacy'>Privacidade</Label>
+              <Select
+                value={privacy}
+                onValueChange={(v) => onPrivacyChange(v as CrmTiktokPrivacy)}
+              >
+                <SelectTrigger id='tt-privacy'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIVACY_OPTIONS.map((o) => (
+                    <SelectItem
+                      key={o.value}
+                      value={o.value}
+                      disabled={o.auditRequired}
+                    >
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <p className='text-muted-foreground text-xs'>
-          Máximo 64 MB. O app ainda não passou pela auditoria da TikTok — apenas
-          publicações Privado (só eu) são permitidas, e a conta precisa estar
-          configurada como privada no app do TikTok no momento da publicação.
-        </p>
+            <div className='space-y-1.5'>
+              <Label htmlFor='tt-file'>Arquivo de vídeo</Label>
+              <TikTokVideoFileInput onPreview={handlePreview} />
+            </div>
+          </div>
 
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={publish.isPending}>
-            {publish.isPending ? 'Enviando…' : 'Publicar no TikTok'}
-          </Button>
-        </div>
-      </form>
+          {filePreview && (
+            <div className='relative overflow-hidden rounded-lg border border-border/60 bg-black'>
+              <video
+                src={filePreview.objectUrl}
+                className='mx-auto max-h-48 object-contain'
+                muted
+                preload='metadata'
+              />
+              {filePreview.duration && (
+                <div className='absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs'>
+                  {filePreview.duration}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className='space-y-3 rounded-lg border border-border/70 p-3'>
+            <ToggleRow
+              label='Desativar comentários'
+              checked={disableComment}
+              onCheckedChange={onDisableCommentChange}
+            />
+            <ToggleRow
+              label='Desativar Duet'
+              checked={disableDuet}
+              onCheckedChange={onDisableDuetChange}
+            />
+            <ToggleRow
+              label='Desativar Stitch'
+              checked={disableStitch}
+              onCheckedChange={onDisableStitchChange}
+            />
+          </div>
+
+          <p className='text-muted-foreground text-xs'>
+            Máximo 64 MB. O app ainda não passou pela auditoria da TikTok —
+            apenas publicações Privado (só eu) são permitidas, e a conta precisa
+            estar configurada como privada no app do TikTok no momento da
+            publicação.
+          </p>
+
+          <div className='flex justify-end'>
+            <Button type='submit' disabled={publish.isPending}>
+              {publish.isPending ? 'Enviando…' : 'Publicar no TikTok'}
+            </Button>
+          </div>
+        </form>
+      </GhostAiProvider>
     </Card>
   )
 }

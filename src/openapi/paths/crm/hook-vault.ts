@@ -4,11 +4,16 @@ import {
   ReorderCrmHookVaultItemsSchema,
   UpdateCrmHookVaultItemSchema,
 } from '@/src/schemas/crm-hook-vault.schema'
+import { CrmTextAiAssistSchema } from '@/src/schemas/crm-text-ai.schema'
 import type { RouteConfig } from '../../registry'
+import { CrmTextAiReplyDTO } from '../../schemas/crm/forms'
 import { CrmHookVaultItemDTO } from '../../schemas/crm/hook-vault'
 import { CRM_ERRORS, crmAccess, describe, notFoundError } from './shared'
 
-/** CRM · IA — Hook Vault (ganchos de conteúdo para posts). */
+/**
+ * CRM · IA — Hook Vault (ganchos de conteúdo para posts) e o mini chat de
+ * IA dos campos de texto.
+ */
 
 const HOOK_PARAM = { description: 'ID do item do Hook Vault.' }
 
@@ -87,5 +92,44 @@ export const crmHookVaultRoutes: RouteConfig[] = [
     params: { itemId: HOOK_PARAM },
     responses: { 200: { description: 'Item excluído.', schema: null } },
     errors: [...CRM_ERRORS, HOOK_NOT_FOUND],
+  },
+  /* --------------------------- Texto com IA --------------------------- */
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/ai/text',
+    tags: ['CRM · IA'],
+    summary: 'Ajustar o texto de um campo com IA',
+    description: describe(
+      'Uma rodada do mini chat de IA de um campo de texto do CRM: landing pages (`LANDING_PAGE`), propostas e modelos (`DOCUMENT`) e publicações de redes sociais (`SOCIAL`). Sem estado: o cliente envia o texto atual do campo e o histórico curto (até 12 mensagens, terminando no usuário) a cada rodada; nenhum outro dado do CRM vai ao provedor. Usa a IA do workspace (mesmo modelo do assistente do CRM) e consome a cota mensal de IA.',
+      'Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e, conforme `surface`, a permissão `landing-pages` × `EDIT`, `documents` × `EDIT` ou `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam).',
+    ),
+    body: CrmTextAiAssistSchema,
+    responses: {
+      200: { description: 'Resposta da IA.', schema: CrmTextAiReplyDTO },
+    },
+    errors: [
+      ...CRM_ERRORS,
+      {
+        code: 'FEATURE_NOT_ENABLED',
+        when: 'Feature `crm.aiAssistant` desligada para o workspace',
+      },
+      {
+        code: 'AI_QUOTA_EXCEEDED',
+        when: 'Cota mensal de IA do workspace esgotada',
+      },
+      {
+        code: 'AI_PROVIDER_UNAVAILABLE',
+        when: 'Nenhum modelo habilitado com provedor configurado',
+      },
+      {
+        code: 'CRM_TEXT_AI_FAILED',
+        when: 'Falha do provedor ou resposta fora do formato',
+      },
+      {
+        code: 'VALIDATION_ERROR',
+        message: 'Dados inválidos',
+        when: '`surface` desconhecida, histórico vazio, longo demais ou sem terminar no usuário',
+      },
+    ],
   },
 ]

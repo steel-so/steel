@@ -2,6 +2,7 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiInput } from '@/components/ui/ai-text-field'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -97,7 +98,8 @@ export function ProductsPricingEditor({
           {item.name === '' ? (
             <FieldError>Nome do item é obrigatório</FieldError>
           ) : null}
-          <Input
+          <AiInput
+            aiLabel='Descrição do produto/serviço'
             value={item.description ?? ''}
             onChange={(e) =>
               updateItem(index, { description: e.target.value || undefined })

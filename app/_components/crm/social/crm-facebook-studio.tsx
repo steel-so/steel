@@ -12,6 +12,7 @@ import {
 import { ResponsiveLine } from '@nivo/line'
 import { useEffect, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,11 +27,11 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { GhostAiProvider } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import {
   CrmSocialApiError,
@@ -41,6 +42,7 @@ import {
   useDeleteCrmFacebookPost,
   usePublishCrmFacebookPost,
 } from '@/src/hooks/use-crm-social-facebook'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type {
   CrmFacebookInsightsRange,
   CrmFacebookPost,
@@ -383,6 +385,9 @@ function PostComposer({
   onVideoChange: (f: File | undefined) => void
 }) {
   const publish = usePublishCrmFacebookPost(workspaceId, connectionId)
+  const assistText = useCrmTextAi(workspaceId, 'SOCIAL', () => ({
+    platform: 'Facebook',
+  }))
 
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -428,65 +433,73 @@ function PostComposer({
 
   return (
     <Card className='p-4 sm:p-6'>
-      <form className='space-y-4' onSubmit={handleSubmit}>
-        <div className='space-y-1.5'>
-          <Label htmlFor='fb-message'>Mensagem</Label>
-          <Textarea
-            id='fb-message'
-            name='message'
-            rows={5}
-            maxLength={5000}
-            placeholder='O que você quer publicar?'
-            value={message}
-            onChange={(e) => onMessageChange(e.target.value)}
-          />
-        </div>
-
-        <div className='space-y-1.5'>
-          <Label htmlFor='fb-link'>Link (opcional)</Label>
-          <Input id='fb-link' name='link' type='url' placeholder='https://…' />
-        </div>
-
-        <div className='grid gap-4 sm:grid-cols-2'>
+      <GhostAiProvider assist={assistText}>
+        <form className='space-y-4' onSubmit={handleSubmit}>
           <div className='space-y-1.5'>
-            <Label htmlFor='fb-image'>Imagem (opcional)</Label>
-            <Input
-              id='fb-image'
-              name='image'
-              type='file'
-              accept='image/*'
-              onChange={(e) => {
-                onImageChange(e.target.files?.[0])
-                if (e.target.files?.[0]) onVideoChange(undefined)
-              }}
+            <Label htmlFor='fb-message'>Mensagem</Label>
+            <AiTextarea
+              id='fb-message'
+              aiLabel='Mensagem do post'
+              name='message'
+              rows={5}
+              maxLength={5000}
+              placeholder='O que você quer publicar?'
+              value={message}
+              onChange={(e) => onMessageChange(e.target.value)}
             />
           </div>
+
           <div className='space-y-1.5'>
-            <Label htmlFor='fb-video'>Vídeo (opcional)</Label>
+            <Label htmlFor='fb-link'>Link (opcional)</Label>
             <Input
-              id='fb-video'
-              name='video'
-              type='file'
-              accept='video/*'
-              onChange={(e) => {
-                onVideoChange(e.target.files?.[0])
-                if (e.target.files?.[0]) onImageChange(undefined)
-              }}
+              id='fb-link'
+              name='link'
+              type='url'
+              placeholder='https://…'
             />
           </div>
-        </div>
-        <p className='text-muted-foreground text-xs'>
-          Imagem ou vídeo — não os dois. Imagem vira uma foto com a mensagem
-          como legenda (máx. 10 MB); vídeo vira uma publicação de vídeo na
-          Página (máx. 256 MB, pode levar alguns minutos para publicar).
-        </p>
 
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={publish.isPending}>
-            {publish.isPending ? 'Publicando…' : 'Publicar'}
-          </Button>
-        </div>
-      </form>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <div className='space-y-1.5'>
+              <Label htmlFor='fb-image'>Imagem (opcional)</Label>
+              <Input
+                id='fb-image'
+                name='image'
+                type='file'
+                accept='image/*'
+                onChange={(e) => {
+                  onImageChange(e.target.files?.[0])
+                  if (e.target.files?.[0]) onVideoChange(undefined)
+                }}
+              />
+            </div>
+            <div className='space-y-1.5'>
+              <Label htmlFor='fb-video'>Vídeo (opcional)</Label>
+              <Input
+                id='fb-video'
+                name='video'
+                type='file'
+                accept='video/*'
+                onChange={(e) => {
+                  onVideoChange(e.target.files?.[0])
+                  if (e.target.files?.[0]) onImageChange(undefined)
+                }}
+              />
+            </div>
+          </div>
+          <p className='text-muted-foreground text-xs'>
+            Imagem ou vídeo — não os dois. Imagem vira uma foto com a mensagem
+            como legenda (máx. 10 MB); vídeo vira uma publicação de vídeo na
+            Página (máx. 256 MB, pode levar alguns minutos para publicar).
+          </p>
+
+          <div className='flex justify-end'>
+            <Button type='submit' disabled={publish.isPending}>
+              {publish.isPending ? 'Publicando…' : 'Publicar'}
+            </Button>
+          </div>
+        </form>
+      </GhostAiProvider>
     </Card>
   )
 }

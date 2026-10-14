@@ -14,6 +14,7 @@ import {
 import { ResponsiveLine } from '@nivo/line'
 import { useEffect, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { GhostAiProvider } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -40,7 +42,6 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import {
   CrmSocialApiError,
@@ -53,6 +54,7 @@ import {
   useDeleteCrmInstagramMedia,
   usePublishCrmInstagramPost,
 } from '@/src/hooks/use-crm-social-instagram'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import {
   CRM_INSTAGRAM_POST_TYPE_LABELS,
   type CrmInstagramActiveStory,
@@ -512,6 +514,9 @@ function PostComposer({
   onCoverChange: (f: File | undefined) => void
 }) {
   const publish = usePublishCrmInstagramPost(workspaceId, connectionId)
+  const assistText = useCrmTextAi(workspaceId, 'SOCIAL', () => ({
+    platform: `Instagram · ${postType === 'REELS' ? 'Reels' : postType === 'STORIES' ? 'Stories' : 'Feed'}`,
+  }))
 
   const mediaAccept =
     postType === 'REELS'
@@ -573,88 +578,91 @@ function PostComposer({
 
   return (
     <Card className='p-4 sm:p-6'>
-      <form className='space-y-4' onSubmit={handleSubmit}>
-        <input type='hidden' name='postType' value={postType} />
-        <div className='space-y-1.5'>
-          <Label htmlFor='ig-post-type'>Tipo de publicação</Label>
-          <Select
-            items={POST_TYPES.map((t) => ({
-              value: t,
-              label: CRM_INSTAGRAM_POST_TYPE_LABELS[t],
-            }))}
-            value={postType}
-            onValueChange={(v) => onPostTypeChange(v as CrmInstagramPostType)}
-          >
-            <SelectTrigger id='ig-post-type'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {POST_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {CRM_INSTAGRAM_POST_TYPE_LABELS[t]}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className='space-y-1.5'>
-          <Label htmlFor='ig-caption'>Legenda</Label>
-          <Textarea
-            id='ig-caption'
-            name='caption'
-            rows={5}
-            maxLength={2200}
-            placeholder='Escreva uma legenda (opcional)'
-            value={caption}
-            onChange={(e) => onCaptionChange(e.target.value)}
-          />
-        </div>
-
-        <div className='space-y-1.5'>
-          <Label htmlFor='ig-media'>
-            {postType === 'REELS'
-              ? 'Vídeo'
-              : postType === 'STORIES'
-                ? 'Mídia'
-                : 'Imagem'}
-          </Label>
-          <Input
-            id='ig-media'
-            name='media'
-            type='file'
-            accept={mediaAccept}
-            required
-            onChange={(e) => onMediaChange(e.target.files?.[0])}
-          />
-          <p className='text-muted-foreground text-xs'>{mediaHint}</p>
-        </div>
-
-        {postType === 'REELS' && (
+      <GhostAiProvider assist={assistText}>
+        <form className='space-y-4' onSubmit={handleSubmit}>
+          <input type='hidden' name='postType' value={postType} />
           <div className='space-y-1.5'>
-            <Label htmlFor='ig-cover'>Capa (opcional)</Label>
-            <Input
-              id='ig-cover'
-              name='cover'
-              type='file'
-              accept='image/*'
-              onChange={(e) => onCoverChange(e.target.files?.[0])}
-            />
-            <p className='text-muted-foreground text-xs'>
-              Imagem de capa do Reels (JPEG, até 10 MB). Sem ela, a Meta usa um
-              frame do próprio vídeo.
-            </p>
+            <Label htmlFor='ig-post-type'>Tipo de publicação</Label>
+            <Select
+              items={POST_TYPES.map((t) => ({
+                value: t,
+                label: CRM_INSTAGRAM_POST_TYPE_LABELS[t],
+              }))}
+              value={postType}
+              onValueChange={(v) => onPostTypeChange(v as CrmInstagramPostType)}
+            >
+              <SelectTrigger id='ig-post-type'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {POST_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {CRM_INSTAGRAM_POST_TYPE_LABELS[t]}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
-        )}
 
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={publish.isPending}>
-            {publish.isPending ? 'Publicando…' : 'Publicar'}
-          </Button>
-        </div>
-      </form>
+          <div className='space-y-1.5'>
+            <Label htmlFor='ig-caption'>Legenda</Label>
+            <AiTextarea
+              id='ig-caption'
+              aiLabel='Legenda'
+              name='caption'
+              rows={5}
+              maxLength={2200}
+              placeholder='Escreva uma legenda (opcional)'
+              value={caption}
+              onChange={(e) => onCaptionChange(e.target.value)}
+            />
+          </div>
+
+          <div className='space-y-1.5'>
+            <Label htmlFor='ig-media'>
+              {postType === 'REELS'
+                ? 'Vídeo'
+                : postType === 'STORIES'
+                  ? 'Mídia'
+                  : 'Imagem'}
+            </Label>
+            <Input
+              id='ig-media'
+              name='media'
+              type='file'
+              accept={mediaAccept}
+              required
+              onChange={(e) => onMediaChange(e.target.files?.[0])}
+            />
+            <p className='text-muted-foreground text-xs'>{mediaHint}</p>
+          </div>
+
+          {postType === 'REELS' && (
+            <div className='space-y-1.5'>
+              <Label htmlFor='ig-cover'>Capa (opcional)</Label>
+              <Input
+                id='ig-cover'
+                name='cover'
+                type='file'
+                accept='image/*'
+                onChange={(e) => onCoverChange(e.target.files?.[0])}
+              />
+              <p className='text-muted-foreground text-xs'>
+                Imagem de capa do Reels (JPEG, até 10 MB). Sem ela, a Meta usa
+                um frame do próprio vídeo.
+              </p>
+            </div>
+          )}
+
+          <div className='flex justify-end'>
+            <Button type='submit' disabled={publish.isPending}>
+              {publish.isPending ? 'Publicando…' : 'Publicar'}
+            </Button>
+          </div>
+        </form>
+      </GhostAiProvider>
     </Card>
   )
 }

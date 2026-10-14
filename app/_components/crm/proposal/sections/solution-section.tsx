@@ -1,8 +1,8 @@
 'use client'
 
 import { ImageGalleryField } from '@/app/_components/crm/proposal/proposal-image-upload'
+import { AiTextarea } from '@/components/ui/ai-text-field'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Textarea } from '@/components/ui/textarea'
 import type { CrmProposalSectionContent } from '@/src/schemas/crm-proposal.schema'
 
 export type SolutionContent = Extract<
@@ -31,8 +31,9 @@ export function SolutionEditor({
     <div className='flex flex-col gap-4'>
       <Field>
         <FieldLabel htmlFor='solution-description'>Descrição</FieldLabel>
-        <Textarea
+        <AiTextarea
           id='solution-description'
+          aiLabel='Descrição da solução'
           rows={8}
           value={content.description}
           onChange={(e) =>

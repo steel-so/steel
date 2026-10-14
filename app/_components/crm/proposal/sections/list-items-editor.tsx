@@ -2,10 +2,9 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiInput, AiTextarea } from '@/components/ui/ai-text-field'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 
 export type ListItem = { title: string; description: string }
 
@@ -40,7 +39,8 @@ export function ListItemsEditor({
       {items.map((item, index) => (
         <div key={index} className='flex flex-col gap-2 rounded-md border p-3'>
           <div className='flex items-center gap-2'>
-            <Input
+            <AiInput
+              aiLabel='Título do item'
               value={item.title}
               onChange={(e) => update(index, { title: e.target.value })}
               placeholder={itemPlaceholder}
@@ -61,7 +61,8 @@ export function ListItemsEditor({
           {item.title === '' ? (
             <FieldError>Título do item é obrigatório</FieldError>
           ) : null}
-          <Textarea
+          <AiTextarea
+            aiLabel='Descrição do item'
             value={item.description}
             onChange={(e) => update(index, { description: e.target.value })}
             placeholder='Descrição (opcional)'

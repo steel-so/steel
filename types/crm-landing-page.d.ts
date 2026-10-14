@@ -47,10 +47,3 @@ export interface CrmLandingPageViewDTO {
   createdAt: string
   updatedAt: string
 }
-
-/** Resposta do mini chat de IA de um campo do construtor. */
-export interface CrmLandingPageAiReplyDTO {
-  reply: string
-  /** Texto pronto para aplicar no campo, ou `null` quando a IA só conversou. */
-  suggestion: string | null
-}

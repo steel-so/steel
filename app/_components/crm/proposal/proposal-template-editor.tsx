@@ -7,6 +7,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Checkbox } from '@/components/ui/checkbox'
+import { GhostAiProvider, GhostAiSection } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { notify } from '@/lib/notify'
@@ -16,6 +17,7 @@ import {
   createCrmProposalTemplate,
   updateCrmProposalTemplate,
 } from '@/src/hooks/use-crm-proposal-template'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type {
   CrmProposalSectionContent,
   CrmProposalSectionType,
@@ -143,6 +145,10 @@ export function ProposalTemplateEditor({
 
   const selectedSection = sections.find((s) => s.type === selectedType)
 
+  const assistText = useCrmTextAi(workspaceId, 'DOCUMENT', () => ({
+    title: name,
+  }))
+
   if (isLoading) {
     return (
       <div className='flex h-full flex-col gap-3 p-4'>
@@ -253,15 +259,21 @@ export function ProposalTemplateEditor({
                   const { Editor } = SECTION_REGISTRY[selectedSection.type]
                   const content = selectedSection.defaultContent
                   return (
-                    <Editor
-                      content={content}
-                      onChange={(next: CrmProposalSectionContent) =>
-                        updateSection(selectedSection.type, {
-                          defaultContent: next,
-                        })
-                      }
-                      workspaceId={workspaceId}
-                    />
+                    <GhostAiProvider assist={assistText}>
+                      <GhostAiSection
+                        value={SECTION_REGISTRY[selectedSection.type].label}
+                      >
+                        <Editor
+                          content={content}
+                          onChange={(next: CrmProposalSectionContent) =>
+                            updateSection(selectedSection.type, {
+                              defaultContent: next,
+                            })
+                          }
+                          workspaceId={workspaceId}
+                        />
+                      </GhostAiSection>
+                    </GhostAiProvider>
                   )
                 })()
               ) : (

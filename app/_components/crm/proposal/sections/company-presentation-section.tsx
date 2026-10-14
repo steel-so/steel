@@ -1,9 +1,8 @@
 'use client'
 
 import { ImageGalleryField } from '@/app/_components/crm/proposal/proposal-image-upload'
+import { AiInput, AiTextarea } from '@/components/ui/ai-text-field'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import type { CrmProposalSectionContent } from '@/src/schemas/crm-proposal.schema'
 
 export type CompanyPresentationContent = Extract<
@@ -32,8 +31,9 @@ export function CompanyPresentationEditor({
     <div className='flex flex-col gap-4'>
       <Field>
         <FieldLabel htmlFor='company-headline'>Chamada</FieldLabel>
-        <Input
+        <AiInput
           id='company-headline'
+          aiLabel='Chamada da apresentação'
           value={content.headline ?? ''}
           onChange={(e) =>
             onChange({ ...content, headline: e.target.value || undefined })
@@ -43,8 +43,9 @@ export function CompanyPresentationEditor({
       </Field>
       <Field>
         <FieldLabel htmlFor='company-description'>Descrição</FieldLabel>
-        <Textarea
+        <AiTextarea
           id='company-description'
+          aiLabel='Descrição da empresa'
           rows={6}
           value={content.description}
           onChange={(e) =>

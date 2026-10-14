@@ -14,6 +14,7 @@ import { ResponsiveLine } from '@nivo/line'
 import type { ChangeEvent, SyntheticEvent } from 'react'
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
+import { AiInput, AiTextarea } from '@/components/ui/ai-text-field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { GhostAiProvider } from '@/components/ui/ghost-ai'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -39,7 +41,6 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import {
   type CrmSocialApiError,
@@ -49,6 +50,7 @@ import {
   useDeleteCrmYoutubeVideo,
   usePublishCrmYoutubeVideo,
 } from '@/src/hooks/use-crm-social-youtube'
+import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
 import type {
   CrmSocialYoutubeInsightsRange,
   CrmSocialYoutubeVideoDTO,
@@ -448,6 +450,10 @@ function UploadForm({
   onPreview?: (p: FilePreview | null) => void
 }) {
   const publish = usePublishCrmYoutubeVideo(workspaceId)
+  const assistText = useCrmTextAi(workspaceId, 'SOCIAL', () => ({
+    platform: 'YouTube',
+    title,
+  }))
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null)
 
   function handlePreview(p: FilePreview | null) {
@@ -485,95 +491,99 @@ function UploadForm({
 
   return (
     <Card className='p-4 sm:p-6'>
-      <form className='space-y-4' onSubmit={handleSubmit}>
-        <div className='space-y-1.5'>
-          <Label htmlFor='yt-title'>Título</Label>
-          <Input
-            id='yt-title'
-            name='title'
-            maxLength={100}
-            required
-            placeholder='Título do vídeo'
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-          />
-        </div>
-
-        <div className='space-y-1.5'>
-          <Label htmlFor='yt-description'>Descrição</Label>
-          <Textarea
-            id='yt-description'
-            name='description'
-            rows={4}
-            maxLength={5000}
-            placeholder='Descrição (opcional)'
-          />
-        </div>
-
-        <div className='grid gap-4 sm:grid-cols-2'>
+      <GhostAiProvider assist={assistText}>
+        <form className='space-y-4' onSubmit={handleSubmit}>
           <div className='space-y-1.5'>
-            <Label htmlFor='yt-privacy'>Visibilidade</Label>
-            <Select
-              name='privacyStatus'
-              value={privacyStatus}
-              onValueChange={(v) => v && onPrivacyStatusChange(v)}
-            >
-              <SelectTrigger id='yt-privacy'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='private'>Privado</SelectItem>
-                <SelectItem value='unlisted'>Não listado</SelectItem>
-                <SelectItem value='public'>Público</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className='space-y-1.5'>
-            <Label htmlFor='yt-tags'>Tags</Label>
-            <Input
-              id='yt-tags'
-              name='tags'
-              placeholder='separadas por vírgula'
+            <Label htmlFor='yt-title'>Título</Label>
+            <AiInput
+              id='yt-title'
+              aiLabel='Título do vídeo'
+              name='title'
+              maxLength={100}
+              required
+              placeholder='Título do vídeo'
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
             />
           </div>
-        </div>
 
-        <div className='space-y-1.5'>
-          <Label htmlFor='yt-file'>Arquivo de vídeo</Label>
-          <VideoFileInput
-            id='yt-file'
-            name='file'
-            required
-            onPreview={handlePreview}
-          />
-          {filePreview ? (
-            <div className='relative mt-1 overflow-hidden rounded-lg border border-border/60 bg-black'>
-              <video
-                src={filePreview.objectUrl}
-                className='aspect-video w-full object-contain'
-                muted
-                preload='metadata'
-              />
-              {filePreview.duration && (
-                <div className='absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs'>
-                  {filePreview.duration}
-                </div>
-              )}
+          <div className='space-y-1.5'>
+            <Label htmlFor='yt-description'>Descrição</Label>
+            <AiTextarea
+              id='yt-description'
+              aiLabel='Descrição do vídeo'
+              name='description'
+              rows={4}
+              maxLength={5000}
+              placeholder='Descrição (opcional)'
+            />
+          </div>
+
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <div className='space-y-1.5'>
+              <Label htmlFor='yt-privacy'>Visibilidade</Label>
+              <Select
+                name='privacyStatus'
+                value={privacyStatus}
+                onValueChange={(v) => v && onPrivacyStatusChange(v)}
+              >
+                <SelectTrigger id='yt-privacy'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='private'>Privado</SelectItem>
+                  <SelectItem value='unlisted'>Não listado</SelectItem>
+                  <SelectItem value='public'>Público</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <p className='text-muted-foreground text-xs'>
-              Máximo 256 MB. O vídeo entra como privado por padrão.
-            </p>
-          )}
-        </div>
 
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={publish.isPending}>
-            {publish.isPending ? 'Enviando…' : 'Publicar no YouTube'}
-          </Button>
-        </div>
-      </form>
+            <div className='space-y-1.5'>
+              <Label htmlFor='yt-tags'>Tags</Label>
+              <Input
+                id='yt-tags'
+                name='tags'
+                placeholder='separadas por vírgula'
+              />
+            </div>
+          </div>
+
+          <div className='space-y-1.5'>
+            <Label htmlFor='yt-file'>Arquivo de vídeo</Label>
+            <VideoFileInput
+              id='yt-file'
+              name='file'
+              required
+              onPreview={handlePreview}
+            />
+            {filePreview ? (
+              <div className='relative mt-1 overflow-hidden rounded-lg border border-border/60 bg-black'>
+                <video
+                  src={filePreview.objectUrl}
+                  className='aspect-video w-full object-contain'
+                  muted
+                  preload='metadata'
+                />
+                {filePreview.duration && (
+                  <div className='absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs'>
+                    {filePreview.duration}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className='text-muted-foreground text-xs'>
+                Máximo 256 MB. O vídeo entra como privado por padrão.
+              </p>
+            )}
+          </div>
+
+          <div className='flex justify-end'>
+            <Button type='submit' disabled={publish.isPending}>
+              {publish.isPending ? 'Enviando…' : 'Publicar no YouTube'}
+            </Button>
+          </div>
+        </form>
+      </GhostAiProvider>
     </Card>
   )
 }
