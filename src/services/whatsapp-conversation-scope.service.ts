@@ -3,7 +3,6 @@ import { WhatsAppTeamSnapshotCache } from '@/src/cache/whatsapp-team.cache'
 import { whatsappConversationNotFound } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
-  type ConversationVisibilityTarget,
   canSeeConversation,
   scopeFromSnapshot,
   type WhatsAppConversationScope,
@@ -14,7 +13,6 @@ import {
   createRealtimeScopeFilter,
   createScopeRefresher,
 } from '@/src/lib/whatsapp/realtime-scope-filter'
-import { MembershipRepository } from '@/src/repositories/membership.repository'
 import {
   WhatsAppConversationRepository,
   type WhatsAppConversationWithPreview,
@@ -120,37 +118,6 @@ export async function whatsAppTeamMemberIds(
   if (!snapshot.ok) return []
   const team = snapshot.value.find((candidate) => candidate.id === teamId)
   return team ? team.members.map((member) => member.userId) : []
-}
-
-/**
- * Keeps only the users that can see the conversation — a notice must never
- * point someone at a conversation (and contact name) hidden from them.
- * Users that are no longer members are dropped too.
- */
-export async function filterUsersWhoSeeConversation(
-  workspaceId: string,
-  conversation: ConversationVisibilityTarget,
-  userIds: string[],
-): Promise<Result<string[]>> {
-  if (userIds.length === 0) return ok([])
-  const [snapshot, members] = await Promise.all([
-    loadWhatsAppTeamSnapshot(workspaceId),
-    MembershipRepository.listWithUserByWorkspace(workspaceId),
-  ])
-  if (!snapshot.ok) return snapshot
-  if (!members.ok) return members
-
-  const roles = new Map(members.value.map((m) => [m.userId, m.role]))
-  return ok(
-    userIds.filter((userId) => {
-      const role = roles.get(userId)
-      if (!role) return false
-      return canSeeConversation(
-        scopeFromSnapshot(userId, role, snapshot.value),
-        conversation,
-      )
-    }),
-  )
 }
 
 /**

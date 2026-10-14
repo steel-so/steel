@@ -43,6 +43,7 @@ import { WhatsAppAiKnowledgeDocumentRepository } from '@/src/repositories/whatsa
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import {
   AiUsageService,
   type PreparedAiCall,
@@ -461,6 +462,25 @@ describe('WhatsAppAiReplyService · handoff notice', () => {
     expectOk(await handoff({ assignedUserId: null }))
     expect(admins).toHaveBeenCalledWith(WS)
     expect(notify.mock.calls[0][0].userIds).toEqual(['owner', 'admin'])
+  })
+
+  it('tells the team of an unassigned team conversation (Equipes)', async () => {
+    vi.mocked(
+      WhatsAppTeamRepository.listMembershipSnapshot,
+    ).mockResolvedValueOnce(
+      ok([
+        {
+          id: 'team1',
+          members: [
+            { userId: 'lia', role: 'LEADER' },
+            { userId: 'ana', role: 'AGENT' },
+          ],
+        },
+      ]),
+    )
+    expectOk(await handoff({ assignedUserId: null, teamId: 'team1' }))
+    expect(admins).not.toHaveBeenCalled()
+    expect(notify.mock.calls[0][0].userIds).toEqual(['lia', 'ana'])
   })
 
   it('never notifies a regular AI reply', async () => {
