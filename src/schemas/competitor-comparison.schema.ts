@@ -47,8 +47,9 @@ export type CompetitorPlan = z.infer<typeof CompetitorPlanSchema>
 
 export const CompetitorSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
-  /** Product name, in text only (no logos or trademarks as images). */
   name: z.string().min(1),
+  /** Vendor domain the official logo is loaded by (Brandfetch Logo Link). */
+  domain: z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/),
   currency: CurrencySchema,
   plans: z.array(CompetitorPlanSchema).min(1),
   sourceUrl: z.url(),
@@ -90,6 +91,14 @@ export type ComparisonBlock = z.infer<typeof ComparisonBlockSchema>
 export const ComparisonCatalogSchema = z.object({
   /** Month the competitor pages were checked, `YYYY-MM`. */
   checkedAt: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  /**
+   * Fixed USD→BRL rate the calculator converts dollar prices with, and the
+   * day it was taken (Banco Central PTAX, selling rate). Shown on the page.
+   */
+  exchangeRate: z.object({
+    usdBrl: z.number().positive(),
+    date: z.iso.date(),
+  }),
   blocks: z
     .array(ComparisonBlockSchema)
     .length(COMPARISON_MODULES.length)

@@ -1,6 +1,7 @@
 import { PLAN_PRICES } from '@/src/config/plan-prices'
 import { PLAN_CATALOG } from '@/src/config/plans'
 import type {
+  Competitor,
   CompetitorPlan,
   Currency,
   ListPrice,
@@ -84,4 +85,76 @@ export function steelComparisonPlans(): CompetitorPlan[] {
       ...(note ? { note } : {}),
     }
   })
+}
+
+/**
+ * Brandfetch Logo Link client id (public: it travels in every image URL).
+ * The CDN only answers real browsers hotlinking from a page, so logos are
+ * never downloaded or proxied through next/image.
+ */
+const BRANDFETCH_CLIENT_ID = '1bxid64Mup7aczewSAYMX'
+
+/** Official square icon of a vendor, by domain; a lettermark when it has none. */
+export function competitorLogoUrl(domain: string): string {
+  return `https://cdn.brandfetch.io/${domain}/w/128/h/128/fallback/lettermark/icon?c=${BRANDFETCH_CLIENT_ID}`
+}
+
+/** Converts list cents to BRL cents with the catalog's fixed rate. */
+export function toBrlCents(
+  cents: number,
+  currency: Currency,
+  usdBrl: number,
+): number {
+  return currency === 'BRL' ? cents : Math.round(cents * usdBrl)
+}
+
+/** Monthly list price of a plan in its own currency, or `null` when free or on request. */
+function paidMonthlyCents(price: ListPrice): number | null {
+  switch (price.kind) {
+    case 'per-seat':
+    case 'flat':
+      return price.cents > 0 ? price.cents : null
+    case 'per-seat-range':
+      return price.minCents > 0 ? price.minCents : null
+    case 'quote':
+      return null
+  }
+}
+
+export interface CalculatorCost {
+  /** Plan the cost was computed with: the vendor's cheapest paid plan. */
+  plan: CompetitorPlan
+  /** Account-wide price (does not grow with the team). */
+  perAccount: boolean
+  /** Yearly cost in BRL cents. */
+  yearlyBrlCents: number
+}
+
+/**
+ * Yearly cost of a competitor for `seats` users, on its cheapest paid plan
+ * with a public price, converted to BRL. `null` when no plan has one.
+ * Catalog plans are listed cheapest first; a range counts at its minimum.
+ */
+export function competitorYearlyCost(
+  competitor: Competitor,
+  seats: number,
+  usdBrl: number,
+): CalculatorCost | null {
+  for (const plan of competitor.plans) {
+    const monthly = paidMonthlyCents(plan.price)
+    if (monthly === null) continue
+    const perAccount = plan.price.kind === 'flat'
+    const yearly = monthly * 12 * (perAccount ? 1 : seats)
+    return {
+      plan,
+      perAccount,
+      yearlyBrlCents: toBrlCents(yearly, competitor.currency, usdBrl),
+    }
+  }
+  return null
+}
+
+/** Steel Pro on annual billing: one seat covers the three modules. */
+export function steelYearlyCost(seats: number): number {
+  return (PLAN_PRICES.PRO?.yearly ?? 0) * seats
 }

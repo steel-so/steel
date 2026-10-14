@@ -14,6 +14,7 @@ const block: ComparisonBlock = {
     {
       id: 'acme',
       name: 'Acme CRM',
+      domain: 'acme.test',
       currency: 'USD',
       sourceUrl: 'https://acme.test/pricing',
       plans: [{ name: 'Team', price: { kind: 'per-seat', cents: 1000 } }],
@@ -64,6 +65,19 @@ describe('ComparisonBlockSchema', () => {
   })
 })
 
+describe('CompetitorSchema domain', () => {
+  it('takes a bare domain, never a URL', () => {
+    const withDomain = (domain: string) =>
+      ComparisonBlockSchema.safeParse({
+        ...block,
+        competitors: [{ ...block.competitors[0], domain }],
+      }).success
+    expect(withDomain('blip.ai')).toBe(true)
+    expect(withDomain('https://blip.ai')).toBe(false)
+    expect(withDomain('blip')).toBe(false)
+  })
+})
+
 describe('ListPriceSchema', () => {
   it('rejects negative and fractional cents', () => {
     expect(
@@ -80,10 +94,24 @@ describe('ComparisonCatalogSchema', () => {
     const blocks = COMPETITOR_COMPARISON.blocks
     expect(
       ComparisonCatalogSchema.safeParse({
-        checkedAt: '2026-10',
+        ...COMPETITOR_COMPARISON,
         blocks: [blocks[1], blocks[0], blocks[2]],
       }).success,
     ).toBe(false)
+  })
+
+  it('requires a positive exchange rate with an ISO date', () => {
+    for (const exchangeRate of [
+      { usdBrl: 0, date: '2026-10-14' },
+      { usdBrl: 5.04, date: '14/10/2026' },
+    ]) {
+      expect(
+        ComparisonCatalogSchema.safeParse({
+          ...COMPETITOR_COMPARISON,
+          exchangeRate,
+        }).success,
+      ).toBe(false)
+    }
   })
 
   it('requires a YYYY-MM check date', () => {

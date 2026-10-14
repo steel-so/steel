@@ -10,13 +10,16 @@ import {
  * vendor's own currency (cents), exactly as the public page shows them.
  * Features follow the vendor's public pages only: anything not stated there
  * is `no-info`. Steel's own price is never here — it comes from
- * `src/config/plan-prices.ts`.
+ * `src/config/plan-prices.ts`. Update `exchangeRate` together with the
+ * prices (PTAX selling rate of the review day).
  *
  * Last checked on 2026-10-09 (see the PR of the web-content slice for what
  * changed against the first research).
  */
 const CATALOG: ComparisonCatalog = {
   checkedAt: '2026-10',
+  // PTAX selling rate published by the Banco Central do Brasil on this day.
+  exchangeRate: { usdBrl: 5.0441, date: '2026-10-14' },
   blocks: [
     {
       module: 'servicedesk',
@@ -25,6 +28,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'zendesk',
           name: 'Zendesk Suite',
+          domain: 'zendesk.com',
           currency: 'USD',
           sourceUrl: 'https://www.zendesk.com/pricing/',
           plans: [
@@ -42,6 +46,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'freshservice',
           name: 'Freshservice',
+          domain: 'freshworks.com',
           currency: 'USD',
           sourceUrl: 'https://www.freshworks.com/freshservice/pricing/',
           plans: [
@@ -54,6 +59,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'jsm',
           name: 'Jira Service Management',
+          domain: 'atlassian.com',
           currency: 'USD',
           sourceUrl: 'https://www.atlassian.com/collections/service/pricing',
           plans: [
@@ -138,6 +144,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'salesforce',
           name: 'Salesforce Sales Cloud',
+          domain: 'salesforce.com',
           currency: 'USD',
           sourceUrl: 'https://www.salesforce.com/sales/pricing/',
           plans: [
@@ -149,6 +156,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'hubspot',
           name: 'HubSpot Sales Hub',
+          domain: 'hubspot.com',
           currency: 'USD',
           sourceUrl: 'https://www.hubspot.com/pricing/sales',
           plans: [
@@ -175,6 +183,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'pipedrive',
           name: 'Pipedrive',
+          domain: 'pipedrive.com',
           currency: 'USD',
           sourceUrl: 'https://www.pipedrive.com/pt/pricing',
           plans: [
@@ -187,6 +196,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'rdstation',
           name: 'RD Station CRM',
+          domain: 'rdstation.com',
           currency: 'BRL',
           sourceUrl: 'https://www.rdstation.com/planos/crm/',
           plans: [
@@ -309,6 +319,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'zenvia',
           name: 'Zenvia',
+          domain: 'zenvia.com',
           currency: 'BRL',
           sourceUrl: 'https://www.zenvia.com/precos/',
           plans: [
@@ -322,6 +333,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'blip',
           name: 'Blip',
+          domain: 'blip.ai',
           currency: 'BRL',
           sourceUrl: 'https://www.blip.ai/precos/',
           plans: [
@@ -335,6 +347,7 @@ const CATALOG: ComparisonCatalog = {
         {
           id: 'octadesk',
           name: 'Octadesk',
+          domain: 'octadesk.com',
           currency: 'BRL',
           sourceUrl: 'https://www.octadesk.com/precos',
           plans: [

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { isBillingEnabled } from '@/src/lib/billing'
 import { PricingBillingNote } from '../_components/pricing/pricing-billing-note'
 import { BillingToggle } from '../_components/pricing/pricing-billing-toggle'
+import { PricingCalculator } from '../_components/pricing/pricing-calculator'
 import { PricingCardPlan } from '../_components/pricing/pricing-card-plan'
 import { PricingComparison } from '../_components/pricing/pricing-comparison'
 import { PricingFaq } from '../_components/pricing/pricing-faq'
@@ -90,9 +91,21 @@ export default async function PricingPage() {
           size='sm'
           variant='outline'
           nativeButton={false}
-          render={<Link href='#comparar'>Comparar com outros produtos</Link>}
+          render={<Link href='#calculadora'>Calculadora de economia</Link>}
         />
       </div>
+      <div className='w-full border border-border flex flex-col gap-4 px-4 pt-16 pb-4'>
+        <h2 className='font-normal text-3xl'>
+          Um workspace no lugar de três assinaturas
+        </h2>
+        <p className='text-muted-foreground'>
+          Atendimento, vendas e WhatsApp costumam ser três contratos. Escolha
+          uma ferramenta de cada categoria e compararemos com o Steel, que
+          inclui os três módulos no mesmo assento.
+        </p>
+      </div>
+      <PricingCalculator />
+      <PricingComparison />
       <div className='w-full border border-border flex flex-col gap-4 px-4 pt-16 pb-4'>
         <h2 className='font-normal text-3xl'>Tudo o que está incluído</h2>
         <p className='text-muted-foreground'>
@@ -101,7 +114,6 @@ export default async function PricingPage() {
         </p>
       </div>
       <PricingTableDetailsPlan billingEnabled={billingEnabled} />
-      <PricingComparison />
       <PricingFaq />
     </main>
   )
