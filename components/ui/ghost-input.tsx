@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useGhostAiField } from '@/components/ui/ghost-ai'
 import { cn } from '@/lib/utils'
 
 type GhostTag = 'span' | 'h1' | 'h2' | 'h3' | 'p'
@@ -39,6 +40,19 @@ export function GhostInput({
   ...rest
 }: GhostInputProps) {
   const [draft, setDraft] = useState(value)
+  const aiRef = useGhostAiField(
+    {
+      getValue: () => draft,
+      apply: (next) => {
+        setDraft(next)
+        if (next !== value) onCommit(next)
+      },
+      label: rest['aria-label'] ?? placeholder,
+      multiline: false,
+      maxLength,
+    },
+    readOnly,
+  )
 
   useEffect(() => {
     setDraft(value)
@@ -51,6 +65,7 @@ export function GhostInput({
 
   return (
     <input
+      ref={aiRef}
       value={draft}
       placeholder={placeholder}
       maxLength={maxLength}

@@ -50,6 +50,7 @@ export {
   crmHookVaultItemNotFound,
   crmIntegrationKeyInvalid,
   crmIntegrationKeyNotFound,
+  crmLandingPageAiFailed,
   crmLandingPageNotFound,
   crmLandingPageTemplateNotFound,
   crmLeadAlreadyClosed,

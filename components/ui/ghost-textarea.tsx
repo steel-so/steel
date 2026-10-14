@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useGhostAiField } from '@/components/ui/ghost-ai'
 import { cn } from '@/lib/utils'
 
 export type GhostTextareaProps = {
@@ -42,9 +43,31 @@ export function GhostTextarea({
 }: GhostTextareaProps) {
   const [draft, setDraft] = useState(value)
   const ref = useRef<HTMLTextAreaElement | null>(null)
+  const aiRef = useGhostAiField(
+    {
+      getValue: () => draft,
+      apply: (next) => {
+        setDraft(next)
+        if (next !== value) onCommit(next)
+      },
+      label: rest['aria-label'] ?? placeholder,
+      multiline: true,
+      maxLength,
+    },
+    readOnly,
+  )
+  const setRefs = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      ref.current = el
+      aiRef(el)
+    },
+    [aiRef],
+  )
 
   useEffect(() => {
     setDraft(value)
+    // Re-measure when the value changes from outside (e.g. an AI suggestion).
+    requestAnimationFrame(() => autosize(ref.current))
   }, [value])
 
   useEffect(() => {
@@ -58,7 +81,7 @@ export function GhostTextarea({
 
   return (
     <textarea
-      ref={ref}
+      ref={setRefs}
       rows={1}
       value={draft}
       placeholder={placeholder}

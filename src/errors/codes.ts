@@ -362,6 +362,10 @@ export const ERROR_CODES = {
     code: 'CRM_WORKFLOW_WEBHOOK_INVALID',
     status: 404,
   },
+  CRM_LANDING_PAGE_AI_FAILED: {
+    code: 'CRM_LANDING_PAGE_AI_FAILED',
+    status: 502,
+  },
   CRM_LANDING_PAGE_NOT_FOUND: {
     code: 'CRM_LANDING_PAGE_NOT_FOUND',
     status: 404,

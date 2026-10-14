@@ -115,3 +115,16 @@ export const CrmLandingPageViewDTO = dto(
     })
     .meta({ description: 'Visualização registrada de uma landing page.' }),
 )
+
+export const CrmLandingPageAiReplyDTO = dto(
+  'CrmLandingPageAiReply',
+  z
+    .object({
+      reply: z.string().meta({ description: 'Resposta curta da IA.' }),
+      suggestion: z.string().nullable().meta({
+        description:
+          'Novo texto completo do campo, pronto para aplicar; `null` quando a IA só respondeu uma pergunta.',
+      }),
+    })
+    .meta({ description: 'Uma rodada do mini chat de IA de um campo.' }),
+)

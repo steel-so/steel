@@ -39,7 +39,7 @@ export const FEATURE_CATALOG = {
     module: 'CRM',
     label: 'IA do CRM',
     description:
-      'Análise de concorrentes com IA no CRM. O antigo widget de chat saiu; o assistente agora é o Steel AI.',
+      'Análise de concorrentes e redação de landing pages com IA no CRM. O antigo widget de chat saiu; o assistente agora é o Steel AI.',
     // Ligado em todos os planos para não mudar o comportamento de quem já
     // usa; restringir por plano é decisão de produto (ver docs/feature-flags.md).
     planDefaults: ALL_PLANS_ON,

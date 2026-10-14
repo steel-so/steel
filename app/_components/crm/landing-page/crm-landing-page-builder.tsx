@@ -43,6 +43,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  type GhostAiAssist,
+  GhostAiProvider,
+  GhostAiSection,
+} from '@/components/ui/ghost-ai'
 import { GhostLinkTargetsProvider } from '@/components/ui/ghost-link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
@@ -50,6 +55,7 @@ import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
   useCrmLandingPage,
+  useCrmLandingPageAiAssist,
   useSetCrmLandingPagePublished,
   useUpdateCrmLandingPage,
 } from '@/src/hooks/use-crm-landing-page'
@@ -131,6 +137,7 @@ function CrmLandingPageBuilderInner({
   const router = useRouter()
   const updatePage = useUpdateCrmLandingPage(workspaceId, initial.id)
   const setPublished = useSetCrmLandingPagePublished(workspaceId, initial.id)
+  const aiAssist = useCrmLandingPageAiAssist(workspaceId)
 
   const [title, setTitle] = React.useState(initial.title)
   const [status, setStatus] = React.useState<CrmLandingPageStatusDTO>(
@@ -146,6 +153,17 @@ function CrmLandingPageBuilderInner({
       : ''
 
   const online = status === 'PUBLISHED'
+  const titleRef = React.useRef(title)
+  titleRef.current = title
+  const { mutateAsync: requestAi } = aiAssist
+  const assist = React.useCallback<GhostAiAssist>(
+    ({ section, ...request }) =>
+      requestAi({
+        ...request,
+        page: { title: titleRef.current.trim() || undefined, section },
+      }),
+    [requestAi],
+  )
   const linkTargets = React.useMemo(
     () => sectionAnchors(sections.filter((s) => s.enabled)),
     [sections],
@@ -319,52 +337,56 @@ function CrmLandingPageBuilderInner({
       </header>
 
       <div className='min-h-0 flex-1 overflow-y-auto bg-muted/30'>
-        <GhostLinkTargetsProvider value={linkTargets}>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={onDragEnd}
-          >
-            <SortableContext
-              items={sections.map((s) => s.key)}
-              strategy={verticalListSortingStrategy}
+        <GhostAiProvider assist={assist}>
+          <GhostLinkTargetsProvider value={linkTargets}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
             >
-              <div className='landing-page-light-scope mx-auto flex flex-col gap-4 p-4'>
-                {sections.map((section) => (
-                  <SortableSection
-                    key={section.key}
-                    section={section}
-                    templateKey={initial.templateKey}
-                    workspaceId={workspaceId}
-                    onChange={(content) => updateSection(section.key, content)}
-                    onRemove={() => removeSection(section.key)}
-                  />
-                ))}
+              <SortableContext
+                items={sections.map((s) => s.key)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className='landing-page-light-scope mx-auto flex flex-col gap-4 p-4'>
+                  {sections.map((section) => (
+                    <SortableSection
+                      key={section.key}
+                      section={section}
+                      templateKey={initial.templateKey}
+                      workspaceId={workspaceId}
+                      onChange={(content) =>
+                        updateSection(section.key, content)
+                      }
+                      onRemove={() => removeSection(section.key)}
+                    />
+                  ))}
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant='outline' className='self-center'>
-                        <SteelIcon icon={Add01Icon} strokeWidth={2} />
-                        Adicionar seção
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent>
-                    {Object.values(SECTION_REGISTRY).map((definition) => (
-                      <DropdownMenuItem
-                        key={definition.type}
-                        onClick={() => addSection(definition.type)}
-                      >
-                        {definition.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </SortableContext>
-          </DndContext>
-        </GhostLinkTargetsProvider>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant='outline' className='self-center'>
+                          <SteelIcon icon={Add01Icon} strokeWidth={2} />
+                          Adicionar seção
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent>
+                      {Object.values(SECTION_REGISTRY).map((definition) => (
+                        <DropdownMenuItem
+                          key={definition.type}
+                          onClick={() => addSection(definition.type)}
+                        >
+                          {definition.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </SortableContext>
+            </DndContext>
+          </GhostLinkTargetsProvider>
+        </GhostAiProvider>
       </div>
 
       {metricsOpen ? (
@@ -453,11 +475,13 @@ function SortableSection({
           <SteelIcon icon={Delete02Icon} strokeWidth={2} size={14} />
         </Button>
       </div>
-      <Component
-        content={section.content}
-        onChange={onChange}
-        workspaceId={workspaceId}
-      />
+      <GhostAiSection value={definition.label}>
+        <Component
+          content={section.content}
+          onChange={onChange}
+          workspaceId={workspaceId}
+        />
+      </GhostAiSection>
     </div>
   )
 }

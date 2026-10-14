@@ -1,9 +1,13 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { CrmLandingPageAiAssistInput } from '@/src/schemas/crm-landing-page-ai.schema'
 import type { CrmLandingPageSectionInputDTO } from '@/src/schemas/crm-landing-page-section.schema'
-import type { CrmLandingPageDTO } from '@/types/crm-landing-page'
-import { apiFetch } from './_fetch'
+import type {
+  CrmLandingPageAiReplyDTO,
+  CrmLandingPageDTO,
+} from '@/types/crm-landing-page'
+import { apiFetch, apiFetchJson } from './_fetch'
 
 export type MutationResult<T> = { ok: boolean; data?: T; message?: string }
 
@@ -161,4 +165,17 @@ export async function uploadCrmLandingPageVideo(
   } catch {
     return { ok: false, message: 'Erro de rede. Tente novamente.' }
   }
+}
+
+/** Uma rodada do mini chat de IA de um campo do construtor. */
+export function useCrmLandingPageAiAssist(workspaceId: string) {
+  return useMutation({
+    mutationFn: (input: CrmLandingPageAiAssistInput) =>
+      apiFetchJson<CrmLandingPageAiReplyDTO>(
+        `${collectionUrl(workspaceId)}/ai`,
+        'POST',
+        input,
+        'A IA não conseguiu responder agora.',
+      ),
+  })
 }
