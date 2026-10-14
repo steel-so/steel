@@ -219,3 +219,13 @@ The project follows **trunk-based development with direct commits to `main`** (A
 - **Commits** follow Conventional Commits, enforced by commitlint + Husky pre-commit hooks.
 - **Language split (strict):** everything that is engineering — commit messages (subject **and** body), PR titles and bodies, branch names, code comments, docstrings, identifiers, log messages, technical error messages, and anything written into a GitHub issue or PR — is **English**. Everything the end user reads — UI strings, user-facing error messages, transactional e-mail copy — is **Portuguese (pt-BR)**. **One exception, decided by the product owner: `docs/` stays in pt-BR** — runbooks, ADRs and architecture notes are read by the dev and IT team, and Portuguese is easier for them. Commits before 2026-10-02 have pt-BR bodies; history is not rewritten.
 - Prisma models use `@map`/`@@map` to snake_case DB names while keeping camelCase in code.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
