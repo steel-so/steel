@@ -10,6 +10,18 @@ import { ensureBucket, putObject } from '@/src/lib/storage/s3'
 
 const newToken = () => randomBytes(24).toString('base64url')
 
+/**
+ * The root layout streams every page inside a Suspense boundary, so a
+ * `notFound()` in the page body arrives as the not-found UI (and its
+ * `NEXT_HTTP_ERROR_FALLBACK;404` digest) after the 200 status is sent.
+ */
+async function expectNotFound(res: Response, hidden: string) {
+  const html = await res.text()
+  expect([200, 404]).toContain(res.status)
+  expect(html).toContain('NEXT_HTTP_ERROR_FALLBACK;404')
+  expect(html).not.toContain(hidden)
+}
+
 async function publishedPage() {
   const { user, workspace } = await withWiki(authenticatedOwner())
   const token = newToken()
@@ -47,13 +59,13 @@ describe('GET /w/[token] (published wiki page)', () => {
   it('should 404 an unknown token and a revoked one', async () => {
     const { page, token } = await publishedPage()
 
-    expect((await getJson(`/w/${newToken()}`)).status).toBe(404)
+    await expectNotFound(await getJson(`/w/${newToken()}`), 'Guia público')
 
     await prisma.wikiPage.update({
       where: { id: page.id },
       data: { publicToken: null, publishedAt: null },
     })
-    expect((await getJson(`/w/${token}`)).status).toBe(404)
+    await expectNotFound(await getJson(`/w/${token}`), 'Guia público')
   })
 })
 
