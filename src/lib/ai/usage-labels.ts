@@ -14,6 +14,7 @@ export const AI_USAGE_FEATURE_KEYS = [
   'SERVICEDESK_COPILOT',
   'SERVICEDESK_PRE_SERVICE',
   'SERVICEDESK_TRIAGE',
+  'WIKI_ASSISTANT',
 ] as const
 export type AiUsageFeatureKey = (typeof AI_USAGE_FEATURE_KEYS)[number]
 
@@ -26,6 +27,7 @@ export const AI_USAGE_FEATURE_LABELS: Record<AiUsageFeatureKey, string> = {
   SERVICEDESK_COPILOT: 'Copiloto do ServiceDesk',
   SERVICEDESK_PRE_SERVICE: 'Pré-atendimento do ServiceDesk',
   SERVICEDESK_TRIAGE: 'Triagem do ServiceDesk',
+  WIKI_ASSISTANT: 'IA da Wiki',
 }
 
 /** `PLATFORM` = no module (platform tools, or a call that used no tool). */
@@ -61,6 +63,7 @@ const FEATURE_MODULE: Record<
   SERVICEDESK_COPILOT: 'SERVICE_DESK',
   SERVICEDESK_PRE_SERVICE: 'SERVICE_DESK',
   SERVICEDESK_TRIAGE: 'SERVICE_DESK',
+  WIKI_ASSISTANT: null,
 }
 
 /** Scope of a ledger row: its module, else the feature's, else platform. */

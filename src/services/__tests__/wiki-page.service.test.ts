@@ -1,17 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { auditMutation } from '@/lib/axiom/audit'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeWikiPage } from '@/src/__tests__/factories/wiki-page.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
+import { publishWikiLockChange } from '@/src/lib/wiki-lock-channel'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WikiLabelRepository } from '@/src/repositories/wiki-label.repository'
 import { WikiPageRepository } from '@/src/repositories/wiki-page.repository'
+import { WikiPageFavoriteRepository } from '@/src/repositories/wiki-page-favorite.repository'
 import { WikiPageService } from '../wiki-page.service'
 
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/wiki-page.repository')
 vi.mock('@/src/repositories/wiki-label.repository')
+vi.mock('@/src/repositories/wiki-page-favorite.repository')
+vi.mock('@/src/lib/wiki-lock-channel', () => ({
+  publishWikiLockChange: vi.fn(async () => undefined),
+}))
 // The wiki is on for every case here; the off switch has its own suite.
 vi.mock('@/src/repositories/wiki-settings.repository', () => ({
   WikiSettingsRepository: {
@@ -23,6 +30,7 @@ vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 const mockedMembership = vi.mocked(MembershipRepository)
 const mockedWikiPage = vi.mocked(WikiPageRepository)
 const mockedLabels = vi.mocked(WikiLabelRepository)
+const mockedFavorites = vi.mocked(WikiPageFavoriteRepository)
 
 const memberMembership = createFakeMembership({
   userId: 'actor',
@@ -35,6 +43,8 @@ beforeEach(() => {
   mockedMembership.findByUserAndWorkspace.mockResolvedValue(
     ok(memberMembership),
   )
+  mockedFavorites.isFavorite.mockResolvedValue(ok(false))
+  mockedFavorites.listPageIds.mockResolvedValue(ok(new Set<string>()))
 })
 
 describe('WikiPageService', () => {
@@ -561,5 +571,560 @@ describe('WikiPageService', () => {
         'FORBIDDEN',
       )
     })
+  })
+})
+
+const adminMembership = createFakeMembership({
+  userId: 'admin',
+  workspaceId: 'ws1',
+  role: 'ADMIN',
+})
+
+/** Page locked by its author `author`, in ws1. */
+function lockedPage(overrides: Parameters<typeof createFakeWikiPage>[0] = {}) {
+  return createFakeWikiPage({
+    id: 'w1',
+    workspaceId: 'ws1',
+    createdById: 'author',
+    lockedAt: new Date('2026-10-14T10:00:00.000Z'),
+    lockedById: 'author',
+    ...overrides,
+  })
+}
+
+describe('WikiPageService — viewer fields', () => {
+  it('list() should mark favorites and lock rights with one favorites query', async () => {
+    mockedWikiPage.listByWorkspace.mockResolvedValue(
+      ok([
+        createFakeWikiPage({
+          id: 'a',
+          workspaceId: 'ws1',
+          createdById: 'actor',
+        }),
+        createFakeWikiPage({ id: 'b', workspaceId: 'ws1', createdById: 'x' }),
+      ]),
+    )
+    mockedFavorites.listPageIds.mockResolvedValue(ok(new Set(['b'])))
+
+    const pages = expectOk(await WikiPageService.list('actor', 'ws1'))
+
+    expect(pages.map((p) => [p.id, p.canManageLock, p.isFavorite])).toEqual([
+      ['a', true, false],
+      ['b', false, true],
+    ])
+    expect(mockedFavorites.listPageIds).toHaveBeenCalledTimes(1)
+    expect(mockedFavorites.isFavorite).not.toHaveBeenCalled()
+  })
+
+  it('list() should propagate the favorites error', async () => {
+    mockedWikiPage.listByWorkspace.mockResolvedValue(ok([]))
+    mockedFavorites.listPageIds.mockResolvedValue(err(databaseError()))
+
+    expectErr(await WikiPageService.list('actor', 'ws1'), 'DATABASE_ERROR')
+  })
+
+  it('getById() should let OWNER/ADMIN manage the lock of any page', async () => {
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(
+      ok(adminMembership),
+    )
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+    mockedFavorites.isFavorite.mockResolvedValue(ok(true))
+
+    const dto = expectOk(await WikiPageService.getById('admin', 'ws1', 'w1'))
+
+    expect(dto.canManageLock).toBe(true)
+    expect(dto.isFavorite).toBe(true)
+  })
+
+  it('getById() should propagate the favorite lookup error', async () => {
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+    mockedFavorites.isFavorite.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await WikiPageService.getById('actor', 'ws1', 'w1'),
+      'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('WikiPageService — edit lock enforcement', () => {
+  beforeEach(() => {
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+  })
+
+  it('update() should return WIKI_PAGE_LOCKED for a plain member', async () => {
+    expectErr(
+      await WikiPageService.update('actor', 'ws1', 'w1', { title: 'x' }),
+      'WIKI_PAGE_LOCKED',
+    )
+    expect(mockedWikiPage.update).not.toHaveBeenCalled()
+  })
+
+  it('move(), archive() and setLabels() should be blocked too', async () => {
+    expectErr(
+      await WikiPageService.move('actor', 'ws1', 'w1', {
+        parentId: null,
+        position: 0,
+      }),
+      'WIKI_PAGE_LOCKED',
+    )
+    expectErr(
+      await WikiPageService.archive('actor', 'ws1', 'w1'),
+      'WIKI_PAGE_LOCKED',
+    )
+    expectErr(
+      await WikiPageService.setLabels('actor', 'ws1', 'w1', { labelIds: [] }),
+      'WIKI_PAGE_LOCKED',
+    )
+    expect(mockedWikiPage.move).not.toHaveBeenCalled()
+    expect(mockedWikiPage.archive).not.toHaveBeenCalled()
+    expect(mockedLabels.setPageLabels).not.toHaveBeenCalled()
+  })
+
+  it('update() should let the author edit a locked page', async () => {
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(
+      ok(
+        createFakeMembership({
+          userId: 'author',
+          workspaceId: 'ws1',
+          role: 'MEMBER',
+        }),
+      ),
+    )
+    mockedWikiPage.update.mockResolvedValue(ok(lockedPage({ title: 'x' })))
+
+    const dto = expectOk(
+      await WikiPageService.update('author', 'ws1', 'w1', { title: 'x' }),
+    )
+    expect(dto.canManageLock).toBe(true)
+  })
+
+  it('update() should let an ADMIN edit a locked page', async () => {
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(
+      ok(adminMembership),
+    )
+    mockedWikiPage.update.mockResolvedValue(ok(lockedPage()))
+
+    expectOk(await WikiPageService.update('admin', 'ws1', 'w1', { title: 'x' }))
+  })
+})
+
+describe('WikiPageService.publish() / unpublish()', () => {
+  it('should create a 32-char URL-safe token and audit it', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+    mockedWikiPage.setPublication.mockImplementation(async (_id, data) =>
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1', ...data })),
+    )
+
+    const dto = expectOk(await WikiPageService.publish('actor', 'ws1', 'w1'))
+
+    expect(dto.publicToken).toMatch(/^[A-Za-z0-9_-]{32}$/)
+    expect(dto.publishedAt).not.toBeNull()
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'publish', targetId: 'w1' }),
+    )
+  })
+
+  it('should keep the link of an already published page', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          publicToken: 't'.repeat(32),
+          publishedAt: new Date(),
+        }),
+      ),
+    )
+
+    const dto = expectOk(await WikiPageService.publish('actor', 'ws1', 'w1'))
+
+    expect(dto.publicToken).toBe('t'.repeat(32))
+    expect(mockedWikiPage.setPublication).not.toHaveBeenCalled()
+  })
+
+  it('should audit a failed publish', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+    mockedWikiPage.setPublication.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await WikiPageService.publish('actor', 'ws1', 'w1'),
+      'DATABASE_ERROR',
+    )
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'publish', outcome: 'failure' }),
+    )
+  })
+
+  it('should block publishing a locked page for a plain member', async () => {
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+
+    expectErr(
+      await WikiPageService.publish('actor', 'ws1', 'w1'),
+      'WIKI_PAGE_LOCKED',
+    )
+    expectErr(
+      await WikiPageService.unpublish('actor', 'ws1', 'w1'),
+      'WIKI_PAGE_LOCKED',
+    )
+  })
+
+  it('should revoke the token on unpublish', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          publicToken: 't'.repeat(32),
+          publishedAt: new Date(),
+        }),
+      ),
+    )
+    mockedWikiPage.setPublication.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+
+    const dto = expectOk(await WikiPageService.unpublish('actor', 'ws1', 'w1'))
+
+    expect(dto.publicToken).toBeNull()
+    expect(mockedWikiPage.setPublication).toHaveBeenCalledWith('w1', {
+      publicToken: null,
+      publishedAt: null,
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'unpublish' }),
+    )
+  })
+
+  it('should be a no-op to unpublish a page that is not published', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+
+    expectOk(await WikiPageService.unpublish('actor', 'ws1', 'w1'))
+    expect(mockedWikiPage.setPublication).not.toHaveBeenCalled()
+  })
+
+  it('should propagate the unpublish write error', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          publicToken: 't'.repeat(32),
+        }),
+      ),
+    )
+    mockedWikiPage.setPublication.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await WikiPageService.unpublish('actor', 'ws1', 'w1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should reject a page of another workspace and a non-member', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'other' })),
+    )
+    expectErr(
+      await WikiPageService.publish('actor', 'ws1', 'w1'),
+      'WIKI_PAGE_FORBIDDEN',
+    )
+
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(ok(null))
+    expectErr(
+      await WikiPageService.unpublish('stranger', 'ws1', 'w1'),
+      'FORBIDDEN',
+    )
+  })
+})
+
+describe('WikiPageService.setLock()', () => {
+  it('should let the author lock, notify the realtime server and audit', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          createdById: 'actor',
+        }),
+      ),
+    )
+    const lockedAt = new Date('2026-10-14T10:00:00.000Z')
+    mockedWikiPage.setLock.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          createdById: 'actor',
+          lockedAt,
+          lockedById: 'actor',
+        }),
+      ),
+    )
+
+    const dto = expectOk(
+      await WikiPageService.setLock('actor', 'ws1', 'w1', true),
+    )
+
+    expect(dto.lockedAt).toBe(lockedAt.toISOString())
+    expect(mockedWikiPage.setLock).toHaveBeenCalledWith('w1', {
+      lockedAt: expect.any(Date),
+      lockedById: 'actor',
+    })
+    expect(publishWikiLockChange).toHaveBeenCalledWith({
+      wikiPageId: 'w1',
+      lockedAt: lockedAt.toISOString(),
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'lock', targetId: 'w1' }),
+    )
+  })
+
+  it('should let an ADMIN unlock a page of someone else', async () => {
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(
+      ok(adminMembership),
+    )
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+    mockedWikiPage.setLock.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          createdById: 'author',
+        }),
+      ),
+    )
+
+    const dto = expectOk(
+      await WikiPageService.setLock('admin', 'ws1', 'w1', false),
+    )
+
+    expect(dto.lockedAt).toBeNull()
+    expect(mockedWikiPage.setLock).toHaveBeenCalledWith('w1', {
+      lockedAt: null,
+      lockedById: null,
+    })
+    expect(publishWikiLockChange).toHaveBeenCalledWith({
+      wikiPageId: 'w1',
+      lockedAt: null,
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'unlock' }),
+    )
+  })
+
+  it('should return WIKI_LOCK_FORBIDDEN for a member who is not the author', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          createdById: 'author',
+        }),
+      ),
+    )
+
+    expectErr(
+      await WikiPageService.setLock('actor', 'ws1', 'w1', true),
+      'WIKI_LOCK_FORBIDDEN',
+    )
+    expect(mockedWikiPage.setLock).not.toHaveBeenCalled()
+  })
+
+  it('should be idempotent when the state already matches', async () => {
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(
+      ok(adminMembership),
+    )
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+
+    expectOk(await WikiPageService.setLock('admin', 'ws1', 'w1', true))
+    expect(mockedWikiPage.setLock).not.toHaveBeenCalled()
+    expect(publishWikiLockChange).not.toHaveBeenCalled()
+  })
+
+  it('should audit a failed write and not notify', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          createdById: 'actor',
+        }),
+      ),
+    )
+    mockedWikiPage.setLock.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await WikiPageService.setLock('actor', 'ws1', 'w1', true),
+      'DATABASE_ERROR',
+    )
+    expect(publishWikiLockChange).not.toHaveBeenCalled()
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'lock', outcome: 'failure' }),
+    )
+  })
+
+  it('should propagate the page lookup error', async () => {
+    mockedWikiPage.findById.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await WikiPageService.setLock('actor', 'ws1', 'w1', true),
+      'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('WikiPageService.setFavorite()', () => {
+  it('should favorite and unfavorite for the viewer', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+    mockedFavorites.add.mockResolvedValue(ok(undefined))
+    mockedFavorites.remove.mockResolvedValue(ok(undefined))
+
+    expect(
+      expectOk(await WikiPageService.setFavorite('actor', 'ws1', 'w1', true))
+        .isFavorite,
+    ).toBe(true)
+    expect(mockedFavorites.add).toHaveBeenCalledWith('actor', 'w1')
+
+    expect(
+      expectOk(await WikiPageService.setFavorite('actor', 'ws1', 'w1', false))
+        .isFavorite,
+    ).toBe(false)
+    expect(mockedFavorites.remove).toHaveBeenCalledWith('actor', 'w1')
+  })
+
+  it('should allow favoriting a locked page', async () => {
+    mockedWikiPage.findById.mockResolvedValue(ok(lockedPage()))
+    mockedFavorites.add.mockResolvedValue(ok(undefined))
+
+    expectOk(await WikiPageService.setFavorite('actor', 'ws1', 'w1', true))
+  })
+
+  it('should propagate errors', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+    mockedFavorites.add.mockResolvedValue(err(databaseError()))
+    expectErr(
+      await WikiPageService.setFavorite('actor', 'ws1', 'w1', true),
+      'DATABASE_ERROR',
+    )
+
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(ok(null))
+    expectErr(
+      await WikiPageService.setFavorite('stranger', 'ws1', 'w1', true),
+      'FORBIDDEN',
+    )
+  })
+})
+
+describe('WikiPageService.duplicate()', () => {
+  it('should copy the page with " (cópia)" and audit it', async () => {
+    const source = lockedPage({ title: 'Manual' })
+    mockedWikiPage.findById.mockResolvedValue(ok(source))
+    mockedWikiPage.duplicate.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'copy',
+          workspaceId: 'ws1',
+          title: 'Manual (cópia)',
+        }),
+      ),
+    )
+
+    const dto = expectOk(await WikiPageService.duplicate('actor', 'ws1', 'w1'))
+
+    expect(dto.id).toBe('copy')
+    expect(dto.canManageLock).toBe(true)
+    expect(mockedWikiPage.duplicate).toHaveBeenCalledWith(source, {
+      title: 'Manual (cópia)',
+      createdById: 'actor',
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'duplicate',
+        targetId: 'copy',
+        meta: { workspaceId: 'ws1', sourceId: 'w1' },
+      }),
+    )
+  })
+
+  it('should name an untitled copy and keep the title within 255 chars', async () => {
+    mockedWikiPage.findById.mockResolvedValueOnce(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1', title: '  ' })),
+    )
+    mockedWikiPage.duplicate.mockResolvedValue(ok(createFakeWikiPage()))
+
+    await WikiPageService.duplicate('actor', 'ws1', 'w1')
+    expect(mockedWikiPage.duplicate.mock.calls[0][1].title).toBe(
+      'Sem título (cópia)',
+    )
+
+    mockedWikiPage.findById.mockResolvedValueOnce(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          title: 'x'.repeat(255),
+        }),
+      ),
+    )
+    await WikiPageService.duplicate('actor', 'ws1', 'w1')
+    const title = mockedWikiPage.duplicate.mock.calls[1][1].title
+    expect(title).toHaveLength(255)
+    expect(title.endsWith(' (cópia)')).toBe(true)
+  })
+
+  it('should not duplicate an archived page', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(
+        createFakeWikiPage({
+          id: 'w1',
+          workspaceId: 'ws1',
+          archivedAt: new Date(),
+        }),
+      ),
+    )
+
+    expectErr(
+      await WikiPageService.duplicate('actor', 'ws1', 'w1'),
+      'WIKI_PAGE_NOT_FOUND',
+    )
+  })
+
+  it('should audit a failed copy', async () => {
+    mockedWikiPage.findById.mockResolvedValue(
+      ok(createFakeWikiPage({ id: 'w1', workspaceId: 'ws1' })),
+    )
+    mockedWikiPage.duplicate.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await WikiPageService.duplicate('actor', 'ws1', 'w1'),
+      'DATABASE_ERROR',
+    )
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'duplicate',
+        targetId: 'w1',
+        outcome: 'failure',
+      }),
+    )
+  })
+
+  it('should reject a non-member', async () => {
+    mockedMembership.findByUserAndWorkspace.mockResolvedValue(ok(null))
+
+    expectErr(
+      await WikiPageService.duplicate('stranger', 'ws1', 'w1'),
+      'FORBIDDEN',
+    )
   })
 })

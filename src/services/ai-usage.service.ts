@@ -50,6 +50,8 @@ const MODEL_FIELD_BY_FEATURE: Record<
   // Steel AI reuses the assistant model setting (the CRM widget is gone).
   STEEL_ASSISTANT: 'crmAssistantModel',
   STEEL_AGENT: 'crmAssistantModel',
+  // Wiki inline rewrite (paraphrase, summarize...) uses the assistant model.
+  WIKI_ASSISTANT: 'crmAssistantModel',
 }
 
 /** Features where the user's own model preference applies. */

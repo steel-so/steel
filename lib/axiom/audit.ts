@@ -235,6 +235,10 @@ export type AuditAction =
   | 'reject'
   // Steel AI Autopilot: a write the AI ran without per-action confirmation.
   | 'auto_execute'
+  // Wiki: edit lock and page copy.
+  | 'lock'
+  | 'unlock'
+  | 'duplicate'
 
 type AuditOutcome = 'success' | 'failure'
 

@@ -4,13 +4,27 @@ import { wikiPageNotFound } from '../errors'
 import { err, ok, type Result } from '../lib/result'
 import { dbError } from './db-error'
 
-// Every read and write carries the page's label ids, so the DTO a mutation
-// returns never drops the labels the client already has.
-const WITH_LABELS = {
+const PERSON = { select: { id: true, name: true, image: true } } as const
+
+// Every read and write carries the page's label ids and its author/editor,
+// so the DTO a mutation returns never drops what the client already has.
+const WIKI_PAGE_INCLUDE = {
   labels: { select: { labelId: true } },
+  createdBy: PERSON,
+  updatedBy: PERSON,
 } satisfies Prisma.WikiPageInclude
 
-export type WikiPage = WikiPageRow & { labels: { labelId: string }[] }
+export interface WikiPagePerson {
+  id: string
+  name: string
+  image: string | null
+}
+
+export type WikiPage = WikiPageRow & {
+  labels: { labelId: string }[]
+  createdBy: WikiPagePerson | null
+  updatedBy: WikiPagePerson | null
+}
 
 const EMPTY_CONTENT: Prisma.InputJsonValue = [
   { type: 'p', children: [{ text: '' }] },
@@ -21,7 +35,7 @@ export const WikiPageRepository = {
     try {
       const wikiPage = await prisma.wikiPage.findUnique({
         where: { id },
-        include: WITH_LABELS,
+        include: WIKI_PAGE_INCLUDE,
       })
       if (!wikiPage) return err(wikiPageNotFound())
       return ok(wikiPage)
@@ -35,7 +49,7 @@ export const WikiPageRepository = {
       const wikiPages = await prisma.wikiPage.findMany({
         where: { workspaceId, archivedAt: null },
         orderBy: [{ parentId: 'asc' }, { position: 'asc' }],
-        include: WITH_LABELS,
+        include: WIKI_PAGE_INCLUDE,
       })
       return ok(wikiPages)
     } catch (error) {
@@ -69,7 +83,7 @@ export const WikiPageRepository = {
           position: siblingCount,
           createdById: data.createdById,
         },
-        include: WITH_LABELS,
+        include: WIKI_PAGE_INCLUDE,
       })
 
       return ok(wiki)
@@ -92,7 +106,7 @@ export const WikiPageRepository = {
       const wikiPage = await prisma.wikiPage.update({
         where: { id },
         data,
-        include: WITH_LABELS,
+        include: WIKI_PAGE_INCLUDE,
       })
       return ok(wikiPage)
     } catch (error) {
@@ -108,7 +122,7 @@ export const WikiPageRepository = {
       const wikiPage = await prisma.wikiPage.update({
         where: { id },
         data,
-        include: WITH_LABELS,
+        include: WIKI_PAGE_INCLUDE,
       })
       return ok(wikiPage)
     } catch (error) {
@@ -127,7 +141,7 @@ export const WikiPageRepository = {
         const page = await tx.wikiPage.update({
           where: { id },
           data: { archivedAt, updatedById },
-          include: WITH_LABELS,
+          include: WIKI_PAGE_INCLUDE,
         })
 
         let parentIds = [id]
@@ -165,11 +179,109 @@ export const WikiPageRepository = {
         // `Uint8Array<ArrayBuffer>` — copy into a plain ArrayBuffer-backed
         // array to satisfy it.
         data: { ...data, yjsState: new Uint8Array(data.yjsState) },
-        include: WITH_LABELS,
+        include: WIKI_PAGE_INCLUDE,
       })
       return ok(wikiPage)
     } catch (error) {
       return err(dbError('Failed to persist wiki page yjs state', error))
+    }
+  },
+
+  /** A live (not archived) page by its public link token. */
+  async findPublishedByToken(publicToken: string): Promise<Result<WikiPage>> {
+    try {
+      const wikiPage = await prisma.wikiPage.findFirst({
+        where: { publicToken, archivedAt: null },
+        include: WIKI_PAGE_INCLUDE,
+      })
+      if (!wikiPage) return err(wikiPageNotFound())
+      return ok(wikiPage)
+    } catch (error) {
+      return err(dbError('Failed to find published wiki page', error))
+    }
+  },
+
+  /** Publishes (token + date) or unpublishes (both null) the page. */
+  async setPublication(
+    id: string,
+    data: { publicToken: string | null; publishedAt: Date | null },
+  ): Promise<Result<WikiPage>> {
+    try {
+      const wikiPage = await prisma.wikiPage.update({
+        where: { id },
+        data,
+        include: WIKI_PAGE_INCLUDE,
+      })
+      return ok(wikiPage)
+    } catch (error) {
+      return err(dbError('Failed to set wiki page publication', error))
+    }
+  },
+
+  /** Locks (date + who) or unlocks (both null) the page's editing. */
+  async setLock(
+    id: string,
+    data: { lockedAt: Date | null; lockedById: string | null },
+  ): Promise<Result<WikiPage>> {
+    try {
+      const wikiPage = await prisma.wikiPage.update({
+        where: { id },
+        data,
+        include: WIKI_PAGE_INCLUDE,
+      })
+      return ok(wikiPage)
+    } catch (error) {
+      return err(dbError('Failed to set wiki page lock', error))
+    }
+  },
+
+  /**
+   * Copies a page right after it among its siblings: title, icon, cover,
+   * content, the collaborative (Yjs) state — so the copy opens with the same
+   * content in the realtime editor — and labels. The copy is never
+   * published, locked or favorited, and sub-pages are not copied.
+   */
+  async duplicate(
+    source: WikiPage,
+    data: { title: string; createdById: string },
+  ): Promise<Result<WikiPage>> {
+    try {
+      const copy = await prisma.$transaction(async (tx) => {
+        await tx.wikiPage.updateMany({
+          where: {
+            workspaceId: source.workspaceId,
+            parentId: source.parentId,
+            archivedAt: null,
+            position: { gt: source.position },
+          },
+          data: { position: { increment: 1 } },
+        })
+
+        const created = await tx.wikiPage.create({
+          data: {
+            workspaceId: source.workspaceId,
+            parentId: source.parentId,
+            title: data.title,
+            icon: source.icon,
+            coverImage: source.coverImage,
+            content: source.content as Prisma.InputJsonValue,
+            yjsState: source.yjsState ? new Uint8Array(source.yjsState) : null,
+            position: source.position + 1,
+            createdById: data.createdById,
+            updatedById: data.createdById,
+            labels: {
+              create: source.labels.map((label) => ({
+                labelId: label.labelId,
+              })),
+            },
+          },
+          include: WIKI_PAGE_INCLUDE,
+        })
+        return created
+      })
+      return ok(copy)
+    } catch (error) {
+      return err(dbError('Failed to duplicate wiki page', error))
     }
   },
 
