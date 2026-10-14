@@ -83792,9 +83792,6 @@
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
-          "402": {
-            "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
-          },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
@@ -85320,9 +85317,6 @@
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "402": {
-            "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"

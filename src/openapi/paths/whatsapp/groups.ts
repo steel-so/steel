@@ -12,7 +12,14 @@ import {
   WhatsAppGroupDTO,
   WhatsAppGroupMessageDTO,
 } from '../../schemas/whatsapp'
-import { GROUP_PARAM, perm, permErrors, SEND_ERRORS, SEND_NOTE } from './shared'
+import {
+  GROUP_PARAM,
+  PROVIDER_ERRORS,
+  perm,
+  permErrors,
+  SEND_ERRORS,
+  SEND_NOTE,
+} from './shared'
 
 const TAG = 'Comunicação · Grupos' as const
 const BASE = '/workspaces/{id}/whatsapp/groups/{groupId}'
@@ -79,7 +86,8 @@ export const groupRoutes: RouteConfig[] = [
         code: 'WHATSAPP_GROUP_PROVIDER_UNSUPPORTED',
         when: 'Conexão não é Z-API ou está sem credenciais',
       },
-      ...SEND_ERRORS,
+      // Creating a group sends no message: not metered.
+      ...PROVIDER_ERRORS,
     ],
   },
   {

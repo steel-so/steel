@@ -50,7 +50,7 @@ export const MEMBER_ERRORS: ErrorEntry[] = [
 ]
 
 /** Falha no provedor (Z-API/Meta) ou limite de envio por conexão. */
-export const SEND_ERRORS: ErrorEntry[] = [
+export const PROVIDER_ERRORS: ErrorEntry[] = [
   {
     code: 'WHATSAPP_PROVIDER_ERROR',
     when: 'O provedor (Z-API/Meta) recusou ou falhou o envio',
@@ -60,6 +60,15 @@ export const SEND_ERRORS: ErrorEntry[] = [
     message: 'Muitas requisições',
     when: 'Limite de envio da conexão (20 mensagens/min) excedido',
   },
+]
+
+/**
+ * Metered sends (text, media, template, contact): the provider errors plus the
+ * workspace's monthly message cap. Reactions and group creation are not
+ * metered, so they use PROVIDER_ERRORS.
+ */
+export const SEND_ERRORS: ErrorEntry[] = [
+  ...PROVIDER_ERRORS,
   {
     code: 'WHATSAPP_MESSAGE_LIMIT_REACHED',
     when: 'O limite mensal de mensagens do workspace foi atingido (Ajustes › Comunicação)',

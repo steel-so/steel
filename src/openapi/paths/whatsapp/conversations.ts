@@ -20,6 +20,7 @@ import {
 } from '../../schemas/whatsapp'
 import {
   CONVERSATION_PARAM,
+  PROVIDER_ERRORS,
   perm,
   permErrors,
   SEND_ERRORS,
@@ -35,7 +36,7 @@ const REALTIME =
   'A conversa atualizada é publicada no SSE `GET /whatsapp/events` (`conversation.updated`).'
 
 /** Envios manuais: conversa + conexão carregadas, IA fora do atendimento. */
-const SENDABLE_ERRORS: ErrorEntry[] = [
+const SENDABLE_GUARDS: ErrorEntry[] = [
   ...permErrors('conversations', 'CREATE'),
   'WHATSAPP_CONVERSATION_NOT_FOUND',
   {
@@ -46,8 +47,9 @@ const SENDABLE_ERRORS: ErrorEntry[] = [
     code: 'WHATSAPP_CONVERSATION_AI_HANDLING',
     when: 'A IA está atendendo a conversa (`aiActive`)',
   },
-  ...SEND_ERRORS,
 ]
+
+const SENDABLE_ERRORS: ErrorEntry[] = [...SENDABLE_GUARDS, ...SEND_ERRORS]
 
 const SEND_DESCRIPTION = `${SEND_NOTE} Bloqueado enquanto a IA atende a conversa (remova-a com \`PATCH .../ai\`). A mensagem criada (status \`SENT\`) é publicada no SSE \`GET /whatsapp/events\` (\`message.created\` + \`conversation.updated\`) e a conversa passa a \`IN_PROGRESS\`. Auditado. ${perm('conversations', 'CREATE')}`
 
@@ -510,7 +512,9 @@ export const conversationRoutes: RouteConfig[] = [
       },
     },
     errors: [
-      ...SENDABLE_ERRORS,
+      // Reactions are not messages: never metered (WhatsAppSend.reaction).
+      ...SENDABLE_GUARDS,
+      ...PROVIDER_ERRORS,
       {
         code: 'WHATSAPP_MESSAGE_NOT_FOUND',
         when: 'Mensagem não existe nesta conversa ou ainda não tem id no provedor',
