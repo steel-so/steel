@@ -4,7 +4,9 @@ import { Add01Icon, Delete02Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from './overrides'
 import type { LandingPageSectionProps } from './types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -67,12 +69,19 @@ export function FooterSection({
             key={`${link.label}-${index}`}
             className='group/nav-link flex items-center gap-1'
           >
-            <GhostInput
-              value={link.label}
-              onCommit={(v) => updateLink(index, { label: v })}
+            <GhostLink
+              href={link.href}
+              onHrefChange={(href) => updateLink(index, { href })}
               readOnly={readOnly}
               className='text-muted-foreground text-sm hover:text-foreground'
-            />
+            >
+              <GhostInput
+                value={link.label}
+                onCommit={(v) => updateLink(index, { label: v })}
+                readOnly={readOnly}
+                className='text-inherit'
+              />
+            </GhostLink>
             {!readOnly ? (
               <Button
                 type='button'
@@ -100,9 +109,17 @@ export function FooterSection({
         ) : null}
       </nav>
 
-      <p className='text-muted-foreground text-xs'>
-        © {new Date().getFullYear()} — Todos os direitos reservados.
-      </p>
+      <GhostInput
+        as='p'
+        value={textOf(
+          content,
+          'copyright',
+          `© ${new Date().getFullYear()} — Todos os direitos reservados.`,
+        )}
+        onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+        readOnly={readOnly}
+        className='max-w-md text-center text-muted-foreground text-xs'
+      />
     </footer>
   )
 }

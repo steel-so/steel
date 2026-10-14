@@ -2,6 +2,7 @@
 
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
@@ -62,13 +63,25 @@ export function HeroSection({
       ) : null}
 
       {content.ctaLabel || !readOnly ? (
-        <GhostInput
-          value={content.ctaLabel ?? ''}
-          onCommit={(v) => onChange?.({ ...content, ctaLabel: v || undefined })}
-          placeholder='Texto do botão'
+        <GhostLink
+          href={content.ctaHref}
+          onHrefChange={(href) =>
+            onChange?.({ ...content, ctaHref: href || undefined })
+          }
           readOnly={readOnly}
-          className='mt-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground text-sm'
-        />
+          data-cta
+          className='mt-2 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground text-sm'
+        >
+          <GhostInput
+            value={content.ctaLabel ?? ''}
+            onCommit={(v) =>
+              onChange?.({ ...content, ctaLabel: v || undefined })
+            }
+            placeholder='Texto do botão'
+            readOnly={readOnly}
+            className='text-inherit'
+          />
+        </GhostLink>
       ) : null}
 
       {content.imageUrl || !readOnly ? (
