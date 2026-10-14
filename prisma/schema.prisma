@@ -4711,7 +4711,10 @@ model SdSettings {
   defaultSlaPolicyId          String?        @map("default_sla_policy_id")
   /// Conexão do WhatsApp usada pelo ServiceDesk (WhatsAppConnection.module = SERVICE_DESK).
   whatsappConnectionId        String?        @map("whatsapp_connection_id")
-  portalEnabled               Boolean        @default(true) @map("portal_enabled")
+  /// Chamado aberto pelo WhatsApp: responde ao contato com o código. O
+  /// equivalente do e-mail é por caixa (`SdMailbox.sendAcknowledgement`).
+  whatsappSendAcknowledgement Boolean        @default(true) @map("whatsapp_send_acknowledgement")
+  portalEnabled              Boolean        @default(true) @map("portal_enabled")
   /// Tipos que o solicitante pode abrir pelo portal.
   portalTicketTypes           SdTicketType[] @default([INCIDENT, SERVICE_REQUEST]) @map("portal_ticket_types")
   /// Portal externo (link mágico): o contato vê os chamados das empresas

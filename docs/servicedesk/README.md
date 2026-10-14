@@ -379,7 +379,10 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
   (`WhatsAppConnection.module = SERVICE_DESK`, separada da do zap) e aponta a
   ativa em `SdSettings.whatsappConnectionId`. O webhook já roteia mensagens
   para o chamado aberto da conversa, ou abre um novo (ou entrega ao
-  pré-atendimento da IA, se ligado).
+  pré-atendimento da IA, se ligado). A resposta com o código ao contato
+  depende de `SdSettings.whatsappSendAcknowledgement` (Configurações >
+  WhatsApp > Mensagens automáticas, ligada por padrão) — independente da
+  confirmação por e-mail, que é por caixa.
 - **E-mail**: Configurações > E-mail cadastra as caixas (`SdMailbox`: IMAP
   obrigatório, SMTP opcional, senhas cifradas com `CONNECTION_SECRETS`).
   A cada minuto o worker lê o que chegou desde `lastSeenUid` e, por mensagem:

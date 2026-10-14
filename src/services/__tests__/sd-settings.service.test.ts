@@ -32,6 +32,7 @@ function settingsRow(overrides: Partial<SdSettings> = {}): SdSettings {
     defaultDepartmentId: null,
     defaultSlaPolicyId: null,
     whatsappConnectionId: null,
+    whatsappSendAcknowledgement: true,
     portalEnabled: true,
     portalTicketTypes: ['INCIDENT', 'SERVICE_REQUEST'],
     portalCompanyScope: true,

@@ -15,6 +15,8 @@ export interface SdSettingsDTO {
   defaultDepartmentId: string | null
   defaultSlaPolicyId: string | null
   whatsappConnectionId: string | null
+  /** Chamado aberto pelo WhatsApp responde ao contato com o código. */
+  whatsappSendAcknowledgement: boolean
   portalEnabled: boolean
   portalTicketTypes: SdTicketTypeDTO[]
   /** Portal externo: o contato vê os chamados das empresas dele. */

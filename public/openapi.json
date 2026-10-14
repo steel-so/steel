@@ -70534,6 +70534,9 @@
                       }
                     ]
                   },
+                  "whatsappSendAcknowledgement": {
+                    "type": "boolean"
+                  },
                   "portalEnabled": {
                     "type": "boolean"
                   },
@@ -148382,6 +148385,10 @@
               }
             ]
           },
+          "whatsappSendAcknowledgement": {
+            "type": "boolean",
+            "description": "Chamado aberto pelo WhatsApp responde ao contato com o código. O equivalente do e-mail fica em cada caixa (`sendAcknowledgement`)."
+          },
           "portalEnabled": {
             "type": "boolean"
           },
@@ -148487,6 +148494,7 @@
           "defaultDepartmentId",
           "defaultSlaPolicyId",
           "whatsappConnectionId",
+          "whatsappSendAcknowledgement",
           "portalEnabled",
           "portalTicketTypes",
           "requireSignatureOnClose",

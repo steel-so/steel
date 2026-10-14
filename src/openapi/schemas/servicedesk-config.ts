@@ -48,6 +48,10 @@ export const SdSettingsDTO = dto(
     defaultDepartmentId: id.nullable(),
     defaultSlaPolicyId: id.nullable(),
     whatsappConnectionId: id.nullable(),
+    whatsappSendAcknowledgement: z.boolean().meta({
+      description:
+        'Chamado aberto pelo WhatsApp responde ao contato com o código. O equivalente do e-mail fica em cada caixa (`sendAcknowledgement`).',
+    }),
     portalEnabled: z.boolean(),
     portalTicketTypes: z.array(ticketType),
     requireSignatureOnClose: z.boolean(),

@@ -30,6 +30,7 @@ export const UpdateSdSettingsSchema = z
     defaultDepartmentId: sdId.nullable().optional(),
     defaultSlaPolicyId: sdId.nullable().optional(),
     whatsappConnectionId: sdId.nullable().optional(),
+    whatsappSendAcknowledgement: z.boolean().optional(),
     portalEnabled: z.boolean().optional(),
     portalTicketTypes: z
       .array(SdTicketTypeEnum)

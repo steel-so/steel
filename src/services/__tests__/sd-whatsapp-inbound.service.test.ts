@@ -584,6 +584,22 @@ describe('openTicketFromWhatsapp()', () => {
     )
   })
 
+  it('não responde o código quando a confirmação está desligada', async () => {
+    const opened = expectOk(
+      await SdWhatsappInboundService.openTicketFromWhatsapp({
+        ...base(),
+        config: config({ whatsappSendAcknowledgement: false }),
+        message: inbound(),
+      }),
+    )
+    expect(opened.whatsappConversationId).toBe(CONV)
+    expect(send.text).not.toHaveBeenCalled()
+    expect(sdWa.createTicketMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ authorKind: 'SYSTEM' }),
+    )
+    expect(automations).toHaveBeenCalledWith('TICKET_CREATED', 't1')
+  })
+
   it('segue quando a resposta com o código falha', async () => {
     send.text.mockResolvedValue(err(databaseError()))
     expectOk(

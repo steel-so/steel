@@ -15,6 +15,7 @@ const CONNECTIONS = `${SD_URL}/whatsapp/connections`
 
 const settings = {
   whatsappConnectionId: 'conn-1',
+  whatsappSendAcknowledgement: true,
 }
 
 function renderTab(canEdit = true) {
@@ -165,6 +166,26 @@ describe('<SdWhatsappSettingsTab />', () => {
     )
   })
 
+  it('turns off the ticket code reply on WhatsApp', async () => {
+    const spy = mockFetch([
+      { method: 'PATCH', match: `${SD_URL}/settings`, data: settings },
+      { match: CONNECTIONS, data: [sdConnection()] },
+      { match: `${SD_URL}/settings`, data: settings },
+    ])
+    renderTab()
+
+    const toggle = await screen.findByRole('switch', {
+      name: 'Confirmar a abertura pelo WhatsApp',
+    })
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(toggle)
+    await waitFor(() =>
+      expect(fetchBody(spy, `${SD_URL}/settings`, 'PATCH')).toEqual({
+        whatsappSendAcknowledgement: false,
+      }),
+    )
+  })
+
   it('creates a Z-API connection from the dialog', async () => {
     const spy = mockFetch([
       { method: 'POST', match: CONNECTIONS, data: sdConnection() },
@@ -256,6 +277,13 @@ describe('<SdWhatsappSettingsTab />', () => {
     renderTab(false)
 
     expect(await screen.findByText(/modo leitura/)).toBeTruthy()
+    expect(
+      (
+        await screen.findByRole('switch', {
+          name: 'Confirmar a abertura pelo WhatsApp',
+        })
+      ).hasAttribute('data-disabled'),
+    ).toBe(true)
     expect(screen.queryByRole('button', { name: 'Testar' })).toBeNull()
     expect(
       screen.queryByRole('button', { name: 'Adicionar conexão' }),

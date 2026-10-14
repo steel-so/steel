@@ -265,11 +265,39 @@ async function createTicket(
   return created
 }
 
+/** Replies to the contact with the new ticket code; a failure only logs. */
+async function sendTicketOpenedReply(
+  input: SdOpenFromWhatsappInput,
+  ticket: SdTicketWithRelations,
+): Promise<void> {
+  const code = sdTicketCode(ticket, input.config.prefixes)
+  const reply = await sendSdWhatsappText({
+    connection: input.connection,
+    conversationId: input.conversationId,
+    waId: input.contact.waId,
+    text: sdWhatsappTicketOpenedText(code),
+  })
+  if (reply.ok) {
+    await mirrorSdWhatsappMessage({
+      ticket,
+      message: reply.value,
+      authorKind: 'SYSTEM',
+    })
+    return
+  }
+  logger.warn('servicedesk.whatsapp.ticket_reply_failed', {
+    workspaceId: input.connection.workspaceId,
+    ticketId: ticket.id,
+    reason: reply.error.code,
+  })
+}
+
 export const SdWhatsappInboundService = {
   /**
    * Abre o chamado a partir de uma conversa do WhatsApp do ServiceDesk:
    * contato/cliente pelo número, conversa vinculada, 1ª mensagem espelhada,
-   * automações `TICKET_CREATED` e a resposta com o código ao contato.
+   * automações `TICKET_CREATED` e, se `whatsappSendAcknowledgement`, a
+   * resposta com o código ao contato.
    */
   async openTicketFromWhatsapp(
     input: SdOpenFromWhatsappInput,
@@ -333,31 +361,15 @@ export const SdWhatsappInboundService = {
 
     void fireSdAutomations('TICKET_CREATED', ticket.id)
 
-    const code = sdTicketCode(ticket, input.config.prefixes)
-    const reply = await sendSdWhatsappText({
-      connection: input.connection,
-      conversationId: input.conversationId,
-      waId: input.contact.waId,
-      text: sdWhatsappTicketOpenedText(code),
-    })
-    if (reply.ok) {
-      await mirrorSdWhatsappMessage({
-        ticket,
-        message: reply.value,
-        authorKind: 'SYSTEM',
-      })
-    } else {
-      logger.warn('servicedesk.whatsapp.ticket_reply_failed', {
-        workspaceId,
-        ticketId: ticket.id,
-        reason: reply.error.code,
-      })
+    if (input.config.settings.whatsappSendAcknowledgement) {
+      await sendTicketOpenedReply(input, ticket)
     }
 
     logger.info('servicedesk.whatsapp.ticket_opened', {
       workspaceId,
       ticketId: ticket.id,
       fromPreService: Boolean(input.transcript),
+      acknowledged: input.config.settings.whatsappSendAcknowledgement,
     })
     return ok(ticket)
   },

@@ -42,6 +42,7 @@ import {
   EmptyState,
   ReadOnlyNotice,
   SettingsSection,
+  ToggleRow,
   useSdSettingsContext,
 } from './sd-settings-kit'
 
@@ -514,6 +515,7 @@ export function SdWhatsappSettingsTab() {
   const { workspaceId, canEdit } = useSdSettingsContext()
   const connections = useSdWhatsappConnections(workspaceId)
   const settings = useSdSettings(workspaceId)
+  const updateSettings = useUpdateSdSettings(workspaceId)
   const items = connections.data ?? []
   const activeId = settings.data?.whatsappConnectionId ?? null
 
@@ -553,6 +555,28 @@ export function SdWhatsappSettingsTab() {
       </SettingsSection>
 
       <SettingsSection
+        title='Mensagens automáticas'
+        description='O que o contato recebe sem um atendente digitar. A confirmação por e-mail é ligada em cada caixa, na aba E-mail.'
+      >
+        {settings.data ? (
+          <ToggleRow
+            label='Confirmar a abertura pelo WhatsApp'
+            description='Responde com o código do chamado assim que ele é aberto.'
+            checked={settings.data.whatsappSendAcknowledgement}
+            disabled={!canEdit || updateSettings.isPending}
+            onCheckedChange={(value) =>
+              updateSettings.mutate(
+                { whatsappSendAcknowledgement: value },
+                { onError: (error) => notify.error(error) },
+              )
+            }
+          />
+        ) : (
+          <Skeleton className='h-10 w-full' />
+        )}
+      </SettingsSection>
+
+      <SettingsSection
         title='Como funciona'
         description='O caminho de uma mensagem que chega no número do ServiceDesk.'
       >
@@ -565,8 +589,8 @@ export function SdWhatsappSettingsTab() {
             contato, sugere artigos da base e só abre o chamado quando precisa.
           </li>
           <li>
-            Sem IA, a primeira mensagem já abre um chamado e o contato recebe o
-            código de volta.
+            Sem IA, a primeira mensagem já abre um chamado e, com a confirmação
+            ligada, o contato recebe o código de volta.
           </li>
           <li>
             Com o chamado aberto, as mensagens aparecem na aba WhatsApp dele e o

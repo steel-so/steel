@@ -33,6 +33,7 @@ export function toSdSettingsDTO(settings: SdSettings): SdSettingsDTO {
     defaultDepartmentId: settings.defaultDepartmentId,
     defaultSlaPolicyId: settings.defaultSlaPolicyId,
     whatsappConnectionId: settings.whatsappConnectionId,
+    whatsappSendAcknowledgement: settings.whatsappSendAcknowledgement,
     portalEnabled: settings.portalEnabled,
     portalTicketTypes: settings.portalTicketTypes,
     portalCompanyScope: settings.portalCompanyScope,

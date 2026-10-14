@@ -79,6 +79,7 @@ describe('sd-settings mapper', () => {
     defaultDepartmentId: 'd1',
     defaultSlaPolicyId: null,
     whatsappConnectionId: null,
+    whatsappSendAcknowledgement: true,
     portalEnabled: true,
     portalTicketTypes: ['INCIDENT'],
     portalCompanyScope: true,

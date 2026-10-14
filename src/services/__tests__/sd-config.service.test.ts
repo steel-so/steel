@@ -55,6 +55,7 @@ const settings: SdSettings = {
   defaultDepartmentId: null,
   defaultSlaPolicyId: null,
   whatsappConnectionId: null,
+  whatsappSendAcknowledgement: true,
   portalEnabled: true,
   portalTicketTypes: ['INCIDENT'],
   portalCompanyScope: true,
