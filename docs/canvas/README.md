@@ -40,3 +40,43 @@ Decisão de arquitetura: [ADR 0026](../adr/0026-steel-canvas-shared-drag-and-dro
 | S2 | Nível Wix: galeria, carrossel, abas, popups, animações, posição livre, componentes globais, mídia, versões, SEO |
 | S3 | Nível WordPress: blog, coleções, domínio próprio com TLS, redirecionamentos, sitemap, conversões |
 | S4 | Coedição (Yjs), gerador de site com IA, teste A/B; loja e área de membros a decidir |
+
+## Núcleo do motor (`src/lib/canvas/`)
+
+| Arquivo | O quê |
+|---|---|
+| `ops.ts` | `applyOp`, `canDrop`, `cloneFragment`, `fragmentForType`, `createDocument`, `validateDocument`, `getNode`, `parentOf`, `resolveResponsive` |
+| `store.ts` | `createCanvasStore`: histórico, seleção, área de transferência, estado salvo |
+| `nodes.ts` | Documentos derivados sem copiar o mapa de nós (sobreposição) |
+| `tree.ts` | Índice de pais por documento (WeakMap), derivado a cada operação |
+| `draft.ts` | Cópia de trabalho de uma operação ou de um lote |
+| `rules.ts` | Regras do catálogo (accepts, parents, min/max, props) |
+| `path.ts` / `responsive.ts` | Caminhos com ponto (`style.padding.top`) e valores por breakpoint |
+| `app/_components/canvas/use-canvas.ts` | `CanvasStoreProvider`, `useCanvasStore(selector, isEqual?)`, `useCanvasStoreApi`, `useCanvasNode` |
+
+Regras que quem usa o motor precisa saber:
+
+- **Leia nós com `getNode(doc, id)`** (ou `useCanvasNode`). Um documento
+  produzido por `applyOp` guarda só o que mudou sobre o anterior;
+  `doc.nodes` continua sendo um `Record` de verdade (JSON, spread,
+  `Object.values`), mas é montado no primeiro acesso — O(n) uma vez por
+  documento. Assim cada operação custa O(profundidade): ~0,03–0,05 ms num
+  documento de 2.000 nós.
+- **Identidade preservada**: nós não tocados mantêm o mesmo objeto; uma
+  operação que não muda nada devolve o mesmo documento (e não entra no
+  histórico).
+- **`move.to.index` é a linha de soltar** entre os filhos *atuais* do destino;
+  dentro do mesmo pai o motor desconta a vaga do próprio nó.
+- **Travado** (`meta.locked`) impede mover e excluir (inclusive excluir um
+  ancestral); editar props e meta continua permitido (é como destravar).
+- **Desfazer/refazer** reaplicam a inversa com `replay: true`: ignoram
+  `LOCKED` e `REQUIRED`, mas não as regras estruturais.
+- **Histórico**: até 200 passos; `update`s seguidos no mesmo nó e nos mesmos
+  caminhos em até 500 ms viram um passo só (`coalesce: false` força passo
+  novo). Salvar (`markSaved`) quebra a fusão. `markSaved(doc)` marca o
+  instantâneo enviado ao servidor, então o que foi digitado durante o
+  salvamento continua "não salvo".
+- **Colar** entra dentro do nó âncora quando ele aceita o conteúdo; senão,
+  logo depois dele. Copiar vários nós gera um fragmento com `roots`.
+- Erros novos além do contrato inicial: `UNKNOWN_TYPE`, `DUPLICATE_ID` e
+  `INVALID_DOCUMENT` (forma inválida, catálogo/versão errados, nó órfão).
