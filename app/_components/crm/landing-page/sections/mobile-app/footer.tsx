@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
 import { GhostLink } from '@/components/ui/ghost-link'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -199,16 +200,42 @@ export function MobileAppFooter({
         ))}
 
         <div className='flex flex-col gap-4'>
-          <span className='text-[#161c2d]/70 text-[15px]'>
-            Download Our App
-          </span>
+          <GhostInput
+            value={textOf(content, 'download.title', 'Download Our App')}
+            onCommit={(v) => onChange?.(withText(content, 'download.title', v))}
+            placeholder='Título da coluna'
+            readOnly={readOnly}
+            className='text-[#161c2d]/70 text-[15px]'
+          />
           <div className='flex flex-col items-start gap-3'>
-            <img src={APP_STORE} alt='App Store' className='h-[42px] w-auto' />
-            <img
-              src={PLAY_STORE}
-              alt='Google Play'
-              className='h-[42px] w-auto'
-            />
+            <GhostLink
+              href={hrefOf(content, 'download.appStore', '#')}
+              onHrefChange={(v) =>
+                onChange?.(withHref(content, 'download.appStore', v))
+              }
+              readOnly={readOnly}
+              aria-label='App Store'
+            >
+              <img
+                src={APP_STORE}
+                alt='App Store'
+                className='h-[42px] w-auto'
+              />
+            </GhostLink>
+            <GhostLink
+              href={hrefOf(content, 'download.playStore', '#')}
+              onHrefChange={(v) =>
+                onChange?.(withHref(content, 'download.playStore', v))
+              }
+              readOnly={readOnly}
+              aria-label='Google Play'
+            >
+              <img
+                src={PLAY_STORE}
+                alt='Google Play'
+                className='h-[42px] w-auto'
+              />
+            </GhostLink>
           </div>
         </div>
       </div>
@@ -228,7 +255,17 @@ export function MobileAppFooter({
             readOnly={readOnly}
             className='inline-flex text-[#161c2d] text-[15px]'
           />
-          . Todos os direitos reservados.
+          <GhostInput
+            value={textOf(
+              content,
+              'copyright',
+              '. Todos os direitos reservados.',
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+            placeholder='Texto de copyright'
+            readOnly={readOnly}
+            className='field-sizing-content inline-flex w-auto text-[#161c2d] text-[15px]'
+          />
         </p>
 
         <div className='flex items-center gap-4'>

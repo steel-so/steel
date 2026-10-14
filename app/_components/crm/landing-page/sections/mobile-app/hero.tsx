@@ -8,6 +8,7 @@ import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import { MOBILE_APP_HERO_GRADIENT } from '@/src/lib/landing-page-templates/mobile-app/colors'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -105,20 +106,44 @@ export function MobileAppHero({
           ) : null}
 
           <div className='mt-8 flex flex-col gap-4'>
-            <span className='font-bold text-[#f4f7fa] text-[13px] uppercase tracking-[1.6px]'>
-              Download our app
-            </span>
+            <GhostInput
+              value={textOf(content, 'download.title', 'Download our app')}
+              onCommit={(v) =>
+                onChange?.(withText(content, 'download.title', v))
+              }
+              placeholder='Texto de destaque'
+              readOnly={readOnly}
+              className='font-bold text-[#f4f7fa] text-[13px] uppercase tracking-[1.6px]'
+            />
             <div className='flex items-center gap-3'>
-              <img
-                src={APP_STORE}
-                alt='App Store'
-                className='h-[42px] w-auto'
-              />
-              <img
-                src={PLAY_STORE}
-                alt='Google Play'
-                className='h-[42px] w-auto'
-              />
+              <GhostLink
+                href={hrefOf(content, 'download.appStore', '#')}
+                onHrefChange={(v) =>
+                  onChange?.(withHref(content, 'download.appStore', v))
+                }
+                readOnly={readOnly}
+                aria-label='App Store'
+              >
+                <img
+                  src={APP_STORE}
+                  alt='App Store'
+                  className='h-[42px] w-auto'
+                />
+              </GhostLink>
+              <GhostLink
+                href={hrefOf(content, 'download.playStore', '#')}
+                onHrefChange={(v) =>
+                  onChange?.(withHref(content, 'download.playStore', v))
+                }
+                readOnly={readOnly}
+                aria-label='Google Play'
+              >
+                <img
+                  src={PLAY_STORE}
+                  alt='Google Play'
+                  className='h-[42px] w-auto'
+                />
+              </GhostLink>
             </div>
           </div>
         </div>
