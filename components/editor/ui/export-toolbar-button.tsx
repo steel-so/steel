@@ -6,17 +6,18 @@ import { MarkdownPlugin } from '@platejs/markdown'
 import { ArrowDownToLineIcon } from 'lucide-react'
 import type { SlatePlugin } from 'platejs'
 import { createSlateEditor } from 'platejs'
-import { useEditorRef } from 'platejs/react'
+import { type PlateEditor, useEditorRef } from 'platejs/react'
 import { serializeHtml } from 'platejs/static'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { BaseEditorKit } from '@/components/editor/editor-base-kit'
 import { EditorStatic } from '@/components/editor/ui/editor-static'
 import { ToolbarButton } from '@/components/editor/ui/toolbar'
 
-export function ExportToolbarButton(props: React.ComponentProps<typeof DropdownMenu>) {
-  const editor = useEditorRef()
-  const [open, setOpen] = React.useState(false)
-
+/**
+ * The page exports (HTML, PDF, image, Markdown, Word) over a Plate editor —
+ * shared by this toolbar button and the wiki's "⋯" menu.
+ */
+export function createEditorExporter(editor: PlateEditor) {
   const getCanvas = async () => {
     const { default: html2canvas } = await import('html2canvas-pro')
 
@@ -124,6 +125,21 @@ export function ExportToolbarButton(props: React.ComponentProps<typeof DropdownM
     link.remove()
     URL.revokeObjectURL(url)
   }
+
+  return {
+    html: exportToHtml,
+    pdf: exportToPdf,
+    image: exportToImage,
+    markdown: exportToMarkdown,
+    word: exportToWord,
+  }
+}
+
+export function ExportToolbarButton(props: React.ComponentProps<typeof DropdownMenu>) {
+  const editor = useEditorRef()
+  const [open, setOpen] = React.useState(false)
+  const { html: exportToHtml, pdf: exportToPdf, image: exportToImage, markdown: exportToMarkdown, word: exportToWord } =
+    createEditorExporter(editor)
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>

@@ -18,13 +18,18 @@ function realtimeUrl(): string {
 
 export function createYjsKit({
   documentName,
+  userId,
   userName,
+  userImage,
   userColor,
   onSyncChange,
   onConnectionChange,
 }: {
   documentName: string
+  /** Lets the page's presence list show one avatar per person, not per tab. */
+  userId?: string
   userName: string
+  userImage?: string | null
   userColor: string
   onSyncChange?: (isSynced: boolean) => void
   /** The collaboration socket opened (true) or dropped (false). */
@@ -33,7 +38,14 @@ export function createYjsKit({
   return [
     YjsPlugin.configure({
       options: {
-        cursors: { data: { name: userName, color: userColor } },
+        cursors: {
+          data: {
+            name: userName,
+            color: userColor,
+            ...(userId && { id: userId }),
+            ...(userImage && { image: userImage }),
+          },
+        },
         providers: [
           {
             type: 'hocuspocus',

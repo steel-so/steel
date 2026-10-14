@@ -22,6 +22,19 @@ import { cn } from '@/lib/utils'
 
 const UNDRAGGABLE_KEYS = [KEYS.column, KEYS.tr, KEYS.td]
 
+/**
+ * Opt-in extra control rendered to the left of a block's drag handle (the
+ * wiki's inline AI). Editors that do not provide it — the ServiceDesk
+ * knowledge base — render exactly the handle alone.
+ */
+export type BlockGutterSlot = React.ComponentType<{
+  element: TElement
+  /** Same offset as the drag handle, to line up with the block's first line. */
+  top: number
+}>
+
+export const BlockGutterSlotContext = React.createContext<BlockGutterSlot | null>(null)
+
 export const BlockDraggable: RenderNodeWrapper = (props) => {
   const { editor, element, path } = props
 
@@ -74,6 +87,7 @@ function Draggable(props: PlateElementProps) {
 
   const isInColumn = path.length === 3
   const isInTable = path.length === 4
+  const GutterSlot = React.useContext(BlockGutterSlotContext)
 
   const [previewTop, setPreviewTop] = React.useState(0)
 
@@ -115,6 +129,7 @@ function Draggable(props: PlateElementProps) {
       {!isInTable && (
         <Gutter>
           <div className={cn('slate-blockToolbarWrapper', 'flex h-[1.5em]', isInColumn && 'h-4')}>
+            {GutterSlot && !isInColumn && <GutterSlot element={element} top={dragButtonTop} />}
             <div
               className={cn(
                 'slate-blockToolbar relative w-4.5',

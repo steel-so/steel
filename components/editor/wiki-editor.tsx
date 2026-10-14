@@ -1,8 +1,8 @@
 'use client'
 
-import { type ReactNode, useEffect, useState } from "react"
+import { type ReactNode, type RefObject, useEffect, useState } from "react"
 import { KEYS, Value } from "platejs"
-import { Plate, usePlateEditor } from "platejs/react"
+import { type PlateEditor, Plate, usePlateEditor } from "platejs/react"
 import { YjsPlugin } from "@platejs/yjs/react"
 import { BasicNodesKit } from "./plugins/basic-nodes-kit"
 import { ListKit } from "./plugins/list-kit"
@@ -11,7 +11,6 @@ import { AlignKit } from "./plugins/align-kit"
 import { FontKit } from "./plugins/font-kit"
 import { LineHeightKit } from "./plugins/line-height-kit"
 import { BlockMenuKit } from "./plugins/block-menu-kit"
-import { FixedToolbarKit } from "./plugins/fixed-toolbar-kit"
 import { FloatingToolbarKit } from "./plugins/floating-toolbar-kit"
 import { CursorOverlayKit } from "./plugins/cursor-overlay-kit"
 import { createYjsKit } from "./plugins/yjs-kit"
@@ -19,6 +18,10 @@ import { useMounted } from "@/components/editor/hooks/use-mounted"
 import { cn } from "@/lib/utils"
 import { Editor, EditorContainer } from "@/components/editor/ui/editor"
 import { CursorOverlay } from "@/components/editor/ui/cursor-overlay"
+import {
+  type BlockGutterSlot,
+  BlockGutterSlotContext,
+} from "@/components/editor/ui/block-draggable"
 import { ColumnKit } from "./plugins/column-kit"
 import { ToggleKit } from "./plugins/toggle-kit"
 import { TocKit } from "./plugins/toc-kit"
@@ -61,11 +64,24 @@ interface WikiPageRichEditorProps {
   workspaceId: string
   userId: string
   userName: string
+  /** Avatar shown to the others on the page (Yjs awareness). */
+  userImage?: string | null
   content: Value
   onChange: (content: Value) => void
-  /** Rendered above the toolbar, inside the editor's Plate context. */
+  /** The page's toolbar, inside the editor's Plate context (sticky). */
+  toolbar?: ReactNode
+  /** Rendered between the toolbar and the text (icon, title, labels). */
   header?: ReactNode
   onStatusChange?: (status: WikiSyncStatus) => void
+  /** Raw awareness states of everyone on the page, on every change. */
+  onPresenceChange?: (states: Record<string, unknown>[]) => void
+  /** Filled with the editor, for actions outside the Plate tree. */
+  editorRef?: RefObject<PlateEditor | null>
+  /** Extra control beside each block's drag handle (inline AI). */
+  blockGutter?: BlockGutterSlot
+  readOnly?: boolean
+  /** Classes of the editable area (the text column's padding). */
+  editorClassName?: string
   className?: string
 }
 
@@ -74,10 +90,17 @@ export function WikiPageRichEditor({
   workspaceId,
   userId,
   userName,
+  userImage,
   content,
   onChange,
+  toolbar,
   header,
   onStatusChange,
+  onPresenceChange,
+  editorRef,
+  blockGutter,
+  readOnly = false,
+  editorClassName,
   className
 }: WikiPageRichEditorProps) {
   const [isSynced, setIsSynced] = useState(false)
@@ -117,11 +140,12 @@ export function WikiPageRichEditor({
       ...CursorOverlayKit,
       ...BlockMenuKit,
       ...DndKit,
-      ...FixedToolbarKit,
       ...FloatingToolbarKit,
       ...createYjsKit({
         documentName,
+        userId,
         userName,
+        userImage,
         userColor: colorFromUserId(userId),
         onSyncChange: setIsSynced,
         onConnectionChange: setConnected,
@@ -132,6 +156,27 @@ export function WikiPageRichEditor({
   })
 
   const mounted = useMounted()
+
+  useEffect(() => {
+    if (!editorRef) return
+    editorRef.current = editor
+    return () => {
+      editorRef.current = null
+    }
+  }, [editor, editorRef])
+
+  useEffect(() => {
+    if (!onPresenceChange) return
+    const awareness = editor.getOption(YjsPlugin, 'awareness')
+    if (!awareness) return
+    const emit = () =>
+      onPresenceChange(
+        Array.from(awareness.getStates().values()) as Record<string, unknown>[],
+      )
+    emit()
+    awareness.on('change', emit)
+    return () => awareness.off('change', emit)
+  }, [editor, onPresenceChange])
 
   useEffect(() => {
     if (!mounted) return
@@ -172,8 +217,10 @@ export function WikiPageRichEditor({
       userName={userName}
       backend={wikiEditorBackend}
     >
+      <BlockGutterSlotContext.Provider value={blockGutter ?? null}>
       <Plate
         editor={editor}
+        readOnly={readOnly}
         onChange={({ value }) => {
           // Ctrl+A -> Del can zero out editor.children before Slate's
           // normalization runs (Yjs init disables the default normalization,
@@ -189,6 +236,7 @@ export function WikiPageRichEditor({
         }}
       >
         <div className={cn('flex flex-col', className)}>
+          {toolbar}
           {header}
           {/* The page scrolls as a whole (title, labels, toolbar, text), so
               the container does not scroll on its own: the toolbar then
@@ -205,12 +253,13 @@ export function WikiPageRichEditor({
             <Editor
               key={isSynced ? 'synced' : 'pending'}
               placeholder='Digite algo, ou / para comandos'
-              className='min-h-[50vh] max-sm:px-5 max-sm:pb-40'
+              className={cn('min-h-[50vh] max-sm:px-5 max-sm:pb-40', editorClassName)}
             />
             <CursorOverlay />
           </EditorContainer>
         </div>
       </Plate>
+      </BlockGutterSlotContext.Provider>
     </EditorDocumentProvider>
   )
 }
