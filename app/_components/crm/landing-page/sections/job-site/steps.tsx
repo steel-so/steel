@@ -13,6 +13,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type StepsContent = Extract<CrmLandingPageSectionContent, { type: 'STEPS' }>
@@ -134,11 +135,29 @@ export function JobSiteSteps({
                 className='text-white'
               />
             </span>
-            <div className='flex flex-col'>
-              <span className='text-[13px] text-white/70'>New Invitation!</span>
-              <span className='font-bold text-[15px] text-white'>
-                Interview invitation at Greener
-              </span>
+            <div className='flex min-w-0 flex-1 flex-col'>
+              <GhostInput
+                value={textOf(content, 'notice.badge', 'New Invitation!')}
+                onCommit={(v) =>
+                  onChange?.(withText(content, 'notice.badge', v))
+                }
+                placeholder='Rótulo do aviso'
+                readOnly={readOnly}
+                className='text-[13px] text-white/70'
+              />
+              <GhostInput
+                value={textOf(
+                  content,
+                  'notice.title',
+                  'Interview invitation at Greener',
+                )}
+                onCommit={(v) =>
+                  onChange?.(withText(content, 'notice.title', v))
+                }
+                placeholder='Texto do aviso'
+                readOnly={readOnly}
+                className='font-bold text-[15px] text-white'
+              />
             </div>
           </div>
         </div>

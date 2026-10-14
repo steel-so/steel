@@ -9,6 +9,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { cn } from '@/lib/utils'
 import { jobSiteLogoFont } from '@/src/lib/landing-page-templates/job-site/fonts'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -251,9 +252,20 @@ export function JobSiteFooter({
         ))}
       </div>
 
-      <p className='mx-auto mt-16 max-w-6xl border-white/10 border-t pt-6 text-center text-white/40 text-xs'>
-        © {new Date().getFullYear()} — Todos os direitos reservados.
-      </p>
+      <div className='mx-auto mt-16 max-w-6xl border-white/10 border-t pt-6'>
+        <GhostInput
+          as='p'
+          value={textOf(
+            content,
+            'copyright',
+            `© ${new Date().getFullYear()} — Todos os direitos reservados.`,
+          )}
+          onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+          placeholder='Texto de copyright'
+          readOnly={readOnly}
+          className='text-center text-white/40 text-xs'
+        />
+      </div>
     </footer>
   )
 }

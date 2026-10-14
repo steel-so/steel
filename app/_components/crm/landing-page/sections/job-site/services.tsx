@@ -8,7 +8,9 @@ import {
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type ServicesContent = Extract<
@@ -92,13 +94,21 @@ export function JobSiteServices({
           ) : null}
         </div>
 
-        <a
-          href='#categories'
+        <GhostLink
+          href={hrefOf(content, 'explore', '#categories')}
+          onHrefChange={(v) => onChange?.(withHref(content, 'explore', v))}
+          readOnly={readOnly}
           className='inline-flex shrink-0 items-center gap-2 font-bold text-[#68d585] text-[17px] tracking-[-0.6px] hover:opacity-80'
         >
-          Explore all categories
+          <GhostInput
+            value={textOf(content, 'explore', 'Explore all categories')}
+            onCommit={(v) => onChange?.(withText(content, 'explore', v))}
+            placeholder='Texto do link'
+            readOnly={readOnly}
+            className='field-sizing-content text-inherit'
+          />
           <SteelIcon icon={ArrowRight01Icon} strokeWidth={2.5} size={16} />
-        </a>
+        </GhostLink>
       </div>
 
       <div className='mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>

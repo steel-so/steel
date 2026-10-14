@@ -12,6 +12,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -85,8 +86,8 @@ export function JobSiteHero({
             />
           ) : null}
 
-          {/* Formulário de busca — decorativo/estático, não faz parte do
-              schema de HERO (que só cobre título/subtítulo/CTA único). */}
+          {/* Decorative search form — not part of the HERO schema; its
+              visible copy lives in the `texts` overrides (`search.*`). */}
           <div className='mt-2 flex w-full max-w-xl flex-col gap-3 rounded-xl bg-[#473bf0] p-2 shadow-[0_54px_53px_-23px_rgba(22,28,45,0.14)] sm:flex-row sm:items-center'>
             <div className='flex flex-1 items-center gap-2 rounded-lg bg-white px-4 py-3'>
               <SteelIcon
@@ -95,12 +96,30 @@ export function JobSiteHero({
                 size={16}
                 className='text-[#161c2d]/40'
               />
-              <span className='text-[#161c2d]/70 text-[15px]'>
-                Job title or keyword
-              </span>
+              <GhostInput
+                value={textOf(
+                  content,
+                  'search.keyword',
+                  'Job title or keyword',
+                )}
+                onCommit={(v) =>
+                  onChange?.(withText(content, 'search.keyword', v))
+                }
+                placeholder='Texto do campo'
+                readOnly={readOnly}
+                className='text-[#161c2d]/70 text-[15px]'
+              />
             </div>
             <div className='flex flex-1 items-center justify-between gap-2 rounded-lg border border-[#e7e9ed] bg-white px-4 py-3'>
-              <span className='text-[#161c2d] text-[15px]'>City</span>
+              <GhostInput
+                value={textOf(content, 'search.city', 'City')}
+                onCommit={(v) =>
+                  onChange?.(withText(content, 'search.city', v))
+                }
+                placeholder='Texto do campo'
+                readOnly={readOnly}
+                className='text-[#161c2d] text-[15px]'
+              />
               <SteelIcon
                 icon={ArrowDown01Icon}
                 strokeWidth={2}
@@ -131,9 +150,18 @@ export function JobSiteHero({
               </GhostLink>
             ) : null}
           </div>
-          <p className='text-[#161c2d]/70 text-[15px]'>
-            Try Product Designer, Software Engineer etc.
-          </p>
+          <GhostInput
+            as='p'
+            value={textOf(
+              content,
+              'search.hint',
+              'Try Product Designer, Software Engineer etc.',
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'search.hint', v))}
+            placeholder='Dica de busca'
+            readOnly={readOnly}
+            className='text-[#161c2d]/70 text-[15px]'
+          />
         </div>
 
         <div className='relative mx-auto aspect-[428/610] w-full max-w-[428px]'>

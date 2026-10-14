@@ -4,6 +4,7 @@ import { Mail01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { CrmPublicFormRenderer } from '@/app/_components/crm/crm-public-form-renderer'
 import { SteelIcon } from '@/components/icon/icon'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import {
   Select,
@@ -15,6 +16,7 @@ import {
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
 import type { CrmFormDTO } from '@/types/crm-form'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type NewsletterContent = Extract<
@@ -129,7 +131,13 @@ export function JobSiteNewsletter({
             readOnly={readOnly}
             className='flex-1 px-2 text-[#161c2d]/70 text-[15px]'
           />
-          <span className='shrink-0 rounded-md bg-[#473bf0] px-6 py-3 font-bold text-[17px] text-white tracking-[-0.6px]'>
+          <GhostLink
+            href={hrefOf(content, 'cta', '#')}
+            onHrefChange={(v) => onChange?.(withHref(content, 'cta', v))}
+            readOnly={readOnly}
+            data-cta
+            className='shrink-0 rounded-md bg-[#473bf0] px-6 py-3 font-bold text-[17px] text-white tracking-[-0.6px]'
+          >
             <GhostInput
               value={content.ctaLabel ?? ''}
               onCommit={(v) =>
@@ -137,16 +145,24 @@ export function JobSiteNewsletter({
               }
               placeholder='Inscrever'
               readOnly={readOnly}
-              className='text-inherit'
+              className='field-sizing-content text-inherit'
             />
-          </span>
+          </GhostLink>
         </div>
       )}
 
-      <p className='text-[#161c2d]/70 text-[15px]'>
-        We&rsquo;ll never share your details with third parties. View our
-        Privacy Policy for more info.
-      </p>
+      <GhostTextarea
+        value={textOf(
+          content,
+          'disclaimer',
+          'We’ll never share your details with third parties. View our Privacy Policy for more info.',
+        )}
+        onCommit={(v) => onChange?.(withText(content, 'disclaimer', v))}
+        placeholder='Aviso de privacidade'
+        readOnly={readOnly}
+        as='p'
+        className='text-center text-[#161c2d]/70 text-[15px]'
+      />
     </section>
   )
 }
