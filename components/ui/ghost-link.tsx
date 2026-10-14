@@ -1,7 +1,12 @@
 'use client'
 
 import { Link02Icon } from '@hugeicons-pro/core-stroke-rounded'
-import { type ComponentProps, useState } from 'react'
+import {
+  type ComponentProps,
+  createContext,
+  useContext,
+  useState,
+} from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +16,16 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+
+export type GhostLinkTarget = { id: string; label: string }
+
+const GhostLinkTargetsContext = createContext<GhostLinkTarget[]>([])
+
+/**
+ * In-page targets offered as one-click destinations in every GhostLink
+ * below it (the landing-page builder passes the page's section anchors).
+ */
+export const GhostLinkTargetsProvider = GhostLinkTargetsContext.Provider
 
 export type GhostLinkProps = {
   href?: string
@@ -36,6 +51,7 @@ export function GhostLink({
 }: GhostLinkProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(href ?? '')
+  const targets = useContext(GhostLinkTargetsContext)
 
   if (readOnly) {
     return (
@@ -88,7 +104,7 @@ export function GhostLink({
               htmlFor='ghost-link-href'
               className='font-medium text-muted-foreground text-xs'
             >
-              Link do botão
+              Destino do link
             </label>
             <Input
               id='ghost-link-href'
@@ -97,6 +113,29 @@ export function GhostLink({
               placeholder='https://... ou #secao'
               autoFocus
             />
+            {targets.length > 0 ? (
+              <div className='flex flex-col gap-1'>
+                <span className='text-muted-foreground text-xs'>
+                  Seções desta página
+                </span>
+                <div className='flex flex-wrap gap-1'>
+                  {targets.map((target) => (
+                    <button
+                      key={target.id}
+                      type='button'
+                      onClick={() => setDraft(`#${target.id}`)}
+                      className={cn(
+                        'rounded-full border px-2 py-0.5 text-xs transition-colors hover:bg-muted',
+                        draft === `#${target.id}` &&
+                          'border-primary bg-primary/10 text-primary',
+                      )}
+                    >
+                      {target.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <Button type='submit' size='sm'>
               Salvar
             </Button>

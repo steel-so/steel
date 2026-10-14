@@ -29,6 +29,7 @@ import {
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { CrmLandingPageMetrics } from '@/app/_components/crm/crm-landing-page-metrics'
+import { sectionAnchors } from '@/app/_components/crm/landing-page/section-anchors'
 import {
   getSectionDefinition,
   SECTION_REGISTRY,
@@ -42,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { GhostLinkTargetsProvider } from '@/components/ui/ghost-link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
@@ -144,6 +146,10 @@ function CrmLandingPageBuilderInner({
       : ''
 
   const online = status === 'PUBLISHED'
+  const linkTargets = React.useMemo(
+    () => sectionAnchors(sections.filter((s) => s.enabled)),
+    [sections],
+  )
   const keyCounter = React.useRef(sections.length)
 
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -313,50 +319,52 @@ function CrmLandingPageBuilderInner({
       </header>
 
       <div className='min-h-0 flex-1 overflow-y-auto bg-muted/30'>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={onDragEnd}
-        >
-          <SortableContext
-            items={sections.map((s) => s.key)}
-            strategy={verticalListSortingStrategy}
+        <GhostLinkTargetsProvider value={linkTargets}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
           >
-            <div className='landing-page-light-scope mx-auto flex flex-col gap-4 p-4'>
-              {sections.map((section) => (
-                <SortableSection
-                  key={section.key}
-                  section={section}
-                  templateKey={initial.templateKey}
-                  workspaceId={workspaceId}
-                  onChange={(content) => updateSection(section.key, content)}
-                  onRemove={() => removeSection(section.key)}
-                />
-              ))}
+            <SortableContext
+              items={sections.map((s) => s.key)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className='landing-page-light-scope mx-auto flex flex-col gap-4 p-4'>
+                {sections.map((section) => (
+                  <SortableSection
+                    key={section.key}
+                    section={section}
+                    templateKey={initial.templateKey}
+                    workspaceId={workspaceId}
+                    onChange={(content) => updateSection(section.key, content)}
+                    onRemove={() => removeSection(section.key)}
+                  />
+                ))}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button variant='outline' className='self-center'>
-                      <SteelIcon icon={Add01Icon} strokeWidth={2} />
-                      Adicionar seção
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent>
-                  {Object.values(SECTION_REGISTRY).map((definition) => (
-                    <DropdownMenuItem
-                      key={definition.type}
-                      onClick={() => addSection(definition.type)}
-                    >
-                      {definition.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </SortableContext>
-        </DndContext>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant='outline' className='self-center'>
+                        <SteelIcon icon={Add01Icon} strokeWidth={2} />
+                        Adicionar seção
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent>
+                    {Object.values(SECTION_REGISTRY).map((definition) => (
+                      <DropdownMenuItem
+                        key={definition.type}
+                        onClick={() => addSection(definition.type)}
+                      >
+                        {definition.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </SortableContext>
+          </DndContext>
+        </GhostLinkTargetsProvider>
       </div>
 
       {metricsOpen ? (

@@ -29,6 +29,34 @@ export type CrmLandingPageSectionType = z.infer<
   typeof CrmLandingPageSectionTypeEnum
 >
 
+/**
+ * Free-form overrides every section accepts: copy and link targets that the
+ * pixel-perfect templates render beyond the typed fields (badges, secondary
+ * CTAs, "see more" links, decorative captions). Keyed by a stable slot name
+ * chosen by the section component (`textOf`/`hrefOf` in
+ * `app/_components/crm/landing-page/sections/overrides.ts`); an absent key
+ * falls back to the template's default copy, so existing pages render the
+ * same until edited.
+ */
+const OverrideKeySchema = z
+  .string()
+  .regex(/^[a-zA-Z0-9_.-]{1,80}$/, 'Chave inválida')
+
+const SectionOverridesShape = {
+  texts: z
+    .record(OverrideKeySchema, z.string().trim().max(2000))
+    .refine((value) => Object.keys(value).length <= 120, {
+      message: 'Textos demais na seção',
+    })
+    .optional(),
+  hrefs: z
+    .record(OverrideKeySchema, z.string().trim().max(500))
+    .refine((value) => Object.keys(value).length <= 60, {
+      message: 'Links demais na seção',
+    })
+    .optional(),
+}
+
 const LinkSchema = z.object({
   label: z.string().trim().min(1).max(60),
   href: z.string().trim().min(1).max(500),
@@ -44,6 +72,7 @@ const DropdownFieldSchema = z.object({
 
 const HeaderContentSchema = z.object({
   type: z.literal('HEADER'),
+  ...SectionOverridesShape,
   logoText: z.string().trim().min(1, 'Texto do logo é obrigatório').max(60),
   navLinks: z.array(LinkSchema).max(8).default([]),
   ctaLabel: z.string().trim().max(60).optional(),
@@ -52,6 +81,7 @@ const HeaderContentSchema = z.object({
 
 const HeroContentSchema = z.object({
   type: z.literal('HERO'),
+  ...SectionOverridesShape,
   eyebrow: z.string().trim().max(80).optional(),
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
@@ -83,6 +113,7 @@ const ServiceItemSchema = z.object({
 
 const ServicesContentSchema = z.object({
   type: z.literal('SERVICES'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
   items: z.array(ServiceItemSchema).max(12).default([]),
@@ -98,11 +129,13 @@ const FactItemSchema = z.object({
 
 const FactsContentSchema = z.object({
   type: z.literal('FACTS'),
+  ...SectionOverridesShape,
   items: z.array(FactItemSchema).max(8).default([]),
 })
 
 const AboutContentSchema = z.object({
   type: z.literal('ABOUT'),
+  ...SectionOverridesShape,
   eyebrow: z.string().trim().max(80).optional(),
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   description: z.string().trim().max(4_000).default(''),
@@ -117,6 +150,7 @@ const AboutContentSchema = z.object({
 
 const TestimonialContentSchema = z.object({
   type: z.literal('TESTIMONIAL'),
+  ...SectionOverridesShape,
   quote: z.string().trim().min(1, 'Depoimento é obrigatório').max(1_000),
   authorName: z.string().trim().min(1, 'Nome é obrigatório').max(120),
   authorRole: z.string().trim().max(160).optional(),
@@ -139,6 +173,7 @@ const FeatureItemSchema = z.object({
 
 const FeaturesContentSchema = z.object({
   type: z.literal('FEATURES'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
   items: z.array(FeatureItemSchema).max(12).default([]),
@@ -159,6 +194,7 @@ const WorkItemSchema = z.object({
 
 const WorksContentSchema = z.object({
   type: z.literal('WORKS'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
   items: z.array(WorkItemSchema).max(12).default([]),
@@ -179,6 +215,7 @@ const SocialLinkSchema = z.object({
 
 const FooterContentSchema = z.object({
   type: z.literal('FOOTER'),
+  ...SectionOverridesShape,
   logoText: z.string().trim().max(60).optional(),
   text: z.string().trim().max(300).optional(),
   linkGroups: z.array(FooterLinkGroupSchema).max(6).optional().default([]),
@@ -208,6 +245,7 @@ const PricingPlanSchema = z.object({
 
 const PricingContentSchema = z.object({
   type: z.literal('PRICING'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
   plans: z.array(PricingPlanSchema).max(6).default([]),
@@ -220,6 +258,7 @@ const FaqItemSchema = z.object({
 
 const FaqContentSchema = z.object({
   type: z.literal('FAQ'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
   items: z.array(FaqItemSchema).max(20).default([]),
@@ -232,6 +271,7 @@ const StepItemSchema = z.object({
 
 const StepsContentSchema = z.object({
   type: z.literal('STEPS'),
+  ...SectionOverridesShape,
   eyebrow: z.string().trim().max(80).optional(),
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
@@ -243,6 +283,7 @@ const StepsContentSchema = z.object({
 
 const NewsletterContentSchema = z.object({
   type: z.literal('NEWSLETTER'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   description: z.string().trim().max(400).optional(),
   placeholder: z.string().trim().max(80).optional(),
@@ -260,6 +301,7 @@ const LogoItemSchema = z.object({
 
 const LogosContentSchema = z.object({
   type: z.literal('LOGOS'),
+  ...SectionOverridesShape,
   title: z.string().trim().max(200).optional(),
   logos: z.array(LogoItemSchema).max(12).default([]),
 })
@@ -274,6 +316,7 @@ const ProductItemSchema = z.object({
 
 const ProductsContentSchema = z.object({
   type: z.literal('PRODUCTS'),
+  ...SectionOverridesShape,
   title: z.string().trim().min(1, 'Título é obrigatório').max(200),
   subtitle: z.string().trim().max(400).optional(),
   items: z.array(ProductItemSchema).max(16).default([]),
