@@ -9,6 +9,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -28,20 +29,55 @@ export function consultationHeroDefaultContent(): HeroContent {
 }
 
 /**
- * O frame "Alert" do Figma (tarja roxa "We've added a new exciting
- * feature...") não tem tipo de seção dedicado no vocabulário — dobrado aqui,
- * decorativo/não editável, logo abaixo do Hero (mesma sugestão do brief:
- * "fold as a small decorative element inside your Hero").
+ * The Figma "Alert" frame (purple strip "We've added a new exciting
+ * feature...") has no section type of its own, so it is folded under the
+ * Hero; its copy and link go through the `alert.*` overrides.
  */
-function AlertStrip() {
+function AlertStrip({
+  content,
+  onChange,
+  readOnly,
+}: Pick<
+  LandingPageSectionProps<HeroContent>,
+  'content' | 'onChange' | 'readOnly'
+>) {
   return (
     <div className='flex items-center justify-center gap-3 bg-[#473bf0] px-6 py-6 text-center'>
       <span className='inline-flex shrink-0 items-center rounded-full bg-white px-3 py-1 font-bold text-[#473bf0] text-[13px] uppercase tracking-[1.6px]'>
-        New
+        <GhostInput
+          value={textOf(content, 'alert.badge', 'New')}
+          onCommit={(v) => onChange?.(withText(content, 'alert.badge', v))}
+          placeholder='Selo'
+          readOnly={readOnly}
+          className='field-sizing-content w-auto text-inherit'
+        />
       </span>
       <p className='text-[17px] text-white leading-[29px] tracking-[-0.2px]'>
-        We&rsquo;ve added a new exciting feature in v3.0.{' '}
-        <span className='underline underline-offset-2'>Get it now for $49</span>
+        <GhostInput
+          value={textOf(
+            content,
+            'alert.text',
+            'We’ve added a new exciting feature in v3.0.',
+          )}
+          onCommit={(v) => onChange?.(withText(content, 'alert.text', v))}
+          placeholder='Texto do aviso'
+          readOnly={readOnly}
+          className='field-sizing-content w-auto text-inherit'
+        />{' '}
+        <GhostLink
+          href={hrefOf(content, 'alert.link', '#footer')}
+          onHrefChange={(v) => onChange?.(withHref(content, 'alert.link', v))}
+          readOnly={readOnly}
+          className='underline underline-offset-2'
+        >
+          <GhostInput
+            value={textOf(content, 'alert.link', 'Get it now for $49')}
+            onCommit={(v) => onChange?.(withText(content, 'alert.link', v))}
+            placeholder='Texto do link'
+            readOnly={readOnly}
+            className='field-sizing-content w-auto text-inherit underline underline-offset-2'
+          />
+        </GhostLink>
         .
       </p>
     </div>
@@ -126,7 +162,7 @@ export function ConsultationHero({
         </div>
       </div>
 
-      <AlertStrip />
+      <AlertStrip content={content} onChange={onChange} readOnly={readOnly} />
     </section>
   )
 }

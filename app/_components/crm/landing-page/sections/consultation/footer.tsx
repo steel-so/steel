@@ -7,6 +7,7 @@ import { GhostInput } from '@/components/ui/ghost-input'
 import { GhostLink } from '@/components/ui/ghost-link'
 import { cn } from '@/lib/utils'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
@@ -228,7 +229,16 @@ export function ConsultationFooter({
 
       <div className='mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 border-[#161c2d]/10 border-t py-6 sm:flex-row'>
         <p className='flex items-center gap-1 text-[#161c2d] text-[15px] tracking-[-0.1px]'>
-          © {new Date().getFullYear()} Copyright, All Right Reserved, Made with
+          <GhostInput
+            value={textOf(
+              content,
+              'copyright',
+              `© ${new Date().getFullYear()} Copyright, All Right Reserved, Made with`,
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
+            readOnly={readOnly}
+            className='field-sizing-content w-auto text-inherit'
+          />
           <img
             src={HEART_ICON}
             alt=''

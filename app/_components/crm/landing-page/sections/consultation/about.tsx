@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type AboutContent = Extract<CrmLandingPageSectionContent, { type: 'ABOUT' }>
@@ -126,6 +127,19 @@ function DropdownField({
  * formulário funcional); só o dropdown de serviço tem edição real, via
  * `AboutContentSchema.dropdowns`.
  */
+const FORM_FIELDS = [
+  { key: 'name', label: 'Name', placeholder: 'i.e. John Doe' },
+  { key: 'email', label: 'Email', placeholder: 'i.e. john@mail.com' },
+  { key: 'phone', label: 'Phone', placeholder: 'i.e. 123-456-7890' },
+] as const
+
+const FIELD_LABEL_CLASS =
+  'font-bold text-[#161c2d] text-[15px] tracking-[-0.1px]'
+const FIELD_BOX_CLASS =
+  'rounded-lg border border-[#e7e9ed] px-[18px] py-3 text-[#161c2d]/70 text-[15px] tracking-[-0.1px]'
+const SUBMIT_CLASS =
+  'mt-2 rounded-lg bg-[#473bf0] py-4 font-bold text-[17px] text-white tracking-[-0.6px]'
+
 export function ConsultationAbout({
   content,
   onChange,
@@ -211,36 +225,50 @@ export function ConsultationAbout({
           aria-hidden={readOnly || undefined}
           className='flex flex-col gap-4 rounded-[10px] border border-[#e7e9ed] bg-white p-8 shadow-[0px_34px_33px_-23px_rgba(22,28,45,0.13)]'
         >
-          <label className='flex flex-col gap-2'>
-            <span className='font-bold text-[#161c2d] text-[15px] tracking-[-0.1px]'>
-              Name
-            </span>
-            <input
-              disabled
-              placeholder='i.e. John Doe'
-              className='rounded-lg border border-[#e7e9ed] px-[18px] py-3 text-[#161c2d]/70 text-[15px] tracking-[-0.1px]'
-            />
-          </label>
-          <label className='flex flex-col gap-2'>
-            <span className='font-bold text-[#161c2d] text-[15px] tracking-[-0.1px]'>
-              Email
-            </span>
-            <input
-              disabled
-              placeholder='i.e. john@mail.com'
-              className='rounded-lg border border-[#e7e9ed] px-[18px] py-3 text-[#161c2d]/70 text-[15px] tracking-[-0.1px]'
-            />
-          </label>
-          <label className='flex flex-col gap-2'>
-            <span className='font-bold text-[#161c2d] text-[15px] tracking-[-0.1px]'>
-              Phone
-            </span>
-            <input
-              disabled
-              placeholder='i.e. 123-456-7890'
-              className='rounded-lg border border-[#e7e9ed] px-[18px] py-3 text-[#161c2d]/70 text-[15px] tracking-[-0.1px]'
-            />
-          </label>
+          {FORM_FIELDS.map((field) => {
+            const labelKey = `form.${field.key}.label`
+            const placeholderKey = `form.${field.key}.placeholder`
+            const label = textOf(content, labelKey, field.label)
+            const placeholder = textOf(
+              content,
+              placeholderKey,
+              field.placeholder,
+            )
+            if (readOnly) {
+              return (
+                <label key={field.key} className='flex flex-col gap-2'>
+                  <span className={FIELD_LABEL_CLASS}>{label}</span>
+                  <input
+                    disabled
+                    placeholder={placeholder}
+                    className={FIELD_BOX_CLASS}
+                  />
+                </label>
+              )
+            }
+            // Edit mode: the label and the decorative placeholder become
+            // ghost inputs styled like the static field.
+            return (
+              <div key={field.key} className='flex flex-col gap-2'>
+                <GhostInput
+                  value={label}
+                  onCommit={(v) => onChange?.(withText(content, labelKey, v))}
+                  placeholder='Rótulo do campo'
+                  className={FIELD_LABEL_CLASS}
+                />
+                <div className={FIELD_BOX_CLASS}>
+                  <GhostInput
+                    value={placeholder}
+                    onCommit={(v) =>
+                      onChange?.(withText(content, placeholderKey, v))
+                    }
+                    placeholder='Texto de exemplo do campo'
+                    className='text-inherit'
+                  />
+                </div>
+              </div>
+            )
+          })}
           {dropdowns.map((dropdown, index) => (
             <DropdownField
               key={index}
@@ -256,13 +284,22 @@ export function ConsultationAbout({
               readOnly={readOnly}
             />
           ))}
-          <button
-            type='button'
-            disabled
-            className='mt-2 rounded-lg bg-[#473bf0] py-4 font-bold text-[17px] text-white tracking-[-0.6px]'
-          >
-            Get Free Consultancy
-          </button>
+          {readOnly ? (
+            <button type='button' disabled className={SUBMIT_CLASS}>
+              {textOf(content, 'form.submit', 'Get Free Consultancy')}
+            </button>
+          ) : (
+            <div className={`${SUBMIT_CLASS} px-4 text-center`}>
+              <GhostInput
+                value={textOf(content, 'form.submit', 'Get Free Consultancy')}
+                onCommit={(v) =>
+                  onChange?.(withText(content, 'form.submit', v))
+                }
+                placeholder='Texto do botão'
+                className='text-center text-inherit'
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>
