@@ -8,8 +8,10 @@ import {
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 import { AGENCY_COLORS } from './colors'
 
@@ -107,9 +109,13 @@ export function AgencyServices({
       />
 
       <div className='mx-auto mb-16 flex max-w-2xl flex-col items-center gap-4 text-center'>
-        <span className='font-bold text-[#f64b4b] text-[13px] uppercase tracking-[1.6px]'>
-          Our services
-        </span>
+        <GhostInput
+          value={textOf(content, 'badge', 'Our services')}
+          onCommit={(v) => onChange?.(withText(content, 'badge', v))}
+          placeholder='Texto de destaque'
+          readOnly={readOnly}
+          className='text-center font-bold text-[#f64b4b] text-[13px] uppercase tracking-[1.6px]'
+        />
         <GhostInput
           as='h2'
           value={content.title}
@@ -176,19 +182,30 @@ export function AgencyServices({
                 className='text-[17px] text-white/65 leading-[1.7]'
               />
 
-              <a
-                href='#footer'
-                aria-label='Learn more about this service'
+              <GhostLink
+                href={hrefOf(content, `item.${index}.cta`, '#footer')}
+                onHrefChange={(v) =>
+                  onChange?.(withHref(content, `item.${index}.cta`, v))
+                }
+                readOnly={readOnly}
                 data-cta
                 className='mt-2 inline-flex items-center gap-2 font-bold text-[17px] text-white tracking-[-0.6px] hover:opacity-90'
               >
-                Learn more
+                <GhostInput
+                  value={textOf(content, `item.${index}.cta`, 'Learn more')}
+                  onCommit={(v) =>
+                    onChange?.(withText(content, `item.${index}.cta`, v))
+                  }
+                  placeholder='Texto do link'
+                  readOnly={readOnly}
+                  className='field-sizing-content w-auto text-inherit'
+                />
                 <SteelIcon
                   icon={ArrowRight01Icon}
                   strokeWidth={2.5}
                   size={16}
                 />
-              </a>
+              </GhostLink>
             </div>
           )
         })}

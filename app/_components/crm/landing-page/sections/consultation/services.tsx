@@ -9,9 +9,11 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, withHref } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type ServicesContent = Extract<
@@ -145,21 +147,30 @@ export function ConsultationServices({
               className='aspect-[255/167] w-full object-cover'
             />
 
-            <div className='relative flex items-center justify-between gap-2 px-[22px] py-[19px]'>
-              <GhostInput
-                as='h3'
-                value={item.title}
-                onCommit={(v) => updateItem(index, { title: v })}
-                placeholder='Serviço'
+            <div className='relative flex items-center px-[22px] py-[19px]'>
+              <GhostLink
+                href={hrefOf(content, `item.${index}`, '#footer')}
+                onHrefChange={(v) =>
+                  onChange?.(withHref(content, `item.${index}`, v))
+                }
                 readOnly={readOnly}
-                className='font-normal text-[#161c2d] text-[17px] tracking-[-0.2px]'
-              />
-              <SteelIcon
-                icon={ArrowRight01Icon}
-                strokeWidth={2}
-                size={16}
-                className='shrink-0 text-[#161c2d]'
-              />
+                className='flex w-full items-center justify-between gap-2'
+              >
+                <GhostInput
+                  as='h3'
+                  value={item.title}
+                  onCommit={(v) => updateItem(index, { title: v })}
+                  placeholder='Serviço'
+                  readOnly={readOnly}
+                  className='font-normal text-[#161c2d] text-[17px] tracking-[-0.2px]'
+                />
+                <SteelIcon
+                  icon={ArrowRight01Icon}
+                  strokeWidth={2}
+                  size={16}
+                  className='shrink-0 text-[#161c2d]'
+                />
+              </GhostLink>
               <img
                 src={TAIL}
                 alt=''

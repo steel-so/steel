@@ -4,6 +4,7 @@ import { Add01Icon, Delete02Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
 import type { LandingPageSectionProps } from './types'
@@ -122,13 +123,25 @@ export function FeaturesSection({
       </div>
 
       {content.ctaLabel || !readOnly ? (
-        <GhostInput
-          value={content.ctaLabel ?? ''}
-          onCommit={(v) => onChange?.({ ...content, ctaLabel: v || undefined })}
-          placeholder='Texto do botão'
+        <GhostLink
+          href={content.ctaHref}
+          onHrefChange={(href) =>
+            onChange?.({ ...content, ctaHref: href || undefined })
+          }
           readOnly={readOnly}
-          className='rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground text-sm'
-        />
+          data-cta
+          className='inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground text-sm'
+        >
+          <GhostInput
+            value={content.ctaLabel ?? ''}
+            onCommit={(v) =>
+              onChange?.({ ...content, ctaLabel: v || undefined })
+            }
+            placeholder='Texto do botão'
+            readOnly={readOnly}
+            className='text-inherit'
+          />
+        </GhostLink>
       ) : null}
     </section>
   )

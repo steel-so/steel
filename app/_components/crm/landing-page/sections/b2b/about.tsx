@@ -2,21 +2,21 @@
 
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type AboutContent = Extract<CrmLandingPageSectionContent, { type: 'ABOUT' }>
 
 const BASE = '/landing-page-templates/b2b'
 
-// O frame "Content 01" do Figma tem uma mini-lista de 3 números (1M+, 92%,
-// 4.9/5.0) ao lado do texto — o schema ABOUT não tem um campo dedicado pra
-// isso (só eyebrow/title/description/imagens), então a lista fica estática
-// aqui, seguindo a orientação da task de não estender o vocabulário de
-// seções por causa de um único template.
+// The Figma "Content 01" frame has a 3-number mini list next to the copy.
+// ABOUT has no typed field for it, so these are the defaults of the
+// `fact.<i>.value` / `fact.<i>.label` text overrides.
 const FACTS = [
   {
     value: '1M+',
@@ -78,13 +78,21 @@ export function B2bAbout({
             as='p'
             className='max-w-sm text-[#161c2d]/70 text-[17px] leading-[1.7] sm:text-[19px]'
           />
-          <a
-            href='#footer'
+          <GhostLink
+            href={hrefOf(content, 'cta', '#footer')}
+            onHrefChange={(v) => onChange?.(withHref(content, 'cta', v))}
+            readOnly={readOnly}
             data-cta
             className='inline-flex w-fit items-center justify-center rounded-lg bg-[#473bf0] px-6 py-4 font-bold text-[17px] text-white tracking-[-0.6px] transition-opacity hover:opacity-90'
           >
-            Learn how we work
-          </a>
+            <GhostInput
+              value={textOf(content, 'cta', 'Learn how we work')}
+              onCommit={(v) => onChange?.(withText(content, 'cta', v))}
+              placeholder='Texto do botão'
+              readOnly={readOnly}
+              className='text-inherit'
+            />
+          </GhostLink>
         </div>
 
         <GhostImage
@@ -96,14 +104,27 @@ export function B2bAbout({
         />
 
         <div className='flex flex-col gap-8'>
-          {FACTS.map((fact) => (
-            <div key={fact.value} className='flex flex-col gap-2'>
-              <span className='font-bold text-[#161c2d] text-[32px] tracking-[-1.2px]'>
-                {fact.value}
-              </span>
-              <span className='max-w-xs text-[#161c2d]/70 text-[19px] leading-[1.7]'>
-                {fact.label}
-              </span>
+          {FACTS.map((fact, index) => (
+            <div key={index} className='flex flex-col gap-2'>
+              <GhostInput
+                value={textOf(content, `fact.${index}.value`, fact.value)}
+                onCommit={(v) =>
+                  onChange?.(withText(content, `fact.${index}.value`, v))
+                }
+                placeholder='0'
+                readOnly={readOnly}
+                className='font-bold text-[#161c2d] text-[32px] tracking-[-1.2px]'
+              />
+              <GhostTextarea
+                as='span'
+                value={textOf(content, `fact.${index}.label`, fact.label)}
+                onCommit={(v) =>
+                  onChange?.(withText(content, `fact.${index}.label`, v))
+                }
+                placeholder='Descrição da métrica'
+                readOnly={readOnly}
+                className='max-w-xs text-[#161c2d]/70 text-[19px] leading-[1.7]'
+              />
             </div>
           ))}
         </div>
