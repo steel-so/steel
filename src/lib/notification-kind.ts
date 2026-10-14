@@ -419,6 +419,18 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'template',
     color: 'rose',
   },
+  WHATSAPP_USAGE_WARNING: {
+    module: 'COMMUNICATION',
+    label: 'Limite mensal do WhatsApp em 50% / 80%',
+    icon: 'hourglass',
+    color: 'amber',
+  },
+  WHATSAPP_USAGE_LIMIT_REACHED: {
+    module: 'COMMUNICATION',
+    label: 'Limite mensal do WhatsApp atingido',
+    icon: 'hourglass',
+    color: 'rose',
+  },
   AGENT_APPROVAL_REQUESTED: {
     module: 'OTHER',
     label: 'Agente aguardando aprovação',

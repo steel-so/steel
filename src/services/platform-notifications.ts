@@ -1,6 +1,11 @@
+import type {
+  WhatsAppUsageMetric,
+  WhatsAppUsageThreshold,
+} from '@/src/schemas/whatsapp-usage.schema'
 import {
   emitNotification,
   workspaceAdminIds,
+  workspaceMemberIds,
   workspaceOwnerIds,
 } from './notification-emitter'
 
@@ -122,6 +127,58 @@ export async function notifyAiQuota(input: {
       : 'Acompanhe o consumo para a IA não parar antes do fim do mês.',
     path: '/settings/steel-intelligence',
     dedupeKey: `ai-quota:${input.workspaceId}:${input.period}:${input.threshold}`,
+  })
+}
+
+const WHATSAPP_USAGE_COPY: Record<
+  WhatsAppUsageMetric,
+  { title: string; unit: string; verb: string; blocked: string }
+> = {
+  conversations: {
+    title: 'Conversas do WhatsApp',
+    unit: 'conversas',
+    verb: 'abertas',
+    blocked:
+      'A equipe não pode iniciar nem reabrir conversas até o próximo mês ou até um administrador aumentar o limite. Conversas iniciadas pelos contatos continuam chegando.',
+  },
+  messages: {
+    title: 'Mensagens do WhatsApp',
+    unit: 'mensagens',
+    verb: 'enviadas',
+    blocked:
+      'Os envios ficam bloqueados até o próximo mês ou até um administrador aumentar o limite. Mensagens recebidas continuam chegando.',
+  },
+}
+
+/**
+ * Comunicação: a monthly WhatsApp limit crossed 50%, 80% or 100%. Goes to
+ * **every** member (anyone sending is affected), once per month, metric and
+ * threshold.
+ */
+export async function notifyWhatsAppUsage(input: {
+  workspaceId: string
+  metric: WhatsAppUsageMetric
+  threshold: WhatsAppUsageThreshold
+  /** `YYYY-MM` of the usage month. */
+  period: string
+  used: number
+  limit: number
+}): Promise<number> {
+  const copy = WHATSAPP_USAGE_COPY[input.metric]
+  const reached = input.threshold === 100
+  const count = (value: number) => value.toLocaleString('pt-BR')
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: await workspaceMemberIds(input.workspaceId),
+    kind: reached ? 'WHATSAPP_USAGE_LIMIT_REACHED' : 'WHATSAPP_USAGE_WARNING',
+    title: reached
+      ? `${copy.title}: limite mensal atingido`
+      : `${copy.title}: ${input.threshold}% do limite mensal`,
+    body: reached
+      ? copy.blocked
+      : `${count(input.used)} de ${count(input.limit)} ${copy.unit} ${copy.verb} neste mês.`,
+    path: '/settings/communication',
+    dedupeKey: `whatsapp-usage:${input.workspaceId}:${input.period}:${input.metric}:${input.threshold}`,
   })
 }
 

@@ -8,6 +8,8 @@ import {
   crmSocialOauthFailed,
   crmWorkflowExecutionFailed,
   crmWorkflowInvalidDefinition,
+  whatsappConversationLimitReached,
+  whatsappMessageLimitReached,
   workspaceStatusConflict,
 } from '@/src/errors/app-error'
 import { ERROR_CODES } from '@/src/errors/codes'
@@ -40,6 +42,8 @@ describe('AppError factories — registry contract', () => {
   const numericArgs: Record<string, unknown[]> = {
     rateLimited: [30, 'Mensagem de teste'],
     aiQuotaExceeded: [1, 2],
+    whatsappConversationLimitReached: [1, 2],
+    whatsappMessageLimitReached: [1, 2],
     workspaceExportLimitReached: [
       'Mensagem de teste',
       new Date('2026-10-09T03:00:00.000Z'),
@@ -96,6 +100,18 @@ describe('AppError factories — parametrized messages', () => {
     expect(error.message).toContain('12,50')
     expect(error.message).toContain('50,00')
     expect(error.details).toEqual({ usedUsd: 12.5, quotaUsd: 50 })
+  })
+
+  it('formats the WhatsApp limits in pt-BR and keeps the raw numbers as details', () => {
+    const conversations = whatsappConversationLimitReached(1500, 1500)
+    expect(conversations.code).toBe('WHATSAPP_CONVERSATION_LIMIT_REACHED')
+    expect(conversations.message).toContain('1.500 de 1.500')
+    expect(conversations.details).toEqual({ used: 1500, limit: 1500 })
+
+    const messages = whatsappMessageLimitReached(20000, 20000)
+    expect(messages.code).toBe('WHATSAPP_MESSAGE_LIMIT_REACHED')
+    expect(messages.message).toContain('20.000 de 20.000')
+    expect(messages.details).toEqual({ used: 20000, limit: 20000 })
   })
 
   it('passes required messages through unchanged', () => {

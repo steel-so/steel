@@ -3,6 +3,7 @@ import {
   BookOpen01Icon,
   Building02Icon,
   ChartRelationshipIcon,
+  Chatting01Icon,
   Notification01Icon,
   SparklesIcon,
   Upload01Icon,
@@ -16,6 +17,7 @@ import {
   NavGroup,
   NavItem,
 } from '@/app/_components/navigation/sidebar-context'
+import { hasModuleAccess } from '@/src/lib/module-access-guard'
 
 export default async function SettingsLayout({
   children,
@@ -26,6 +28,7 @@ export default async function SettingsLayout({
 }) {
   const { 'workspace-slug': slug } = await params
   const base = `/${slug}/settings`
+  const communication = await hasModuleAccess(slug, 'COMMUNICATION')
 
   return (
     <>
@@ -58,6 +61,11 @@ export default async function SettingsLayout({
           <NavItem href={`${base}/whiteboard`} icon={WhiteboardIcon}>
             Quadro-branco
           </NavItem>
+          {communication && (
+            <NavItem href={`${base}/communication`} icon={Chatting01Icon}>
+              Comunicação
+            </NavItem>
+          )}
           <NavItem href={`${base}/steel-intelligence`} icon={SparklesIcon}>
             Steel IA
           </NavItem>

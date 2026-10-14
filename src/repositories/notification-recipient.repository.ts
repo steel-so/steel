@@ -59,4 +59,16 @@ export const NotificationRecipientRepository = {
       return err(dbError('Failed to list workspace owners', error))
     }
   },
+  /** Every member of the workspace, whatever the role. */
+  async listMemberIds(workspaceId: string): Promise<Result<string[]>> {
+    try {
+      const rows = await prisma.membership.findMany({
+        where: { workspaceId },
+        select: { userId: true },
+      })
+      return ok(rows.map((row) => row.userId))
+    } catch (error) {
+      return err(dbError('Failed to list workspace members', error))
+    }
+  },
 }

@@ -3,7 +3,12 @@ import { join } from 'node:path'
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { hasModuleAccess } from '@/src/lib/module-access-guard'
 import SettingsLayout from '../layout'
+
+vi.mock('@/src/lib/module-access-guard', () => ({
+  hasModuleAccess: vi.fn(async () => true),
+}))
 
 vi.mock('@/app/_components/navigation/sidebar-context', () => ({
   ContextSidebar: ({ children }: { children: ReactNode }) => (
@@ -52,5 +57,20 @@ describe('Settings sidebar', () => {
         true,
       )
     }
+  })
+
+  it('should link to Comunicação only when the module is enabled', async () => {
+    const { unmount } = await renderLayout()
+    expect(
+      document.querySelector('a[href="/acme/settings/communication"]'),
+    ).not.toBeNull()
+    expect(hasModuleAccess).toHaveBeenCalledWith('acme', 'COMMUNICATION')
+    unmount()
+
+    vi.mocked(hasModuleAccess).mockResolvedValueOnce(false)
+    await renderLayout()
+    expect(
+      document.querySelector('a[href="/acme/settings/communication"]'),
+    ).toBeNull()
   })
 })

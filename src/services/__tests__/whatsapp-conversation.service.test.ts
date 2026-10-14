@@ -4,8 +4,14 @@ import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp
 import { createFakeWhatsAppContact } from '@/src/__tests__/factories/whatsapp-contact.factory'
 import { createFakeWhatsAppConversationWithPreview } from '@/src/__tests__/factories/whatsapp-conversation.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { ok } from '@/src/lib/result'
+import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/src/services/whatsapp-usage.service', () => ({
+  WhatsAppUsageService: {
+    assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
+    record: vi.fn(async () => undefined),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
@@ -18,17 +24,20 @@ vi.mock('@/src/services/whatsapp-notify', async (importOriginal) => ({
   notifyWhatsAppUsers: vi.fn(async () => 1),
 }))
 
+import { whatsappConversationLimitReached } from '@/src/errors'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
 import { notifyWhatsAppUsers } from '../whatsapp-notify'
+import { WhatsAppUsageService } from '../whatsapp-usage.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
 const mockedConnectionRepo = vi.mocked(WhatsAppConnectionRepository)
 const mockedContactRepo = vi.mocked(WhatsAppContactRepository)
 const mockedConversationRepo = vi.mocked(WhatsAppConversationRepository)
+const mockedUsage = vi.mocked(WhatsAppUsageService)
 
 describe('WhatsAppConversationService', () => {
   describe('list()', () => {
@@ -98,6 +107,37 @@ describe('WhatsAppConversationService', () => {
           status: 'NEW',
         }),
       )
+      expect(mockedUsage.assertCanSend).toHaveBeenCalledWith(
+        'ws1',
+        'conversations',
+      )
+      expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
+    })
+
+    it('should refuse a new conversation once the monthly limit is reached', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      mockedContactRepo.findById.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1' })),
+      )
+      mockedConnectionRepo.findById.mockResolvedValue(
+        ok(createFakeWhatsAppConnection({ id: 'conn1' })),
+      )
+      mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
+      mockedUsage.assertCanSend.mockResolvedValueOnce(
+        err(whatsappConversationLimitReached(100, 100)),
+      )
+
+      expectErr(
+        await WhatsAppConversationService.start('u1', 'ws1', {
+          contactId: 'contact1',
+          connectionId: 'conn1',
+        }),
+        'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+      )
+      expect(mockedConversationRepo.create).not.toHaveBeenCalled()
+      expect(mockedUsage.record).not.toHaveBeenCalled()
     })
 
     it('should reuse an already active conversation instead of creating a duplicate', async () => {
@@ -125,6 +165,9 @@ describe('WhatsAppConversationService', () => {
       const dto = expectOk(result)
       expect(dto.id).toBe('conv-existing')
       expect(mockedConversationRepo.create).not.toHaveBeenCalled()
+      // Reusing an active conversation is neither blocked nor counted.
+      expect(mockedUsage.assertCanSend).not.toHaveBeenCalled()
+      expect(mockedUsage.record).not.toHaveBeenCalled()
     })
 
     it('should return WHATSAPP_CONTACT_NOT_FOUND for an unknown contact', async () => {

@@ -42,6 +42,7 @@ import {
   whatsAppConversationPath,
 } from './whatsapp-notify'
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
+import { WhatsAppUsageService } from './whatsapp-usage.service'
 
 /** Máximo de conversas fechadas por inatividade a cada tick do job. */
 const AUTO_CLOSE_BATCH = 500
@@ -215,6 +216,12 @@ export const WhatsAppConversationService = {
     if (existing.value) {
       conversationId = existing.value.id
     } else {
+      const allowed = await WhatsAppUsageService.assertCanSend(
+        workspaceId,
+        'conversations',
+      )
+      if (!allowed.ok) return allowed
+
       const created = await WhatsAppConversationRepository.create({
         workspaceId,
         connectionId: dto.connectionId,
@@ -223,6 +230,7 @@ export const WhatsAppConversationService = {
       })
       if (!created.ok) return created
       conversationId = created.value.id
+      await WhatsAppUsageService.record(workspaceId, 'conversations')
 
       auditMutation({
         entity: 'whatsapp_conversation',
@@ -756,11 +764,19 @@ export const WhatsAppConversationService = {
       return err(whatsappConversationNotClosed())
     }
 
+    // A reopened conversation is a new attendance: limited and counted.
+    const allowed = await WhatsAppUsageService.assertCanSend(
+      workspaceId,
+      'conversations',
+    )
+    if (!allowed.ok) return allowed
+
     const reopened = await reopenWhatsAppConversation(existing.value, {
       actorUserId: actorId,
       source: 'AGENT',
     })
     if (!reopened.ok) return reopened
+    await WhatsAppUsageService.record(workspaceId, 'conversations')
 
     void indexSearchDocument('zap-conversation', workspaceId, id)
     return publishConversation(workspaceId, id)

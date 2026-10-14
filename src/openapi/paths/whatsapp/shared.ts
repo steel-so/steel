@@ -60,6 +60,10 @@ export const SEND_ERRORS: ErrorEntry[] = [
     message: 'Muitas requisições',
     when: 'Limite de envio da conexão (20 mensagens/min) excedido',
   },
+  {
+    code: 'WHATSAPP_MESSAGE_LIMIT_REACHED',
+    when: 'O limite mensal de mensagens do workspace foi atingido (Ajustes › Comunicação)',
+  },
 ]
 
 export const SEND_NOTE =

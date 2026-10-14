@@ -419,6 +419,38 @@ export const WhatsAppSettingsDTO = dto(
   }),
 )
 
+const WhatsAppUsageMetricDTO = z.object({
+  used: z.number().int(),
+  limit: z.number().int().nullable().meta({ description: 'null = ilimitado.' }),
+  percent: z.number().int().nullable().meta({
+    description: '0–100 (arredondado para baixo); null quando ilimitado.',
+  }),
+  reached: z.boolean().meta({
+    description: 'No limite ou acima: esse tipo de envio é recusado.',
+  }),
+})
+
+export const WhatsAppUsageDTO = dto(
+  'WhatsAppUsage',
+  z.object({
+    workspaceId: z.string(),
+    period: z.string().meta({
+      description: 'Mês de consumo `YYYY-MM` (America/Sao_Paulo).',
+      example: '2026-10',
+    }),
+    canManage: z.boolean().meta({
+      description: 'OWNER/ADMIN — pode alterar os limites.',
+    }),
+    conversations: WhatsAppUsageMetricDTO.meta({
+      description:
+        'Conversas abertas ou reabertas no mês (recebidas e iniciadas).',
+    }),
+    messages: WhatsAppUsageMetricDTO.meta({
+      description: 'Mensagens enviadas no mês (reações não contam).',
+    }),
+  }),
+)
+
 export const DeletedIdDTO = dto(
   'WhatsAppDeletedId',
   z.object({ id: z.string() }).meta({ description: 'Id do recurso removido.' }),

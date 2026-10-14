@@ -118,6 +118,17 @@ export const ERROR_CODES = {
     status: 404,
   },
   WHATSAPP_PROVIDER_ERROR: { code: 'WHATSAPP_PROVIDER_ERROR', status: 502 },
+  // Monthly Communication limits: 402 like AI_QUOTA_EXCEEDED — a spent
+  // budget, not a rate limit; retrying won't help until an admin raises the
+  // limit or the month turns.
+  WHATSAPP_CONVERSATION_LIMIT_REACHED: {
+    code: 'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+    status: 402,
+  },
+  WHATSAPP_MESSAGE_LIMIT_REACHED: {
+    code: 'WHATSAPP_MESSAGE_LIMIT_REACHED',
+    status: 402,
+  },
   // Click-to-call: the actor has no PABX extension/device in the profile.
   PABX_EXTENSION_REQUIRED: { code: 'PABX_EXTENSION_REQUIRED', status: 422 },
   // Click-to-call: PABX_DEVICE_DB_URL is not set on the server.

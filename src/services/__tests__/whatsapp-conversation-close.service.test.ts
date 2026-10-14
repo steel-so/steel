@@ -8,6 +8,12 @@ import { createFakeWhatsAppSettings } from '@/src/__tests__/factories/whatsapp-s
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { ok } from '@/src/lib/result'
 
+vi.mock('@/src/services/whatsapp-usage.service', () => ({
+  WhatsAppUsageService: {
+    assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
+    record: vi.fn(async () => undefined),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
@@ -19,17 +25,21 @@ vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 
 import type { WhatsAppConversationEvent } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { whatsappConversationLimitReached } from '@/src/errors'
+import { err } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
+import { WhatsAppUsageService } from '../whatsapp-usage.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
 const mockedConversationRepo = vi.mocked(WhatsAppConversationRepository)
 const mockedEventRepo = vi.mocked(WhatsAppConversationEventRepository)
 const mockedSettingsRepo = vi.mocked(WhatsAppSettingsRepository)
+const mockedUsage = vi.mocked(WhatsAppUsageService)
 
 function fakeEvent(
   overrides: Partial<WhatsAppConversationEvent> = {},
@@ -167,6 +177,26 @@ describe('WhatsAppConversationService.reopen()', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'reopen', actorId: 'u1' }),
     )
+    expect(mockedUsage.assertCanSend).toHaveBeenCalledWith(
+      'ws1',
+      'conversations',
+    )
+    expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
+  })
+
+  it('should refuse to reopen once the monthly conversation limit is reached', async () => {
+    asRole('MEMBER')
+    arrangeConversation({ status: 'CLOSED', assignedUserId: 'agent1' })
+    mockedUsage.assertCanSend.mockResolvedValueOnce(
+      err(whatsappConversationLimitReached(10, 10)),
+    )
+
+    expectErr(
+      await WhatsAppConversationService.reopen('u1', 'ws1', 'conv1'),
+      'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+    )
+    expect(mockedConversationRepo.update).not.toHaveBeenCalled()
+    expect(mockedUsage.record).not.toHaveBeenCalled()
   })
 
   it('should reopen as NEW when nobody is assigned', async () => {

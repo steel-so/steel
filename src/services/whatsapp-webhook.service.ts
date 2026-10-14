@@ -40,6 +40,7 @@ import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
+import { WhatsAppUsageService } from './whatsapp-usage.service'
 
 export interface InboundWhatsAppMessage {
   connection: WhatsAppConnection
@@ -139,10 +140,12 @@ async function handleOptOutKeyword(input: {
     })
   }
 
-  const sent = await WhatsAppSend.text(connection, {
-    to: contact.waId,
-    text: WHATSAPP_OPT_OUT_CONFIRMATION,
-  })
+  // Compliance reply: goes out even past the monthly message limit.
+  const sent = await WhatsAppSend.text(
+    connection,
+    { to: contact.waId, text: WHATSAPP_OPT_OUT_CONFIRMATION },
+    { unmetered: true },
+  )
   if (!sent.ok) {
     logger.warn('whatsapp.opt_out.confirmation_failed', {
       workspaceId,
@@ -257,6 +260,9 @@ export const WhatsAppWebhookService = {
         if (!reopened.ok) return reopened
         conversationId = reopened.value.id
         aiActive = aiConfigActive
+        if (!serviceDesk) {
+          await WhatsAppUsageService.record(workspaceId, 'conversations')
+        }
       } else {
         const created = await WhatsAppConversationRepository.create({
           workspaceId,
@@ -271,6 +277,10 @@ export const WhatsAppWebhookService = {
         if (!created.ok) return created
         conversationId = created.value.id
         aiActive = aiConfigActive
+        // Inbound is counted toward the monthly limit but never blocked.
+        if (!serviceDesk) {
+          await WhatsAppUsageService.record(workspaceId, 'conversations')
+        }
       }
     }
 
@@ -423,6 +433,9 @@ export const WhatsAppWebhookService = {
         })
         if (!reopened.ok) return reopened
         conversationId = reopened.value.id
+        if (!isServiceDesk(connection)) {
+          await WhatsAppUsageService.record(workspaceId, 'conversations')
+        }
       } else {
         const created = await WhatsAppConversationRepository.create({
           workspaceId,
@@ -436,6 +449,9 @@ export const WhatsAppWebhookService = {
         })
         if (!created.ok) return created
         conversationId = created.value.id
+        if (!isServiceDesk(connection)) {
+          await WhatsAppUsageService.record(workspaceId, 'conversations')
+        }
       }
     }
 

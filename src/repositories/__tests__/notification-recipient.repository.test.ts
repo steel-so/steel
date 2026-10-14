@@ -62,6 +62,11 @@ describe('NotificationRecipientRepository', () => {
         await NotificationRecipientRepository.listOwnerIds(workspace.id),
       ),
     ).toEqual([owner.id])
+    expect(
+      expectOk(
+        await NotificationRecipientRepository.listMemberIds(workspace.id),
+      ).sort(),
+    ).toEqual([owner.id, admin.id, member.id].sort())
   })
 
   it('should map database failures to DATABASE_ERROR', async () => {
@@ -80,6 +85,10 @@ describe('NotificationRecipientRepository', () => {
     )
     expectErr(
       await NotificationRecipientRepository.listOwnerIds('ws'),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await NotificationRecipientRepository.listMemberIds('ws'),
       'DATABASE_ERROR',
     )
   })

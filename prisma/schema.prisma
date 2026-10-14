@@ -425,6 +425,7 @@ model Workspace {
   whatsappTemplates            WhatsAppTemplate[]
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
+  whatsappUsage                WhatsAppUsageMonthly[]
   whatsappConversationEvents   WhatsAppConversationEvent[]
   notifications                Notification[]
   notificationPreferences      NotificationPreference[]
@@ -1284,6 +1285,25 @@ model WhatsAppConversationEvent {
   @@map("whatsapp_conversation_events")
 }
 
+/// Monthly Communication (WhatsApp) usage counters per workspace. A dedicated
+/// ledger because broadcasts and campaigns send without writing
+/// `WhatsAppMessage` rows. `period` is the `YYYY-MM` month in America/Sao_Paulo.
+model WhatsAppUsageMonthly {
+  id               String   @id @default(cuid())
+  workspaceId      String   @map("workspace_id")
+  period           String
+  /// Conversations opened or reopened (inbound and agent-started).
+  conversations    Int      @default(0)
+  /// Outbound messages accepted by the provider (reactions excluded).
+  outboundMessages Int      @default(0) @map("outbound_messages")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, period])
+  @@map("whatsapp_usage_monthly")
+}
+
 /// Configurações de atendimento do WhatsApp por workspace (admin).
 model WhatsAppSettings {
   id                  String @id @default(cuid())
@@ -1303,6 +1323,11 @@ model WhatsAppSettings {
   /// Supervisor que assume a conversa sem atendente ao disparar o alerta.
   sentimentAlertAssignToId    String?  @map("sentiment_alert_assign_to_id")
   sentimentAlertCooldownHours Int      @default(6) @map("sentiment_alert_cooldown_hours")
+  /// Monthly caps for the Communication module (null = unlimited). At 100%
+  /// outbound sends and agent-started conversations are refused; inbound
+  /// keeps flowing. Set by OWNER/ADMIN in Ajustes › Comunicação.
+  monthlyConversationLimit    Int?     @map("monthly_conversation_limit")
+  monthlyMessageLimit         Int?     @map("monthly_message_limit")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -4360,6 +4385,10 @@ enum NotificationKind {
   AI_QUOTA_WARNING
   /// Platform: monthly AI quota exhausted.
   AI_QUOTA_EXCEEDED
+  /// Communication: 50% or 80% of a monthly WhatsApp limit used.
+  WHATSAPP_USAGE_WARNING
+  /// Communication: a monthly WhatsApp limit reached (sends blocked).
+  WHATSAPP_USAGE_LIMIT_REACHED
   /// Pedido de aprovação cancelado (aviso ao aprovador).
   SD_APPROVAL_CANCELED
   /// Pedido/rodada de aprovação venceu sem resposta.
