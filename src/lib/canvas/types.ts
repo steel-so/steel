@@ -64,4 +64,8 @@ export interface CanvasLocation {
 export interface CanvasFragment {
   rootId: CanvasNodeId
   nodes: Record<CanvasNodeId, CanvasNode>
+  /** Several top-level nodes (a multi-selection copy), in order; `rootId` is
+   * the first. Absent for a single-root fragment. An `insert` op only places
+   * `rootId`; the store's `paste`/`insertFragment` insert every root. */
+  roots?: CanvasNodeId[]
 }
