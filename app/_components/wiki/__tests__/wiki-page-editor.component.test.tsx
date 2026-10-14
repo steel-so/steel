@@ -19,7 +19,30 @@ const EDITED_AGAIN: Value = [{ type: 'p', children: [{ text: 'de novo' }] }]
 // transport; stub it at the module boundary and drive `onChange` by hand so
 // these tests are only about the title field and the autosave around it.
 // Labels fetch their own list; this suite is about title and content.
+// frimousse loads its emoji data over the network; a one-emoji stub keeps
+// the picker about selection.
+vi.mock('@/components/ui/emoji-picker', () => ({
+  EmojiPicker: ({
+    children,
+    onEmojiSelect,
+  }: {
+    children: React.ReactNode
+    onEmojiSelect: (emoji: { emoji: string }) => void
+  }) => (
+    <div>
+      <button type='button' onClick={() => onEmojiSelect({ emoji: '🚀' })}>
+        Emoji foguete
+      </button>
+      {children}
+    </div>
+  ),
+  EmojiPickerSearch: () => null,
+  EmojiPickerContent: () => null,
+  EmojiPickerFooter: () => null,
+}))
 vi.mock('../wiki-page-labels', () => ({ WikiPageLabels: () => null }))
+const push = vi.fn()
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 vi.mock('@/components/editor/wiki-editor', () => ({
   WikiPageRichEditor: ({
     documentName,
@@ -28,6 +51,9 @@ vi.mock('@/components/editor/wiki-editor', () => ({
     onChange,
     header,
     onStatusChange,
+    onPresenceChange,
+    readOnly,
+    blockGutter,
   }: {
     documentName: string
     userName: string
@@ -35,9 +61,23 @@ vi.mock('@/components/editor/wiki-editor', () => ({
     onChange: (content: Value) => void
     header?: React.ReactNode
     onStatusChange?: (status: string) => void
+    onPresenceChange?: (states: Record<string, unknown>[]) => void
+    readOnly?: boolean
+    blockGutter?: unknown
   }) => (
-    <div>
+    <div data-readonly={String(!!readOnly)} data-ai={String(!!blockGutter)}>
       {header}
+      <button
+        type='button'
+        onClick={() =>
+          onPresenceChange?.([
+            { data: { id: 'user-1', name: 'Ana', color: 'red' } },
+            { data: { id: 'user-2', name: 'Bruno Lima', color: 'blue' } },
+          ])
+        }
+      >
+        Chegar alguém
+      </button>
       <button type='button' onClick={() => onStatusChange?.('synced')}>
         Sincronizar
       </button>
@@ -92,6 +132,11 @@ function renderEditor(page = buildPage(), tree: WikiPageDTO[] = [page]) {
   // spy about the saves only.
   const queryClient = createTestQueryClient()
   queryClient.setQueryData(['wiki-pages', WORKSPACE_ID], tree)
+  // Labels feed the side panel; seeded and fresh so they never refetch.
+  queryClient.setQueryDefaults(['wiki-labels'], {
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+  queryClient.setQueryData(['wiki-labels', WORKSPACE_ID], [])
   const utils = renderWithProviders(
     <ShortcutsProvider>
       <WikiPageEditor
@@ -286,5 +331,151 @@ describe('<WikiPageEditor /> content autosave', () => {
     await advance(AUTOSAVE_DELAY_MS * 2)
 
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+/** jsdom here has no `localStorage`; a Map-backed one for the preferences. */
+function installStorage(initial: Record<string, string> = {}) {
+  const store = new Map(Object.entries(initial))
+  const storage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => store.set(key, value),
+    removeItem: (key: string) => store.delete(key),
+  }
+  Object.defineProperty(window, 'localStorage', {
+    value: storage,
+    configurable: true,
+  })
+  return () => {
+    Object.defineProperty(window, 'localStorage', {
+      value: undefined,
+      configurable: true,
+    })
+  }
+}
+
+describe('<WikiPageEditor /> page chrome', () => {
+  it('shows who is on the page from the editor awareness', () => {
+    renderEditor()
+
+    expect(
+      screen.queryByRole('list', { name: 'Pessoas nesta página' }),
+    ).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Chegar alguém' }))
+
+    const list = screen.getByRole('list', { name: 'Pessoas nesta página' })
+    expect(list.querySelectorAll('li')).toHaveLength(2)
+    expect(screen.getByLabelText('Ana (você)')).toBeTruthy()
+    expect(screen.getByLabelText('Bruno Lima')).toBeTruthy()
+  })
+
+  it('makes a locked page read-only for who cannot unlock it', () => {
+    const { container } = renderEditor(
+      buildPage({ lockedAt: '2026-10-01T00:00:00Z', canManageLock: false }),
+    )
+
+    expect(screen.getByText('Somente leitura')).toBeTruthy()
+    expect(titleInput().hasAttribute('readonly')).toBe(true)
+    const editor = container.querySelector('[data-readonly]') as HTMLElement
+    expect(editor.dataset.readonly).toBe('true')
+    // No inline AI on a page nobody here can change.
+    expect(editor.dataset.ai).toBe('false')
+  })
+
+  it('keeps a locked page editable for its author', () => {
+    const { container } = renderEditor(
+      buildPage({ lockedAt: '2026-10-01T00:00:00Z', canManageLock: true }),
+    )
+
+    expect(screen.queryByText('Somente leitura')).toBeNull()
+    const editor = container.querySelector('[data-readonly]') as HTMLElement
+    expect(editor.dataset.readonly).toBe('false')
+    expect(editor.dataset.ai).toBe('true')
+  })
+
+  it('follows the page in the list cache after a mutation', async () => {
+    const { queryClient } = renderEditor()
+
+    act(() => {
+      queryClient.setQueryData(
+        ['wiki-pages', WORKSPACE_ID],
+        [
+          buildPage({
+            publishedAt: '2026-10-01T00:00:00Z',
+            publicToken: 'tok',
+          }),
+        ],
+      )
+    })
+
+    expect(
+      (await screen.findByRole('link', { name: /Ao vivo/ })).getAttribute(
+        'href',
+      ),
+    ).toBe('/w/tok')
+  })
+
+  it('remembers the layout and shows the panel toggle without the toolbar', async () => {
+    const restore = installStorage({
+      'steel.wiki.preferences': JSON.stringify({
+        fixedToolbar: false,
+        panelOpen: false,
+      }),
+    })
+    try {
+      const { user } = renderEditor()
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Abrir painel lateral' }),
+      )
+      expect(screen.getByTestId('wiki-side-panel')).toBeTruthy()
+      expect(
+        JSON.parse(window.localStorage.getItem('steel.wiki.preferences') ?? ''),
+      ).toMatchObject({ fixedToolbar: false, panelOpen: true })
+    } finally {
+      restore()
+    }
+  })
+
+  it('opens on the defaults when the stored preferences are unreadable', () => {
+    const restore = installStorage({ 'steel.wiki.preferences': '{not json' })
+    try {
+      renderEditor()
+      expect(screen.queryByTestId('wiki-side-panel')).toBeNull()
+    } finally {
+      restore()
+    }
+  })
+
+  it('opens on the defaults when storage is blocked', () => {
+    renderEditor()
+    expect(screen.queryByTestId('wiki-side-panel')).toBeNull()
+  })
+
+  it('removes the icon', async () => {
+    const { user, fetchSpy } = renderEditor(buildPage({ icon: '📘' }))
+
+    await user.click(screen.getByRole('button', { name: 'Trocar ícone' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Remover ícone' }),
+    )
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
+    expect(getFetchCall(fetchSpy)).toMatchObject({
+      method: 'PATCH',
+      body: { icon: null },
+    })
+  })
+
+  it('adds an icon from the picker', async () => {
+    const { user, fetchSpy } = renderEditor()
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar ícone' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Emoji foguete' }),
+    )
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
+    expect(getFetchCall(fetchSpy).body).toEqual({ icon: '🚀' })
   })
 })
