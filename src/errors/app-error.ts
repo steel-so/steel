@@ -191,6 +191,18 @@ export const whatsappConversationAiHandling = (
   message = 'A IA está atendendo esta conversa. Remova-a do atendimento da IA para enviar mensagens.',
 ): AppError => appError('WHATSAPP_CONVERSATION_AI_HANDLING', message)
 
+export const whatsappTeamNotFound = (): AppError =>
+  appError('WHATSAPP_TEAM_NOT_FOUND', 'Equipe não encontrada')
+
+export const whatsappTeamConflict = (
+  message = 'Já existe uma equipe com este nome',
+): AppError => appError('WHATSAPP_TEAM_CONFLICT', message)
+
+/** Buttons that the connection's provider/context cannot send (e.g. Meta
+ * mixing reply and link buttons outside a template). */
+export const whatsappButtonsUnsupported = (message: string): AppError =>
+  appError('WHATSAPP_BUTTONS_UNSUPPORTED', message)
+
 export const whatsappQuickReplyNotFound = (): AppError =>
   appError('WHATSAPP_QUICK_REPLY_NOT_FOUND', 'Mensagem rápida não encontrada')
 

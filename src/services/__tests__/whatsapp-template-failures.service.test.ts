@@ -190,13 +190,16 @@ describe('WhatsAppTemplateService.create() failures and components', () => {
     arrangeMeta()
     mockedCreate.mockResolvedValue(metaItem('promo_setembro', 'APPROVED'))
     const buttons = [{ type: 'QUICK_REPLY' as const, text: 'Quero saber' }]
+    const inputButtons = [
+      { id: 'b1', type: 'REPLY' as const, label: 'Quero saber', actions: [] },
+    ]
 
     expectOk(
       await WhatsAppTemplateService.create('u1', 'ws1', {
         ...input,
         headerText: 'Promoção',
         footer: 'Responda SAIR para não receber',
-        buttons,
+        buttons: inputButtons,
       }),
     )
 

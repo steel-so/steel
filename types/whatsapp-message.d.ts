@@ -1,3 +1,4 @@
+import type { WhatsAppMessageButtonDTO } from './whatsapp-button'
 export type WhatsAppMessageDirectionDTO = 'IN' | 'OUT'
 
 export type WhatsAppMessageTypeDTO =
@@ -39,5 +40,9 @@ export interface WhatsAppMessageDTO {
   reactionEmoji: string | null
   reactedByContact: boolean | null
   contactPayload: WhatsAppMessageContactPayload | null
+  /** Buttons sent with an OUT message (rendered under the bubble). */
+  buttons: WhatsAppMessageButtonDTO[] | null
+  /** IN click: the clicked button id (or the provider's raw payload). */
+  buttonPayload: string | null
   createdAt: string
 }

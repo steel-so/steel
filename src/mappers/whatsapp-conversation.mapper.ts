@@ -39,6 +39,11 @@ export function toWhatsAppConversationDTO(
     contactAvatarUrl: conversation.contact.avatarUrl,
     status: conversation.status,
     assignedUserId: conversation.assignedUserId,
+    teamId: conversation.teamId,
+    // Contract shim: the teams slice adds `team` to the list include.
+    team:
+      (conversation as { team?: { id: string; name: string } | null }).team ??
+      null,
     aiActive: conversation.aiActive,
     aiHandoff: conversation.aiHandoff,
     unreadCount: conversation.unreadCount,

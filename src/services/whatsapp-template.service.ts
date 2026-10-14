@@ -54,7 +54,14 @@ function buildComponents(
     components.push({ type: 'FOOTER', text: input.footer })
   }
   if (input.buttons && input.buttons.length > 0) {
-    components.push({ type: 'BUTTONS', buttons: input.buttons })
+    components.push({
+      type: 'BUTTONS',
+      buttons: input.buttons.map((button) =>
+        button.type === 'URL'
+          ? { type: 'URL', text: button.label, url: button.url }
+          : { type: 'QUICK_REPLY', text: button.label },
+      ),
+    })
   }
   return components
 }

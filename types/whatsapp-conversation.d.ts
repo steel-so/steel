@@ -10,6 +10,8 @@ export interface WhatsAppConversationDTO {
   contactAvatarUrl: string | null
   status: WhatsAppConversationStatusDTO
   assignedUserId: string | null
+  teamId: string | null
+  team: { id: string; name: string } | null
   aiActive: boolean
   aiHandoff: boolean
   unreadCount: number
@@ -36,11 +38,15 @@ export type WhatsAppConversationEventKindDTO =
   | 'CLOSED'
   | 'REOPENED'
   | 'SENTIMENT_ALERT'
+  | 'BUTTON_CLICKED'
+  | 'ASSIGNED'
+  | 'TEAM_CHANGED'
 export type WhatsAppConversationEventSourceDTO =
   | 'AGENT'
   | 'CONTACT'
   | 'INACTIVITY'
   | 'SENTIMENT'
+  | 'BUTTON_ACTION'
 
 export interface WhatsAppConversationEventDTO {
   id: string

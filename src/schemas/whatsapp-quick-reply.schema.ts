@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { WhatsAppButtonsSchema } from './whatsapp-button.schema'
 
 // Agents type `/shortcut` in the composer, so a shortcut saved as `/saudacao`
 // would need `//saudacao`: the leading slash is dropped here. Spaces would end
@@ -18,6 +19,9 @@ export const CreateWhatsAppQuickReplySchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(120),
   body: z.string().min(1, 'Mensagem é obrigatória').max(4096),
   mediaUrl: z.url().max(2048).optional(),
+  // Até 2 botões; Z-API envia como botões de ação, Meta como mensagem
+  // interativa (dentro da janela de 24h).
+  buttons: WhatsAppButtonsSchema.optional(),
 })
 
 export type CreateWhatsAppQuickReplyDTO = z.infer<
@@ -29,6 +33,8 @@ export const UpdateWhatsAppQuickReplySchema = z.object({
   title: z.string().min(1).max(120).optional(),
   body: z.string().min(1).max(4096).optional(),
   mediaUrl: z.url().max(2048).optional(),
+  // `null` remove os botões.
+  buttons: WhatsAppButtonsSchema.nullable().optional(),
 })
 
 export type UpdateWhatsAppQuickReplyDTO = z.infer<

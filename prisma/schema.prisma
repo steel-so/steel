@@ -69,6 +69,7 @@ model User {
 
   whatsappConnectionsCreated          WhatsAppConnection[]          @relation("WhatsAppConnectionCreatedBy")
   whatsappConversationsAssigned       WhatsAppConversation[]        @relation("WhatsAppConversationAssignee")
+  whatsappTeamMemberships             WhatsAppTeamMember[]
   whatsappMessagesSent                WhatsAppMessage[]             @relation("WhatsAppMessageSender")
   whatsappBroadcastsCreated           WhatsAppBroadcastList[]       @relation("WhatsAppBroadcastCreatedBy")
   whatsappGroupMessagesSent           WhatsAppGroupMessage[]        @relation("WhatsAppGroupMessageSender")
@@ -261,18 +262,18 @@ enum QuickSendShortcut {
 }
 
 model UserPreference {
-  id                String            @id @default(cuid())
-  userId            String            @unique @map("user_id")
-  theme             Theme             @default(SYSTEM)
-  smoothCursor      Boolean           @default(false) @map("smooth_cursor")
-  quickSendShortcut QuickSendShortcut @default(ENTER) @map("quick_send_shortcut")
-  timezone          String            @default("America/Sao_Paulo")
-  weekStartsOn      Int               @default(1) @map("week_starts_on")
-  weekendDays       Int[]             @default([0, 6]) @map("weekend_days")
+  id                 String            @id @default(cuid())
+  userId             String            @unique @map("user_id")
+  theme              Theme             @default(SYSTEM)
+  smoothCursor       Boolean           @default(false) @map("smooth_cursor")
+  quickSendShortcut  QuickSendShortcut @default(ENTER) @map("quick_send_shortcut")
+  timezone           String            @default("America/Sao_Paulo")
+  weekStartsOn       Int               @default(1) @map("week_starts_on")
+  weekendDays        Int[]             @default([0, 6]) @map("weekend_days")
   /// "Atalhos de uma tecla": off disables single-key shortcuts and sequences (WCAG 2.1.4).
-  singleKeyShortcuts Boolean          @default(true) @map("single_key_shortcuts")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  singleKeyShortcuts Boolean           @default(true) @map("single_key_shortcuts")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -381,35 +382,35 @@ model Verification {
 }
 
 model Workspace {
-  id              String          @id @default(cuid())
-  name            String
-  slug            String          @unique
-  activePlan      Plan            @default(FREE) @map("active_plan")
-  trialEndsAt     DateTime?       @map("trial_ends_at")
+  id                String                @id @default(cuid())
+  name              String
+  slug              String                @unique
+  activePlan        Plan                  @default(FREE) @map("active_plan")
+  trialEndsAt       DateTime?             @map("trial_ends_at")
   /// Ciclo de vida controlado pelo admin global: SUSPENDED bloqueia membros
   /// (UI e API) e DELETING marca a exclusão em andamento (backup → purge).
-  status          WorkspaceStatus @default(ACTIVE)
-  suspendedAt     DateTime?       @map("suspended_at")
-  suspendedReason String?         @map("suspended_reason")
-  suspendedById   String?         @map("suspended_by_id")
+  status            WorkspaceStatus       @default(ACTIVE)
+  suspendedAt       DateTime?             @map("suspended_at")
+  suspendedReason   String?               @map("suspended_reason")
+  suspendedById     String?               @map("suspended_by_id")
   /// Wiki do workspace: desligada até um OWNER/ADMIN ativar em Ajustes > Wiki.
-  wikiEnabled     Boolean         @default(false) @map("wiki_enabled")
+  wikiEnabled       Boolean               @default(false) @map("wiki_enabled")
   /// Quadro-branco (Excalidraw): ligado por padrão; OWNER/ADMIN desliga em
   /// Ajustes > Quadro-branco.
-  whiteboardEnabled Boolean       @default(true) @map("whiteboard_enabled")
+  whiteboardEnabled Boolean               @default(true) @map("whiteboard_enabled")
   /// Logo público (bucket `workspace-logos`, chave `<id>/logo-<uuid>.<ext>`),
   /// editado em Ajustes > Geral. `null` = sem logo (a UI mostra a inicial).
-  logoUrl         String?         @map("logo_url")
+  logoUrl           String?               @map("logo_url")
   /// Faixa de tamanho da empresa, informada em Ajustes > Geral.
-  companySize     WorkspaceCompanySize? @map("company_size")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-  memberships     Membership[]
-  subscriptions   Subscription[]
-  projects        Project[]
-  wikiPages       WikiPage[]
-  wikiLabels      WikiLabel[]
-  whiteboards     Whiteboard[]
+  companySize       WorkspaceCompanySize? @map("company_size")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  memberships       Membership[]
+  subscriptions     Subscription[]
+  projects          Project[]
+  wikiPages         WikiPage[]
+  wikiLabels        WikiLabel[]
+  whiteboards       Whiteboard[]
 
   invitations       WorkspaceInvitation[]
   moduleConnections WorkspaceModuleConnection[]
@@ -423,6 +424,7 @@ model Workspace {
   whatsappPhoneCalls           WhatsAppPhoneCall[]
   whatsappMessages             WhatsAppMessage[]
   whatsappQuickReplies         WhatsAppQuickReply[]
+  whatsappTeams                WhatsAppTeam[]
   whatsappBroadcastLists       WhatsAppBroadcastList[]
   whatsappTemplates            WhatsAppTemplate[]
   whatsappAiConfig             WhatsAppAiConfig?
@@ -1163,6 +1165,9 @@ model WhatsAppConversation {
   contactId          String                     @map("contact_id")
   status             WhatsAppConversationStatus @default(NEW)
   assignedUserId     String?                    @map("assigned_user_id")
+  /// Equipe da conversa (roteamento por botão ou manual). Conversa sem
+  /// responsável com equipe só aparece na fila dos membros dessa equipe.
+  teamId             String?                    @map("team_id")
   aiActive           Boolean                    @default(false) @map("ai_active")
   aiHandoff          Boolean                    @default(false) @map("ai_handoff")
   unreadCount        Int                        @default(0) @map("unread_count")
@@ -1188,6 +1193,7 @@ model WhatsAppConversation {
   connection   WhatsAppConnection          @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   contact      WhatsAppContact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
   assignedUser User?                       @relation("WhatsAppConversationAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  team         WhatsAppTeam?               @relation(fields: [teamId], references: [id], onDelete: SetNull)
   messages     WhatsAppMessage[]
   events       WhatsAppConversationEvent[]
   phoneCalls   WhatsAppPhoneCall[]
@@ -1198,6 +1204,7 @@ model WhatsAppConversation {
   @@index([connectionId])
   @@index([contactId])
   @@index([assignedUserId])
+  @@index([teamId])
   @@map("whatsapp_conversations")
 }
 
@@ -1255,6 +1262,11 @@ enum WhatsAppConversationEventKind {
   CLOSED
   REOPENED
   SENTIMENT_ALERT
+  /// Contato clicou num botão de resposta; `reason` guarda o rótulo.
+  BUTTON_CLICKED
+  /// Ações automáticas do botão (atribuir, equipe, status...).
+  ASSIGNED
+  TEAM_CHANGED
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1264,6 +1276,8 @@ enum WhatsAppConversationEventSource {
   CONTACT
   INACTIVITY
   SENTIMENT
+  /// Ação configurada num botão de template/mensagem pronta.
+  BUTTON_ACTION
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -1388,6 +1402,10 @@ model WhatsAppMessage {
   // reacted. Meaningless while reactionEmoji is null.
   reactedByContact  Boolean?                 @map("reacted_by_contact")
   contactPayload    Json?                    @map("contact_payload")
+  /// Botões enviados com a mensagem (OUT) — `WhatsAppButton[]` sem as ações.
+  buttons           Json?
+  /// Clique recebido (IN): id do botão (`WhatsAppButton.id`) ou payload cru.
+  buttonPayload     String?                  @map("button_payload")
   /// Classificação de humor — só preenchido em mensagens recebidas (IN),
   /// pelo job de análise de sentimento (não bloqueia o envio/recebimento).
   sentiment         WhatsAppSentiment?
@@ -1415,6 +1433,8 @@ model WhatsAppQuickReply {
   title       String
   body        String
   mediaUrl    String?  @map("media_url")
+  /// Até 2 botões (`WhatsAppButton[]`, com ações no clique). Nulo = sem botões.
+  buttons     Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -1516,19 +1536,48 @@ enum WhatsAppTemplateStatus {
   APPROVED
   PENDING
   REJECTED
+  /// Meta pausou o template por qualidade baixa (volta sozinho ou é desativado).
+  PAUSED
+  DISABLED
+}
+
+/// Classificação de qualidade da Meta (quality_score). UNKNOWN = ainda sem
+/// envios suficientes para avaliar.
+enum WhatsAppTemplateQuality {
+  GREEN
+  YELLOW
+  RED
+  UNKNOWN
+}
+
+enum WhatsAppTemplateHeaderFormat {
+  TEXT
+  IMAGE
+  VIDEO
+  DOCUMENT
 }
 
 model WhatsAppTemplate {
-  id           String                 @id @default(cuid())
-  workspaceId  String                 @map("workspace_id")
-  connectionId String                 @map("connection_id")
-  name         String
-  language     String
-  category     String
-  status       WhatsAppTemplateStatus @default(PENDING)
-  components   Json
-  createdAt    DateTime               @default(now()) @map("created_at")
-  updatedAt    DateTime               @updatedAt @map("updated_at")
+  id               String                        @id @default(cuid())
+  workspaceId      String                        @map("workspace_id")
+  connectionId     String                        @map("connection_id")
+  name             String
+  language         String
+  category         String
+  status           WhatsAppTemplateStatus        @default(PENDING)
+  components       Json
+  quality          WhatsAppTemplateQuality       @default(UNKNOWN)
+  qualityUpdatedAt DateTime?                     @map("quality_updated_at")
+  /// Motivo da rejeição/pausa informado pela Meta.
+  statusReason     String?                       @map("status_reason")
+  headerFormat     WhatsAppTemplateHeaderFormat? @map("header_format")
+  /// Cópia no MinIO da mídia do cabeçalho — reenviada a cada disparo.
+  headerMediaUrl   String?                       @map("header_media_url")
+  /// Botões com as ações no clique (`WhatsAppButton[]`). Nulo em templates
+  /// vindos da Meta ainda sem ações configuradas — derive de `components`.
+  buttons          Json?
+  createdAt        DateTime                      @default(now()) @map("created_at")
+  updatedAt        DateTime                      @updatedAt @map("updated_at")
 
   workspace      Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   connection     WhatsAppConnection      @relation(fields: [connectionId], references: [id], onDelete: Cascade)
@@ -1537,6 +1586,45 @@ model WhatsAppTemplate {
   @@unique([connectionId, name, language])
   @@index([workspaceId])
   @@map("whatsapp_templates")
+}
+
+enum WhatsAppTeamRole {
+  LEADER
+  AGENT
+}
+
+/// Equipe de atendimento do zap. O líder vê as conversas dos agentes da
+/// equipe; o agente vê só as suas (e a fila sem responsável).
+model WhatsAppTeam {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace     Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members       WhatsAppTeamMember[]
+  conversations WhatsAppConversation[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("whatsapp_teams")
+}
+
+model WhatsAppTeamMember {
+  id        String           @id @default(cuid())
+  teamId    String           @map("team_id")
+  userId    String           @map("user_id")
+  role      WhatsAppTeamRole @default(AGENT)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  team WhatsAppTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@map("whatsapp_team_members")
 }
 
 model WhatsAppAiConfig {
@@ -3953,30 +4041,30 @@ model ChangelogRecipient {
 /// do modelo (`AI_MODEL_CATALOG`) × a margem da plataforma
 /// (`PlatformAiSettings.costMargin`). A coluna fica pelo histórico.
 model WorkspaceAiSettings {
-  id                     String   @id @default(cuid())
-  workspaceId            String   @unique @map("workspace_id")
-  enabledModels          String[] @map("enabled_models")
-  crmAssistantModel      String   @map("crm_assistant_model")
-  whatsappReplyModel     String   @map("whatsapp_reply_model")
-  whatsappSentimentModel String   @map("whatsapp_sentiment_model")
-  monthlyQuotaUsd        Decimal  @default(50) @map("monthly_quota_usd") @db.Decimal(12, 2)
+  id                      String   @id @default(cuid())
+  workspaceId             String   @unique @map("workspace_id")
+  enabledModels           String[] @map("enabled_models")
+  crmAssistantModel       String   @map("crm_assistant_model")
+  whatsappReplyModel      String   @map("whatsapp_reply_model")
+  whatsappSentimentModel  String   @map("whatsapp_sentiment_model")
+  monthlyQuotaUsd         Decimal  @default(50) @map("monthly_quota_usd") @db.Decimal(12, 2)
   /// Deprecated (ADR 0019) — not read anymore; kept for history.
-  usdPer1kTokens         Decimal  @default(4) @map("usd_per_1k_tokens") @db.Decimal(12, 4)
+  usdPer1kTokens          Decimal  @default(4) @map("usd_per_1k_tokens") @db.Decimal(12, 4)
   /// Kill switch for the Steel AI "agente" mode (write tools). Off = the
   /// assistant only explores, whatever the user picks.
-  agentModeEnabled       Boolean  @default(true) @map("agent_mode_enabled")
+  agentModeEnabled        Boolean  @default(true) @map("agent_mode_enabled")
   /// Master switch for every Steel AI feature in the workspace.
-  aiEnabled              Boolean  @default(true) @map("ai_enabled")
+  aiEnabled               Boolean  @default(true) @map("ai_enabled")
   /// Steel Agents may run (schedule, events, manual).
-  agentsEnabled          Boolean  @default(true) @map("agents_enabled")
+  agentsEnabled           Boolean  @default(true) @map("agents_enabled")
   /// Steel AI may save and use memories (workspace + personal).
-  memoryEnabled          Boolean  @default(true) @map("memory_enabled")
+  memoryEnabled           Boolean  @default(true) @map("memory_enabled")
   /// AUTOPILOT mode allowed: writes run without per-action confirmation.
-  autopilotEnabled       Boolean  @default(false) @map("autopilot_enabled")
+  autopilotEnabled        Boolean  @default(false) @map("autopilot_enabled")
   /// Weekly Steel AI usage summary e-mailed to the OWNERs (Mondays).
-  usageWeeklyEmailEnabled Boolean @default(true) @map("usage_weekly_email_enabled")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
+  usageWeeklyEmailEnabled Boolean  @default(true) @map("usage_weekly_email_enabled")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -4714,7 +4802,7 @@ model SdSettings {
   /// Chamado aberto pelo WhatsApp: responde ao contato com o código. O
   /// equivalente do e-mail é por caixa (`SdMailbox.sendAcknowledgement`).
   whatsappSendAcknowledgement Boolean        @default(true) @map("whatsapp_send_acknowledgement")
-  portalEnabled              Boolean        @default(true) @map("portal_enabled")
+  portalEnabled               Boolean        @default(true) @map("portal_enabled")
   /// Tipos que o solicitante pode abrir pelo portal.
   portalTicketTypes           SdTicketType[] @default([INCIDENT, SERVICE_REQUEST]) @map("portal_ticket_types")
   /// Portal externo (link mágico): o contato vê os chamados das empresas
