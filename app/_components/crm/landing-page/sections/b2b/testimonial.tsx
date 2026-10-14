@@ -6,6 +6,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { textOf, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type TestimonialContent = Extract<
@@ -15,12 +16,10 @@ type TestimonialContent = Extract<
 
 const BASE = '/landing-page-templates/b2b'
 
-// O frame "Testimonial" do Figma mostra 3 depoimentos lado a lado, mas o
-// schema TESTIMONIAL modela só um (quote/authorName/authorRole/avatarUrl) —
-// não uma lista. Seguindo o mesmo tipo de solução do bloco "Video" (visual
-// fiel, sem estender o schema por causa de um único template), só o
-// primeiro card é editável via `content`; os outros dois ficam com o texto
-// real do Figma, fixos.
+// The Figma "Testimonial" frame shows 3 testimonials side by side, but the
+// TESTIMONIAL schema models a single one. The first card uses the typed
+// fields; the other two keep the Figma copy as defaults of the
+// `card.<i>.quote|name|role` text overrides (their avatars stay fixed).
 const STATIC_CARDS = [
   {
     quote:
@@ -51,25 +50,51 @@ export function testimonialDefaultContent(): TestimonialContent {
 }
 
 function StaticCard({
-  quote,
-  authorName,
-  authorRole,
-  avatarUrl,
-}: (typeof STATIC_CARDS)[number]) {
+  card,
+  index,
+  content,
+  onChange,
+  readOnly,
+}: {
+  card: (typeof STATIC_CARDS)[number]
+  index: number
+} & Pick<
+  LandingPageSectionProps<TestimonialContent>,
+  'content' | 'onChange' | 'readOnly'
+>) {
+  const key = (field: string) => `card.${index}.${field}`
+  const authorName = textOf(content, key('name'), card.authorName)
   return (
     <div className='flex flex-col gap-6 rounded-[10px] border border-[#e7e9ed] bg-white p-8'>
       <img
-        src={avatarUrl}
+        src={card.avatarUrl}
         alt={authorName}
         className='size-[54px] rounded-full object-cover'
       />
-      <p className='text-[#161c2d] text-[21px] leading-[1.55] tracking-[-0.5px]'>
-        “{quote}”
-      </p>
+      <GhostTextarea
+        value={textOf(content, key('quote'), `“${card.quote}”`)}
+        onCommit={(v) => onChange?.(withText(content, key('quote'), v))}
+        placeholder='Depoimento'
+        readOnly={readOnly}
+        as='p'
+        className='text-[#161c2d] text-[21px] leading-[1.55] tracking-[-0.5px]'
+      />
       <div className='flex items-center gap-1 text-[17px]'>
-        <span className='font-bold text-[#161c2d]'>{authorName}</span>
+        <GhostInput
+          value={authorName}
+          onCommit={(v) => onChange?.(withText(content, key('name'), v))}
+          placeholder='Nome'
+          readOnly={readOnly}
+          className='font-bold text-[#161c2d]'
+        />
         <span className='text-[#161c2d]/70'>·</span>
-        <span className='text-[#161c2d]/70'>{authorRole}</span>
+        <GhostInput
+          value={textOf(content, key('role'), card.authorRole)}
+          onCommit={(v) => onChange?.(withText(content, key('role'), v))}
+          placeholder='Cargo/empresa'
+          readOnly={readOnly}
+          className='text-[#161c2d]/70'
+        />
       </div>
     </div>
   )
@@ -92,18 +117,29 @@ export function B2bTestimonial({
 
   return (
     <section className='bg-white px-6 py-20 sm:px-10 sm:py-28 lg:px-[123px]'>
-      {/* Título e subtítulo fixos — o schema TESTIMONIAL modela um único
-          depoimento (sem título de seção), então este cabeçalho segue o
-          texto real do Figma, não-editável, igual às outras seções
-          decorativas deste template. */}
+      {/* TESTIMONIAL has no section title field, so the heading goes
+          through the `title`/`subtitle` text overrides. */}
       <div className='mx-auto mb-16 flex max-w-2xl flex-col items-center gap-4 text-center'>
-        <h2 className='text-balance font-bold text-[#161c2d] text-[28px] leading-tight tracking-[-1px] sm:text-[36px] sm:leading-[48px]'>
-          What people say about us
-        </h2>
-        <p className='text-[#161c2d]/70 text-[19px] leading-[1.7]'>
-          With lots of unique blocks, you can easily build a page without
-          coding. Build your next landing page.
-        </p>
+        <GhostInput
+          as='h2'
+          value={textOf(content, 'title', 'What people say about us')}
+          onCommit={(v) => onChange?.(withText(content, 'title', v))}
+          placeholder='Título da seção'
+          readOnly={readOnly}
+          className='text-balance text-center font-bold text-[#161c2d] text-[28px] leading-tight tracking-[-1px] sm:text-[36px] sm:leading-[48px]'
+        />
+        <GhostTextarea
+          value={textOf(
+            content,
+            'subtitle',
+            'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          )}
+          onCommit={(v) => onChange?.(withText(content, 'subtitle', v))}
+          placeholder='Descrição de apoio'
+          readOnly={readOnly}
+          as='p'
+          className='text-center text-[#161c2d]/70 text-[19px] leading-[1.7]'
+        />
       </div>
 
       <div className='mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
@@ -150,8 +186,15 @@ export function B2bTestimonial({
           </div>
         </div>
 
-        {STATIC_CARDS.map((card) => (
-          <StaticCard key={card.authorName} {...card} />
+        {STATIC_CARDS.map((card, index) => (
+          <StaticCard
+            key={card.authorName}
+            card={card}
+            index={index}
+            content={content}
+            onChange={onChange}
+            readOnly={readOnly}
+          />
         ))}
       </div>
     </section>

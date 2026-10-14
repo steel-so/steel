@@ -9,6 +9,7 @@ import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type HeroContent = Extract<CrmLandingPageSectionContent, { type: 'HERO' }>
@@ -109,14 +110,22 @@ export function B2bHero({
               </GhostLink>
             ) : null}
 
-            <a
-              href='#video'
+            <GhostLink
+              href={hrefOf(content, 'video', '#video')}
+              onHrefChange={(v) => onChange?.(withHref(content, 'video', v))}
+              readOnly={readOnly}
               data-cta
               className='inline-flex items-center gap-2 font-bold text-[#161c2d] text-[13px] uppercase tracking-[1.6px] hover:opacity-80'
             >
               <SteelIcon icon={PlayIcon} strokeWidth={2} size={18} />
-              Watch how we can help
-            </a>
+              <GhostInput
+                value={textOf(content, 'video', 'Watch how we can help')}
+                onCommit={(v) => onChange?.(withText(content, 'video', v))}
+                placeholder='Texto do link'
+                readOnly={readOnly}
+                className='field-sizing-content w-auto text-inherit'
+              />
+            </GhostLink>
           </div>
         </div>
 

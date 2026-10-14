@@ -10,6 +10,7 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { GhostVideo } from '@/components/ui/ghost-video'
 import { notify } from '@/lib/notify'
@@ -18,6 +19,7 @@ import {
   uploadCrmLandingPageVideo,
 } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type ServicesContent = Extract<
@@ -172,15 +174,26 @@ export function B2bServices({
               className='text-[#161c2d]/70 text-[17px] leading-[1.7]'
             />
 
-            <a
-              href='#footer'
-              aria-label='Learn more about this service'
+            <GhostLink
+              href={hrefOf(content, `item.${index}.cta`, '#footer')}
+              onHrefChange={(v) =>
+                onChange?.(withHref(content, `item.${index}.cta`, v))
+              }
+              readOnly={readOnly}
               data-cta
               className='inline-flex items-center gap-2 font-bold text-[#473bf0] text-[17px] tracking-[-0.6px] hover:opacity-90'
             >
-              Learn more
+              <GhostInput
+                value={textOf(content, `item.${index}.cta`, 'Learn more')}
+                onCommit={(v) =>
+                  onChange?.(withText(content, `item.${index}.cta`, v))
+                }
+                placeholder='Texto do link'
+                readOnly={readOnly}
+                className='field-sizing-content w-auto text-inherit'
+              />
               <SteelIcon icon={ArrowRight01Icon} strokeWidth={2.5} size={16} />
-            </a>
+            </GhostLink>
           </div>
         ))}
 
@@ -232,13 +245,32 @@ export function B2bServices({
               className='text-[#473bf0]'
             />
           </span>
-          <h3 className='text-balance font-bold text-[24px] text-white tracking-[-0.8px] sm:text-[36px] sm:tracking-[-1.2px]'>
-            How do we help you to grow?
-          </h3>
-          <p className='max-w-lg text-[15px] text-white/65 leading-[1.7] sm:text-[19px]'>
-            With lots of unique blocks, you can easily build a page without
-            coding. Build your next landing page.
-          </p>
+          <GhostInput
+            as='h3'
+            value={textOf(
+              content,
+              'video.title',
+              'How do we help you to grow?',
+            )}
+            onCommit={(v) => onChange?.(withText(content, 'video.title', v))}
+            placeholder='Título do vídeo'
+            readOnly={readOnly}
+            className='text-balance text-center font-bold text-[24px] text-white tracking-[-0.8px] sm:text-[36px] sm:tracking-[-1.2px]'
+          />
+          <GhostTextarea
+            value={textOf(
+              content,
+              'video.description',
+              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+            )}
+            onCommit={(v) =>
+              onChange?.(withText(content, 'video.description', v))
+            }
+            placeholder='Texto de apoio'
+            readOnly={readOnly}
+            as='p'
+            className='max-w-lg text-center text-[15px] text-white/65 leading-[1.7] sm:text-[19px]'
+          />
         </div>
       </div>
     </section>
