@@ -77,6 +77,11 @@ ENV SKIP_ENV_VALIDATION="true"
 ARG NODE_BUILD_MEMORY=2048
 ENV NODE_OPTIONS="--max-old-space-size=${NODE_BUILD_MEMORY}"
 
+# Caps Turbopack memory and the page-data workers (next.config.ts). On by
+# default for the small self-hosted runner; the 16GB hosted runners turn it off.
+ARG NEXT_BUILD_LOW_MEMORY=true
+ENV NEXT_BUILD_LOW_MEMORY=$NEXT_BUILD_LOW_MEMORY
+
 RUN --mount=type=secret,id=sentry_auth_token \
     corepack enable pnpm && \
     if [ -f /run/secrets/sentry_auth_token ]; then \

@@ -68,6 +68,10 @@ const staticAssetHeaders = [
 // Existe só quando há chave configurada, então um deploy sem PostHog não tem
 // rota `/ingest`, nem rewrite externo, nem mudança de trailing slash.
 const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+
+// Set by the Dockerfile (on unless the build passes NEXT_BUILD_LOW_MEMORY=false);
+// see `experimental` below.
+const lowMemoryBuild = process.env.NEXT_BUILD_LOW_MEMORY === "true";
 const posthogHost =
   process.env.NEXT_PUBLIC_POSTHOG_HOST || POSTHOG_DEFAULT_HOST;
 
@@ -174,17 +178,19 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     webpackMemoryOptimizations: true,
-    // O runner de build self-hosted tem ~3.8GB de RAM total; sem controle o
-    // Turbopack cresce até o OOM killer matar o processo (visto em duas runs
-    // de CD). O Next 16.3 removeu o turbopackMemoryLimit. 'full' fez o
-    // Turbopack dar segfault/panic no docker build; 'auto' é estável e o pico
-    // de memória real vinha dos workers de page data (limitados abaixo).
-    turbopackMemoryEviction: 'auto',
-    // "Collecting page data" abre um worker por CPU (9 no runner) e cada um
-    // carrega o app inteiro: foi aí que o build do CD levou OOM kill. Dois
-    // workers cabem na RAM do runner sem alongar muito o build.
-    cpus: 2,
-    memoryBasedWorkersCount: true,
+    // Low-memory mode, only for image builds on the ~3.8GB self-hosted runner
+    // (still used by promote-production.yml; CI/CD build on 16GB hosted
+    // runners since ADR 0009). There, Turbopack grows until the OOM killer
+    // ends the build, and "Collecting page data" opens one worker per CPU,
+    // each loading the whole app. Elsewhere these limits only slow the build
+    // down: eviction pages the Turbopack cache to disk and two workers
+    // serialize page data collection.
+    ...(lowMemoryBuild && {
+      // 'full' made Turbopack segfault/panic in the docker build; 'auto' is stable.
+      turbopackMemoryEviction: 'auto' as const,
+      cpus: 2,
+      memoryBasedWorkersCount: true,
+    }),
   },
   typescript: {
     ignoreBuildErrors: true

@@ -689,6 +689,7 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
           build-args: |
             NODE_BUILD_MEMORY=6144
+            NEXT_BUILD_LOW_MEMORY=false
           secrets: |
             hugeicons_token=${{ secrets.HUGEICONS_TOKEN }}
 
