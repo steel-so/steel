@@ -11,6 +11,7 @@ import {
   SendWhatsAppTemplateMessageSchema,
   SendWhatsAppTextMessageSchema,
 } from '@/src/schemas/whatsapp-message.schema'
+import { SetWhatsAppConversationTeamSchema } from '@/src/schemas/whatsapp-team.schema'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   DeletedIdDTO,
@@ -34,6 +35,10 @@ const MESSAGE_PARAM = 'Id da mensagem (na conversa).'
 
 const REALTIME =
   'A conversa atualizada é publicada no SSE `GET /whatsapp/events` (`conversation.updated`).'
+
+/** Equipes: who sees which conversation. */
+const VISIBILITY =
+  'Visibilidade por **Equipes**: o OWNER vê todas; um ADMIN vê todas, a menos que pertença a alguma equipe; os demais veem as conversas atribuídas a eles, as dos agentes e das equipes que lideram e a fila (sem responsável, sem equipe ou de uma equipe deles). Conversa fora do alcance responde como inexistente (404).'
 
 /** Envios manuais: conversa + conexão carregadas, IA fora do atendimento. */
 const SENDABLE_GUARDS: ErrorEntry[] = [
@@ -114,7 +119,7 @@ export const conversationRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/conversations',
     tags: [TAG],
     summary: 'Listar conversas',
-    description: `Conversas do workspace (excluídas nunca aparecem), fixadas primeiro e depois pela última mensagem. Sem paginação. ${perm('conversations', 'VIEW')}`,
+    description: `Conversas do workspace que o usuário pode ver (excluídas nunca aparecem), fixadas primeiro e depois pela última mensagem. Sem paginação. ${VISIBILITY} ${perm('conversations', 'VIEW')}`,
     query: StatusQuery,
     queryValidationError: false,
     responses: {
@@ -145,6 +150,11 @@ export const conversationRoutes: RouteConfig[] = [
       {
         code: 'WHATSAPP_CONVERSATION_LIMIT_REACHED',
         when: 'Conversa nova com o limite mensal de conversas do workspace atingido (reaproveitar a ativa não conta)',
+      },
+      {
+        code: 'FORBIDDEN',
+        message: 'Este contato já está em atendimento com outra pessoa',
+        when: 'O contato tem uma conversa ativa que o usuário não pode ver (Equipes)',
       },
     ],
   },
@@ -235,7 +245,7 @@ export const conversationRoutes: RouteConfig[] = [
     path: `${BASE}/assign`,
     tags: [TAG],
     summary: 'Atribuir conversa',
-    description: `Define o atendente responsável (ou remove, com \`null\`) e move a conversa para \`IN_PROGRESS\`. ${REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
+    description: `Define o atendente responsável (ou devolve à fila, com \`null\`): \`IN_PROGRESS\` com responsável, \`NEW\` sem (fechada continua fechada). Registra o evento \`ASSIGNED\` na linha do tempo. Quem tem escopo de equipe: o líder atribui dentro das equipes que lidera; o agente só assume uma conversa da fila ou devolve a própria. ${VISIBILITY} ${REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
     params: PARAMS,
     body: AssignSchema,
     responses: {
@@ -248,9 +258,39 @@ export const conversationRoutes: RouteConfig[] = [
       ...permErrors('conversations', 'EDIT'),
       'WHATSAPP_CONVERSATION_NOT_FOUND',
       {
+        code: 'FORBIDDEN',
+        message: 'Você não pode transferir esta conversa',
+        when: 'A regra de equipes não permite essa atribuição',
+      },
+      {
         code: 'BAD_REQUEST',
         message: 'Usuário informado não pertence a este workspace',
         when: '`assignedUserId` não é membro ativo do workspace',
+      },
+    ],
+  },
+  {
+    method: 'patch',
+    path: `${BASE}/team`,
+    tags: ['Comunicação · Equipes'],
+    summary: 'Mover conversa de equipe',
+    description: `Coloca a conversa numa equipe (ou tira, com \`null\`) e registra o evento \`TEAM_CHANGED\`. Sem responsável, ela entra na fila da equipe e os membros são avisados. OWNER e ADMIN fora de equipe movem livremente; um líder move entre as equipes que lidera; agentes não movem. ${VISIBILITY} ${REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
+    params: PARAMS,
+    body: SetWhatsAppConversationTeamSchema,
+    responses: {
+      200: {
+        description: 'Conversa atualizada.',
+        schema: WhatsAppConversationDTO,
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'EDIT'),
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
+      'WHATSAPP_TEAM_NOT_FOUND',
+      {
+        code: 'FORBIDDEN',
+        message: 'Você não pode mover esta conversa de equipe',
+        when: 'Agente, ou líder movendo para/de uma equipe que não lidera',
       },
     ],
   },
