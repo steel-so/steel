@@ -5,10 +5,12 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostImage } from '@/components/ui/ghost-image'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import { notify } from '@/lib/notify'
 import { uploadCrmLandingPageImage } from '@/src/hooks/use-crm-landing-page'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type ProductsContent = Extract<
@@ -22,10 +24,11 @@ const BASE = '/landing-page-templates/product'
  * Fiel ao frame "Pricing" — 3 variantes de cor do mesmo AirPods, não planos
  * tiered, então o tipo PRODUCTS encaixa melhor que PRICING (ver instrução
  * do orquestrador). A cor entra no `title` de cada item; o texto
- * "AirPods (2nd gen)…" é idêntico nos 3 cards e não existe campo pra isso
+ * "AirPods (2nd gen)…", o "Buy now -" e o destino do botão não têm campo
  * no schema (`ProductItemSchema` só tem title/price/originalPrice/rating/
- * imageUrl) — fica fixo, igual ao "CTA Image" (a foto full-bleed do frame
- * que fecha a seção, sem texto próprio, virou decoração fixa aqui).
+ * imageUrl), então ficam nos overrides `item.<i>.description`/`item.<i>.cta`
+ * por índice. O "CTA Image" (a foto full-bleed do frame que fecha a seção,
+ * sem texto próprio) segue como decoração fixa.
  */
 export function pricingDefaultContent(): ProductsContent {
   return {
@@ -149,9 +152,20 @@ export function ProductPricing({
               alt={item.title}
               className='aspect-[226/155] w-full max-w-[226px] rounded-lg bg-white object-contain'
             />
-            <p className='text-[#161c2d]/70 text-[17px] leading-[1.7]'>
-              AirPods (2nd gen) iPhone Colors with Wireless Charging Case
-            </p>
+            <GhostTextarea
+              value={textOf(
+                content,
+                `item.${index}.description`,
+                'AirPods (2nd gen) iPhone Colors with Wireless Charging Case',
+              )}
+              onCommit={(v) =>
+                onChange?.(withText(content, `item.${index}.description`, v))
+              }
+              placeholder='Descrição do produto'
+              readOnly={readOnly}
+              as='p'
+              className='text-[#161c2d]/70 text-[17px] leading-[1.7]'
+            />
             <GhostInput
               value={item.title}
               onCommit={(v) => updateItem(index, { title: v })}
@@ -159,19 +173,32 @@ export function ProductPricing({
               readOnly={readOnly}
               className='font-bold text-[#161c2d] text-[21px] tracking-[-0.5px]'
             />
-            <a
-              href='#pricing'
+            <GhostLink
+              href={hrefOf(content, `item.${index}.cta`, '#pricing')}
+              onHrefChange={(v) =>
+                onChange?.(withHref(content, `item.${index}.cta`, v))
+              }
+              readOnly={readOnly}
+              data-cta
               className='inline-flex items-center justify-center gap-1 rounded-lg bg-[#473bf0] px-8 py-4 font-bold text-[17px] text-white tracking-[-0.5px] transition-opacity hover:opacity-90'
             >
-              Buy now -{' '}
+              <GhostInput
+                value={textOf(content, `item.${index}.cta`, 'Buy now -')}
+                onCommit={(v) =>
+                  onChange?.(withText(content, `item.${index}.cta`, v))
+                }
+                placeholder='Texto do botão'
+                readOnly={readOnly}
+                className='field-sizing-content w-auto text-inherit'
+              />
               <GhostInput
                 value={item.price}
                 onCommit={(v) => updateItem(index, { price: v })}
                 placeholder='$0'
                 readOnly={readOnly}
-                className='text-inherit'
+                className='field-sizing-content w-auto text-inherit'
               />
-            </a>
+            </GhostLink>
           </div>
         ))}
         {!readOnly ? (
