@@ -4,8 +4,10 @@ import { Add01Icon, Delete02Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { GhostInput } from '@/components/ui/ghost-input'
+import { GhostLink } from '@/components/ui/ghost-link'
 import { GhostTextarea } from '@/components/ui/ghost-textarea'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
+import { hrefOf, textOf, withHref, withText } from '../overrides'
 import type { LandingPageSectionProps } from '../types'
 
 type FaqContent = Extract<CrmLandingPageSectionContent, { type: 'FAQ' }>
@@ -151,8 +153,27 @@ export function SaasSubscriptionFaq({
       </div>
 
       <p className='mt-16 text-center text-[17px] text-white'>
-        Haven&rsquo;t got your answer?{' '}
-        <span className='text-[#68d585]'>Contact our support now</span>
+        <GhostInput
+          value={textOf(content, 'support.prefix', 'Haven’t got your answer?')}
+          onCommit={(v) => onChange?.(withText(content, 'support.prefix', v))}
+          placeholder='Texto de apoio'
+          readOnly={readOnly}
+          className='field-sizing-content w-auto text-inherit'
+        />{' '}
+        <GhostLink
+          href={hrefOf(content, 'support.link', '#footer')}
+          onHrefChange={(v) => onChange?.(withHref(content, 'support.link', v))}
+          readOnly={readOnly}
+          className='text-[#68d585]'
+        >
+          <GhostInput
+            value={textOf(content, 'support.link', 'Contact our support now')}
+            onCommit={(v) => onChange?.(withText(content, 'support.link', v))}
+            placeholder='Texto do link'
+            readOnly={readOnly}
+            className='field-sizing-content w-auto text-inherit'
+          />
+        </GhostLink>
       </p>
     </section>
   )
