@@ -1,8 +1,8 @@
 import { cacheLife, cacheTag } from 'next/cache'
+import type { SiteLiveForm } from '@/src/lib/canvas-site'
 import { siteCacheTag } from '@/src/lib/sites/cache'
 import {
   type PublishedSite,
-  type SiteFormData,
   SitePublicService,
 } from '@/src/services/site-public.service'
 
@@ -29,7 +29,7 @@ export async function loadSiteForms(
   slug: string,
   workspaceId: string,
   formTokens: string[],
-): Promise<Record<string, SiteFormData>> {
+): Promise<Record<string, SiteLiveForm>> {
   'use cache'
   cacheTag(siteCacheTag(slug))
   cacheLife('minutes')

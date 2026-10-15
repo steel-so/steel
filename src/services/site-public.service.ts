@@ -1,5 +1,6 @@
 import { BETTER_AUTH_SECRET } from '@/lib/env/server'
 import { appError } from '@/src/errors/app-error'
+import type { SiteLiveForm } from '@/src/lib/canvas-site'
 import { err, ok, type Result } from '@/src/lib/result'
 import { publicSiteUrl } from '@/src/lib/sites/public-url'
 import { parseSiteSnapshot, type SiteSnapshot } from '@/src/lib/sites/snapshot'
@@ -7,7 +8,6 @@ import { referrerHost, siteVisitorHash } from '@/src/lib/sites/visitor'
 import { toCrmFormPublicDTO } from '@/src/mappers/crm-form.mapper'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import type { RecordSiteViewDTO } from '@/src/schemas/site-view.schema'
-import type { CrmFormPublicDTO } from '@/types/crm-form'
 import { assertModuleEnabled } from './authz'
 
 /** What the public runtime renders: the live snapshot and where it lives. */
@@ -18,12 +18,6 @@ export interface PublishedSite {
   baseUrl: string
   publishedAt: string
   snapshot: SiteSnapshot
-}
-
-/** A CRM form a `site.form` block renders, with the token it posts to. */
-export interface SiteFormData {
-  form: CrmFormPublicDTO
-  publicToken: string
 }
 
 const siteNotFound = () => appError('SITE_NOT_FOUND', 'Site não encontrado')
@@ -57,14 +51,23 @@ export const SitePublicService = {
   async getForms(
     workspaceId: string,
     tokens: string[],
-  ): Promise<Result<Record<string, SiteFormData>>> {
+  ): Promise<Result<Record<string, SiteLiveForm>>> {
     const forms = await SiteRepository.findPublishedForms(workspaceId, tokens)
     if (!forms.ok) return forms
-    const byToken: Record<string, SiteFormData> = {}
+    const byToken: Record<string, SiteLiveForm> = {}
     for (const form of forms.value) {
+      const dto = toCrmFormPublicDTO(form)
       byToken[form.publicToken] = {
-        form: toCrmFormPublicDTO(form),
-        publicToken: form.publicToken,
+        fields: dto.fields.map((field) => ({
+          key: field.key,
+          label: field.label,
+          type: field.type,
+          required: field.required,
+          ...(field.placeholder ? { placeholder: field.placeholder } : {}),
+          ...(field.options ? { options: field.options } : {}),
+        })),
+        successMessage: dto.successMessage,
+        redirectUrl: dto.redirectUrl,
       }
     }
     return ok(byToken)

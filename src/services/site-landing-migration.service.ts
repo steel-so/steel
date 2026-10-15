@@ -40,7 +40,9 @@ async function linkForms(
   if (!forms.ok) return forms
   for (const node of blocks) {
     const form = forms.value.find((item) => item.id === node.props.formId)
+    const { formId: _formId, ...props } = node.props
     node.props = {
+      ...props,
       formToken: form?.publicToken ?? '',
       formName: form?.name ?? '',
     }

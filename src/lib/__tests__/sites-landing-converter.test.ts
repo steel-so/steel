@@ -172,7 +172,7 @@ describe('convertLandingPage', () => {
     ['full', FULL],
     ['minimal', MINIMAL],
   ])(
-    'converts every section type (%s) into valid site documents',
+    'converts every section type (%s) into catalog-valid documents',
     (_label, contents) => {
       const result = convertLandingPage({
         title: 'Clínica',
@@ -181,17 +181,18 @@ describe('convertLandingPage', () => {
       })
       expect(result.skipped).toBe(0)
       for (const doc of [result.page, result.header, result.footer]) {
-        expect(doc && validateSiteDocument(doc).ok).toBe(true)
+        const checked = validateSiteDocument(doc)
+        expect(checked.ok ? [] : checked.error).toEqual([])
       }
-      const anchors = props(result.page, 'site.section').map((p) => p.anchorId)
+      const anchors = props(result.page, 'site.section').map((p) => p.anchor)
       expect(anchors).toContain('servicos')
       expect(anchors).not.toContain('cabecalho')
       expect(
-        props(result.header as CanvasDocument, 'site.section')[0].anchorId,
-      ).toBe('cabecalho')
+        props(result.header as CanvasDocument, 'site.section')[0],
+      ).toMatchObject({ anchor: 'cabecalho', tag: 'header' })
       expect(
-        props(result.footer as CanvasDocument, 'site.section')[0].anchorId,
-      ).toBe('rodape')
+        props(result.footer as CanvasDocument, 'site.section')[0],
+      ).toMatchObject({ anchor: 'rodape', tag: 'footer' })
     },
   )
 
@@ -209,37 +210,88 @@ describe('convertLandingPage', () => {
         'site.form',
       ]),
     )
-    expect(props(result.page, 'site.form')).toEqual([{ formId: 'form-1' }])
-    expect(props(result.page, 'site.heading')).toContainEqual({
-      text: 'Cuidamos de você',
-      level: 1,
+    expect(props(result.page, 'site.form')[0]).toMatchObject({
+      formId: 'form-1',
     })
-    expect(props(result.page, 'site.text')).toContainEqual({
-      text: 'R$ 50 (de R$ 70)',
-      variant: 'lead',
+    expect(props(result.page, 'site.video')[0]).toMatchObject({
+      url: '/media/hero.mp4',
+      source: 'upload',
+      poster: '/media/hero.png',
     })
-    expect(props(result.page, 'site.text')).toContainEqual({
-      text: 'Ana — Paciente',
-      variant: 'small',
-    })
-    expect(props(result.page, 'site.section')).toContainEqual({
-      anchorId: 'depoimentos',
-      tone: 'accent',
-    })
-    expect(props(result.header as CanvasDocument, 'site.menu')).toEqual([
-      { source: 'links', links: [link] },
-    ])
-    expect(props(result.footer as CanvasDocument, 'site.social')).toHaveLength(
-      1,
+    expect(props(result.page, 'site.heading')).toContainEqual(
+      expect.objectContaining({ text: 'Cuidamos de você', level: 'h1' }),
     )
-    expect(props(result.page, 'site.button')).toContainEqual({
-      label: 'Assinar',
-      href: '/assinar',
-      variant: 'primary',
+    expect(props(result.page, 'site.text')).toContainEqual(
+      expect.objectContaining({
+        html: '<p>R$ 50 (de R$ 70)</p>',
+        preset: 'lead',
+      }),
+    )
+    expect(props(result.page, 'site.section')).toContainEqual(
+      expect.objectContaining({
+        anchor: 'depoimentos',
+        background: { kind: 'color', color: 'token:surface' },
+      }),
+    )
+    expect(
+      props(result.header as CanvasDocument, 'site.menu')[0],
+    ).toMatchObject({
+      source: 'custom',
+      items: [{ label: 'Contato', link: { type: 'anchor', value: 'contato' } }],
     })
+    expect(
+      props(result.footer as CanvasDocument, 'site.social')[0],
+    ).toMatchObject({
+      items: [{ network: 'instagram', url: 'https://instagram.com/x' }],
+    })
+    expect(props(result.page, 'site.button')).toContainEqual(
+      expect.objectContaining({
+        label: 'Assinar',
+        link: { type: 'url', value: '/assinar' },
+      }),
+    )
   })
 
-  it('keeps a second header/footer inline and skips disabled or broken sections', () => {
+  it('escapes copy, detects video hosts and drops unknown networks', () => {
+    const result = convertLandingPage({
+      title: 'x',
+      templateKey: 'agency',
+      sections: sections({
+        HERO: {
+          title: 'A',
+          subtitle: '<script>',
+          videoUrl: 'https://youtu.be/abc',
+        },
+        STEPS: { title: 'Passos', videoUrl: 'https://vimeo.com/1' },
+        FOOTER: {
+          socialLinks: [
+            { platform: 'Twitter', href: 'https://x.com/a' },
+            { platform: 'orkut', href: 'https://o.com' },
+          ],
+        },
+      }),
+    })
+    expect(props(result.page, 'site.text')).toContainEqual(
+      expect.objectContaining({ html: '<p>&lt;script&gt;</p>' }),
+    )
+    expect(props(result.page, 'site.video').map((p) => p.source)).toEqual([
+      'youtube',
+      'vimeo',
+    ])
+    expect(
+      props(result.footer as CanvasDocument, 'site.social')[0].items,
+    ).toEqual([{ network: 'x', url: 'https://x.com/a' }])
+    const none = convertLandingPage({
+      title: 'x',
+      templateKey: 'agency',
+      sections: sections({
+        FOOTER: { socialLinks: [{ platform: 'orkut', href: 'https://o.com' }] },
+      }),
+    })
+    expect(types(none.footer)).not.toContain('site.social')
+  })
+
+  it('keeps a second header inline and skips disabled or broken sections', () => {
     const result = convertLandingPage({
       title: 'Clínica',
       templateKey: 'b2b',
@@ -279,12 +331,15 @@ describe('convertLandingPage', () => {
     })
     expect(result.skipped).toBe(2)
     expect(result.footer).toBeNull()
-    expect(props(result.page, 'site.section').map((p) => p.anchorId)).toEqual([
+    expect(props(result.page, 'site.section').map((p) => p.anchor)).toEqual([
       'destaque',
       'cabecalho-2',
     ])
     expect(props(result.page, 'site.button')).toEqual([
-      { label: 'Ir', href: '#', variant: 'primary' },
+      expect.objectContaining({
+        label: 'Ir',
+        link: { type: 'anchor', value: '' },
+      }),
     ])
   })
 
@@ -296,7 +351,7 @@ describe('convertLandingPage', () => {
     })
     expect(result.header).toBeNull()
     expect(props(result.page, 'site.heading')).toEqual([
-      { text: 'Minha página', level: 1 },
+      expect.objectContaining({ text: 'Minha página', level: 'h1' }),
     ])
     expect(validateSiteDocument(result.page).ok).toBe(true)
   })

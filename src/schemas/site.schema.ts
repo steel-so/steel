@@ -34,9 +34,10 @@ export const SitePageSlugSchema = z
   })
 
 /**
- * Theme of the `site` catalog. TODO(sites-integration): replace with the
- * catalog's theme schema (src/lib/canvas-site) once it lands; until then any
- * JSON object up to 64 KB is stored as-is.
+ * Theme overrides of the `site` catalog (palette, fonts, text presets,
+ * buttons…), up to 64 KB. Stored as sent; every read goes through the
+ * catalog's `parseSiteTheme`, which merges them over the defaults and resets
+ * any invalid leaf, so a partial or stale theme never breaks a page.
  */
 export const SiteThemeSchema = z
   .record(z.string(), z.unknown())

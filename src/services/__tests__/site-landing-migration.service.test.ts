@@ -179,9 +179,10 @@ describe('SiteLandingMigrationService.migrateLandingPage', () => {
       .filter((node) => node.type === 'site.form')
       .map((node) => node.props)
     expect(forms).toEqual([
-      { formToken: 'tok-1', formName: 'Contato' },
-      { formToken: '', formName: '' },
+      expect.objectContaining({ formToken: 'tok-1', formName: 'Contato' }),
+      expect.objectContaining({ formToken: '', formName: '' }),
     ])
+    expect(forms[0]).not.toHaveProperty('formId')
 
     sites.findFormsByIds.mockResolvedValueOnce(err(databaseError()))
     expectErr(

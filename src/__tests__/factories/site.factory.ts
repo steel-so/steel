@@ -7,25 +7,37 @@ import type {
   SiteVersion,
 } from '@prisma/client'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
+import { siteCatalog } from '@/src/lib/canvas-site'
 import { prisma } from '@/src/lib/prisma'
 import { createEmptySiteDocument } from '@/src/lib/sites/document'
 import { buildSiteSnapshot, type SiteSnapshot } from '@/src/lib/sites/snapshot'
 
-/** A small valid `site` document: section > heading. */
+const defaults = (type: string) => siteCatalog.components[type].defaultProps()
+
+/** A small valid `site` document: root > section `s1` > heading `h1`. */
 export function createSiteDocument(text = 'Olá'): CanvasDocument {
   return {
     catalog: 'site',
     version: 1,
     rootId: 'root',
     nodes: {
-      root: { id: 'root', type: 'site.page', props: {}, children: ['s1'] },
+      root: {
+        id: 'root',
+        type: 'site.page',
+        props: defaults('site.page'),
+        children: ['s1'],
+      },
       s1: {
         id: 's1',
         type: 'site.section',
-        props: { anchorId: 'inicio' },
+        props: { ...defaults('site.section'), anchor: 'inicio' },
         children: ['h1'],
       },
-      h1: { id: 'h1', type: 'site.heading', props: { text, level: 1 } },
+      h1: {
+        id: 'h1',
+        type: 'site.heading',
+        props: { ...defaults('site.heading'), text, level: 'h1' },
+      },
     },
   }
 }

@@ -65,15 +65,50 @@ describe('SitePublicService.getPublished', () => {
 })
 
 describe('SitePublicService.getForms', () => {
-  it('maps published forms by their public token', async () => {
-    const form = createFakeCrmForm({ id: 'f1', publicToken: 'tok' })
+  it('maps published forms by their public token in the catalog shape', async () => {
+    const form = createFakeCrmForm({
+      id: 'f1',
+      publicToken: 'tok',
+      successMessage: 'Valeu',
+      fields: [
+        {
+          key: 'nome',
+          label: 'Nome',
+          type: 'text',
+          required: true,
+          mapping: { target: 'person', attribute: 'name' },
+        },
+        {
+          key: 'plano',
+          label: 'Plano',
+          type: 'select',
+          required: false,
+          placeholder: 'Escolha',
+          options: [{ label: 'A', value: 'a' }],
+          mapping: { target: 'person', attribute: 'name' },
+        },
+      ] as never,
+    })
     sites.findPublishedForms.mockResolvedValue(ok([form]))
     const forms = expectOk(
       await SitePublicService.getForms('ws1', ['tok', 'other']),
     )
     expect(Object.keys(forms)).toEqual(['tok'])
-    expect(forms.tok.publicToken).toBe('tok')
-    expect(forms.tok.form.id).toBe('f1')
+    expect(forms.tok).toEqual({
+      fields: [
+        { key: 'nome', label: 'Nome', type: 'text', required: true },
+        {
+          key: 'plano',
+          label: 'Plano',
+          type: 'select',
+          required: false,
+          placeholder: 'Escolha',
+          options: [{ label: 'A', value: 'a' }],
+        },
+      ],
+      successMessage: 'Valeu',
+      redirectUrl: null,
+    })
     sites.findPublishedForms.mockResolvedValue(err(databaseError()))
     expectErr(
       await SitePublicService.getForms('ws1', ['tok']),

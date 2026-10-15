@@ -1,8 +1,18 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
+import {
+  compileSiteCss,
+  createSiteCatalog,
+  needsFormScript,
+  parseSiteTheme,
+  SITE_FORM_SCRIPT,
+  SiteDocument,
+  type SiteRenderContext,
+} from '@/src/lib/canvas-site'
 import { collectFormTokens } from '@/src/lib/sites/document'
 import {
+  resolveSiteHref,
   SITE_VIA_HOST_HEADER,
   siteLinkBase,
   sitePageUrl,
@@ -14,8 +24,7 @@ import {
   publicPathOf,
 } from '@/src/lib/sites/snapshot'
 import { SiteAnalytics } from '../../../_components/site-analytics'
-import { siteStylesheet } from '../../../_components/site-catalog-adapter'
-import { SiteDocument } from '../../../_components/site-document'
+import { SITE_CHROME_CSS } from '../../../_components/site-chrome-css'
 import { loadPublishedSite, loadSiteForms } from '../../../_lib/load'
 
 type PageProps = {
@@ -74,50 +83,62 @@ export default async function PublishedSitePage({ params }: PageProps) {
   const page = findSnapshotPage(site.snapshot, path)
   if (!page) notFound()
 
-  const header = globalOf(site.snapshot, 'HEADER')
-  const footer = globalOf(site.snapshot, 'FOOTER')
+  const { snapshot } = site
+  const header = globalOf(snapshot, 'HEADER')
+  const footer = globalOf(snapshot, 'FOOTER')
   const documents = [header?.document, page.document, footer?.document].filter(
     (doc) => doc !== undefined,
   )
-  const forms = await loadSiteForms(
+  const [forms, requestHeaders] = await Promise.all([
+    loadSiteForms(site.slug, site.workspaceId, collectFormTokens(documents)),
+    headers(),
+  ])
+  const linkBase = siteLinkBase(
     site.slug,
-    site.workspaceId,
-    collectFormTokens(documents),
+    requestHeaders.get(SITE_VIA_HOST_HEADER) === '1',
   )
-  const viaHost = (await headers()).get(SITE_VIA_HOST_HEADER) === '1'
-  const ctx = {
-    linkBase: siteLinkBase(site.slug, viaHost),
-    pages: site.snapshot.pages,
+  const pages = snapshot.pages.map((item) => ({
+    id: item.id,
+    title: item.title,
+    path: resolveSiteHref(`/${publicPathOf(snapshot, item)}`, linkBase),
+    parentId: item.parentId,
+    showInMenu: !item.seo.noindex,
+  }))
+  const context: SiteRenderContext = {
+    pages,
+    currentPageId: page.id,
     forms,
   }
+  const catalog = createSiteCatalog(context)
+  const css = compileSiteCss(documents, {
+    theme: parseSiteTheme(snapshot.theme),
+  })
+  const nonce = requestHeaders.get('x-nonce') ?? undefined
 
   return (
-    <div className='ss landing-page-light-scope' lang='pt-BR'>
-      {/* Compiled stylesheet of the published site (classes, no inline
-          styles on elements). */}
-      <style>{siteStylesheet()}</style>
-      <a className='sr-only focus:not-sr-only' href='#conteudo'>
-        Pular para o conteúdo
-      </a>
-      {header ? (
-        <header>
-          <SiteDocument doc={header.document} ctx={ctx} />
-        </header>
-      ) : null}
+    <>
+      {/* Compiled stylesheet of the published site: theme tokens, classes
+          and per-breakpoint media queries (no inline styles on elements). */}
+      <style>{css}</style>
+      <style>{SITE_CHROME_CSS}</style>
+      {header ? <SiteDocument doc={header.document} catalog={catalog} /> : null}
       <main id='conteudo'>
-        <SiteDocument doc={page.document} ctx={ctx} />
+        <SiteDocument doc={page.document} catalog={catalog} />
       </main>
-      {footer ? (
-        <footer>
-          <SiteDocument doc={footer.document} ctx={ctx} />
-        </footer>
+      {footer ? <SiteDocument doc={footer.document} catalog={catalog} /> : null}
+      {needsFormScript(documents) ? (
+        <script
+          nonce={nonce}
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: constant script of the site catalog (no user input), inlined once with the CSP nonce.
+          dangerouslySetInnerHTML={{ __html: SITE_FORM_SCRIPT }}
+        />
       ) : null}
       <SiteAnalytics
         slug={site.slug}
         pageId={page.id}
-        path={`/${publicPathOf(site.snapshot, page)}`}
-        banner={site.snapshot.settings.cookieBanner}
+        path={`/${publicPathOf(snapshot, page)}`}
+        banner={snapshot.settings.cookieBanner}
       />
-    </div>
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import { createId } from '@paralleldrive/cuid2'
 import { describe, expect, it } from 'vitest'
+import { createSiteDocument } from '@/src/__tests__/factories/site.factory'
 import {
   authenticatedOwner,
   defaultHeaders,
@@ -7,16 +8,7 @@ import {
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 
-const document = (text: string) => ({
-  catalog: 'site',
-  version: 1,
-  rootId: 'root',
-  nodes: {
-    root: { id: 'root', type: 'site.page', props: {}, children: ['s1'] },
-    s1: { id: 's1', type: 'site.section', props: {}, children: ['h1'] },
-    h1: { id: 'h1', type: 'site.heading', props: { text, level: 1 } },
-  },
-})
+const document = (text: string) => createSiteDocument(text)
 
 async function publishedSite() {
   const { user, workspace } = await authenticatedOwner()
@@ -59,8 +51,10 @@ describe('public site runtime', () => {
     expect(html).toContain('<title>Contato | Clínica E2E</title>')
     expect(html).toContain(`/s/${slug}/contato`)
 
+    // Streamed inside the root layout's Suspense: the 404 boundary renders
+    // (with noindex) after the shell, so assert on the content.
     const missing = await fetch(`${BASE_URL}/s/${slug}/nao-existe`)
-    expect(missing.status).toBe(404)
+    expect(await missing.text()).toContain('Página não encontrada')
   })
 
   it('serves sitemap.xml and robots.txt per site', async () => {
@@ -100,6 +94,8 @@ describe('public site runtime', () => {
       method: 'DELETE',
       headers: { ...defaultHeaders, Cookie: user.cookie },
     })
-    expect((await fetch(`${BASE_URL}/s/${slug}`)).status).toBe(404)
+    expect(await (await fetch(`${BASE_URL}/s/${slug}`)).text()).toContain(
+      'Página não encontrada',
+    )
   })
 })

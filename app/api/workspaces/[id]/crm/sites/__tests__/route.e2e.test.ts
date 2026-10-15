@@ -1,5 +1,6 @@
 import { createId } from '@paralleldrive/cuid2'
 import { describe, expect, it } from 'vitest'
+import { createSiteDocument } from '@/src/__tests__/factories/site.factory'
 import {
   addMember,
   authenticatedOwner,
@@ -12,16 +13,7 @@ import {
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 
-const document = {
-  catalog: 'site',
-  version: 1,
-  rootId: 'root',
-  nodes: {
-    root: { id: 'root', type: 'site.page', props: {}, children: ['s1'] },
-    s1: { id: 's1', type: 'site.section', props: {}, children: ['h1'] },
-    h1: { id: 'h1', type: 'site.heading', props: { text: 'Olá', level: 1 } },
-  },
-}
+const document = createSiteDocument()
 
 const uniqueSlug = () => `e2e-${createId().slice(0, 12)}`
 
