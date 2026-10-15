@@ -4,6 +4,7 @@ import {
   publicPathOf,
   renderSitemapXml,
 } from '@/src/lib/sites/snapshot'
+import { SiteBlogPublicService } from '@/src/services/site-blog-public.service'
 import { loadPublishedSite } from '../../../_lib/load'
 
 type Params = { params: Promise<{ siteSlug: string }> }
@@ -14,8 +15,18 @@ export async function GET(_request: Request, ctx: Params) {
   if (!site) return new Response('Not found', { status: 404 })
 
   const lastModified = new Date(site.publishedAt)
-  const xml = renderSitemapXml(
-    indexablePages(site.snapshot)
+  // Blog posts and collection items with a page (slice site-blog).
+  const dynamic = site.snapshot.settings.seo.noindex
+    ? null
+    : await SiteBlogPublicService.sitemap(site.id, site.snapshot, new Date())
+  const dynamicUrls = dynamic?.ok
+    ? dynamic.value.map((entry) => ({
+        loc: sitePageUrl(site.baseUrl, entry.path.slice(1)),
+        lastModified: entry.lastModified,
+      }))
+    : []
+  const xml = renderSitemapXml([
+    ...indexablePages(site.snapshot)
       .map((page) => ({
         page,
         loc: sitePageUrl(site.baseUrl, publicPathOf(site.snapshot, page)),
@@ -32,7 +43,8 @@ export async function GET(_request: Request, ctx: Params) {
         priority: page.seo.sitemapPriority,
         changeFrequency: page.seo.changeFrequency,
       })),
-  )
+    ...dynamicUrls,
+  ])
   return new Response(xml, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8' },
   })

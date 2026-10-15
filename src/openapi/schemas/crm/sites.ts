@@ -8,7 +8,7 @@ import { dto } from '../../common'
 const dateTime = () => z.iso.datetime()
 const nullableDateTime = () => z.iso.datetime().nullable()
 const SITE_STATUS = z.enum(['DRAFT', 'PUBLISHED'])
-const GLOBAL_KIND = z.enum(['HEADER', 'FOOTER', 'SYMBOL'])
+const GLOBAL_KIND = z.enum(['HEADER', 'FOOTER', 'SYMBOL', 'TEMPLATE'])
 
 export const SiteCanvasDocumentDTO = dto(
   'SiteCanvasDocument',

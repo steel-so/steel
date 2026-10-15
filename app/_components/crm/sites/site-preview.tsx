@@ -30,13 +30,16 @@ import {
   crmSitesKeys,
   useCrmSite,
 } from '@/src/hooks/use-crm-sites'
+import { useSiteCmsPreview } from '@/src/hooks/use-site-blog'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { createSiteCatalog } from '@/src/lib/canvas-site/catalog'
+import type { SiteCmsContext } from '@/src/lib/canvas-site/cms'
 import type { SitePageLink } from '@/src/lib/canvas-site/context'
 import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SiteDocument } from '@/src/lib/canvas-site/render'
 import { siteRuntimeScripts } from '@/src/lib/canvas-site/runtime'
 import { parseSiteTheme } from '@/src/lib/canvas-site/theme'
+import { cmsResolver } from '@/src/lib/sites/blog/resolve'
 import { applyVariantChoices } from '@/src/lib/sites/experiments'
 import { orderPages, toPageLinks } from './site-editor-context'
 import { SiteStatusBadge } from './site-status-badge'
@@ -81,7 +84,10 @@ function PreviewFrame({
   currentPageId,
   width,
   onNavigate,
+  cms,
 }: {
+  /** Blog posts and collection items of the draft (slice site-blog). */
+  cms?: SiteCmsContext
   docs: {
     header?: CanvasDocument
     page: CanvasDocument
@@ -181,8 +187,8 @@ function PreviewFrame({
   }, [mount])
 
   const catalog = useMemo(
-    () => createSiteCatalog({ pages: links, currentPageId, symbols }),
-    [links, currentPageId, symbols],
+    () => createSiteCatalog({ pages: links, currentPageId, symbols, cms }),
+    [links, currentPageId, symbols, cms],
   )
 
   return (
@@ -252,6 +258,21 @@ export function SitePreview({
   })
 
   const links = useMemo(() => toPageLinks(pages.data ?? []), [pages.data])
+  const cmsPreview = useSiteCmsPreview(workspaceId, siteId)
+  const cms = useMemo(
+    () =>
+      cmsPreview.data
+        ? cmsResolver({
+            blog: cmsPreview.data.blog,
+            collections: cmsPreview.data.collections,
+            request: { path: '/', blogRoute: null, page: 1, query: '' },
+            href: (path) => path,
+            timezone: site.data?.settings.timezone,
+            sample: cmsPreview.data.sample,
+          })
+        : undefined,
+    [cmsPreview.data, site.data?.settings.timezone],
+  )
   const theme = useMemo(
     () => parseSiteTheme(site.data?.theme ?? {}),
     [site.data?.theme],
@@ -409,6 +430,7 @@ export function SitePreview({
             currentPageId={currentId}
             width={width}
             onNavigate={setPageId}
+            cms={cms}
           />
         ) : (
           <Skeleton className='m-4 h-auto w-full max-w-5xl' />

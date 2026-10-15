@@ -12,6 +12,7 @@ import { resolveProps } from './resolve'
 import { EDITOR_CSS, staticCss } from './static-css'
 import { type ElementCssUsage, elementsCss } from './static-css-elements'
 import { SITE_STYLE_FNS, type SiteRuleSet, type SiteStyleFn } from './styles'
+import { cmsCss } from './styles-cms'
 import { compileThemeCss, type SiteTheme } from './theme'
 
 /**
@@ -255,10 +256,12 @@ export function compileSiteCss(
   options: CompileSiteCssOptions = {},
 ): string {
   const list = Array.isArray(docs) ? docs : [docs]
+  const usage = cssUsage(list)
   const base = [
     options.theme ? compileThemeCss(options.theme) : '',
     staticCss(!!options.editing),
-    elementsCss(cssUsage(list), !!options.editing),
+    elementsCss(usage, !!options.editing),
+    cmsCss(usage.types),
     options.editing ? EDITOR_CSS : '',
   ]
     .filter(Boolean)

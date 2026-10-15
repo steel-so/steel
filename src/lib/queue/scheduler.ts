@@ -22,6 +22,7 @@ import {
   ServicedeskRiskJob,
   ServicedeskSlaJob,
   ServicedeskTaskRemindersJob,
+  SitePostsJob,
   StatusCollectJob,
   SteelAgentsJob,
   TrialLifecycleJob,
@@ -53,6 +54,7 @@ import {
   getServicedeskRiskQueue,
   getServicedeskSlaQueue,
   getServicedeskTaskRemindersQueue,
+  getSitePostsQueue,
   getStatusCollectQueue,
   getSteelAgentsQueue,
   getTrialLifecycleQueue,
@@ -87,6 +89,7 @@ import {
   ServicedeskRiskCron,
   ServicedeskSlaCron,
   ServicedeskTaskRemindersCron,
+  SitePostsPublishCron,
   StatusCollectCron,
   SteelAgentsTickCron,
   UsageRollupCron,
@@ -571,6 +574,21 @@ export async function scheduleCrmCampaignsJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_campaigns_registered', {
     component: 'Worker',
     pattern: CrmCampaignsTickCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleSitePostsJobs(): Promise<void> {
+  const queue = getSitePostsQueue()
+  await queue.upsertJobScheduler(
+    SitePostsJob.PublishDue,
+    { pattern: SitePostsPublishCron, tz: RetentionTimezone },
+    { name: SitePostsJob.PublishDue, data: {} },
+  )
+
+  logger.info('queue.scheduler.site_posts_registered', {
+    component: 'Worker',
+    pattern: SitePostsPublishCron,
     timezone: RetentionTimezone,
   })
 }

@@ -7563,6 +7563,9 @@ enum SiteGlobalKind {
   HEADER
   FOOTER
   SYMBOL
+  /// Template of a dynamic page (blog index/post/archives, collection
+  /// item); `name` holds the template key (see src/lib/sites/blog/templates.ts).
+  TEMPLATE
 }
 
 /// A website built with the Steel Canvas `site` catalog. `slug` is globally
@@ -7600,6 +7603,11 @@ model Site {
   versions         SiteVersion[]    @relation("SiteVersions")
   views            SiteView[]
   redirects        SiteRedirect[]
+  posts            SitePost[]
+  blogCategories   SiteBlogCategory[]
+  blogTags         SiteBlogTag[]
+  authors          SiteAuthor[]
+  collections      SiteCollection[]
   experiments      SiteExperiment[]
 
   @@index([workspaceId])
@@ -7721,6 +7729,185 @@ model SiteRedirect {
 
   @@unique([siteId, fromPath])
   @@map("site_redirects")
+}
+
+// ─── Site blog and collections (Sites wave S4, slice site-blog) ──────────
+
+enum SitePostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+
+enum SiteCollectionItemStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Blog post of a site. Unlike pages, posts go live on their own (no site
+/// publish): PUBLISHED with `publishedAt` in the past is public; SCHEDULED
+/// is flipped to PUBLISHED by the worker at `publishedAt`. `content` is the
+/// Plate editor value; `contentHtml` is its sanitized HTML, rendered on save.
+model SitePost {
+  id             String         @id @default(cuid())
+  siteId         String         @map("site_id")
+  title          String
+  slug           String
+  excerpt        String?
+  content        Json           @default("[]")
+  contentHtml    String         @default("") @map("content_html")
+  /// Plain text of the body (search, feeds, llms.txt, AI), capped.
+  plainText      String         @default("") @map("plain_text")
+  /// First words of the body: the card text when `excerpt` is empty.
+  autoExcerpt    String         @default("") @map("auto_excerpt")
+  coverImageUrl  String?        @map("cover_image_url")
+  coverImageAlt  String?        @map("cover_image_alt")
+  authorId       String?        @map("author_id")
+  status         SitePostStatus @default(DRAFT)
+  featured       Boolean        @default(false)
+  publishedAt    DateTime?      @map("published_at")
+  wordCount      Int            @default(0) @map("word_count")
+  readingMinutes Int            @default(1) @map("reading_minutes")
+  /// Title/description, focus keyword, social image, canonical, noindex,
+  /// FAQ (same shape as the page SEO plus the post-only fields).
+  seo            Json           @default("{}")
+  createdById    String         @map("created_by_id")
+  updatedById    String?        @map("updated_by_id")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  site       Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  author     SiteAuthor?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  categories SitePostCategory[]
+  tags       SitePostTag[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, status, publishedAt])
+  @@index([status, publishedAt])
+  @@map("site_posts")
+}
+
+model SiteBlogCategory {
+  id          String   @id @default(cuid())
+  siteId      String   @map("site_id")
+  name        String
+  slug        String
+  description String?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  site  Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  posts SitePostCategory[]
+
+  @@unique([siteId, slug])
+  @@map("site_blog_categories")
+}
+
+model SiteBlogTag {
+  id        String   @id @default(cuid())
+  siteId    String   @map("site_id")
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  site  Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  posts SitePostTag[]
+
+  @@unique([siteId, slug])
+  @@map("site_blog_tags")
+}
+
+model SitePostCategory {
+  postId     String @map("post_id")
+  categoryId String @map("category_id")
+
+  post     SitePost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category SiteBlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@index([categoryId])
+  @@map("site_post_categories")
+}
+
+model SitePostTag {
+  postId String @map("post_id")
+  tagId  String @map("tag_id")
+
+  post SitePost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  SiteBlogTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  @@map("site_post_tags")
+}
+
+/// Public author profile of a site's blog, tied to a workspace member
+/// (`userId`, no FK: the profile and its posts outlive the account).
+model SiteAuthor {
+  id        String   @id @default(cuid())
+  siteId    String   @map("site_id")
+  userId    String?  @map("user_id")
+  name      String
+  slug      String
+  bio       String?
+  avatarUrl String?  @map("avatar_url")
+  /// Social/profile links: [{ network, url }].
+  links     Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  site  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  posts SitePost[]
+
+  @@unique([siteId, slug])
+  @@unique([siteId, userId])
+  @@map("site_authors")
+}
+
+/// Custom content type of a site (cases, equipe, vagas, imóveis…): typed
+/// `fields` and items served at `/<slug>/<item slug>` when the collection
+/// has an item template (`templateGlobalId`, a TEMPLATE global; no FK
+/// because restoring a version recreates the globals with the same ids).
+model SiteCollection {
+  id               String   @id @default(cuid())
+  siteId           String   @map("site_id")
+  name             String
+  /// Singular label ("Caso", "Vaga") for the UI.
+  itemName         String   @map("item_name")
+  slug             String
+  /// Field definitions: [{ key, label, type, required, ... }].
+  fields           Json     @default("[]")
+  templateGlobalId String?  @map("template_global_id")
+  position         Int      @default(0)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  site  Site                 @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  items SiteCollectionItem[]
+
+  @@unique([siteId, slug])
+  @@map("site_collections")
+}
+
+model SiteCollectionItem {
+  id           String                   @id @default(cuid())
+  collectionId String                   @map("collection_id")
+  title        String
+  slug         String
+  /// Field values by field key, validated against the collection fields.
+  data         Json                     @default("{}")
+  status       SiteCollectionItemStatus @default(DRAFT)
+  position     Int                      @default(0)
+  publishedAt  DateTime?                @map("published_at")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @updatedAt @map("updated_at")
+
+  collection SiteCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, slug])
+  @@index([collectionId, status, position])
+  @@map("site_collection_items")
 }
 
 /// Yjs state of a Steel Canvas document co-edited in real time (site pages,

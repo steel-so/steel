@@ -66,6 +66,13 @@ export const SITE_TYPES = {
   map: 'site.map',
   whatsapp: 'site.whatsapp',
   beforeAfter: 'site.before-after',
+  postList: 'site.post-list',
+  post: 'site.post',
+  postTerms: 'site.post-terms',
+  blogSearch: 'site.blog-search',
+  postAuthor: 'site.post-author',
+  collectionList: 'site.collection-list',
+  collectionField: 'site.collection-field',
 } as const
 
 /** Content elements (leaves): what sections and containers accept besides
@@ -96,6 +103,25 @@ export const SITE_ELEMENT_TYPES: string[] = [
   SITE_TYPES.map,
   SITE_TYPES.whatsapp,
   SITE_TYPES.beforeAfter,
+  SITE_TYPES.postList,
+  SITE_TYPES.post,
+  SITE_TYPES.postTerms,
+  SITE_TYPES.blogSearch,
+  SITE_TYPES.postAuthor,
+  SITE_TYPES.collectionList,
+  SITE_TYPES.collectionField,
+]
+
+/** Blog and collection elements: they render dynamic content, resolved
+ * before the render (`SiteRenderContext.cms`). */
+export const SITE_CMS_TYPES: string[] = [
+  SITE_TYPES.postList,
+  SITE_TYPES.post,
+  SITE_TYPES.postTerms,
+  SITE_TYPES.blogSearch,
+  SITE_TYPES.postAuthor,
+  SITE_TYPES.collectionList,
+  SITE_TYPES.collectionField,
 ]
 
 /** Types only workspace admins may add (arbitrary third-party markup). */
@@ -111,6 +137,8 @@ export const SITE_CATEGORIES = [
   'Navegação',
   'Formulários',
   'Avançado',
+  'Blog',
+  'Coleções',
 ] as const
 
 /** Class on the element that wraps a rendered site (theme variables and

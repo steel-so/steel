@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { templateLabel } from '@/src/lib/sites/blog/templates'
 import { PublishDialog } from './publish-dialog'
 import { RedirectsDialog } from './redirects-dialog'
 import { orderPages, useSiteEditor } from './site-editor-context'
@@ -38,13 +39,16 @@ const GLOBAL_LABELS = {
   HEADER: 'Cabeçalho',
   FOOTER: 'Rodapé',
   SYMBOL: 'Componente',
+  TEMPLATE: 'Modelo',
 } as const
 
-/** Header/footer by kind; reusable components by their own name. */
+/** Header/footer by kind; reusable components by their own name; blog and
+ * collection templates by their key. */
 function globalLabel(global: {
   kind: keyof typeof GLOBAL_LABELS
   name: string
 }) {
+  if (global.kind === 'TEMPLATE') return templateLabel(global.name)
   return global.kind === 'SYMBOL' ? global.name : GLOBAL_LABELS[global.kind]
 }
 

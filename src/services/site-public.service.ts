@@ -17,6 +17,7 @@ import { SiteRedirectRepository } from '@/src/repositories/site-redirect.reposit
 import type { RecordSiteViewDTO } from '@/src/schemas/site-view.schema'
 import { assertModuleEnabled } from './authz'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
+import { SiteBlogPublicService } from './site-blog-public.service'
 
 /** What the public runtime renders: the live snapshot and where it lives. */
 export interface PublishedSite {
@@ -170,6 +171,13 @@ export const SitePublicService = {
     }
     const redirects = await SiteRedirectRepository.listBySiteSlug(slug)
     if (!redirects.ok) return redirects
+    // Blog posts, archives and collection items answer 200 too.
+    const dynamic = await SiteBlogPublicService.routePaths(
+      published.value.id,
+      published.value.snapshot,
+      new Date(),
+    )
+    if (!dynamic.ok) return dynamic
 
     const index = buildSiteRouteIndex(
       published.value.snapshot,
@@ -178,6 +186,7 @@ export const SitePublicService = {
         toPath: redirect.toPath,
         permanent: redirect.permanent,
       })),
+      dynamic.value,
     )
     await siteRouteCache.set(slug, index)
     return ok(index)

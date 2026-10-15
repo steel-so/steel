@@ -123,7 +123,7 @@ export const sitePlaceSchema = z.object({
 })
 export type SitePlace = z.infer<typeof sitePlaceSchema>
 
-const commonShape = {
+export const commonShape = {
   visibility: canvasVisibilitySchema.optional(),
   anchor: siteAnchorSchema.optional(),
   margin: resp(canvasSpacingSchema).optional(),

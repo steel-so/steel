@@ -1,3 +1,4 @@
+import { templateLabel } from './blog/templates'
 import type { SiteSnapshot } from './snapshot'
 
 /**
@@ -77,6 +78,7 @@ function diffItems<T extends { id: string }>(
 const GLOBAL_NAMES = { HEADER: 'Cabeçalho', FOOTER: 'Rodapé' } as const
 
 function globalName(global: SiteSnapshot['globals'][number]): string {
+  if (global.kind === 'TEMPLATE') return templateLabel(global.name)
   return global.kind === 'SYMBOL' ? global.name : GLOBAL_NAMES[global.kind]
 }
 

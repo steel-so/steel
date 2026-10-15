@@ -30,13 +30,18 @@ export const UNPUBLISHED_ROUTE_INDEX: SiteRouteIndex = {
 export function buildSiteRouteIndex(
   snapshot: SiteSnapshot,
   redirects: SiteRedirectRule[],
+  /** Paths of dynamic pages (blog posts, archives, collection items). */
+  dynamicPaths: string[] = [],
 ): SiteRouteIndex {
   return {
     published: true,
     name: snapshot.name,
-    paths: snapshot.pages.map((page) =>
-      normalizeSitePath(`/${publicPathOf(snapshot, page)}`),
-    ),
+    paths: [
+      ...snapshot.pages.map((page) =>
+        normalizeSitePath(`/${publicPathOf(snapshot, page)}`),
+      ),
+      ...dynamicPaths.map(normalizeSitePath),
+    ],
     redirects,
   }
 }
@@ -51,6 +56,9 @@ const OWN_PATHS = [
   '/sitemap.xml',
   '/robots.txt',
   '/_og',
+  // Blog feeds (slice site-blog).
+  '/feed.xml',
+  '/atom.xml',
   '/llms.txt',
   '/llms-full.txt',
   '/indexnow-key.txt',

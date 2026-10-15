@@ -12,6 +12,7 @@ import {
   ContainerIcon,
   Cursor01Icon,
   DashedLine01Icon,
+  Database01Icon,
   DiscountTag01Icon,
   DocumentValidationIcon,
   File02Icon,
@@ -19,18 +20,24 @@ import {
   Heading02Icon,
   HourglassIcon,
   Image01Icon,
+  InputTextIcon,
   Layout01Icon,
   LayoutThreeRowIcon,
   LayoutTwoColumnIcon,
   LeftToRightListBulletIcon,
   MapsLocation01Icon,
   Menu01Icon,
+  News01Icon,
+  Note01Icon,
   QuoteDownIcon,
+  Search01Icon,
   Share08Icon,
   SourceCodeIcon,
   SquareArrowExpand01Icon,
   StarIcon,
+  Tag01Icon,
   TextIcon,
+  UserCircleIcon,
   Video01Icon,
   WhatsappIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -41,6 +48,17 @@ import {
   defineCatalog,
   type InspectorSection,
 } from '@/src/lib/canvas/registry'
+import {
+  blogSearchDefinition,
+  postAuthorDefinition,
+  postDefinition,
+  postListDefinition,
+  postTermsDefinition,
+} from './components/blog'
+import {
+  collectionFieldDefinition,
+  collectionListDefinition,
+} from './components/collection'
 import { mapDefinition, whatsappDefinition } from './components/contact'
 import {
   buttonDefinition,
@@ -137,6 +155,13 @@ const ICONS = {
   map: MapsLocation01Icon,
   whatsapp: WhatsappIcon,
   beforeAfter: ArrowDataTransferHorizontalIcon,
+  postList: News01Icon,
+  post: Note01Icon,
+  postTerms: Tag01Icon,
+  blogSearch: Search01Icon,
+  postAuthor: UserCircleIcon,
+  collectionList: Database01Icon,
+  collectionField: InputTextIcon,
 }
 
 const CHILDREN_LABELS: Record<string, string> = {
@@ -204,6 +229,13 @@ export function createSiteCatalog(ctx: SiteRenderContext = {}): CanvasCatalog {
     mapDefinition,
     whatsappDefinition(ctx),
     beforeAfterDefinition,
+    postListDefinition(ctx),
+    postDefinition(ctx),
+    postTermsDefinition(ctx),
+    blogSearchDefinition(ctx),
+    postAuthorDefinition(ctx),
+    collectionListDefinition(ctx),
+    collectionFieldDefinition(ctx),
   ].map((definition) => ({
     ...definition,
     // S2 effects: hover, click interaction, entrance animation and free

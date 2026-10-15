@@ -189,6 +189,12 @@ export type AuditEntity =
   | 'site_media'
   // Sites wave S2 (platform): 301 redirects manager
   | 'site_redirect'
+  // Sites wave S4 (site-blog): blog posts, terms, authors, collections
+  | 'site_post'
+  | 'site_blog_term'
+  | 'site_author'
+  | 'site_collection'
+  | 'site_collection_item'
   // Sites wave S4: A/B tests
   | 'site_experiment'
   // CRM e-mail editor: saved blocks and v2 template versions

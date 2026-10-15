@@ -12,6 +12,13 @@ import {
   siteRuntimeScripts,
   usedSymbolIds,
 } from '@/src/lib/canvas-site'
+import { withGraphNodes } from '@/src/lib/sites/blog/jsonld'
+import {
+  BLOG_PAGE_PARAM,
+  BLOG_SEARCH_PARAM,
+  pageNumber,
+  searchTerm,
+} from '@/src/lib/sites/blog/routes'
 import { siteMetaCsp } from '@/src/lib/sites/csp'
 import { collectFormTokens } from '@/src/lib/sites/document'
 import {
@@ -51,6 +58,12 @@ import { parseSearchContent } from '@/src/schemas/site-search.schema'
 import { SITE_CHROME_CSS } from '../../../_components/site-chrome-css'
 import { SiteRuntime } from '../../../_components/site-runtime'
 import {
+  type DynamicPage,
+  type DynamicRequest,
+  resolveDynamicPage,
+  siteCmsContext,
+} from '../../../_lib/cms'
+import {
   loadPublishedSite,
   loadSiteExperiments,
   loadSiteForms,
@@ -59,14 +72,34 @@ import {
 
 type PageProps = {
   params: Promise<{ siteSlug: string; path?: string[] }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+/** Page number and search term of a blog page (`?pagina=`, `?busca=`). */
+async function dynamicRequest(
+  searchParams: PageProps['searchParams'],
+): Promise<DynamicRequest> {
+  const query = await searchParams
+  return {
+    page: pageNumber(query[BLOG_PAGE_PARAM]),
+    query: searchTerm(query[BLOG_SEARCH_PARAM]),
+  }
 }
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   const { siteSlug, path = [] } = await params
   const site = await loadPublishedSite(siteSlug)
-  const page = site ? findSnapshotPage(site.snapshot, path) : null
+  // Blog posts, archives and collection items (slice site-blog).
+  const dynamic =
+    site && !findSnapshotPage(site.snapshot, path)
+      ? await resolveDynamicPage(site, path, await dynamicRequest(searchParams))
+      : null
+  const page = site
+    ? (findSnapshotPage(site.snapshot, path) ?? dynamic?.page ?? null)
+    : null
   if (!site || !page) {
     return {
       title: 'Página não encontrada',
@@ -95,7 +128,17 @@ export async function generateMetadata({
     title: { absolute: title },
     description,
     applicationName: site.snapshot.name,
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      ...(dynamic?.route
+        ? {
+            types: {
+              'application/rss+xml': `${site.baseUrl}/feed.xml`,
+              'application/atom+xml': `${site.baseUrl}/atom.xml`,
+            },
+          }
+        : {}),
+    },
     robots: noindex
       ? { index: false, follow: false }
       : { index: true, follow: true },
@@ -118,7 +161,13 @@ export async function generateMetadata({
         }
       : {}),
     openGraph: {
-      type: 'website',
+      ...(dynamic?.post
+        ? {
+            type: 'article' as const,
+            publishedTime: dynamic.post.publishedAt,
+            modifiedTime: dynamic.post.updatedAt,
+          }
+        : { type: 'website' as const }),
       locale: 'pt_BR',
       siteName: site.snapshot.name,
       url: canonical,
@@ -164,7 +213,10 @@ function symbolsOf(
   return symbols
 }
 
-export default async function PublishedSitePage({ params }: PageProps) {
+export default async function PublishedSitePage({
+  params,
+  searchParams,
+}: PageProps) {
   const { siteSlug, path = [] } = await params
   const [site, redirects, experiments, requestHeaders, cookieStore] =
     await Promise.all([
@@ -189,7 +241,14 @@ export default async function PublishedSitePage({ params }: PageProps) {
     redirect(location)
   }
 
-  const page = findSnapshotPage(site.snapshot, path)
+  const request = await dynamicRequest(searchParams)
+  // Regular pages win; then the blog and collection item pages.
+  let dynamic: DynamicPage | null = null
+  let page = findSnapshotPage(site.snapshot, path)
+  if (!page) {
+    dynamic = await resolveDynamicPage(site, path, request)
+    page = dynamic?.page ?? null
+  }
   if (!page) notFound()
 
   const { snapshot } = site
@@ -244,6 +303,12 @@ export default async function PublishedSitePage({ params }: PageProps) {
     forms,
     formAction: (token) => `/api/crm/forms/${encodeURIComponent(token)}/submit`,
     symbols,
+    cms: await siteCmsContext(site, documents, {
+      path: `/${publicPathOf(snapshot, page)}`,
+      dynamic,
+      request,
+      linkBase,
+    }),
   }
   // "Atualizado em …" (Buscadores → freshness), in the site's timezone.
   const updatedLabel =
@@ -285,7 +350,12 @@ export default async function PublishedSitePage({ params }: PageProps) {
       <script
         type='application/ld+json'
         dangerouslySetInnerHTML={{
-          __html: serializeJsonLd(siteJsonLd(snapshot, page, site.baseUrl)),
+          __html: serializeJsonLd(
+            withGraphNodes(
+              siteJsonLd(snapshot, page, site.baseUrl),
+              dynamic?.jsonLd ?? [],
+            ),
+          ),
         }}
       />
       {header ? <SiteDocument doc={header} context={context} /> : null}

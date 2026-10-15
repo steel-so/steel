@@ -391,6 +391,92 @@ escreve um documento com `<!doctype html>` antes de montar, a raiz tem a
 altura mínima do palco e um documento sozinho ocupa o palco todo (fundo do
 e-mail). O ajuste da S1 que encolhia cabeçalho e rodapé saiu.
 
+## Sites — blog e coleções (S4, fatia site-blog)
+
+### Blog
+
+- **Posts** (`site_posts`): título, endereço, resumo, corpo no editor Plate
+  (o mesmo da Wiki/KB: títulos, listas, código, tabelas, colunas, imagens da
+  mídia do site, vídeos e incorporações, destaque/callout, sumário), capa,
+  autor, categorias, tags, destaque e SEO. O HTML público é gerado no
+  servidor ao salvar (`src/lib/sites/blog/plate.ts`): só nós conhecidos,
+  texto escapado e URLs conferidas — o site publicado não carrega o editor.
+  Também guardamos o texto puro (busca, feeds, IA), um resumo automático e o
+  tempo de leitura (200 palavras/min).
+- **Publicação própria**: um post vai ao ar sem publicar o site. PUBLISHED
+  com data passada é público na hora; data futura agenda (SCHEDULED) e o
+  worker (`site-posts`, a cada minuto) publica no horário. O runtime já
+  trata um agendado vencido como publicado, então um atraso do worker não
+  atrasa o post. Datas no **fuso do site** (`settings.timezone`).
+- **Autores** (`site_authors`): perfil público por site (nome, foto, bio,
+  redes), ligado a um membro do workspace ou convidado (sem conta). Sem FK
+  para o usuário: o perfil e os posts sobrevivem à conta.
+- **SEO do post**: o mesmo modelo de SEO da página (título, descrição,
+  imagem social, noindex, canônico) mais o bloco `seo.search` no formato da
+  área **Buscadores** (palavra-chave, sinônimos, perguntas que o conteúdo
+  responde, resumo citável). As perguntas viram o FAQ do post (acordeão no
+  fim + `FAQPage`). Cada post publica um `BlogPosting` no grafo JSON-LD.
+- **IA** (cota do assistente de IA do CRM): escrever post a partir de
+  assunto/roteiro, gerar resumo, sugerir títulos e transformar em FAQ.
+  Sempre rascunho para revisão no editor; nada é salvo sozinho.
+
+### Páginas dinâmicas e modelos
+
+| Endereço | Modelo |
+|---|---|
+| `/blog` (`?pagina=2`, `?busca=termo`) | Página do blog |
+| `/blog/<post>` | Post |
+| `/blog/categoria/<slug>` | Categoria (sem modelo próprio: o da página do blog) |
+| `/blog/tag/<slug>` | Tag (idem) |
+| `/blog/autor/<slug>` | Autor (idem) |
+| `/<coleção>/<item>` | Página do item da coleção |
+
+- Modelos são globais `TEMPLATE` (o `name` é a chave: `blog-index`,
+  `blog-post`, `blog-category`, `blog-tag`, `blog-author`,
+  `collection:<id>`), editados no canvas como qualquer página e publicados
+  com o site. Sem modelo, o runtime usa o padrão embutido
+  (`src/lib/sites/blog/templates.ts`) — o blog funciona antes de alguém
+  mexer em modelo.
+- Página comum vence página dinâmica (uma página `/blog` criada à mão é
+  servida no lugar do índice).
+- O índice de rotas do proxy inclui os endereços dinâmicos, então post
+  inexistente responde 404 de verdade.
+
+### Elementos novos do catálogo `site`
+
+`site.post-list` (Lista de posts: mais recentes, da página — categoria,
+tag, autor, busca —, em destaque ou relacionados; grade, cartões ou lista;
+paginação; primeiro em destaque), `site.post` (o post atual), `site.post-terms`
+(categorias/tags do blog ou do post), `site.blog-search`, `site.post-author`,
+`site.collection-list` e `site.collection-field` (um campo do item atual,
+para o modelo da página do item). Os dados chegam por
+`SiteRenderContext.cms`, resolvidos antes do render
+(`src/lib/sites/blog/resolve.ts`): no runtime, do banco; no editor, dos
+posts do site (rascunhos inclusos) ou de um blog de exemplo quando ainda não
+há post.
+
+### Coleções
+
+Tipos de conteúdo próprios (casos, equipe, vagas, imóveis…) com campos
+tipados: texto, texto formatado, imagem, número, data, link, referência a
+outra coleção do site e produto do CRM (nome e preço copiados ao salvar).
+Itens publicados aparecem na hora; com a página do item criada, cada item
+ganha `/<coleção>/<item>`.
+
+### Feeds, sitemap e llms.txt
+
+- `/feed.xml` (RSS 2.0) e `/atom.xml`; `?categoria=<slug>` filtra. Os últimos
+  50 posts, com o HTML completo.
+- O `sitemap.xml` inclui o blog, os posts (sem noindex/canônico externo) e os
+  itens de coleções com página.
+- `SiteBlogPublicService.llmsSections` + `renderLlmsSections` montam as
+  seções "Blog" e de cada coleção para o `/llms.txt` da área Buscadores.
+
+### Cache
+
+Leituras do blog e das coleções usam a tag do site (`site:<slug>`) e vida
+curta (`minutes`): salvar um post publicado expira na hora; um agendado
+aparece sozinho em até alguns minutos.
 ## Coedição em tempo real (S4)
 
 Decisão em [ADR 0027](../adr/0027-canvas-real-time-co-editing.md).
