@@ -597,7 +597,24 @@ export const SiteExperimentService = {
     const experiment = current.value
 
     if (!experiment.winnerKey) {
-      const variants = experimentVariantsOf(experiment)
+      // Variants another open test still uses stay in the draft.
+      const all = await SiteExperimentRepository.listBySite(siteId)
+      if (!all.ok) return all
+      const shared = new Set(
+        all.value
+          .filter((other) => other.id !== experimentId && !other.winnerKey)
+          .flatMap((other) =>
+            experimentVariantsOf(other).flatMap((variant) => [
+              variant.nodeId,
+              variant.pageId,
+            ]),
+          ),
+      )
+      const variants = experimentVariantsOf(experiment).filter(
+        (variant) =>
+          variant.key === CONTROL_KEY ||
+          !shared.has(variant.nodeId ?? variant.pageId),
+      )
       const control = variants.find((variant) => variant.key === CONTROL_KEY)
       if (control) {
         const cleaned = await promoteInDraft(

@@ -951,6 +951,19 @@ describe('remove', () => {
     expect(pageService.update).not.toHaveBeenCalled()
   })
 
+  it('keeps variants another open test still uses', async () => {
+    experiments.listBySite.mockResolvedValueOnce(
+      ok([
+        experiment(),
+        experiment({ id: 'other' }),
+        experiment({ id: 'done', winnerKey: 'A' }),
+      ]),
+    )
+    expectOk(await SiteExperimentService.remove('u1', WS, SITE, 'e1'))
+    expect(pageService.update).not.toHaveBeenCalled()
+    expect(experiments.delete).toHaveBeenCalledWith('e1')
+  })
+
   it('propagates failures', async () => {
     experiments.findById.mockResolvedValueOnce(
       err(appError('SITE_EXPERIMENT_NOT_FOUND', 'x')),
@@ -958,6 +971,11 @@ describe('remove', () => {
     expectErr(
       await SiteExperimentService.remove('u1', WS, SITE, 'e1'),
       'SITE_EXPERIMENT_NOT_FOUND',
+    )
+    experiments.listBySite.mockResolvedValueOnce(err(databaseError()))
+    expectErr(
+      await SiteExperimentService.remove('u1', WS, SITE, 'e1'),
+      'DATABASE_ERROR',
     )
     pageService.update.mockResolvedValueOnce(err(databaseError()))
     expectErr(
