@@ -26,6 +26,7 @@ export {
   type CompileSiteCssOptions,
   compileNodesCss,
   compileSiteCss,
+  cssUsage,
   nodeClass,
 } from './css'
 export { SITE_ICON_NAMES, SITE_ICONS, SOCIAL_NETWORKS } from './icons'
@@ -44,6 +45,14 @@ export {
   sectionPreset,
 } from './presets'
 export { documentTypes, needsFormScript, SiteDocument } from './render'
+export {
+  SITE_BOOT_SCRIPT,
+  type SiteRuntime,
+  type SiteRuntimeFeature,
+  type SiteRuntimeScript,
+  siteRuntimeFeatures,
+  siteRuntimeScripts,
+} from './runtime'
 export type * from './schemas'
 export {
   compileThemeCss,
