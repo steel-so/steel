@@ -1,7 +1,11 @@
 import type { CanvasDocument, CanvasNode } from '@/src/lib/canvas/types'
 import { SITE_TYPES } from '@/src/lib/canvas-site/constants'
 import { richTextToPlain } from '@/src/lib/canvas-site/sanitize'
+import { parseSearchContent } from '@/src/schemas/site-search.schema'
 import { sitePageUrl } from './host'
+import { businessNode, isLocalBusiness } from './search/business'
+import { resolveBusinessProfile } from './search/context'
+import { structuredDataNode } from './search/structured-data'
 import {
   pageTitle,
   publicPathOf,
@@ -12,8 +16,11 @@ import {
 /**
  * SEO of a published page: canonical address, social image (uploaded or
  * the auto-generated card) and the schema.org graph (Organization,
- * WebSite, WebPage, BreadcrumbList and, with an accordion, FAQPage). Pure; the runtime page and the
- * sitemap call it with the published snapshot.
+ * WebSite, WebPage, BreadcrumbList and, with an accordion, FAQPage), plus
+ * the "Buscadores" data: the business profile as Organization or
+ * LocalBusiness, freshness, speakable and the page's structured data items.
+ * Pure; the runtime page and the sitemap call it with the published
+ * snapshot.
  */
 
 /** Route of the auto-generated social card, under the site's base URL. */
@@ -138,17 +145,27 @@ export function siteJsonLd(
   const organizationId = `${siteUrl}#organization`
   const websiteId = `${siteUrl}#website`
   const pageUrl = sitePageUrl(baseUrl, publicPathOf(snapshot, page))
-  const logo = settings.seo.logoUrl ?? settings.faviconUrl
   const description = page.seo.description || settings.seo.description
+  const image = socialImageOf(snapshot, page, baseUrl).url
 
-  const organization: JsonLdNode = {
-    '@type': 'Organization',
-    '@id': organizationId,
-    name: settings.seo.organizationName || snapshot.name,
-    url: siteUrl,
-    ...(logo ? { logo: absoluteUrl(logo, baseUrl) } : {}),
-    ...(settings.seo.sameAs?.length ? { sameAs: settings.seo.sameAs } : {}),
-  }
+  const search = parseSearchContent(page.seo.search)
+  const items = search.structuredData ?? []
+  // The business profile ("Buscadores") with the older SEO fields as
+  // fallbacks; a LocalBusiness item makes a plain Organization local.
+  const profile = resolveBusinessProfile(settings, snapshot.name)
+  const wantsLocal = items.some((item) => item.type === 'LocalBusiness')
+  const organization = businessNode(
+    {
+      ...profile,
+      ...(wantsLocal && !isLocalBusiness(profile)
+        ? { type: 'LocalBusiness' as const }
+        : {}),
+      logoUrl: profile.logoUrl
+        ? absoluteUrl(profile.logoUrl, baseUrl)
+        : undefined,
+    },
+    { id: organizationId, siteUrl, fallbackName: snapshot.name },
+  )
   const website: JsonLdNode = {
     '@type': 'WebSite',
     '@id': websiteId,
@@ -180,9 +197,34 @@ export function siteJsonLd(
     breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
     primaryImageOfPage: {
       '@type': 'ImageObject',
-      url: socialImageOf(snapshot, page, baseUrl).url,
+      url: image,
     },
+    ...(page.updatedAt ? { dateModified: page.updatedAt } : {}),
+    ...(search.summary ? { abstract: search.summary } : {}),
+    ...(search.speakable
+      ? {
+          speakable: {
+            '@type': 'SpeakableSpecification',
+            xpath: [
+              '/html/head/title',
+              "/html/head/meta[@name='description']/@content",
+            ],
+          },
+        }
+      : {}),
   }
+  const extra = items
+    .map((item, index) =>
+      structuredDataNode(item, index, {
+        pageUrl,
+        pageTitle: pageTitle(snapshot, page),
+        description,
+        image,
+        organizationId,
+        dateModified: page.updatedAt,
+      }),
+    )
+    .filter((node): node is JsonLdNode => node !== null)
 
   const questions = faqOf(page.document)
   const faq: JsonLdNode[] = questions.length
@@ -204,7 +246,7 @@ export function siteJsonLd(
 
   return {
     '@context': 'https://schema.org',
-    '@graph': [organization, website, webPage, breadcrumb, ...faq],
+    '@graph': [organization, website, webPage, breadcrumb, ...faq, ...extra],
   }
 }
 

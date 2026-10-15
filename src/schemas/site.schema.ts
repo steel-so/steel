@@ -4,6 +4,7 @@ import {
   isValidSiteSlug,
   SITE_SLUG_MAX,
 } from '@/src/lib/sites/slug'
+import { SiteSearchSettingsSchema } from './site-search.schema'
 
 /** Absolute http(s) URL or a same-origin path (`/media/…`); never
  * `javascript:` or `data:`. */
@@ -119,6 +120,10 @@ export const SiteSettingsSchema = z.object({
   socialImageUrl: SiteUrlSchema.optional(),
   tracking: TrackingSchema.default({}),
   cookieBanner: CookieBannerSchema.default({ enabled: false }),
+  /** "Buscadores": business profile, crawlers, llms.txt, IndexNow and
+   * verification (see `site-search.schema.ts`). A malformed block reads as
+   * absent instead of resetting every setting. */
+  search: SiteSearchSettingsSchema.optional().catch(undefined),
 })
 
 export type SiteSettingsDTO = z.infer<typeof SiteSettingsSchema>

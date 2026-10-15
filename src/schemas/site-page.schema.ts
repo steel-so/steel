@@ -4,6 +4,7 @@ import {
   SitePageSlugSchema,
   SiteUrlSchema,
 } from './site.schema'
+import { SearchContentSchema } from './site-search.schema'
 
 /** `<changefreq>` values of the sitemap protocol. */
 export const SITEMAP_CHANGE_FREQUENCIES = [
@@ -31,6 +32,9 @@ export const SitePageSeoSchema = z.object({
   sitemapPriority: z.number().min(0).max(1).optional(),
   /** Sitemap `<changefreq>`. */
   changeFrequency: z.enum(SITEMAP_CHANGE_FREQUENCIES).optional(),
+  /** "Buscadores" data (keyword, questions, summary, structured data). A
+   * malformed block reads as absent. */
+  search: SearchContentSchema.optional().catch(undefined),
 })
 
 export type SitePageSeoDTO = z.infer<typeof SitePageSeoSchema>
