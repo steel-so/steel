@@ -6,7 +6,10 @@ import {
   type EmailProductData,
 } from '@/src/lib/canvas-email/theme'
 import type { EmailBrand } from '@/src/lib/crm-email-builder/brand'
-import type { CrmEmailBrandDTO } from '@/types/crm-email-marketing'
+import type {
+  CrmEmailBrandDTO,
+  CrmEmailTemplateDTO,
+} from '@/types/crm-email-marketing'
 import type { CrmProductDTO } from '@/types/crm-product'
 import {
   createTemplateMetaStore,
@@ -30,6 +33,11 @@ export interface EmailEditorData {
   meta: TemplateMetaStore
   /** Saves pending name/subject edits now; `true` when nothing is left. */
   flushMeta: () => Promise<boolean>
+  /** Saves pending document edits now (before recording a version). */
+  flushDocument: () => Promise<boolean>
+  /** Loads a template the server changed (a restored version) into the
+   * open editor: document, subject and name, all marked as saved. */
+  applyTemplate: (template: CrmEmailTemplateDTO) => void
 }
 
 const EmailEditorDataContext = createContext<EmailEditorData>({
@@ -41,6 +49,8 @@ const EmailEditorDataContext = createContext<EmailEditorData>({
   brand: DEFAULT_EMAIL_BRAND,
   meta: createTemplateMetaStore({ name: '', subject: '' }),
   flushMeta: async () => true,
+  flushDocument: async () => true,
+  applyTemplate: () => {},
 })
 
 export function EmailEditorDataProvider({

@@ -18,6 +18,7 @@ import {
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
 import { createCanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
+import { openEmailDocument } from '@/src/lib/canvas-email/convert-v1'
 import { EMAIL_PRESETS } from '@/src/lib/canvas-email/presets'
 import {
   createEmailRenderContext,
@@ -31,6 +32,7 @@ import type {
   CrmEmailTemplateDTO,
 } from '@/types/crm-email-marketing'
 import type { CrmProductDTO } from '@/types/crm-product'
+import { AiSectionPanel } from './ai-section-panel'
 import { createEditorEmailCatalog } from './editor-catalog'
 import {
   type EmailEditorData,
@@ -41,11 +43,14 @@ import {
 import { ChecklistButton } from './email-checklist'
 import { PreviewButton } from './email-preview-dialog'
 import { EnvelopeFields } from './envelope-fields'
+import { EMAIL_EDITOR_FRAME_CSS } from './frame-styles'
 import { GlobalStylesPanel } from './global-styles-panel'
 import { ProductPickerControl } from './product-picker-control'
+import { SavedBlocksPanel } from './saved-blocks-panel'
 import { SendTestButton } from './send-test-dialog'
 import { createTemplateMetaStore, type TemplateMeta } from './template-meta'
 import { VariablesPanel } from './variables-panel'
+import { VersionHistoryButton } from './version-history'
 
 /** Delay before name/subject edits are saved. */
 export const META_AUTOSAVE_MS = 1000
@@ -58,10 +63,14 @@ export const EMAIL_EDITOR_PRESETS: CanvasPresetItem[] = EMAIL_PRESETS.map(
 
 const TITLE = <EnvelopeFields />
 
+/** Editor-only CSS in the canvas iframe ("Mostrar se" badge). */
+const FRAME_HEAD = <style>{EMAIL_EDITOR_FRAME_CSS}</style>
+
 function renderActions() {
   return (
     <div className='flex items-center gap-1'>
       <ChecklistButton />
+      <VersionHistoryButton />
       <PreviewButton />
       <SendTestButton />
     </div>
@@ -225,6 +234,29 @@ export function EmailCanvasEditor({
     }
   }, [meta, flushMeta])
 
+  // Pending document edits, saved now (before recording a version).
+  const flushDocument = useCallback(async () => {
+    const { doc, dirty } = store.getState()
+    if (!dirty) return true
+    const saved = await onSave(doc)
+    if (saved) store.markSaved(doc)
+    return saved
+  }, [store, onSave])
+
+  // A restored version: the server already saved it — load it as saved.
+  const applyTemplate = useCallback(
+    (next: CrmEmailTemplateDTO) => {
+      const doc = openEmailDocument(next.builderDocument)
+      if (doc) {
+        store.reset(doc)
+        store.markSaved(doc)
+      }
+      savedMeta.current = { name: next.name, subject: next.subject }
+      meta.set({ name: next.name, subject: next.subject })
+    },
+    [store, meta],
+  )
+
   // ── brand ───────────────────────────────────────────────────────────────
   const brandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previewBrand = useCallback((next: EmailBrand) => {
@@ -288,6 +320,22 @@ export function EmailCanvasEditor({
           <VariablesPanel store={canvasStore} />
         ),
       },
+      {
+        id: 'saved',
+        label: 'Salvos',
+        icon: 'saved',
+        render: ({ store: canvasStore }) => (
+          <SavedBlocksPanel store={canvasStore} />
+        ),
+      },
+      {
+        id: 'ai',
+        label: 'IA',
+        icon: 'ai',
+        render: ({ store: canvasStore }) => (
+          <AiSectionPanel store={canvasStore} />
+        ),
+      },
     ],
     [brandSaving, previewBrand, handleBrandSave],
   )
@@ -303,6 +351,8 @@ export function EmailCanvasEditor({
       brand,
       meta,
       flushMeta,
+      flushDocument,
+      applyTemplate,
     }),
     [
       workspaceId,
@@ -313,6 +363,8 @@ export function EmailCanvasEditor({
       brand,
       meta,
       flushMeta,
+      flushDocument,
+      applyTemplate,
     ],
   )
 
@@ -323,6 +375,7 @@ export function EmailCanvasEditor({
         store={store}
         initialDocument={initialDocument}
         viewportWidths={EMAIL_VIEWPORTS}
+        frameHead={FRAME_HEAD}
         presets={EMAIL_EDITOR_PRESETS}
         extraTabs={extraTabs}
         title={TITLE}

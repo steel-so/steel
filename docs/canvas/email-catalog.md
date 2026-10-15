@@ -124,3 +124,76 @@ o nó quando um deles muda. O catálogo de e-mail declara as props do corpo
 para todos (fonte, cores, largura) e as larguras das irmãs para a coluna —
 antes, mudar a largura de uma coluna só redesenhava as outras na próxima
 mudança da seção.
+
+## Fases E2 e E3 no editor
+
+### Blocos salvos ("Salvos")
+
+- Selecione uma seção ou um bloco e use "Salvar seção/bloco selecionado":
+  nome e categoria (Cabeçalhos, Conteúdo, Chamadas, Produtos, Rodapés e
+  assinaturas, Outros). O bloco vale para **todo o workspace**.
+- O fragmento (`CrmEmailSavedBlock.fragment`) passa pela mesma validação do
+  documento: `validateEmailFragment` (`fragments.ts`) coloca o fragmento num
+  e-mail mínimo (corpo → seção → coluna → bloco, rodapé) e roda
+  `validateEmailDocument`; texto rico e HTML saem sanitizados. Só seção ou
+  bloco de conteúdo pode ser salvo (`CRM_EMAIL_SAVED_BLOCK_INVALID`), bloco
+  de HTML só por OWNER/ADMIN, até 200 por workspace.
+- Na aba, cada bloco tem prévia real (render do fragmento na marca do
+  workspace), busca, renomear e excluir; arrasta para o canvas ou insere com
+  clique, como as seções prontas. Inserir copia o conteúdo (ids novos):
+  editar ou excluir o bloco salvo não muda e-mails que já o usam.
+- API: `GET/POST /api/workspaces/{id}/crm/email-saved-blocks`,
+  `PATCH/DELETE …/email-saved-blocks/{blockId}` (permissão `email`).
+
+### Histórico de versões ("Histórico")
+
+- `CrmEmailTemplateVersion` guarda documento + assunto de templates v2 em
+  quatro momentos: "Salvar versão" (com nome opcional), envio de teste,
+  criação de campanha com o template e restauração. Conteúdo igual ao da
+  última versão não grava de novo (hash de documento + assunto), exceto a
+  restauração. Ficam as **50** mais recentes por template.
+- A gaveta lista as versões (motivo, autor, há quanto tempo), mostra a
+  prévia exata do envio e restaura com confirmação: o template é salvo pelo
+  `PATCH` normal (mesma validação e regra do bloco de HTML) e vira uma
+  versão `RESTORE` — nada se perde.
+- API: `GET/POST …/email-templates/{templateId}/versions`,
+  `GET …/versions/{versionId}`, `POST …/versions/{versionId}/restore`.
+
+### IA nos blocos
+
+- Inspetor, seção "IA" (título, texto, botão, depoimento, cupom, evento, NPS,
+  descrição do produto): "Escrever com IA" a partir de um pedido e
+  "Reescrever" — mais curto, mais persuasivo, mais formal. O resultado entra
+  como um passo de desfazer.
+- Aba "IA" da barra lateral: "Gerar seção" a partir de um pedido e/ou de um
+  produto do CRM. O modelo devolve um JSON pequeno (colunas e blocos);
+  `buildAiSection` (`ai-blocks.ts`) cria cada bloco com os padrões do
+  catálogo, descarta o que o schema recusa e valida a seção inteira — nó
+  inválido nunca chega ao editor.
+- Mesmo provedor, modelo e cota mensal do assistente do CRM (ADR 0007,
+  feature `crm.aiAssistant`). Rotas: `POST …/crm/email-ai/rewrite` e
+  `POST …/crm/email-ai/section`.
+
+### Conteúdo condicional ("Mostrar se")
+
+- Seções e blocos ganham `showIf` (Avançado › Mostrar se): dado do contato
+  (nome, primeiro nome, e-mail, empresa, cargo, telefone, cidade — é igual,
+  é diferente, contém, não contém, está vazio, está preenchido; sem
+  diferenciar maiúsculas e acentos) ou lista de e-mail (está / não está).
+- No render final o nó condicional fica entre comentários
+  `<!--ec-if:<id>:<condição>-->…<!--ec-endif:<id>-->`. A renderização base
+  continua única (cache e cópia da campanha); por destinatário,
+  `applyEmailConditions` mantém ou corta cada trecho e refaz o texto puro,
+  antes das variáveis. Vale no envio de teste, na campanha e na API de
+  render; as listas do contato só são consultadas quando o e-mail tem
+  condição de lista.
+- No canvas o nó condicional mostra o selo "Mostrar se: …". Em "Visualizar",
+  o "Ver como" mostra a versão de cada contato (com as listas da pessoa do
+  CRM); com "Mostrar variáveis" tudo aparece.
+
+### Só no celular
+
+- Avançado › Celular: mostrar no computador/celular (um dos dois fica
+  ligado), margem própria no celular e tamanho da fonte no celular. Grava os
+  valores responsivos do catálogo (`{ base, mobile }`), que viram media
+  queries no envio, qualquer que seja o tamanho mostrado no canvas.

@@ -538,6 +538,33 @@ export const crmEmailCanvasHtmlForbidden = (): AppError =>
     'CRM_EMAIL_CANVAS_HTML_FORBIDDEN',
     'Só administradores do workspace podem adicionar ou alterar blocos de HTML',
   )
+export const crmEmailSavedBlockNotFound = (): AppError =>
+  appError('CRM_EMAIL_SAVED_BLOCK_NOT_FOUND', 'Bloco salvo não encontrado')
+
+export const crmEmailSavedBlockInvalid = (issues: string[]): AppError =>
+  appError('CRM_EMAIL_SAVED_BLOCK_INVALID', issues[0] ?? 'O bloco é inválido', {
+    issues,
+  })
+
+export const crmEmailSavedBlockLimitReached = (limit: number): AppError =>
+  appError(
+    'CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED',
+    `O workspace chegou ao limite de ${limit} blocos salvos — exclua algum para salvar outro`,
+  )
+
+export const crmEmailTemplateVersionNotFound = (): AppError =>
+  appError(
+    'CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND',
+    'Versão do template não encontrada',
+  )
+
+export const crmEmailAiFailed = (message?: string): AppError =>
+  appError(
+    'CRM_EMAIL_AI_FAILED',
+    message ??
+      'A IA não conseguiu responder agora — tente de novo em instantes',
+  )
+
 export const crmCampaignNotFound = (): AppError =>
   appError('CRM_CAMPAIGN_NOT_FOUND', 'Campanha não encontrada')
 

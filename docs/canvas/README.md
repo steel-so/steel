@@ -140,6 +140,11 @@ blocos, rodapé obrigatório), render idêntico no editor e no envio, conversor
 da v1, seções prontas e checklist. Detalhes, regras e o que a fatia do editor
 precisa saber: [email-catalog.md](./email-catalog.md).
 
+Fases E2/E3 entregues no editor do CRM: blocos salvos do workspace,
+histórico de versões com restauração, IA nos blocos (escrever, reescrever,
+gerar seção), conteúdo condicional por contato ("Mostrar se") e ajustes só
+no celular — ver [email-catalog.md](./email-catalog.md#fases-e2-e-e3-no-editor).
+
 ## Catálogo de sites (`src/lib/canvas-site/`)
 
 Catálogo `site`, versão 1, breakpoints `base` (≥ 1024 px), `tablet`

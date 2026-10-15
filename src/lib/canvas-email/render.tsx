@@ -19,6 +19,13 @@ import {
   MSO_CLOSE_MARKER,
   MSO_OPEN_MARKER,
 } from './components/layout'
+import {
+  applyConditionMarkers,
+  CONDITION_CLOSE_ATTR,
+  CONDITION_OPEN_ATTR,
+  conditionMarkers,
+  conditionOf,
+} from './conditions'
 import { collectMobileCss } from './mobile'
 import type { EmailBodyProps } from './schemas'
 import { createEmailRenderContext, type EmailProductData } from './theme'
@@ -27,7 +34,8 @@ import { createEmailRenderContext, type EmailProductData } from './theme'
  * Final render of an e-mail canvas document: the very same catalog
  * components the editor shows, with `editing: false` — no `data-canvas-id`,
  * no hints, hidden nodes dropped — then `@react-email/render`. Variables stay
- * as `{{key}}`; personalize per recipient with `personalizeEmail`.
+ * as `{{key}}`; per recipient, run `applyEmailConditions` ("Mostrar se")
+ * and then `personalizeEmail`.
  */
 
 /** Children in output order: the footer always closes the e-mail. */
@@ -54,12 +62,23 @@ function NodeTree({
   const children = orderedChildren(node, doc).map((child) => (
     <NodeTree key={child} doc={doc} id={child} catalog={catalog} />
   ))
-  return definition.render({
+  const output = definition.render({
     node,
     children,
     breakpoint: 'base',
     editing: false,
   })
+  const condition = conditionOf(node)
+  if (!condition || output == null) return output
+  // "Mostrar se": markers around the node, evaluated per recipient.
+  const markers = conditionMarkers(node.id, condition)
+  return (
+    <>
+      <span {...{ [CONDITION_OPEN_ATTR]: markers.open }} />
+      {output}
+      <span {...{ [CONDITION_CLOSE_ATTR]: markers.close }} />
+    </>
+  )
 }
 
 const MSO_FONT_FALLBACK =
@@ -110,6 +129,8 @@ export async function renderEmailDocument(
     rootProps,
     editing: false,
   })
-  const html = applyOutlookMarkers(await render(element), rootProps.width)
+  const html = applyConditionMarkers(
+    applyOutlookMarkers(await render(element), rootProps.width),
+  )
   return { subject: options.subject, html, text: emailHtmlToText(html) }
 }

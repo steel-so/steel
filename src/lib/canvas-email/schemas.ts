@@ -12,6 +12,7 @@ import {
   isEmailBuilderImage,
   isEmailBuilderLink,
 } from '@/src/schemas/crm-email-builder.schema'
+import { emailConditionSchema } from './conditions'
 import { EMAIL_FONT_IDS } from './theme'
 
 /**
@@ -62,10 +63,15 @@ export const responsiveAlign = responsiveSchema(alignSchema)
 export const responsiveSpacing = responsiveSchema(canvasSpacingSchema)
 export const responsiveTypography = responsiveSchema(canvasTypographySchema)
 
-/** Props every block carries: outer padding and per-device visibility. */
+/** "Mostrar se": shown only to recipients that match (E3). */
+export const showIfSchema = emailConditionSchema.optional()
+
+/** Props every block carries: outer padding, per-device visibility and the
+ * optional per-recipient condition. */
 const blockBase = {
   padding: responsiveSpacing,
   visibility: canvasVisibilitySchema,
+  showIf: showIfSchema,
 }
 
 const optionalColor = canvasColorSchema.optional()
@@ -90,6 +96,7 @@ export const sectionSchema = z.object({
   border: canvasBorderSchema.optional(),
   radius: z.number().min(0).max(40),
   visibility: canvasVisibilitySchema,
+  showIf: showIfSchema,
 })
 export type EmailSectionProps = z.infer<typeof sectionSchema>
 
@@ -183,6 +190,7 @@ export type EmailDividerProps = z.infer<typeof dividerSchema>
 export const spacerSchema = z.object({
   height: responsiveSchema(z.number().int().min(4).max(200)),
   visibility: canvasVisibilitySchema,
+  showIf: showIfSchema,
 })
 export type EmailSpacerProps = z.infer<typeof spacerSchema>
 

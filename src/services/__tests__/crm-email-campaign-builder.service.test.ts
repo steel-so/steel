@@ -15,6 +15,8 @@ vi.mock('@/src/repositories/crm-person.repository')
 vi.mock('@/src/repositories/crm-mailing-list.repository')
 vi.mock('@/src/repositories/crm-email-opt-out.repository')
 vi.mock('@/src/repositories/crm-email-builder.repository')
+// Version history (E2) is covered in crm-email-template-version.service.test.
+vi.mock('@/src/services/crm-email-template-history')
 vi.mock('@/src/lib/mail/send', () => ({
   sendEmail: vi.fn(async () => ({ id: 'resend-1' })),
 }))
