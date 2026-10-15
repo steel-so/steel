@@ -2,6 +2,7 @@
 
 import {
   Add01Icon,
+  Analytics01Icon,
   Copy01Icon,
   Delete02Icon,
   Globe02Icon,
@@ -19,6 +20,7 @@ import {
   SiteSnapshot,
   useNearViewport,
 } from '@/app/_components/canvas-site/site-snapshot'
+import { VIZ_VARS } from '@/app/_components/steel-ai-usage/usage-charts'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -47,10 +49,13 @@ import {
   useCrmSites,
   useLegacyLandingPageCount,
 } from '@/src/hooks/use-crm-sites'
+import { useSitesAnalyticsSummary } from '@/src/hooks/use-site-platform'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { parseSiteTheme } from '@/src/lib/canvas-site/theme'
 import type { SiteSummaryDTO } from '@/types/site'
 import { formatSiteRelative } from './format'
+import { formatCount } from './metrics/site-metrics'
+import { SiteSparkline } from './metrics/site-sparkline'
 import { NewSiteDialog } from './new-site-dialog'
 import { toPageLinks } from './site-editor-context'
 import { SiteStatusBadge } from './site-status-badge'
@@ -91,9 +96,14 @@ function SiteThumbnail({
       const page = home ? await api.page(site.id, home.id) : null
       const header = globals.find((global) => global.kind === 'HEADER')
       const footer = globals.find((global) => global.kind === 'FOOTER')
+      const symbols: Record<string, CanvasDocument> = {}
+      for (const global of globals) {
+        if (global.kind === 'SYMBOL') symbols[global.id] = global.document
+      }
       return {
         theme: parseSiteTheme(full.theme),
         links: toPageLinks(pages),
+        symbols,
         docs: [header?.document, page?.document, footer?.document].filter(
           (doc): doc is CanvasDocument => doc !== undefined,
         ),
@@ -101,7 +111,10 @@ function SiteThumbnail({
     },
   })
   const context = useMemo(
-    () => ({ pages: data.data?.links ?? [] }),
+    () => ({
+      pages: data.data?.links ?? [],
+      symbols: data.data?.symbols,
+    }),
     [data.data],
   )
   return (
@@ -131,12 +144,15 @@ function SiteCard({
   workspaceId,
   slug,
   site,
+  traffic,
   onDuplicate,
   onDelete,
 }: {
   workspaceId: string
   slug: string
   site: SiteSummaryDTO
+  /** Daily views of the last days (sparkline), when loaded. */
+  traffic?: { views: number[]; total: number }
   onDuplicate: (site: SiteSummaryDTO) => void
   onDelete: (site: SiteSummaryDTO) => void
 }) {
@@ -145,6 +161,7 @@ function SiteCard({
   const canDelete = useCan('landing-pages', 'DELETE')
   const editorHref = `/${slug}/crm/sites/${site.id}`
   const previewHref = `${editorHref}/preview`
+  const metricsHref = `${editorHref}/metrics`
   const [now] = useState(() => Date.now())
 
   async function copyUrl() {
@@ -194,6 +211,10 @@ function SiteCard({
               <DropdownMenuItem render={<Link href={previewHref} />}>
                 <SteelIcon icon={ViewIcon} />
                 Visualizar rascunho
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link href={metricsHref} />}>
+                <SteelIcon icon={Analytics01Icon} />
+                Métricas
               </DropdownMenuItem>
               {site.status === 'PUBLISHED' ? (
                 <DropdownMenuItem
@@ -246,6 +267,24 @@ function SiteCard({
             {site.url.replace(/^https?:\/\//, '')}
           </a>
         </div>
+        {traffic ? (
+          <Link
+            href={metricsHref}
+            data-testid={`site-traffic-${site.id}`}
+            className='-mx-1 flex min-w-0 items-center justify-between gap-3 rounded-md px-1 py-0.5 text-muted-foreground text-xs transition-colors hover:bg-muted hover:text-foreground'
+          >
+            <span className='truncate'>
+              {traffic.total === 1
+                ? '1 visita'
+                : `${formatCount(traffic.total)} visitas`}{' '}
+              em {traffic.views.length} dias
+            </span>
+            <SiteSparkline
+              values={traffic.views}
+              label={`Visitas por dia de ${site.name} nos últimos ${traffic.views.length} dias`}
+            />
+          </Link>
+        ) : null}
       </div>
     </li>
   )
@@ -341,6 +380,11 @@ export function SitesList({
   slug: string
 }) {
   const sites = useCrmSites(workspaceId)
+  const summary = useSitesAnalyticsSummary(workspaceId)
+  const traffic = useMemo(
+    () => new Map(summary.data?.sites.map((item) => [item.siteId, item])),
+    [summary.data],
+  )
   const queryClient = useQueryClient()
   const router = useRouter()
   const canCreate = useCan('landing-pages', 'CREATE')
@@ -445,7 +489,7 @@ export function SitesList({
       ) : (
         <ul
           aria-label='Sites'
-          className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'
+          className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${VIZ_VARS}`}
         >
           {list.map((site) => (
             <SiteCard
@@ -453,6 +497,7 @@ export function SitesList({
               workspaceId={workspaceId}
               slug={slug}
               site={site}
+              traffic={traffic.get(site.id)}
               onDuplicate={(item) => void duplicate(item)}
               onDelete={setRemoving}
             />

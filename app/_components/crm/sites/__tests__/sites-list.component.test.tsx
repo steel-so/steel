@@ -55,6 +55,20 @@ function setup({
   landingPages?: number
 } = {}) {
   const spy = mockFetch([
+    {
+      match: `${BASE}/analytics?days=14`,
+      data: {
+        from: '2026-10-02',
+        to: '2026-10-15',
+        sites: [
+          {
+            siteId: 'site_1',
+            views: [0, 1, 2, 3, 0, 0, 5, 1, 0, 2, 3, 4, 1, 2],
+            total: 24,
+          },
+        ],
+      },
+    },
     { match: new RegExp(`${BASE}$`), data: sites },
     { match: /\/crm\/landing-pages$/, data: Array(landingPages).fill({}) },
     {
@@ -256,5 +270,19 @@ describe('<SitesList />', () => {
       spy.mock.calls.some(([url]) => String(url).includes('migrate')),
     ).toBe(true)
     expect(screen.queryByText('Landing pages agora são Sites')).toBeNull()
+  })
+
+  it('shows the traffic of the last days with a link to the metrics', async () => {
+    setup()
+    const traffic = await screen.findByTestId('site-traffic-site_1')
+    expect(traffic.textContent).toContain('24 visitas em 14 dias')
+    expect(traffic.getAttribute('href')).toBe('/acme/crm/sites/site_1/metrics')
+    expect(
+      within(traffic).getByRole('img', {
+        name: 'Visitas por dia de Clínica São Lucas nos últimos 14 dias',
+      }),
+    ).toBeTruthy()
+    // A site without metrics yet shows no line.
+    expect(screen.queryByTestId('site-traffic-site_2')).toBeNull()
   })
 })

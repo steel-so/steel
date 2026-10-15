@@ -1,9 +1,11 @@
 'use client'
 
 import {
+  Analytics01Icon,
   Clock01Icon,
   LinkSquare02Icon,
   Rocket01Icon,
+  Route01Icon,
   Settings02Icon,
   ViewIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -23,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { PublishDialog } from './publish-dialog'
+import { RedirectsDialog } from './redirects-dialog'
 import { orderPages, useSiteEditor } from './site-editor-context'
 import { SiteSettingsDialog } from './site-settings-dialog'
 import { SiteStatusBadge } from './site-status-badge'
@@ -32,8 +35,16 @@ import { VersionsSheet } from './versions-sheet'
 const GLOBAL_LABELS = {
   HEADER: 'Cabeçalho',
   FOOTER: 'Rodapé',
-  SYMBOL: 'Símbolo',
+  SYMBOL: 'Componente',
 } as const
+
+/** Header/footer by kind; reusable components by their own name. */
+function globalLabel(global: {
+  kind: keyof typeof GLOBAL_LABELS
+  name: string
+}) {
+  return global.kind === 'SYMBOL' ? global.name : GLOBAL_LABELS[global.kind]
+}
 
 const iconLink =
   'flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
@@ -51,7 +62,7 @@ function TargetSwitcher() {
       return pages.find((page) => page.id === id)?.title ?? 'Página'
     }
     const global = globals.find((item) => item.id === id)
-    return global ? GLOBAL_LABELS[global.kind] : 'Global'
+    return global ? globalLabel(global) : 'Global'
   }
   return (
     <Select
@@ -98,7 +109,7 @@ function TargetSwitcher() {
               <SelectLabel>Globais</SelectLabel>
               {globals.map((global) => (
                 <SelectItem key={global.id} value={`global:${global.id}`}>
-                  {GLOBAL_LABELS[global.kind]}
+                  {globalLabel(global)}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -143,8 +154,10 @@ export function SiteEditorTitle() {
 
 /** Right side: preview, history, live site and Publicar. */
 export function SiteEditorActions() {
-  const { site, target, previewHref } = useSiteEditor()
+  const { site, target, previewHref, slug, workspaceId, canEdit } =
+    useSiteEditor()
   const [versionsOpen, setVersionsOpen] = useState(false)
+  const [redirectsOpen, setRedirectsOpen] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
   const live = site.status === 'PUBLISHED'
   return (
@@ -159,6 +172,24 @@ export function SiteEditorActions() {
       >
         <SteelIcon icon={ViewIcon} className='size-4' />
       </a>
+      <a
+        href={`/${slug}/crm/sites/${site.id}/metrics`}
+        aria-label='Métricas do site'
+        title='Métricas do site'
+        className={iconLink}
+      >
+        <SteelIcon icon={Analytics01Icon} className='size-4' />
+      </a>
+      <button
+        type='button'
+        onClick={() => setRedirectsOpen(true)}
+        aria-label='Redirecionamentos'
+        title='Redirecionamentos'
+        data-testid='site-redirects-open'
+        className={iconLink}
+      >
+        <SteelIcon icon={Route01Icon} className='size-4' />
+      </button>
       <button
         type='button'
         onClick={() => setVersionsOpen(true)}
@@ -191,6 +222,13 @@ export function SiteEditorActions() {
         Publicar
       </Button>
       <VersionsSheet open={versionsOpen} onOpenChange={setVersionsOpen} />
+      <RedirectsDialog
+        open={redirectsOpen}
+        onOpenChange={setRedirectsOpen}
+        workspaceId={workspaceId}
+        siteId={site.id}
+        canEdit={canEdit}
+      />
       <PublishDialog open={publishOpen} onOpenChange={setPublishOpen} />
     </div>
   )
