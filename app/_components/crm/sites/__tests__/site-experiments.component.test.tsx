@@ -367,7 +367,9 @@ describe('SiteExperiments screen', () => {
           new RegExp(`${EXPERIMENTS}$`).test(String(url)) &&
           (init as RequestInit | undefined)?.method === 'POST',
       )
-      expect(JSON.parse((call?.[1] as RequestInit).body as string)).toEqual({
+      expect(
+        JSON.parse(((call as unknown[])[1] as RequestInit).body as string),
+      ).toEqual({
         name: 'Novo',
         kind: 'PAGE',
         pageId: 'sobre',
@@ -504,14 +506,14 @@ describe('AbPanel', () => {
         new RegExp(`${EXPERIMENTS}$`).test(String(url)) &&
         (init as RequestInit | undefined)?.method === 'POST',
     )
-    expect(JSON.parse((call?.[1] as RequestInit).body as string)).toMatchObject(
-      {
-        kind: 'SECTION',
-        pageId: 'home',
-        controlNodeId: 's1',
-        variantNodeIds: [children[1]],
-      },
-    )
+    expect(
+      JSON.parse(((call as unknown[])[1] as RequestInit).body as string),
+    ).toMatchObject({
+      kind: 'SECTION',
+      pageId: 'home',
+      controlNodeId: 's1',
+      variantNodeIds: [children[1]],
+    })
   })
 
   it('lists the tests of the page and their variants', async () => {
