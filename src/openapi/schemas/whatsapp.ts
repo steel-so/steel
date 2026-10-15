@@ -648,3 +648,18 @@ export const WhatsAppConversationScopeDTO = dto(
     memberTeamIds: z.array(z.string()),
   }),
 )
+
+export const WhatsAppContactImportResultDTO = dto(
+  'WhatsAppContactImportResult',
+  z.object({
+    created: z.number().int(),
+    updated: z.number().int(),
+    skipped: z.number().int(),
+    rejected: z.array(
+      z.object({
+        line: z.number().int().meta({ example: 3 }),
+        message: z.string().meta({ example: 'Telefone em branco.' }),
+      }),
+    ),
+  }),
+)
