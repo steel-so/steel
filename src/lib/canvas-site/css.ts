@@ -7,8 +7,10 @@ import type {
 import { VISIBLE_EVERYWHERE } from '@/src/lib/canvas/values'
 import { SITE_BREAKPOINTS, SITE_MEDIA } from './constants'
 import { cssProperty, cssValue } from './css-value'
+import { effectRules } from './effects'
 import { resolveProps } from './resolve'
 import { EDITOR_CSS, staticCss } from './static-css'
+import { type ElementCssUsage, elementsCss } from './static-css-elements'
 import { SITE_STYLE_FNS, type SiteRuleSet, type SiteStyleFn } from './styles'
 import { compileThemeCss, type SiteTheme } from './theme'
 
@@ -89,6 +91,15 @@ export function hashString(input: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
 }
 
+/** `extra` declarations added over `base`, selector by selector. */
+function mergeRules(base: SiteRuleSet, extra: SiteRuleSet): SiteRuleSet {
+  const out: SiteRuleSet = { ...base }
+  for (const [suffix, decls] of Object.entries(extra)) {
+    out[suffix] = { ...out[suffix], ...decls }
+  }
+  return out
+}
+
 /** Compiles one node's styles (no caching). `null` for types without a
  * style function or without any declaration. */
 export function compileNode(
@@ -98,9 +109,12 @@ export function compileNode(
     ? SITE_STYLE_FNS[node.type]
     : undefined
   if (!fn) return null
-  const sets = SITE_BREAKPOINTS.map((bp) =>
-    clean(fn(resolveProps(node.props, bp) as never, bp)),
-  )
+  const sets = SITE_BREAKPOINTS.map((bp) => {
+    const props = resolveProps(node.props, bp)
+    return clean(
+      mergeRules(fn(props as never, bp), effectRules(node.type, props)),
+    )
+  })
   const rules = {
     base: toRules(sets[0]),
     tablet: diff(sets[0], sets[1]),
@@ -201,6 +215,28 @@ export function compileNodesCss(docs: CanvasDocument[]): string {
   return parts.join('\n')
 }
 
+/** What the documents use that needs structural CSS or a runtime script:
+ * visible types, entrance animations and click interactions. */
+export function cssUsage(docs: CanvasDocument[]): ElementCssUsage {
+  const usage: ElementCssUsage = {
+    types: new Set(),
+    animations: false,
+    interactions: false,
+  }
+  for (const doc of docs) {
+    for (const node of visibleNodes(doc)) {
+      usage.types.add(node.type)
+      const effect = (node.props.animation as { effect?: string } | undefined)
+        ?.effect
+      if (effect && effect !== 'none') usage.animations = true
+      const action = (node.props.interaction as { action?: string } | undefined)
+        ?.action
+      if (action && action !== 'none') usage.interactions = true
+    }
+  }
+  return usage
+}
+
 export interface CompileSiteCssOptions {
   /** Theme stylesheet to include (omit when it is served separately). */
   theme?: SiteTheme
@@ -222,6 +258,7 @@ export function compileSiteCss(
   const base = [
     options.theme ? compileThemeCss(options.theme) : '',
     staticCss(!!options.editing),
+    elementsCss(cssUsage(list), !!options.editing),
     options.editing ? EDITOR_CSS : '',
   ]
     .filter(Boolean)

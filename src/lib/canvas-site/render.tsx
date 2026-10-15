@@ -41,6 +41,11 @@ function NodeTree({
     children,
     breakpoint: 'base',
     editing: false,
+    childNodes: definition.readsChildren
+      ? (node.children ?? [])
+          .map((child) => getNode(doc, child))
+          .filter((child): child is CanvasNode => child !== undefined)
+      : undefined,
   })
 }
 

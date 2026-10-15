@@ -44,6 +44,15 @@ export interface SiteRenderContext {
   /** Inspector control that picks a CRM form (site-ui provides it);
    * without it the token is typed in a text field. */
   formPicker?: ComponentType<CustomControlProps>
+  /** Inspector control that picks an anchor of the document (interaction
+   * targets); without it the anchor is typed. */
+  anchorPicker?: ComponentType<CustomControlProps>
+  /** Inspector control that picks a Comunicação (WhatsApp) connection and
+   * fills the number of `site.whatsapp`; without it the number is typed. */
+  whatsappPicker?: ComponentType<CustomControlProps>
+  /** Inspector control of carousels, tabs and accordions that adds a
+   * slide/tab/item (it needs the editor store). */
+  childAdder?: ComponentType<CustomControlProps>
 }
 
 export function defaultFormAction(token: string): string {

@@ -3,6 +3,12 @@ import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
 import { columnsFragment } from '../components/layout'
 import type { SiteTheme } from '../theme'
 import { toDocument, toFragment } from './builder'
+import {
+  ELEMENT_SECTION_BUILDERS,
+  SITE_ELEMENT_SECTION_LABELS,
+  SITE_ELEMENT_SECTION_TYPES,
+  type SiteElementSectionType,
+} from './elements'
 import { SITE_KITS, type SiteKitId } from './kits'
 import {
   SECTION_BUILDERS,
@@ -48,9 +54,24 @@ export const SITE_SECTION_PRESETS: SitePreset[] = SITE_SECTION_TYPES.flatMap(
     })),
 )
 
+/** Sections built on the S2 elements (carousel, tabs, accordion…), one
+ * per kit, grouped by section type. */
+export const SITE_ELEMENT_PRESETS: SitePreset[] =
+  SITE_ELEMENT_SECTION_TYPES.flatMap((type) =>
+    Object.values(SITE_KITS).map((kit) => ({
+      id: `${type}-${kit.id}`,
+      label: `${SITE_ELEMENT_SECTION_LABELS[type]} · ${kit.label}`,
+      category: SITE_ELEMENT_SECTION_LABELS[type],
+      kit: kit.id,
+      fragment: () =>
+        cloneFragment(toFragment(ELEMENT_SECTION_BUILDERS[type](kit))),
+    })),
+  )
+
 export const SITE_PRESETS: SitePreset[] = [
   ...LAYOUT_PRESETS,
   ...SITE_SECTION_PRESETS,
+  ...SITE_ELEMENT_PRESETS,
 ]
 
 /** Section preset of one type and kit (landing-page conversion). */
@@ -70,7 +91,7 @@ export interface SiteTemplate {
   label: string
   description: string
   kit: SiteKitId
-  sections: SiteSectionType[]
+  sections: Array<SiteSectionType | SiteElementSectionType>
   /** Theme the template is designed with (a new site starts from it). */
   theme: () => SiteTheme
   /** The home page document (fresh object each call). */
@@ -82,7 +103,7 @@ function template(
   label: string,
   description: string,
   kit: SiteKitId,
-  sections: SiteSectionType[],
+  sections: Array<SiteSectionType | SiteElementSectionType>,
 ): SiteTemplate {
   return {
     id,
@@ -92,10 +113,18 @@ function template(
     sections,
     theme: () => structuredClone(SITE_KITS[kit].theme),
     document: () =>
-      toDocument(
-        sections.map((type) => SECTION_BUILDERS[type](SITE_KITS[kit])),
-      ),
+      toDocument(sections.map((type) => templateSection(type, SITE_KITS[kit]))),
   }
+}
+
+/** Spec of a template section (landing-page or S2 element section). */
+export function templateSection(
+  type: SiteSectionType | SiteElementSectionType,
+  kit: (typeof SITE_KITS)[SiteKitId],
+) {
+  return Object.hasOwn(SECTION_BUILDERS, type)
+    ? SECTION_BUILDERS[type as SiteSectionType](kit)
+    : ELEMENT_SECTION_BUILDERS[type as SiteElementSectionType](kit)
 }
 
 export const SITE_TEMPLATES: SiteTemplate[] = [
@@ -185,12 +214,38 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       'footer',
     ],
   ),
+  template(
+    'evento',
+    'Evento e lançamento',
+    'Carrossel, números, abas, depoimentos, planos, perguntas, mapa e WhatsApp.',
+    'saas',
+    [
+      'header',
+      'hero',
+      'logo-strip',
+      'stats',
+      'tabs',
+      'hero-slider',
+      'testimonials-slider',
+      'pricing-table',
+      'faq-accordion',
+      'contact-map',
+      'footer',
+      'popup-offer',
+    ],
+  ),
 ]
 
 export function getSiteTemplate(id: string): SiteTemplate | undefined {
   return SITE_TEMPLATES.find((item) => item.id === id)
 }
 
+export {
+  ELEMENT_SECTION_BUILDERS,
+  SITE_ELEMENT_SECTION_LABELS,
+  SITE_ELEMENT_SECTION_TYPES,
+  type SiteElementSectionType,
+} from './elements'
 export { SITE_KIT_IDS, SITE_KITS, type SiteKit, type SiteKitId } from './kits'
 export {
   SECTION_BUILDERS,

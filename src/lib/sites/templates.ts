@@ -1,5 +1,5 @@
 import type { CanvasDocument } from '@/src/lib/canvas/types'
-import { getSiteTemplate } from '@/src/lib/canvas-site/presets'
+import { getSiteTemplate, templateSection } from '@/src/lib/canvas-site/presets'
 import { toDocument } from '@/src/lib/canvas-site/presets/builder'
 import { SITE_KITS } from '@/src/lib/canvas-site/presets/kits'
 import {
@@ -21,7 +21,7 @@ export interface SiteTemplateBuild {
   footer: CanvasDocument | null
 }
 
-const GLOBAL_SECTIONS: SiteSectionType[] = ['header', 'footer']
+const GLOBAL_SECTIONS: string[] = ['header', 'footer']
 
 export function buildSiteFromTemplate(
   templateId: string,
@@ -39,7 +39,7 @@ export function buildSiteFromTemplate(
       : null
   return {
     theme: template.theme(),
-    home: toDocument(body.map((type) => SECTION_BUILDERS[type](kit))),
+    home: toDocument(body.map((type) => templateSection(type, kit))),
     header: global('header'),
     footer: global('footer'),
   }
