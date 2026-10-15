@@ -22,6 +22,9 @@ export interface CanvasPresetItem {
   category: string
   /** Static thumbnail URL or a rendered preview. */
   thumbnail?: string
+  /** Live miniature rendered in the card instead of `thumbnail` (e.g. the
+   * fragment drawn with the document's theme). */
+  preview?: () => ReactNode
   fragment: () => CanvasFragment
 }
 
@@ -37,6 +40,11 @@ export interface CanvasEditorProps {
   viewportWidths: Partial<Record<'base' | 'tablet' | 'mobile', number>>
   /** Extra stylesheet injected in the canvas iframe (fonts, catalog CSS). */
   frameHead?: ReactNode
+  /** Read-only content drawn in the canvas before/after the document (a
+   * site's header and footer around the page being edited). Not part of
+   * the document: clicking it selects nothing. */
+  frameBefore?: ReactNode
+  frameAfter?: ReactNode
   extraTabs?: CanvasSidebarTab[]
   presets?: CanvasPresetItem[]
   /** Inspector content when nothing is selected (document settings). */

@@ -1,13 +1,10 @@
-import { MailAdd01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { EmailStarterGallery } from '@/app/_components/crm/email-editor/email-starter-gallery'
 import {
-  HeaderBreadcrumbCrumb,
-  HeaderBreadcrumbList,
-} from '@/app/_components/header/breadcrumb-page'
-import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
-import { SteelIcon } from '@/components/icon/icon'
+  FocusedHeader,
+  FocusedScreen,
+} from '@/app/_components/layout/focused-screen'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { MembershipService } from '@/src/services/membership.service'
 
@@ -33,24 +30,18 @@ export default async function CrmNewEmailTemplatePage({
   if (!membership.ok || !membership.value) notFound()
 
   return (
-    <div className='flex h-full w-full min-h-0 flex-col'>
-      <HeaderInternalNavigation>
-        <HeaderBreadcrumbList>
-          <HeaderBreadcrumbCrumb title='Novo template'>
-            <SteelIcon
-              icon={MailAdd01Icon}
-              strokeWidth={2}
-              className='text-primary'
-            />
-          </HeaderBreadcrumbCrumb>
-        </HeaderBreadcrumbList>
-      </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1'>
+    <FocusedScreen label='Novo template de e-mail'>
+      <FocusedHeader
+        backHref={`/${slug}/crm/email-templates`}
+        backLabel='Voltar para os templates'
+        title='Templates de e-mail'
+      />
+      <div className='min-h-0 flex-1 overflow-y-auto'>
         <EmailStarterGallery
           workspaceId={membership.value.workspaceId}
           slug={slug}
         />
       </div>
-    </div>
+    </FocusedScreen>
   )
 }

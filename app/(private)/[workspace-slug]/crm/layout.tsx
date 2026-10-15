@@ -1,5 +1,4 @@
 import {
-  BrowserIcon,
   Building03Icon,
   Calendar01Icon,
   ChartHistogramIcon,
@@ -32,6 +31,7 @@ import {
   UserMultipleIcon,
   UserSearch01Icon,
   UserSearch02Icon,
+  WebDesign01Icon,
   WorkflowCircle01Icon,
   YoutubeIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -121,8 +121,8 @@ export default async function CrmLayout({
             <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
               Listas
             </NavItem>
-            <NavItem href={`${base}/landing-pages`} icon={BrowserIcon}>
-              Páginas
+            <NavItem href={`${base}/sites`} icon={WebDesign01Icon}>
+              Sites
             </NavItem>
           </NavGroupAccordion>
           <NavGroupAccordion label='Social' icon={Share08Icon}>

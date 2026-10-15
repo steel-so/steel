@@ -1,7 +1,7 @@
-import { BrowserIcon } from '@hugeicons-pro/core-stroke-rounded'
+import { WebDesign01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { CrmLandingPagesTable } from '@/app/_components/crm/crm-landing-pages-table'
+import { SitesList } from '@/app/_components/crm/sites/sites-list'
 import {
   HeaderBreadcrumbCrumb,
   HeaderBreadcrumbList,
@@ -12,11 +12,11 @@ import { getAuthSession } from '@/src/lib/auth-session'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
-  title: 'Landing pages | CRM | Steel',
-  description: 'Landing pages do CRM',
+  title: 'Sites | CRM | Steel',
+  description: 'Sites e landing pages do CRM',
 }
 
-export default async function CrmLandingPagesPage({
+export default async function CrmSitesPage({
   params,
 }: {
   params: Promise<{ 'workspace-slug': string }>
@@ -36,20 +36,17 @@ export default async function CrmLandingPagesPage({
     <div className='flex h-full w-full min-h-0 flex-col'>
       <HeaderInternalNavigation>
         <HeaderBreadcrumbList>
-          <HeaderBreadcrumbCrumb title='Landing pages'>
+          <HeaderBreadcrumbCrumb title='Sites'>
             <SteelIcon
-              icon={BrowserIcon}
+              icon={WebDesign01Icon}
               strokeWidth={2}
               className='text-primary'
             />
           </HeaderBreadcrumbCrumb>
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1'>
-        <CrmLandingPagesTable
-          workspaceId={membership.value.workspaceId}
-          slug={slug}
-        />
+      <div className='min-h-0 flex-1 overflow-y-auto'>
+        <SitesList workspaceId={membership.value.workspaceId} slug={slug} />
       </div>
     </div>
   )

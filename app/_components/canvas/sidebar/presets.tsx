@@ -45,7 +45,9 @@ function PresetCard({ preset }: { preset: CanvasPresetItem }) {
       )}
     >
       <div className='flex aspect-[16/7] w-full items-center justify-center overflow-hidden bg-muted/60'>
-        {preset.thumbnail ? (
+        {preset.preview ? (
+          preset.preview()
+        ) : preset.thumbnail ? (
           <img
             src={preset.thumbnail}
             alt=''

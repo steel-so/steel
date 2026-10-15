@@ -61,7 +61,7 @@ export function EnvelopeFields() {
         placeholder='Nome do template'
         onChange={(event) => meta.set({ name: event.target.value })}
         className={cn(
-          'h-8 w-36 min-w-0 rounded-md border border-transparent bg-transparent px-2 font-medium text-sm outline-none transition-colors hover:border-input focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 xl:w-48',
+          'h-8 w-48 min-w-0 shrink rounded-md border border-transparent bg-transparent px-2 font-medium text-sm outline-none transition-colors hover:border-input focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 xl:w-64 2xl:w-80',
           !name.trim() && 'border-destructive/60',
         )}
       />

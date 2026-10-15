@@ -975,7 +975,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_8"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_10"
           }
         },
         "security": [
@@ -6728,7 +6728,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_5"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_6"
           }
         },
         "security": []
@@ -6896,7 +6896,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_4"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_5"
           }
         },
         "security": []
@@ -11748,7 +11748,7 @@
             "$ref": "#/components/responses/415_AI_ATTACHMENT_UNSUPPORTED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -11902,7 +11902,7 @@
             "$ref": "#/components/responses/404_AI_CONVERSATION_NOT_FOUND_AI_ATTACHMENT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -14976,7 +14976,7 @@
             "$ref": "#/components/responses/404_CRM_EMAIL_TEMPLATE_NOT_FOUND_CRM_CAMPAIGN_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16564,7 +16564,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16794,7 +16794,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -18967,7 +18967,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_2"
+            "$ref": "#/components/responses/400_BAD_REQUEST_3"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -20019,7 +20019,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20102,7 +20102,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -24065,7 +24065,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_12"
+            "$ref": "#/components/responses/400_BAD_REQUEST_2"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -24074,7 +24074,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -24219,7 +24219,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_11"
+            "$ref": "#/components/responses/400_BAD_REQUEST_12"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -33556,7 +33556,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_2"
+            "$ref": "#/components/responses/400_BAD_REQUEST_3"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -36993,6 +36993,89 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "409": {
+            "$ref": "#/components/responses/409_SITE_SLUG_TAKEN_SITE_LIMIT_REACHED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/from-template": {
+      "post": {
+        "tags": ["CRM · Sites"],
+        "summary": "Criar site a partir de um modelo",
+        "operationId": "postWorkspacesByIdCrmSitesFromTemplate",
+        "description": "Cria o site em rascunho com o tema do modelo, a página inicial com as seções do modelo e o cabeçalho e o rodapé como componentes globais.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nOs sites usam a permissão `landing-pages` (o menu Sites substitui as landing pages).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "enum": ["agencia", "empresa", "saas", "consultoria", "loja"]
+                  },
+                  "slug": {
+                    "type": "string",
+                    "maxLength": 63
+                  }
+                },
+                "required": ["name", "templateId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Site criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Site"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "409": {
             "$ref": "#/components/responses/409_SITE_SLUG_TAKEN_SITE_LIMIT_REACHED"
           },
           "422": {
@@ -37000,6 +37083,202 @@
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/media": {
+      "get": {
+        "tags": ["CRM · Sites"],
+        "summary": "Listar imagens dos sites",
+        "operationId": "getWorkspacesByIdCrmSitesMedia",
+        "description": "Biblioteca de mídia do editor: imagens enviadas para os sites do workspace e as das landing pages antigas, das mais novas para as mais antigas (até 500).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Imagens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SiteMediaItem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_STORAGE_ERROR_3"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Sites"],
+        "summary": "Enviar imagem para os sites",
+        "operationId": "postWorkspacesByIdCrmSitesMedia",
+        "description": "Upload **binário cru** (não multipart): o corpo é o arquivo e o `Content-Type` o seu tipo. Aceita JPEG, PNG ou WebP até 5 MB.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário (limite de upload); ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Bytes da imagem (`image/jpeg`, `image/png` ou `image/webp`).",
+          "content": {
+            "image/*": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Imagem salva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteMediaItem"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_BAD_REQUEST_2"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_STORAGE_ERROR_7"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["CRM · Sites"],
+        "summary": "Excluir imagem dos sites",
+        "operationId": "deleteWorkspacesByIdCrmSitesMedia",
+        "description": "Apaga uma imagem enviada pelo editor (`source: site`). Páginas que ainda a usam passam a mostrar a imagem quebrada.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}\\.(jpg|png|webp)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Imagem excluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_STORAGE_ERROR_3"
           }
         },
         "security": [
@@ -37415,6 +37694,157 @@
           },
           "404": {
             "$ref": "#/components/responses/404_SITE_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/changes": {
+      "get": {
+        "tags": ["CRM · Sites"],
+        "summary": "Resumo da próxima publicação",
+        "operationId": "getWorkspacesByIdCrmSitesBySiteIdChanges",
+        "description": "Compara o rascunho com a versão no ar: páginas e globais novos, alterados ou removidos, mudanças de ordem, tema e configurações. Antes da primeira publicação, tudo aparece como novo.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteChanges"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_VERSION_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/duplicate": {
+      "post": {
+        "tags": ["CRM · Sites"],
+        "summary": "Duplicar site",
+        "operationId": "postWorkspacesByIdCrmSitesBySiteIdDuplicate",
+        "description": "Cópia em rascunho do site: tema, configurações, todas as páginas (mesma árvore e caminhos) e os componentes globais. O endereço vira `<slug>-copia` (com sufixo, se preciso).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nOs sites usam a permissão `landing-pages` (o menu Sites substitui as landing pages).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cópia criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Site"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_SITE_LIMIT_REACHED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -38824,7 +39254,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_VERSION_NOT_FOUND"
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_VERSION_NOT_FOUND_2"
           },
           "422": {
             "$ref": "#/components/responses/422_SITE_DOCUMENT_INVALID_2"
@@ -39819,7 +40249,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_8"
+            "$ref": "#/components/responses/400_BAD_REQUEST_9"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -39840,7 +40270,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_3"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_4"
           },
           "502": {
             "$ref": "#/components/responses/502_CRM_SOCIAL_OAUTH_FAILED"
@@ -39920,7 +40350,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_10"
+            "$ref": "#/components/responses/400_BAD_REQUEST_11"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -43069,7 +43499,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_7"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_9"
           }
         },
         "security": [
@@ -52111,7 +52541,7 @@
             "$ref": "#/components/responses/404_SD_CEP_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -65224,7 +65654,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_6"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_8"
           }
         },
         "security": [
@@ -81629,7 +82059,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_5"
+            "$ref": "#/components/responses/400_BAD_REQUEST_6"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -82065,7 +82495,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_9"
+            "$ref": "#/components/responses/400_BAD_REQUEST_10"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -83210,7 +83640,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_3"
+            "$ref": "#/components/responses/400_BAD_REQUEST_4"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -83769,7 +84199,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_4"
+            "$ref": "#/components/responses/400_BAD_REQUEST_5"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -91458,7 +91888,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_6"
+            "$ref": "#/components/responses/400_BAD_REQUEST_7"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -91539,7 +91969,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_7"
+            "$ref": "#/components/responses/400_BAD_REQUEST_8"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -97482,7 +97912,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -97566,7 +97996,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -97664,6 +98094,40 @@
             },
             "examples": {
               "BAD_REQUEST": {
+                "summary": "BAD_REQUEST — Sem header Content-Type",
+                "value": {
+                  "success": false,
+                  "statusCode": 400,
+                  "message": "Content-Type é obrigatório",
+                  "error": {
+                    "code": "BAD_REQUEST"
+                  }
+                }
+              },
+              "BAD_REQUEST_2": {
+                "summary": "BAD_REQUEST — Content-Length acima do limite",
+                "value": {
+                  "success": false,
+                  "statusCode": 400,
+                  "message": "Arquivo muito grande. Máximo 5 MB",
+                  "error": {
+                    "code": "BAD_REQUEST"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "400_BAD_REQUEST_3": {
+        "description": "Requisição inválida: `BAD_REQUEST`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "BAD_REQUEST": {
                 "summary": "BAD_REQUEST — Sem header `Content-Type`",
                 "value": {
                   "success": false,
@@ -97689,7 +98153,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_3": {
+      "400_BAD_REQUEST_4": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97712,7 +98176,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_4": {
+      "400_BAD_REQUEST_5": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97746,7 +98210,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_5": {
+      "400_BAD_REQUEST_6": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97769,7 +98233,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_6": {
+      "400_BAD_REQUEST_7": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97803,7 +98267,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_7": {
+      "400_BAD_REQUEST_8": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97837,7 +98301,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_8": {
+      "400_BAD_REQUEST_9": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97893,7 +98357,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_9": {
+      "400_BAD_REQUEST_10": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97916,7 +98380,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_10": {
+      "400_BAD_REQUEST_11": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -97930,40 +98394,6 @@
                   "success": false,
                   "statusCode": 400,
                   "message": "Plataforma inválida para este endpoint",
-                  "error": {
-                    "code": "BAD_REQUEST"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "400_BAD_REQUEST_11": {
-        "description": "Requisição inválida: `BAD_REQUEST`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "BAD_REQUEST": {
-                "summary": "BAD_REQUEST — Sem header Content-Type",
-                "value": {
-                  "success": false,
-                  "statusCode": 400,
-                  "message": "Content-Type é obrigatório",
-                  "error": {
-                    "code": "BAD_REQUEST"
-                  }
-                }
-              },
-              "BAD_REQUEST_2": {
-                "summary": "BAD_REQUEST — Content-Length acima do limite",
-                "value": {
-                  "success": false,
-                  "statusCode": 400,
-                  "message": "Arquivo muito grande. Máximo 25 MB",
                   "error": {
                     "code": "BAD_REQUEST"
                   }
@@ -97997,7 +98427,7 @@
                 "value": {
                   "success": false,
                   "statusCode": 400,
-                  "message": "Arquivo muito grande. Máximo 5 MB",
+                  "message": "Arquivo muito grande. Máximo 25 MB",
                   "error": {
                     "code": "BAD_REQUEST"
                   }
@@ -111852,6 +112282,38 @@
                 }
               },
               "SITE_VERSION_NOT_FOUND": {
+                "summary": "SITE_VERSION_NOT_FOUND — A versão no ar não foi encontrada",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "error": {
+                    "code": "SITE_VERSION_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_SITE_NOT_FOUND_SITE_VERSION_NOT_FOUND_2": {
+        "description": "Não encontrado: `SITE_NOT_FOUND`, `SITE_VERSION_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SITE_NOT_FOUND": {
+                "summary": "SITE_NOT_FOUND — Site inexistente, excluído ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "error": {
+                    "code": "SITE_NOT_FOUND"
+                  }
+                }
+              },
+              "SITE_VERSION_NOT_FOUND": {
                 "summary": "SITE_VERSION_NOT_FOUND — Versão inexistente ou de outro site",
                 "value": {
                   "success": false,
@@ -114748,6 +115210,28 @@
           }
         }
       },
+      "409_SITE_LIMIT_REACHED": {
+        "description": "Conflito com o estado atual: `SITE_LIMIT_REACHED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SITE_LIMIT_REACHED": {
+                "summary": "SITE_LIMIT_REACHED — O workspace já tem 100 sites",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "SITE_LIMIT_REACHED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "409_SITE_PAGE_PATH_TAKEN_SITE_LIMIT_REACHED": {
         "description": "Conflito com o estado atual: `SITE_PAGE_PATH_TAKEN`, `SITE_LIMIT_REACHED`",
         "content": {
@@ -114899,6 +115383,38 @@
         }
       },
       "409_SITE_SLUG_TAKEN_SITE_LIMIT_REACHED": {
+        "description": "Conflito com o estado atual: `SITE_SLUG_TAKEN`, `SITE_LIMIT_REACHED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SITE_LIMIT_REACHED": {
+                "summary": "SITE_LIMIT_REACHED — O workspace já tem 100 sites",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "SITE_LIMIT_REACHED"
+                  }
+                }
+              },
+              "SITE_SLUG_TAKEN": {
+                "summary": "SITE_SLUG_TAKEN — O endereço já é usado por outro site (de qualquer workspace)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "SITE_SLUG_TAKEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_SITE_SLUG_TAKEN_SITE_LIMIT_REACHED_2": {
         "description": "Conflito com o estado atual: `SITE_SLUG_TAKEN`, `SITE_LIMIT_REACHED`",
         "content": {
           "application/json": {
@@ -115875,6 +116391,29 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Content-Type fora da lista aceita",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Formato não suportado. Use JPEG, PNG ou WebP",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_7": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
                 "value": {
                   "success": false,
@@ -115914,7 +116453,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_7": {
+      "422_VALIDATION_ERROR_8": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -115955,7 +116494,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_8": {
+      "422_VALIDATION_ERROR_9": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -115978,7 +116517,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_9": {
+      "422_VALIDATION_ERROR_10": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -116008,7 +116547,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_10": {
+      "422_VALIDATION_ERROR_11": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -116038,7 +116577,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_11": {
+      "422_VALIDATION_ERROR_12": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -116068,7 +116607,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_12": {
+      "422_VALIDATION_ERROR_13": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -116091,29 +116630,6 @@
                         "message": "Nome deve ter ao menos 2 caracteres"
                       }
                     ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "422_VALIDATION_ERROR_13": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Content-Type fora da lista aceita",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Formato não suportado. Use JPEG, PNG ou WebP",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
                   }
                 }
               }
@@ -120306,7 +120822,7 @@
             },
             "examples": {
               "STORAGE_ERROR": {
-                "summary": "STORAGE_ERROR — Falha ao gravar a mídia de uma publicação assíncrona",
+                "summary": "STORAGE_ERROR — O armazenamento não respondeu",
                 "value": {
                   "success": false,
                   "statusCode": 500,
@@ -120329,7 +120845,7 @@
             },
             "examples": {
               "STORAGE_ERROR": {
-                "summary": "STORAGE_ERROR — Falha ao gravar o anexo no MinIO",
+                "summary": "STORAGE_ERROR — Falha ao gravar a mídia de uma publicação assíncrona",
                 "value": {
                   "success": false,
                   "statusCode": 500,
@@ -120352,7 +120868,7 @@
             },
             "examples": {
               "STORAGE_ERROR": {
-                "summary": "STORAGE_ERROR — Falha ao ler o arquivo no MinIO",
+                "summary": "STORAGE_ERROR — Falha ao gravar o anexo no MinIO",
                 "value": {
                   "success": false,
                   "statusCode": 500,
@@ -120375,7 +120891,7 @@
             },
             "examples": {
               "STORAGE_ERROR": {
-                "summary": "STORAGE_ERROR — Redis indisponível",
+                "summary": "STORAGE_ERROR — Falha ao ler o arquivo no MinIO",
                 "value": {
                   "success": false,
                   "statusCode": 500,
@@ -120398,6 +120914,52 @@
             },
             "examples": {
               "STORAGE_ERROR": {
+                "summary": "STORAGE_ERROR — O armazenamento recusou o arquivo",
+                "value": {
+                  "success": false,
+                  "statusCode": 500,
+                  "message": "Falha ao armazenar o arquivo",
+                  "error": {
+                    "code": "STORAGE_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "500_STORAGE_ERROR_8": {
+        "description": "Erro interno: `STORAGE_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "STORAGE_ERROR": {
+                "summary": "STORAGE_ERROR — Redis indisponível",
+                "value": {
+                  "success": false,
+                  "statusCode": 500,
+                  "message": "Falha ao armazenar o arquivo",
+                  "error": {
+                    "code": "STORAGE_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "500_STORAGE_ERROR_9": {
+        "description": "Erro interno: `STORAGE_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "STORAGE_ERROR": {
                 "summary": "STORAGE_ERROR",
                 "value": {
                   "success": false,
@@ -120412,7 +120974,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_8": {
+      "500_STORAGE_ERROR_10": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -157368,6 +157930,91 @@
         "required": ["catalog", "version", "rootId", "nodes"],
         "description": "Documento normalizado do Steel Canvas, catálogo `site` (ADR 0026): mapa plano de nós a partir de `root` (`site.page`)."
       },
+      "SiteChanges": {
+        "type": "object",
+        "properties": {
+          "firstPublish": {
+            "type": "boolean"
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Sobre"
+                },
+                "change": {
+                  "type": "string",
+                  "enum": ["added", "changed", "removed"]
+                }
+              },
+              "required": ["id", "name", "change"]
+            }
+          },
+          "globals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Sobre"
+                },
+                "change": {
+                  "type": "string",
+                  "enum": ["added", "changed", "removed"]
+                }
+              },
+              "required": ["id", "name", "change"]
+            }
+          },
+          "structure": {
+            "type": "boolean"
+          },
+          "theme": {
+            "type": "boolean"
+          },
+          "settings": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "example": 3
+          }
+        },
+        "required": [
+          "firstPublish",
+          "publishedAt",
+          "pages",
+          "globals",
+          "structure",
+          "theme",
+          "settings",
+          "total"
+        ],
+        "description": "O que a próxima publicação muda no site no ar: páginas e globais novos, alterados ou removidos, ordem/hierarquia, tema e configurações."
+      },
       "SiteGlobal": {
         "type": "object",
         "properties": {
@@ -157444,6 +158091,41 @@
           }
         },
         "required": ["created", "skipped", "failed", "items"]
+      },
+      "SiteMediaItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "3f0c8a52-5a1e-4c55-9d0a-0c9f2f1b7a10.webp"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://media.example.com/site-media/ws1/3f0c8a52-5a1e-4c55-9d0a-0c9f2f1b7a10.webp"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "example": 182304
+          },
+          "source": {
+            "type": "string",
+            "enum": ["site", "landing"]
+          },
+          "uploadedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["id", "url", "size", "source", "uploadedAt"]
       },
       "SitePage": {
         "type": "object",

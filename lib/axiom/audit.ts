@@ -185,6 +185,8 @@ export type AuditEntity =
   | 'site'
   | 'site_page'
   | 'site_global'
+  // Site builder UI (site-ui): image library of the site editor
+  | 'site_media'
 
 export type AuditAction =
   | 'create'

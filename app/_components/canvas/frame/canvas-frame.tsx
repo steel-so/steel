@@ -199,7 +199,9 @@ export function CanvasFrame({
         createPortal(
           <>
             {props.frameHead && createPortal(props.frameHead, mount.doc.head)}
+            {props.frameBefore}
             <DocumentView />
+            {props.frameAfter}
             {editingText && (
               <InlineTextEditor key={editingText} id={editingText} />
             )}

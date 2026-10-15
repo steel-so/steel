@@ -94,6 +94,13 @@ export const WORKSPACE_BUCKETS: readonly WorkspaceBucket[] = [
     public: false,
     writtenBy: 'src/services/whiteboard-file.service.ts',
   },
+  {
+    // Site editor media library (public, served on published sites):
+    // `<ws>/<uuid>.<ext>`.
+    name: 'site-media',
+    public: true,
+    writtenBy: 'src/services/site-media.service.ts',
+  },
 ] as const
 
 export const WORKSPACE_PREFIXED_BUCKETS = WORKSPACE_BUCKETS.map((b) => b.name)
