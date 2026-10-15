@@ -286,7 +286,8 @@ export function collectionListDefinition(ctx: SiteRenderContext) {
       editing,
     }: CanvasRenderProps<SiteCollectionListProps>) => {
       const p = node.props
-      const list = ctx.cms?.collections?.[node.id]
+      const list =
+        ctx.cms?.collections?.[node.id] ?? ctx.cms?.collectionList?.(node.id, p)
       const items = list?.items ?? []
       if (items.length === 0) {
         if (editing) {

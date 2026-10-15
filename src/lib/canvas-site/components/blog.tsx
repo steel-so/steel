@@ -70,7 +70,7 @@ const cardStyleFields: InspectorField[] = [
 ]
 
 function termPickerField(
-  ctx: SiteRenderContext,
+  picker: SiteRenderContext['blogCategoryPicker'],
   path: string,
   label: string,
 ): InspectorField {
@@ -78,8 +78,8 @@ function termPickerField(
     path,
     label,
     help: 'Deixe vazio para não filtrar.',
-    control: ctx.blogTermPicker
-      ? { kind: 'custom', component: ctx.blogTermPicker }
+    control: picker
+      ? { kind: 'custom', component: picker }
       : { kind: 'text', placeholder: 'slug', maxLength: 80 },
   }
 }
@@ -262,8 +262,12 @@ export function postListDefinition(ctx: SiteRenderContext) {
               })),
             },
           },
-          termPickerField(ctx, 'categorySlug', 'Só da categoria'),
-          termPickerField(ctx, 'tagSlug', 'Só da tag'),
+          termPickerField(
+            ctx.blogCategoryPicker,
+            'categorySlug',
+            'Só da categoria',
+          ),
+          termPickerField(ctx.blogTagPicker, 'tagSlug', 'Só da tag'),
           {
             path: 'perPage',
             label: 'Posts por página',
@@ -383,7 +387,7 @@ export function postListDefinition(ctx: SiteRenderContext) {
       editing,
     }: CanvasRenderProps<SitePostListProps>) => {
       const p = node.props
-      const list = ctx.cms?.lists?.[node.id]
+      const list = ctx.cms?.lists?.[node.id] ?? ctx.cms?.postList?.(node.id, p)
       const archive = p.showArchiveHeader ? ctx.cms?.archive : undefined
       const posts = list?.posts ?? []
       const header = archive ? (

@@ -130,6 +130,8 @@ export interface ResolveCmsInput {
   sample?: boolean
 }
 
+type CmsInput = Omit<ResolveCmsInput, 'docs'>
+
 /** Lower-case, accent-free text (search). */
 export function normalizeSearch(value: string): string {
   return value
@@ -195,7 +197,7 @@ interface Lookups {
   authors: Map<string, SiteCmsAuthor>
 }
 
-function lookups(blog: BlogData, href: ResolveCmsInput['href']): Lookups {
+function lookups(blog: BlogData, href: CmsInput['href']): Lookups {
   const counts = new Map<string, number>()
   for (const post of blog.posts) {
     for (const id of [...post.categoryIds, ...post.tagIds]) {
@@ -238,7 +240,7 @@ function lookups(blog: BlogData, href: ResolveCmsInput['href']): Lookups {
 function toCard(
   post: BlogPostRecord,
   maps: Lookups,
-  input: ResolveCmsInput,
+  input: CmsInput,
 ): SiteCmsPostCard {
   const pick = (ids: string[], map: Map<string, SiteCmsTermLink>) =>
     ids
@@ -343,7 +345,7 @@ function postList(
   props: SitePostListProps,
   blog: BlogData,
   maps: Lookups,
-  input: ResolveCmsInput,
+  input: CmsInput,
 ): SiteCmsPostList {
   const { request } = input
   let posts: BlogPostRecord[]
@@ -462,7 +464,7 @@ function sortItems(
 function itemHref(
   collection: CollectionRecord,
   item: CollectionItemRecord,
-  input: ResolveCmsInput,
+  input: CmsInput,
 ): string | undefined {
   return collection.hasTemplate
     ? input.href(collectionItemPath(collection.slug, item.slug))
@@ -471,7 +473,7 @@ function itemHref(
 
 function referenceMap(
   collections: Record<string, CollectionRecord>,
-  input: ResolveCmsInput,
+  input: CmsInput,
 ): Map<string, { title: string; href?: string }> {
   const map = new Map<string, { title: string; href?: string }>()
   for (const collection of Object.values(collections)) {
@@ -488,7 +490,7 @@ function referenceMap(
 function toItem(
   collection: CollectionRecord,
   item: CollectionItemRecord,
-  input: ResolveCmsInput,
+  input: CmsInput,
   references: Map<string, { title: string; href?: string }>,
 ): SiteCmsItem {
   return {
@@ -503,19 +505,17 @@ function toItem(
   }
 }
 
-/** The page's `SiteCmsContext` (`undefined` when it shows no dynamic
- * content). */
-export function resolveCms(input: ResolveCmsInput): SiteCmsContext | undefined {
+/**
+ * The blog/collection context without the per-node lists: the archive,
+ * current post/item, term lists, plus `postList`/`collectionList`, which
+ * compute one list from a node's props. The editor canvas uses it as is
+ * (lists follow the inspector live); `resolveCms` precomputes the lists of
+ * a page for the public runtime.
+ */
+export function cmsResolver(
+  input: Omit<ResolveCmsInput, 'docs'>,
+): SiteCmsContext {
   const { request } = input
-  const nodes = visibleNodes(input.docs)
-  const needs = cmsNeeds(input.docs)
-  const isBlogRoute = request.blogRoute !== null
-  if (!needs.blog && needs.collectionIds.length === 0 && !request.item) {
-    return isBlogRoute || request.query
-      ? { blogHref: input.href(blogPath({ kind: 'index' })) }
-      : undefined
-  }
-
   const cms: SiteCmsContext = {
     blogHref: input.href(blogPath({ kind: 'index' })),
     query: request.query || undefined,
@@ -548,35 +548,21 @@ export function resolveCms(input: ResolveCmsInput): SiteCmsContext | undefined {
       }
       cms.post = post
     }
-    const lists: Record<string, SiteCmsPostList> = {}
-    for (const node of nodes) {
-      if (node.type !== SITE_TYPES.postList) continue
-      lists[node.id] = postList(
-        node.props as SitePostListProps,
-        blog,
-        maps,
-        input,
-      )
-    }
-    cms.lists = lists
+    cms.postList = (_nodeId, props) => postList(props, blog, maps, input)
   }
 
   const collections = input.collections ?? {}
   const references = referenceMap(collections, input)
-  const collectionLists: SiteCmsContext['collections'] = {}
-  for (const node of nodes) {
-    if (node.type !== SITE_TYPES.collectionList) continue
-    const props = node.props as SiteCollectionListProps
+  cms.collectionList = (_nodeId, props) => {
     const collection = collections[props.collectionId]
-    if (!collection) continue
-    collectionLists[node.id] = {
+    if (!collection) return undefined
+    return {
       collectionName: collection.name,
       items: sortItems(collection.items, props.sort)
         .slice(0, props.limit)
         .map((item) => toItem(collection, item, input, references)),
     }
   }
-  cms.collections = collectionLists
 
   if (request.item) {
     const collection = collections[request.item.collectionId]
@@ -588,4 +574,37 @@ export function resolveCms(input: ResolveCmsInput): SiteCmsContext | undefined {
     }
   }
   return cms
+}
+
+/** The page's `SiteCmsContext` (`undefined` when it shows no dynamic
+ * content), with every list of the page precomputed. */
+export function resolveCms(input: ResolveCmsInput): SiteCmsContext | undefined {
+  const { request } = input
+  const needs = cmsNeeds(input.docs)
+  if (!needs.blog && needs.collectionIds.length === 0 && !request.item) {
+    return request.blogRoute !== null || request.query
+      ? { blogHref: input.href(blogPath({ kind: 'index' })) }
+      : undefined
+  }
+  const {
+    postList: listOf,
+    collectionList: collectionOf,
+    ...cms
+  } = cmsResolver(input)
+  const lists: Record<string, SiteCmsPostList> = {}
+  const collectionLists: NonNullable<SiteCmsContext['collections']> = {}
+  for (const node of visibleNodes(input.docs)) {
+    if (node.type === SITE_TYPES.postList && listOf) {
+      lists[node.id] = listOf(node.id, node.props as SitePostListProps)
+    }
+    if (node.type === SITE_TYPES.collectionList && collectionOf) {
+      const list = collectionOf(node.id, node.props as SiteCollectionListProps)
+      if (list) collectionLists[node.id] = list
+    }
+  }
+  return {
+    ...cms,
+    ...(input.blog ? { lists } : {}),
+    collections: collectionLists,
+  }
 }

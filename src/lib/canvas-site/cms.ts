@@ -1,3 +1,5 @@
+import type { SiteCollectionListProps, SitePostListProps } from './schemas-cms'
+
 /**
  * Dynamic content of a site page (blog and collections): what the blog and
  * collection elements render, resolved before the render (the public
@@ -143,4 +145,12 @@ export interface SiteCmsContext {
   item?: SiteCmsItem
   /** Editor canvas with sample content (empty states read differently). */
   sample?: boolean
+  /** Editor: computes a post list from the node's live props (the runtime
+   * precomputes `lists` instead). */
+  postList?: (nodeId: string, props: SitePostListProps) => SiteCmsPostList
+  /** Editor: computes a collection list from the node's live props. */
+  collectionList?: (
+    nodeId: string,
+    props: SiteCollectionListProps,
+  ) => SiteCmsCollectionList | undefined
 }

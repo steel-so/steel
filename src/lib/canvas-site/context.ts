@@ -65,9 +65,10 @@ export interface SiteRenderContext {
   childAdder?: ComponentType<CustomControlProps>
   /** Blog posts and collection items the page shows (slice site-blog). */
   cms?: SiteCmsContext
-  /** Inspector control that picks a blog category/tag slug of the site;
-   * without it the slug is typed. */
-  blogTermPicker?: ComponentType<CustomControlProps>
+  /** Inspector controls that pick a blog category/tag slug of the site;
+   * without them the slug is typed. */
+  blogCategoryPicker?: ComponentType<CustomControlProps>
+  blogTagPicker?: ComponentType<CustomControlProps>
   /** Inspector control that picks a collection of the site. */
   collectionPicker?: ComponentType<CustomControlProps>
   /** Inspector control that picks a field of the node's collection (or of

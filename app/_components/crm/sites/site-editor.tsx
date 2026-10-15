@@ -2,9 +2,11 @@
 
 import {
   ComponentIcon,
+  Database01Icon,
   Files01Icon,
   Image01Icon,
   LayoutTopIcon,
+  News01Icon,
   PaintBoardIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -53,6 +55,15 @@ import {
   siteColorTokens,
 } from '@/src/lib/canvas-site/theme'
 import type { SiteGlobalDTO, SitePageSummaryDTO } from '@/types/site'
+import { BlogPanel } from './blog/blog-panel'
+import { CollectionsPanel } from './blog/collections-panel'
+import {
+  SiteBlogCategoryPicker,
+  SiteBlogTagPicker,
+  SiteCollectionFieldPicker,
+  SiteCollectionPicker,
+  useEditorCms,
+} from './blog/editor-cms'
 import {
   SiteAnchorPicker,
   SiteChildAdder,
@@ -84,6 +95,8 @@ const TAB_ICONS = {
   'site-globals': LayoutTopIcon,
   'site-media': Image01Icon,
   'site-symbols': ComponentIcon,
+  'site-blog': News01Icon,
+  'site-collections': Database01Icon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -116,6 +129,18 @@ const TABS: CanvasSidebarTab[] = [
     label: 'Componentes',
     icon: 'site-symbols',
     render: () => <SymbolsPanel />,
+  },
+  {
+    id: 'site-blog',
+    label: 'Blog',
+    icon: 'site-blog',
+    render: () => <BlogPanel />,
+  },
+  {
+    id: 'site-collections',
+    label: 'Coleções',
+    icon: 'site-collections',
+    render: () => <CollectionsPanel />,
   },
 ]
 
@@ -239,6 +264,20 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
   const queryClient = useQueryClient()
   const canEmbed = useIsPrivileged()
   const forms = useLiveForms(workspaceId)
+  // Blog posts and collection items the blog/collection elements show.
+  const cms = useEditorCms(
+    workspaceId,
+    site.id,
+    target,
+    globals,
+    site.settings.timezone,
+  )
+  // Blog/collection templates are pages too: drawn inside the header/footer.
+  const withChrome =
+    target.kind === 'page' ||
+    globals.some(
+      (global) => global.id === target.id && global.kind === 'TEMPLATE',
+    )
 
   // Reusable components drawn by `site.symbol` instances (live masters).
   const symbols = useMemo(() => {
@@ -261,15 +300,20 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
       forms,
       symbols,
       symbolControl: SymbolOverridesControl,
+      cms,
+      blogCategoryPicker: SiteBlogCategoryPicker,
+      blogTagPicker: SiteBlogTagPicker,
+      collectionPicker: SiteCollectionPicker,
+      collectionFieldPicker: SiteCollectionFieldPicker,
     })
     return { ...base, icons: { ...base.icons, ...TAB_ICONS } }
-  }, [pageLinks, target, canEmbed, forms, symbols])
+  }, [pageLinks, target, canEmbed, forms, symbols, cms])
 
   const header = globals.find((global) => global.kind === 'HEADER')
   const footer = globals.find((global) => global.kind === 'FOOTER')
   const around = useMemo(
     () => [
-      ...(target.kind === 'page'
+      ...(withChrome
         ? [header?.document, footer?.document].filter(
             (doc): doc is CanvasDocument => doc !== undefined,
           )
@@ -277,7 +321,7 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
       // Styles of every component master, for the instances on the canvas.
       ...Object.values(symbols),
     ],
-    [target.kind, header, footer, symbols],
+    [withChrome, header, footer, symbols],
   )
 
   const tokens = useMemo(() => siteColorTokens(theme), [theme])
@@ -341,12 +385,12 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
       fonts={FONTS}
       frameHead={<SiteEditorFrameStyles theme={theme} around={around} />}
       frameBefore={
-        header && target.kind === 'page' ? (
+        header && withChrome ? (
           <GlobalBand global={header} catalog={catalog} />
         ) : null
       }
       frameAfter={
-        footer && target.kind === 'page' ? (
+        footer && withChrome ? (
           <GlobalBand global={footer} catalog={catalog} />
         ) : null
       }

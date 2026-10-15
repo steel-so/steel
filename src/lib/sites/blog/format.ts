@@ -56,3 +56,58 @@ export function formatSiteDateTime(
     }).format(date)
   }
 }
+
+function zoneOffsetMinutes(date: Date, timezone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date)
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0)
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  )
+  return Math.round((asUtc - date.getTime()) / 60_000)
+}
+
+/** `YYYY-MM-DDTHH:mm` (a `datetime-local` value) read in the site's
+ * timezone, as an ISO instant; `null` when invalid. */
+export function siteLocalToIso(
+  value: string,
+  timezone: string = DEFAULT_SITE_TIMEZONE,
+): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value)
+  if (!match) return null
+  const [, y, mo, d, h, mi] = match.map(Number)
+  const guess = new Date(Date.UTC(y, mo - 1, d, h, mi))
+  if (Number.isNaN(guess.getTime())) return null
+  // Two passes settle the offset around daylight-saving changes.
+  let instant = guess.getTime() - zoneOffsetMinutes(guess, timezone) * 60_000
+  instant =
+    guess.getTime() - zoneOffsetMinutes(new Date(instant), timezone) * 60_000
+  return new Date(instant).toISOString()
+}
+
+/** An ISO instant as a `datetime-local` value in the site's timezone. */
+export function isoToSiteLocal(
+  iso: string,
+  timezone: string = DEFAULT_SITE_TIMEZONE,
+): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const local = new Date(
+    date.getTime() + zoneOffsetMinutes(date, timezone) * 60_000,
+  )
+  return local.toISOString().slice(0, 16)
+}
