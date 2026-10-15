@@ -180,6 +180,8 @@ const OUT = [
   'upgrade/',
   'jobs/',
   '(private)/',
+  // Published CRM sites render their own document (no Steel chrome).
+  '(sites)/',
 ]
 
 const under = (page: string, prefixes: string[]) =>
