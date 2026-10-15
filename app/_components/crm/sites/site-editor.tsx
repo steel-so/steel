@@ -3,6 +3,7 @@
 import {
   ComponentIcon,
   Files01Icon,
+  FlaskConicalIcon,
   Image01Icon,
   LayoutTopIcon,
   PaintBoardIcon,
@@ -58,6 +59,7 @@ import {
   SiteChildAdder,
   SiteWhatsappPicker,
 } from './element-controls'
+import { AbPanel } from './experiments/ab-panel'
 import { SiteFormPicker } from './form-picker'
 import { GlobalsPanel } from './globals-panel'
 import { MediaPanel } from './media-panel'
@@ -84,6 +86,7 @@ const TAB_ICONS = {
   'site-globals': LayoutTopIcon,
   'site-media': Image01Icon,
   'site-symbols': ComponentIcon,
+  'site-ab': FlaskConicalIcon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -116,6 +119,12 @@ const TABS: CanvasSidebarTab[] = [
     label: 'Componentes',
     icon: 'site-symbols',
     render: () => <SymbolsPanel />,
+  },
+  {
+    id: 'site-ab',
+    label: 'Testes A/B',
+    icon: 'site-ab',
+    render: () => <AbPanel />,
   },
 ]
 
