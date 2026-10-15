@@ -560,6 +560,7 @@ model Workspace {
   workspaceExports          WorkspaceExport[]
   integrations              WorkspaceIntegration[]
   sites                     Site[]
+  canvasCollabStates        CanvasCollabState[]
 
   @@index([status])
   @@map("workspaces")
@@ -7703,4 +7704,23 @@ model SiteRedirect {
 
   @@unique([siteId, fromPath])
   @@map("site_redirects")
+}
+
+/// Yjs state of a Steel Canvas document co-edited in real time (site pages,
+/// site globals, e-mail templates v2). `documentName` is the realtime room
+/// (`canvas.<kind>.<id>`). `documentHash` is the hash of the stored JSON
+/// document this state was persisted with: when the row's document changed
+/// elsewhere (REST autosave, version restore), the realtime server merges
+/// that change into the state on load.
+model CanvasCollabState {
+  documentName String   @id @map("document_name")
+  workspaceId  String   @map("workspace_id")
+  state        Bytes
+  documentHash String   @map("document_hash")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("canvas_collab_states")
 }

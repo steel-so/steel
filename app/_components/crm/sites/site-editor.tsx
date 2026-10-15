@@ -18,6 +18,7 @@ import {
   useState,
 } from 'react'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
+import type { CanvasCollaboration } from '@/app/_components/canvas/collab/collab-context'
 import type {
   CanvasPresetItem,
   CanvasSidebarTab,
@@ -40,6 +41,7 @@ import {
 } from '@/src/hooks/use-crm-sites'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
+import { canvasDocumentName } from '@/src/lib/canvas-collab/names'
 import { createSiteCatalog, siteCatalog } from '@/src/lib/canvas-site/catalog'
 import { SITE_VIEWPORT_WIDTHS } from '@/src/lib/canvas-site/constants'
 import type { SiteLiveForm } from '@/src/lib/canvas-site/context'
@@ -233,7 +235,13 @@ function useLiveForms(workspaceId: string): Record<string, SiteLiveForm> {
 }
 
 /** The canvas of the current target (remounted when it changes). */
-function SiteCanvas({ document }: { document: CanvasDocument }) {
+function SiteCanvas({
+  document,
+  collabUser,
+}: {
+  document: CanvasDocument
+  collabUser?: CanvasCollaboration['user']
+}) {
   const { site, globals, target, theme, api, workspaceId, pageLinks } =
     useSiteEditor()
   const queryClient = useQueryClient()
@@ -330,10 +338,24 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
     [api, site.id, target, queryClient, workspaceId],
   )
 
+  // Read once on mount (the canvas remounts per target).
+  const [collaboration] = useState<CanvasCollaboration | undefined>(() =>
+    collabUser
+      ? {
+          documentName: canvasDocumentName(
+            target.kind === 'page' ? 'site-page' : 'site-global',
+            target.id,
+          ),
+          user: collabUser,
+        }
+      : undefined,
+  )
+
   return (
     <CanvasEditor
       catalog={catalog}
       initialDocument={document}
+      collaboration={collaboration}
       viewportWidths={SITE_VIEWPORT_WIDTHS}
       presets={presets}
       extraTabs={TABS}
@@ -423,11 +445,14 @@ export function SiteEditor({
   slug,
   siteId,
   initialPageId,
+  collabUser,
 }: {
   workspaceId: string
   slug: string
   siteId: string
   initialPageId?: string
+  /** Who is editing, for real-time co-editing (presence, outlines). */
+  collabUser?: CanvasCollaboration['user']
 }) {
   const api = useMemo(() => crmSitesApi(workspaceId), [workspaceId])
   const queryClient = useQueryClient()
@@ -623,6 +648,7 @@ export function SiteEditor({
         <SiteCanvas
           key={`${value.target.kind}:${value.target.id}:${epoch}`}
           document={document}
+          collabUser={collabUser}
         />
       ) : (
         <EditorSkeleton />

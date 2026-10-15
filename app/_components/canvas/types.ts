@@ -3,6 +3,7 @@ import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
 import type { CanvasColorToken } from '@/src/lib/canvas/values'
+import type { CanvasCollaboration } from './collab/collab-context'
 
 /** A tab in the left sidebar. The shell always provides "Adicionar"
  * (palette from the catalog) and "Camadas"; catalogs add the rest
@@ -65,4 +66,8 @@ export interface CanvasEditorProps {
   /** Font families offered by the typography control (CSS `font-family`
    * values with fallbacks). Defaults to a safe system/web list. */
   fonts?: Array<{ label: string; value: string }>
+  /** Real-time co-editing (site pages/globals, e-mail templates v2): the
+   * room and who is editing. Without it — or while the realtime server is
+   * unreachable — the editor saves through `onSave` only. */
+  collaboration?: CanvasCollaboration
 }

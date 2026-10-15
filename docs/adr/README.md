@@ -45,3 +45,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0024 | [Integrações (Slack, GitHub, GitLab) no nível do workspace](./0024-workspace-level-integrations.md) | Aceita | 2026-10-08 |
 | 0025 | [Campanha multicanal: e-mail + WhatsApp opcional, sem grafo de etapas](./0025-crm-multichannel-campaign-execution.md) | Aceita | 2026-10-09 |
 | 0026 | [Steel Canvas: um motor de arrastar e soltar para e-mail e sites](./0026-steel-canvas-shared-drag-and-drop-engine.md) | Aceita | 2026-10-14 |
+| 0027 | [Coedição em tempo real do Steel Canvas sobre o servidor realtime da Wiki](./0027-canvas-real-time-co-editing.md) | Aceita | 2026-10-15 |

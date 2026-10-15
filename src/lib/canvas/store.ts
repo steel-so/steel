@@ -39,6 +39,19 @@ export interface CanvasEditorState {
   lastError: CanvasOpError | null
 }
 
+/**
+ * A document change, for bindings that mirror the document elsewhere (the
+ * real-time co-editing in `src/lib/canvas-collab`). `op` is the op that
+ * produced `next` — for undo/redo, the op actually replayed. `reset` and
+ * `remote` changes have no op.
+ */
+export interface CanvasStoreChange {
+  prev: CanvasDocument
+  next: CanvasDocument
+  op?: CanvasOp
+  source: 'local' | 'undo' | 'redo' | 'reset' | 'remote'
+}
+
 export interface CanvasStore {
   /** The catalog this editor validates against (for `canDrop`, palette…). */
   readonly catalog: CanvasCatalog
@@ -83,6 +96,19 @@ export interface CanvasStore {
   /** Marks the current document as saved — or `doc`, the snapshot that was
    * actually sent to the server, so edits made while saving stay dirty. */
   markSaved(doc?: CanvasDocument): void
+
+  /** Every document change, after the state listeners ran. */
+  onChange(listener: (change: CanvasStoreChange) => void): () => void
+  /**
+   * Replaces the document with one changed by someone else (co-editing):
+   * no history step, selection repaired. The local history keeps its own
+   * ops, so undo still only reverts this user's changes; a step that no
+   * longer applies (its node was removed remotely) is dropped.
+   */
+  applyRemote(doc: CanvasDocument): void
+  /** Refuses inline text editing on nodes the guard rejects (someone else
+   * is editing that text). `null` removes the guard. */
+  setTextGuard(guard: ((id: CanvasNodeId) => boolean) | null): void
 }
 
 export const HISTORY_LIMIT = 200
@@ -141,6 +167,14 @@ export function createCanvasStore(
   /** Token of each document produced here, for `markSaved(doc)`. */
   let docTokens = new WeakMap<CanvasDocument, number>([[initialDoc, 0]])
   const listeners = new Set<() => void>()
+  const changeListeners = new Set<(change: CanvasStoreChange) => void>()
+  /** A remote change arrived: history steps may no longer apply. */
+  let remoteSeen = false
+  let textGuard: ((id: CanvasNodeId) => boolean) | null = null
+
+  function emitChange(change: CanvasStoreChange): void {
+    for (const listener of [...changeListeners]) listener(change)
+  }
 
   const currentToken = () => past.at(-1)?.token ?? baseToken
 
@@ -228,7 +262,9 @@ export function createCanvasStore(
     }
     future = []
     docTokens.set(doc, currentToken())
+    const prev = state.doc
     commit({ ...withDoc(doc), lastError: null })
+    emitChange({ prev, next: doc, op, source: 'local' })
     return true
   }
 
@@ -237,7 +273,7 @@ export function createCanvasStore(
   function travel(
     entry: HistoryEntry,
     direction: 'undo' | 'redo',
-  ): CanvasDocument | null {
+  ): { doc: CanvasDocument; op: CanvasOp } | null {
     const op = direction === 'undo' ? entry.inverse : entry.forward
     const result = applyOp(state.doc, op, catalog, { replay: true })
     if (!result.ok) {
@@ -246,32 +282,53 @@ export function createCanvasStore(
     }
     if (direction === 'undo') entry.forward = result.value.inverse
     else entry.inverse = result.value.inverse
-    return result.value.doc
+    return { doc: result.value.doc, op }
   }
 
   function undo(): void {
     const entry = past.at(-1)
     if (!entry) return
-    const doc = travel(entry, 'undo')
-    if (!doc) return
+    const travelled = travel(entry, 'undo')
+    if (!travelled) {
+      // Co-editing: someone else removed what this step touched — drop it
+      // so the steps below stay reachable.
+      if (remoteSeen) {
+        past.pop()
+        coalesceTarget = null
+        commit({})
+      }
+      return
+    }
+    const { doc, op } = travelled
     past.pop()
     future.push(entry)
     coalesceTarget = null
     entry.selectionAfter = state.selection
     docTokens.set(doc, currentToken())
+    const prev = state.doc
     commit({ ...withDoc(doc, entry.selectionBefore), lastError: null })
+    emitChange({ prev, next: doc, op, source: 'undo' })
   }
 
   function redo(): void {
     const entry = future.at(-1)
     if (!entry) return
-    const doc = travel(entry, 'redo')
-    if (!doc) return
+    const travelled = travel(entry, 'redo')
+    if (!travelled) {
+      if (remoteSeen) {
+        future.pop()
+        commit({})
+      }
+      return
+    }
+    const { doc, op } = travelled
     future.pop()
     past.push(entry)
     coalesceTarget = null
     docTokens.set(doc, currentToken())
+    const prev = state.doc
     commit({ ...withDoc(doc, entry.selectionAfter), lastError: null })
+    emitChange({ prev, next: doc, op, source: 'redo' })
   }
 
   function select(ids: CanvasNodeId[] | CanvasNodeId | null): void {
@@ -419,6 +476,7 @@ export function createCanvasStore(
     baseToken = nextToken++
     savedToken = baseToken
     docTokens = new WeakMap([[doc, baseToken]])
+    const prev = state.doc
     commit({
       doc,
       selection: [],
@@ -426,6 +484,16 @@ export function createCanvasStore(
       editingText: null,
       lastError: null,
     })
+    if (prev !== doc) emitChange({ prev, next: doc, source: 'reset' })
+  }
+
+  function applyRemote(doc: CanvasDocument): void {
+    if (doc === state.doc) return
+    const prev = state.doc
+    remoteSeen = true
+    docTokens.set(doc, currentToken())
+    commit(withDoc(doc))
+    emitChange({ prev, next: doc, source: 'remote' })
   }
 
   function markSaved(doc?: CanvasDocument): void {
@@ -454,6 +522,7 @@ export function createCanvasStore(
       })
     },
     setEditingText(id) {
+      if (id !== null && textGuard && !textGuard(id)) return
       commit({
         editingText: id !== null && getNode(state.doc, id) ? id : null,
       })
@@ -473,5 +542,15 @@ export function createCanvasStore(
     paste,
     reset,
     markSaved,
+    onChange(listener) {
+      changeListeners.add(listener)
+      return () => {
+        changeListeners.delete(listener)
+      }
+    },
+    applyRemote,
+    setTextGuard(guard) {
+      textGuard = guard
+    },
   }
 }

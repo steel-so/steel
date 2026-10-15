@@ -4,6 +4,7 @@ import { SparklesIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import type { CanvasCollaboration } from '@/app/_components/canvas/collab/collab-context'
 import { EmailBuilderEditor } from '@/app/_components/crm/email-builder/email-builder-editor'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -129,11 +130,14 @@ export function EmailTemplateEditorPage({
   slug,
   templateId,
   allowHtml,
+  collabUser,
 }: {
   workspaceId: string
   slug: string
   templateId: string
   allowHtml: boolean
+  /** Who is editing, for real-time co-editing (presence, outlines). */
+  collabUser?: CanvasCollaboration['user']
 }) {
   const template = useCrmEmailTemplate(workspaceId, templateId)
   const brand = useCrmEmailBrand(workspaceId)
@@ -182,6 +186,7 @@ export function EmailTemplateEditorPage({
         brand={brand.data}
         initialDocument={doc}
         allowHtml={allowHtml}
+        collabUser={collabUser}
       />
     )
   }

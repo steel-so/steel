@@ -28,6 +28,8 @@ import {
 import { cn } from '@/lib/utils'
 import { ZOOM_MAX, ZOOM_MIN } from '@/src/lib/canvas/store'
 import type { CanvasBreakpoint } from '@/src/lib/canvas/types'
+import { useCollabSession, useCollabSnapshot } from './collab/collab-context'
+import { CollabPresence } from './collab/presence-bar'
 import { useCanvasEditor, useCanvasEditorUi } from './editor-context'
 import { DEFAULT_VIEWPORTS, fitZoom } from './frame/canvas-stage'
 import { BREAKPOINT_LABELS } from './lib/messages'
@@ -94,16 +96,27 @@ export function IconButton({
 function SaveIndicator() {
   const { saveStatus } = useCanvasEditorUi()
   const dirty = useCanvasStore((state) => state.dirty)
+  // Live co-editing: the realtime server saves, so "saved" means synced.
+  const session = useCollabSession()
+  const live = useCollabSnapshot(
+    (snapshot) => snapshot.status === 'live' && !snapshot.readOnly,
+  )
+  const syncing = useCollabSnapshot((snapshot) => snapshot.syncing)
   const status =
     saveStatus === 'saving'
       ? 'saving'
-      : saveStatus === 'error'
+      : saveStatus === 'error' && !(session && live)
         ? 'error'
-        : dirty
-          ? 'dirty'
-          : 'saved'
+        : session && live
+          ? syncing
+            ? 'syncing'
+            : 'saved'
+          : dirty
+            ? 'dirty'
+            : 'saved'
   const copy = {
     saving: { icon: Loading03Icon, text: 'Salvando…' },
+    syncing: { icon: Loading03Icon, text: 'Sincronizando…' },
     error: { icon: AlertCircleIcon, text: 'Não foi possível salvar' },
     dirty: { icon: null, text: 'Alterações não salvas' },
     saved: { icon: CheckmarkCircle02Icon, text: 'Salvo' },
@@ -121,7 +134,10 @@ function SaveIndicator() {
       {copy.icon ? (
         <SteelIcon
           icon={copy.icon}
-          className={cn('size-3.5', status === 'saving' && 'animate-spin')}
+          className={cn(
+            'size-3.5',
+            (status === 'saving' || status === 'syncing') && 'animate-spin',
+          )}
         />
       ) : (
         <span className='size-1.5 rounded-full bg-muted-foreground/60' />
@@ -254,6 +270,7 @@ export function CanvasTopBar({ title }: { title: ReactNode }) {
       </div>
 
       <div className='flex flex-1 items-center justify-end gap-3'>
+        <CollabPresence />
         <SaveIndicator />
         {props.actions?.({ store })}
       </div>

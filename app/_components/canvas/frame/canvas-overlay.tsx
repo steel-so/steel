@@ -13,6 +13,8 @@ import { SteelIcon } from '@/components/icon/icon'
 import { cn } from '@/lib/utils'
 import { getNode, parentOf } from '@/src/lib/canvas/ops'
 import type { CanvasNodeId } from '@/src/lib/canvas/types'
+import { type CanvasPeer, shortName } from '@/src/lib/canvas-collab/presence'
+import { useCollabSnapshot } from '../collab/collab-context'
 import { nodeLabel, useCanvasDraggable } from '../dnd/canvas-dnd'
 import {
   useCanvasEditor,
@@ -318,6 +320,65 @@ function DropFeedback() {
   )
 }
 
+/** Another person's selected node: an outline in their color with their
+ * name, or "Fulano está editando este texto" while they edit its text. */
+function RemoteSelectionBox({
+  id,
+  peer,
+  editing,
+}: {
+  id: CanvasNodeId
+  peer: CanvasPeer
+  editing: boolean
+}) {
+  const rect = useNodeRect(id)
+  const scale = useScale()
+  const exists = useCanvasStore((state) => getNode(state.doc, id) !== undefined)
+  if (!rect || !exists) return null
+  const box = scaled(rect, scale)
+  const name = shortName(peer.user.name)
+  return (
+    <div
+      data-testid='canvas-remote-selection'
+      data-node-id={id}
+      data-peer={peer.user.id}
+      className='pointer-events-none absolute rounded-[2px] outline-2'
+      style={{ ...box, outlineColor: peer.user.color, outlineStyle: 'solid' }}
+    >
+      <span
+        className={cn(
+          'absolute left-[-2px] flex max-w-60 items-center gap-1 truncate rounded-sm px-1.5 py-0.5 text-[10px] leading-none font-medium whitespace-nowrap text-white shadow-sm',
+          box.top < 22 ? 'top-[calc(100%+3px)]' : '-top-[18px]',
+        )}
+        style={{ backgroundColor: peer.user.color }}
+      >
+        {editing && <SteelIcon icon={LockIcon} className='size-2.5' />}
+        {editing ? `${name} está editando este texto` : name}
+      </span>
+    </div>
+  )
+}
+
+/** Selections of the other people in the room (real-time co-editing). */
+function RemoteSelections() {
+  const peers = useCollabSnapshot((snapshot) => snapshot.peers)
+  const seen = new Set<CanvasNodeId>()
+  const boxes: Array<{ id: CanvasNodeId; peer: CanvasPeer; editing: boolean }> =
+    []
+  for (const peer of peers) {
+    // Someone on another screen size sees another layout: their selection
+    // is still the same node, so it is drawn anyway.
+    for (const id of peer.selection) {
+      if (seen.has(id)) continue
+      seen.add(id)
+      boxes.push({ id, peer, editing: peer.editingText === id })
+    }
+  }
+  return boxes.map((box) => (
+    <RemoteSelectionBox key={`${box.peer.clientId}:${box.id}`} {...box} />
+  ))
+}
+
 /**
  * Editing layer drawn in the parent document over the iframe: hover
  * outline, selection boxes with quick actions, drop feedback and the inline
@@ -330,6 +391,7 @@ export function CanvasOverlay() {
       className='pointer-events-none absolute inset-0 z-10'
       data-testid='canvas-overlay'
     >
+      <RemoteSelections />
       <HoverOutline />
       {selection.map((id, index) => (
         <SelectionBox

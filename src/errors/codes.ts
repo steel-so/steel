@@ -847,6 +847,9 @@ export const ERROR_CODES = {
   SITE_REDIRECT_PATH_TAKEN: { code: 'SITE_REDIRECT_PATH_TAKEN', status: 409 },
   // The redirect points to itself or closes a loop with another one.
   SITE_REDIRECT_LOOP: { code: 'SITE_REDIRECT_LOOP', status: 422 },
+  // S4 co-editing: the realtime room names no co-editable canvas document
+  // (unknown target, or an e-mail template that is not a v2 canvas).
+  CANVAS_COLLAB_NOT_FOUND: { code: 'CANVAS_COLLAB_NOT_FOUND', status: 404 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
