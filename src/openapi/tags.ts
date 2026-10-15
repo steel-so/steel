@@ -378,6 +378,11 @@ export const TAG_GROUPS = [
         description:
           'Registro anônimo de visualizações dos sites publicados (sem sessão; o slug do site é o acesso).',
       },
+      {
+        name: 'CRM público · Modo TV',
+        description:
+          'Painel do CRM no telão da equipe de vendas: link somente leitura, sem login (o token é o acesso; revogar corta a tela).',
+      },
     ],
   },
   {

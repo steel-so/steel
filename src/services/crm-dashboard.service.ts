@@ -1,7 +1,11 @@
 import type { CrmDashboard, ModuleKind, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
-import { notFound, validationError } from '@/src/errors'
+import {
+  crmSalesWidgetUnsupported,
+  notFound,
+  validationError,
+} from '@/src/errors'
 import type { PermissionAction } from '@/src/lib/permissions'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
@@ -12,8 +16,10 @@ import {
   CrmDashboardRepository,
   CrmDashboardWidgetRepository,
 } from '@/src/repositories/crm-dashboard.repository'
+import { CrmSalesMetricsRepository } from '@/src/repositories/crm-sales-metrics.repository'
 import type {
   CreateCrmDashboardDTO,
+  CreateCrmDashboardFromTemplateDTO,
   CreateCrmDashboardWidgetDTO,
   CrmDashboardWidgetLayoutBatchDTO,
   UpdateCrmDashboardDTO,
@@ -22,9 +28,11 @@ import type {
 import { widgetConfigSchema } from '@/src/schemas/crm-dashboard.schema'
 import type {
   CrmDashboardDTO,
+  CrmDashboardLookupsDTO,
   CrmDashboardWidgetDTO,
 } from '@/types/crm-dashboard'
 import { assertMember, assertModuleEnabled, assertModuleMember } from './authz'
+import { DASHBOARD_TEMPLATE_DATA } from './crm-dashboard-templates'
 import { SdAccess } from './sd-access'
 
 /**
@@ -103,7 +111,125 @@ async function loadAuthorized(
 
 const MAX_TITLE = 200
 
+/**
+ * Names behind the ids of CRM rows (pipelines, stages, members), so every
+ * dashboard shows names instead of ids. No authorization: callers check it.
+ */
+export async function loadDashboardLookups(
+  workspaceId: string,
+): Promise<Result<CrmDashboardLookupsDTO>> {
+  const [pipelines, stages, users] = await Promise.all([
+    CrmSalesMetricsRepository.listPipelines(workspaceId),
+    CrmSalesMetricsRepository.listStages(workspaceId),
+    CrmSalesMetricsRepository.listMembers(workspaceId),
+  ])
+  if (!pipelines.ok) return pipelines
+  if (!stages.ok) return stages
+  if (!users.ok) return users
+  return ok({
+    pipelines: pipelines.value,
+    stages: stages.value.map((stage) => ({
+      id: stage.id,
+      name: stage.name,
+      pipelineId: stage.pipelineId,
+      category: stage.category,
+      color: stage.color,
+    })),
+    users: users.value,
+  })
+}
+
 export const CrmDashboardService = {
+  /** One dashboard (title, screens, TV rotation). */
+  async get(
+    actorId: string,
+    workspaceId: string,
+    dashboardId: string,
+    module?: ModuleKind,
+  ): Promise<Result<CrmDashboardDTO>> {
+    const dashboard = await loadAuthorized(
+      actorId,
+      workspaceId,
+      dashboardId,
+      'VIEW',
+      module,
+    )
+    if (!dashboard.ok) return dashboard
+    return ok(toCrmDashboardDTO(dashboard.value))
+  },
+
+  /** Lookups of the CRM dashboards (stage, pipeline and member names). */
+  async lookups(
+    actorId: string,
+    workspaceId: string,
+  ): Promise<Result<CrmDashboardLookupsDTO>> {
+    const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
+      resource: 'dashboards',
+      action: 'VIEW',
+    })
+    if (!membership.ok) return membership
+    return loadDashboardLookups(workspaceId)
+  },
+
+  /**
+   * Creates a ready-made CRM dashboard (today: "Vendas — TV", the sales kit
+   * laid out on two screens that rotate on the TV).
+   */
+  async createFromTemplate(
+    actorId: string,
+    workspaceId: string,
+    dto: CreateCrmDashboardFromTemplateDTO,
+  ): Promise<Result<CrmDashboardDTO>> {
+    const membership = await authorizeModule(
+      actorId,
+      workspaceId,
+      'CRM',
+      'CREATE',
+    )
+    if (!membership.ok) return membership
+
+    const template = DASHBOARD_TEMPLATE_DATA[dto.template]
+    const created = await CrmDashboardRepository.create({
+      workspaceId,
+      createdById: actorId,
+      title: dto.title ?? template.title,
+      module: 'CRM',
+      settings: template.settings as Prisma.InputJsonValue,
+    })
+    if (!created.ok) return created
+
+    for (const widget of template.widgets) {
+      const copy = await CrmDashboardWidgetRepository.create({
+        dashboardId: created.value.id,
+        type: widget.type,
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        page: widget.page,
+        config: widget.config as Prisma.InputJsonValue,
+      })
+      if (!copy.ok) {
+        logger.error('crm_dashboard.template.widget_failed', {
+          workspaceId,
+          dashboardId: created.value.id,
+          template: dto.template,
+          error: copy.error.code,
+        })
+      }
+    }
+
+    auditMutation({
+      entity: 'crm_dashboard',
+      action: 'create',
+      actorId,
+      targetId: created.value.id,
+      meta: { template: dto.template },
+    })
+
+    return ok(toCrmDashboardDTO(created.value))
+  },
+
   async list(
     actorId: string,
     workspaceId: string,
@@ -187,6 +313,9 @@ export const CrmDashboardService = {
     const result = await CrmDashboardRepository.update(dashboardId, {
       title: dto.title,
       updatedById: actorId,
+      ...(dto.settings
+        ? { settings: dto.settings as Prisma.InputJsonValue }
+        : {}),
     })
     if (!result.ok) return result
 
@@ -275,6 +404,7 @@ export const CrmDashboardService = {
       createdById: actorId,
       title: `${source.value.title.slice(0, MAX_TITLE - suffix.length)}${suffix}`,
       module: source.value.module,
+      settings: source.value.settings as Prisma.InputJsonValue,
     })
     if (!created.ok) return created
 
@@ -286,6 +416,7 @@ export const CrmDashboardService = {
         y: widget.y,
         w: widget.w,
         h: widget.h,
+        page: widget.page,
         config: widget.config as Prisma.InputJsonValue,
       })
       if (!copy.ok) {
@@ -347,6 +478,9 @@ export const CrmDashboardWidgetService = {
       module,
     )
     if (!dashboard.ok) return dashboard
+    if (dto.type === 'SALES' && dashboard.value.module !== 'CRM') {
+      return err(crmSalesWidgetUnsupported())
+    }
 
     const result = await CrmDashboardWidgetRepository.create({
       dashboardId,
@@ -355,6 +489,7 @@ export const CrmDashboardWidgetService = {
       y: dto.y,
       w: dto.w,
       h: dto.h,
+      page: dto.page,
       config: dto.config as Prisma.InputJsonValue,
     })
 
@@ -418,6 +553,7 @@ export const CrmDashboardWidgetService = {
       y: dto.y,
       w: dto.w,
       h: dto.h,
+      page: dto.page,
       config,
     })
     if (!result.ok) return result

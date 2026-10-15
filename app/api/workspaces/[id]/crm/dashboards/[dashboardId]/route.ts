@@ -14,6 +14,24 @@ import {
 
 type Params = { params: Promise<{ id: string; dashboardId: string }> }
 
+export const GET = withAxiom(async (_request: NextRequest, ctx: Params) => {
+  const auth = await getAuthSession()
+  if (!auth.ok) return handleError(auth.error)
+
+  const limit = await consume(apiLimiter, `user:${auth.value.user.id}`)
+  if (!limit.ok) return handleError(limit.error)
+
+  const { id, dashboardId } = await ctx.params
+  const result = await CrmDashboardService.get(
+    auth.value.user.id,
+    id,
+    dashboardId,
+  )
+  if (!result.ok) return handleError(result.error)
+
+  return successResponse(result.value)
+})
+
 export const PATCH = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()
   if (!auth.ok) return handleError(auth.error)

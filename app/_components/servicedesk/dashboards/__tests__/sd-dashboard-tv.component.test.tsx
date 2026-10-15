@@ -27,6 +27,7 @@ function widget(
     y: 0,
     w: 6,
     h: 4,
+    page: 0,
     config: { title: 'SLA em risco', html: '<p>3 chamados</p>' },
     createdAt: '2026-09-21T12:00:00.000Z',
     updatedAt: '2026-09-21T12:00:00.000Z',

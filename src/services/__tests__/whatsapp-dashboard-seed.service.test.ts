@@ -41,6 +41,7 @@ function stubEmptyState() {
       y: 0,
       w: 4,
       h: 6,
+      page: 0,
       config: {},
       createdAt: new Date(),
       updatedAt: new Date(),

@@ -1460,3 +1460,15 @@ export const whiteboardRevisionConflict = (
 
 export const whiteboardFileNotFound = (): AppError =>
   appError('WHITEBOARD_FILE_NOT_FOUND', 'Arquivo do quadro não encontrado')
+
+export const crmTvLinkNotFound = (): AppError =>
+  appError(
+    'CRM_TV_LINK_NOT_FOUND',
+    'Link da TV inválido ou revogado. Peça um novo link a quem administra o painel.',
+  )
+
+export const crmSalesWidgetUnsupported = (): AppError =>
+  appError(
+    'CRM_SALES_WIDGET_UNSUPPORTED',
+    'Os widgets de Vendas só podem ser usados em painéis do CRM.',
+  )

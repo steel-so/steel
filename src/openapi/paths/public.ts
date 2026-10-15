@@ -8,6 +8,11 @@ import {
 } from '@/src/schemas/crm-proposal.schema'
 import type { ErrorEntry, OpenApiRegistry, RouteConfig } from '../registry'
 import {
+  CrmDashboardTvBootDTO,
+  CrmDashboardTvWidgetDataDTO,
+  CrmSalesMetricDTO,
+} from '../schemas/crm/reports'
+import {
   CrmFormPublicDTO,
   CrmFormSubmissionDTO,
   CrmLandingPagePublicDTO,
@@ -61,7 +66,69 @@ const lead = {
   updatedAt: '2026-09-18T13:00:00.000Z',
 }
 
+const TV_LINK_GONE: ErrorEntry = {
+  code: 'CRM_TV_LINK_NOT_FOUND',
+  when: 'Token inexistente ou revogado, dashboard excluído, CRM desabilitado ou quem criou o link não vê mais dashboards',
+}
+const TV_TOKEN = {
+  token: {
+    description: 'Token do link da TV (vem no endereço `/tv/<token>`).',
+    example: '9Qm2xL7aP0bC4dE6fG8hJ1kL3mN5pQ7r',
+  },
+}
+
 const routes: RouteConfig[] = [
+  /* -------------------------------- modo TV ------------------------------- */
+  {
+    ...PUBLIC,
+    method: 'get',
+    path: '/crm/tv/{token}',
+    tags: ['CRM público · Modo TV'],
+    summary: 'Abrir painel da TV',
+    description:
+      'O que a página `/tv/<token>` precisa para montar a tela: título, telas e rotação, widgets (sem `IFRAME`), nomes de etapas/pipelines/membros e o fuso do workspace.',
+    params: TV_TOKEN,
+    responses: {
+      200: { description: 'Painel.', schema: CrmDashboardTvBootDTO },
+    },
+    errors: [TV_LINK_GONE],
+  },
+  {
+    ...PUBLIC,
+    method: 'get',
+    path: '/crm/tv/{token}/widgets/{widgetId}',
+    tags: ['CRM público · Modo TV'],
+    summary: 'Dados de um widget da TV',
+    description:
+      'Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários e landing pages, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados).',
+    params: { ...TV_TOKEN, widgetId: 'ID do widget.' },
+    responses: {
+      200: { description: 'Dados.', schema: CrmDashboardTvWidgetDataDTO },
+    },
+    errors: [
+      TV_LINK_GONE,
+      {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'CrmDashboardWidget not found',
+        when: 'Widget de outro dashboard',
+      },
+    ],
+  },
+  {
+    ...PUBLIC,
+    method: 'get',
+    path: '/crm/tv/{token}/wins',
+    tags: ['CRM público · Modo TV'],
+    summary: 'Últimas vitórias',
+    description:
+      'Os 5 ganhos mais recentes (30 dias). A TV consulta a cada 15 s e comemora quando aparece um novo.',
+    params: TV_TOKEN,
+    responses: {
+      200: { description: 'Vitórias.', schema: CrmSalesMetricDTO },
+    },
+    errors: [TV_LINK_GONE],
+  },
+
   /* ------------------------------ formulários ----------------------------- */
   {
     ...PUBLIC,

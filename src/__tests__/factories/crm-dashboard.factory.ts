@@ -21,6 +21,7 @@ export function createFakeCrmDashboard(
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
+    settings: {},
     ...overrides,
   }
 }
@@ -37,6 +38,7 @@ export function createFakeCrmDashboardDTO(
     createdById: createId(),
     updatedById: null,
     position: 0,
+    settings: { pages: ['Tela 1'], rotateSeconds: 0 },
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -65,6 +67,7 @@ export function createFakeCrmDashboardWidget(
     y: 0,
     w: 4,
     h: 6,
+    page: 0,
     config: {},
     createdAt: now,
     updatedAt: now,
@@ -84,6 +87,7 @@ export function createFakeCrmDashboardWidgetDTO(
     y: 0,
     w: 4,
     h: 6,
+    page: 0,
     config: {},
     createdAt: now,
     updatedAt: now,
@@ -93,7 +97,9 @@ export function createFakeCrmDashboardWidgetDTO(
 
 export async function seedCrmDashboardWidget(
   dashboardId: string,
-  overrides?: Partial<Pick<CrmDashboardWidget, 'type' | 'x' | 'y' | 'w' | 'h'>>,
+  overrides?: Partial<
+    Pick<CrmDashboardWidget, 'type' | 'x' | 'y' | 'w' | 'h' | 'page'>
+  >,
 ) {
   return prisma.crmDashboardWidget.create({
     data: { dashboardId, type: 'CHART', config: {}, ...overrides },

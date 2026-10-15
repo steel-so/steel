@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import {
+  CreateCrmDashboardFromTemplateSchema,
   CreateCrmDashboardSchema,
+  CreateCrmDashboardTvLinkSchema,
   CreateCrmDashboardWidgetSchema,
   CrmDashboardWidgetLayoutBatchSchema,
   UpdateCrmDashboardSchema,
@@ -10,15 +12,25 @@ import {
   CreateCrmReportSchema,
   UpdateCrmReportSchema,
 } from '@/src/schemas/crm-report.schema'
+import { SalesMetricsQuerySchema } from '@/src/schemas/crm-sales-metrics.schema'
 import { flag } from '../../common'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   CrmDashboardDTO,
+  CrmDashboardLookupsDTO,
+  CrmDashboardTvLinkDTO,
   CrmDashboardWidgetDTO,
   CrmReportDataDTO,
   CrmReportDTO,
+  CrmSalesMetricDTO,
 } from '../../schemas/crm/reports'
-import { CRM_ERRORS, crmAccess, describe, notFoundError } from './shared'
+import {
+  CRM_ERRORS,
+  CRM_PRIVILEGED_ERRORS,
+  crmAccess,
+  describe,
+  notFoundError,
+} from './shared'
 
 /**
  * CRM · Relatórios e dashboards — `reports`, `dashboards` e widgets.
@@ -46,6 +58,10 @@ const WIDGET_NOT_FOUND = notFoundError(
   'CrmDashboardWidget',
   'Widget inexistente neste dashboard',
 )
+const TV_LINK_NOT_FOUND: ErrorEntry = {
+  code: 'CRM_TV_LINK_NOT_FOUND',
+  when: 'Link inexistente, já revogado ou de outro dashboard',
+}
 
 const RUN_NOTE =
   'Cada dataset é lido pelo service da fonte com a permissão `VIEW` do usuário (e, para `whatsapp_*`, com o módulo Comunicação habilitado) — sem acesso a uma fonte, a execução falha com o erro dela (`403`).'
@@ -234,6 +250,54 @@ export const crmReportsRoutes: RouteConfig[] = [
     errors: CRM_ERRORS,
   },
   {
+    method: 'get',
+    path: '/workspaces/{id}/crm/dashboards/{dashboardId}',
+    tags: TAGS,
+    summary: 'Obter dashboard',
+    description: describe(
+      'Título, telas (`settings.pages`) e rotação do modo TV (`settings.rotateSeconds`).',
+      crmAccess('dashboards', 'VIEW'),
+    ),
+    params: { dashboardId: DASHBOARD_ID },
+    responses: {
+      200: { description: 'Dashboard.', schema: CrmDashboardDTO },
+    },
+    errors: [...CRM_ERRORS, DASHBOARD_NOT_FOUND],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/dashboards/lookups',
+    tags: TAGS,
+    summary: 'Nomes para os widgets',
+    description: describe(
+      'Pipelines, etapas (com categoria e cor) e membros (nome e foto) do workspace — os gráficos e tabelas usam para mostrar nomes no lugar dos IDs de `stageId`, `pipelineId`, `ownerId` e `assigneeId`.',
+      crmAccess('dashboards', 'VIEW'),
+    ),
+    responses: {
+      200: { description: 'Nomes.', schema: CrmDashboardLookupsDTO },
+    },
+    errors: CRM_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/dashboards/templates',
+    tags: TAGS,
+    summary: 'Criar dashboard a partir de modelo',
+    description: describe(
+      '`sales-tv` cria o painel "Vendas — TV": o kit de Vendas em duas telas (metas e ranking; pipeline e funil) que alternam a cada 30 s no modo TV.',
+      crmAccess('dashboards', 'CREATE'),
+    ),
+    consent: true,
+    body: {
+      schema: CreateCrmDashboardFromTemplateSchema,
+      example: { template: 'sales-tv' },
+    },
+    responses: {
+      201: { description: 'Dashboard criado.', schema: CrmDashboardDTO },
+    },
+    errors: CRM_ERRORS,
+  },
+  {
     method: 'patch',
     path: '/workspaces/{id}/crm/dashboards/{dashboardId}',
     tags: TAGS,
@@ -241,7 +305,12 @@ export const crmReportsRoutes: RouteConfig[] = [
     description: crmAccess('dashboards', 'EDIT'),
     params: { dashboardId: DASHBOARD_ID },
     consent: true,
-    body: UpdateCrmDashboardSchema,
+    body: {
+      schema: UpdateCrmDashboardSchema,
+      example: {
+        settings: { pages: ['Metas', 'Pipeline'], rotateSeconds: 30 },
+      },
+    },
     responses: {
       200: { description: 'Dashboard atualizado.', schema: CrmDashboardDTO },
     },
@@ -278,7 +347,7 @@ export const crmReportsRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Adicionar widget',
     description: describe(
-      '`type` define o formato de `config`: `CHART` (gráfico sobre uma fonte do CRM ou `socials`), `VIEW` (tabela de uma fonte), `IFRAME` (`url`) ou `RICH_TEXT` (`html`). Posição/tamanho no grid de 12 colunas em `x`, `y`, `w`, `h`.',
+      '`type` define o formato de `config`: `CHART` (gráfico sobre uma fonte do CRM ou `socials`), `VIEW` (tabela de uma fonte), `IFRAME` (`url`), `RICH_TEXT` (`html`) ou `SALES` (widget do kit de Vendas, só em dashboards do CRM). Posição/tamanho no grid de 12 colunas em `x`, `y`, `w`, `h`; `page` é a tela (0 a 2).',
       crmAccess('dashboards', 'CREATE'),
     ),
     params: { dashboardId: DASHBOARD_ID },
@@ -302,7 +371,14 @@ export const crmReportsRoutes: RouteConfig[] = [
     responses: {
       201: { description: 'Widget criado.', schema: CrmDashboardWidgetDTO },
     },
-    errors: [...CRM_ERRORS, DASHBOARD_NOT_FOUND],
+    errors: [
+      ...CRM_ERRORS,
+      DASHBOARD_NOT_FOUND,
+      {
+        code: 'CRM_SALES_WIDGET_UNSUPPORTED',
+        when: 'Widget `SALES` num dashboard que não é do CRM',
+      },
+    ],
   },
   {
     method: 'post',
@@ -361,5 +437,89 @@ export const crmReportsRoutes: RouteConfig[] = [
     consent: true,
     responses: { 200: { description: 'Widget removido.', schema: null } },
     errors: [...CRM_ERRORS, DASHBOARD_NOT_FOUND, WIDGET_NOT_FOUND],
+  },
+
+  /* --------------------------------- vendas -------------------------------- */
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/sales-metrics',
+    tags: TAGS,
+    summary: 'Métrica do kit de Vendas',
+    description: describe(
+      [
+        'Calcula no servidor uma métrica do kit de Vendas (ADR 0031), no fuso do calendário padrão do workspace (ou `America/Sao_Paulo`). Um ganho conta no período em que a oportunidade entrou numa etapa `WON` (`wonAt`). Dias úteis: segunda a sexta, menos os feriados do calendário padrão.',
+        '',
+        '- `goal`: ganho do período × soma das metas, % atingido, falta, dias úteis restantes, necessário por dia e ritmo (projeção);',
+        '- `ranking`: vendedores por valor ganho e % da meta individual;',
+        '- `pipeline`: abertas por etapa (valor e ponderado = valor × probabilidade) de um pipeline;',
+        '- `forecast`: comprometido (≥ 70%), melhor cenário e ponderado das que fecham no período;',
+        '- `conversion`: lead → oportunidade → ganho, período atual × anterior;',
+        '- `deal-stats`: ticket médio e ciclo médio (dias da criação ao ganho), com tendência;',
+        '- `stalled`: abertas sem atividade há `stalledDays` dias;',
+        '- `proposals`: enviadas/vistas aguardando resposta e as que vencem nesta semana;',
+        '- `scoreboard`: placar de hoje (ganhos, valor, reuniões, atividades, leads novos por origem);',
+        '- `wins-feed`: últimos ganhos (30 dias).',
+      ].join('\n'),
+      crmAccess('opportunities', 'VIEW'),
+    ),
+    query: SalesMetricsQuerySchema,
+    responses: {
+      200: { description: 'Métrica.', schema: CrmSalesMetricDTO },
+    },
+    errors: CRM_ERRORS,
+  },
+
+  /* ------------------------------- link da TV ------------------------------ */
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/dashboards/{dashboardId}/tv-links',
+    tags: TAGS,
+    summary: 'Listar links da TV',
+    description: describe(
+      'Links ativos (não revogados) do modo TV deste dashboard.',
+      crmAccess('privileged'),
+    ),
+    params: { dashboardId: DASHBOARD_ID },
+    responses: {
+      200: {
+        description: 'Links.',
+        schema: z.array(CrmDashboardTvLinkDTO),
+      },
+    },
+    errors: [...CRM_PRIVILEGED_ERRORS, DASHBOARD_NOT_FOUND],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/dashboards/{dashboardId}/tv-links',
+    tags: TAGS,
+    summary: 'Criar link da TV',
+    description: describe(
+      'Gera um link somente leitura (`/tv/<token>`, 192 bits aleatórios) para abrir o painel numa TV sem login. A tela lê os dados em nome de quem criou o link: se essa pessoa sair do workspace, o link para de funcionar.',
+      crmAccess('privileged'),
+    ),
+    params: { dashboardId: DASHBOARD_ID },
+    consent: true,
+    body: {
+      schema: CreateCrmDashboardTvLinkSchema,
+      example: { name: 'TV da sala de vendas' },
+    },
+    responses: {
+      201: { description: 'Link criado.', schema: CrmDashboardTvLinkDTO },
+    },
+    errors: [...CRM_PRIVILEGED_ERRORS, DASHBOARD_NOT_FOUND],
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/crm/dashboards/{dashboardId}/tv-links/{linkId}',
+    tags: TAGS,
+    summary: 'Revogar link da TV',
+    description: describe(
+      'A tela que usa o link para na próxima atualização.',
+      crmAccess('privileged'),
+    ),
+    params: { dashboardId: DASHBOARD_ID, linkId: 'ID do link.' },
+    consent: true,
+    responses: { 200: { description: 'Link revogado.', schema: null } },
+    errors: [...CRM_PRIVILEGED_ERRORS, DASHBOARD_NOT_FOUND, TV_LINK_NOT_FOUND],
   },
 ]

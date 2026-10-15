@@ -913,6 +913,13 @@ export const ERROR_CODES = {
     code: 'SITE_EXPERIMENT_NOT_PUBLISHED',
     status: 422,
   },
+  // Sales TV: unknown, revoked or orphaned TV link (`/tv/<token>`).
+  CRM_TV_LINK_NOT_FOUND: { code: 'CRM_TV_LINK_NOT_FOUND', status: 404 },
+  // The "Vendas" widget kit only exists on CRM dashboards.
+  CRM_SALES_WIDGET_UNSUPPORTED: {
+    code: 'CRM_SALES_WIDGET_UNSUPPORTED',
+    status: 422,
+  },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },

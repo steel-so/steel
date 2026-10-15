@@ -1967,6 +1967,9 @@ model CrmOpportunity {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
   deletedAt        DateTime? @map("deleted_at")
+  /// When the deal entered a WON stage (cleared when it leaves one). The
+  /// sales kit attributes a win to the period of this date (ADR 0031).
+  wonAt            DateTime? @map("won_at")
 
   workspace      Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   pipeline       CrmPipeline      @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
@@ -1990,6 +1993,7 @@ model CrmOpportunity {
   @@index([companyId])
   @@index([deletedAt])
   @@index([workspaceId, position])
+  @@index([workspaceId, wonAt])
   @@map("crm_opportunities")
 }
 
@@ -2563,6 +2567,8 @@ enum CrmWidgetType {
   VIEW
   IFRAME
   RICH_TEXT
+  /// "Vendas" kit (goal, ranking, pipeline…): metrics computed server-side.
+  SALES
 }
 
 /// Dashboard customizável por workspace (grade de widgets).
@@ -2579,11 +2585,14 @@ model CrmDashboard {
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
   deletedAt   DateTime?  @map("deleted_at")
+  /// Screens (pages) and TV rotation: {"pages":["Tela 1"],"rotateSeconds":0}.
+  settings    Json       @default("{}")
 
   workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy User                 @relation("CrmDashboardCreatedBy", fields: [createdById], references: [id])
   updatedBy User?                @relation("CrmDashboardUpdatedBy", fields: [updatedById], references: [id])
   widgets   CrmDashboardWidget[]
+  tvLinks   CrmDashboardTvLink[]
 
   @@index([workspaceId])
   @@index([deletedAt])
@@ -2601,6 +2610,8 @@ model CrmDashboardWidget {
   y           Int           @default(0)
   w           Int           @default(4)
   h           Int           @default(6)
+  /// Screen (page) of the dashboard the widget lives on, 0-based.
+  page        Int           @default(0)
   config      Json
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
@@ -2609,6 +2620,27 @@ model CrmDashboardWidget {
 
   @@index([dashboardId])
   @@map("crm_dashboard_widgets")
+}
+
+/// Read-only TV link of a CRM dashboard (`/tv/<token>`): no login, the token
+/// is the credential; revoking sets `revokedAt`. Data is read on behalf of
+/// `createdById`, so the link dies when its creator leaves the workspace.
+model CrmDashboardTvLink {
+  id          String    @id @default(cuid())
+  workspaceId String    @map("workspace_id")
+  dashboardId String    @map("dashboard_id")
+  token       String    @unique
+  name        String
+  createdById String    @map("created_by_id")
+  lastUsedAt  DateTime? @map("last_used_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  dashboard CrmDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([dashboardId])
+  @@map("crm_dashboard_tv_links")
 }
 
 enum CrmProposalSectionType {

@@ -36,13 +36,14 @@ import { notifyCrmOpportunityAssigned } from './crm-notifications'
 import { CrmPipelineService } from './crm-pipeline.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
 
-type StageRefs = { pipelineId: string; stageId: string }
+/** `won`: the stage is of category WON (stamps `wonAt`, ADR 0031). */
+type StageRefs = { pipelineId: string; stageId: string; won?: boolean }
 
 /** Primeira etapa (categoria OPEN, ou a primeira por posição) do pipeline. */
 async function firstStageOf(
   workspaceId: string,
   pipelineId: string,
-): Promise<Result<string>> {
+): Promise<Result<{ id: string; won: boolean }>> {
   const pipeline = await CrmPipelineRepository.findById(pipelineId, workspaceId)
   if (!pipeline.ok) return pipeline
 
@@ -52,22 +53,25 @@ async function firstStageOf(
 
   const ordered = [...stages.value].sort((a, b) => a.position - b.position)
   const stage = ordered.find((s) => s.category === 'OPEN') ?? ordered[0]
-  return ok(stage.id)
+  return ok({ id: stage.id, won: stage.category === 'WON' })
 }
 
-/** Valida que `stageId` pertence ao `pipelineId` informado e à workspace. */
+/**
+ * Valida que `stageId` pertence ao `pipelineId` informado e à workspace;
+ * devolve se a etapa é de ganho.
+ */
 async function assertStage(
   workspaceId: string,
   pipelineId: string,
   stageId: string,
-): Promise<Result<true>> {
+): Promise<Result<{ won: boolean }>> {
   const pipeline = await CrmPipelineRepository.findById(pipelineId, workspaceId)
   if (!pipeline.ok) return pipeline
 
   const stage = await CrmPipelineStageRepository.findById(stageId, pipelineId)
   if (!stage.ok) return stage
 
-  return ok(true)
+  return ok({ won: stage.value.category === 'WON' })
 }
 
 /** Resolve pipeline+etapa para a criação, aplicando os defaults da workspace. */
@@ -85,12 +89,20 @@ async function resolveStageForCreate(
       input.stageId,
     )
     if (!valid.ok) return valid
-    return ok({ pipelineId: input.pipelineId, stageId: input.stageId })
+    return ok({
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
+      won: valid.value.won,
+    })
   }
   if (input.pipelineId) {
     const stage = await firstStageOf(workspaceId, input.pipelineId)
     if (!stage.ok) return stage
-    return ok({ pipelineId: input.pipelineId, stageId: stage.value })
+    return ok({
+      pipelineId: input.pipelineId,
+      stageId: stage.value.id,
+      won: stage.value.won,
+    })
   }
   return CrmPipelineService.resolveDefaultStage(workspaceId)
 }
@@ -116,11 +128,33 @@ async function resolveStageForUpdate(
       input.stageId,
     )
     if (!valid.ok) return valid
-    return ok({ pipelineId: targetPipelineId, stageId: input.stageId })
+    return ok({
+      pipelineId: targetPipelineId,
+      stageId: input.stageId,
+      won: valid.value.won,
+    })
   }
   const stage = await firstStageOf(workspaceId, targetPipelineId)
   if (!stage.ok) return stage
-  return ok({ pipelineId: targetPipelineId, stageId: stage.value })
+  return ok({
+    pipelineId: targetPipelineId,
+    stageId: stage.value.id,
+    won: stage.value.won,
+  })
+}
+
+/**
+ * `wonAt` after a stage change: stamped when the deal enters a WON stage
+ * (kept when it was already won), cleared when it leaves one. `undefined`
+ * leaves the column alone.
+ */
+function nextWonAt(
+  refs: StageRefs | null,
+  current: Date | null,
+): Date | null | undefined {
+  if (!refs) return undefined
+  if (refs.won) return current ?? new Date()
+  return current === null ? undefined : null
 }
 
 export const CrmOpportunityService = {
@@ -194,6 +228,7 @@ export const CrmOpportunityService = {
       pointOfContactId: dto.pointOfContactId,
       ownerId: dto.ownerId,
       source: dto.source,
+      ...(stageRefs.value.won ? { wonAt: new Date() } : {}),
     })
 
     if (!result.ok) {
@@ -271,6 +306,7 @@ export const CrmOpportunityService = {
       { pipelineId: dto.pipelineId, stageId: dto.stageId },
     )
     if (!stageRefs.ok) return stageRefs
+    const wonAt = nextWonAt(stageRefs.value, existing.value.wonAt)
 
     const result = await CrmOpportunityRepository.update(opportunityId, {
       name: dto.name,
@@ -284,6 +320,7 @@ export const CrmOpportunityService = {
       ownerId: dto.ownerId,
       source: dto.source,
       updatedById: actorId,
+      ...(wonAt !== undefined ? { wonAt } : {}),
     })
     if (!result.ok) return result
 

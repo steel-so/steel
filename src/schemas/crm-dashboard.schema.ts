@@ -1,4 +1,5 @@
 import z from 'zod'
+import { SalesConfigSchema } from '@/src/schemas/crm-sales-metrics.schema'
 import { CRM_SOCIAL_PLATFORMS } from '@/src/schemas/crm-social.schema'
 
 export const CreateCrmDashboardSchema = z.object({
@@ -7,8 +8,39 @@ export const CreateCrmDashboardSchema = z.object({
 
 export type CreateCrmDashboardDTO = z.infer<typeof CreateCrmDashboardSchema>
 
+/** A dashboard has 1 to 3 screens (pages); the TV can rotate between them. */
+export const MAX_DASHBOARD_PAGES = 3
+/** Blocks per screen that still read well on a TV across the room. */
+export const TV_MAX_BLOCKS_PER_PAGE = 8
+
+export const CrmDashboardSettingsSchema = z.object({
+  /** Screen titles; the count is the number of screens. */
+  pages: z
+    .array(z.string().trim().min(1).max(60))
+    .min(1)
+    .max(MAX_DASHBOARD_PAGES)
+    .default(['Tela 1']),
+  /** TV rotation between screens, in seconds (0 = no rotation). */
+  rotateSeconds: z
+    .number()
+    .int()
+    .refine((value) => value === 0 || (value >= 10 && value <= 600), {
+      message: 'Use 0 (sem rotação) ou de 10 a 600 segundos',
+    })
+    .default(0),
+})
+
+export type CrmDashboardSettings = z.infer<typeof CrmDashboardSettingsSchema>
+
+/** Settings stored before this field existed (`{}`) or broken: defaults. */
+export function parseDashboardSettings(value: unknown): CrmDashboardSettings {
+  const parsed = CrmDashboardSettingsSchema.safeParse(value ?? {})
+  return parsed.success ? parsed.data : CrmDashboardSettingsSchema.parse({})
+}
+
 export const UpdateCrmDashboardSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(200).optional(),
+  settings: CrmDashboardSettingsSchema.optional(),
 })
 
 export type UpdateCrmDashboardDTO = z.infer<typeof UpdateCrmDashboardSchema>
@@ -21,7 +53,13 @@ export type ReorderCrmDashboardsDTO = z.infer<typeof ReorderCrmDashboardsSchema>
 
 /* ----------------------------- config por tipo widget ---------------------------- */
 
-export const WIDGET_TYPES = ['CHART', 'VIEW', 'IFRAME', 'RICH_TEXT'] as const
+export const WIDGET_TYPES = [
+  'CHART',
+  'VIEW',
+  'IFRAME',
+  'RICH_TEXT',
+  'SALES',
+] as const
 export type WidgetType = (typeof WIDGET_TYPES)[number]
 
 /** Subtipos de chart (botões do topo do painel). */
@@ -229,6 +267,8 @@ export function widgetConfigSchema(type: WidgetType) {
       return IframeConfigSchema
     case 'RICH_TEXT':
       return RichTextConfigSchema
+    case 'SALES':
+      return SalesConfigSchema
   }
 }
 
@@ -242,6 +282,13 @@ const layoutShape = {
   y: z.number().int().min(0).max(1000).default(0),
   w: z.number().int().min(1).max(12).default(4),
   h: z.number().int().min(1).max(60).default(6),
+  /** Screen of the dashboard (0-based). */
+  page: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_DASHBOARD_PAGES - 1)
+    .default(0),
 }
 
 export const CreateCrmDashboardWidgetSchema = z.discriminatedUnion('type', [
@@ -265,6 +312,11 @@ export const CreateCrmDashboardWidgetSchema = z.discriminatedUnion('type', [
     config: RichTextConfigSchema,
     ...layoutShape,
   }),
+  z.object({
+    type: z.literal('SALES'),
+    config: SalesConfigSchema,
+    ...layoutShape,
+  }),
 ])
 
 export type CreateCrmDashboardWidgetDTO = z.infer<
@@ -278,6 +330,7 @@ export const UpdateCrmDashboardWidgetSchema = z
     y: layoutShape.y.unwrap(),
     w: layoutShape.w.unwrap(),
     h: layoutShape.h.unwrap(),
+    page: layoutShape.page.unwrap(),
     config: z.unknown(),
   })
   .partial()
@@ -299,6 +352,7 @@ export const CrmDashboardWidgetLayoutBatchSchema = z.object({
         y: layoutShape.y.unwrap(),
         w: layoutShape.w.unwrap(),
         h: layoutShape.h.unwrap(),
+        page: layoutShape.page.unwrap().optional(),
       }),
     )
     .max(200),
@@ -306,4 +360,27 @@ export const CrmDashboardWidgetLayoutBatchSchema = z.object({
 
 export type CrmDashboardWidgetLayoutBatchDTO = z.infer<
   typeof CrmDashboardWidgetLayoutBatchSchema
+>
+
+/* ------------------------------ TV and templates ----------------------------- */
+
+export const CreateCrmDashboardTvLinkSchema = z.object({
+  name: z.string().trim().min(1, 'Dê um nome ao link').max(80).default('TV'),
+})
+
+export type CreateCrmDashboardTvLinkDTO = z.infer<
+  typeof CreateCrmDashboardTvLinkSchema
+>
+
+/** Ready-made dashboards a workspace can start from in one click. */
+export const DASHBOARD_TEMPLATES = ['sales-tv'] as const
+export type DashboardTemplate = (typeof DASHBOARD_TEMPLATES)[number]
+
+export const CreateCrmDashboardFromTemplateSchema = z.object({
+  template: z.enum(DASHBOARD_TEMPLATES),
+  title: z.string().trim().min(1).max(200).optional(),
+})
+
+export type CreateCrmDashboardFromTemplateDTO = z.infer<
+  typeof CreateCrmDashboardFromTemplateSchema
 >

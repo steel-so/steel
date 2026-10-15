@@ -33,6 +33,7 @@ export function createFakeCrmOpportunity(
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
+    wonAt: null,
     ...overrides,
   }
 }

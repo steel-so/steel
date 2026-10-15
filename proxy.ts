@@ -80,6 +80,9 @@ const PUBLIC_ROUTES = [
   // page-view beacon. Sites on <slug>.<SITES_ROOT_DOMAIN> are rewritten to
   // /s/<slug> before this check.
   '/s', '/api/sites',
+  // CRM dashboard on a TV (sales room): read-only link, no session (the
+  // random token in the URL is the credential; revoking it cuts the screen).
+  '/tv', '/api/crm/tv',
   // Proxy reverso do PostHog (o next.config.ts reescreve direto para o
   // PostHog). Analytics é coletado nas páginas públicas também, onde ninguém
   // tem sessão, então o gate de autenticação responderia cada beacon com um

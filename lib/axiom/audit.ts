@@ -200,6 +200,8 @@ export type AuditEntity =
   // CRM e-mail editor: saved blocks and v2 template versions
   | 'crm_email_saved_block'
   | 'crm_email_template_version'
+  // Sales TV: read-only TV links of CRM dashboards
+  | 'crm_dashboard_tv_link'
 
 export type AuditAction =
   | 'create'

@@ -891,6 +891,7 @@ describe('CrmDashboardService.duplicate()', () => {
       createdById: 'u1',
       title: 'Vendas (cópia)',
       module: 'CRM',
+      settings: {},
     })
     expect(mockedWidgetRepo.create).toHaveBeenCalledTimes(2)
     expect(mockedWidgetRepo.create).toHaveBeenCalledWith(

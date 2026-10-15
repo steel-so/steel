@@ -84,6 +84,7 @@ export const CrmOpportunityRepository = {
     pointOfContactId?: string
     ownerId?: string
     source?: string
+    wonAt?: Date
   }): Promise<Result<CrmOpportunity>> {
     try {
       const position = await prisma.crmOpportunity.count({
@@ -112,6 +113,7 @@ export const CrmOpportunityRepository = {
       ownerId?: string | null
       source?: string | null
       updatedById?: string
+      wonAt?: Date | null
     },
   ): Promise<Result<CrmOpportunity>> {
     try {
