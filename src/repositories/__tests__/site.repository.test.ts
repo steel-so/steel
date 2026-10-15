@@ -319,12 +319,22 @@ describe('SiteRepository', () => {
     ).toEqual([])
     const forms = expectOk(
       await SiteRepository.findPublishedForms(workspace.id, [
-        published.id,
-        draft.id,
-        foreign.id,
+        published.publicToken,
+        draft.publicToken,
+        foreign.publicToken,
       ]),
     )
     expect(forms.map((f) => f.id)).toEqual([published.id])
+
+    expect(
+      expectOk(await SiteRepository.findFormsByIds(workspace.id, [])),
+    ).toEqual([])
+    const byId = expectOk(
+      await SiteRepository.findFormsByIds(workspace.id, [draft.id, foreign.id]),
+    )
+    expect(byId).toEqual([
+      { id: draft.id, name: draft.name, publicToken: draft.publicToken },
+    ])
   })
 
   it('records an anonymous view', async () => {
@@ -380,6 +390,7 @@ describe('SiteRepository', () => {
       SiteRepository.listVersions('s'),
       SiteRepository.findVersion('s', 'v'),
       SiteRepository.findPublishedForms('w', ['f']),
+      SiteRepository.findFormsByIds('w', ['f']),
       SiteRepository.recordView({
         siteId: 's',
         pageId: null,

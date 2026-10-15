@@ -376,16 +376,17 @@ export const SiteRepository = {
     }
   },
 
-  /** Published CRM forms of the workspace among `ids` (site.form blocks). */
+  /** Published CRM forms of the workspace among `tokens` (site.form
+   * blocks point to a form by its public token). */
   async findPublishedForms(
     workspaceId: string,
-    ids: string[],
+    tokens: string[],
   ): Promise<Result<CrmForm[]>> {
-    if (ids.length === 0) return ok([])
+    if (tokens.length === 0) return ok([])
     try {
       const forms = await prisma.crmForm.findMany({
         where: {
-          id: { in: ids },
+          publicToken: { in: tokens },
           workspaceId,
           status: 'PUBLISHED',
           deletedAt: null,
@@ -394,6 +395,23 @@ export const SiteRepository = {
       return ok(forms)
     } catch (error) {
       return err(dbError('Failed to load site forms', error))
+    }
+  },
+
+  /** Token and name of workspace forms by id (landing page migration). */
+  async findFormsByIds(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<Array<Pick<CrmForm, 'id' | 'name' | 'publicToken'>>>> {
+    if (ids.length === 0) return ok([])
+    try {
+      const forms = await prisma.crmForm.findMany({
+        where: { id: { in: ids }, workspaceId, deletedAt: null },
+        select: { id: true, name: true, publicToken: true },
+      })
+      return ok(forms)
+    } catch (error) {
+      return err(dbError('Failed to load forms by id', error))
     }
   },
 

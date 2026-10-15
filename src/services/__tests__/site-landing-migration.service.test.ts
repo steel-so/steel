@@ -147,6 +147,49 @@ describe('SiteLandingMigrationService.migrateLandingPage', () => {
     ).toBe(false)
   })
 
+  it('links newsletter forms by their public token', async () => {
+    const source = landing()
+    source.sections.push(
+      createFakeCrmLandingPageSection({
+        landingPageId: source.id,
+        type: 'NEWSLETTER',
+        order: 5,
+        content: { type: 'NEWSLETTER', title: 'A', formId: 'f1' } as never,
+      }),
+      createFakeCrmLandingPageSection({
+        landingPageId: source.id,
+        type: 'NEWSLETTER',
+        order: 6,
+        content: { type: 'NEWSLETTER', title: 'B', formId: 'gone' } as never,
+      }),
+    )
+    sites.findFormsByIds.mockResolvedValueOnce(
+      ok([{ id: 'f1', name: 'Contato', publicToken: 'tok-1' }]),
+    )
+    expectOk(await SiteLandingMigrationService.migrateLandingPage(source))
+    expect(sites.findFormsByIds).toHaveBeenCalledWith(source.workspaceId, [
+      'f1',
+      'gone',
+    ])
+    const doc = sites.createWithPages.mock.calls[0][0].pages[0]
+      .document as unknown as {
+      nodes: Record<string, { type: string; props: unknown }>
+    }
+    const forms = Object.values(doc.nodes)
+      .filter((node) => node.type === 'site.form')
+      .map((node) => node.props)
+    expect(forms).toEqual([
+      { formToken: 'tok-1', formName: 'Contato' },
+      { formToken: '', formName: '' },
+    ])
+
+    sites.findFormsByIds.mockResolvedValueOnce(err(databaseError()))
+    expectErr(
+      await SiteLandingMigrationService.migrateLandingPage(source),
+      'DATABASE_ERROR',
+    )
+  })
+
   it('skips landing pages that already have a site', async () => {
     sites.findBySourceLandingPageId.mockResolvedValue(
       ok(createFakeSite({ id: 's9', slug: 'antigo', status: 'PUBLISHED' })),

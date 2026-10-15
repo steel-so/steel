@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createSiteDocument } from '@/src/__tests__/factories/site.factory'
 import {
-  collectFormIds,
+  collectFormTokens,
   createEmptySiteDocument,
   MAX_SITE_NODES,
   validateSiteDocument,
@@ -84,15 +84,15 @@ describe('validateSiteDocument', () => {
   })
 })
 
-describe('collectFormIds', () => {
-  it('collects unique form ids of site.form nodes', () => {
+describe('collectFormTokens', () => {
+  it('collects unique form tokens of site.form nodes', () => {
     const a = createSiteDocument()
-    a.nodes.f1 = { id: 'f1', type: 'site.form', props: { formId: 'form-1' } }
-    a.nodes.f2 = { id: 'f2', type: 'site.form', props: { formId: '' } }
-    a.nodes.t = { id: 't', type: 'site.text', props: { formId: 'nope' } }
+    a.nodes.f1 = { id: 'f1', type: 'site.form', props: { formToken: 'tok-1' } }
+    a.nodes.f2 = { id: 'f2', type: 'site.form', props: { formToken: '' } }
+    a.nodes.t = { id: 't', type: 'site.text', props: { formToken: 'nope' } }
     const b = createSiteDocument()
-    b.nodes.f3 = { id: 'f3', type: 'site.form', props: { formId: 'form-1' } }
-    b.nodes.f4 = { id: 'f4', type: 'site.form', props: { formId: 'form-2' } }
-    expect(collectFormIds([a, b])).toEqual(['form-1', 'form-2'])
+    b.nodes.f3 = { id: 'f3', type: 'site.form', props: { formToken: 'tok-1' } }
+    b.nodes.f4 = { id: 'f4', type: 'site.form', props: { formToken: 'tok-2' } }
+    expect(collectFormTokens([a, b])).toEqual(['tok-1', 'tok-2'])
   })
 })

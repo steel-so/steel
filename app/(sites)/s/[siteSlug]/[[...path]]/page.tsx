@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { collectFormIds } from '@/src/lib/sites/document'
+import { collectFormTokens } from '@/src/lib/sites/document'
 import {
   SITE_VIA_HOST_HEADER,
   siteLinkBase,
@@ -82,7 +82,7 @@ export default async function PublishedSitePage({ params }: PageProps) {
   const forms = await loadSiteForms(
     site.slug,
     site.workspaceId,
-    collectFormIds(documents),
+    collectFormTokens(documents),
   )
   const viaHost = (await headers()).get(SITE_VIA_HOST_HEADER) === '1'
   const ctx = {

@@ -65,17 +65,20 @@ describe('SitePublicService.getPublished', () => {
 })
 
 describe('SitePublicService.getForms', () => {
-  it('maps published forms by id with their token', async () => {
+  it('maps published forms by their public token', async () => {
     const form = createFakeCrmForm({ id: 'f1', publicToken: 'tok' })
     sites.findPublishedForms.mockResolvedValue(ok([form]))
     const forms = expectOk(
-      await SitePublicService.getForms('ws1', ['f1', 'f2']),
+      await SitePublicService.getForms('ws1', ['tok', 'other']),
     )
-    expect(Object.keys(forms)).toEqual(['f1'])
-    expect(forms.f1.publicToken).toBe('tok')
-    expect(forms.f1.form.id).toBe('f1')
+    expect(Object.keys(forms)).toEqual(['tok'])
+    expect(forms.tok.publicToken).toBe('tok')
+    expect(forms.tok.form.id).toBe('f1')
     sites.findPublishedForms.mockResolvedValue(err(databaseError()))
-    expectErr(await SitePublicService.getForms('ws1', ['f1']), 'DATABASE_ERROR')
+    expectErr(
+      await SitePublicService.getForms('ws1', ['tok']),
+      'DATABASE_ERROR',
+    )
   })
 })
 

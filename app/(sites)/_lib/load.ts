@@ -28,11 +28,11 @@ export async function loadPublishedSite(
 export async function loadSiteForms(
   slug: string,
   workspaceId: string,
-  formIds: string[],
+  formTokens: string[],
 ): Promise<Record<string, SiteFormData>> {
   'use cache'
   cacheTag(siteCacheTag(slug))
   cacheLife('minutes')
-  const result = await SitePublicService.getForms(workspaceId, formIds)
+  const result = await SitePublicService.getForms(workspaceId, formTokens)
   return result.ok ? result.value : {}
 }

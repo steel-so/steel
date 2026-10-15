@@ -218,7 +218,7 @@ export function renderSiteNode(
       )
     }
     case 'site.form': {
-      const data = ctx.forms[str(props.formId) ?? '']
+      const data = ctx.forms[str(props.formToken) ?? '']
       if (!data) return null
       return (
         <div className='ss-form'>

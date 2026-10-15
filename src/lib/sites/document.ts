@@ -112,17 +112,18 @@ export function createEmptySiteDocument(): CanvasDocument {
   }
 }
 
-/** CRM form ids referenced by `site.form` nodes (`props.formId`), so the
- * runtime can load them once per page. */
-export function collectFormIds(documents: CanvasDocument[]): string[] {
-  const ids = new Set<string>()
+/** Public tokens of the CRM forms `site.form` nodes point to
+ * (`props.formToken`, as in the `site` catalog), so the runtime loads the
+ * live forms once per page. */
+export function collectFormTokens(documents: CanvasDocument[]): string[] {
+  const tokens = new Set<string>()
   for (const doc of documents) {
     for (const node of Object.values(doc.nodes)) {
-      const formId = node.props.formId
-      if (node.type === 'site.form' && typeof formId === 'string' && formId) {
-        ids.add(formId)
+      const token = node.props.formToken
+      if (node.type === 'site.form' && typeof token === 'string' && token) {
+        tokens.add(token)
       }
     }
   }
-  return [...ids]
+  return [...tokens]
 }

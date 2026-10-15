@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { ok, type Result } from '@/src/lib/result'
 import { convertLandingPage } from '@/src/lib/sites/landing-converter'
 import { siteSlugFromName } from '@/src/lib/sites/slug'
@@ -19,6 +20,33 @@ import {
 } from './site.service'
 
 const json = (value: unknown) => value as Prisma.InputJsonValue
+
+/** The converter keeps the landing page's form id; `site.form` points to a
+ * form by its public token (and shows its name in the editor). A form that
+ * no longer exists leaves the block empty. */
+async function linkForms(
+  doc: CanvasDocument,
+  workspaceId: string,
+): Promise<Result<CanvasDocument>> {
+  const blocks = Object.values(doc.nodes).filter(
+    (node) =>
+      node.type === 'site.form' && typeof node.props.formId === 'string',
+  )
+  if (blocks.length === 0) return ok(doc)
+  const forms = await SiteRepository.findFormsByIds(
+    workspaceId,
+    blocks.map((node) => node.props.formId as string),
+  )
+  if (!forms.ok) return forms
+  for (const node of blocks) {
+    const form = forms.value.find((item) => item.id === node.props.formId)
+    node.props = {
+      formToken: form?.publicToken ?? '',
+      formName: form?.name ?? '',
+    }
+  }
+  return ok(doc)
+}
 
 export interface SiteLandingMigrationReport {
   created: number
@@ -51,6 +79,8 @@ export const SiteLandingMigrationService = {
     }
 
     const converted = convertLandingPage(landing)
+    const page = await linkForms(converted.page, landing.workspaceId)
+    if (!page.ok) return page
     const slug = await findFreeSiteSlug(siteSlugFromName(landing.title))
     if (!slug.ok) return slug
 
@@ -89,7 +119,7 @@ export const SiteLandingMigrationService = {
           position: 0,
           isHome: true,
           seo: {},
-          document: json(converted.page),
+          document: json(page.value),
         },
       ],
       globals,

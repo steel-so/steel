@@ -52,22 +52,22 @@ export const SitePublicService = {
     })
   },
 
-  /** Published CRM forms of the site's workspace, by id. Unknown, draft or
-   * foreign ids are simply absent (the block renders nothing). */
+  /** Published CRM forms of the site's workspace, by public token.
+   * Unknown, draft or foreign tokens are simply absent. */
   async getForms(
     workspaceId: string,
-    formIds: string[],
+    tokens: string[],
   ): Promise<Result<Record<string, SiteFormData>>> {
-    const forms = await SiteRepository.findPublishedForms(workspaceId, formIds)
+    const forms = await SiteRepository.findPublishedForms(workspaceId, tokens)
     if (!forms.ok) return forms
-    const byId: Record<string, SiteFormData> = {}
+    const byToken: Record<string, SiteFormData> = {}
     for (const form of forms.value) {
-      byId[form.id] = {
+      byToken[form.publicToken] = {
         form: toCrmFormPublicDTO(form),
         publicToken: form.publicToken,
       }
     }
-    return ok(byId)
+    return ok(byToken)
   },
 
   /** Anonymous page view (see `siteVisitorHash`). The runtime only sends it
