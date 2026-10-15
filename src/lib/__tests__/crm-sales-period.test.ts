@@ -16,7 +16,11 @@ const SP = DEFAULT_SALES_TIME_ZONE
 describe('salesWindow()', () => {
   it('returns the civil month of São Paulo, not of UTC', () => {
     // 31/10 23:00 in São Paulo is already 01/11 in UTC.
-    const window = salesWindow(new Date('2026-11-01T02:00:00.000Z'), SP, 'month')
+    const window = salesWindow(
+      new Date('2026-11-01T02:00:00.000Z'),
+      SP,
+      'month',
+    )
     expect(window.key).toBe('2026-10')
     expect(window.fromKey).toBe('2026-10-01')
     expect(window.toKey).toBe('2026-10-31')
@@ -26,18 +30,23 @@ describe('salesWindow()', () => {
   })
 
   it('shifts by whole months across the year boundary', () => {
-    const january = salesWindow(new Date('2026-01-10T12:00:00.000Z'), SP, 'month', -1)
+    const january = salesWindow(
+      new Date('2026-01-10T12:00:00.000Z'),
+      SP,
+      'month',
+      -1,
+    )
     expect(january.key).toBe('2025-12')
     expect(january.toKey).toBe('2025-12-31')
   })
 
   it('ends February on the 28th or 29th', () => {
-    expect(salesWindow(new Date('2028-02-10T12:00:00.000Z'), SP, 'month').toKey).toBe(
-      '2028-02-29',
-    )
-    expect(salesWindow(new Date('2026-02-10T12:00:00.000Z'), SP, 'month').toKey).toBe(
-      '2026-02-28',
-    )
+    expect(
+      salesWindow(new Date('2028-02-10T12:00:00.000Z'), SP, 'month').toKey,
+    ).toBe('2028-02-29')
+    expect(
+      salesWindow(new Date('2026-02-10T12:00:00.000Z'), SP, 'month').toKey,
+    ).toBe('2026-02-28')
   })
 
   it('builds quarters with the CrmQuota key format', () => {
@@ -48,13 +57,22 @@ describe('salesWindow()', () => {
       toKey: '2026-12-31',
       label: '4º trimestre de 2026',
     })
-    const previous = salesWindow(new Date('2026-02-01T12:00:00.000Z'), SP, 'quarter', -1)
+    const previous = salesWindow(
+      new Date('2026-02-01T12:00:00.000Z'),
+      SP,
+      'quarter',
+      -1,
+    )
     expect(previous.key).toBe('2025-Q4')
     expect(previous.fromKey).toBe('2025-10-01')
   })
 
   it('follows another time zone when the workspace has one', () => {
-    const tokyo = salesWindow(new Date('2026-09-30T16:00:00.000Z'), 'Asia/Tokyo', 'month')
+    const tokyo = salesWindow(
+      new Date('2026-09-30T16:00:00.000Z'),
+      'Asia/Tokyo',
+      'month',
+    )
     expect(tokyo.key).toBe('2026-10')
   })
 })

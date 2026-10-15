@@ -474,8 +474,14 @@ async function dealStats(
     kind: 'deal-stats',
     current: currentStats,
     previous: before,
-    ticketChangePct: changePct(currentStats.averageTicket, before.averageTicket),
-    cycleChangePct: changePct(currentStats.averageCycleDays, before.averageCycleDays),
+    ticketChangePct: changePct(
+      currentStats.averageTicket,
+      before.averageTicket,
+    ),
+    cycleChangePct: changePct(
+      currentStats.averageCycleDays,
+      before.averageCycleDays,
+    ),
   })
 }
 
