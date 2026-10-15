@@ -259,7 +259,7 @@ export const crmEmailRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Criar template de e-mail',
     description: describe(
-      'Conteúdo livre (`contentHtml`, com o estado do editor em `contentJson`) **ou** a partir de um layout fixo (`templateId` + `templateProps`) — nesse caso o HTML é renderizado pelo servidor e `contentHtml` pode ser omitido. Com `builderLayout`, cria um template do editor visual com o conteúdo do modelo: versão 1 (estrutura travada) por padrão, ou documento Steel Canvas com `builderVersion: 2`.',
+      'Conteúdo livre (`contentHtml`, com o estado do editor em `contentJson`) **ou** a partir de um layout fixo (`templateId` + `templateProps`) — nesse caso o HTML é renderizado pelo servidor e `contentHtml` pode ser omitido. Com `builderLayout`, cria um template do editor visual com o conteúdo do modelo: versão 1 (estrutura travada) por padrão, ou documento Steel Canvas com `builderVersion: 2`. Com `builderDocument` (documento Steel Canvas, versão 2 — por exemplo o modelo em branco da galeria), cria o template já com esse documento, validado como num salvamento; ele tem precedência sobre `builderLayout`.',
       crmAccess('email', 'CREATE'),
     ),
     consent: true,
