@@ -1,12 +1,36 @@
 import z from 'zod'
-import { SitePageSlugSchema, SiteUrlSchema } from './site.schema'
+import {
+  SiteAbsoluteUrlSchema,
+  SitePageSlugSchema,
+  SiteUrlSchema,
+} from './site.schema'
+
+/** `<changefreq>` values of the sitemap protocol. */
+export const SITEMAP_CHANGE_FREQUENCIES = [
+  'always',
+  'hourly',
+  'daily',
+  'weekly',
+  'monthly',
+  'yearly',
+  'never',
+] as const
 
 /** Per-page SEO; empty fields fall back to the site defaults. */
 export const SitePageSeoSchema = z.object({
   title: z.string().trim().max(120).optional(),
   description: z.string().trim().max(320).optional(),
+  /** Social image; without one (and without the site's) the runtime draws
+   * a card with the page title (`/_og`). */
   socialImageUrl: SiteUrlSchema.optional(),
   noindex: z.boolean().optional(),
+  /** Canonical address when the content lives elsewhere (defaults to the
+   * page's own URL). */
+  canonicalUrl: SiteAbsoluteUrlSchema.optional(),
+  /** Sitemap `<priority>` (0.0–1.0). */
+  sitemapPriority: z.number().min(0).max(1).optional(),
+  /** Sitemap `<changefreq>`. */
+  changeFrequency: z.enum(SITEMAP_CHANGE_FREQUENCIES).optional(),
 })
 
 export type SitePageSeoDTO = z.infer<typeof SitePageSeoSchema>

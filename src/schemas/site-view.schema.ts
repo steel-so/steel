@@ -13,6 +13,9 @@ export const RecordSiteViewSchema = z.object({
   utmCampaign: utm,
   utmTerm: utm,
   utmContent: utm,
+  /** `CONVERSION`: a CRM form was sent from the page (`formToken`). */
+  kind: z.enum(['VIEW', 'CONVERSION']).default('VIEW'),
+  formToken: z.string().trim().min(1).max(64).optional(),
 })
 
 export type RecordSiteViewDTO = z.infer<typeof RecordSiteViewSchema>

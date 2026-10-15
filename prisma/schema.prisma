@@ -7522,6 +7522,7 @@ model Site {
   globals          SiteGlobal[]
   versions         SiteVersion[] @relation("SiteVersions")
   views            SiteView[]
+  redirects        SiteRedirect[]
 
   @@index([workspaceId])
   @@index([deletedAt])
@@ -7607,10 +7608,39 @@ model SiteView {
   utmCampaign String?  @map("utm_campaign")
   utmTerm     String?  @map("utm_term")
   utmContent  String?  @map("utm_content")
+  /// VIEW (page view) or CONVERSION (a CRM form sent from the page).
+  kind        SiteEventKind @default(VIEW)
+  /// Public token of the CRM form behind a CONVERSION.
+  formToken   String?  @map("form_token")
   createdAt   DateTime @default(now()) @map("created_at")
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@index([siteId, createdAt])
   @@map("site_views")
+}
+
+enum SiteEventKind {
+  VIEW
+  CONVERSION
+}
+
+/// 301-style redirect of a site (old address → new one), applied by the
+/// public runtime before the page lookup. Takes effect right away (not
+/// part of the published snapshot).
+model SiteRedirect {
+  id        String   @id @default(cuid())
+  siteId    String   @map("site_id")
+  /// Normalized path (`/antigo`, `/blog/*`), unique per site.
+  fromPath  String   @map("from_path")
+  /// Site path (`/novo`) or absolute URL.
+  toPath    String   @map("to_path")
+  permanent Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, fromPath])
+  @@map("site_redirects")
 }

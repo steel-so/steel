@@ -161,6 +161,28 @@ describe('SitePublicService.recordView', () => {
     expect(sites.recordView.mock.calls[1][0].pageId).toBeNull()
   })
 
+  it('records form conversions with their token only', async () => {
+    await SitePublicService.recordView('clinica', request, {
+      pageId: 'home',
+      path: '/',
+      kind: 'CONVERSION',
+      formToken: 'tok',
+    })
+    expect(sites.recordView.mock.calls[0][0]).toMatchObject({
+      kind: 'CONVERSION',
+      formToken: 'tok',
+    })
+    await SitePublicService.recordView('clinica', request, {
+      path: '/',
+      kind: 'VIEW',
+      formToken: 'tok',
+    })
+    expect(sites.recordView.mock.calls[1][0]).toMatchObject({
+      kind: 'VIEW',
+      formToken: undefined,
+    })
+  })
+
   it('refuses unpublished sites', async () => {
     sites.findPublishedBySlug.mockResolvedValueOnce(
       err(appError('SITE_NOT_FOUND', 'x')),

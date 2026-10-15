@@ -187,6 +187,8 @@ export type AuditEntity =
   | 'site_global'
   // Site builder UI (site-ui): image library of the site editor
   | 'site_media'
+  // Sites wave S2 (platform): 301 redirects manager
+  | 'site_redirect'
 
 export type AuditAction =
   | 'create'

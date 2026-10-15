@@ -73,9 +73,10 @@ export const SitePublicService = {
     return ok(byToken)
   },
 
-  /** Anonymous page view (see `siteVisitorHash`). The runtime only sends it
-   * when the visitor accepted the site's cookie banner, or when the site has
-   * none (nothing is stored on the device either way). */
+  /** Anonymous page view or form conversion (see `siteVisitorHash`). The
+   * runtime only sends it when the visitor accepted the site's cookie
+   * banner, or when the site has none (nothing is stored on the device
+   * either way). */
   async recordView(
     slug: string,
     request: {
@@ -84,7 +85,9 @@ export const SitePublicService = {
       host: string | null
       now?: Date
     },
-    dto: RecordSiteViewDTO,
+    dto: Omit<RecordSiteViewDTO, 'kind'> & {
+      kind?: RecordSiteViewDTO['kind']
+    },
   ): Promise<Result<void>> {
     const published = await SitePublicService.getPublished(slug)
     if (!published.ok) return published
@@ -112,6 +115,8 @@ export const SitePublicService = {
       utmCampaign: dto.utmCampaign,
       utmTerm: dto.utmTerm,
       utmContent: dto.utmContent,
+      kind: dto.kind ?? 'VIEW',
+      formToken: dto.kind === 'CONVERSION' ? dto.formToken : undefined,
     })
   },
 

@@ -821,6 +821,12 @@ export const ERROR_CODES = {
   // A canvas document failed the `site` catalog validation.
   SITE_DOCUMENT_INVALID: { code: 'SITE_DOCUMENT_INVALID', status: 422 },
   SITE_LIMIT_REACHED: { code: 'SITE_LIMIT_REACHED', status: 409 },
+  // Sites wave S2 (platform): redirects manager.
+  SITE_REDIRECT_NOT_FOUND: { code: 'SITE_REDIRECT_NOT_FOUND', status: 404 },
+  // Another redirect of the same site already starts at this path.
+  SITE_REDIRECT_PATH_TAKEN: { code: 'SITE_REDIRECT_PATH_TAKEN', status: 409 },
+  // The redirect points to itself or closes a loop with another one.
+  SITE_REDIRECT_LOOP: { code: 'SITE_REDIRECT_LOOP', status: 422 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
