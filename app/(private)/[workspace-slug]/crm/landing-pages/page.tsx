@@ -1,56 +1,11 @@
-import { BrowserIcon } from '@hugeicons-pro/core-stroke-rounded'
-import type { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
-import { CrmLandingPagesTable } from '@/app/_components/crm/crm-landing-pages-table'
-import {
-  HeaderBreadcrumbCrumb,
-  HeaderBreadcrumbList,
-} from '@/app/_components/header/breadcrumb-page'
-import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
-import { SteelIcon } from '@/components/icon/icon'
-import { getAuthSession } from '@/src/lib/auth-session'
-import { MembershipService } from '@/src/services/membership.service'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Landing pages | CRM | Steel',
-  description: 'Landing pages do CRM',
-}
-
+/** Landing pages moved into CRM › Sites. */
 export default async function CrmLandingPagesPage({
   params,
 }: {
   params: Promise<{ 'workspace-slug': string }>
 }) {
   const { 'workspace-slug': slug } = await params
-
-  const session = await getAuthSession()
-  if (!session.ok) redirect('/sign-in')
-
-  const membership = await MembershipService.getByUserAndSlug(
-    session.value.user.id,
-    slug,
-  )
-  if (!membership.ok || !membership.value) notFound()
-
-  return (
-    <div className='flex h-full w-full min-h-0 flex-col'>
-      <HeaderInternalNavigation>
-        <HeaderBreadcrumbList>
-          <HeaderBreadcrumbCrumb title='Landing pages'>
-            <SteelIcon
-              icon={BrowserIcon}
-              strokeWidth={2}
-              className='text-primary'
-            />
-          </HeaderBreadcrumbCrumb>
-        </HeaderBreadcrumbList>
-      </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1'>
-        <CrmLandingPagesTable
-          workspaceId={membership.value.workspaceId}
-          slug={slug}
-        />
-      </div>
-    </div>
-  )
+  redirect(`/${slug}/crm/sites`)
 }

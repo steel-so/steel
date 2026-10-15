@@ -24,7 +24,7 @@ const SEGMENTS = [
   'campaigns',
   'email-campaigns',
   'mailing-lists',
-  'landing-pages',
+  'sites',
   'workflows',
   'social',
   'email-sync',
@@ -62,4 +62,17 @@ describe('CRM sidebar pages', () => {
       expect(html).not.toContain('Application error')
     },
   )
+})
+
+describe('landing pages moved to Sites', () => {
+  it('sends the old list and builder routes to /crm/sites', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    for (const path of ['landing-pages', 'landing-pages/unknown-id']) {
+      const res = await fetch(`${BASE_URL}/${workspace.slug}/crm/${path}`, {
+        headers: { ...defaultHeaders, Cookie: user.cookie },
+      })
+      expect(res.status).toBe(200)
+      expect(new URL(res.url).pathname).toBe(`/${workspace.slug}/crm/sites`)
+    }
+  })
 })
