@@ -162,13 +162,16 @@ export const CrmSalesMetricsRepository = {
         where: { workspaceId, opportunityId: { in: opportunityIds } },
         _max: { createdAt: true },
       })
-      const map = new Map<string, Date>()
-      for (const group of groups) {
-        if (group.opportunityId && group._max.createdAt) {
-          map.set(group.opportunityId, group._max.createdAt)
-        }
-      }
-      return ok(map)
+      // The `in` filter makes `opportunityId` non-null, and every group has
+      // at least one row, so `_max.createdAt` is always set.
+      return ok(
+        new Map(
+          groups.map((group) => [
+            group.opportunityId as string,
+            group._max.createdAt as Date,
+          ]),
+        ),
+      )
     } catch (error) {
       return err(dbError('Failed to read CRM opportunity activity', error))
     }
