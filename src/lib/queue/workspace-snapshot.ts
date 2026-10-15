@@ -84,6 +84,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   siteGlobal: (ws) => ({ site: { workspaceId: ws } }),
   siteVersion: (ws) => ({ site: { workspaceId: ws } }),
   siteView: (ws) => ({ site: { workspaceId: ws } }),
+  siteRedirect: (ws) => ({ site: { workspaceId: ws } }),
 }
 
 /**

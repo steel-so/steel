@@ -71,7 +71,7 @@ function wrap(fragment: CanvasFragment): CanvasDocument {
 describe('site catalog', () => {
   it('registers every component with valid default props', () => {
     expect(siteCatalog.id).toBe(SITE_CATALOG_ID)
-    expect(Object.keys(siteCatalog.components)).toHaveLength(17)
+    expect(Object.keys(siteCatalog.components)).toHaveLength(18)
     for (const definition of Object.values(siteCatalog.components)) {
       const parsed = definition.propsSchema.safeParse(definition.defaultProps())
       expect(parsed.success, definition.type).toBe(true)
@@ -80,7 +80,9 @@ describe('site catalog', () => {
 
   it('inserts every palette type into a valid document', () => {
     for (const type of Object.keys(siteCatalog.components)) {
-      if (type === SITE_TYPES.page) continue
+      // The page is the root; reusable component instances sit in the page
+      // (canvas-site-symbol.test.ts).
+      if (type === SITE_TYPES.page || type === 'site.symbol') continue
       const fragment = fragmentForType(siteCatalog, type) as CanvasFragment
       const result = validateDocument(wrap(fragment), siteCatalog)
       expect(result.ok, type).toBe(true)

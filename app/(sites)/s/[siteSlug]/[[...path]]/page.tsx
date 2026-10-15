@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound, permanentRedirect, redirect } from 'next/navigation'
+import { NODE_ENV } from '@/lib/env/env'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   compileSiteCss,
@@ -11,6 +12,7 @@ import {
   type SiteRenderContext,
   usedSymbolIds,
 } from '@/src/lib/canvas-site'
+import { siteMetaCsp } from '@/src/lib/sites/csp'
 import { collectFormTokens } from '@/src/lib/sites/document'
 import {
   resolveSiteHref,
@@ -196,6 +198,15 @@ export default async function PublishedSitePage({ params }: PageProps) {
 
   return (
     <>
+      {/* The site's own CSP (hoisted to <head>): only the trackers this
+          site configured, on top of the proxy's header policy. */}
+      <meta
+        httpEquiv='Content-Security-Policy'
+        content={siteMetaCsp(snapshot.settings.tracking, {
+          nonce,
+          development: NODE_ENV === 'development',
+        })}
+      />
       {/* Compiled stylesheet of the published site: theme tokens, classes
           and per-breakpoint media queries (no inline styles on elements). */}
       <style>{css}</style>
