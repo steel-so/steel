@@ -136,6 +136,8 @@ model User {
   crmIntegrationApiKeysCreated       CrmIntegrationApiKey[]        @relation("CrmIntegrationApiKeyCreatedBy")
   crmEmailTemplatesCreated           CrmEmailTemplate[]            @relation("CrmEmailTemplateCreatedBy")
   crmEmailTemplatesUpdated           CrmEmailTemplate[]            @relation("CrmEmailTemplateUpdatedBy")
+  crmEmailSavedBlocks                CrmEmailSavedBlock[]          @relation("CrmEmailSavedBlockAuthor")
+  crmEmailTemplateVersions           CrmEmailTemplateVersion[]     @relation("CrmEmailTemplateVersionAuthor")
   crmEmailCampaignsCreated           CrmEmailCampaign[]            @relation("CrmEmailCampaignCreatedBy")
   crmMailingListsCreated             CrmMailingList[]              @relation("CrmMailingListCreatedBy")
   crmWorkflowsCreated                CrmWorkflow[]                 @relation("CrmWorkflowCreatedBy")
@@ -472,6 +474,7 @@ model Workspace {
   steelAgentRuns            SteelAgentRun[]
   crmIntegrationApiKeys     CrmIntegrationApiKey[]
   crmEmailTemplates         CrmEmailTemplate[]
+  crmEmailSavedBlocks       CrmEmailSavedBlock[]
   crmEmailCampaigns         CrmEmailCampaign[]
   crmMailingLists           CrmMailingList[]
   crmEmailOptOuts           CrmEmailOptOut[]
@@ -2965,6 +2968,7 @@ model CrmEmailTemplate {
   createdBy User               @relation("CrmEmailTemplateCreatedBy", fields: [createdById], references: [id])
   updatedBy User?              @relation("CrmEmailTemplateUpdatedBy", fields: [updatedById], references: [id])
   campaigns CrmEmailCampaign[]
+  versions  CrmEmailTemplateVersion[]
 
   @@index([workspaceId])
   @@index([deletedAt])
@@ -2978,6 +2982,62 @@ enum CrmEmailTemplateKind {
 
 /// Marca usada pelos templates do editor visual (uma por workspace). Sem
 /// linha, vale o nome/logo do workspace e a cor padrão.
+/// Why a version of a v2 e-mail template was recorded.
+enum CrmEmailTemplateVersionReason {
+  SAVE
+  TEST_SEND
+  CAMPAIGN
+  RESTORE
+}
+
+/// Snapshot of a v2 (Steel Canvas) e-mail template: on "Salvar versão",
+/// test sends, campaign use and restores. The newest 50 per template are kept.
+model CrmEmailTemplateVersion {
+  id             String                        @id @default(cuid())
+  templateId     String                        @map("template_id")
+  workspaceId    String                        @map("workspace_id")
+  reason         CrmEmailTemplateVersionReason
+  label          String?
+  subject        String
+  document       Json
+  /// Hash of document + subject: an unchanged template records no new version.
+  contentHash    String                        @map("content_hash")
+  restoredFromId String?                       @map("restored_from_id")
+  createdById    String?                       @map("created_by_id")
+  createdAt      DateTime                      @default(now()) @map("created_at")
+
+  template  CrmEmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy User?            @relation("CrmEmailTemplateVersionAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([templateId, createdAt])
+  @@map("crm_email_template_versions")
+}
+
+/// Reusable section or block of the e-mail editor ("Salvos"), shared by the
+/// whole workspace. `fragment` is a Steel Canvas fragment validated by the
+/// e-mail catalog.
+model CrmEmailSavedBlock {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  category    String
+  /// `section` or `block`: what the fragment's root is.
+  kind        String
+  fragment    Json
+  nodeCount   Int      @map("node_count")
+  /// Optional preview image URL (the editor renders a live preview otherwise).
+  thumbnail   String?
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("CrmEmailSavedBlockAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@map("crm_email_saved_blocks")
+}
+
 model CrmEmailBrand {
   id           String   @id @default(cuid())
   workspaceId  String   @unique @map("workspace_id")
