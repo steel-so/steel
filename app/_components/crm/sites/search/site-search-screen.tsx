@@ -83,7 +83,7 @@ export function SiteSearchScreen({
   return (
     <div
       className={cn(
-        'mx-auto grid w-full max-w-6xl gap-6 p-4 sm:p-6',
+        'mx-auto grid w-full min-w-0 max-w-6xl gap-6 p-4 sm:p-6',
         SEARCH_TONE_VARS,
       )}
       data-testid='site-search-screen'
@@ -136,6 +136,7 @@ export function SiteSearchScreen({
       </header>
 
       <Tabs
+        className='min-w-0'
         value={tab}
         onValueChange={(value) =>
           router.replace(`/${slug}/crm/sites/${siteId}/search?tab=${value}`, {
@@ -150,7 +151,7 @@ export function SiteSearchScreen({
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value='saude' className='pt-4'>
+        <TabsContent value='saude' className='min-w-0 pt-4'>
           <SearchReport
             workspaceId={workspaceId}
             slug={slug}
@@ -158,7 +159,7 @@ export function SiteSearchScreen({
             canEdit={canEdit}
           />
         </TabsContent>
-        <TabsContent value='perfil' className='pt-4'>
+        <TabsContent value='perfil' className='min-w-0 pt-4'>
           {settings.data ? (
             <BusinessProfileForm
               profile={settings.data.settings.business}
@@ -171,7 +172,7 @@ export function SiteSearchScreen({
             <Skeleton className='h-96 w-full' />
           )}
         </TabsContent>
-        <TabsContent value='rastreadores' className='pt-4'>
+        <TabsContent value='rastreadores' className='min-w-0 pt-4'>
           {settings.data ? (
             <CrawlersSettings
               view={settings.data}

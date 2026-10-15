@@ -114,7 +114,7 @@ export function SearchReport({
   }
 
   return (
-    <div className='grid gap-6' data-testid='search-report'>
+    <div className='grid min-w-0 gap-6' data-testid='search-report'>
       <section
         className='grid gap-4 rounded-lg border p-4 sm:grid-cols-3'
         aria-label='Notas médias do site'
@@ -181,7 +181,7 @@ export function SearchReport({
         )}
       </section>
 
-      <section className='grid gap-3' aria-labelledby={`${id}-pages`}>
+      <section className='grid min-w-0 gap-3' aria-labelledby={`${id}-pages`}>
         <div className='flex flex-wrap items-end justify-between gap-3'>
           <div>
             <h2 id={`${id}-pages`} className='font-semibold text-base'>
@@ -230,7 +230,7 @@ export function SearchReport({
             </div>
           ) : null}
         </div>
-        <div className='overflow-x-auto rounded-lg border'>
+        <div className='w-full min-w-0 overflow-x-auto rounded-lg border'>
           <table className='w-full min-w-[640px] text-sm'>
             <thead className='bg-muted/40 text-left text-muted-foreground text-xs'>
               <tr>

@@ -79,7 +79,12 @@ export function ScoreRing({
         role='img'
         aria-label={`${label}: ${score} de 100 (${SCORE_BAND_LABELS[band]})`}
       >
-        <svg width={size} height={size} aria-hidden className='-rotate-90'>
+        <svg
+          width={size}
+          height={size}
+          aria-hidden
+          className='size-full -rotate-90'
+        >
           <circle
             cx={size / 2}
             cy={size / 2}
