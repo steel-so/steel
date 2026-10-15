@@ -9,6 +9,7 @@ import { dashboardRoutes } from './whatsapp/dashboards'
 import { groupRoutes } from './whatsapp/groups'
 import { realtimeRoutes } from './whatsapp/realtime'
 import { settingsRoutes } from './whatsapp/settings'
+import { teamRoutes } from './whatsapp/teams'
 import { templateRoutes } from './whatsapp/templates'
 
 /**
@@ -30,6 +31,7 @@ const routes: RouteConfig[] = [
   ...settingsRoutes,
   ...dashboardRoutes,
   ...realtimeRoutes,
+  ...teamRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

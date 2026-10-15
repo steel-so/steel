@@ -41,6 +41,7 @@ import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
+import { WhatsAppTeamService } from './whatsapp-team.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
 export interface InboundWhatsAppMessage {
@@ -330,6 +331,8 @@ export const WhatsAppWebhookService = {
       message: toWhatsAppMessageDTO(message.value),
     })
     await publishConversationSnapshot(workspaceId, conversationId)
+    // Unassigned conversation of a team: the team queue hears about it.
+    await WhatsAppTeamService.notifyQueueOnInbound(workspaceId, conversationId)
 
     // Reply to a CRM campaign: links this conversation to the contact.
     await CrmCampaignTrackingService.onWhatsAppInbound(

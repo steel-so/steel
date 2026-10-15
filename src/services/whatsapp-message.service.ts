@@ -3,11 +3,12 @@ import {
   whatsappConnectionNotFound,
   whatsappContactNotFound,
   whatsappConversationAiHandling,
-  whatsappConversationNotFound,
   whatsappMessageNotFound,
 } from '@/src/errors'
+import type { PermissionAction } from '@/src/lib/permissions'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
+import type { WhatsAppConversationScope } from '@/src/lib/whatsapp/conversation-scope'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
@@ -35,17 +36,41 @@ import type {
   WhatsAppMessageTypeDTO,
 } from '@/types/whatsapp-message'
 import { assertModuleMember } from './authz'
+import {
+  loadVisibleConversation,
+  resolveConversationScope,
+} from './whatsapp-conversation-scope.service'
+
+/**
+ * Module member with the permission + their conversation visibility
+ * (Equipes): messages of a conversation the actor cannot see answer 404.
+ */
+async function authorizeMessages(
+  actorId: string,
+  workspaceId: string,
+  action: PermissionAction,
+): Promise<Result<WhatsAppConversationScope>> {
+  const membership = await assertModuleMember(
+    actorId,
+    workspaceId,
+    'COMMUNICATION',
+    { resource: 'conversations', action },
+  )
+  if (!membership.ok) return membership
+  return resolveConversationScope(actorId, workspaceId, membership.value.role)
+}
 
 async function loadSendableConversation(
+  scope: WhatsAppConversationScope,
   workspaceId: string,
   conversationId: string,
 ) {
-  const conversation = await WhatsAppConversationRepository.findById(
-    conversationId,
+  const conversation = await loadVisibleConversation(
+    scope,
     workspaceId,
+    conversationId,
   )
   if (!conversation.ok) return conversation
-  if (!conversation.value) return err(whatsappConversationNotFound())
   if (conversation.value.aiActive) return err(whatsappConversationAiHandling())
 
   const connection = await WhatsAppConnectionRepository.findById(
@@ -143,20 +168,15 @@ export const WhatsAppMessageService = {
     conversationId: string,
     options: ListWhatsAppMessagesDTO,
   ): Promise<Result<WhatsAppMessageDTO[]>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'VIEW' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'VIEW')
+    if (!scope.ok) return scope
 
-    const conversation = await WhatsAppConversationRepository.findById(
-      conversationId,
+    const conversation = await loadVisibleConversation(
+      scope.value,
       workspaceId,
+      conversationId,
     )
     if (!conversation.ok) return conversation
-    if (!conversation.value) return err(whatsappConversationNotFound())
 
     const result = await WhatsAppMessageRepository.listByConversation(
       conversationId,
@@ -177,15 +197,14 @@ export const WhatsAppMessageService = {
     conversationId: string,
     dto: SendWhatsAppTextMessageDTO,
   ): Promise<Result<WhatsAppMessageDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'CREATE' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'CREATE')
+    if (!scope.ok) return scope
 
-    const loaded = await loadSendableConversation(workspaceId, conversationId)
+    const loaded = await loadSendableConversation(
+      scope.value,
+      workspaceId,
+      conversationId,
+    )
     if (!loaded.ok) return loaded
 
     const quotedProviderMessageId = await resolveQuotedProviderMessageId(
@@ -216,15 +235,14 @@ export const WhatsAppMessageService = {
     conversationId: string,
     dto: SendWhatsAppMediaMessageDTO,
   ): Promise<Result<WhatsAppMessageDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'CREATE' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'CREATE')
+    if (!scope.ok) return scope
 
-    const loaded = await loadSendableConversation(workspaceId, conversationId)
+    const loaded = await loadSendableConversation(
+      scope.value,
+      workspaceId,
+      conversationId,
+    )
     if (!loaded.ok) return loaded
 
     const mediaType = dto.type.toLowerCase() as
@@ -265,15 +283,14 @@ export const WhatsAppMessageService = {
     conversationId: string,
     dto: SendWhatsAppTemplateMessageDTO,
   ): Promise<Result<WhatsAppMessageDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'CREATE' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'CREATE')
+    if (!scope.ok) return scope
 
-    const loaded = await loadSendableConversation(workspaceId, conversationId)
+    const loaded = await loadSendableConversation(
+      scope.value,
+      workspaceId,
+      conversationId,
+    )
     if (!loaded.ok) return loaded
 
     // Media header + reply-button payloads come from the stored template;
@@ -313,15 +330,14 @@ export const WhatsAppMessageService = {
     conversationId: string,
     dto: SendWhatsAppContactMessageDTO,
   ): Promise<Result<WhatsAppMessageDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'CREATE' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'CREATE')
+    if (!scope.ok) return scope
 
-    const loaded = await loadSendableConversation(workspaceId, conversationId)
+    const loaded = await loadSendableConversation(
+      scope.value,
+      workspaceId,
+      conversationId,
+    )
     if (!loaded.ok) return loaded
 
     const sharedContact = await WhatsAppContactRepository.findById(
@@ -359,20 +375,15 @@ export const WhatsAppMessageService = {
     conversationId: string,
     messageId: string,
   ): Promise<Result<{ id: string }>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'EDIT')
+    if (!scope.ok) return scope
 
-    const conversation = await WhatsAppConversationRepository.findById(
-      conversationId,
+    const conversation = await loadVisibleConversation(
+      scope.value,
       workspaceId,
+      conversationId,
     )
     if (!conversation.ok) return conversation
-    if (!conversation.value) return err(whatsappConversationNotFound())
 
     const target = await WhatsAppMessageRepository.findById(messageId)
     if (!target.ok) return target
@@ -408,15 +419,14 @@ export const WhatsAppMessageService = {
     messageId: string,
     dto: ReactToWhatsAppMessageDTO,
   ): Promise<Result<WhatsAppMessageDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'CREATE' },
-    )
-    if (!membership.ok) return membership
+    const scope = await authorizeMessages(actorId, workspaceId, 'CREATE')
+    if (!scope.ok) return scope
 
-    const loaded = await loadSendableConversation(workspaceId, conversationId)
+    const loaded = await loadSendableConversation(
+      scope.value,
+      workspaceId,
+      conversationId,
+    )
     if (!loaded.ok) return loaded
 
     const target = await WhatsAppMessageRepository.findById(messageId)

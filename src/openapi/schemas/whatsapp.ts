@@ -107,6 +107,14 @@ export const WhatsAppConversationDTO = dto(
     contactAvatarUrl: z.string().nullable(),
     status: z.enum(['NEW', 'IN_PROGRESS', 'CLOSED']),
     assignedUserId: z.string().nullable(),
+    teamId: z.string().nullable().meta({
+      description:
+        'Equipe da conversa. Sem responsável, a conversa fica na fila dessa equipe.',
+    }),
+    team: z
+      .object({ id: z.string(), name: z.string() })
+      .nullable()
+      .meta({ description: 'Equipe (id e nome), ou `null`.' }),
     aiActive: z.boolean().meta({
       description:
         'A IA está atendendo — envios manuais são bloqueados até removê-la (`PATCH .../ai`).',
@@ -136,7 +144,13 @@ export const WhatsAppConversationEventDTO = dto(
     .object({
       id: z.string(),
       conversationId: z.string(),
-      kind: z.enum(['CLOSED', 'REOPENED', 'SENTIMENT_ALERT']),
+      kind: z.enum([
+        'CLOSED',
+        'REOPENED',
+        'SENTIMENT_ALERT',
+        'ASSIGNED',
+        'TEAM_CHANGED',
+      ]),
       source: z.enum(['AGENT', 'CONTACT', 'INACTIVITY', 'SENTIMENT']),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -592,5 +606,45 @@ export const WhatsAppReportDataDTO = dto(
     }),
     grouped: z.boolean(),
     total: z.number(),
+  }),
+)
+
+/* -------------------------------- equipes -------------------------------- */
+
+export const WhatsAppTeamDTO = dto(
+  'WhatsAppTeam',
+  z.object({
+    id: id('ckv9x2p0h0000tm7d3k1e5abc'),
+    workspaceId: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    members: z
+      .array(
+        z.object({
+          userId: z.string(),
+          name: z.string(),
+          email: z.string(),
+          image: z.string().nullable(),
+          role: z.enum(['LEADER', 'AGENT']).meta({
+            description:
+              '`LEADER` vê as conversas dos agentes e da fila da equipe e atribui dentro dela; `AGENT` atende.',
+          }),
+        }),
+      )
+      .meta({ description: 'Líderes primeiro, depois agentes, por nome.' }),
+    createdAt: dateTime(),
+    updatedAt: dateTime(),
+  }),
+)
+
+export const WhatsAppConversationScopeDTO = dto(
+  'WhatsAppConversationScope',
+  z.object({
+    mode: z.enum(['ALL', 'SCOPED']).meta({
+      description:
+        '`ALL` = vê todas as conversas (OWNER, ou ADMIN fora de equipe); `SCOPED` = vê as próprias, as das equipes que lidera e a fila.',
+    }),
+    leadsTeamIds: z.array(z.string()),
+    memberTeamIds: z.array(z.string()),
   }),
 )

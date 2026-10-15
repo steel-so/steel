@@ -158,7 +158,8 @@ describe('WhatsAppConversationService.close()', () => {
 describe('WhatsAppConversationService.reopen()', () => {
   it('should reopen as IN_PROGRESS when the conversation has an assignee', async () => {
     asRole('MEMBER')
-    arrangeConversation({ status: 'CLOSED', assignedUserId: 'agent1' })
+    // The member's own conversation — a scoped member sees it (Equipes).
+    arrangeConversation({ status: 'CLOSED', assignedUserId: 'u1' })
 
     expectOk(await WhatsAppConversationService.reopen('u1', 'ws1', 'conv1'))
 
@@ -186,7 +187,8 @@ describe('WhatsAppConversationService.reopen()', () => {
 
   it('should refuse to reopen once the monthly conversation limit is reached', async () => {
     asRole('MEMBER')
-    arrangeConversation({ status: 'CLOSED', assignedUserId: 'agent1' })
+    // The member's own conversation — a scoped member sees it (Equipes).
+    arrangeConversation({ status: 'CLOSED', assignedUserId: 'u1' })
     mockedUsage.assertCanSend.mockResolvedValueOnce(
       err(whatsappConversationLimitReached(10, 10)),
     )

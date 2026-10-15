@@ -22,6 +22,7 @@ import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conv
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { AiUsageService } from './ai-usage.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import { whatsAppTeamMemberIds } from './whatsapp-conversation-scope.service'
 import {
   notifyWhatsAppUsers,
   whatsAppAdminIds,
@@ -414,15 +415,18 @@ export const WhatsAppAiReplyService = {
         targetId: conversationId,
         meta: { aiHandoff: true, trigger: 'ai', actor: 'system' },
       })
-      // A human must take over: the assignee, else the module admins
-      // (capped) — never every member with conversation access.
+      // A human must take over: the assignee, else the conversation's team
+      // (Equipes), else the module admins (capped) — never every member
+      // with conversation access.
       const label = contact.value.name ?? contact.value.waId
       await notifyWhatsAppUsers({
         workspaceId,
         kind: 'WHATSAPP_AI_HANDOFF',
         userIds: conversation.assignedUserId
           ? [conversation.assignedUserId]
-          : await whatsAppAdminIds(workspaceId),
+          : conversation.teamId
+            ? await whatsAppTeamMemberIds(workspaceId, conversation.teamId)
+            : await whatsAppAdminIds(workspaceId),
         title: 'A IA transferiu uma conversa para você',
         body: `${label} precisa de um atendente.`,
         path: whatsAppConversationPath(conversationId),

@@ -8,8 +8,9 @@ import {
 } from '@/src/__tests__/factories/whatsapp-conversation.factory'
 import { createFakeWhatsAppSettings } from '@/src/__tests__/factories/whatsapp-settings.factory'
 import { createFakeWorkspace } from '@/src/__tests__/factories/workspace.factory'
-import { expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { ok } from '@/src/lib/result'
+import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import { databaseError } from '@/src/errors'
+import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/notification.repository')
@@ -43,6 +44,7 @@ import { NotificationRepository } from '@/src/repositories/notification.reposito
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
+import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { WhatsAppSentimentAlertService } from '../whatsapp-sentiment-alert.service'
 
@@ -244,5 +246,31 @@ describe('WhatsAppSentimentAlertService.evaluate()', () => {
 
     expect(outcome).toEqual(expect.objectContaining({ assignedToId: null }))
     expect(mockedConversationRepo.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('WhatsAppSentimentAlertService.evaluate() · Equipes', () => {
+  const teams = vi.mocked(WhatsAppTeamRepository)
+
+  it('does not tell an admin who belongs to a team about a conversation they cannot see', async () => {
+    arrange({ settings: null, assignedUserId: 'agent1' })
+    teams.listMembershipSnapshot.mockResolvedValueOnce(
+      ok([{ id: 'team1', members: [{ userId: 'admin1', role: 'AGENT' }] }]),
+    )
+
+    const outcome = expectOk(await evaluate(-0.5))
+
+    expect(outcome).toMatchObject({ alerted: true, recipients: 1 })
+    expect(mockedNotificationRepo.createMany).toHaveBeenCalledWith([
+      expect.objectContaining({ userId: 'owner1' }),
+    ])
+  })
+
+  it('propagates a team snapshot failure before alerting', async () => {
+    arrange({ settings: null })
+    teams.listMembershipSnapshot.mockResolvedValueOnce(err(databaseError()))
+
+    expectErr(await evaluate(-0.5), 'DATABASE_ERROR')
+    expect(mockedConversationRepo.claimSentimentAlert).not.toHaveBeenCalled()
   })
 })

@@ -6,6 +6,7 @@ import {
   Megaphone01Icon,
   Settings02Icon,
   Shapes01Icon,
+  UserGroup03Icon,
   UserGroupIcon,
   UserMultipleIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -40,6 +41,9 @@ export default async function ZapLayout({
           </NavItem>
           <NavItem href={`${base}/grupos`} icon={UserGroupIcon}>
             Grupos
+          </NavItem>
+          <NavItem href={`${base}/equipes`} icon={UserGroup03Icon}>
+            Equipes
           </NavItem>
         </NavGroup>
         <NavGroup>

@@ -248,6 +248,9 @@ describe('WhatsAppConversationService read failures', () => {
 
   it('listEvents() should propagate a repository failure', async () => {
     asAdmin()
+    mockedConversationRepo.findById.mockResolvedValue(
+      ok(createFakeWhatsAppConversationWithPreview({ id: 'conv1' })),
+    )
     mockedEventRepo.listByConversation.mockResolvedValue(err(DB_ERROR))
 
     expectErr(
