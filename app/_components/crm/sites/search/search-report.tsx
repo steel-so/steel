@@ -230,7 +230,7 @@ export function SearchReport({
             </div>
           ) : null}
         </div>
-        <div className='w-full min-w-0 overflow-x-auto rounded-lg border'>
+        <div className='relative w-full min-w-0 overflow-x-auto rounded-lg border'>
           <table className='w-full min-w-[640px] text-sm'>
             <thead className='bg-muted/40 text-left text-muted-foreground text-xs'>
               <tr>
