@@ -142,11 +142,11 @@ describe('sales widgets and screens on widgets', () => {
     expect(parsed.config).toMatchObject({ kind: 'ranking', period: 'month' })
   })
 
-  it('defaults the screen to the first and caps it at 3 screens', () => {
+  it('leaves the screen to the database default and caps it at 3 screens', () => {
     expect(
       CreateCrmDashboardWidgetSchema.parse({ type: 'RICH_TEXT', config: {} })
         .page,
-    ).toBe(0)
+    ).toBeUndefined()
     expect(
       CreateCrmDashboardWidgetSchema.safeParse({
         type: 'RICH_TEXT',
