@@ -8,9 +8,8 @@ import type { ReactNode } from 'react'
  * the site's own `<head>` (metadata, icon and the per-site CSP meta, see
  * `src/lib/sites/csp.ts`).
  *
- * No Suspense boundary on purpose: the page renders in full before the
- * response starts, so a missing page answers a real HTTP 404 (and a
- * redirect a real 307/308) instead of a streamed 200.
+ * HTTP statuses (404, 301/302) are decided by the proxy from the site's
+ * route index before rendering (`src/lib/sites/route-index.ts`).
  */
 export const instant = false
 

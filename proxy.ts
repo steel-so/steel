@@ -17,9 +17,17 @@ import { geolocateRequest } from '@/src/lib/analytics/geoip'
 import { SITES_ROOT_DOMAIN } from '@/lib/env/server'
 import { siteHeaderCsp } from '@/src/lib/sites/csp'
 import {
+  decideSiteRoute,
+  isSiteFilePath,
+  siteNotFoundHtml,
+} from '@/src/lib/sites/route-index'
+import { SitePublicService } from '@/src/services/site-public.service'
+import {
   SITE_REQUEST_HEADER,
   SITE_VIA_HOST_HEADER,
   parseSiteHost,
+  resolveSiteHref,
+  siteLinkBase,
   siteRewritePath,
   siteSlugFromPath,
 } from '@/src/lib/sites/host'
@@ -218,7 +226,52 @@ async function logProxyRequest(request: NextRequest): Promise<void> {
   await logger.flush()
 }
 
-export function proxy(request: NextRequest, event: NextFetchEvent) {
+/**
+ * HTTP status of a published-site page, decided before rendering (the App
+ * Router answers 200 as soon as it starts streaming): a redirect of the
+ * site answers 301/302, an unknown page or site a small 404 page
+ * (`siteNotFoundHtml`), anything else renders normally.
+ * Reads the route index from Redis; on any failure the page decides.
+ */
+async function siteRouteResponse(
+  request: NextRequest,
+  options: { slug: string; sitePath: string; viaHost: boolean; nonce: string },
+): Promise<NextResponse | null> {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return null
+  if (isSiteFilePath(options.sitePath)) return null
+  const index = await SitePublicService.routeIndex(options.slug)
+  if (!index.ok) return null
+  const decision = decideSiteRoute(index.value, options.sitePath)
+  if (decision.kind === 'page') return null
+  const linkBase = siteLinkBase(options.slug, options.viaHost)
+  if (decision.kind === 'not-found') {
+    const html = siteNotFoundHtml({
+      siteName: index.value.name,
+      homeHref: index.value.published
+        ? resolveSiteHref('/', linkBase)
+        : undefined,
+    })
+    return withSecurityHeaders(
+      new NextResponse(request.method === 'HEAD' ? null : html, {
+        status: 404,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      }),
+      options.nonce,
+      true,
+    )
+  }
+  const location = new URL(
+    resolveSiteHref(decision.location, linkBase),
+    request.nextUrl.origin,
+  )
+  return withSecurityHeaders(
+    NextResponse.redirect(location, decision.permanent ? 301 : 302),
+    options.nonce,
+    true,
+  )
+}
+
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
   event.waitUntil(logProxyRequest(request))
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
@@ -244,6 +297,13 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
       requestHeaders.set('Content-Security-Policy', cspFor(nonce, true))
       const url = request.nextUrl.clone()
       url.pathname = target
+      const routed = await siteRouteResponse(request, {
+        slug: hostSlug,
+        sitePath: pathname,
+        viaHost: true,
+        nonce,
+      })
+      if (routed) return routed
       return withSecurityHeaders(
         NextResponse.rewrite(url, { request: { headers: requestHeaders } }),
         nonce,
@@ -255,6 +315,13 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
   if (pathSlug) {
     requestHeaders.set(SITE_REQUEST_HEADER, pathSlug)
     requestHeaders.set('Content-Security-Policy', cspFor(nonce, true))
+    const routed = await siteRouteResponse(request, {
+      slug: pathSlug,
+      sitePath: pathname.slice(`/s/${pathSlug}`.length) || '/',
+      viaHost: false,
+      nonce,
+    })
+    if (routed) return routed
   }
 
   if (

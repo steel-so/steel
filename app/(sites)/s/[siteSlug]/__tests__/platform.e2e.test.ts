@@ -110,7 +110,7 @@ describe('site redirects', () => {
     const moved = await fetch(`${BASE_URL}/s/${slug}/fale-conosco`, {
       redirect: 'manual',
     })
-    expect(moved.status).toBe(308)
+    expect(moved.status).toBe(301)
     expect(moved.headers.get('location')).toContain(`/s/${slug}/contato`)
 
     expect(
@@ -145,7 +145,7 @@ describe('site redirects', () => {
     const temporary = await fetch(`${BASE_URL}/s/${slug}/fale-conosco`, {
       redirect: 'manual',
     })
-    expect(temporary.status).toBe(307)
+    expect(temporary.status).toBe(302)
 
     const list = await getJson(redirects, user.cookie)
     expect((await list.json()).data).toHaveLength(1)
