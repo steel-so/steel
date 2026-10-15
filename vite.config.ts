@@ -151,6 +151,7 @@ export default defineConfig({
         'src/lib/pricing/**',
         'src/lib/seo/**',
         'src/lib/shortcuts/**',
+        'src/lib/canvas/**',
       ],
       exclude: [
         'node_modules/**',
