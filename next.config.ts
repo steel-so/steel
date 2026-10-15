@@ -108,6 +108,15 @@ const canUploadSourcemaps = Boolean(
 
 const nextConfig: NextConfig = {
   ...posthogProxy,
+  // CRM landing pages moved into CRM › Sites (old builder links resolve in
+  // `crm/landing-pages/[id]/page.tsx`, which needs the database).
+  redirects: async () => [
+    {
+      source: '/:workspace/crm/landing-pages',
+      destination: '/:workspace/crm/sites',
+      permanent: false,
+    },
+  ],
   poweredByHeader: false,
   output: 'standalone',
   // O Turbopack não emite source map de navegador sem pedido, e o plugin do

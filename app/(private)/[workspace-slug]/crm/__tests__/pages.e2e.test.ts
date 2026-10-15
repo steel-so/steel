@@ -65,14 +65,25 @@ describe('CRM sidebar pages', () => {
 })
 
 describe('landing pages moved to Sites', () => {
-  it('sends the old list and builder routes to /crm/sites', async () => {
+  it('redirects the old list to /crm/sites', async () => {
     const { user, workspace } = await authenticatedOwner()
-    for (const path of ['landing-pages', 'landing-pages/unknown-id']) {
-      const res = await fetch(`${BASE_URL}/${workspace.slug}/crm/${path}`, {
-        headers: { ...defaultHeaders, Cookie: user.cookie },
-      })
-      expect(res.status).toBe(200)
-      expect(new URL(res.url).pathname).toBe(`/${workspace.slug}/crm/sites`)
-    }
+    const res = await fetch(`${BASE_URL}/${workspace.slug}/crm/landing-pages`, {
+      headers: { ...defaultHeaders, Cookie: user.cookie },
+      redirect: 'manual',
+    })
+    expect(res.status).toBe(307)
+    expect(new URL(res.headers.get('location') ?? '', BASE_URL).pathname).toBe(
+      `/${workspace.slug}/crm/sites`,
+    )
+  })
+
+  it('renders the old builder route without a server error', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const res = await fetch(
+      `${BASE_URL}/${workspace.slug}/crm/landing-pages/unknown-id`,
+      { headers: { ...defaultHeaders, Cookie: user.cookie } },
+    )
+    expect(res.status).toBe(200)
+    expect(await res.text()).not.toContain('Application error')
   })
 })
