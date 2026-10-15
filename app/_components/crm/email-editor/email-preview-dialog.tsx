@@ -24,7 +24,13 @@ import {
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { useCrmEmailContactLists } from '@/src/hooks/use-crm-email-editor'
 import { getNode } from '@/src/lib/canvas/nodes'
+import {
+  applyEmailConditions,
+  hasEmailConditions,
+  needsListMembership,
+} from '@/src/lib/canvas-email/conditions'
 import type { EmailBodyProps } from '@/src/lib/canvas-email/schemas'
 import { personalizeEmail } from '@/src/lib/crm-email-builder/render'
 import { contactToVariables } from '@/src/lib/crm-email-builder/variables'
@@ -32,7 +38,11 @@ import { ContactSelect } from './contact-select'
 import { useEmailEditorData } from './editor-data'
 import { useTemplateMeta } from './template-meta'
 import { useRenderedEmail } from './use-email-render'
-import { SAMPLE_KEY, usePreviewContacts } from './use-preview-contacts'
+import {
+  personIdOf,
+  SAMPLE_KEY,
+  usePreviewContacts,
+} from './use-preview-contacts'
 
 export const PREVIEW_CAMPAIGN_LINK =
   'https://exemplo.com.br/campanha?utm_source=email'
@@ -91,19 +101,27 @@ function PreviewBody() {
       ?.preheader ?? ''
 
   const contact = contacts.resolve(contactKey)
+  const personId = personIdOf(contactKey) ?? null
+  const lists = useCrmEmailContactLists(
+    workspaceId,
+    rendered && needsListMembership(rendered.html) ? personId : null,
+  )
+  const listIds = lists.data?.listIds
+  const conditional = rendered ? hasEmailConditions(rendered.html) : false
   const email = useMemo(() => {
     if (!rendered) return null
-    const withInbox = { ...rendered, text: preheader }
-    return contact
-      ? personalizeEmail(
-          withInbox,
-          contactToVariables(contact, {
-            campaignLink: PREVIEW_CAMPAIGN_LINK,
-            unsubscribeUrl: '#descadastro',
-          }),
-        )
-      : withInbox
-  }, [rendered, contact, preheader])
+    if (!contact) return { ...rendered, text: preheader }
+    const values = contactToVariables(contact, {
+      campaignLink: PREVIEW_CAMPAIGN_LINK,
+      unsubscribeUrl: '#descadastro',
+    })
+    // "Mostrar se": this contact's version, then the variables.
+    const shown = applyEmailConditions(rendered, {
+      values,
+      listIds: listIds ?? [],
+    })
+    return personalizeEmail({ ...shown, text: preheader }, values)
+  }, [rendered, contact, preheader, listIds])
 
   return (
     <>
@@ -142,6 +160,19 @@ function PreviewBody() {
       </div>
 
       <div className='min-h-0 overflow-y-auto bg-muted/40 px-4 py-5'>
+        {conditional ? (
+          <p
+            className='mx-auto mb-3 rounded-md border border-dashed bg-background px-3 py-2 text-xs text-muted-foreground'
+            style={{
+              maxWidth: device === 'mobile' ? MOBILE_WIDTH : DESKTOP_WIDTH,
+            }}
+            data-testid='preview-conditions'
+          >
+            {contact
+              ? 'Este e-mail tem conteúdo condicional: você vê a versão deste contato. Troque o contato em “Ver como” para comparar.'
+              : 'Este e-mail tem conteúdo condicional: com as variáveis cruas, todo o conteúdo aparece.'}
+          </p>
+        ) : null}
         <div
           className='mx-auto mb-4 flex items-center gap-3 rounded-lg border bg-background px-3 py-2.5 shadow-xs transition-[max-width]'
           style={{
