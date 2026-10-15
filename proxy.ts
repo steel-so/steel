@@ -9,6 +9,8 @@ import {
   NEXT_PUBLIC_GA_ID,
   NEXT_PUBLIC_POSTHOG_KEY,
   NEXT_PUBLIC_REALTIME_URL,
+  NEXT_PUBLIC_META_APP_ID,
+  NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID,
   NEXT_PUBLIC_SENTRY_DSN,
   NODE_ENV,
 } from '@/lib/env/env'
@@ -110,6 +112,21 @@ function googleAnalyticsSrc(): { script: string; connect: string } {
   }
 }
 
+/**
+ * WhatsApp Embedded Signup: the Facebook JS SDK (script), its XHRs and the
+ * login frames. Only allowed when the feature is configured at build time.
+ */
+function embeddedSignupSrc(): { script: string; connect: string; frame: string } {
+  if (!NEXT_PUBLIC_META_APP_ID || !NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID) {
+    return { script: '', connect: '', frame: '' }
+  }
+  return {
+    script: ' https://connect.facebook.net',
+    connect: ' https://www.facebook.com https://graph.facebook.com',
+    frame: ' https://www.facebook.com https://web.facebook.com',
+  }
+}
+
 function sentryConnectSrc(): string {
   if (!NEXT_PUBLIC_SENTRY_DSN) return ''
   try {
@@ -162,15 +179,16 @@ function realtimeConnectSrc(): string {
 
 function buildCspHeader(nonce: string): string {
   const ga = googleAnalyticsSrc()
+  const fb = embeddedSignupSrc()
   return `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}'${ga.script}${NODE_ENV === 'development' ? " 'unsafe-eval'" : ''};
+    script-src 'self' 'nonce-${nonce}'${ga.script}${fb.script}${NODE_ENV === 'development' ? " 'unsafe-eval'" : ''};
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https:;
     media-src 'self' blob: https:;
     font-src 'self';
-    connect-src 'self' blob: data: https://*.axiom.co https://cdn.jsdelivr.net${realtimeConnectSrc()}${sentryConnectSrc()}${ga.connect}${NODE_ENV === 'development' ? ' ws://localhost:4444' : ''};
-    frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com https://www.google.com;
+    connect-src 'self' blob: data: https://*.axiom.co https://cdn.jsdelivr.net${realtimeConnectSrc()}${sentryConnectSrc()}${ga.connect}${fb.connect}${NODE_ENV === 'development' ? ' ws://localhost:4444' : ''};
+    frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com https://www.google.com${fb.frame};
     frame-ancestors 'none';
     form-action 'self';
     base-uri 'self';

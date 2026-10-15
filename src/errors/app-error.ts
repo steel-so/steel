@@ -267,6 +267,24 @@ export const whatsappProviderError = (
   message = 'Falha ao comunicar com o provedor do WhatsApp',
 ): AppError => appError('WHATSAPP_PROVIDER_ERROR', message)
 
+export const whatsappSignupPaymentRequired = (): AppError =>
+  appError(
+    'WHATSAPP_SIGNUP_PAYMENT_REQUIRED',
+    'A conta do WhatsApp Business não tem forma de pagamento. Cadastre uma no Gerenciador da Meta e tente de novo.',
+  )
+
+export const whatsappSignupNameNotApproved = (): AppError =>
+  appError(
+    'WHATSAPP_SIGNUP_NAME_NOT_APPROVED',
+    'O nome de exibição do número ainda não foi aprovado pela Meta. Aguarde a aprovação e conecte de novo.',
+  )
+
+export const whatsappSignupPermissionDenied = (): AppError =>
+  appError(
+    'WHATSAPP_SIGNUP_PERMISSION_DENIED',
+    'A Meta negou a permissão para gerenciar este número. Refaça o login e autorize todas as permissões pedidas.',
+  )
+
 export const pabxExtensionRequired = (): AppError =>
   appError(
     'PABX_EXTENSION_REQUIRED',

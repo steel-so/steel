@@ -85,6 +85,7 @@ function connection(
     metaPhoneNumberId: null,
     metaWabaId: null,
     encryptedMetaAccessToken: null,
+    encryptedMetaPin: null,
     createdById: ACTOR,
     createdAt: NOW,
     updatedAt: NOW,

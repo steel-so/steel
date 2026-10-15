@@ -1112,6 +1112,8 @@ model WhatsAppConnection {
   metaPhoneNumberId        String?                  @map("meta_phone_number_id")
   metaWabaId               String?                  @map("meta_waba_id")
   encryptedMetaAccessToken String?                  @map("encrypted_meta_access_token")
+  /// PIN de 6 dígitos usado no registro Embedded Signup (cifrado), para o suporte.
+  encryptedMetaPin         String?                  @map("encrypted_meta_pin")
   createdById              String                   @map("created_by_id")
   createdAt                DateTime                 @default(now()) @map("created_at")
   updatedAt                DateTime                 @updatedAt @map("updated_at")

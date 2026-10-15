@@ -12,7 +12,7 @@ import type {
 } from './types'
 
 const META_GRAPH_VERSION = 'v23.0'
-const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`
+export const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`
 
 export interface MetaCredentials {
   phoneNumberId: string
@@ -50,6 +50,76 @@ async function metaRequest<T>(
   }
 
   return body as T
+}
+
+const PHONE_HEALTH_FIELDS =
+  'display_phone_number,verified_name,status,code_verification_status,health_status'
+
+interface MetaPhoneHealth {
+  status?: string
+  health_status?: {
+    can_send_message?: string
+    entities?: {
+      can_send_message?: string
+      errors?: { error_code?: number; error_description?: string }[]
+    }[]
+  }
+}
+
+/** Result of checking a number against the Graph API. */
+export interface WhatsAppConnectionCheck {
+  connected: boolean
+  /** The check itself failed (bad token, Graph down, number blocked). */
+  failed?: boolean
+  /** pt-BR reason shown on the connection when it is not usable. */
+  error?: string | null
+}
+
+/** pt-BR message for the Meta health error codes we know customers hit. */
+const META_HEALTH_ERRORS: Record<number, string> = {
+  141000:
+    'O número não está registrado na Cloud API da Meta. Registre o número (ou reconecte pela Meta) e tente de novo.',
+  141006:
+    'A conta do WhatsApp Business está sem forma de pagamento. Cadastre uma no Gerenciador da Meta.',
+  141008: 'A conta do WhatsApp Business está restrita pela Meta.',
+}
+
+/**
+ * Turns the phone-number `status` and `health_status` into a usable /
+ * not-usable verdict with a pt-BR reason.
+ */
+export function evaluateMetaPhoneHealth(
+  phone: MetaPhoneHealth,
+): WhatsAppConnectionCheck {
+  const errors = (phone.health_status?.entities ?? []).flatMap(
+    (entity) => entity.errors ?? [],
+  )
+  const known = errors.find(
+    (e) => e.error_code !== undefined && META_HEALTH_ERRORS[e.error_code],
+  )
+  const reason = known?.error_code
+    ? META_HEALTH_ERRORS[known.error_code]
+    : (errors[0]?.error_description ?? null)
+  const blocked = phone.health_status?.can_send_message === 'BLOCKED'
+  const status = phone.status ?? 'UNKNOWN'
+
+  if (
+    blocked ||
+    ['BANNED', 'RESTRICTED', 'FLAGGED', 'DELETED'].includes(status)
+  ) {
+    return {
+      connected: false,
+      failed: true,
+      error: reason ?? `A Meta bloqueou o número (status ${status}).`,
+    }
+  }
+  if (status === 'CONNECTED') return { connected: true, error: null }
+  return {
+    connected: false,
+    error:
+      reason ??
+      'O número ainda não está ativo na Cloud API da Meta (aguardando registro ou verificação).',
+  }
 }
 
 /** Body limit of an interactive message on the Cloud API. */
@@ -264,14 +334,22 @@ export function createMetaClient(
       })
     },
 
-    async getConnectionStatus(): Promise<{ connected: boolean }> {
+    async getConnectionStatus(): Promise<WhatsAppConnectionCheck> {
       try {
-        await metaRequest(credentials, `/${credentials.phoneNumberId}`, {
-          method: 'GET',
-        })
-        return { connected: true }
-      } catch {
-        return { connected: false }
+        const phone = await metaRequest<MetaPhoneHealth>(
+          credentials,
+          `/${credentials.phoneNumberId}?fields=${PHONE_HEALTH_FIELDS}`,
+          { method: 'GET' },
+        )
+        return evaluateMetaPhoneHealth(phone)
+      } catch (cause) {
+        return {
+          connected: false,
+          failed: true,
+          error: `Não foi possível validar o número na Meta: ${
+            cause instanceof Error ? cause.message : 'erro desconhecido'
+          }`,
+        }
       }
     },
   }

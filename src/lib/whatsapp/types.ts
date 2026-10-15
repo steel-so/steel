@@ -75,7 +75,11 @@ export interface WhatsAppProviderClient {
   sendContact(input: WhatsAppOutboundContact): Promise<WhatsAppSendResult>
   sendButtons(input: WhatsAppOutboundButtons): Promise<WhatsAppSendResult>
   sendReaction(input: WhatsAppOutboundReaction): Promise<void>
-  getConnectionStatus(): Promise<{ connected: boolean }>
+  getConnectionStatus(): Promise<{
+    connected: boolean
+    failed?: boolean
+    error?: string | null
+  }>
 }
 
 export interface ZapiProviderClient extends WhatsAppProviderClient {

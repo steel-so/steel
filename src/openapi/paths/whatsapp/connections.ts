@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   CreateWhatsAppConnectionSchema,
+  MetaEmbeddedSignupSchema,
   UpdateWhatsAppConnectionSchema,
 } from '@/src/schemas/whatsapp-connection.schema'
 import type { RouteConfig } from '../../registry'
@@ -109,6 +110,48 @@ Os tokens são cifrados com \`CONNECTION_SECRETS\`. A resposta traz o \`webhookS
         message: 'Conexão Z-API sem credenciais configuradas',
         when: 'Conexão Z-API sem instância/token',
       },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/connections/embedded-signup',
+    tags: [TAG],
+    summary: 'Conectar número pela Meta (Embedded Signup)',
+    description: `Recebe o resultado do popup do WhatsApp Embedded Signup (\`code\`, \`phoneNumberId\`, \`wabaId\`), troca o código por um token de integração, inscreve o app na WABA, registra o número na Cloud API com um PIN aleatório (guardado cifrado) e cria a conexão \`META\`, já verificada. Auditado. ${PRIVILEGED}`,
+    body: MetaEmbeddedSignupSchema,
+    responses: {
+      201: {
+        description: 'Conexão criada (com o segredo do webhook).',
+        schema: WhatsAppConnectionCreatedDTO,
+      },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      'FEATURE_NOT_ENABLED',
+      'WHATSAPP_CONNECTION_CONFLICT',
+      'WHATSAPP_SIGNUP_PAYMENT_REQUIRED',
+      'WHATSAPP_SIGNUP_NAME_NOT_APPROVED',
+      'WHATSAPP_SIGNUP_PERMISSION_DENIED',
+      'WHATSAPP_PROVIDER_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/connections/{connectionId}/status',
+    tags: [TAG],
+    summary: 'Verificar status da conexão (Meta)',
+    description: `Consulta o número na Graph API (\`status\` e \`health_status\`) e atualiza a conexão para \`CONNECTED\`, \`ERROR\` ou \`DISCONNECTED\`, com o motivo em pt-BR em \`statusError\`. Só para conexões \`META\`. ${PRIVILEGED}`,
+    params: { connectionId: CONNECTION_PARAM },
+    responses: {
+      200: {
+        description: 'Conexão atualizada.',
+        schema: WhatsAppConnectionDTO,
+      },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      'WHATSAPP_CONNECTION_NOT_FOUND',
+      'BAD_REQUEST',
     ],
   },
 ]

@@ -46,3 +46,13 @@ export const UpdateWhatsAppConnectionSchema = z.object({
 export type UpdateWhatsAppConnectionDTO = z.infer<
   typeof UpdateWhatsAppConnectionSchema
 >
+
+/** Result of the Meta Embedded Signup popup, sent by the browser. */
+export const MetaEmbeddedSignupSchema = z.object({
+  code: z.string().min(1).max(2000),
+  phoneNumberId: z.string().regex(/^\d{5,30}$/, 'Phone Number ID inválido'),
+  wabaId: z.string().regex(/^\d{5,30}$/, 'WABA ID inválido'),
+  label: LabelField.optional(),
+})
+
+export type MetaEmbeddedSignupDTO = z.infer<typeof MetaEmbeddedSignupSchema>
