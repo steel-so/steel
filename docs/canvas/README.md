@@ -80,3 +80,51 @@ Regras que quem usa o motor precisa saber:
   logo depois dele. Copiar vários nós gera um fragmento com `roots`.
 - Erros novos além do contrato inicial: `UNKNOWN_TYPE`, `DUPLICATE_ID` e
   `INVALID_DOCUMENT` (forma inválida, catálogo/versão errados, nó órfão).
+
+## Shell do editor (`app/_components/canvas/`)
+
+| Arquivo | O quê |
+|---|---|
+| `canvas-editor.tsx` | `CanvasEditor` (props em `types.ts`): cria o store, autosave (1,5 s), toasts de operação recusada, aviso de tela pequena |
+| `top-bar.tsx` | Título, breakpoints, zoom, desfazer/refazer, prévia escura, estado de salvamento, ações |
+| `sidebar/` | Abas Adicionar (paleta com busca e arrastar), Camadas (árvore: renomear, ocultar, travar, arrastar), Seções prontas e as abas do catálogo |
+| `frame/` | Iframe com portal React (`frameHead` no `<head>`), camada de edição no documento pai (contorno, seleção, ações rápidas, linha de soltar), edição de texto no lugar (TipTap) com barra flutuante |
+| `dnd/canvas-dnd.tsx` | `@dnd-kit`: mouse e teclado (espaço pega, setas movem, espaço/Enter solta, Esc cancela), rolagem automática |
+| `inspector/` | Inspetor gerado (abas Conteúdo/Estilo/Avançado) e um controle por `InspectorControl` em `inspector/controls/` |
+| `use-shortcuts.ts` | Atalhos (abaixo) na página e dentro do iframe |
+| `__demo__/` | Catálogo de demonstração + playground `/<workspace>/canvas-lab` |
+
+O que um catálogo precisa fazer para funcionar no shell:
+
+- **Espalhar `attributes`** no elemento mais externo de cada componente
+  (`<td {...attributes}>`). É o `data-canvas-id` que o canvas usa para
+  selecionar, contornar e calcular onde o item cai. Na saída final vem vazio.
+- **`icons`** no catálogo: o mapa de nomes (`icon: 'button'`) para ícones
+  Hugeicons. Nome desconhecido cai num ícone neutro. Opções de `segmented`
+  também podem usar os nomes prontos `text-left|center|right|justify`,
+  `align-top|middle|bottom|left|center|right`.
+- **Valores dos controles compostos** seguem `src/lib/canvas/values.ts`
+  (cor, espaçamento, cantos, borda, sombra, tipografia, fundo, imagem, link,
+  tamanho, visibilidade), com os schemas Zod e os helpers de CSS
+  (`spacingToCss`, `backgroundToCss`, `resolveColor`…). Use
+  `responsiveSchema(x)` para campos `responsive: true`.
+- **`defineComponent<P>()`** tipa uma definição com as próprias props.
+- Editar no lugar: `inlineText: { path, rich }`. Texto simples termina com
+  Enter/Esc; rico usa as marcas do controle `richtext` do mesmo caminho.
+
+Decisões do shell:
+
+- O iframe cresce com o conteúdo e quem rola é o palco; a camada de edição
+  fica no documento pai, então nada dela entra na saída.
+- O alvo de soltar não usa *droppables*: a cada movimento o ponteiro é
+  testado no iframe (`elementFromPoint`) ou na árvore de Camadas, e o
+  `canDrop` do motor decide. Borda de um container (até 12 px) significa
+  "antes/depois dele"; dentro, a posição entre os filhos.
+- **Abaixo de 1024 px** o editor mostra "Use uma tela maior para editar": a
+  barra lateral, o canvas e o inspetor não cabem lado a lado em tablet em pé.
+- O playground abre fora de produção; em produção só com `CANVAS_LAB=true`.
+
+Atalhos: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+C / Ctrl+X / Ctrl+V,
+Ctrl+D, Delete/Backspace, ↑/↓ irmão anterior/próximo, Alt+↑/↓ move o
+elemento, ← pai, → primeiro filho, Esc sobe para o pai, Enter edita o texto,
+Ctrl+S salva, Ctrl+= / Ctrl+- / Ctrl+0 zoom.

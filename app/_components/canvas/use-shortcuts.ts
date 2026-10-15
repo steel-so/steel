@@ -159,6 +159,8 @@ export function useCanvasShortcuts() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // Keys belong to the keyboard drag while one is in flight.
+      if (ctx.drag.get().source) return
       if (handleEditorKey(event, ctx)) event.preventDefault()
     }
     let frameDoc: Document | null = null
