@@ -127,6 +127,16 @@ Decisões do shell:
   o contexto de render do catálogo precisa ler o documento vivo (e-mail).
 - `dependsOn(doc, node)` na definição: o que o componente lê de outros nós;
   o canvas redesenha o nó quando esses valores mudam.
+- `tracksSelection` (S2): o canvas passa `activeChild` — o filho no caminho
+  até a seleção, ou o último que esteve — para o componente mostrar o que
+  está sendo editado (slide, aba, item, popup).
+- `readsChildren` (S2): o render recebe `childNodes` (rótulos das abas,
+  títulos do acordeão desenhados pelo pai); redesenha só quando um filho
+  direto muda.
+- `freeLayout: { childPath, enabled(props, breakpoint) }` (S2): filhos de um
+  nó em posição livre são arrastados no canvas com guias de alinhamento
+  (bordas e centro do container e dos irmãos; Alt desliga o ímã). O arraste
+  grava `<childPath>.x` e `<childPath>.y` no breakpoint ativo.
 
 Atalhos: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+C / Ctrl+X / Ctrl+V,
 Ctrl+D, Delete/Backspace, ↑/↓ irmão anterior/próximo, Alt+↑/↓ move o
@@ -199,3 +209,64 @@ Para quem usa:
 
 O playground (`/<workspace>/canvas-lab`) tem a chave **Demonstração / Site**
 e um seletor de modelo no modo Site.
+
+## Fase S2 — elementos "nível Wix"
+
+Novos tipos do catálogo `site` (a versão do catálogo continua 1: só há
+props e tipos novos, nenhum documento antigo muda):
+
+| Tipo | Elemento | Observações |
+|---|---|---|
+| `site.gallery` | Galeria | Grade ou mosaico; "Ampliar ao clicar" abre a lightbox |
+| `site.carousel` + `site.slide` | Carrossel | Qualquer conteúdo no slide; setas, indicadores, passagem automática (pausa no mouse, foco, toque e botão), arrastar no celular (scroll-snap nativo) |
+| `site.tabs` + `site.tab` | Abas | Padrão WAI-ARIA (setas, Home/End); sem JS mostra todos os painéis |
+| `site.accordion` + `site.accordion-item` | Acordeão (FAQ) | `<details>` nativo, um aberto por vez via `name` |
+| `site.popup` | Popup | Filho da página; abre por clique (interação ou link `#âncora`), ao carregar, depois de N s, ao rolar X % ou na intenção de saída; frequência por visita/visitante; `<dialog>` modal (foco preso, Esc fecha, foco volta) |
+| `site.countdown` | Contagem regressiva | Data, hora e fuso (UTC±) do próprio elemento |
+| `site.stats` | Números | Contagem animada ao aparecer; o HTML já traz o valor final |
+| `site.testimonials` | Depoimentos | Grade ou carrossel |
+| `site.pricing` | Tabela de preços | Planos com destaque, selo e botão |
+| `site.logos` | Logos | Grade ou faixa rolando (CSS puro) |
+| `site.map` | Mapa | Google Maps por endereço; por padrão só carrega após o clique (LGPD) |
+| `site.whatsapp` | Botão do WhatsApp | Flutuante ou na página; número digitado ou de uma conexão da Comunicação |
+| `site.before-after` | Antes e depois | `<input type=range>` nativo sobre as duas imagens |
+
+Efeitos em qualquer elemento (props comuns, aba Avançado/Estilo):
+
+- **Ao clicar** (`interaction`): abrir/fechar popup, rolar até uma âncora, ir
+  para página/URL, mostrar/ocultar elemento. Alvos são âncoras (`id`);
+  popups sem âncora usam `popup-<id do nó>`.
+- **Animação de entrada** (`animation`): efeito, ao abrir ou ao aparecer,
+  duração, atraso e aceleração. `prefers-reduced-motion` desliga tudo.
+  Use "Ao abrir" no topo da página (não atrasa o LCP).
+- **Ao passar o mouse** (`hover`): cor de fundo/texto/borda, sombra, escala,
+  elevar, opacidade — em botões, containers (cartões), imagens e ícones;
+  vale também para foco do teclado.
+- **Posição livre**: no container, "Posicionamento: Livre" (por
+  breakpoint); cada filho guarda `place.x`, `place.y`, `place.width` e
+  `place.z` por breakpoint. O fluxo continua sendo o padrão.
+
+Runtime público (`src/lib/canvas-site/runtime/`):
+
+- `siteRuntimeScripts(docs)` devolve `boot` (uma linha que marca `html.s-js`
+  antes do conteúdo) e só os scripts das funções usadas: `form`,
+  `carousel`, `tabs`, `actions` (popups e interações), `lightbox`,
+  `countdown`, `stats`, `map`, `before-after`, `reveal`. Cada um é JS puro
+  pequeno, inline com o nonce da CSP; nada do editor vai para a página.
+- O CSS estrutural dos elementos novos (`static-css-elements.ts`) também só
+  entra quando a página usa o elemento.
+- A CSP libera `https://www.google.com` em `frame-src` (mapa).
+- A prévia do editor roda os mesmos scripts (exceto o do formulário).
+
+Editor:
+
+- Carrossel, abas e acordeão mostram o filho selecionado; clicar num
+  indicador ou numa aba no canvas seleciona aquele slide/aba. Popups ficam
+  recolhidos num selo "Popup: nome" até serem selecionados (pelo selo ou
+  pelas Camadas).
+- O inspetor do carrossel, das abas e do acordeão tem "Adicionar
+  slide/aba/item"; o alvo de "Ao clicar" é escolhido numa lista de âncoras e
+  popups da página; o WhatsApp lista as conexões da Comunicação.
+- Seções prontas novas (12 tipos × 3 estilos) e o modelo "Evento e
+  lançamento".
+
