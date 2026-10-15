@@ -22,7 +22,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { EmailBodyProps } from '@/src/lib/canvas-email/schemas'
-import { useEmailEditorData } from './editor-data'
+import { campaignReturnHref, useEmailEditorData } from './editor-data'
 import { useTemplateMeta } from './template-meta'
 
 export const SUBJECT_MAX = 300
@@ -34,7 +34,16 @@ export const PREHEADER_MAX = 150
  * shows the subject.
  */
 export function EnvelopeFields() {
-  const { slug, meta } = useEmailEditorData()
+  const { slug, meta, returnTo, templateId } = useEmailEditorData()
+  const back = returnTo
+    ? {
+        href: campaignReturnHref(returnTo, templateId),
+        label: 'Voltar para a campanha',
+      }
+    : {
+        href: `/${slug}/crm/email-templates`,
+        label: 'Voltar para os templates',
+      }
   const store = useCanvasStoreApi()
   const name = useTemplateMeta(meta, (m) => m.name)
   const subject = useTemplateMeta(meta, (m) => m.subject)
@@ -47,9 +56,9 @@ export function EnvelopeFields() {
   return (
     <div className='flex min-w-0 items-center gap-1.5'>
       <Link
-        href={`/${slug}/crm/email-templates`}
-        aria-label='Voltar para os templates'
-        title='Voltar para os templates'
+        href={back.href}
+        aria-label={back.label}
+        title={back.label}
         className='flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
       >
         <SteelIcon icon={ArrowLeft01Icon} className='size-4' />

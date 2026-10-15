@@ -155,6 +155,8 @@ export default defineConfig({
         'src/lib/canvas-email/**',
         'src/lib/canvas-site/**',
         'src/lib/sites/**',
+        'src/lib/canvas-collab/**',
+        'src/lib/site-ai/**',
       ],
       exclude: [
         'node_modules/**',

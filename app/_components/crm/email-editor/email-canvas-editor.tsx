@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
+import type { CanvasCollaboration } from '@/app/_components/canvas/collab/collab-context'
 import type {
   CanvasPresetItem,
   CanvasSidebarTab,
@@ -18,6 +19,7 @@ import {
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
 import { createCanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
+import { canvasDocumentName } from '@/src/lib/canvas-collab/names'
 import { openEmailDocument } from '@/src/lib/canvas-email/convert-v1'
 import { EMAIL_PRESETS } from '@/src/lib/canvas-email/presets'
 import {
@@ -49,6 +51,7 @@ import { ProductPickerControl } from './product-picker-control'
 import { SavedBlocksPanel } from './saved-blocks-panel'
 import { SendTestButton } from './send-test-dialog'
 import { createTemplateMetaStore, type TemplateMeta } from './template-meta'
+import { UseInCampaignButton } from './use-in-campaign-button'
 import { VariablesPanel } from './variables-panel'
 import { VersionHistoryButton } from './version-history'
 
@@ -73,6 +76,7 @@ function renderActions() {
       <VersionHistoryButton />
       <PreviewButton />
       <SendTestButton />
+      <UseInCampaignButton />
     </div>
   )
 }
@@ -98,6 +102,8 @@ export function EmailCanvasEditor({
   brand: savedBrand,
   initialDocument,
   allowHtml,
+  collabUser,
+  returnTo = null,
 }: {
   workspaceId: string
   slug: string
@@ -107,6 +113,10 @@ export function EmailCanvasEditor({
   initialDocument: CanvasDocument
   /** Workspace OWNER/ADMIN: the HTML block is offered in the palette. */
   allowHtml: boolean
+  /** Who is editing, for real-time co-editing (presence, outlines). */
+  collabUser?: CanvasCollaboration['user']
+  /** Campaign wizard to go back to with this template selected. */
+  returnTo?: string | null
 }) {
   const queryClient = useQueryClient()
   // A plain call, not useMutation: the editor must not re-render (and redraw
@@ -340,6 +350,14 @@ export function EmailCanvasEditor({
     [brandSaving, previewBrand, handleBrandSave],
   )
   const colorTokens = useMemo(() => emailColorTokens(brand), [brand])
+  const [collaboration] = useState<CanvasCollaboration | undefined>(() =>
+    collabUser
+      ? {
+          documentName: canvasDocumentName('email-template', template.id),
+          user: collabUser,
+        }
+      : undefined,
+  )
 
   const data = useMemo<EmailEditorData>(
     () => ({
@@ -353,6 +371,7 @@ export function EmailCanvasEditor({
       flushMeta,
       flushDocument,
       applyTemplate,
+      returnTo,
     }),
     [
       workspaceId,
@@ -365,6 +384,7 @@ export function EmailCanvasEditor({
       flushMeta,
       flushDocument,
       applyTemplate,
+      returnTo,
     ],
   )
 
@@ -374,6 +394,7 @@ export function EmailCanvasEditor({
         catalog={catalog}
         store={store}
         initialDocument={initialDocument}
+        collaboration={collaboration}
         viewportWidths={EMAIL_VIEWPORTS}
         frameHead={FRAME_HEAD}
         presets={EMAIL_EDITOR_PRESETS}

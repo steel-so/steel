@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { NODE_ENV } from '@/lib/env/env'
+import { BETTER_AUTH_SECRET } from '@/lib/env/server'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   compileSiteCss,
@@ -21,11 +22,21 @@ import {
 import { siteMetaCsp } from '@/src/lib/sites/csp'
 import { collectFormTokens } from '@/src/lib/sites/document'
 import {
+  AB_CONFIG_ID,
+  abCookieName,
+  abRuntimeConfig,
+  resolveAbVisitorKey,
+  SITE_AB_SCRIPT,
+  serializeAbConfig,
+} from '@/src/lib/sites/experiment-runtime'
+import { planExperiments } from '@/src/lib/sites/experiments'
+import {
   resolveSiteHref,
   SITE_VIA_HOST_HEADER,
   siteLinkBase,
 } from '@/src/lib/sites/host'
 import { matchRedirect } from '@/src/lib/sites/redirects'
+import { searchSettingsOf } from '@/src/lib/sites/search/context'
 import {
   canonicalUrlOf,
   fallbackFavicon,
@@ -41,6 +52,9 @@ import {
   publicPathOf,
   type SiteSnapshot,
 } from '@/src/lib/sites/snapshot'
+import { clientIp } from '@/src/lib/sites/visitor'
+import { DEFAULT_SITE_TIMEZONE } from '@/src/schemas/site.schema'
+import { parseSearchContent } from '@/src/schemas/site-search.schema'
 import { SITE_CHROME_CSS } from '../../../_components/site-chrome-css'
 import { SiteRuntime } from '../../../_components/site-runtime'
 import {
@@ -51,6 +65,7 @@ import {
 } from '../../../_lib/cms'
 import {
   loadPublishedSite,
+  loadSiteExperiments,
   loadSiteForms,
   loadSiteRedirects,
 } from '../../../_lib/load'
@@ -105,6 +120,8 @@ export async function generateMetadata({
   ]
   const noindex = Boolean(settings.seo.noindex || page.seo.noindex)
   const { colors } = parseSiteTheme(site.snapshot.theme)
+  // Ownership checks of Google Search Console and Bing Webmaster Tools.
+  const { verification } = searchSettingsOf(settings)
 
   return {
     metadataBase: new URL(site.baseUrl),
@@ -133,6 +150,16 @@ export async function generateMetadata({
       ...(settings.faviconUrl ? { apple: settings.faviconUrl } : {}),
     },
     manifest: null,
+    ...(verification.google || verification.bing
+      ? {
+          verification: {
+            ...(verification.google ? { google: verification.google } : {}),
+            ...(verification.bing
+              ? { other: { 'msvalidate.01': verification.bing } }
+              : {}),
+          },
+        }
+      : {}),
     openGraph: {
       ...(dynamic?.post
         ? {
@@ -191,11 +218,14 @@ export default async function PublishedSitePage({
   searchParams,
 }: PageProps) {
   const { siteSlug, path = [] } = await params
-  const [site, redirects, requestHeaders] = await Promise.all([
-    loadPublishedSite(siteSlug),
-    loadSiteRedirects(siteSlug),
-    headers(),
-  ])
+  const [site, redirects, experiments, requestHeaders, cookieStore] =
+    await Promise.all([
+      loadPublishedSite(siteSlug),
+      loadSiteRedirects(siteSlug),
+      loadSiteExperiments(siteSlug),
+      headers(),
+      cookies(),
+    ])
   if (!site) notFound()
   const linkBase = siteLinkBase(
     site.slug,
@@ -222,9 +252,34 @@ export default async function PublishedSitePage({
   if (!page) notFound()
 
   const { snapshot } = site
-  const header = asChrome(globalOf(snapshot, 'HEADER')?.document)
-  const footer = asChrome(globalOf(snapshot, 'FOOTER')?.document)
-  const shown = [header, page.document, footer].filter(
+  // A/B tests: the variant of each running test is picked on the server
+  // (no flicker) from the visitor's key — the consented cookie, else the
+  // anonymous daily hash. See `src/lib/sites/experiments.ts`.
+  const now = new Date()
+  const visitorKey = resolveAbVisitorKey({
+    cookie: cookieStore.get(abCookieName(site.slug))?.value,
+    ip: clientIp(requestHeaders.get('x-forwarded-for')),
+    userAgent: requestHeaders.get('user-agent') ?? '',
+    siteId: site.id,
+    secret: BETTER_AUTH_SECRET,
+    now,
+  })
+  const plan = planExperiments({
+    snapshot,
+    page,
+    experiments,
+    visitorKey,
+    now,
+  })
+  const chromeOf = (kind: 'HEADER' | 'FOOTER') => {
+    const doc = asChrome(globalOf(snapshot, kind)?.document)
+    return doc ? plan.chrome(doc) : undefined
+  }
+  const header = chromeOf('HEADER')
+  const footer = chromeOf('FOOTER')
+  const pageDocument = plan.document
+  const abEntries = plan.entries()
+  const shown = [header, pageDocument, footer].filter(
     (doc) => doc !== undefined,
   )
   const symbols = symbolsOf(snapshot, shown)
@@ -255,6 +310,14 @@ export default async function PublishedSitePage({
       linkBase,
     }),
   }
+  // "Atualizado em …" (Buscadores → freshness), in the site's timezone.
+  const updatedLabel =
+    page.updatedAt && parseSearchContent(page.seo.search).showUpdatedDate
+      ? `Atualizado em ${new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'long',
+          timeZone: snapshot.settings.timezone ?? DEFAULT_SITE_TIMEZONE,
+        }).format(new Date(page.updatedAt))}`
+      : null
   const css = compileSiteCss(documents, {
     theme: parseSiteTheme(snapshot.theme),
   })
@@ -296,7 +359,12 @@ export default async function PublishedSitePage({
         }}
       />
       {header ? <SiteDocument doc={header} context={context} /> : null}
-      <SiteDocument doc={page.document} context={context} />
+      <SiteDocument doc={pageDocument} context={context} />
+      {updatedLabel && page.updatedAt ? (
+        <p className='ss-updated'>
+          <time dateTime={page.updatedAt}>{updatedLabel}</time>
+        </p>
+      ) : null}
       {footer ? <SiteDocument doc={footer} context={context} /> : null}
       {runtime.scripts.map((script) => (
         <script
@@ -306,6 +374,29 @@ export default async function PublishedSitePage({
           dangerouslySetInnerHTML={{ __html: script.code }}
         />
       ))}
+      {abEntries.length > 0 ? (
+        <>
+          <script
+            id={AB_CONFIG_ID}
+            type='application/json'
+            dangerouslySetInnerHTML={{
+              __html: serializeAbConfig(
+                abRuntimeConfig({
+                  slug: site.slug,
+                  visitorKey,
+                  bannerEnabled: snapshot.settings.cookieBanner.enabled,
+                  entries: abEntries,
+                }),
+              ),
+            }}
+          />
+          <script
+            nonce={nonce}
+            data-site-runtime='ab'
+            dangerouslySetInnerHTML={{ __html: SITE_AB_SCRIPT }}
+          />
+        </>
+      ) : null}
       <SiteRuntime
         slug={site.slug}
         pageId={page.id}

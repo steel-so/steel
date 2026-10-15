@@ -8,6 +8,7 @@ import {
 import { createDragStore } from '@/app/_components/canvas/lib/drag-store'
 import { createFrameHandle } from '@/app/_components/canvas/lib/frame-handle'
 import type { CanvasEditorProps } from '@/app/_components/canvas/types'
+import { CanvasStoreProvider } from '@/app/_components/canvas/use-canvas'
 import { renderWithQuery } from '@/src/__tests__/component-utils'
 import { createSiteDocument } from '@/src/__tests__/factories/site.factory'
 import { crmSitesApi } from '@/src/hooks/use-crm-sites'
@@ -144,9 +145,11 @@ export function renderInEditor(
     clipboard: { current: null },
   }
   const rendered = renderWithQuery(
-    <CanvasEditorContextProvider value={editor}>
-      <SiteEditorProvider value={ctx}>{ui}</SiteEditorProvider>
-    </CanvasEditorContextProvider>,
+    <CanvasStoreProvider store={editor.store}>
+      <CanvasEditorContextProvider value={editor}>
+        <SiteEditorProvider value={ctx}>{ui}</SiteEditorProvider>
+      </CanvasEditorContextProvider>
+    </CanvasStoreProvider>,
     { client: options.client },
   )
   return { ...rendered, ctx, save, editor }

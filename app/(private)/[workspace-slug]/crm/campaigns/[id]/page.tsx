@@ -21,10 +21,10 @@ export default async function CrmCampaignPage({
   searchParams,
 }: {
   params: Promise<{ 'workspace-slug': string; id: string }>
-  searchParams: Promise<{ passo?: string }>
+  searchParams: Promise<{ passo?: string; emailTemplate?: string }>
 }) {
   const { 'workspace-slug': slug, id } = await params
-  const { passo } = await searchParams
+  const { passo, emailTemplate } = await searchParams
 
   const session = await getAuthSession()
   if (!session.ok) redirect('/sign-in')
@@ -54,6 +54,7 @@ export default async function CrmCampaignPage({
           workspaceSlug={slug}
           campaignId={id}
           initialStep={passo ? Number(passo) - 1 || 0 : 0}
+          initialEmailTemplateId={emailTemplate ?? null}
         />
       </div>
     </div>

@@ -20,25 +20,12 @@ export const SiteFaqItemSchema = z.object({
 export type SiteFaqItemDTO = z.infer<typeof SiteFaqItemSchema>
 
 /**
- * "Buscadores" data of a post, stored at `seo.search` with the same shape
- * the site-search slice gives pages (`SearchContentSchema`): focus keyword,
- * synonyms, the questions the post answers (its FAQ) and a quotable
- * summary. Unknown keys set by the Buscadores panel are kept.
+ * Post SEO: exactly the per-page SEO model (title, description, social
+ * image, noindex, canonical) with the "Buscadores" block at `seo.search`
+ * (`SearchContentSchema`: focus keyword, synonyms, questions, summary,
+ * structured data). The questions are the post's FAQ.
  */
-export const SitePostSearchSchema = z
-  .object({
-    focusKeyword: z.string().trim().max(100).optional(),
-    synonyms: z.array(z.string().trim().min(1).max(100)).max(8).optional(),
-    questions: z.array(SiteFaqItemSchema).max(20).optional(),
-    summary: z.string().trim().max(600).optional(),
-  })
-  .passthrough()
-
-/** Post SEO: the per-page SEO model (same fields and fallbacks) plus the
- * shared `search` block. */
-export const SitePostSeoSchema = SitePageSeoSchema.extend({
-  search: SitePostSearchSchema.optional(),
-})
+export const SitePostSeoSchema = SitePageSeoSchema
 export type SitePostSeoDTO = z.infer<typeof SitePostSeoSchema>
 
 /** FAQ of a post (its "questions this content answers"). */

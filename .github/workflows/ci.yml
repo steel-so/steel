@@ -46,8 +46,10 @@ jobs:
       - name: Type check
         # O projeto passou de 4 GB de heap no `tsc` (padrão do Node no
         # runner) e o job morria com "JavaScript heap out of memory".
+        # 6 GB também estourou com os modelos do blog/coleções dos sites
+        # (S4); o runner padrão tem 16 GB.
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm tsc --noEmit
 
       - name: Lint

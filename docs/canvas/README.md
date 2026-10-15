@@ -38,7 +38,9 @@ Decisão de arquitetura: [ADR 0026](../adr/0026-steel-canvas-shared-drag-and-dro
 | E3 | Bloco condicional por contato, produtos dinâmicos, ajustes só no celular, IA nos blocos |
 | S1 | Sites: site e páginas, layout em fluxo, ~15 elementos, tema, breakpoints, formulário do CRM, subdomínio, migração das landing pages, menu "Sites" |
 | S2 | Nível Wix: galeria, carrossel, abas, popups, animações, posição livre, componentes globais, mídia, versões, SEO |
-| S3 | Nível WordPress: blog, coleções, domínio próprio com TLS, redirecionamentos, sitemap, conversões |
+| S3 | Só domínios: subdomínio do Steel e domínio próprio do cliente com TLS (depende de infraestrutura — issue #91). Até lá, os sites ficam em `/s/<site>` |
+| Conteúdo | Blog e coleções (CMS), antes previstos no S3; redirecionamentos, sitemap e conversões já entraram na S2 |
+| Buscadores | SEO, AEO e GEO: perfil do negócio, notas por página, robots por robô de IA, `llms.txt`, editor de dados estruturados |
 | S4 | Coedição (Yjs), gerador de site com IA, teste A/B; loja e área de membros a decidir |
 
 ## Núcleo do motor (`src/lib/canvas/`)
@@ -475,3 +477,135 @@ ganha `/<coleção>/<item>`.
 Leituras do blog e das coleções usam a tag do site (`site:<slug>`) e vida
 curta (`minutes`): salvar um post publicado expira na hora; um agendado
 aparece sozinho em até alguns minutos.
+## Coedição em tempo real (S4)
+
+Decisão em [ADR 0027](../adr/0027-canvas-real-time-co-editing.md).
+
+- **Onde liga:** `CanvasEditorProps.collaboration = { documentName, user }`.
+  O editor de sites (página ou global) e o de e-mail v2 passam a sala
+  (`canvasDocumentName('site-page' | 'site-global' | 'email-template', id)`)
+  e o usuário da sessão, que vem da página do servidor. Sem a prop o
+  editor funciona como antes.
+- **Peças:** `src/lib/canvas-collab/` — `ydoc.ts` (modelo Yjs, props planas
+  por caminho), `binding.ts` (`bindCanvasStore`: store ⇄ Y.Doc),
+  `project.ts` (projeção válida de um estado remoto), `presence.ts`
+  (awareness), `names.ts` (salas e mensagens). No shell,
+  `app/_components/canvas/collab/` — `session.ts` (conexão, presença,
+  flush), `hocuspocus.ts`, `collab-context.tsx`, `presence-bar.tsx`. No
+  servidor, `src/services/canvas-collab.service.ts` e
+  `canvas_collab_states`.
+- **Store:** ganhou `onChange` (toda mudança de documento, com a op),
+  `applyRemote` (sem passo de histórico) e `setTextGuard` (recusa editar
+  texto travado por outra pessoa). Desfazer continua por usuário.
+- **Salvar:** com a sala ao vivo, o servidor realtime grava (debounce do
+  Hocuspocus); "Salvar"/Ctrl+S, publicar e enviar teste pedem gravação
+  imediata (`canvas.flush`) e caem no REST se o servidor não confirmar. Sem
+  realtime, o autosave REST de sempre; o selo "Sem colaboração em tempo
+  real" aparece na barra.
+- **Presença:** avatares de quem está no documento na barra, contorno com a
+  cor e o nome da pessoa no que ela selecionou, e "Fulano está editando
+  este texto" no texto em edição (os outros não conseguem abrir o mesmo
+  texto).
+- **Proxy:** usa o `/realtime` da Wiki — nenhuma regra nova no nginx nem no
+  Apache de borda.
+## Sites — fase S4, gerador com IA
+
+"Novo site → Gerar com IA" monta um site inteiro a partir de um briefing curto; no editor, a aba **IA** gera uma seção, reescreve os textos da página e sugere imagens. Tudo usa o provedor, o modelo e a cota mensal da IA do CRM (ADR 0007/0019: feature `crm.aiAssistant`, consumo lançado como `CRM_ASSISTANT` com `module = CRM`).
+
+**Princípio: a IA escreve, o catálogo monta.** O modelo nunca cria nós. A estrutura vem das seções prontas do catálogo (`SECTION_BUILDERS`, `ELEMENT_SECTION_BUILDERS`) e de algumas seções próprias do gerador (`src/lib/site-ai/sections.ts`: abertura de página, chamada para ação, contato com o formulário do CRM, produtos e depoimentos reais, contagem regressiva, cabeçalho e rodapé). O modelo só preenche **slots** (`src/lib/site-ai/slots.ts`): cada texto da árvore (título, parágrafo, botão, item de lista, pergunta, aba, plano, texto alternativo, ícone) vira um campo com id curto (`t1`…), papel, limite de caracteres e o texto de exemplo. Valor que não cabe no schema da prop é descartado e o campo fica com o texto do modelo de seção.
+
+- **Dados reais não passam pela IA**: nós com nome de camada `Logo`, `Produto`, `Descrição do produto`, `Preço`, `Depoimento`, `Autor do depoimento` e `Direitos` ficam fora dos slots (nem a geração nem "Reescrever textos" mexem). Produtos vêm do CRM (`crm_products`, ativos), depoimentos das seções `TESTIMONIAL` das landing pages; sem esses dados, as seções `products`/`testimonials` não entram no plano. O prompt proíbe inventar números, preços, clientes e contatos ("Sob consulta" onde faltar preço).
+- **Plano** (`plan.ts`): a primeira chamada escolhe estilo (kit), paleta, fontes, texto do botão e as seções de cada página; `normalizePlan` só aceita o que o briefing permite e completa com padrões (Início abre com `hero`, páginas internas com `intro`, um único formulário — na página Contato ou no fim do Início, no máximo 7 seções). A cor da marca do briefing sempre vence a do modelo; cor clara ganha texto escuro no botão.
+- **Respostas** (`run.ts`): saída JSON estrita (structured outputs), lida com reparo (cercas, texto em volta, vírgula sobrando), conferida por Zod e por validação de domínio (todos os campos devolvidos). Se falhar, os problemas voltam ao modelo como nova mensagem — até 3 chamadas. Cada chamada lança o consumo na hora.
+- **Validação**: links para âncoras que não existem viram link para a página Contato (ou para o Início); cada seção é validada sozinha por `validateSiteDocument` e a que falhar é descartada (com aviso), depois a página inteira. Nada é gravado antes de todas as páginas ficarem prontas; site, páginas (com SEO) e globais entram numa transação (`SiteRepository.createWithPages`).
+- **Stream**: `POST /crm/sites/ai/generate` responde `text/event-stream` (`SiteAiEvent`: `steps` → `step`* → `done`/`error`), com `: ping` a cada 15 s para o proxy não derrubar a conexão; as páginas são escritas 3 por vez. Erros de permissão, plano, cota, limite de sites e formulário voltam antes do stream, no envelope JSON.
+- **Imagens**: "Sugerir imagens" só deixa o modelo escolher entre a biblioteca de mídia do workspace (descrita pelos textos alternativos que o site já usa) e as fotos de exemplo do catálogo (`SITE_AI_PLACEHOLDERS`, servidas pelo próprio app). Nenhum endereço externo é aceito.
+- **Custo**: `GET /crm/sites/ai` devolve a cota (usada, total, restante) e a estimativa de cada ação (`estimate.ts`: tokens típicos × preço do modelo × margem da plataforma). A tela mostra "Custo estimado ≈ … · Restam … da cota" e bloqueia quando a cota acabou.
+
+Formulário de contato: o usuário escolhe um formulário publicado, pede um novo ("Contato pelo site", ação LEAD, criado e publicado no fim da geração) ou deixa para depois (o editor mostra "Escolha um formulário").
+## Sites — Buscadores (SEO, AEO e GEO)
+
+Três frentes, uma nota de 0 a 100 cada, calculadas por verificações
+**determinísticas e puras** em `src/lib/sites/search/`:
+
+| Frente | Para quem | O que pesa |
+|---|---|---|
+| **SEO** | Google e Bing | palavra-chave, título e descrição (tamanho e termo), endereço, um H1 e hierarquia, texto alternativo, links internos e externos, quantidade de texto, títulos repetidos no site, canônico/noindex, imagem social |
+| **AEO** | trechos em destaque, "As pessoas também perguntam", assistentes de voz | títulos em forma de pergunta, resposta direta de 40–60 palavras logo depois, FAQ visível (acordeão → `FAQPage`), perguntas cadastradas, listas e tabelas, HowTo, resumo falável |
+| **GEO** | ChatGPT, Perplexity, Gemini, Visões gerais do Google | perfil do negócio completo, NAP consistente (telefone do perfil = telefone do site), fatos com números/datas, resumo citável no topo, fontes de referência (.gov.br, .edu, .org, Wikipédia), atualização (data visível e `dateModified`), dados estruturados válidos, HTML semântico, acesso das IAs (robots.txt e llms.txt) |
+
+Cada verificação devolve `pass`/`warn`/`fail`, um peso, a explicação em
+pt-BR e, quando dá, uma **correção de um clique** (`SearchFix`): `patch` no
+SEO da página, `canvas` (operações desfazíveis, ex.: rebaixar H1 extras),
+`select` (seleciona o nó no inspetor), `insert-faq`, `insert-summary`,
+`open` (leva ao campo/aba certa) e `ai`. A nota é a soma ponderada (aviso
+vale metade). O editor e o relatório usam as mesmas funções, então a nota
+do painel (documento ao vivo) e a do relatório (rascunho salvo) batem.
+
+### Modelo de dados (sem migração)
+
+- **Site** → `sites.settings.search` (`SiteSearchSettingsSchema`):
+  `business` (perfil do negócio: tipo schema.org, nome, razão social,
+  descrição, categoria, endereço, geo, telefone, e-mail, horários, área
+  atendida, fundação, logo, `sameAs`, pessoas, faixa de preço), `crawlers`
+  (`false` bloqueia o robô), `llms` (liga/desliga + recado), `indexNow`
+  (liga/desliga + chave gerada pelo servidor) e `verification` (Google
+  Search Console, Bing). Vai no snapshot: entra no ar ao publicar.
+- **Conteúdo** → `seo.search` (`SearchContentSchema`): `focusKeyword`,
+  `synonyms`, `questions` (pergunta + resposta direta), `summary`,
+  `speakable`, `showUpdatedDate` e `structuredData` (Article, Product,
+  Service, Event, HowTo, FAQPage, LocalBusiness; BreadcrumbList é
+  automático).
+
+**Blog e outros conteúdos reutilizam o mesmo modelo**: guarde
+`SearchContentSchema` no JSON de SEO do post (`seo.search`), monte um
+`SearchPageInput` (`page` = o post, `document` = o canvas do post,
+`siblings` = os outros posts/páginas para títulos repetidos) e chame
+`analyzeSearchPage`; os campos de UI (`KeywordFields`, `QuestionsEditor`,
+`SummaryFields` em `app/_components/crm/sites/search/search-fields.tsx`) e o
+`StructuredDataDialog` recebem `search` + `onSave(patch)` e não sabem se é
+página ou post. Para o JSON-LD, `structuredDataNode` monta Article e os
+demais; o perfil do negócio vem de `resolveBusinessProfile(settings)`.
+
+Diálogos antigos que regravam `settings`/`seo` inteiros sem o bloco `search`
+não o apagam: `keepStoredSearch` mantém o que estava salvo (site e página).
+
+### Telas
+
+- **Editor → aba Buscadores**: as três notas da página aberta (ao vivo),
+  palavra-chave e sinônimos, verificações com correção, prévia do Google
+  (computador/celular) e das redes, perguntas (salvar e "Inserir como seção
+  na página" — vira um acordeão, logo `FAQPage`), resumo citável,
+  speakable, "Atualizado em", "Como a IA resumiria esta página" e dados
+  estruturados (com produto do CRM, validação e prévia do JSON-LD).
+- **Configurações da página**: palavra-chave e as três notas.
+- **`/<ws>/crm/sites/<id>/search`** (ícone de lupa na barra do editor):
+  *Saúde* (médias, problemas por impacto somado, páginas com notas e
+  "Otimizar com IA" em lote com revisão antes de aplicar), *Perfil do
+  negócio* (rascunho preenchido com workspace, marca de e-mail e SEO do
+  site) e *Rastreadores e feeds* (robô por robô, treino × busca explicado,
+  prévia do robots.txt, llms.txt, IndexNow e verificação).
+
+### Runtime público
+
+| Arquivo | O quê |
+|---|---|
+| `/robots.txt` | um grupo `Disallow` por robô bloqueado, depois `*` liberado, sitemap e o link do llms.txt |
+| `/llms.txt` | resumo em Markdown (llmstxt.org): perfil, fatos, páginas com resumo, perguntas frequentes |
+| `/llms-full.txt` | texto de todas as páginas indexáveis em Markdown (até 400 mil caracteres) |
+| `/indexnow-key.txt` | chave do IndexNow (só com ele ligado) |
+| `/sitemap.xml` | `lastmod` da própria página (`updatedAt` no snapshot) |
+| página | metatags de verificação, JSON-LD com perfil (Organization ou LocalBusiness), `dateModified`, `abstract`, `speakable` e os itens estruturados; "Atualizado em" no fuso do site |
+
+**IndexNow**: a cada publicação, com ele ligado, as URLs indexáveis vão
+para `api.indexnow.org` (Bing, Yandex, Seznam, Naver) — melhor esforço,
+nunca bloqueia a publicação, resultado no Axiom (`site_indexnow.*`).
+
+### IA
+
+`POST …/search/ai/summary` (resumo como um mecanismo generativo leria, com
+entidades, perguntas e sugestões) e `POST …/search/ai/optimize` (títulos,
+descrições e respostas diretas para até 10 páginas, uma chamada por
+página). Mesmo provedor, permissão de plano (`crm.aiAssistant`) e cota
+mensal das outras IAs do CRM. Nada é gravado pela IA: `POST …/search/apply`
+salva só o que o usuário marcou. Falha do provedor: `SITE_SEARCH_AI_FAILED`.

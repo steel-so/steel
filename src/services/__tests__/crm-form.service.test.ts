@@ -206,6 +206,28 @@ describe('CrmFormService', () => {
         }),
         expect.any(Date),
       )
+
+      // Sent from a site page (`site.form`): a site-form conversion.
+      expectOk(
+        await CrmFormService.submit('tok', '1.2.3.4', undefined, {
+          values: { full_name: 'Jane', work_email: 'jane@acme.com' },
+          campaign: {
+            utmCampaign: 'bf',
+            siteSlug: 'clinica',
+            sitePageId: 'home',
+          },
+        }),
+      )
+      expect(CrmCampaignTrackingService.attributeSiteForm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          submissionId: 's1',
+          formId: 'f1',
+          leadId: 'lead1',
+          ref: expect.objectContaining({ siteSlug: 'clinica' }),
+        }),
+        expect.any(Date),
+      )
+      expect(CrmCampaignTrackingService.attribute).toHaveBeenCalledTimes(1)
       expect(mockedLeadRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws1',

@@ -49,6 +49,26 @@ describe('crm-campaign mapper', () => {
     expect(links.whatsapp).toContain('utm_campaign=black-friday')
   })
 
+  it('should build site page links from the resolved URL', () => {
+    const campaign = createFakeCrmCampaign({ destinationType: 'SITE_PAGE' })
+    const links = toCrmCampaignLinks(campaign, 'https://a.test', {
+      url: 'https://a.test/s/clinica/contato',
+    })
+    expect(links.destination).toBe('https://a.test/s/clinica/contato')
+    expect(links.email).toMatch(/\/s\/clinica\/contato\?utm_source=email/)
+    // A token for a site page (or a URL for a form) is a mismatch.
+    expect(
+      toCrmCampaignLinks(campaign, 'https://a.test', 'tok').email,
+    ).toBeNull()
+    expect(
+      toCrmCampaignLinks(
+        createFakeCrmCampaign({ destinationType: 'FORM' }),
+        'https://a.test',
+        { url: 'https://a.test/x' },
+      ).destination,
+    ).toBeNull()
+  })
+
   it('should map a campaign with ISO dates and null variables', () => {
     const at = new Date('2026-10-09T13:00:00.000Z')
     const dto = toCrmCampaignDTO(
@@ -58,6 +78,9 @@ describe('crm-campaign mapper', () => {
     expect(dto.startAt).toBe(at.toISOString())
     expect(dto.scheduledAt).toBeNull()
     expect(dto.whatsappVariables).toBeNull()
+    expect(dto.destination).toBeNull()
+    expect(dto.siteId).toBeNull()
+    expect(dto.whatsappQuickReplyId).toBeNull()
   })
 
   it('should default KPIs without a funnel', () => {

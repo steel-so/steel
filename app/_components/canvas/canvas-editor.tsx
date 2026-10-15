@@ -7,6 +7,8 @@ import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { createCanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasFragment } from '@/src/lib/canvas/types'
+import { CollabProvider, useCanvasCollaboration } from './collab/collab-context'
+import type { CollabSession } from './collab/session'
 import { CanvasDnd } from './dnd/canvas-dnd'
 import {
   CanvasEditorContextProvider,
@@ -30,10 +32,18 @@ import { useCanvasShortcuts } from './use-shortcuts'
 /** Autosave delay after the last change. */
 export const AUTOSAVE_MS = 1500
 
+/**
+ * Saves through `onSave` (REST) while there is no live co-editing session.
+ * While live, the realtime server saves: changes are not sent here, and an
+ * explicit save (Ctrl+S, publish, test send) asks the server to save now,
+ * falling back to `onSave` when it does not confirm. Losing the connection
+ * saves pending changes through REST right away.
+ */
 function useAutosave(
   ctx: Pick<CanvasEditorContextValue, 'store'>,
   onSave: CanvasEditorProps['onSave'],
   setStatus: (status: SaveStatus) => void,
+  collab: CollabSession | null,
 ) {
   const { store } = ctx
   const onSaveRef = useRef(onSave)
@@ -52,7 +62,7 @@ function useAutosave(
     setStatus('saving')
     let ok = false
     try {
-      ok = await onSaveRef.current(doc)
+      ok = (await collab?.flush()) || (await onSaveRef.current(doc))
     } catch {
       ok = false
     }
@@ -68,7 +78,7 @@ function useAutosave(
       if (store.getState().dirty) return save()
     }
     return ok
-  }, [store, setStatus])
+  }, [store, setStatus, collab])
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null
@@ -78,18 +88,30 @@ function useAutosave(
       if (doc === lastDoc) return
       lastDoc = doc
       if (timer) clearTimeout(timer)
-      if (dirty) timer = setTimeout(() => void save(), AUTOSAVE_MS)
+      if (dirty && !collab?.isLive()) {
+        timer = setTimeout(() => void save(), AUTOSAVE_MS)
+      }
+    })
+    let wasLive = collab?.isLive() ?? false
+    const unsubscribeCollab = collab?.subscribe(() => {
+      const live = collab.isLive()
+      if (wasLive && !live && store.getState().dirty) void save()
+      wasLive = live
     })
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (store.getState().dirty) event.preventDefault()
+      const pending = collab?.isLive()
+        ? collab.getSnapshot().syncing
+        : store.getState().dirty
+      if (pending) event.preventDefault()
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => {
       unsubscribe()
+      unsubscribeCollab?.()
       if (timer) clearTimeout(timer)
       window.removeEventListener('beforeunload', onBeforeUnload)
     }
-  }, [store, save])
+  }, [store, save, collab])
 
   return save
 }
@@ -166,7 +188,8 @@ export function CanvasEditor(props: CanvasEditorProps) {
   const clipboard = useRef<CanvasFragment | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [dark, setDark] = useState(false)
-  const save = useAutosave({ store }, props.onSave, setSaveStatus)
+  const collab = useCanvasCollaboration(store, props.collaboration)
+  const save = useAutosave({ store }, props.onSave, setSaveStatus, collab)
 
   const value = useMemo<CanvasEditorContextValue>(
     () => ({
@@ -186,9 +209,11 @@ export function CanvasEditor(props: CanvasEditorProps) {
     <CanvasStoreProvider store={store}>
       <CanvasEditorContextProvider value={value}>
         <CanvasEditorUiProvider value={ui}>
-          <CanvasDnd>
-            <EditorLayout title={props.title} />
-          </CanvasDnd>
+          <CollabProvider value={collab}>
+            <CanvasDnd>
+              <EditorLayout title={props.title} />
+            </CanvasDnd>
+          </CollabProvider>
         </CanvasEditorUiProvider>
       </CanvasEditorContextProvider>
     </CanvasStoreProvider>

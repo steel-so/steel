@@ -34,3 +34,17 @@ export function renderLlmsSections(sections: LlmsSection[]): string {
     })
     .join('\n\n')
 }
+
+/** `llms.txt` with the dynamic sections before its "Opcional" links (at
+ * the end when there is none). */
+export function withLlmsSections(
+  llms: string,
+  sections: LlmsSection[],
+): string {
+  const extra = renderLlmsSections(sections)
+  if (!extra) return llms
+  const marker = llms.indexOf('## Opcional')
+  return marker === -1
+    ? `${llms.trimEnd()}\n\n${extra}\n`
+    : `${llms.slice(0, marker)}${extra}\n\n${llms.slice(marker)}`
+}

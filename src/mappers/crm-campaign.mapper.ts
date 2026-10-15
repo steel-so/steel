@@ -1,16 +1,18 @@
 import type {
   CrmCampaign,
   CrmCampaignConversion,
+  CrmCampaignConversionKind,
   CrmCampaignRecipient,
 } from '@prisma/client'
 import {
-  buildDestinationUrl,
+  campaignDestinationUrl,
   withCampaignParams,
 } from '@/src/lib/crm-campaign/campaign-url'
 import type { CampaignFunnelCounts } from '@/src/repositories/crm-campaign.repository'
 import type {
   CrmCampaignAudienceDTO,
   CrmCampaignConvertedContactDTO,
+  CrmCampaignDestinationDTO,
   CrmCampaignDTO,
   CrmCampaignKpisDTO,
   CrmCampaignLinksDTO,
@@ -34,24 +36,33 @@ export function toCrmCampaignAudienceDTO(raw: unknown): CrmCampaignAudienceDTO {
   }
 }
 
-/** Public links of the destination, with the UTM parameters per channel. */
+/**
+ * Public links of the destination, with the UTM parameters per channel.
+ * `destination` is the landing page/form token, or the resolved URL of a
+ * site page (`{ url }`).
+ */
 export function toCrmCampaignLinks(
   campaign: Pick<CrmCampaign, 'destinationType' | 'slug' | 'utmMedium'>,
   baseUrl: string,
-  destinationToken: string | null,
+  destination: string | { url: string } | null,
 ): CrmCampaignLinksDTO {
-  if (!campaign.destinationType || !destinationToken) {
-    return { destination: null, email: null, whatsapp: null }
-  }
-  const destination = buildDestinationUrl(baseUrl, {
-    type: campaign.destinationType,
-    token: destinationToken,
-  })
+  const type = campaign.destinationType
+  const usable =
+    type !== null &&
+    destination !== null &&
+    (type === 'SITE_PAGE') === (typeof destination === 'object')
+  if (!usable) return { destination: null, email: null, whatsapp: null }
+  const destinationUrl = campaignDestinationUrl(
+    baseUrl,
+    typeof destination === 'string'
+      ? { type: type as 'LANDING_PAGE' | 'FORM', token: destination }
+      : { type: 'SITE_PAGE', url: destination.url },
+  )
   const params = { medium: campaign.utmMedium, campaign: campaign.slug }
   return {
-    destination,
-    email: withCampaignParams(destination, { ...params, source: 'email' }),
-    whatsapp: withCampaignParams(destination, {
+    destination: destinationUrl,
+    email: withCampaignParams(destinationUrl, { ...params, source: 'email' }),
+    whatsapp: withCampaignParams(destinationUrl, {
       ...params,
       source: 'whatsapp',
     }),
@@ -61,6 +72,7 @@ export function toCrmCampaignLinks(
 export function toCrmCampaignDTO(
   campaign: CrmCampaign,
   links: CrmCampaignLinksDTO,
+  destination: CrmCampaignDestinationDTO | null = null,
 ): CrmCampaignDTO {
   return {
     id: campaign.id,
@@ -71,6 +83,8 @@ export function toCrmCampaignDTO(
     destinationType: campaign.destinationType,
     landingPageId: campaign.landingPageId,
     formId: campaign.formId,
+    siteId: campaign.siteId,
+    sitePageId: campaign.sitePageId,
     utmMedium: campaign.utmMedium,
     emailFrom: campaign.emailFrom,
     emailSubject: campaign.emailSubject,
@@ -86,6 +100,7 @@ export function toCrmCampaignDTO(
       null,
     whatsappText: campaign.whatsappText,
     whatsappMediaUrl: campaign.whatsappMediaUrl,
+    whatsappQuickReplyId: campaign.whatsappQuickReplyId,
     whatsappDelayHours: campaign.whatsappDelayHours,
     whatsappLegalBasis: campaign.whatsappLegalBasis,
     scheduledAt: iso(campaign.scheduledAt),
@@ -100,6 +115,7 @@ export function toCrmCampaignDTO(
     createdAt: campaign.createdAt.toISOString(),
     updatedAt: campaign.updatedAt.toISOString(),
     links,
+    destination,
   }
 }
 
@@ -121,7 +137,7 @@ export function toCrmCampaignKpisDTO(
 export function toCrmCampaignStatsDTO(
   funnel: CampaignFunnelCounts,
   conversionCounts: {
-    kind: 'LANDING_VIEW' | 'FORM_SUBMISSION'
+    kind: CrmCampaignConversionKind
     channel: 'EMAIL' | 'WHATSAPP' | null
     count: number
   }[],
@@ -157,12 +173,23 @@ export function toCrmCampaignStatsDTO(
     },
     conversions: {
       total: sum(() => true),
-      visits: sum((row) => row.kind === 'LANDING_VIEW'),
-      submissions: sum((row) => row.kind === 'FORM_SUBMISSION'),
+      visits: sum(
+        (row) => row.kind === 'LANDING_VIEW' || row.kind === 'SITE_VIEW',
+      ),
+      submissions: sum(
+        (row) =>
+          row.kind === 'FORM_SUBMISSION' || row.kind === 'SITE_FORM_SUBMISSION',
+      ),
       byChannel: {
         email: sum((row) => row.channel === 'EMAIL'),
         whatsapp: sum((row) => row.channel === 'WHATSAPP'),
         unknown: sum((row) => row.channel === null),
+      },
+      byDestination: {
+        siteView: sum((row) => row.kind === 'SITE_VIEW'),
+        siteForm: sum((row) => row.kind === 'SITE_FORM_SUBMISSION'),
+        crmForm: sum((row) => row.kind === 'FORM_SUBMISSION'),
+        landingView: sum((row) => row.kind === 'LANDING_VIEW'),
       },
     },
     convertedContacts: recent.map(toCrmCampaignConvertedContactDTO),

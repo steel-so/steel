@@ -3,9 +3,11 @@
 import {
   Analytics01Icon,
   Clock01Icon,
+  FlaskConicalIcon,
   LinkSquare02Icon,
   Rocket01Icon,
   Route01Icon,
+  SearchFocusIcon,
   Settings02Icon,
   ViewIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -183,6 +185,23 @@ export function SiteEditorActions() {
         className={iconLink}
       >
         <SteelIcon icon={Analytics01Icon} className='size-4' />
+      </a>
+      <a
+        href={`/${slug}/crm/sites/${site.id}/search`}
+        aria-label='Buscadores (SEO, AEO e GEO)'
+        title='Buscadores (SEO, AEO e GEO)'
+        data-testid='site-search-link'
+        className={iconLink}
+      >
+        <SteelIcon icon={SearchFocusIcon} className='size-4' />
+      </a>
+      <a
+        href={`/${slug}/crm/sites/${site.id}/experiments`}
+        aria-label='Testes A/B'
+        title='Testes A/B'
+        className={iconLink}
+      >
+        <SteelIcon icon={FlaskConicalIcon} className='size-4' />
       </a>
       <button
         type='button'

@@ -8,20 +8,18 @@ import {
   SentIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
   useCrmCampaignEmailPreview,
   useLaunchCrmCampaign,
-  useTestSendCrmCampaign,
   useUpdateCrmCampaign,
 } from '@/src/hooks/use-crm-campaigns'
 import type {
@@ -29,282 +27,15 @@ import type {
   CrmCampaignOptionsDTO,
 } from '@/types/crm-campaign'
 import { CampaignAudienceStep } from './campaign-audience-step'
+import { DestinationStep } from './campaign-destination-step'
 import {
   type CampaignDraft,
   draftFromCampaign,
   draftToPatch,
 } from './campaign-draft'
-import {
-  fromLocalInput,
-  LEGAL_BASIS_LABEL,
-  toLocalInput,
-  WIZARD_STEPS,
-} from './campaign-labels'
-import { ContentStep, DestinationStep } from './campaign-steps'
-
-function ReviewStep({
-  campaign,
-  draft,
-  onChange,
-  options,
-  workspaceId,
-  dirty,
-}: {
-  campaign: CrmCampaignDetailDTO
-  draft: CampaignDraft
-  onChange: (patch: Partial<CampaignDraft>) => void
-  options: CrmCampaignOptionsDTO
-  workspaceId: string
-  dirty: boolean
-}) {
-  const [testEmail, setTestEmail] = useState('')
-  const [testPhone, setTestPhone] = useState('')
-  const test = useTestSendCrmCampaign(workspaceId, campaign.id)
-  const scheduled = draft.scheduledAt !== null
-  const windowOn = draft.sendWindowStartHour !== null
-
-  const destination =
-    draft.destinationType === 'FORM'
-      ? options.forms.find((f) => f.id === draft.formId)?.name
-      : options.landingPages.find((p) => p.id === draft.landingPageId)?.title
-  const template = options.emailTemplates.find(
-    (t) => t.id === draft.emailTemplateId,
-  )?.name
-  const connection = options.whatsapp.connections.find(
-    (c) => c.id === draft.whatsappConnectionId,
-  )
-
-  function sendTest() {
-    test.mutate(
-      {
-        email: testEmail.trim() || undefined,
-        phone: testPhone.trim() || undefined,
-      },
-      {
-        onSuccess: (result) => {
-          if (result.errors.length > 0) notify.error(result.errors.join(' · '))
-          else notify.success('Teste enviado')
-        },
-        onError: (error) => notify.error(error, 'Erro ao enviar o teste'),
-      },
-    )
-  }
-
-  const summary = [
-    {
-      label: 'Destino',
-      value: destination ?? '—',
-    },
-    {
-      label: 'E-mail',
-      value: draft.emailSubject
-        ? `“${draft.emailSubject}” · ${template ?? 'sem visual'}`
-        : '—',
-    },
-    {
-      label: 'WhatsApp',
-      value: draft.whatsappEnabled
-        ? `${connection?.label ?? 'sem conexão'} · ${
-            draft.whatsappDelayHours > 0
-              ? `${draft.whatsappDelayHours} h depois do e-mail`
-              : 'junto com o e-mail'
-          }`
-        : 'Desligado',
-    },
-    {
-      label: 'Base legal',
-      value:
-        [
-          draft.emailLegalBasis
-            ? `E-mail: ${LEGAL_BASIS_LABEL[draft.emailLegalBasis]}`
-            : null,
-          draft.whatsappEnabled && draft.whatsappLegalBasis
-            ? `WhatsApp: ${LEGAL_BASIS_LABEL[draft.whatsappLegalBasis]}`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' · ') || '—',
-    },
-  ]
-
-  return (
-    <div className='grid gap-6 lg:grid-cols-2'>
-      <div className='flex min-w-0 flex-col gap-6'>
-        <dl className='flex flex-col gap-3 rounded-xl border p-4'>
-          {summary.map((row) => (
-            <div key={row.label} className='flex min-w-0 flex-col'>
-              <dt className='text-muted-foreground text-xs'>{row.label}</dt>
-              <dd className='break-words text-sm'>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {campaign.issues.length > 0 || dirty ? (
-          <div
-            role='alert'
-            className='flex flex-col gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-4'
-          >
-            <p className='font-medium text-sm'>Antes de enviar</p>
-            {dirty ? (
-              <p className='text-sm'>Há alterações não salvas.</p>
-            ) : null}
-            <ul className='list-disc pl-5 text-sm'>
-              {campaign.issues.map((issue) => (
-                <li key={issue.message}>{issue.message}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        <div className='flex flex-col gap-3 rounded-xl border p-4'>
-          <p className='font-medium text-sm'>Envio de teste</p>
-          <div className='grid gap-2 sm:grid-cols-2'>
-            <Input
-              aria-label='E-mail de teste'
-              type='email'
-              placeholder='voce@empresa.com.br'
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-            />
-            {draft.whatsappEnabled ? (
-              <Input
-                aria-label='WhatsApp de teste'
-                placeholder='(11) 99999-0000'
-                value={testPhone}
-                onChange={(e) => setTestPhone(e.target.value)}
-              />
-            ) : null}
-          </div>
-          <Button
-            type='button'
-            variant='outline'
-            className='self-start'
-            disabled={dirty || test.isPending || (!testEmail && !testPhone)}
-            onClick={sendTest}
-          >
-            Enviar teste
-          </Button>
-        </div>
-      </div>
-
-      <div className='flex min-w-0 flex-col gap-6'>
-        <RadioGroup
-          value={scheduled ? 'schedule' : 'now'}
-          onValueChange={(value) =>
-            onChange({
-              scheduledAt:
-                value === 'schedule'
-                  ? new Date(Date.now() + 60 * 60 * 1000).toISOString()
-                  : null,
-            })
-          }
-          className='flex flex-col gap-3'
-        >
-          <Label className='flex items-center gap-2 font-normal'>
-            <RadioGroupItem value='now' /> Enviar agora
-          </Label>
-          <Label className='flex items-center gap-2 font-normal'>
-            <RadioGroupItem value='schedule' /> Agendar
-          </Label>
-        </RadioGroup>
-        {scheduled ? (
-          <div className='flex flex-col gap-2'>
-            <Label htmlFor='scheduled-at'>Data e hora (Brasília)</Label>
-            <Input
-              id='scheduled-at'
-              type='datetime-local'
-              className='sm:w-64'
-              value={toLocalInput(draft.scheduledAt)}
-              onChange={(e) =>
-                onChange({ scheduledAt: fromLocalInput(e.target.value) })
-              }
-            />
-          </div>
-        ) : null}
-
-        <div className='flex flex-col gap-3 rounded-xl border p-4'>
-          <Label className='flex items-center justify-between gap-4 font-normal'>
-            <span>
-              <span className='block font-medium'>Janela de envio</span>
-              <span className='text-muted-foreground text-xs'>
-                Fora dela os envios esperam o próximo horário (Brasília).
-              </span>
-            </span>
-            <Switch
-              checked={windowOn}
-              onCheckedChange={(checked) =>
-                onChange(
-                  checked
-                    ? {
-                        sendWindowStartHour: 8,
-                        sendWindowEndHour: 18,
-                        sendWeekdaysOnly: true,
-                      }
-                    : {
-                        sendWindowStartHour: null,
-                        sendWindowEndHour: null,
-                        sendWeekdaysOnly: false,
-                      },
-                )
-              }
-            />
-          </Label>
-          {windowOn ? (
-            <div className='flex flex-wrap items-end gap-3'>
-              <div className='flex flex-col gap-1'>
-                <Label htmlFor='window-start'>Das</Label>
-                <Input
-                  id='window-start'
-                  type='number'
-                  min={0}
-                  max={23}
-                  className='w-20'
-                  value={draft.sendWindowStartHour ?? 8}
-                  onChange={(e) =>
-                    onChange({
-                      sendWindowStartHour: Math.min(
-                        23,
-                        Math.max(0, Number(e.target.value) || 0),
-                      ),
-                    })
-                  }
-                />
-              </div>
-              <div className='flex flex-col gap-1'>
-                <Label htmlFor='window-end'>às</Label>
-                <Input
-                  id='window-end'
-                  type='number'
-                  min={1}
-                  max={24}
-                  className='w-20'
-                  value={draft.sendWindowEndHour ?? 18}
-                  onChange={(e) =>
-                    onChange({
-                      sendWindowEndHour: Math.min(
-                        24,
-                        Math.max(1, Number(e.target.value) || 1),
-                      ),
-                    })
-                  }
-                />
-              </div>
-              <Label className='flex items-center gap-2 pb-2 font-normal'>
-                <Checkbox
-                  checked={draft.sendWeekdaysOnly}
-                  onCheckedChange={(checked) =>
-                    onChange({ sendWeekdaysOnly: checked === true })
-                  }
-                />
-                Só dias úteis
-              </Label>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  )
-}
+import { WIZARD_STEPS } from './campaign-labels'
+import { ReviewStep } from './campaign-review-step'
+import { ContentStep, campaignLinks } from './campaign-steps'
 
 export function CrmCampaignWizard({
   workspaceId,
@@ -313,6 +44,7 @@ export function CrmCampaignWizard({
   options,
   onRefreshOptions,
   initialStep = 0,
+  initialEmailTemplateId = null,
 }: {
   workspaceId: string
   workspaceSlug: string
@@ -321,7 +53,11 @@ export function CrmCampaignWizard({
   onRefreshOptions: () => void
   /** Opens on this step (0–3), e.g. from a `?passo=` deep link. */
   initialStep?: number
+  /** Template created/edited in the e-mail editor (`?emailTemplate=`),
+   * selected and saved on arrival. */
+  initialEmailTemplateId?: string | null
 }) {
+  const router = useRouter()
   const [step, setStep] = useState(
     Math.min(Math.max(initialStep, 0), WIZARD_STEPS.length - 1),
   )
@@ -354,6 +90,52 @@ export function CrmCampaignWizard({
 
   async function goTo(next: number) {
     if (await save()) setStep(next)
+  }
+
+  /** Back from the e-mail editor with a template: select and save it. */
+  const applied = useRef(false)
+  useEffect(() => {
+    if (applied.current || !initialEmailTemplateId) return
+    applied.current = true
+    router.replace(
+      `/${workspaceSlug}/crm/campaigns/${campaign.id}?passo=${step + 1}`,
+      { scroll: false },
+    )
+    if (initialEmailTemplateId === campaign.emailTemplateId) return
+    update
+      .mutateAsync({ emailTemplateId: initialEmailTemplateId })
+      .then((saved) => {
+        setDraft((current) => ({
+          ...current,
+          emailTemplateId: saved.emailTemplateId,
+        }))
+        onRefreshOptions()
+        notify.success('Template selecionado para a campanha')
+      })
+      .catch((error) => notify.error(error, 'Erro ao escolher o template'))
+  }, [
+    initialEmailTemplateId,
+    campaign.emailTemplateId,
+    campaign.id,
+    router,
+    step,
+    update,
+    workspaceSlug,
+    onRefreshOptions,
+  ])
+
+  /** Leaves for the e-mail editor (saving first); it comes back to the
+   * Conteúdo step with the template selected. */
+  async function openEmailEditor(templateId: string | null) {
+    if (!(await save())) return
+    const returnTo = encodeURIComponent(
+      `/${workspaceSlug}/crm/campaigns/${campaign.id}?passo=2`,
+    )
+    router.push(
+      templateId
+        ? `/${workspaceSlug}/crm/email-templates/${templateId}?returnTo=${returnTo}`
+        : `/${workspaceSlug}/crm/email-templates/new?returnTo=${returnTo}`,
+    )
   }
 
   async function handleSaveDraft() {
@@ -464,6 +246,7 @@ export function CrmCampaignWizard({
             onChange={change}
             options={options}
             campaign={campaign}
+            workspaceId={workspaceId}
             workspaceSlug={workspaceSlug}
             onRefreshOptions={onRefreshOptions}
           />
@@ -472,9 +255,13 @@ export function CrmCampaignWizard({
             draft={draft}
             onChange={change}
             options={options}
-            workspaceSlug={workspaceSlug}
+            workspaceId={workspaceId}
             preview={preview.data}
             previewLoading={preview.isLoading}
+            checklist={dirty ? [] : campaign.emailChecklist}
+            onCreateTemplate={() => void openEmailEditor(null)}
+            onOpenTemplate={(id) => void openEmailEditor(id)}
+            sampleLink={campaignLinks(draft, campaign.slug, options)?.whatsapp}
           />
         ) : step === 2 ? (
           <CampaignAudienceStep
@@ -491,6 +278,8 @@ export function CrmCampaignWizard({
             options={options}
             workspaceId={workspaceId}
             dirty={dirty}
+            preview={preview.data}
+            previewLoading={preview.isLoading}
           />
         )}
       </div>

@@ -9,6 +9,7 @@ import {
   createEmptySiteDocument,
   validateSiteDocument,
 } from '@/src/lib/sites/document'
+import { keepStoredSearch } from '@/src/lib/sites/search/context'
 import { joinPagePath, pageSlugFromTitle } from '@/src/lib/sites/slug'
 import { toSitePageDTO, toSitePageSummaryDTO } from '@/src/mappers/site.mapper'
 import {
@@ -313,7 +314,11 @@ export const SitePageService = {
         parentId: dto.parentId,
         path: path === current.path ? undefined : path,
         document,
-        seo: dto.seo === undefined ? undefined : json(dto.seo),
+        // A SEO save without the "Buscadores" block keeps the stored one.
+        seo:
+          dto.seo === undefined
+            ? undefined
+            : json(keepStoredSearch(dto.seo, current.seo)),
       },
       path === current.path
         ? []

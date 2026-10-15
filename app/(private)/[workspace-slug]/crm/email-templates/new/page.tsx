@@ -6,6 +6,7 @@ import {
   FocusedScreen,
 } from '@/app/_components/layout/focused-screen'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { safeRedirectPath } from '@/src/lib/safe-redirect'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
@@ -15,10 +16,14 @@ export const metadata: Metadata = {
 
 export default async function CrmNewEmailTemplatePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ 'workspace-slug': string }>
+  searchParams: Promise<{ returnTo?: string }>
 }) {
   const { 'workspace-slug': slug } = await params
+  // "Criar novo template" in the campaign wizard: back there afterwards.
+  const returnTo = safeRedirectPath((await searchParams).returnTo)
 
   const session = await getAuthSession()
   if (!session.ok) redirect('/sign-in')
@@ -32,14 +37,17 @@ export default async function CrmNewEmailTemplatePage({
   return (
     <FocusedScreen label='Novo template de e-mail'>
       <FocusedHeader
-        backHref={`/${slug}/crm/email-templates`}
-        backLabel='Voltar para os templates'
+        backHref={returnTo ?? `/${slug}/crm/email-templates`}
+        backLabel={
+          returnTo ? 'Voltar para a campanha' : 'Voltar para os templates'
+        }
         title='Templates de e-mail'
       />
       <div className='min-h-0 flex-1 overflow-y-auto'>
         <EmailStarterGallery
           workspaceId={membership.value.workspaceId}
           slug={slug}
+          returnTo={returnTo}
         />
       </div>
     </FocusedScreen>

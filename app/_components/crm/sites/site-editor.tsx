@@ -1,13 +1,16 @@
 'use client'
 
 import {
+  AiMagicIcon,
   ComponentIcon,
   Database01Icon,
   Files01Icon,
+  FlaskConicalIcon,
   Image01Icon,
   LayoutTopIcon,
   News01Icon,
   PaintBoardIcon,
+  SearchFocusIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -20,6 +23,7 @@ import {
   useState,
 } from 'react'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
+import type { CanvasCollaboration } from '@/app/_components/canvas/collab/collab-context'
 import type {
   CanvasPresetItem,
   CanvasSidebarTab,
@@ -42,6 +46,7 @@ import {
 } from '@/src/hooks/use-crm-sites'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
+import { canvasDocumentName } from '@/src/lib/canvas-collab/names'
 import { createSiteCatalog, siteCatalog } from '@/src/lib/canvas-site/catalog'
 import { SITE_VIEWPORT_WIDTHS } from '@/src/lib/canvas-site/constants'
 import type { SiteLiveForm } from '@/src/lib/canvas-site/context'
@@ -55,6 +60,7 @@ import {
   siteColorTokens,
 } from '@/src/lib/canvas-site/theme'
 import type { SiteGlobalDTO, SitePageSummaryDTO } from '@/types/site'
+import { SiteAiPanel } from './ai/site-ai-panel'
 import { BlogPanel } from './blog/blog-panel'
 import { CollectionsPanel } from './blog/collections-panel'
 import {
@@ -69,10 +75,12 @@ import {
   SiteChildAdder,
   SiteWhatsappPicker,
 } from './element-controls'
+import { AbPanel } from './experiments/ab-panel'
 import { SiteFormPicker } from './form-picker'
 import { GlobalsPanel } from './globals-panel'
 import { MediaPanel } from './media-panel'
 import { PagesPanel } from './pages-panel'
+import { SearchPanel } from './search/search-panel'
 import {
   type SiteEditorContextValue,
   SiteEditorProvider,
@@ -97,6 +105,9 @@ const TAB_ICONS = {
   'site-symbols': ComponentIcon,
   'site-blog': News01Icon,
   'site-collections': Database01Icon,
+  'site-ai': AiMagicIcon,
+  'site-search': SearchFocusIcon,
+  'site-ab': FlaskConicalIcon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -141,6 +152,24 @@ const TABS: CanvasSidebarTab[] = [
     label: 'Coleções',
     icon: 'site-collections',
     render: () => <CollectionsPanel />,
+  },
+  {
+    id: 'site-ai',
+    label: 'IA',
+    icon: 'site-ai',
+    render: ({ store }) => <SiteAiPanel store={store} />,
+  },
+  {
+    id: 'site-search',
+    label: 'Buscadores',
+    icon: 'site-search',
+    render: () => <SearchPanel />,
+  },
+  {
+    id: 'site-ab',
+    label: 'Testes A/B',
+    icon: 'site-ab',
+    render: () => <AbPanel />,
   },
 ]
 
@@ -258,7 +287,13 @@ function useLiveForms(workspaceId: string): Record<string, SiteLiveForm> {
 }
 
 /** The canvas of the current target (remounted when it changes). */
-function SiteCanvas({ document }: { document: CanvasDocument }) {
+function SiteCanvas({
+  document,
+  collabUser,
+}: {
+  document: CanvasDocument
+  collabUser?: CanvasCollaboration['user']
+}) {
   const { site, globals, target, theme, api, workspaceId, pageLinks } =
     useSiteEditor()
   const queryClient = useQueryClient()
@@ -374,10 +409,24 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
     [api, site.id, target, queryClient, workspaceId],
   )
 
+  // Read once on mount (the canvas remounts per target).
+  const [collaboration] = useState<CanvasCollaboration | undefined>(() =>
+    collabUser
+      ? {
+          documentName: canvasDocumentName(
+            target.kind === 'page' ? 'site-page' : 'site-global',
+            target.id,
+          ),
+          user: collabUser,
+        }
+      : undefined,
+  )
+
   return (
     <CanvasEditor
       catalog={catalog}
       initialDocument={document}
+      collaboration={collaboration}
       viewportWidths={SITE_VIEWPORT_WIDTHS}
       presets={presets}
       extraTabs={TABS}
@@ -467,11 +516,14 @@ export function SiteEditor({
   slug,
   siteId,
   initialPageId,
+  collabUser,
 }: {
   workspaceId: string
   slug: string
   siteId: string
   initialPageId?: string
+  /** Who is editing, for real-time co-editing (presence, outlines). */
+  collabUser?: CanvasCollaboration['user']
 }) {
   const api = useMemo(() => crmSitesApi(workspaceId), [workspaceId])
   const queryClient = useQueryClient()
@@ -667,6 +719,7 @@ export function SiteEditor({
         <SiteCanvas
           key={`${value.target.kind}:${value.target.id}:${epoch}`}
           document={document}
+          collabUser={collabUser}
         />
       ) : (
         <EditorSkeleton />

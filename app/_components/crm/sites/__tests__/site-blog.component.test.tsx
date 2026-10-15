@@ -416,18 +416,16 @@ describe('<PostEditor />', () => {
     fireEvent.keyDown(tagInput, { key: 'Enter' })
     fireEvent.change(tagInput, { target: { value: 'Nova Tag' } })
     fireEvent.keyDown(tagInput, { key: 'Enter' })
-    fireEvent.click(
-      within(settings).getByRole('button', { name: 'Adicionar pergunta' }),
-    )
-    fireEvent.click(
-      within(settings).getByRole('button', { name: 'Adicionar pergunta' }),
-    )
+    fireEvent.click(within(settings).getByRole('button', { name: 'Pergunta' }))
     fireEvent.change(within(settings).getByLabelText('Pergunta 1'), {
       target: { value: 'Quanto custa?' },
     })
     fireEvent.change(within(settings).getByLabelText('Resposta 1'), {
       target: { value: 'Depende do plano.' },
     })
+    fireEvent.click(
+      within(settings).getByRole('button', { name: 'Salvar perguntas' }),
+    )
     fireEvent.change(screen.getByLabelText('Corpo do post'), {
       target: { value: 'Texto' },
     })

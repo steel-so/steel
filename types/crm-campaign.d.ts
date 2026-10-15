@@ -7,7 +7,13 @@ export type CrmCampaignStatusDTO =
   | 'CANCELED'
   | 'FAILED'
 
-export type CrmCampaignDestinationTypeDTO = 'LANDING_PAGE' | 'FORM'
+export type CrmCampaignDestinationTypeDTO = 'LANDING_PAGE' | 'FORM' | 'SITE_PAGE'
+
+export type CrmCampaignConversionKindDTO =
+  | 'LANDING_VIEW'
+  | 'FORM_SUBMISSION'
+  | 'SITE_VIEW'
+  | 'SITE_FORM_SUBMISSION'
 
 export type CrmCampaignLegalBasisDTO =
   | 'CONSENT'
@@ -65,6 +71,24 @@ export interface CrmCampaignLinksDTO {
   whatsapp: string | null
 }
 
+/** What the campaign links to, as shown in summaries. */
+export interface CrmCampaignDestinationDTO {
+  type: CrmCampaignDestinationTypeDTO
+  /** Site, form or landing page name. */
+  name: string
+  /** Site page title (SITE_PAGE). */
+  pageTitle: string | null
+  /** Public URL without the campaign parameters. */
+  url: string | null
+  published: boolean
+}
+
+/** One line of the e-mail pre-send checklist (v2 templates). */
+export interface CrmCampaignChecklistItemDTO {
+  level: 'error' | 'warning'
+  message: string
+}
+
 export interface CrmCampaignDTO {
   id: string
   workspaceId: string
@@ -74,6 +98,8 @@ export interface CrmCampaignDTO {
   destinationType: CrmCampaignDestinationTypeDTO | null
   landingPageId: string | null
   formId: string | null
+  siteId: string | null
+  sitePageId: string | null
   utmMedium: string
   emailFrom: string | null
   emailSubject: string | null
@@ -87,6 +113,7 @@ export interface CrmCampaignDTO {
   whatsappVariables: CrmCampaignWhatsAppVariablesDTO | null
   whatsappText: string | null
   whatsappMediaUrl: string | null
+  whatsappQuickReplyId: string | null
   whatsappDelayHours: number
   whatsappLegalBasis: CrmCampaignLegalBasisDTO | null
   scheduledAt: string | null
@@ -101,10 +128,14 @@ export interface CrmCampaignDTO {
   createdAt: string
   updatedAt: string
   links: CrmCampaignLinksDTO
+  destination: CrmCampaignDestinationDTO | null
 }
 
 export interface CrmCampaignDetailDTO extends CrmCampaignDTO {
   issues: CrmCampaignIssueDTO[]
+  /** Checklist of the chosen e-mail template (errors also block the
+   * launch through `issues`). */
+  emailChecklist: CrmCampaignChecklistItemDTO[]
 }
 
 export interface CrmCampaignKpisDTO {
@@ -149,7 +180,7 @@ export interface CrmCampaignWhatsAppFunnelDTO {
 
 export interface CrmCampaignConvertedContactDTO {
   id: string
-  kind: 'LANDING_VIEW' | 'FORM_SUBMISSION'
+  kind: CrmCampaignConversionKindDTO
   channel: CrmCampaignChannelDTO | null
   recipientId: string | null
   name: string | null
@@ -167,6 +198,13 @@ export interface CrmCampaignStatsDTO {
     visits: number
     submissions: number
     byChannel: { email: number; whatsapp: number; unknown: number }
+    /** Split by where it happened. */
+    byDestination: {
+      siteView: number
+      siteForm: number
+      crmForm: number
+      landingView: number
+    }
   }
   convertedContacts: CrmCampaignConvertedContactDTO[]
 }
@@ -226,12 +264,48 @@ export interface CrmCampaignTemplateFieldsDTO {
   urlButtons: number[]
 }
 
+export type CrmCampaignTemplateQualityDTO =
+  | 'GREEN'
+  | 'YELLOW'
+  | 'RED'
+  | 'UNKNOWN'
+
+/** A template button as the campaign shows it. */
+export interface CrmCampaignTemplateButtonDTO {
+  type: 'REPLY' | 'URL'
+  label: string
+  /** URL buttons: the URL (with `{{1}}` when dynamic). */
+  url: string | null
+  /** URL button whose suffix is a variable (mapped to the campaign link). */
+  dynamic: boolean
+  /** Reply buttons: how many actions run on click. */
+  actionCount: number
+}
+
 export interface CrmCampaignWhatsAppTemplateOptionDTO {
   id: string
   name: string
   language: string
   category: string
+  status: 'APPROVED' | 'PAUSED' | 'DISABLED'
+  quality: CrmCampaignTemplateQualityDTO
+  /** Media header format (IMAGE/VIDEO/DOCUMENT) or TEXT. */
+  headerFormat: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | null
+  headerMediaUrl: string | null
+  buttons: CrmCampaignTemplateButtonDTO[]
+  /** pt-BR reason when the template cannot be used (red, paused, disabled). */
+  blockedReason: string | null
   fields: CrmCampaignTemplateFieldsDTO
+}
+
+/** Z-API quick reply usable as campaign content. */
+export interface CrmCampaignQuickReplyOptionDTO {
+  id: string
+  shortcut: string
+  title: string
+  body: string
+  mediaUrl: string | null
+  buttons: CrmCampaignTemplateButtonDTO[]
 }
 
 export interface CrmCampaignWhatsAppConnectionOptionDTO {
@@ -239,26 +313,76 @@ export interface CrmCampaignWhatsAppConnectionOptionDTO {
   label: string
   provider: 'META' | 'ZAPI'
   phoneNumber: string
-  /** Approved templates (Meta only). */
+  /** Approved templates, plus paused/disabled ones shown blocked (Meta). */
   templates: CrmCampaignWhatsAppTemplateOptionDTO[]
+}
+
+export interface CrmCampaignSitePageOptionDTO {
+  id: string
+  title: string
+  /** Public path (`''` = home). */
+  path: string
+  url: string
+  isHome: boolean
+}
+
+export interface CrmCampaignSiteOptionDTO {
+  id: string
+  name: string
+  slug: string
+  /** Public address of the home page. */
+  url: string
+  published: boolean
+  updatedAt: string
+  /** Live pages (empty when not published). */
+  pages: CrmCampaignSitePageOptionDTO[]
+}
+
+/** Where a form is embedded (published site pages). */
+export interface CrmCampaignFormEmbedDTO {
+  siteId: string
+  siteName: string
+  pageId: string
+  pageTitle: string
+  url: string
 }
 
 export interface CrmCampaignOptionsDTO {
   baseUrl: string
+  sites: CrmCampaignSiteOptionDTO[]
+  /** Legacy landing pages not migrated to Sites yet (the chosen one is
+   * always listed). */
   landingPages: {
     id: string
     title: string
     published: boolean
     shareToken: string
   }[]
-  forms: { id: string; name: string; published: boolean; publicToken: string }[]
-  emailTemplates: { id: string; name: string; subject: string }[]
+  forms: {
+    id: string
+    name: string
+    published: boolean
+    publicToken: string
+    /** Public link (`/f/<token>`). */
+    url: string
+    embeds: CrmCampaignFormEmbedDTO[]
+  }[]
+  emailTemplates: {
+    id: string
+    name: string
+    subject: string
+    /** v2 = Steel Canvas ("Novo editor"), v1 = locked layouts, html = free HTML. */
+    editor: 'v2' | 'v1' | 'html'
+    updatedAt: string
+  }[]
   mailingLists: { id: string; name: string }[]
   whatsapp: {
     available: boolean
     /** pt-BR reason when unavailable. */
     reason: string | null
     connections: CrmCampaignWhatsAppConnectionOptionDTO[]
+    /** Quick replies (Z-API content with buttons). */
+    quickReplies: CrmCampaignQuickReplyOptionDTO[]
   }
 }
 

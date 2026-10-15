@@ -874,6 +874,31 @@ export const ERROR_CODES = {
   },
   // The AI provider failed or returned an unusable blog draft.
   SITE_BLOG_AI_FAILED: { code: 'SITE_BLOG_AI_FAILED', status: 502 },
+  // S4 co-editing: the realtime room names no co-editable canvas document
+  // (unknown target, or an e-mail template that is not a v2 canvas).
+  CANVAS_COLLAB_NOT_FOUND: { code: 'CANVAS_COLLAB_NOT_FOUND', status: 404 },
+  // The AI site generator got no usable answer (after its repair turns).
+  SITE_AI_FAILED: { code: 'SITE_AI_FAILED', status: 502 },
+  // Search engines ("Buscadores"): the AI provider failed or answered with
+  // something unusable.
+  SITE_SEARCH_AI_FAILED: { code: 'SITE_SEARCH_AI_FAILED', status: 502 },
+  // A/B test of a site (s4-ab).
+  SITE_EXPERIMENT_NOT_FOUND: { code: 'SITE_EXPERIMENT_NOT_FOUND', status: 404 },
+  // Changing the variants, split or goal of a running test needs a restart
+  // (`restart: true`), so the results of two setups never mix.
+  SITE_EXPERIMENT_RUNNING: { code: 'SITE_EXPERIMENT_RUNNING', status: 409 },
+  // The action does not apply to the test's status (start an ended test…).
+  SITE_EXPERIMENT_INVALID_STATE: {
+    code: 'SITE_EXPERIMENT_INVALID_STATE',
+    status: 409,
+  },
+  // Another running test already uses this section or page.
+  SITE_EXPERIMENT_CONFLICT: { code: 'SITE_EXPERIMENT_CONFLICT', status: 409 },
+  // A variant is missing from the published version: publish first.
+  SITE_EXPERIMENT_NOT_PUBLISHED: {
+    code: 'SITE_EXPERIMENT_NOT_PUBLISHED',
+    status: 422,
+  },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },

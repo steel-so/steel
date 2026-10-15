@@ -560,6 +560,7 @@ model Workspace {
   workspaceExports          WorkspaceExport[]
   integrations              WorkspaceIntegration[]
   sites                     Site[]
+  canvasCollabStates        CanvasCollabState[]
 
   @@index([status])
   @@map("workspaces")
@@ -2968,9 +2969,9 @@ model CrmEmailTemplate {
   updatedAt       DateTime             @updatedAt @map("updated_at")
   deletedAt       DateTime?            @map("deleted_at")
 
-  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy User               @relation("CrmEmailTemplateCreatedBy", fields: [createdById], references: [id])
-  updatedBy User?              @relation("CrmEmailTemplateUpdatedBy", fields: [updatedById], references: [id])
+  workspace Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User                      @relation("CrmEmailTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?                     @relation("CrmEmailTemplateUpdatedBy", fields: [updatedById], references: [id])
   campaigns CrmEmailCampaign[]
   versions  CrmEmailTemplateVersion[]
 
@@ -3873,6 +3874,8 @@ enum CrmCampaignRunStatus {
 enum CrmCampaignDestinationType {
   LANDING_PAGE
   FORM
+  /// A page of a published site (Sites builder).
+  SITE_PAGE
 }
 
 /// LGPD legal basis declared for a channel at launch.
@@ -3901,6 +3904,10 @@ enum CrmCampaignChannel {
 enum CrmCampaignConversionKind {
   LANDING_VIEW
   FORM_SUBMISSION
+  /// Page view of a published site.
+  SITE_VIEW
+  /// CRM form sent from a published site page (`site.form`).
+  SITE_FORM_SUBMISSION
 }
 
 model CrmCampaign {
@@ -3913,6 +3920,9 @@ model CrmCampaign {
   destinationType      CrmCampaignDestinationType? @map("destination_type")
   landingPageId        String?                     @map("landing_page_id")
   formId               String?                     @map("form_id")
+  /// Site + page of a SITE_PAGE destination.
+  siteId               String?                     @map("site_id")
+  sitePageId           String?                     @map("site_page_id")
   utmMedium            String                      @default("campanha") @map("utm_medium")
   emailFrom            String?                     @map("email_from")
   emailSubject         String?                     @map("email_subject")
@@ -3928,6 +3938,8 @@ model CrmCampaign {
   whatsappVariables    Json?                       @map("whatsapp_variables")
   whatsappText         String?                     @map("whatsapp_text")
   whatsappMediaUrl     String?                     @map("whatsapp_media_url")
+  /// Z-API: quick reply whose buttons (and media) go with the text.
+  whatsappQuickReplyId String?                     @map("whatsapp_quick_reply_id")
   whatsappDelayHours   Int                         @default(0) @map("whatsapp_delay_hours")
   whatsappLegalBasis   CrmCampaignLegalBasis?      @map("whatsapp_legal_basis")
   scheduledAt          DateTime?                   @map("scheduled_at")
@@ -4015,6 +4027,10 @@ model CrmCampaignConversion {
   sourceRef   String                    @map("source_ref")
   leadId      String?                   @map("lead_id")
   personId    String?                   @map("person_id")
+  /// Site, page and CRM form where it happened (site analytics).
+  siteId      String?                   @map("site_id")
+  sitePageId  String?                   @map("site_page_id")
+  formId      String?                   @map("form_id")
   createdAt   DateTime                  @default(now()) @map("created_at")
 
   campaign  CrmCampaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -4022,6 +4038,7 @@ model CrmCampaignConversion {
 
   @@unique([campaignId, kind, sourceRef])
   @@index([campaignId, createdAt])
+  @@index([siteId, createdAt])
   @@map("crm_campaign_conversions")
 }
 
@@ -7577,13 +7594,13 @@ model Site {
   updatedAt           DateTime   @updatedAt @map("updated_at")
   deletedAt           DateTime?  @map("deleted_at")
 
-  workspace        Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy        User          @relation("SiteCreatedBy", fields: [createdById], references: [id])
-  updatedBy        User?         @relation("SiteUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  publishedVersion SiteVersion?  @relation("SitePublishedVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy        User             @relation("SiteCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?            @relation("SiteUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  publishedVersion SiteVersion?     @relation("SitePublishedVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
   pages            SitePage[]
   globals          SiteGlobal[]
-  versions         SiteVersion[] @relation("SiteVersions")
+  versions         SiteVersion[]    @relation("SiteVersions")
   views            SiteView[]
   redirects        SiteRedirect[]
   posts            SitePost[]
@@ -7591,6 +7608,7 @@ model Site {
   blogTags         SiteBlogTag[]
   authors          SiteAuthor[]
   collections      SiteCollection[]
+  experiments      SiteExperiment[]
 
   @@index([workspaceId])
   @@index([deletedAt])
@@ -7665,22 +7683,22 @@ model SiteVersion {
 /// daily-salted hash (IP + user agent + site + day), the referrer keeps only
 /// its host and UTM values are capped.
 model SiteView {
-  id          String   @id @default(cuid())
-  siteId      String   @map("site_id")
-  pageId      String?  @map("page_id")
+  id          String        @id @default(cuid())
+  siteId      String        @map("site_id")
+  pageId      String?       @map("page_id")
   path        String
-  visitorHash String   @map("visitor_hash")
+  visitorHash String        @map("visitor_hash")
   referrer    String?
-  utmSource   String?  @map("utm_source")
-  utmMedium   String?  @map("utm_medium")
-  utmCampaign String?  @map("utm_campaign")
-  utmTerm     String?  @map("utm_term")
-  utmContent  String?  @map("utm_content")
+  utmSource   String?       @map("utm_source")
+  utmMedium   String?       @map("utm_medium")
+  utmCampaign String?       @map("utm_campaign")
+  utmTerm     String?       @map("utm_term")
+  utmContent  String?       @map("utm_content")
   /// VIEW (page view) or CONVERSION (a CRM form sent from the page).
   kind        SiteEventKind @default(VIEW)
   /// Public token of the CRM form behind a CONVERSION.
-  formToken   String?  @map("form_token")
-  createdAt   DateTime @default(now()) @map("created_at")
+  formToken   String?       @map("form_token")
+  createdAt   DateTime      @default(now()) @map("created_at")
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
@@ -7890,4 +7908,102 @@ model SiteCollectionItem {
   @@unique([collectionId, slug])
   @@index([collectionId, status, position])
   @@map("site_collection_items")
+}
+
+/// Yjs state of a Steel Canvas document co-edited in real time (site pages,
+/// site globals, e-mail templates v2). `documentName` is the realtime room
+/// (`canvas.<kind>.<id>`). `documentHash` is the hash of the stored JSON
+/// document this state was persisted with: when the row's document changed
+/// elsewhere (REST autosave, version restore), the realtime server merges
+/// that change into the state on load.
+model CanvasCollabState {
+  documentName String   @id @map("document_name")
+  workspaceId  String   @map("workspace_id")
+  state        Bytes
+  documentHash String   @map("document_hash")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("canvas_collab_states")
+}
+
+enum SiteExperimentKind {
+  /// Variants of one section of a page (siblings marked `meta.variantOf`).
+  SECTION
+  /// Variants of a whole page (hidden copies of the page).
+  PAGE
+}
+
+enum SiteExperimentStatus {
+  DRAFT
+  RUNNING
+  PAUSED
+  ENDED
+}
+
+enum SiteExperimentEventKind {
+  EXPOSURE
+  CONVERSION
+}
+
+/// A/B test of a published site. Variants live in the site's documents (a
+/// section variant is a sibling section with `meta.variantOf`, a page
+/// variant is a hidden page); the public runtime assigns each visitor a
+/// variant of the published version. `run` grows on every restart, so the
+/// results of a run never mix with an earlier one.
+model SiteExperiment {
+  id            String               @id @default(cuid())
+  siteId        String               @map("site_id")
+  /// Page the test runs on (the control page of a PAGE test).
+  pageId        String               @map("page_id")
+  name          String
+  kind          SiteExperimentKind
+  status        SiteExperimentStatus @default(DRAFT)
+  /// Section under test (SECTION tests).
+  controlNodeId String?              @map("control_node_id")
+  /// `[{ key, name, weight, nodeId?, pageId? }]`; `A` is the control.
+  variants      Json
+  /// `{ type: FORM, formToken? } | { type: CLICK, nodeId, label } | { type: PAGE, pageId }`.
+  goal          Json
+  startsAt      DateTime?            @map("starts_at")
+  endsAt        DateTime?            @map("ends_at")
+  run           Int                  @default(1)
+  startedAt     DateTime?            @map("started_at")
+  endedAt       DateTime?            @map("ended_at")
+  winnerKey     String?              @map("winner_key")
+  /// Hash of each variant's published content when the run started: a
+  /// publish that changes it restarts the test.
+  fingerprints  Json                 @default("{}")
+  createdById   String               @map("created_by_id")
+  updatedById   String?              @map("updated_by_id")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  site   Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  events SiteExperimentEvent[]
+
+  @@index([siteId, status])
+  @@map("site_experiments")
+}
+
+/// Exposure or conversion of one visitor in one run of an experiment. No
+/// PII: `visitorKey` is the opaque key of the A/B cookie (after consent) or
+/// a hash derived from the daily visitor hash. One row per visitor, kind
+/// and run.
+model SiteExperimentEvent {
+  id           String                  @id @default(cuid())
+  experimentId String                  @map("experiment_id")
+  run          Int
+  variantKey   String                  @map("variant_key")
+  kind         SiteExperimentEventKind
+  visitorKey   String                  @map("visitor_key")
+  createdAt    DateTime                @default(now()) @map("created_at")
+
+  experiment SiteExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  @@unique([experimentId, run, kind, visitorKey])
+  @@index([experimentId, run, variantKey])
+  @@map("site_experiment_events")
 }

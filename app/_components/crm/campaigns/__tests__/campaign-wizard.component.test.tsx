@@ -12,6 +12,8 @@ import { campaign, options, SLUG, WS } from './fixtures'
 vi.mock('@/lib/notify', () => ({
   notify: { success: vi.fn(), error: vi.fn() },
 }))
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }))
+vi.mock('next/navigation', () => ({ useRouter: () => router }))
 
 function setup(
   c: CrmCampaignDetailDTO = campaign(),
@@ -90,14 +92,23 @@ describe('CrmCampaignWizard', () => {
     ).toBeTruthy()
   })
 
-  it('should clear the destination when switching type and save on continue', async () => {
+  it('should switch to a site page, clearing the form, and save on continue', async () => {
     const spy = setup()
-    fireEvent.click(screen.getByRole('button', { name: /Landing page/ }))
-    expect(screen.queryByText(/utm_source=email/)).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: /Sites/ }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Usar o site Clínica Sorriso' }),
+    )
+    expect(
+      screen.getByText(
+        'https://app.test/s/clinica?utm_source=email&utm_medium=campanha&utm_campaign=black-friday',
+      ),
+    ).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }))
     await waitFor(() =>
       expect(fetchBody(spy, '/crm/campaigns/c1', 'PATCH')).toMatchObject({
-        destinationType: 'LANDING_PAGE',
+        destinationType: 'SITE_PAGE',
+        siteId: 's1',
+        sitePageId: 'home',
         formId: null,
         landingPageId: null,
       }),
@@ -118,6 +129,7 @@ describe('CrmCampaignWizard', () => {
           available: false,
           reason: 'O módulo Comunicação não está ativo neste workspace',
           connections: [],
+          quickReplies: [],
         },
       }),
     )
@@ -162,11 +174,11 @@ describe('CrmCampaignWizard', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /Conteúdo/ }))
     await waitFor(() =>
-      expect(screen.getByText('Oi {{1}}, confira: {{2}}')).toBeTruthy(),
+      expect(screen.getByText('Oi Promo, confira: {{2}}')).toBeTruthy(),
     )
     expect(screen.getByText('Mensagem {{1}}')).toBeTruthy()
     expect(screen.getByText('Mensagem {{2}}')).toBeTruthy()
-    expect(screen.getByText('Botão 1 (fim da URL)')).toBeTruthy()
+    expect(screen.getByText('Botão “Ver oferta” (fim da URL)')).toBeTruthy()
     expect(screen.queryByLabelText('Mensagem')).toBeNull()
     fireEvent.change(screen.getByLabelText('Texto de Mensagem {{1}}'), {
       target: { value: 'Oferta' },

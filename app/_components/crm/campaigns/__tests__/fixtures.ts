@@ -19,6 +19,8 @@ export function campaign(
     destinationType: 'FORM',
     landingPageId: null,
     formId: 'f1',
+    siteId: null,
+    sitePageId: null,
     utmMedium: 'campanha',
     emailFrom: 'mkt@acme.com',
     emailSubject: 'Oferta',
@@ -32,6 +34,7 @@ export function campaign(
     whatsappVariables: null,
     whatsappText: null,
     whatsappMediaUrl: null,
+    whatsappQuickReplyId: null,
     whatsappDelayHours: 0,
     whatsappLegalBasis: null,
     scheduledAt: null,
@@ -52,7 +55,15 @@ export function campaign(
       whatsapp:
         'https://app.test/f/ftok?utm_source=whatsapp&utm_medium=campanha&utm_campaign=black-friday',
     },
+    destination: {
+      type: 'FORM',
+      name: 'Inscrição',
+      pageTitle: null,
+      url: 'https://app.test/f/ftok',
+      published: true,
+    },
     issues: [],
+    emailChecklist: [],
     ...overrides,
   }
 }
@@ -62,14 +73,86 @@ export function options(
 ): CrmCampaignOptionsDTO {
   return {
     baseUrl: 'https://app.test',
+    sites: [
+      {
+        id: 's1',
+        name: 'Clínica Sorriso',
+        slug: 'clinica',
+        url: 'https://app.test/s/clinica',
+        published: true,
+        updatedAt: '2026-10-14T12:00:00.000Z',
+        pages: [
+          {
+            id: 'home',
+            title: 'Início',
+            path: '',
+            url: 'https://app.test/s/clinica',
+            isHome: true,
+          },
+          {
+            id: 'contato',
+            title: 'Contato',
+            path: 'contato',
+            url: 'https://app.test/s/clinica/contato',
+            isHome: false,
+          },
+        ],
+      },
+      {
+        id: 's2',
+        name: 'Loja nova',
+        slug: 'loja',
+        url: 'https://app.test/s/loja',
+        published: false,
+        updatedAt: '2026-10-14T12:00:00.000Z',
+        pages: [],
+      },
+    ],
     landingPages: [
       { id: 'l1', title: 'Página BF', published: true, shareToken: 'ltok' },
     ],
     forms: [
-      { id: 'f1', name: 'Inscrição', published: true, publicToken: 'ftok' },
-      { id: 'f2', name: 'Rascunho', published: false, publicToken: 'f2tok' },
+      {
+        id: 'f1',
+        name: 'Inscrição',
+        published: true,
+        publicToken: 'ftok',
+        url: 'https://app.test/f/ftok',
+        embeds: [
+          {
+            siteId: 's1',
+            siteName: 'Clínica Sorriso',
+            pageId: 'contato',
+            pageTitle: 'Contato',
+            url: 'https://app.test/s/clinica/contato',
+          },
+        ],
+      },
+      {
+        id: 'f2',
+        name: 'Rascunho',
+        published: false,
+        publicToken: 'f2tok',
+        url: 'https://app.test/f/f2tok',
+        embeds: [],
+      },
     ],
-    emailTemplates: [{ id: 't1', name: 'Oferta', subject: 'Oi' }],
+    emailTemplates: [
+      {
+        id: 't1',
+        name: 'Oferta',
+        subject: 'Oi',
+        editor: 'v2',
+        updatedAt: '2026-10-14T12:00:00.000Z',
+      },
+      {
+        id: 't2',
+        name: 'Newsletter antiga',
+        subject: 'Oi',
+        editor: 'html',
+        updatedAt: '2026-10-14T12:00:00.000Z',
+      },
+    ],
     mailingLists: [{ id: 'ml1', name: 'Clientes VIP' }],
     whatsapp: {
       available: true,
@@ -93,12 +176,77 @@ export function options(
               name: 'promo_bf',
               language: 'pt_BR',
               category: 'MARKETING',
+              status: 'APPROVED',
+              quality: 'GREEN',
+              headerFormat: 'IMAGE',
+              headerMediaUrl: 'https://cdn.test/bf.png',
+              buttons: [
+                {
+                  type: 'URL',
+                  label: 'Ver oferta',
+                  url: 'https://app.test/api/crm/campaigns/c/{{1}}',
+                  dynamic: true,
+                  actionCount: 0,
+                },
+                {
+                  type: 'REPLY',
+                  label: 'Falar com vendas',
+                  url: null,
+                  dynamic: false,
+                  actionCount: 2,
+                },
+              ],
+              blockedReason: null,
               fields: {
                 headerVariables: 0,
                 bodyVariables: 2,
                 bodyText: 'Oi {{1}}, confira: {{2}}',
                 urlButtons: [0],
               },
+            },
+            {
+              id: 'wt-red',
+              name: 'promo_velha',
+              language: 'pt_BR',
+              category: 'MARKETING',
+              status: 'APPROVED',
+              quality: 'RED',
+              headerFormat: null,
+              headerMediaUrl: null,
+              buttons: [],
+              blockedReason:
+                'Qualidade baixa (vermelha) na Meta: use outro template.',
+              fields: {
+                headerVariables: 0,
+                bodyVariables: 0,
+                bodyText: 'Oi',
+                urlButtons: [],
+              },
+            },
+          ],
+        },
+      ],
+      quickReplies: [
+        {
+          id: 'qr1',
+          shortcut: 'promo',
+          title: 'Promo da semana',
+          body: 'Oi {nome}, olha a promo!',
+          mediaUrl: null,
+          buttons: [
+            {
+              type: 'REPLY',
+              label: 'Quero',
+              url: null,
+              dynamic: false,
+              actionCount: 1,
+            },
+            {
+              type: 'URL',
+              label: 'Ver',
+              url: 'https://x.test/{link}',
+              dynamic: true,
+              actionCount: 0,
             },
           ],
         },
@@ -141,6 +289,7 @@ export function stats(
       visits: 0,
       submissions: 3,
       byChannel: { email: 2, whatsapp: 1, unknown: 0 },
+      byDestination: { siteView: 5, siteForm: 2, crmForm: 1, landingView: 0 },
     },
     convertedContacts: [
       {

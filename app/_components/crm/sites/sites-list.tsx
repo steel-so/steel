@@ -5,6 +5,7 @@ import {
   Analytics01Icon,
   Copy01Icon,
   Delete02Icon,
+  FlaskConicalIcon,
   Globe02Icon,
   Link01Icon,
   MoreHorizontalIcon,
@@ -215,6 +216,12 @@ function SiteCard({
               <DropdownMenuItem render={<Link href={metricsHref} />}>
                 <SteelIcon icon={Analytics01Icon} />
                 Métricas
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={<Link href={`${editorHref}/experiments`} />}
+              >
+                <SteelIcon icon={FlaskConicalIcon} />
+                Testes A/B
               </DropdownMenuItem>
               {site.status === 'PUBLISHED' ? (
                 <DropdownMenuItem

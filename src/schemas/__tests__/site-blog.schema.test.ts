@@ -32,13 +32,12 @@ describe('post schemas', () => {
         title: 'T',
         search: {
           focusKeyword: 'k',
-          extra: true,
           questions: [{ question: 'Q', answer: 'A' }],
         },
       },
     })
     expect(parsed.publishedAt).toBeInstanceOf(Date)
-    expect(parsed.seo?.search).toMatchObject({ extra: true })
+    expect(parsed.seo?.search?.focusKeyword).toBe('k')
   })
 
   it('rejects reserved slugs, empty updates and huge bodies', () => {

@@ -347,10 +347,9 @@ function renderBlocks(nodes: PlateNode[], state: RenderState): string {
       node.type && /^h[1-6]$/.test(node.type)
         ? renderBlock(node, state)
         : renderInline(childrenOf(node))
-    const check =
-      todo
-        ? `<input type="checkbox" disabled${node.checked === true ? ' checked' : ''} aria-label="${node.checked === true ? 'Concluído' : 'Pendente'}"> `
-        : ''
+    const check = todo
+      ? `<input type="checkbox" disabled${node.checked === true ? ' checked' : ''} aria-label="${node.checked === true ? 'Concluído' : 'Pendente'}"> `
+      : ''
     out.push(`<li>${check}${body}`)
     open.liOpen = true
   }

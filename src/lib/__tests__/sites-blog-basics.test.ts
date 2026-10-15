@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createFakeSnapshot } from '@/src/__tests__/factories/site.factory'
+import { analyzePost, postSearchDocument } from '@/src/lib/sites/blog/analysis'
 import {
   escapeXml,
   FEED_LIMIT,
@@ -14,7 +15,7 @@ import {
   siteLocalToIso,
 } from '@/src/lib/sites/blog/format'
 import { postJsonLd, withGraphNodes } from '@/src/lib/sites/blog/jsonld'
-import { renderLlmsSections } from '@/src/lib/sites/blog/llms'
+import { renderLlmsSections, withLlmsSections } from '@/src/lib/sites/blog/llms'
 import {
   BLOG_BASE,
   blogPath,
@@ -493,5 +494,86 @@ describe('templates', () => {
     expect(blog.posts[1].publishedAt).toBe('2026-10-12T00:00:00.000Z')
     expect(sampleBlogData().authors).toHaveLength(1)
     expect(samplePostBody().html).toContain('<h2')
+  })
+})
+
+describe('withLlmsSections', () => {
+  const sections = [
+    { title: 'Blog', links: [{ title: 'A', url: 'https://x.com/a' }] },
+  ]
+  it('inserts before the optional links or appends', () => {
+    expect(withLlmsSections('# Site\n\n## Opcional\n\n- x\n', sections)).toBe(
+      '# Site\n\n## Blog\n\n- [A](https://x.com/a)\n\n## Opcional\n\n- x\n',
+    )
+    expect(withLlmsSections('# Site\n', sections)).toBe(
+      '# Site\n\n## Blog\n\n- [A](https://x.com/a)\n',
+    )
+    expect(withLlmsSections('# Site\n', [])).toBe('# Site\n')
+  })
+})
+
+describe('post analysis', () => {
+  it('maps a post to a canvas document for the Buscadores checks', () => {
+    const doc = postSearchDocument('Título', [
+      { type: 'h1', children: [{ text: 'Seção' }] },
+      { type: 'h2', children: [{ text: '' }] },
+      { type: 'p', children: [{ text: 'Texto <b>' }] },
+      { type: 'p', children: [{ text: ' ' }] },
+      { type: 'p', listStyleType: 'decimal', children: [{ text: 'Um' }] },
+      { type: 'p', listStyleType: 'disc', children: [{ text: '' }] },
+      { type: 'img', url: '/media/a.png', alt: 'A', children: [] },
+      { type: 'img', url: '/media/b.png', children: [] },
+      { type: 'img', url: 'javascript:x', children: [] },
+    ])
+    const nodes = Object.values(doc.nodes)
+    expect(
+      nodes
+        .filter((n) => n.type === 'site.heading')
+        .map((n) => [n.props.level, n.props.text]),
+    ).toEqual([
+      ['h1', 'Título'],
+      ['h2', 'Seção'],
+    ])
+    expect(
+      nodes.filter((n) => n.type === 'site.text').map((n) => n.props.html),
+    ).toEqual(['<p>Texto &lt;b&gt;</p>', '<ol><li>Um</li></ol>'])
+    expect(nodes.filter((n) => n.type === 'site.image')).toHaveLength(2)
+    expect(validateSiteDocument(doc).ok).toBe(true)
+    expect(
+      Object.values(postSearchDocument('', 'x').nodes).some(
+        (n) => n.props.text === 'Sem título',
+      ),
+    ).toBe(true)
+  })
+
+  it('scores a post like a page', () => {
+    const analysis = analyzePost({
+      post: {
+        id: 'p',
+        title: 'Plano',
+        slug: '',
+        seo: { search: { focusKeyword: 'plano' } },
+        content: [],
+      },
+      site: {
+        name: 'Site',
+        settings: createFakeSnapshot().settings,
+        url: 'https://x.com',
+      },
+      now: new Date('2026-10-15T00:00:00Z'),
+    })
+    expect(analysis.seo.score).toBeGreaterThanOrEqual(0)
+    expect(analysis.aeo.checks.length).toBeGreaterThan(0)
+    expect(
+      analyzePost({
+        post: { id: 'p', title: 'Plano', slug: 'plano', seo: {}, content: [] },
+        site: {
+          name: 'Site',
+          settings: createFakeSnapshot().settings,
+          url: 'https://x.com',
+        },
+        siblings: [],
+      }).geo.score,
+    ).toBeGreaterThanOrEqual(0)
   })
 })

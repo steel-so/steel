@@ -9,16 +9,30 @@ import {
   crmCampaignWhatsappUnavailable,
   validationError,
 } from '@/src/errors'
+import { emailChecklist } from '@/src/lib/canvas-email/checklist'
+import { openEmailDocument } from '@/src/lib/canvas-email/convert-v1'
 import { buildCampaignAudience } from '@/src/lib/crm-campaign/audience'
-import { slugifyCampaignName } from '@/src/lib/crm-campaign/campaign-url'
+import {
+  buildDestinationUrl,
+  slugifyCampaignName,
+} from '@/src/lib/crm-campaign/campaign-url'
 import { renderCampaignEmail } from '@/src/lib/crm-campaign/email-renderer'
 import { toCampaignWaId } from '@/src/lib/crm-campaign/phone'
+import { publishedSitePages } from '@/src/lib/crm-campaign/site-destination'
 import {
+  templateBlockedReason,
   templateFields,
   validateCampaignWhatsApp,
 } from '@/src/lib/crm-campaign/whatsapp-rules'
 import { sendEmail } from '@/src/lib/mail/send'
 import { err, ok, type Result } from '@/src/lib/result'
+import { publicSiteUrl } from '@/src/lib/sites/public-url'
+import { parseSiteSnapshot } from '@/src/lib/sites/snapshot'
+import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
+import {
+  templateButtons,
+  templateHeaderMedia,
+} from '@/src/lib/whatsapp/template-send'
 import {
   toCrmCampaignAudienceDTO,
   toCrmCampaignDTO,
@@ -46,17 +60,24 @@ import type {
 } from '@/src/schemas/crm-campaign.schema'
 import type {
   CrmCampaignAudiencePreviewDTO,
+  CrmCampaignChecklistItemDTO,
   CrmCampaignDetailDTO,
   CrmCampaignDTO,
   CrmCampaignEmailPreviewDTO,
+  CrmCampaignFormEmbedDTO,
   CrmCampaignIssueDTO,
   CrmCampaignListItemDTO,
   CrmCampaignOptionsDTO,
   CrmCampaignRecipientPageDTO,
   CrmCampaignStatsDTO,
+  CrmCampaignTemplateButtonDTO,
   CrmCampaignTestSendResultDTO,
 } from '@/types/crm-campaign'
 import { assertModuleEnabled, assertModuleMember } from './authz'
+import {
+  resolveCampaignDestination,
+  siteDestination,
+} from './crm-campaign-destination'
 import {
   buildCampaignEmail,
   CrmCampaignSendService,
@@ -74,28 +95,13 @@ function authorize(actorId: string, workspaceId: string, action: Action) {
 
 const RECENT_CONVERSIONS = 50
 
-/** Destination record of a campaign (token + published flag), if any. */
-async function loadDestination(campaign: CrmCampaign) {
-  if (campaign.destinationType === 'LANDING_PAGE' && campaign.landingPageId) {
-    return CrmCampaignLookupRepository.findLandingPage(
-      campaign.workspaceId,
-      campaign.landingPageId,
-    )
-  }
-  if (campaign.destinationType === 'FORM' && campaign.formId) {
-    return CrmCampaignLookupRepository.findForm(
-      campaign.workspaceId,
-      campaign.formId,
-    )
-  }
-  return ok(null)
-}
-
 async function toDetail(
   campaign: CrmCampaign,
 ): Promise<Result<CrmCampaignDetailDTO>> {
-  const destination = await loadDestination(campaign)
+  const destination = await resolveCampaignDestination(campaign)
   if (!destination.ok) return destination
+  const checklist = await emailChecklistOf(campaign)
+  if (!checklist.ok) return checklist
   const issues = await computeCampaignIssues(campaign)
   if (!issues.ok) return issues
   return ok({
@@ -104,11 +110,48 @@ async function toDetail(
       toCrmCampaignLinks(
         campaign,
         BETTER_AUTH_URL,
-        destination.value?.token ?? null,
+        destination.value?.ref ?? null,
       ),
+      destination.value?.summary ?? null,
     ),
     issues: issues.value,
+    emailChecklist: checklist.value,
   })
+}
+
+/**
+ * Pre-send checklist of the chosen e-mail template (`emailChecklist`, the
+ * editor's own list) with the campaign's subject and preheader, which win
+ * over the template's. Free-HTML templates have no document to check.
+ */
+export async function emailChecklistOf(
+  campaign: CrmCampaign,
+): Promise<Result<CrmCampaignChecklistItemDTO[]>> {
+  if (!campaign.emailTemplateId) return ok([])
+  const template = await CrmCampaignLookupRepository.findEmailTemplateContent(
+    campaign.workspaceId,
+    campaign.emailTemplateId,
+  )
+  if (!template.ok) return template
+  const doc =
+    template.value?.kind === 'BUILDER'
+      ? openEmailDocument(template.value.builderDocument)
+      : null
+  if (!template.value || !doc) return ok([])
+  return ok(
+    emailChecklist({
+      doc,
+      subject: campaign.emailSubject || template.value.subject,
+    })
+      // The campaign asks for its own subject; its preheader replaces the
+      // template's.
+      .filter(
+        (item) =>
+          item.code !== 'SUBJECT_EMPTY' &&
+          !(item.code === 'PREHEADER_EMPTY' && campaign.emailPreheader),
+      )
+      .map((item) => ({ level: item.level, message: item.message })),
+  )
 }
 
 /** Comunicação is usable by campaigns: module on + a live connection. */
@@ -140,24 +183,18 @@ export async function computeCampaignIssues(
   if (!campaign.destinationType) {
     issues.push({
       step: 'destination',
-      message: 'Escolha a landing page ou o formulário de destino',
+      message: 'Escolha o site, o formulário ou a landing page de destino',
     })
   } else {
-    const destination = await loadDestination(campaign)
+    const destination = await resolveCampaignDestination(campaign)
     if (!destination.ok) return destination
     if (!destination.value) {
       issues.push({
         step: 'destination',
-        message:
-          campaign.destinationType === 'FORM'
-            ? 'Escolha o formulário de destino'
-            : 'Escolha a landing page de destino',
+        message: MISSING_DESTINATION[campaign.destinationType],
       })
-    } else if (!destination.value.published) {
-      issues.push({
-        step: 'destination',
-        message: 'Publique o destino antes de enviar a campanha',
-      })
+    } else if (destination.value.issue) {
+      issues.push({ step: 'destination', message: destination.value.issue })
     }
   }
 
@@ -181,6 +218,15 @@ export async function computeCampaignIssues(
         step: 'content',
         message: 'O visual escolhido não existe mais',
       })
+    } else {
+      // Hard errors of the e-mail checklist block the launch.
+      const checklist = await emailChecklistOf(campaign)
+      if (!checklist.ok) return checklist
+      for (const item of checklist.value) {
+        if (item.level === 'error') {
+          issues.push({ step: 'content', message: `E-mail: ${item.message}` })
+        }
+      }
     }
   }
 
@@ -240,7 +286,12 @@ async function whatsappIssues(
   if (connection.value?.status !== 'CONNECTED') {
     return ok(['A conexão de WhatsApp escolhida não está conectada'])
   }
-  let template: { status: string; components: unknown } | null = null
+  let template: {
+    status: string
+    components: unknown
+    quality: string
+    statusReason: string | null
+  } | null = null
   if (connection.value.provider === 'META' && campaign.whatsappTemplateId) {
     const found = await CrmCampaignLookupRepository.findWhatsAppTemplate(
       campaign.workspaceId,
@@ -250,10 +301,25 @@ async function whatsappIssues(
     if (!found.ok) return found
     template = found.value
   }
+  let quickReply:
+    | { buttons: { type: string; url?: string }[] }
+    | null
+    | undefined
+  if (connection.value.provider === 'ZAPI' && campaign.whatsappQuickReplyId) {
+    const found = await CrmCampaignLookupRepository.findQuickReply(
+      campaign.workspaceId,
+      campaign.whatsappQuickReplyId,
+    )
+    if (!found.ok) return found
+    quickReply = found.value
+      ? { buttons: parseStoredButtons(found.value.buttons) }
+      : null
+  }
   return ok(
     validateCampaignWhatsApp({
       provider: connection.value.provider,
       template,
+      quickReply,
       variables:
         (campaign.whatsappVariables as CrmCampaignWhatsAppVariables | null) ??
         null,
@@ -331,6 +397,26 @@ async function validateReferences(
     if (!form.ok) return form
     if (!form.value) return invalid('Formulário não encontrado')
   }
+  const siteId = dto.siteId === undefined ? current.siteId : dto.siteId
+  if (dto.siteId || dto.sitePageId) {
+    if (!siteId) return invalid('Escolha o site antes da página')
+    const site = await CrmCampaignLookupRepository.findSite(workspaceId, siteId)
+    if (!site.ok) return site
+    if (!site.value) return invalid('Site não encontrado')
+    const pageId =
+      dto.sitePageId === undefined ? current.sitePageId : dto.sitePageId
+    if (pageId && !site.value.pages.some((page) => page.id === pageId)) {
+      return invalid('Página do site não encontrada')
+    }
+  }
+  if (dto.whatsappQuickReplyId) {
+    const reply = await CrmCampaignLookupRepository.findQuickReply(
+      workspaceId,
+      dto.whatsappQuickReplyId,
+    )
+    if (!reply.ok) return reply
+    if (!reply.value) return invalid('Resposta rápida não encontrada')
+  }
   if (dto.emailTemplateId) {
     const template = await CrmCampaignLookupRepository.findEmailTemplate(
       workspaceId,
@@ -388,14 +474,51 @@ function toUpdateData(
         ? (null as unknown as Prisma.InputJsonValue)
         : whatsappVariables
   }
-  // One destination at a time: picking a type clears the other id.
-  if (dto.destinationType === 'LANDING_PAGE') data.formId = null
-  if (dto.destinationType === 'FORM') data.landingPageId = null
-  if (dto.destinationType === null) {
-    data.formId = null
-    data.landingPageId = null
+  // One destination at a time: picking a type clears the other ids.
+  const clear = (keep: 'LANDING_PAGE' | 'FORM' | 'SITE_PAGE' | null) => {
+    if (keep !== 'LANDING_PAGE') data.landingPageId = null
+    if (keep !== 'FORM') data.formId = null
+    if (keep !== 'SITE_PAGE') {
+      data.siteId = null
+      data.sitePageId = null
+    }
+  }
+  if (dto.destinationType !== undefined) clear(dto.destinationType)
+  // Another site: its pages are not the old site's.
+  if (dto.siteId !== undefined && dto.sitePageId === undefined) {
+    data.sitePageId = null
   }
   return data
+}
+
+const MISSING_DESTINATION: Record<
+  'LANDING_PAGE' | 'FORM' | 'SITE_PAGE',
+  string
+> = {
+  LANDING_PAGE: 'Escolha a landing page de destino',
+  FORM: 'Escolha o formulário de destino',
+  SITE_PAGE: 'Escolha o site e a página de destino',
+}
+
+/** A WhatsApp button as the wizard shows it. */
+function toButtonOption(
+  button: ReturnType<typeof parseStoredButtons>[number],
+): CrmCampaignTemplateButtonDTO {
+  return button.type === 'URL'
+    ? {
+        type: 'URL',
+        label: button.label,
+        url: button.url,
+        dynamic: /\{\{\s*1\s*\}\}|\{link\}/.test(button.url),
+        actionCount: 0,
+      }
+    : {
+        type: 'REPLY',
+        label: button.label,
+        url: null,
+        dynamic: false,
+        actionCount: button.actions.length,
+      }
 }
 
 export const CrmCampaignService = {
@@ -413,6 +536,15 @@ export const CrmCampaignService = {
       campaigns.value.map((c) => c.id),
     )
     if (!funnel.ok) return funnel
+    const sites = await CrmCampaignLookupRepository.findSites(workspaceId, [
+      ...new Set(
+        campaigns.value.flatMap((c) =>
+          c.destinationType === 'SITE_PAGE' && c.siteId ? [c.siteId] : [],
+        ),
+      ),
+    ])
+    if (!sites.ok) return sites
+    const siteById = new Map(sites.value.map((site) => [site.id, site]))
     const tokens = await CrmCampaignLookupRepository.destinationTokens(
       workspaceId,
       {
@@ -426,6 +558,11 @@ export const CrmCampaignService = {
 
     return ok(
       campaigns.value.map((campaign) => {
+        const site =
+          campaign.destinationType === 'SITE_PAGE' && campaign.siteId
+            ? siteById.get(campaign.siteId)
+            : undefined
+        const onSite = site ? siteDestination(site, campaign.sitePageId) : null
         const destinationId =
           campaign.destinationType === 'FORM'
             ? campaign.formId
@@ -436,8 +573,11 @@ export const CrmCampaignService = {
             toCrmCampaignLinks(
               campaign,
               BETTER_AUTH_URL,
-              (destinationId && tokens.value.get(destinationId)) || null,
+              campaign.destinationType === 'SITE_PAGE'
+                ? (onSite?.ref ?? null)
+                : (destinationId && tokens.value.get(destinationId)) || null,
             ),
+            onSite?.summary ?? null,
           ),
           kpis: toCrmCampaignKpisDTO(funnel.value.get(campaign.id)),
         }
@@ -589,21 +729,75 @@ export const CrmCampaignService = {
         ? 'Nenhuma conexão de WhatsApp ativa na Comunicação'
         : null
 
+    const sites = options.value.sites.map((site) => {
+      const snapshot = site.snapshot ? parseSiteSnapshot(site.snapshot) : null
+      const baseUrl = publicSiteUrl(site.slug)
+      return {
+        site,
+        baseUrl,
+        pages: snapshot?.ok ? publishedSitePages(snapshot.value, baseUrl) : [],
+      }
+    })
+    const embedsByToken = new Map<string, CrmCampaignFormEmbedDTO[]>()
+    for (const { site, pages } of sites) {
+      for (const page of pages) {
+        for (const token of page.formTokens) {
+          const list = embedsByToken.get(token) ?? []
+          list.push({
+            siteId: site.id,
+            siteName: site.name,
+            pageId: page.id,
+            pageTitle: page.title,
+            url: page.url,
+          })
+          embedsByToken.set(token, list)
+        }
+      }
+    }
+
     return ok({
       baseUrl: BETTER_AUTH_URL,
-      landingPages: options.value.landingPages.map((page) => ({
-        id: page.id,
-        title: page.title,
-        published: page.status === 'PUBLISHED',
-        shareToken: page.shareToken,
+      sites: sites.map(({ site, baseUrl, pages }) => ({
+        id: site.id,
+        name: site.name,
+        slug: site.slug,
+        url: baseUrl,
+        published: pages.length > 0,
+        updatedAt: site.updatedAt.toISOString(),
+        pages: pages.map(({ formTokens: _tokens, ...page }) => page),
       })),
+      // Migrated landing pages live on as sites (a draft still pointing to
+      // one shows it from its own `destination` summary).
+      landingPages: options.value.landingPages
+        .filter((page) => page.migratedSiteId === null)
+        .map((page) => ({
+          id: page.id,
+          title: page.title,
+          published: page.status === 'PUBLISHED',
+          shareToken: page.shareToken,
+        })),
       forms: options.value.forms.map((form) => ({
         id: form.id,
         name: form.name,
         published: form.status === 'PUBLISHED',
         publicToken: form.publicToken,
+        url: buildDestinationUrl(BETTER_AUTH_URL, {
+          type: 'FORM',
+          token: form.publicToken,
+        }),
+        embeds: embedsByToken.get(form.publicToken) ?? [],
       })),
-      emailTemplates: options.value.emailTemplates,
+      emailTemplates: options.value.emailTemplates.map((template) => ({
+        id: template.id,
+        name: template.name,
+        subject: template.subject,
+        editor: template.canvas
+          ? ('v2' as const)
+          : template.kind === 'BUILDER'
+            ? ('v1' as const)
+            : ('html' as const),
+        updatedAt: template.updatedAt.toISOString(),
+      })),
       mailingLists: options.value.mailingLists,
       whatsapp: {
         available: reason === null,
@@ -622,6 +816,15 @@ export const CrmCampaignService = {
                     name: template.name,
                     language: template.language,
                     category: template.category,
+                    status: template.status as
+                      | 'APPROVED'
+                      | 'PAUSED'
+                      | 'DISABLED',
+                    quality: template.quality,
+                    headerFormat: template.headerFormat,
+                    headerMediaUrl: templateHeaderMedia(template)?.url ?? null,
+                    buttons: templateButtons(template).map(toButtonOption),
+                    blockedReason: templateBlockedReason(template),
                     fields: {
                       headerVariables: fields.header.variableCount,
                       bodyVariables: fields.body.variableCount,
@@ -632,6 +835,16 @@ export const CrmCampaignService = {
                 })
               : [],
         })),
+        quickReplies: connections.some((c) => c.provider === 'ZAPI')
+          ? options.value.quickReplies.map((reply) => ({
+              id: reply.id,
+              shortcut: reply.shortcut,
+              title: reply.title,
+              body: reply.body,
+              mediaUrl: reply.mediaUrl,
+              buttons: parseStoredButtons(reply.buttons).map(toButtonOption),
+            }))
+          : [],
       },
     })
   },

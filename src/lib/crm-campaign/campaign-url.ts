@@ -18,6 +18,12 @@ export interface CampaignDestinationRef {
   token: string
 }
 
+/** A site page already resolved to its public URL (subdomain or `/s/`). */
+export interface CampaignSitePageRef {
+  type: 'SITE_PAGE'
+  url: string
+}
+
 export function buildDestinationUrl(
   baseUrl: string,
   destination: CampaignDestinationRef,
@@ -25,6 +31,16 @@ export function buildDestinationUrl(
   const base = baseUrl.replace(/\/$/, '')
   const prefix = destination.type === 'LANDING_PAGE' ? 'l' : 'f'
   return `${base}/${prefix}/${destination.token}`
+}
+
+/** Public URL of any campaign destination. */
+export function campaignDestinationUrl(
+  baseUrl: string,
+  destination: CampaignDestinationRef | CampaignSitePageRef,
+): string {
+  return destination.type === 'SITE_PAGE'
+    ? destination.url
+    : buildDestinationUrl(baseUrl, destination)
 }
 
 export function withCampaignParams(

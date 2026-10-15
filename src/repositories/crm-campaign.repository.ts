@@ -690,6 +690,18 @@ export type CampaignConversionInput = {
   sourceRef: string
   leadId?: string | null
   personId?: string | null
+  siteId?: string | null
+  sitePageId?: string | null
+  formId?: string | null
+}
+
+/** Campaign conversions that happened on one site, per campaign. */
+export interface SiteCampaignConversionRow {
+  campaignId: string
+  name: string
+  slug: string
+  views: number
+  formSubmissions: number
 }
 
 export const CrmCampaignConversionRepository = {
@@ -754,6 +766,55 @@ export const CrmCampaignConversionRepository = {
       )
     } catch (error) {
       return err(dbError('Failed to count CRM campaign conversions', error))
+    }
+  },
+
+  /** Site analytics: conversions recorded on `siteId` in `[start, end)`,
+   * grouped by campaign (deleted campaigns included — the traffic was real). */
+  async countBySite(
+    siteId: string,
+    window: { start: Date; end: Date },
+  ): Promise<Result<SiteCampaignConversionRow[]>> {
+    try {
+      const rows = await prisma.crmCampaignConversion.groupBy({
+        by: ['campaignId', 'kind'],
+        where: {
+          siteId,
+          kind: { in: ['SITE_VIEW', 'SITE_FORM_SUBMISSION'] },
+          createdAt: { gte: window.start, lt: window.end },
+        },
+        _count: { _all: true },
+      })
+      if (rows.length === 0) return ok([])
+      const campaigns = await prisma.crmCampaign.findMany({
+        where: { id: { in: [...new Set(rows.map((row) => row.campaignId))] } },
+        select: { id: true, name: true, slug: true },
+      })
+      const result = new Map<string, SiteCampaignConversionRow>()
+      for (const campaign of campaigns) {
+        result.set(campaign.id, {
+          campaignId: campaign.id,
+          name: campaign.name,
+          slug: campaign.slug,
+          views: 0,
+          formSubmissions: 0,
+        })
+      }
+      for (const row of rows) {
+        const entry = result.get(row.campaignId)
+        if (!entry) continue
+        if (row.kind === 'SITE_VIEW') entry.views += row._count._all
+        else entry.formSubmissions += row._count._all
+      }
+      return ok(
+        [...result.values()].sort(
+          (a, b) =>
+            b.views + b.formSubmissions - (a.views + a.formSubmissions) ||
+            a.name.localeCompare(b.name),
+        ),
+      )
+    } catch (error) {
+      return err(dbError('Failed to count site campaign conversions', error))
     }
   },
 }

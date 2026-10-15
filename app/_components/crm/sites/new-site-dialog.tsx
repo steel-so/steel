@@ -1,6 +1,10 @@
 'use client'
 
-import { Add01Icon, ArrowLeft01Icon } from '@hugeicons-pro/core-stroke-rounded'
+import {
+  Add01Icon,
+  AiMagicIcon,
+  ArrowLeft01Icon,
+} from '@hugeicons-pro/core-stroke-rounded'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useId, useMemo, useState } from 'react'
@@ -24,11 +28,14 @@ import {
   SITE_TEMPLATES,
   type SiteTemplate,
 } from '@/src/lib/canvas-site/presets'
+import { SiteAiWizard } from './ai/site-ai-wizard'
 
-/** "Em branco" or one of the catalog's full-page templates. */
+/** "Em branco", one of the catalog's full-page templates, or the AI
+ * generator. */
 export type SiteStarter =
   | { kind: 'blank' }
   | { kind: 'template'; template: SiteTemplate }
+  | { kind: 'ai' }
 
 function TemplateCard({
   template,
@@ -93,6 +100,7 @@ export function NewSiteDialog({
 
   function pick(next: SiteStarter) {
     setStarter(next)
+    if (next.kind === 'ai') return
     setName(next.kind === 'template' ? next.template.label : 'Meu site')
   }
 
@@ -125,11 +133,21 @@ export function NewSiteDialog({
       <DialogContent
         className={cn(
           'max-h-[90vh] overflow-y-auto',
-          starter ? 'sm:max-w-md' : 'sm:max-w-5xl',
+          starter?.kind === 'ai'
+            ? 'sm:max-w-2xl'
+            : starter
+              ? 'sm:max-w-md'
+              : 'sm:max-w-5xl',
         )}
         data-testid='new-site-dialog'
       >
-        {starter ? (
+        {starter?.kind === 'ai' ? (
+          <SiteAiWizard
+            workspaceId={workspaceId}
+            slug={slug}
+            onBack={() => setStarter(null)}
+          />
+        ) : starter ? (
           <form onSubmit={create} className='grid gap-4'>
             <DialogHeader>
               <DialogTitle>Dê um nome ao site</DialogTitle>
@@ -173,11 +191,30 @@ export function NewSiteDialog({
             <DialogHeader>
               <DialogTitle>Novo site</DialogTitle>
               <DialogDescription>
-                Escolha um modelo pronto ou comece do zero. Cores, fontes e
-                seções se ajustam depois no editor.
+                Gere com IA, escolha um modelo pronto ou comece do zero. Cores,
+                fontes e seções se ajustam depois no editor.
               </DialogDescription>
             </DialogHeader>
             <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+              <button
+                type='button'
+                onClick={() => pick({ kind: 'ai' })}
+                data-testid='site-template-ai'
+                className='group grid overflow-hidden rounded-xl border border-primary/40 bg-card text-left transition-[border-color,box-shadow] hover:border-primary hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+              >
+                <span className='flex aspect-[4/3] items-center justify-center border-b bg-primary/5'>
+                  <span className='flex size-12 items-center justify-center rounded-full bg-background text-primary shadow-xs'>
+                    <SteelIcon icon={AiMagicIcon} className='size-6' />
+                  </span>
+                </span>
+                <span className='grid gap-0.5 p-3'>
+                  <span className='font-medium text-sm'>Gerar com IA</span>
+                  <span className='text-muted-foreground text-xs'>
+                    Conte sobre o negócio e receba tema, páginas e textos
+                    prontos para revisar.
+                  </span>
+                </span>
+              </button>
               <button
                 type='button'
                 onClick={() => pick({ kind: 'blank' })}

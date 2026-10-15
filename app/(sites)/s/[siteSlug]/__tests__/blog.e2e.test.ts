@@ -265,6 +265,9 @@ describe('public blog pages', () => {
       await fetch(`${BASE_URL}/s/${slug}/sitemap.xml`)
     ).text()
     expect(sitemap).toContain('/blog/como-escolher-um-plano</loc>')
+    const llms = await (await fetch(`${BASE_URL}/s/${slug}/llms.txt`)).text()
+    expect(llms).toContain('## Blog')
+    expect(llms).toContain('/blog/como-escolher-um-plano')
     expect(
       (
         await fetch(

@@ -1,7 +1,9 @@
 import { cacheLife, cacheTag } from 'next/cache'
 import type { SiteLiveForm } from '@/src/lib/canvas-site'
 import { siteCacheTag } from '@/src/lib/sites/cache'
+import type { RuntimeExperiment } from '@/src/lib/sites/experiments'
 import type { SiteRedirectRule } from '@/src/lib/sites/redirects'
+import { SiteExperimentService } from '@/src/services/site-experiment.service'
 import {
   type PublishedSite,
   SitePublicService,
@@ -48,5 +50,17 @@ export async function loadSiteRedirects(
   cacheTag(siteCacheTag(slug))
   cacheLife('days')
   const result = await SiteRedirectService.rulesForSlug(slug)
+  return result.ok ? result.value : []
+}
+
+/** Running A/B tests of a site (start, pause, stop and edits expire the
+ * site's tag; the schedule is checked per request). */
+export async function loadSiteExperiments(
+  slug: string,
+): Promise<RuntimeExperiment[]> {
+  'use cache'
+  cacheTag(siteCacheTag(slug))
+  cacheLife('days')
+  const result = await SiteExperimentService.runningForSlug(slug)
   return result.ok ? result.value : []
 }

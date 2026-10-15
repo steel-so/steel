@@ -59,6 +59,9 @@ const OWN_PATHS = [
   // Blog feeds (slice site-blog).
   '/feed.xml',
   '/atom.xml',
+  '/llms.txt',
+  '/llms-full.txt',
+  '/indexnow-key.txt',
 ]
 
 /** `true` for the runtime's own files, which answer their own status. */

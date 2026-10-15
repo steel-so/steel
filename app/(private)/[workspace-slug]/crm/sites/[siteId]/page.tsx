@@ -45,6 +45,11 @@ export default async function CrmSiteEditorPage({
           slug={slug}
           siteId={siteId}
           initialPageId={typeof page === 'string' ? page : undefined}
+          collabUser={{
+            id: session.value.user.id,
+            name: session.value.user.name || session.value.user.email,
+            image: session.value.user.image ?? null,
+          }}
         />
       </div>
     </FocusedScreen>

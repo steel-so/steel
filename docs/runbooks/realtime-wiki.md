@@ -5,6 +5,11 @@ A Wiki edita em tempo real (Yjs) por um processo próprio, `realtime/index.ts`
 worker. Em produção roda no container `steel-realtime`, publicado **só no
 loopback** (`127.0.0.1:1235`).
 
+O mesmo processo atende a **coedição dos editores de sites e de e-mail**
+(salas `canvas.<tipo>.<id>`, ADR 0027), pelo mesmo caminho `/realtime` —
+nenhuma regra nova de proxy. Se o realtime cair, esses editores mostram
+"Sem colaboração em tempo real" e continuam salvando pela API.
+
 O navegador conecta em `wss://<domínio>/realtime` (mesma origem, para o cookie
 de sessão chegar ao servidor, que autentica pelo Better Auth e confere se o
 usuário é membro do workspace com a Wiki ativada). Sem `NEXT_PUBLIC_REALTIME_URL`

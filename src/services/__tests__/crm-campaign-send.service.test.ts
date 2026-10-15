@@ -22,7 +22,12 @@ vi.mock('@/src/lib/crm-campaign/email-renderer', () => ({
 }))
 vi.mock('@/src/lib/mail/send', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/src/lib/whatsapp/send', () => ({
-  WhatsAppSend: { text: vi.fn(), media: vi.fn(), template: vi.fn() },
+  WhatsAppSend: {
+    text: vi.fn(),
+    media: vi.fn(),
+    template: vi.fn(),
+    buttons: vi.fn(),
+  },
 }))
 const add = vi.fn()
 const addBulk = vi.fn()
@@ -383,6 +388,8 @@ describe('send() — e-mail', () => {
     // The builder adds the LGPD footer with this recipient's unsubscribe page.
     expect(contact.unsubscribeUrl).toContain('/unsubscribe/r1.')
     expect(contact.workspaceId).toBe('ws1')
+    // Per-recipient rendering: the CRM person fills the profile variables.
+    expect(contact.personId).toBe('p1')
     expect(recipients.markSent).toHaveBeenCalledWith(
       'r1',
       'EMAIL',
@@ -736,6 +743,129 @@ describe('sendCampaignWhatsApp()', () => {
       ),
     )
     expect(wa.text.mock.calls[0][1].text).toBe('')
+  })
+})
+
+describe('sendCampaignWhatsApp() — Z-API quick reply', () => {
+  const to = {
+    waId: '5511',
+    name: 'Ana',
+    link: 'https://app.test/api/crm/campaigns/c/r1-w.sig',
+    linkCode: 'r1-w.sig',
+  }
+  const c = (overrides?: Partial<CrmCampaign>) =>
+    campaign({
+      whatsappConnectionId: 'conn1',
+      whatsappText: 'Oi {nome}',
+      whatsappQuickReplyId: 'qr1',
+      ...overrides,
+    })
+  const reply = (overrides?: Record<string, unknown>) =>
+    ok({
+      id: 'qr1',
+      workspaceId: 'ws1',
+      shortcut: 'promo',
+      title: 'Promo',
+      body: 'Oi',
+      mediaUrl: null,
+      buttons: [
+        {
+          id: 'b1',
+          type: 'REPLY',
+          label: 'Quero',
+          actions: [{ kind: 'REPLY', text: 'Oba' }],
+        },
+        { id: 'b2', type: 'URL', label: 'Ver', url: 'https://x.test/{link}' },
+      ],
+      createdAt: NOW,
+      updatedAt: NOW,
+      ...overrides,
+    } as never)
+
+  beforeEach(() => {
+    lookup.findConnection.mockResolvedValue(ok(connection()))
+    wa.buttons.mockResolvedValue(ok({ providerMessageId: 'wa-b' }))
+  })
+
+  it('should send the buttons: reply payload keeps actions, URL gets the link', async () => {
+    lookup.findQuickReply.mockResolvedValueOnce(reply())
+    expect(expectOk(await sendCampaignWhatsApp(c(), to))).toEqual({
+      providerMessageId: 'wa-b',
+    })
+    const sent = wa.buttons.mock.calls[0][1]
+    expect(sent.text).toBe('Oi Ana')
+    expect(sent.buttons[0]).toMatchObject({ type: 'REPLY', label: 'Quero' })
+    expect((sent.buttons[0] as { id: string }).id).toContain('qr1')
+    expect(sent.buttons[1]).toEqual({
+      type: 'URL',
+      id: 'b2',
+      label: 'Ver',
+      url: `https://x.test/${to.link}`,
+    })
+    expect(sent).not.toHaveProperty('media')
+  })
+
+  it('should put an image in the button message and send other media first', async () => {
+    lookup.findQuickReply.mockResolvedValueOnce(
+      reply({ mediaUrl: 'https://cdn.test/a.png' }),
+    )
+    expectOk(await sendCampaignWhatsApp(c(), to))
+    expect(wa.buttons.mock.calls[0][1].media).toEqual({
+      url: 'https://cdn.test/a.png',
+      type: 'image',
+    })
+
+    wa.media.mockResolvedValue(ok({ providerMessageId: 'wa-m' }))
+    lookup.findQuickReply.mockResolvedValueOnce(reply())
+    expectOk(
+      await sendCampaignWhatsApp(
+        c({ whatsappMediaUrl: 'https://cdn.test/doc.pdf' }),
+        to,
+      ),
+    )
+    expect(wa.media).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        type: 'document',
+        mediaUrl: 'https://cdn.test/doc.pdf',
+      }),
+    )
+    expect(wa.buttons.mock.calls[1][1]).not.toHaveProperty('media')
+
+    wa.media.mockResolvedValueOnce(err(whatsappProviderError('down')))
+    lookup.findQuickReply.mockResolvedValueOnce(reply())
+    expectErr(
+      await sendCampaignWhatsApp(
+        c({ whatsappMediaUrl: 'https://cdn.test/v.mp4' }),
+        to,
+      ),
+    )
+  })
+
+  it('should fall back to text/media when the quick reply has no buttons', async () => {
+    wa.media.mockResolvedValue(ok({ providerMessageId: 'wa-m' }))
+    lookup.findQuickReply.mockResolvedValueOnce(
+      reply({ buttons: null, mediaUrl: 'https://cdn.test/a.png' }),
+    )
+    expectOk(await sendCampaignWhatsApp(c(), to))
+    expect(wa.buttons).not.toHaveBeenCalled()
+    expect(wa.media).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        mediaUrl: 'https://cdn.test/a.png',
+        caption: 'Oi Ana',
+      }),
+    )
+  })
+
+  it('should fail when the quick reply is gone or unreadable', async () => {
+    lookup.findQuickReply.mockResolvedValueOnce(ok(null))
+    expectErr(
+      await sendCampaignWhatsApp(c(), to),
+      'CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE',
+    )
+    lookup.findQuickReply.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await sendCampaignWhatsApp(c(), to), 'DATABASE_ERROR')
   })
 })
 

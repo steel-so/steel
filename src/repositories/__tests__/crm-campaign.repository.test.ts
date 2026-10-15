@@ -600,6 +600,64 @@ describe('CrmCampaignConversionRepository', () => {
     )
   })
 
+  it('should count site conversions per campaign in a window', async () => {
+    const { workspace, user } = await setup()
+    const bf = await seedCrmCampaign(workspace.id, user.id, { name: 'BF' })
+    const natal = await seedCrmCampaign(workspace.id, user.id, {
+      name: 'Natal',
+    })
+    const at = new Date('2026-10-14T12:00:00.000Z')
+    const row = (
+      campaignId: string,
+      kind: 'SITE_VIEW' | 'SITE_FORM_SUBMISSION' | 'FORM_SUBMISSION',
+      sourceRef: string,
+      siteId = 'site1',
+      createdAt = at,
+    ) =>
+      prisma.crmCampaignConversion.create({
+        data: { campaignId, kind, sourceRef, siteId, createdAt },
+      })
+    await Promise.all([
+      row(bf.id, 'SITE_VIEW', 'v1'),
+      row(bf.id, 'SITE_VIEW', 'v2'),
+      row(bf.id, 'SITE_FORM_SUBMISSION', 's1'),
+      row(natal.id, 'SITE_VIEW', 'v3'),
+      // Not this site, not a site kind, out of the window.
+      row(natal.id, 'SITE_VIEW', 'v4', 'site2'),
+      row(natal.id, 'FORM_SUBMISSION', 's2'),
+      row(natal.id, 'SITE_VIEW', 'v5', 'site1', new Date('2026-09-01')),
+    ])
+    const window = {
+      start: new Date('2026-10-01T00:00:00.000Z'),
+      end: new Date('2026-10-31T00:00:00.000Z'),
+    }
+    expect(
+      expectOk(
+        await CrmCampaignConversionRepository.countBySite('site1', window),
+      ),
+    ).toEqual([
+      {
+        campaignId: bf.id,
+        name: 'BF',
+        slug: bf.slug,
+        views: 2,
+        formSubmissions: 1,
+      },
+      {
+        campaignId: natal.id,
+        name: 'Natal',
+        slug: natal.slug,
+        views: 1,
+        formSubmissions: 0,
+      },
+    ])
+    expect(
+      expectOk(
+        await CrmCampaignConversionRepository.countBySite('none', window),
+      ),
+    ).toEqual([])
+  })
+
   it('should map database failures to DATABASE_ERROR', async () => {
     const spies = [
       vi
@@ -622,6 +680,10 @@ describe('CrmCampaignConversionRepository', () => {
       }),
       CrmCampaignConversionRepository.listRecent('c', 1),
       CrmCampaignConversionRepository.countBy('c'),
+      CrmCampaignConversionRepository.countBySite('s', {
+        start: new Date(),
+        end: new Date(),
+      }),
     ])
     for (const result of results) {
       expect(expectErr(result).code).toBe('DATABASE_ERROR')

@@ -1,12 +1,8 @@
 'use client'
 
-import {
-  Add01Icon,
-  Cancel01Icon,
-  Delete02Icon,
-} from '@hugeicons-pro/core-stroke-rounded'
+import { Add01Icon, Cancel01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { useQueryClient } from '@tanstack/react-query'
-import { type FormEvent, type ReactNode, useId, useState } from 'react'
+import { type FormEvent, type ReactNode, useId, useMemo, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -29,13 +25,22 @@ import {
   useSiteBlogCategories,
   useSiteBlogTags,
 } from '@/src/hooks/use-site-blog'
+import { analyzePost } from '@/src/lib/sites/blog/analysis'
 import { isoToSiteLocal, siteLocalToIso } from '@/src/lib/sites/blog/format'
 import { slugify } from '@/src/lib/sites/slug'
 import type {
   SitePostSeoDTO,
   SitePostStatusDTO,
 } from '@/src/schemas/site-blog.schema'
+import type { SearchContentDTO } from '@/src/schemas/site-search.schema'
+import type { SiteDTO } from '@/types/site'
 import { MediaPickButton } from '../media-pick-button'
+import {
+  KeywordFields,
+  QuestionsEditor,
+  SummaryFields,
+} from '../search/search-fields'
+import { ScorePill, SEARCH_TONE_VARS } from '../search/search-ui'
 import { BlogAuthorsDialog } from './blog-authors-dialog'
 import type { PostDraft } from './post-editor'
 
@@ -147,8 +152,11 @@ export function PostSettings({
   draft,
   status,
   timezone,
+  site,
   onChange,
 }: {
+  /** Site of the post (Buscadores scores); scores hide without it. */
+  site?: Pick<SiteDTO, 'name' | 'settings' | 'url'>
   workspaceId: string
   siteId: string
   api: SiteBlogApi
@@ -168,9 +176,31 @@ export function PostSettings({
   const setSeo = (patch: Partial<SitePostSeoDTO>) =>
     onChange({ seo: { ...seo, ...patch } })
   const search = seo.search ?? {}
-  const questions = search.questions ?? []
-  const setQuestions = (next: typeof questions) =>
-    setSeo({ search: { ...search, questions: next } })
+  // The shared Buscadores fields save through this: the patch goes to the
+  // draft and is stored with the next "Salvar".
+  const saveSearch = async (patch: Partial<SearchContentDTO>) => {
+    setSeo({ search: { ...search, ...patch } })
+    return true
+  }
+  const analysis = useMemo(
+    () =>
+      site
+        ? analyzePost({
+            post: {
+              id: 'post',
+              title: draft.title,
+              slug: draft.slug,
+              seo: {
+                ...seo,
+                description: seo.description || draft.excerpt || undefined,
+              },
+              content: draft.content,
+            },
+            site: { name: site.name, settings: site.settings, url: site.url },
+          })
+        : null,
+    [site, draft.title, draft.slug, draft.excerpt, draft.content, seo],
+  )
 
   const selectedTags = (tags.data ?? []).filter((tag) =>
     draft.tagIds.includes(tag.id),
@@ -465,25 +495,14 @@ export function PostSettings({
       </Section>
 
       <Section title='Buscadores (SEO)'>
-        <Field
-          label='Palavra-chave principal'
-          htmlFor={`${id}-keyword`}
-          hint='O termo que as pessoas buscam para chegar a este post.'
-        >
-          <Input
-            id={`${id}-keyword`}
-            maxLength={100}
-            value={search.focusKeyword ?? ''}
-            onChange={(event) =>
-              setSeo({
-                search: {
-                  ...search,
-                  focusKeyword: event.target.value || undefined,
-                },
-              })
-            }
-          />
-        </Field>
+        {analysis ? (
+          <div className={`flex flex-wrap gap-1.5 ${SEARCH_TONE_VARS}`}>
+            <ScorePill score={analysis.seo.score} label='SEO' />
+            <ScorePill score={analysis.aeo.score} label='AEO' />
+            <ScorePill score={analysis.geo.score} label='GEO' />
+          </div>
+        ) : null}
+        <KeywordFields search={search} onSave={saveSearch} />
         <Field
           label='Título para buscadores'
           htmlFor={`${id}-seo-title`}
@@ -576,70 +595,16 @@ export function PostSettings({
         </Field>
       </Section>
 
-      <Section title='Perguntas frequentes'>
+      <Section title='Perguntas e resumo (AEO/GEO)'>
         <p className='text-muted-foreground text-xs'>
-          Aparecem no fim do post e nos resultados de busca (FAQ). Respostas
-          diretas, de 40 a 60 palavras, funcionam melhor.
+          As perguntas aparecem no fim do post e nos resultados de busca (FAQ).
+          Aplicadas ao salvar o post.
         </p>
-        {questions.map((item, index) => (
-          <div key={index} className='grid gap-1.5 rounded-md border p-2'>
-            <Input
-              aria-label={`Pergunta ${index + 1}`}
-              placeholder='Pergunta'
-              maxLength={300}
-              value={item.question}
-              onChange={(event) =>
-                setQuestions(
-                  questions.map((entry, i) =>
-                    i === index
-                      ? { ...entry, question: event.target.value }
-                      : entry,
-                  ),
-                )
-              }
-              className='h-8'
-            />
-            <Textarea
-              aria-label={`Resposta ${index + 1}`}
-              placeholder='Resposta'
-              rows={3}
-              maxLength={2000}
-              value={item.answer}
-              onChange={(event) =>
-                setQuestions(
-                  questions.map((entry, i) =>
-                    i === index
-                      ? { ...entry, answer: event.target.value }
-                      : entry,
-                  ),
-                )
-              }
-            />
-            <Button
-              variant='ghost'
-              size='xs'
-              className='justify-self-end'
-              onClick={() =>
-                setQuestions(questions.filter((_, i) => i !== index))
-              }
-            >
-              <SteelIcon icon={Delete02Icon} data-icon='inline-start' />
-              Remover
-            </Button>
-          </div>
-        ))}
-        <Button
-          variant='outline'
-          size='sm'
-          className='justify-self-start'
-          disabled={questions.length >= 20}
-          onClick={() =>
-            setQuestions([...questions, { question: '', answer: '' }])
-          }
-        >
-          <SteelIcon icon={Add01Icon} data-icon='inline-start' />
-          Adicionar pergunta
-        </Button>
+        <QuestionsEditor
+          questions={search.questions ?? []}
+          onSave={saveSearch}
+        />
+        <SummaryFields search={search} onSave={saveSearch} />
       </Section>
     </div>
   )

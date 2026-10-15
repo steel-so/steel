@@ -1,5 +1,6 @@
 import type { Prisma, Site, SiteVersion } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { logger } from '@/lib/axiom/logger'
 import { appError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 import { revalidateSites } from '@/src/lib/sites/cache'
@@ -8,6 +9,7 @@ import {
   validateSiteDocument,
 } from '@/src/lib/sites/document'
 import { publicSiteUrl } from '@/src/lib/sites/public-url'
+import { keepStoredSearch } from '@/src/lib/sites/search/context'
 import { siteSlugFromName, slugWithSuffix } from '@/src/lib/sites/slug'
 import {
   buildSiteSnapshot,
@@ -33,6 +35,8 @@ import {
 } from '@/src/schemas/site.schema'
 import type { SiteDTO, SiteSummaryDTO, SiteVersionDTO } from '@/types/site'
 import { assertSitesPermission, authorizeSite } from './site-access'
+import { SiteExperimentService } from './site-experiment.service'
+import { SiteIndexNowService } from './site-indexnow.service'
 
 /** Abuse guard, far above any real workspace. */
 export const MAX_SITES_PER_WORKSPACE = 100
@@ -269,7 +273,11 @@ export const SiteService = {
       name: dto.name,
       slug: dto.slug,
       theme: dto.theme === undefined ? undefined : json(dto.theme),
-      settings: dto.settings === undefined ? undefined : json(dto.settings),
+      // A settings save without the "Buscadores" block keeps the stored one.
+      settings:
+        dto.settings === undefined
+          ? undefined
+          : json(keepStoredSearch(dto.settings, site.value.settings)),
       updatedById: actorId,
     })
     if (!updated.ok) return updated
@@ -335,6 +343,18 @@ export const SiteService = {
       return published
     }
 
+    // A/B tests whose variants this publish changed start a new run.
+    const synced = await SiteExperimentService.syncWithPublication(
+      siteId,
+      snapshot.value,
+    )
+    if (!synced.ok) {
+      logger.warn('sites.experiment.sync_failed', {
+        siteId,
+        code: synced.error.code,
+      })
+    }
+
     auditMutation({
       entity: 'site',
       action: 'publish',
@@ -342,6 +362,8 @@ export const SiteService = {
       targetId: siteId,
       meta: { version: published.value.version.number },
     })
+    // IndexNow (when the site turned it on); best effort, never blocks.
+    void SiteIndexNowService.ping(published.value.site.slug, snapshot.value)
     return ok({
       site: toPublicSiteDTO(published.value.site),
       version: toSiteVersionDTO(

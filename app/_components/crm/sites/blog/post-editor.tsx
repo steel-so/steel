@@ -304,6 +304,7 @@ export function PostEditor({
       draft={draft}
       status={status}
       timezone={timezone}
+      site={site.data}
       onChange={update}
     />
   )

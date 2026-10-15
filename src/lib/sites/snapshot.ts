@@ -28,6 +28,9 @@ export interface SiteSnapshotPage {
   isHome: boolean
   seo: SitePageSeoDTO
   document: CanvasDocument
+  /** Last edit of the page (ISO). Absent on snapshots published before it
+   * was recorded; the sitemap and freshness then use the publish date. */
+  updatedAt?: string
 }
 
 export interface SiteSnapshotGlobal {
@@ -71,6 +74,7 @@ const SnapshotSchema = z.object({
       isHome: z.boolean(),
       seo: z.unknown(),
       document: DocumentShape,
+      updatedAt: z.string().optional(),
     }),
   ),
   globals: z.array(
@@ -99,6 +103,7 @@ export interface SnapshotSource {
     isHome: boolean
     seo: unknown
     document: unknown
+    updatedAt?: Date | string
   }>
   globals: Array<{
     id: string
@@ -127,6 +132,9 @@ export function buildSiteSnapshot(source: SnapshotSource): SiteSnapshot {
         isHome: page.isHome,
         seo: parseSitePageSeo(page.seo),
         document: page.document as CanvasDocument,
+        ...(page.updatedAt
+          ? { updatedAt: new Date(page.updatedAt).toISOString() }
+          : {}),
       })),
     globals: source.globals.map((global) => ({
       id: global.id,

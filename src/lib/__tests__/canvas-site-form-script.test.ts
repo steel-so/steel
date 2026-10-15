@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import { renderSite, siteDoc } from '@/src/__tests__/helpers/site-canvas'
 import { SITE_FORM_SCRIPT } from '@/src/lib/canvas-site/components/form'
 import { form } from '@/src/lib/canvas-site/presets/builder'
@@ -141,5 +149,116 @@ describe('SITE_FORM_SCRIPT', () => {
     document.removeEventListener('steel:site-form-submitted', listener)
     expect(events).toHaveLength(1)
     expect(events[0]).toContain('/api/crm/forms/tok/submit')
+  })
+
+  describe('CRM campaign parameters on a site page', () => {
+    function config(value: Record<string, unknown>) {
+      const el = document.createElement('script')
+      el.id = 'ss-config'
+      el.type = 'application/json'
+      el.textContent = JSON.stringify(value)
+      document.body.append(el)
+    }
+    async function sentCampaign() {
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify({ success: true }), { status: 201 }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      const element = mount()
+      config(currentConfig)
+      submit(element)
+      await flush()
+      const [, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ]
+      return JSON.parse(init.body as string).campaign
+    }
+    let currentConfig: Record<string, unknown> = {}
+    let consent: string | null = null
+
+    beforeEach(() => {
+      window.history.replaceState(
+        null,
+        '',
+        '/?utm_campaign=bf&utm_source=email&stc=r1-e.sig',
+      )
+      consent = null
+      vi.stubGlobal('localStorage', {
+        getItem: () => consent,
+        setItem: () => {},
+      })
+    })
+
+    it('sends the token, the site and the page when no consent is needed', async () => {
+      currentConfig = { slug: 'clinica', pageId: 'home', banner: false }
+      expect(await sentCampaign()).toEqual({
+        ref: 'r1-e.sig',
+        utmCampaign: 'bf',
+        utmSource: 'email',
+        siteSlug: 'clinica',
+        sitePageId: 'home',
+      })
+    })
+
+    it('drops the recipient token until the visitor accepts cookies', async () => {
+      currentConfig = {
+        slug: 'clinica',
+        pageId: 'home',
+        banner: false,
+        tracking: { ga: 'G-1' },
+      }
+      expect(await sentCampaign()).toEqual({
+        utmCampaign: 'bf',
+        utmSource: 'email',
+        siteSlug: 'clinica',
+        sitePageId: 'home',
+      })
+      consent = 'accepted'
+      currentConfig = { slug: 'clinica', banner: true }
+      expect(await sentCampaign()).toEqual({
+        ref: 'r1-e.sig',
+        utmCampaign: 'bf',
+        utmSource: 'email',
+        siteSlug: 'clinica',
+      })
+    })
+
+    it('ignores a broken config and storage errors', async () => {
+      vi.stubGlobal('localStorage', {
+        getItem: () => {
+          throw new Error('blocked')
+        },
+      })
+      currentConfig = { slug: 'clinica', banner: true }
+      expect(await sentCampaign()).toEqual({
+        utmCampaign: 'bf',
+        utmSource: 'email',
+        siteSlug: 'clinica',
+      })
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify({ success: true }), { status: 201 }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      const element = mount()
+      const broken = document.createElement('script')
+      broken.id = 'ss-config'
+      broken.type = 'application/json'
+      broken.textContent = '{'
+      document.body.append(broken)
+      submit(element)
+      await flush()
+      const [, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ]
+      expect(JSON.parse(init.body as string).campaign).toEqual({
+        ref: 'r1-e.sig',
+        utmCampaign: 'bf',
+        utmSource: 'email',
+      })
+    })
   })
 })

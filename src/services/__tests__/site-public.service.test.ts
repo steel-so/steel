@@ -10,6 +10,9 @@ import { appError } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/site.repository')
+vi.mock('@/src/services/crm-campaign-tracking.service', () => ({
+  CrmCampaignTrackingService: { attribute: vi.fn() },
+}))
 vi.mock('@/src/repositories/site-redirect.repository')
 vi.mock('@/src/services/site-blog-public.service', () => ({
   SiteBlogPublicService: {
@@ -29,6 +32,7 @@ import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { SiteBlogPublicService } from '@/src/services/site-blog-public.service'
+import { CrmCampaignTrackingService } from '../crm-campaign-tracking.service'
 import { SitePublicService } from '../site-public.service'
 
 const sites = vi.mocked(SiteRepository)
@@ -197,6 +201,71 @@ describe('SitePublicService.recordView', () => {
       kind: 'VIEW',
       formToken: undefined,
     })
+  })
+
+  it('attributes campaign views once per visitor, page and day', async () => {
+    const attribute = vi.mocked(CrmCampaignTrackingService.attribute)
+    attribute.mockResolvedValue(ok(true))
+    expectOk(
+      await SitePublicService.recordView('clinica', request, {
+        pageId: 'home',
+        path: '/',
+        utmCampaign: 'bf',
+        utmSource: 'email',
+        ref: 'r1-e.sig',
+      }),
+    )
+    const hash = sites.recordView.mock.calls[0][0].visitorHash
+    expect(attribute).toHaveBeenCalledWith(
+      {
+        workspaceId: live.workspaceId,
+        kind: 'SITE_VIEW',
+        sourceRef: `${hash}:home`,
+        ref: { ref: 'r1-e.sig', utmCampaign: 'bf', utmSource: 'email' },
+        siteId: 'site1',
+        sitePageId: 'home',
+      },
+      request.now,
+    )
+
+    // An unknown page keys on the path; a failed attribution never fails
+    // the beacon.
+    attribute.mockResolvedValueOnce(err(databaseError('x')))
+    expectOk(
+      await SitePublicService.recordView('clinica', request, {
+        path: '/x',
+        utmCampaign: 'bf',
+      }),
+    )
+    expect(attribute.mock.lastCall?.[0]).toMatchObject({
+      sourceRef: `${hash}:/x`,
+      sitePageId: undefined,
+    })
+  })
+
+  it('skips attribution without campaign parameters, for conversions and on failures', async () => {
+    const attribute = vi.mocked(CrmCampaignTrackingService.attribute)
+    await SitePublicService.recordView('clinica', request, {
+      pageId: 'home',
+      path: '/',
+      utmSource: 'instagram',
+    })
+    await SitePublicService.recordView('clinica', request, {
+      pageId: 'home',
+      path: '/',
+      kind: 'CONVERSION',
+      formToken: 'tok',
+      utmCampaign: 'bf',
+    })
+    sites.recordView.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(
+      await SitePublicService.recordView('clinica', request, {
+        path: '/',
+        utmCampaign: 'bf',
+      }),
+      'DATABASE_ERROR',
+    )
+    expect(attribute).not.toHaveBeenCalled()
   })
 
   it('refuses unpublished sites', async () => {

@@ -7,6 +7,8 @@ import { hasTrackers, type SiteTrackingIds } from './csp'
  *
  * - sends the anonymous page view to `/api/sites/<slug>/views` — right
  *   away when the site has no cookie banner, after "Aceitar" when it has;
+ *   with the UTM parameters and the CRM campaign link token (`stc`), which
+ *   attribute the view to a campaign (ADR 0025);
  * - records a CONVERSION when a CRM form of the page is sent
  *   (`steel:site-form-submitted`, dispatched by `SITE_FORM_SCRIPT`), under
  *   the same rule;
@@ -15,8 +17,9 @@ import { hasTrackers, type SiteTrackingIds } from './csp'
  *   the banner, even when its own banner switch is off. The scripts carry
  *   the page's nonce (allowed by the site's CSP, see `csp.ts`).
  *
- * The choice lives in `localStorage` (`steel-site-consent:<slug>`); nothing
- * else is stored on the device by Steel.
+ * The choice lives in `localStorage` (`steel-site-consent:<slug>`); an
+ * acceptance is also announced as `steel:site-consent` (the A/B tests
+ * store their cookie only then, see `experiment-runtime.ts`).
  */
 
 export const SITE_RUNTIME_CONFIG_ID = 'ss-config'
@@ -79,7 +82,7 @@ var anyTracker=!!(t.ga||t.gtm||t.pixel),ask=c.banner||anyTracker;
 function read(){try{var v=localStorage.getItem(key);return v==='accepted'||v==='rejected'?v:null}catch(e){return null}}
 function write(v){try{localStorage.setItem(key,v)}catch(e){}}
 function send(b){try{fetch('/api/sites/'+encodeURIComponent(c.slug)+'/views',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),keepalive:true}).catch(function(){})}catch(e){}}
-function view(){var q=new URLSearchParams(location.search),b={pageId:c.pageId,path:c.path};if(document.referrer)b.referrer=document.referrer;['source','medium','campaign','term','content'].forEach(function(k){var v=q.get('utm_'+k);if(v)b['utm'+k.charAt(0).toUpperCase()+k.slice(1)]=v});send(b)}
+function view(){var q=new URLSearchParams(location.search),b={pageId:c.pageId,path:c.path};if(document.referrer)b.referrer=document.referrer;['source','medium','campaign','term','content'].forEach(function(k){var v=q.get('utm_'+k);if(v)b['utm'+k.charAt(0).toUpperCase()+k.slice(1)]=v});var r=q.get('stc');if(r)b.ref=r;send(b)}
 function load(src){var s=document.createElement('script');s.async=true;s.src=src;if(nonce)s.setAttribute('nonce',nonce);document.head.appendChild(s)}
 function trackers(){
 if(t.ga||t.gtm){window.dataLayer=window.dataLayer||[]}
@@ -87,7 +90,7 @@ if(t.ga){window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};w
 if(t.gtm){window.dataLayer.push({'gtm.start':Date.now(),event:'gtm.js'});load('https://www.googletagmanager.com/gtm.js?id='+encodeURIComponent(t.gtm))}
 if(t.pixel&&!window.fbq){var f=window.fbq=function(){f.callMethod?f.callMethod.apply(f,arguments):f.queue.push(arguments)};window._fbq=f;f.push=f;f.loaded=true;f.version='2.0';f.queue=[];f('init',t.pixel);f('track','PageView');load('https://connect.facebook.net/en_US/fbevents.js')}
 }
-function grant(){if(granted)return;granted=true;if(c.banner)view();trackers()}
+function grant(){if(granted)return;granted=true;if(c.banner)view();trackers();try{document.dispatchEvent(new CustomEvent('steel:site-consent',{detail:'accepted'}))}catch(e){}}
 document.addEventListener('${SITE_FORM_SUBMITTED_EVENT}',function(e){
 if(c.banner&&!granted)return;
 var a=(e&&e.detail&&e.detail.action)||'',m=/\\/forms\\/([^/?#]+)\\/submit/.exec(a),b={pageId:c.pageId,path:c.path,kind:'CONVERSION'};

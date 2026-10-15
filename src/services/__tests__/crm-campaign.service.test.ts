@@ -1,5 +1,6 @@
 import type { CrmCampaign, WhatsAppConnection } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createFakeCampaignSite } from '@/src/__tests__/factories/campaign-site.factory'
 import {
   createFakeCrmCampaign,
   createFakeCrmCampaignConversion,
@@ -8,6 +9,7 @@ import {
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
+import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/audit')
@@ -37,6 +39,7 @@ import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-mo
 import {
   CrmCampaignService,
   computeCampaignIssues,
+  emailChecklistOf,
 } from '../crm-campaign.service'
 import {
   buildCampaignEmail,
@@ -147,6 +150,12 @@ beforeEach(() => {
     ok({ id: 'l1', token: 'ltok', published: true }),
   )
   lookup.findEmailTemplate.mockResolvedValue(ok({ id: 't1', subject: 'Tpl' }))
+  lookup.findEmailTemplateContent.mockResolvedValue(
+    ok({ id: 't1', subject: 'Tpl', kind: 'LEGACY', builderDocument: null }),
+  )
+  lookup.findSites.mockResolvedValue(ok([]))
+  lookup.findSite.mockResolvedValue(ok(null))
+  lookup.findQuickReply.mockResolvedValue(ok(null))
   lookup.findConnection.mockResolvedValue(ok(connection()))
   lookup.findWhatsAppTemplate.mockResolvedValue(ok(null))
   lookup.mailingListsExist.mockResolvedValue(ok(true))
@@ -729,10 +738,88 @@ describe('CrmCampaignService.remove()', () => {
 describe('CrmCampaignService.options()', () => {
   const options = {
     landingPages: [
-      { id: 'l1', title: 'LP', status: 'PUBLISHED', shareToken: 'lt' },
+      {
+        id: 'l1',
+        title: 'LP',
+        status: 'PUBLISHED',
+        shareToken: 'lt',
+        migratedSiteId: null,
+      },
+      {
+        id: 'l2',
+        title: 'Migrada',
+        status: 'PUBLISHED',
+        shareToken: 'lt2',
+        migratedSiteId: 'site1',
+      },
     ],
-    forms: [{ id: 'f1', name: 'Form', status: 'DRAFT', publicToken: 'ft' }],
-    emailTemplates: [{ id: 't1', name: 'T', subject: 'S' }],
+    forms: [
+      { id: 'f1', name: 'Form', status: 'DRAFT', publicToken: 'ft' },
+      {
+        id: 'f2',
+        name: 'Contato',
+        status: 'PUBLISHED',
+        publicToken: 'tok-sym',
+      },
+    ],
+    emailTemplates: [
+      {
+        id: 't1',
+        name: 'T',
+        subject: 'S',
+        kind: 'BUILDER' as const,
+        canvas: true,
+        updatedAt: NOW,
+      },
+      {
+        id: 't2',
+        name: 'Antigo',
+        subject: 'S',
+        kind: 'BUILDER' as const,
+        canvas: false,
+        updatedAt: NOW,
+      },
+      {
+        id: 't3',
+        name: 'HTML',
+        subject: 'S',
+        kind: 'LEGACY' as const,
+        canvas: false,
+        updatedAt: NOW,
+      },
+    ],
+    sites: [
+      createFakeCampaignSite(),
+      createFakeCampaignSite({
+        id: 'site2',
+        name: 'Rascunho',
+        slug: 'rascunho',
+        status: 'DRAFT',
+        snapshot: null,
+      }),
+      createFakeCampaignSite({ id: 'site3', snapshot: { bad: true } }),
+    ],
+    quickReplies: [
+      {
+        id: 'qr1',
+        workspaceId: WS,
+        shortcut: 'promo',
+        title: 'Promo',
+        body: 'Oi {nome}',
+        mediaUrl: null,
+        buttons: [
+          {
+            id: 'b1',
+            type: 'REPLY',
+            label: 'Quero',
+            actions: [{ kind: 'REPLY', text: 'Obrigado' }],
+          },
+          { id: 'b2', type: 'URL', label: 'Ver', url: 'https://x.test/{link}' },
+        ],
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+    ],
     mailingLists: [{ id: 'ml', name: 'Lista' }],
     connections: [
       {
@@ -781,6 +868,139 @@ describe('CrmCampaignService.options()', () => {
       urlButtons: [0],
     })
     expect(result.whatsapp.connections[1].templates).toEqual([])
+  })
+
+  it('should list sites, form embeds, unmigrated landing pages and editors', async () => {
+    lookup.listOptions.mockResolvedValue(ok(options))
+    const result = expectOk(await CrmCampaignService.options(ACTOR, WS))
+
+    expect(result.sites.map((site) => [site.id, site.published])).toEqual([
+      ['site1', true],
+      ['site2', false],
+      ['site3', false],
+    ])
+    expect(result.sites[0].url).toMatch(/\/s\/clinica$/)
+    expect(result.sites[0].pages.map((page) => page.id)).toEqual([
+      'home',
+      'contato',
+    ])
+    expect(result.sites[0].pages[0]).not.toHaveProperty('formTokens')
+    expect(result.sites[1].pages).toEqual([])
+
+    expect(result.forms[1].url).toMatch(/\/f\/tok-sym$/)
+    expect(result.forms[1].embeds).toEqual([
+      expect.objectContaining({
+        siteId: 'site1',
+        siteName: 'Clínica',
+        pageId: 'contato',
+        pageTitle: 'Contato',
+      }),
+    ])
+    expect(result.forms[0].embeds).toEqual([])
+
+    expect(result.landingPages.map((page) => page.id)).toEqual(['l1'])
+    expect(result.emailTemplates.map((t) => t.editor)).toEqual([
+      'v2',
+      'v1',
+      'html',
+    ])
+    expect(result.emailTemplates[0].updatedAt).toBe(NOW.toISOString())
+  })
+
+  it('should describe Meta templates (quality, media, buttons) and Z-API quick replies', async () => {
+    const [meta] = options.connections
+    const template = meta.templates[0]
+    lookup.listOptions.mockResolvedValue(
+      ok({
+        ...options,
+        connections: [
+          {
+            ...meta,
+            templates: [
+              {
+                ...template,
+                headerFormat: 'IMAGE' as const,
+                headerMediaUrl: 'https://cdn.test/a.png',
+                buttons: [
+                  {
+                    id: 'b1',
+                    type: 'REPLY',
+                    label: 'Sim',
+                    actions: [{ kind: 'REPLY', text: 'Ok' }],
+                  },
+                  {
+                    id: 'b2',
+                    type: 'URL',
+                    label: 'Ver',
+                    url: 'https://app.test/api/crm/campaigns/c/{{1}}',
+                  },
+                ],
+              },
+              {
+                ...template,
+                id: 'red',
+                quality: 'RED' as const,
+              },
+              {
+                ...template,
+                id: 'paused',
+                status: 'PAUSED' as const,
+              },
+            ],
+          },
+          options.connections[1],
+        ],
+      }),
+    )
+    const { whatsapp } = expectOk(await CrmCampaignService.options(ACTOR, WS))
+    const [approved, red, paused] = whatsapp.connections[0].templates
+    expect(approved).toMatchObject({
+      status: 'APPROVED',
+      headerFormat: 'IMAGE',
+      headerMediaUrl: 'https://cdn.test/a.png',
+      blockedReason: null,
+      buttons: [
+        { type: 'REPLY', label: 'Sim', dynamic: false, actionCount: 1 },
+        { type: 'URL', label: 'Ver', dynamic: true, actionCount: 0 },
+      ],
+    })
+    expect(red.blockedReason).toMatch(/Qualidade baixa/)
+    expect(paused.blockedReason).toMatch(/pausou/)
+
+    expect(whatsapp.quickReplies).toEqual([
+      {
+        id: 'qr1',
+        shortcut: 'promo',
+        title: 'Promo',
+        body: 'Oi {nome}',
+        mediaUrl: null,
+        buttons: [
+          {
+            type: 'REPLY',
+            label: 'Quero',
+            url: null,
+            dynamic: false,
+            actionCount: 1,
+          },
+          {
+            type: 'URL',
+            label: 'Ver',
+            url: 'https://x.test/{link}',
+            dynamic: true,
+            actionCount: 0,
+          },
+        ],
+      },
+    ])
+
+    // Without a Z-API connection there is nothing to send quick replies on.
+    lookup.listOptions.mockResolvedValue(
+      ok({ ...options, connections: [options.connections[0]] }),
+    )
+    expect(
+      expectOk(await CrmCampaignService.options(ACTOR, WS)).whatsapp
+        .quickReplies,
+    ).toEqual([])
   })
 
   it('should explain why WhatsApp is unavailable', async () => {
@@ -1335,6 +1555,7 @@ describe('CrmCampaignService.stats() and listRecipients()', () => {
       visits: 1,
       submissions: 3,
       byChannel: { email: 2, whatsapp: 1, unknown: 1 },
+      byDestination: { siteView: 0, siteForm: 0, crmForm: 3, landingView: 1 },
     })
     expect(stats.convertedContacts[0]).toMatchObject({
       name: 'Ana',
@@ -1377,5 +1598,363 @@ describe('CrmCampaignService.stats() and listRecipients()', () => {
       }),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('CrmCampaignService — site page destinations', () => {
+  const sitePage = (overrides?: Partial<CrmCampaign>) =>
+    readyCampaign({
+      destinationType: 'SITE_PAGE',
+      formId: null,
+      siteId: 'site1',
+      sitePageId: 'contato',
+      ...overrides,
+    })
+
+  it('should link to the live site page with a destination summary', async () => {
+    lookup.findSite.mockResolvedValue(ok(createFakeCampaignSite()))
+    campaigns.findById.mockResolvedValue(ok(sitePage()))
+    const detail = expectOk(await CrmCampaignService.get(ACTOR, WS, 'c1'))
+    expect(detail.issues).toEqual([])
+    expect(detail.links.destination).toMatch(/\/s\/clinica\/contato$/)
+    expect(detail.links.email).toMatch(
+      /\/s\/clinica\/contato\?utm_source=email&utm_medium=.*&utm_campaign=bf$/,
+    )
+    expect(detail.destination).toEqual({
+      type: 'SITE_PAGE',
+      name: 'Clínica',
+      pageTitle: 'Contato',
+      url: expect.stringMatching(/\/s\/clinica\/contato$/),
+      published: true,
+    })
+    expect(lookup.findSite).toHaveBeenCalledWith(WS, 'site1')
+  })
+
+  it('should summarize landing pages and forms too', async () => {
+    lookup.findForm.mockResolvedValue(
+      ok({ id: 'f1', token: 'ftok', published: true, name: 'Inscrição' }),
+    )
+    campaigns.findById.mockResolvedValue(ok(readyCampaign()))
+    const detail = expectOk(await CrmCampaignService.get(ACTOR, WS, 'c1'))
+    expect(detail.destination).toEqual({
+      type: 'FORM',
+      name: 'Inscrição',
+      pageTitle: null,
+      url: expect.stringMatching(/\/f\/ftok$/),
+      published: true,
+    })
+  })
+
+  it('should explain what blocks a site destination', async () => {
+    const message = async (campaign: CrmCampaign) =>
+      expectOk(await computeCampaignIssues(campaign))[0]?.message
+
+    expect(await message(sitePage({ siteId: null }))).toBe(
+      'Escolha o site e a página de destino',
+    )
+    lookup.findSite.mockResolvedValueOnce(ok(null))
+    expect(await message(sitePage())).toBe(
+      'Escolha o site e a página de destino',
+    )
+    lookup.findSite.mockResolvedValue(ok(createFakeCampaignSite()))
+    expect(await message(sitePage({ sitePageId: null }))).toBe(
+      'Escolha a página do site',
+    )
+    expect(await message(sitePage({ sitePageId: 'nova' }))).toMatch(
+      /ainda não está no ar/,
+    )
+    expect(await message(sitePage({ sitePageId: 'gone' }))).toBe(
+      'A página escolhida não existe mais',
+    )
+    lookup.findSite.mockResolvedValueOnce(
+      ok(createFakeCampaignSite({ status: 'DRAFT', snapshot: null })),
+    )
+    expect(await message(sitePage())).toBe(
+      'Publique o site antes de enviar a campanha',
+    )
+    lookup.findSite.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await computeCampaignIssues(sitePage()), 'DATABASE_ERROR')
+  })
+
+  it('should list site campaigns with their page links', async () => {
+    campaigns.listByWorkspace.mockResolvedValue(
+      ok([
+        sitePage(),
+        sitePage({ id: 'c2', siteId: 'site-gone' }),
+        sitePage({ id: 'c3', sitePageId: 'nova' }),
+      ]),
+    )
+    campaigns.funnel.mockResolvedValue(ok(new Map()))
+    lookup.destinationTokens.mockResolvedValue(ok(new Map()))
+    lookup.findSites.mockResolvedValue(ok([createFakeCampaignSite()]))
+
+    const list = expectOk(await CrmCampaignService.list(ACTOR, WS))
+    expect(lookup.findSites).toHaveBeenCalledWith(WS, ['site1', 'site-gone'])
+    expect(list[0].links.whatsapp).toMatch(
+      /\/s\/clinica\/contato\?utm_source=whatsapp/,
+    )
+    expect(list[0].destination?.pageTitle).toBe('Contato')
+    expect(list[1].links.destination).toBeNull()
+    expect(list[1].destination).toBeNull()
+    expect(list[2].links.destination).toBeNull()
+    expect(list[2].destination?.published).toBe(false)
+
+    lookup.findSites.mockResolvedValue(err(databaseError('x')))
+    expectErr(await CrmCampaignService.list(ACTOR, WS), 'DATABASE_ERROR')
+  })
+
+  describe('update()', () => {
+    beforeEach(() => {
+      campaigns.findById.mockResolvedValue(ok(sitePage()))
+      campaigns.update.mockImplementation(async (_id, data) =>
+        ok(sitePage(data as Partial<CrmCampaign>)),
+      )
+      lookup.findSite.mockResolvedValue(ok(createFakeCampaignSite()))
+    })
+
+    it('should pick a site page and clear the other destinations', async () => {
+      expectOk(
+        await CrmCampaignService.update(ACTOR, WS, 'c1', {
+          destinationType: 'SITE_PAGE',
+          siteId: 'site1',
+          sitePageId: 'home',
+        }),
+      )
+      expect(campaigns.update).toHaveBeenLastCalledWith(
+        'c1',
+        expect.objectContaining({
+          siteId: 'site1',
+          sitePageId: 'home',
+          formId: null,
+          landingPageId: null,
+        }),
+      )
+
+      await CrmCampaignService.update(ACTOR, WS, 'c1', {
+        destinationType: 'FORM',
+        formId: 'f1',
+      })
+      expect(campaigns.update).toHaveBeenLastCalledWith(
+        'c1',
+        expect.objectContaining({ siteId: null, sitePageId: null }),
+      )
+
+      // Another site without a page: the old page is not the new site's.
+      await CrmCampaignService.update(ACTOR, WS, 'c1', { siteId: 'site1' })
+      expect(campaigns.update).toHaveBeenLastCalledWith(
+        'c1',
+        expect.objectContaining({ siteId: 'site1', sitePageId: null }),
+      )
+    })
+
+    it('should validate the site and its page', async () => {
+      lookup.findSite.mockResolvedValueOnce(ok(null))
+      expect(
+        expectErr(
+          await CrmCampaignService.update(ACTOR, WS, 'c1', { siteId: 'x' }),
+          'VALIDATION_ERROR',
+        ).message,
+      ).toBe('Site não encontrado')
+
+      expect(
+        expectErr(
+          await CrmCampaignService.update(ACTOR, WS, 'c1', {
+            sitePageId: 'other-site-page',
+          }),
+          'VALIDATION_ERROR',
+        ).message,
+      ).toBe('Página do site não encontrada')
+
+      campaigns.findById.mockResolvedValueOnce(ok(sitePage({ siteId: null })))
+      expect(
+        expectErr(
+          await CrmCampaignService.update(ACTOR, WS, 'c1', {
+            sitePageId: 'home',
+          }),
+          'VALIDATION_ERROR',
+        ).message,
+      ).toBe('Escolha o site antes da página')
+
+      // A draft page of the site is accepted (published later).
+      expectOk(
+        await CrmCampaignService.update(ACTOR, WS, 'c1', {
+          sitePageId: 'nova',
+        }),
+      )
+
+      lookup.findSite.mockResolvedValueOnce(err(databaseError('x')))
+      expectErr(
+        await CrmCampaignService.update(ACTOR, WS, 'c1', { siteId: 'site1' }),
+        'DATABASE_ERROR',
+      )
+    })
+
+    it('should validate the Z-API quick reply', async () => {
+      lookup.findQuickReply.mockResolvedValueOnce(ok(null))
+      expect(
+        expectErr(
+          await CrmCampaignService.update(ACTOR, WS, 'c1', {
+            whatsappQuickReplyId: 'qr-x',
+          }),
+          'VALIDATION_ERROR',
+        ).message,
+      ).toBe('Resposta rápida não encontrada')
+      lookup.findQuickReply.mockResolvedValueOnce(err(databaseError('x')))
+      expectErr(
+        await CrmCampaignService.update(ACTOR, WS, 'c1', {
+          whatsappQuickReplyId: 'qr1',
+        }),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+})
+
+describe('CrmCampaignService — e-mail checklist', () => {
+  const canvas = (subject = 'Tpl') =>
+    ok({
+      id: 't1',
+      subject,
+      kind: 'BUILDER' as const,
+      builderDocument: createBlankEmailDocument(),
+    })
+
+  it('should block the launch on checklist errors and keep warnings', async () => {
+    lookup.findEmailTemplateContent.mockResolvedValue(canvas())
+    const campaign = readyCampaign({ emailSubject: 'Oi {{desconhecida}}' })
+    const issues = expectOk(await computeCampaignIssues(campaign))
+    expect(issues).toEqual([
+      {
+        step: 'content',
+        message: 'E-mail: Variável desconhecida no assunto: {{desconhecida}}',
+      },
+    ])
+    const checklist = expectOk(await emailChecklistOf(campaign))
+    expect(checklist).toContainEqual({
+      level: 'warning',
+      message: expect.stringMatching(/pré-visualização/),
+    })
+  })
+
+  it("should use the campaign's preheader and skip the subject check", async () => {
+    lookup.findEmailTemplateContent.mockResolvedValue(canvas(''))
+    const checklist = expectOk(
+      await emailChecklistOf(
+        readyCampaign({ emailSubject: null, emailPreheader: 'Só hoje' }),
+      ),
+    )
+    expect(checklist.map((item) => item.message).join(' ')).not.toMatch(
+      /sem assunto|pré-visualização/,
+    )
+  })
+
+  it('should check v1 layouts through the converted document', async () => {
+    lookup.findEmailTemplateContent.mockResolvedValue(
+      ok({
+        id: 't1',
+        subject: 'Oi',
+        kind: 'BUILDER' as const,
+        builderDocument: { version: 1, layoutId: 'nope', sections: 'x' },
+      }),
+    )
+    expect(expectOk(await emailChecklistOf(readyCampaign()))).toEqual([])
+  })
+
+  it('should skip free-HTML, missing templates and campaigns without one', async () => {
+    expect(expectOk(await emailChecklistOf(readyCampaign()))).toEqual([])
+    expect(
+      expectOk(
+        await emailChecklistOf(readyCampaign({ emailTemplateId: null })),
+      ),
+    ).toEqual([])
+    lookup.findEmailTemplateContent.mockResolvedValueOnce(ok(null))
+    expect(expectOk(await emailChecklistOf(readyCampaign()))).toEqual([])
+  })
+
+  it('should propagate the template read failure', async () => {
+    lookup.findEmailTemplateContent.mockResolvedValue(err(databaseError('x')))
+    expectErr(await emailChecklistOf(readyCampaign()), 'DATABASE_ERROR')
+    expectErr(await computeCampaignIssues(readyCampaign()), 'DATABASE_ERROR')
+    campaigns.findById.mockResolvedValue(ok(readyCampaign()))
+    expectErr(await CrmCampaignService.get(ACTOR, WS, 'c1'), 'DATABASE_ERROR')
+  })
+})
+
+describe('CrmCampaignService — WhatsApp content rules', () => {
+  const zapi = (overrides?: Partial<CrmCampaign>) =>
+    readyCampaign({
+      whatsappEnabled: true,
+      whatsappLegalBasis: 'CONSENT',
+      whatsappConnectionId: 'conn1',
+      whatsappText: 'Oi {nome}',
+      whatsappQuickReplyId: 'qr1',
+      ...overrides,
+    })
+  const reply = (buttons: unknown) =>
+    ok({
+      id: 'qr1',
+      workspaceId: WS,
+      shortcut: 'p',
+      title: 'P',
+      body: 'Oi',
+      mediaUrl: null,
+      buttons: buttons as never,
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+
+  it('should accept the campaign link in a quick reply URL button', async () => {
+    lookup.findQuickReply.mockResolvedValueOnce(
+      reply([
+        { id: 'b1', type: 'URL', label: 'Ver', url: 'https://x.test/{link}' },
+      ]),
+    )
+    expect(expectOk(await computeCampaignIssues(zapi()))).toEqual([])
+
+    lookup.findQuickReply.mockResolvedValueOnce(reply(null))
+    expect(expectOk(await computeCampaignIssues(zapi()))[0].message).toMatch(
+      /Inclua \{link\}/,
+    )
+  })
+
+  it('should flag a deleted quick reply and propagate lookup errors', async () => {
+    lookup.findQuickReply.mockResolvedValueOnce(ok(null))
+    expect(expectOk(await computeCampaignIssues(zapi()))[0].message).toBe(
+      'A resposta rápida escolhida não existe mais',
+    )
+    lookup.findQuickReply.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await computeCampaignIssues(zapi()), 'DATABASE_ERROR')
+  })
+
+  it('should block a red quality Meta template', async () => {
+    lookup.findConnection.mockResolvedValue(
+      ok(connection({ provider: 'META' })),
+    )
+    lookup.findWhatsAppTemplate.mockResolvedValueOnce(
+      ok({
+        id: 'wt1',
+        workspaceId: WS,
+        connectionId: 'conn1',
+        name: 'promo',
+        language: 'pt_BR',
+        category: 'MARKETING',
+        status: 'APPROVED',
+        components: [{ type: 'BODY', text: 'Oi' }],
+        quality: 'RED' as const,
+        qualityUpdatedAt: null,
+        statusReason: null,
+        headerFormat: null,
+        headerMediaUrl: null,
+        buttons: null,
+        createdAt: NOW,
+        updatedAt: NOW,
+      }),
+    )
+    const issues = expectOk(
+      await computeCampaignIssues(
+        zapi({ whatsappQuickReplyId: null, whatsappTemplateId: 'wt1' }),
+      ),
+    )
+    expect(issues[0].message).toMatch(/Qualidade baixa/)
   })
 })

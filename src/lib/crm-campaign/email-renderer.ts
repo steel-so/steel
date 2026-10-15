@@ -1,6 +1,11 @@
 import 'server-only'
-import type { Result } from '@/src/lib/result'
-import { renderCampaignEmail as renderBuilderEmail } from '@/src/services/crm-email-builder.service'
+import { ok, type Result } from '@/src/lib/result'
+import { CrmEmailBuilderRepository } from '@/src/repositories/crm-email-builder.repository'
+import type { EmailBuilderContact } from '@/src/schemas/crm-email-builder.schema'
+import {
+  personToContact,
+  renderCampaignEmail as renderBuilderEmail,
+} from '@/src/services/crm-email-builder.service'
 
 /**
  * Campaign e-mail rendering seam (ADR 0025). The campaign only depends on
@@ -22,6 +27,12 @@ export interface CampaignEmailContact {
    * (the builder then links its generic page).
    */
   unsubscribeUrl?: string
+  /**
+   * CRM person behind the recipient: fills the profile variables
+   * (`{{empresa}}`, `{{cargo}}`, `{{cidade}}`…) and the list membership of
+   * "Mostrar se" conditions, so each recipient gets their own version.
+   */
+  personId?: string | null
 }
 
 export interface RenderedCampaignEmail {
@@ -35,13 +46,32 @@ export type RenderCampaignEmail = (
   contact: CampaignEmailContact,
 ) => Promise<Result<RenderedCampaignEmail>>
 
-export const renderCampaignEmail: RenderCampaignEmail = (templateId, contact) =>
-  renderBuilderEmail(
-    templateId,
-    { name: contact.name, email: contact.email },
-    {
-      workspaceId: contact.workspaceId,
-      campaignLink: contact.campaignLink,
-      unsubscribeUrl: contact.unsubscribeUrl,
-    },
+/** The recipient's name/e-mail plus the CRM person's profile fields. */
+async function recipientContact(
+  contact: CampaignEmailContact,
+): Promise<Result<EmailBuilderContact>> {
+  const base = { name: contact.name, email: contact.email }
+  if (!contact.personId) return ok(base)
+  const people = await CrmEmailBuilderRepository.findContacts(
+    contact.workspaceId,
+    [contact.personId],
   )
+  if (!people.ok) return people
+  const [person] = people.value
+  // The snapshot's name and address win: they are what the campaign used.
+  return ok(person ? { ...personToContact(person), ...base } : base)
+}
+
+export const renderCampaignEmail: RenderCampaignEmail = async (
+  templateId,
+  contact,
+) => {
+  const recipient = await recipientContact(contact)
+  if (!recipient.ok) return recipient
+  return renderBuilderEmail(templateId, recipient.value, {
+    workspaceId: contact.workspaceId,
+    campaignLink: contact.campaignLink,
+    unsubscribeUrl: contact.unsubscribeUrl,
+    ...(contact.personId ? { personId: contact.personId } : {}),
+  })
+}

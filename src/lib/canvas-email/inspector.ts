@@ -2,6 +2,7 @@ import type {
   InspectorField,
   InspectorSection,
 } from '@/src/lib/canvas/registry'
+import { CAMPAIGN_LINK } from '@/src/lib/crm-email-builder/variables'
 import { EMAIL_FONTS } from './theme'
 
 /** Inspector pieces shared by the e-mail components (pt-BR copy). */
@@ -43,7 +44,13 @@ export function linkField(path = 'link', label = 'Link'): InspectorField {
   return {
     path,
     label,
-    control: { kind: 'link', targets: EMAIL_LINK_TARGETS },
+    control: {
+      kind: 'link',
+      targets: EMAIL_LINK_TARGETS,
+      // In a campaign each recipient gets the tracked link to the
+      // destination (site page, form or landing page).
+      quickValues: [{ label: 'Link da campanha', value: CAMPAIGN_LINK }],
+    },
     help: 'Use {{campaign_link}} para o link rastreado da campanha.',
   }
 }
