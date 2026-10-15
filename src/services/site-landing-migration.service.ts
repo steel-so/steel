@@ -2,7 +2,6 @@ import type { Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { ok, type Result } from '@/src/lib/result'
-import { validateSiteDocument } from '@/src/lib/sites/document'
 import { convertLandingPage } from '@/src/lib/sites/landing-converter'
 import { siteSlugFromName } from '@/src/lib/sites/slug'
 import {
@@ -98,10 +97,7 @@ export const SiteLandingMigrationService = {
     if (!created.ok) return created
 
     let published = false
-    if (
-      landing.status === 'PUBLISHED' &&
-      validateSiteDocument(converted.page).ok
-    ) {
+    if (landing.status === 'PUBLISHED') {
       const snapshot = await snapshotDraft(created.value)
       const result = snapshot.ok
         ? await publishSnapshot(

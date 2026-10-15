@@ -78,8 +78,8 @@ export function slugify(input: string, maxLength = SITE_SLUG_MAX): string {
 export function siteSlugFromName(name: string): string {
   const base = slugify(name, SITE_SLUG_MAX - 5)
   if (isValidSiteSlug(base)) return base
-  const suffixed = base ? `${base}-site` : 'meu-site'
-  return isValidSiteSlug(suffixed) ? suffixed : 'meu-site'
+  // Short or reserved: `ab-site`, `www-site` are always valid labels.
+  return base ? `${base}-site` : 'meu-site'
 }
 
 /** `base`, then `base-2`, `base-3`… trimmed to fit the 63-char label. */
