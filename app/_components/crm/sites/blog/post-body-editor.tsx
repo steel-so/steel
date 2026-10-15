@@ -201,7 +201,6 @@ function BlogToolbarButtons() {
       <ToolbarGroup>
         <MediaToolbarButton nodeType={KEYS.img} />
         <MediaToolbarButton nodeType={KEYS.video} />
-        <MediaToolbarButton nodeType={KEYS.mediaEmbed} />
       </ToolbarGroup>
       <ToolbarGroup>
         <LibraryImageButton />
