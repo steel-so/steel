@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TEMPLATE_QUALITY } from '@/src/lib/whatsapp/button-editor'
 import {
   buildMetaSendComponents,
   extractTemplateFillableFields,
@@ -19,6 +20,7 @@ import {
 } from '@/src/lib/whatsapp/template-variables'
 import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
 import { TemplatePreview } from './template-preview'
+import { TemplateQualityBadge } from './template-quality-badge'
 
 export function TemplateVariablesDialog({
   template,
@@ -71,13 +73,24 @@ export function TemplateVariablesDialog({
         onOpenChange(next)
       }}
     >
-      <DialogContent className='max-w-2xl'>
+      <DialogContent className='max-h-[92vh] overflow-y-auto sm:max-w-2xl'>
         <DialogHeader>
-          <DialogTitle>{template.name}</DialogTitle>
+          <DialogTitle className='flex min-w-0 items-center gap-2'>
+            <TemplateQualityBadge quality={template.quality} />
+            <span className='truncate'>{template.name}</span>
+          </DialogTitle>
           <DialogDescription>
             Preencha as variáveis do template antes de enviar
           </DialogDescription>
         </DialogHeader>
+        {template.quality === 'RED' ? (
+          <p
+            role='alert'
+            className='rounded-md bg-destructive/10 px-3 py-2 text-destructive text-xs'
+          >
+            {TEMPLATE_QUALITY.RED.description}
+          </p>
+        ) : null}
 
         <div className='grid gap-4 md:grid-cols-2'>
           <div className='space-y-3'>
@@ -123,6 +136,7 @@ export function TemplateVariablesDialog({
 
           <TemplatePreview
             fields={fields}
+            headerMediaUrl={template.headerMediaUrl}
             values={{
               header: headerValues,
               body: bodyValues,

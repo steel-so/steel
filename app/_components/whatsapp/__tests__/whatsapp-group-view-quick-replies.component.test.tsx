@@ -48,6 +48,7 @@ function setup() {
           title: 'Saudação',
           body: 'Bom dia, aqui é {nome_usuario}.',
           mediaUrl: null,
+          buttons: [],
         },
       ],
     },

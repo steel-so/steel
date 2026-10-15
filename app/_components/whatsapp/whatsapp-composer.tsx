@@ -56,6 +56,7 @@ import {
 } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
+import { isApiErrorCode } from '@/src/hooks/_fetch'
 import { useUser } from '@/src/hooks/use-user'
 import { useWhatsAppContacts } from '@/src/hooks/use-whatsapp-contacts'
 import { useUploadWhatsAppMedia } from '@/src/hooks/use-whatsapp-media-upload'
@@ -65,8 +66,12 @@ import {
   useSendWhatsAppTemplateMessage,
   useSendWhatsAppTextMessage,
 } from '@/src/hooks/use-whatsapp-messages'
-import { useWhatsAppQuickReplies } from '@/src/hooks/use-whatsapp-quick-replies'
+import {
+  useSendWhatsAppQuickReply,
+  useWhatsAppQuickReplies,
+} from '@/src/hooks/use-whatsapp-quick-replies'
 import { useWhatsAppTemplates } from '@/src/hooks/use-whatsapp-templates'
+import { TEMPLATE_STATUS_LABEL } from '@/src/lib/whatsapp/button-editor'
 import {
   fileNameFromUrl,
   findExactQuickReply,
@@ -84,12 +89,14 @@ import type {
 } from '@/types/whatsapp-message'
 import type { WhatsAppQuickReplyDTO } from '@/types/whatsapp-quick-reply'
 import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
+import { WhatsappButtonsSummary } from './buttons/whatsapp-buttons-editor'
 import {
   QUICK_REPLY_LIST_ID,
   QuickReplyOption,
   QuickReplySlashMenu,
   useQuickReplySlash,
 } from './quick-reply-slash-menu'
+import { TemplateQualityBadge } from './template-quality-badge'
 import { TemplateVariablesDialog } from './template-variables-dialog'
 
 function mediaTypeFromMime(mime: string): WhatsAppMessageTypeDTO {
@@ -207,6 +214,10 @@ export function WhatsappComposer({
     useState<WhatsAppTemplateDTO | null>(null)
   const [variablesDialogOpen, setVariablesDialogOpen] = useState(false)
   const [shareContactOpen, setShareContactOpen] = useState(false)
+  // A quick reply with buttons goes as-is through its own endpoint (a text
+  // send would drop the buttons), so it is staged instead of filling the box.
+  const [stagedQuickReply, setStagedQuickReply] =
+    useState<WhatsAppQuickReplyDTO | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -222,6 +233,7 @@ export function WhatsappComposer({
     conversationId,
   )
   const sendContact = useSendWhatsAppContactMessage(workspaceId, conversationId)
+  const sendQuickReply = useSendWhatsAppQuickReply(workspaceId, conversationId)
   const uploadMedia = useUploadWhatsAppMedia(workspaceId)
 
   const audioRecorder = useAudioRecorder(async (blob) => {
@@ -256,20 +268,58 @@ export function WhatsappComposer({
     )
   }
 
+  /** Picks a quick reply: one with buttons is staged to go as-is; any
+   * other fills the draft (`replace`, or appended) and stages its media. */
+  function pickQuickReply(quickReply: WhatsAppQuickReplyDTO, replace: boolean) {
+    if (quickReply.buttons.length > 0) {
+      setStagedQuickReply(quickReply)
+      if (replace) setText('')
+      return
+    }
+    setText((current) =>
+      replace
+        ? renderQuickReply(quickReply)
+        : `${current}${renderQuickReply(quickReply)}`,
+    )
+    stageQuickReplyMedia(quickReply)
+  }
+
+  async function sendStagedQuickReply(quickReply: WhatsAppQuickReplyDTO) {
+    try {
+      await sendQuickReply.mutateAsync({
+        quickReplyId: quickReply.id,
+        variables: {
+          nome_cliente: contactName?.trim() || 'cliente',
+          nome_usuario: currentUser.data?.name?.trim() || 'atendente',
+        },
+      })
+      setStagedQuickReply(null)
+      setText('')
+    } catch (error) {
+      if (isApiErrorCode(error, 'WHATSAPP_BUTTONS_UNSUPPORTED')) {
+        notify.error(
+          'A Meta não aceita botões em mensagens com mais de 1024 caracteres. Encurte o texto da mensagem rápida para enviar com botões.',
+        )
+        return
+      }
+      notify.error(error, 'Erro ao enviar mensagem rápida')
+    }
+  }
+
   // `/saudacao` + Enter (or a click in the picker): the draft becomes the
   // reply, its media is staged, and the agent sends when ready.
   const slash = useQuickReplySlash({
     text,
     quickReplies: quickReplies.data,
-    onApply: (quickReply) => {
-      setText(renderQuickReply(quickReply))
-      stageQuickReplyMedia(quickReply)
-    },
+    onApply: (quickReply) => pickQuickReply(quickReply, true),
   })
 
   const isUploading = attachments.some((a) => a.status === 'uploading')
   const isBusy =
-    sendText.isPending || sendMedia.isPending || uploadMedia.isPending
+    sendText.isPending ||
+    sendMedia.isPending ||
+    uploadMedia.isPending ||
+    sendQuickReply.isPending
   const isDisabled = Boolean(disabled) || isBusy || isUploading
   const hasAttachments = attachments.length > 0
 
@@ -283,12 +333,20 @@ export function WhatsappComposer({
 
   async function handleSend() {
     if (isDisabled) return
+    if (stagedQuickReply) {
+      await sendStagedQuickReply(stagedQuickReply)
+      return
+    }
 
     // The send button (or the quick-send key with the picker closed) on an
     // exact `/shortcut`: send the reply itself, never the literal command.
     const exact = hasAttachments
       ? null
       : findExactQuickReply(quickReplies.data ?? [], text)
+    if (exact?.buttons.length) {
+      await sendStagedQuickReply(exact)
+      return
+    }
     if (exact) {
       await send(
         renderQuickReply(exact).trim(),
@@ -409,6 +467,35 @@ export function WhatsappComposer({
           </Button>
         </div>
       )}
+      {stagedQuickReply && (
+        <div className='mb-2 rounded-md border bg-muted/50 px-2.5 py-2'>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='min-w-0 space-y-1'>
+              <p className='font-medium text-xs'>
+                Mensagem rápida com botões · /
+                {stagedQuickReply.shortcut.replace(/^\/+/, '')}
+              </p>
+              <p className='line-clamp-2 whitespace-pre-wrap text-muted-foreground text-xs'>
+                {renderQuickReply(stagedQuickReply)}
+              </p>
+              <WhatsappButtonsSummary buttons={stagedQuickReply.buttons} />
+              <p className='text-[11px] text-muted-foreground'>
+                Vai como está{stagedQuickReply.mediaUrl ? ', com o anexo' : ''}{' '}
+                e os botões. Para mudar o texto, edite a mensagem rápida.
+              </p>
+            </div>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Cancelar mensagem rápida'
+              onClick={() => setStagedQuickReply(null)}
+            >
+              <SteelIcon icon={Cancel01Icon} size={14} />
+            </Button>
+          </div>
+        </div>
+      )}
       {hasAttachments && (
         <AttachmentGroup className='mb-2 px-0.5'>
           {attachments.map((attachment) => (
@@ -492,8 +579,7 @@ export function WhatsappComposer({
                     key={qr.id}
                     quickReply={qr}
                     onClick={() => {
-                      setText((current) => `${current}${renderQuickReply(qr)}`)
-                      stageQuickReplyMedia(qr)
+                      pickQuickReply(qr, false)
                       setQuickReplyOpen(false)
                     }}
                   />
@@ -551,9 +637,13 @@ export function WhatsappComposer({
                       }
                     }}
                   >
-                    <span className='font-medium'>{template.name}</span>
+                    <span className='flex w-full min-w-0 items-center gap-1.5 font-medium'>
+                      <TemplateQualityBadge quality={template.quality} />
+                      <span className='truncate'>{template.name}</span>
+                    </span>
                     <span className='text-muted-foreground text-xs'>
-                      {template.language} · {template.status}
+                      {template.language} ·{' '}
+                      {TEMPLATE_STATUS_LABEL[template.status]}
                     </span>
                   </button>
                 ))
@@ -676,9 +766,11 @@ export function WhatsappComposer({
           size='icon-sm'
           disabled={
             isDisabled ||
-            (hasAttachments
-              ? !attachments.some((a) => a.status === 'done')
-              : !text.trim())
+            (stagedQuickReply
+              ? false
+              : hasAttachments
+                ? !attachments.some((a) => a.status === 'done')
+                : !text.trim())
           }
           aria-label='Enviar'
           onClick={handleSend}

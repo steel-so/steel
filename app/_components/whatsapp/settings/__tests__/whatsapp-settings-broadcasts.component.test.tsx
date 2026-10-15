@@ -79,6 +79,12 @@ function template(id: string, name: string, status: string) {
     category: 'UTILITY',
     status,
     components: [],
+    quality: 'UNKNOWN',
+    qualityUpdatedAt: null,
+    statusReason: null,
+    headerFormat: null,
+    headerMediaUrl: null,
+    buttons: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   }
@@ -116,7 +122,7 @@ function submitForm(dialog: HTMLElement) {
   fireEvent.submit(form)
 }
 
-async function pickOption(name: string) {
+async function pickOption(name: string | RegExp) {
   const option = within(await screen.findByRole('listbox')).getByRole(
     'option',
     { name },
@@ -387,7 +393,7 @@ describe('<WhatsappSettingsBroadcasts /> CSV import', () => {
     fireEvent.click(connectionTrigger)
     await pickOption('Vendas')
     fireEvent.click(templateTrigger)
-    await pickOption('lembrete_consulta')
+    await pickOption(/lembrete_consulta/)
     fireEvent.change(
       within(dialog).getByLabelText(
         'Enviar quantas horas antes da data de referência',

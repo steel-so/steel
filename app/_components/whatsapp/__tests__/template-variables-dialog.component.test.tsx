@@ -157,4 +157,42 @@ describe('<TemplateVariablesDialog />', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
+
+  it('shows the quality square and warns before sending a red template', () => {
+    render(
+      <TemplateVariablesDialog
+        template={makeTemplate({ quality: 'RED' })}
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('img', { name: 'Qualidade baixa' })).toBeTruthy()
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Evite enviar até revisar o conteúdo',
+    )
+  })
+
+  it('previews the stored media header', () => {
+    render(
+      <TemplateVariablesDialog
+        template={makeTemplate({
+          components: [
+            { type: 'HEADER', format: 'IMAGE' },
+            { type: 'BODY', text: 'Promoção {{1}}' },
+          ],
+          headerFormat: 'IMAGE',
+          headerMediaUrl: 'https://cdn.test/banner.png',
+          quality: 'GREEN',
+        })}
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(
+      screen.getByRole('img', { name: 'Cabeçalho do template' }),
+    ).toHaveProperty('src', 'https://cdn.test/banner.png')
+  })
 })

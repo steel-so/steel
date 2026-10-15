@@ -1,6 +1,9 @@
 'use client'
 
-import { Image01Icon } from '@hugeicons-pro/core-stroke-rounded'
+import {
+  Image01Icon,
+  TouchInteraction01Icon,
+} from '@hugeicons-pro/core-stroke-rounded'
 import { type ComponentProps, type KeyboardEvent, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { cn } from '@/lib/utils'
@@ -127,14 +130,18 @@ export function QuickReplyOption({
             {quickReply.title}
           </span>
         ) : null}
-        {quickReply.mediaUrl ? (
-          <SteelIcon
-            icon={Image01Icon}
-            size={14}
-            className='ml-auto shrink-0 text-muted-foreground'
-            aria-label='Com anexo'
-          />
-        ) : null}
+        <span className='ml-auto flex shrink-0 items-center gap-1 text-muted-foreground'>
+          {quickReply.mediaUrl ? (
+            <SteelIcon icon={Image01Icon} size={14} aria-label='Com anexo' />
+          ) : null}
+          {quickReply.buttons.length > 0 ? (
+            <SteelIcon
+              icon={TouchInteraction01Icon}
+              size={14}
+              aria-label='Com botões'
+            />
+          ) : null}
+        </span>
       </span>
       <span className='line-clamp-1 text-muted-foreground text-xs'>
         {quickReply.body}
