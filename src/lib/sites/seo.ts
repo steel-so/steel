@@ -1,3 +1,6 @@
+import type { CanvasDocument, CanvasNode } from '@/src/lib/canvas/types'
+import { SITE_TYPES } from '@/src/lib/canvas-site/constants'
+import { richTextToPlain } from '@/src/lib/canvas-site/sanitize'
 import { sitePageUrl } from './host'
 import {
   pageTitle,
@@ -9,7 +12,7 @@ import {
 /**
  * SEO of a published page: canonical address, social image (uploaded or
  * the auto-generated card) and the schema.org graph (Organization,
- * WebSite, WebPage, BreadcrumbList). Pure; the runtime page and the
+ * WebSite, WebPage, BreadcrumbList and, with an accordion, FAQPage). Pure; the runtime page and the
  * sitemap call it with the published snapshot.
  */
 
@@ -78,6 +81,51 @@ export function breadcrumbOf(
 
 type JsonLdNode = Record<string, unknown>
 
+/** Plain text a node and its descendants show (headings, rich text, list
+ * items), in document order. Hidden nodes show nothing. */
+function nodeText(doc: CanvasDocument, node: CanvasNode | undefined): string {
+  if (!node || node.meta?.hidden) return ''
+  const own: string[] = []
+  const { props } = node
+  if (typeof props.html === 'string') own.push(richTextToPlain(props.html))
+  else if (typeof props.text === 'string') own.push(props.text.trim())
+  if (Array.isArray(props.items)) {
+    for (const item of props.items) {
+      const text = (item as { text?: unknown } | null)?.text
+      if (typeof text === 'string') own.push(text.trim())
+    }
+  }
+  for (const childId of node.children ?? []) {
+    own.push(nodeText(doc, doc.nodes[childId]))
+  }
+  return own.filter(Boolean).join(' ')
+}
+
+/** Questions and answers of the page's accordions (title → content), for
+ * a FAQPage node. Items without a title or an answer are left out. */
+export function faqOf(
+  doc: CanvasDocument,
+): Array<{ question: string; answer: string }> {
+  const faq: Array<{ question: string; answer: string }> = []
+  const visit = (id: string) => {
+    const node = doc.nodes[id]
+    if (!node || node.meta?.hidden) return
+    if (node.type === SITE_TYPES.accordionItem) {
+      const question =
+        typeof node.props.title === 'string' ? node.props.title.trim() : ''
+      const answer = (node.children ?? [])
+        .map((childId) => nodeText(doc, doc.nodes[childId]))
+        .filter(Boolean)
+        .join(' ')
+      if (question && answer) faq.push({ question, answer })
+      return
+    }
+    for (const childId of node.children ?? []) visit(childId)
+  }
+  visit(doc.rootId)
+  return faq
+}
+
 /** schema.org graph of a page, ready for one `application/ld+json`
  * script. */
 export function siteJsonLd(
@@ -136,9 +184,27 @@ export function siteJsonLd(
     },
   }
 
+  const questions = faqOf(page.document)
+  const faq: JsonLdNode[] = questions.length
+    ? [
+        {
+          '@type': 'FAQPage',
+          '@id': `${pageUrl}#faq`,
+          url: pageUrl,
+          inLanguage: 'pt-BR',
+          isPartOf: { '@id': websiteId },
+          mainEntity: questions.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: { '@type': 'Answer', text: item.answer },
+          })),
+        },
+      ]
+    : []
+
   return {
     '@context': 'https://schema.org',
-    '@graph': [organization, website, webPage, breadcrumb],
+    '@graph': [organization, website, webPage, breadcrumb, ...faq],
   }
 }
 

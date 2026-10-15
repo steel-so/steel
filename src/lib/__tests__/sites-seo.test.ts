@@ -3,11 +3,13 @@ import {
   createFakeSitePage,
   createFakeSnapshot,
 } from '@/src/__tests__/factories/site.factory'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   absoluteUrl,
   breadcrumbOf,
   canonicalUrlOf,
   fallbackFavicon,
+  faqOf,
   serializeJsonLd,
   siteJsonLd,
   socialImageOf,
@@ -179,5 +181,97 @@ describe('site SEO', () => {
     expect(decodeURIComponent(fallbackFavicon('&', '#000'))).toContain(
       '>S</text>',
     )
+  })
+
+  it('adds a FAQPage built from the page accordions', () => {
+    const faqDoc: CanvasDocument = {
+      catalog: 'site',
+      version: 1,
+      rootId: 'root',
+      nodes: {
+        root: { id: 'root', type: 'site.page', props: {}, children: ['s'] },
+        s: { id: 's', type: 'site.section', props: {}, children: ['acc'] },
+        acc: {
+          id: 'acc',
+          type: 'site.accordion',
+          props: {},
+          children: ['q1', 'q2', 'q3', 'q4'],
+        },
+        q1: {
+          id: 'q1',
+          type: 'site.accordion-item',
+          props: { title: ' Atende convênio? ' },
+          children: ['a1', 'l1', 'h1', 'gone', 'missing'],
+        },
+        a1: {
+          id: 'a1',
+          type: 'site.text',
+          props: { html: '<p>Sim, os <b>principais</b>.</p>' },
+        },
+        l1: {
+          id: 'l1',
+          type: 'site.list',
+          props: { items: [{ text: 'Unimed' }, null, { text: 'Amil' }] },
+        },
+        h1: { id: 'h1', type: 'site.heading', props: { text: 'Fim' } },
+        gone: {
+          id: 'gone',
+          type: 'site.text',
+          props: { html: '<p>oculto</p>' },
+          meta: { hidden: true },
+        },
+        q2: {
+          id: 'q2',
+          type: 'site.accordion-item',
+          props: { title: 'Sem resposta' },
+          children: [],
+        },
+        q3: {
+          id: 'q3',
+          type: 'site.accordion-item',
+          props: { title: 'Oculta' },
+          children: ['a1'],
+          meta: { hidden: true },
+        },
+        q4: {
+          id: 'q4',
+          type: 'site.accordion-item',
+          props: {},
+          children: ['a1'],
+        },
+      },
+    }
+    expect(faqOf(faqDoc)).toEqual([
+      {
+        question: 'Atende convênio?',
+        answer: 'Sim, os principais. Unimed Amil Fim',
+      },
+    ])
+
+    const base = snapshot()
+    const withFaq: SiteSnapshot = {
+      ...base,
+      pages: base.pages.map((item) =>
+        item.id === 'home' ? { ...item, document: faqDoc } : item,
+      ),
+    }
+    const graph = siteJsonLd(withFaq, page(withFaq, 'home'), BASE) as {
+      '@graph': Array<Record<string, unknown>>
+    }
+    expect(graph['@graph'][4]).toMatchObject({
+      '@type': 'FAQPage',
+      '@id': `${BASE}#faq`,
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'Atende convênio?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Sim, os principais. Unimed Amil Fim',
+          },
+        },
+      ],
+    })
+    expect(siteJsonLd(base, page(base, 'home'), BASE)['@graph']).toHaveLength(4)
   })
 })

@@ -349,6 +349,8 @@ vídeos e o `site.embed` (só administradores, com `sandbox`).
 - Cada página publica um grafo schema.org (`Organization`, `WebSite`,
   `WebPage`, `BreadcrumbList`). Nome, logo e perfis sociais da organização
   ficam em Configurações do site; sem eles, nome do site e favicon.
+- Página com acordeão ganha também um `FAQPage`: cada item com título e
+  resposta vira uma pergunta (itens ocultos ficam de fora).
 - Imagem social por página (envio) → do site → **cartão gerado** em
   `/<site>/_og?page=<id>` (1200×630, cores do tema).
 - Endereço canônico por página; página com canônico apontando para fora sai
