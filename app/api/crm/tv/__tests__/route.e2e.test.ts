@@ -197,6 +197,7 @@ describe('CRM sales TV', () => {
 
     const page = await getJson(`/tv/${token}`)
     expect(page.status).toBe(200)
+    expect(await page.text()).toContain('crm-dashboard-tv')
 
     // Revoking cuts the screen.
     const revoked = await deleteJson(
@@ -208,7 +209,9 @@ describe('CRM sales TV', () => {
     expect(gone.status).toBe(404)
     expect((await gone.json()).error.code).toBe('CRM_TV_LINK_NOT_FOUND')
     expect((await getJson(`/api/crm/tv/${token}/wins`)).status).toBe(404)
-    expect((await getJson(`/tv/${token}`)).status).toBe(404)
+    // The streamed page may answer 200 with the not-found UI: check the body.
+    const goneHtml = await (await getJson(`/tv/${token}`)).text()
+    expect(goneHtml).not.toContain('crm-dashboard-tv')
   })
 
   it('answers 404 for an unknown token and 401 for workspace routes without a session', async () => {
