@@ -78,7 +78,7 @@ const BAND_PADDING = {
   mobile: spacing(64, 20),
 }
 
-function band(kit: SiteKit, tinted = false) {
+export function band(kit: SiteKit, tinted = false) {
   return {
     background: tinted ? kit.band : { kind: 'none' as const },
     padding: BAND_PADDING,
@@ -87,7 +87,7 @@ function band(kit: SiteKit, tinted = false) {
 }
 
 /** Overline + title (+ intro), aligned by the kit. */
-function head(
+export function head(
   kit: SiteKit,
   eyebrow: string,
   title: string,
@@ -111,11 +111,11 @@ function head(
   )
 }
 
-function centered(kit: SiteKit) {
+export function centered(kit: SiteKit) {
   return kit.headAlign === 'center' ? ('center' as const) : ('stretch' as const)
 }
 
-function card(
+export function card(
   kit: SiteKit,
   children: NodeSpec[],
   extra: Record<string, unknown> = {},

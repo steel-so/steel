@@ -35,6 +35,7 @@ import { createSiteCatalog } from '@/src/lib/canvas-site/catalog'
 import type { SitePageLink } from '@/src/lib/canvas-site/context'
 import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SiteDocument } from '@/src/lib/canvas-site/render'
+import { siteRuntimeScripts } from '@/src/lib/canvas-site/runtime'
 import { parseSiteTheme } from '@/src/lib/canvas-site/theme'
 import { orderPages, toPageLinks } from './site-editor-context'
 import { SiteStatusBadge } from './site-status-badge'
@@ -147,6 +148,33 @@ function PreviewFrame({
   useEffect(() => {
     mount?.doc.defaultView?.scrollTo(0, 0)
   }, [mount, currentPageId])
+
+  // The same element scripts as the published page (carousels, tabs,
+  // popups, animations…), with this page's CSP nonce, once per frame.
+  // Forms stay inert in the preview.
+  const docsRef = useRef(docs)
+  docsRef.current = docs
+  useEffect(() => {
+    if (!mount) return
+    const { header, page, footer } = docsRef.current
+    const runtime = siteRuntimeScripts(
+      [header, page, footer].filter(
+        (doc): doc is CanvasDocument => doc !== undefined,
+      ),
+    )
+    const nonce =
+      document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce ?? ''
+    const run = (code: string) => {
+      const script = mount.doc.createElement('script')
+      if (nonce) script.nonce = nonce
+      script.textContent = code
+      mount.doc.body.appendChild(script)
+    }
+    if (runtime.boot) run(runtime.boot)
+    for (const script of runtime.scripts) {
+      if (script.id !== 'form') run(script.code)
+    }
+  }, [mount])
 
   const catalog = useMemo(
     () => createSiteCatalog({ pages: links, currentPageId }),
@@ -355,6 +383,9 @@ export function SitePreview({
           </p>
         ) : docs && currentId ? (
           <PreviewFrame
+            // A fresh frame per page: the element scripts run once per
+            // document (they bind document-level listeners).
+            key={currentId}
             docs={docs}
             css={css}
             links={links}

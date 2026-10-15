@@ -374,6 +374,11 @@ export function buttonDefinition(ctx: SiteRenderContext) {
             <a {...link} className={className}>
               {content}
             </a>
+          ) : p.interaction && p.interaction.action !== 'none' ? (
+            // Opens a popup, scrolls… (effects): a real, focusable button.
+            <button type='button' className={className}>
+              {content}
+            </button>
           ) : (
             <span className={className}>{content}</span>
           )}

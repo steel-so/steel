@@ -161,7 +161,7 @@ function buildCspHeader(nonce: string): string {
     media-src 'self' blob: https:;
     font-src 'self';
     connect-src 'self' blob: data: https://*.axiom.co https://cdn.jsdelivr.net${realtimeConnectSrc()}${sentryConnectSrc()}${ga.connect}${NODE_ENV === 'development' ? ' ws://localhost:4444' : ''};
-    frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com;
+    frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com https://www.google.com;
     frame-ancestors 'none';
     form-action 'self';
     base-uri 'self';
