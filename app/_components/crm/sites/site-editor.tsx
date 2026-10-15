@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AiMagicIcon,
   ComponentIcon,
   Files01Icon,
   Image01Icon,
@@ -55,6 +56,7 @@ import {
   siteColorTokens,
 } from '@/src/lib/canvas-site/theme'
 import type { SiteGlobalDTO, SitePageSummaryDTO } from '@/types/site'
+import { SiteAiPanel } from './ai/site-ai-panel'
 import {
   SiteAnchorPicker,
   SiteChildAdder,
@@ -86,6 +88,7 @@ const TAB_ICONS = {
   'site-globals': LayoutTopIcon,
   'site-media': Image01Icon,
   'site-symbols': ComponentIcon,
+  'site-ai': AiMagicIcon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -118,6 +121,12 @@ const TABS: CanvasSidebarTab[] = [
     label: 'Componentes',
     icon: 'site-symbols',
     render: () => <SymbolsPanel />,
+  },
+  {
+    id: 'site-ai',
+    label: 'IA',
+    icon: 'site-ai',
+    render: ({ store }) => <SiteAiPanel store={store} />,
   },
 ]
 

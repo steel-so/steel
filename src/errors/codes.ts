@@ -850,6 +850,8 @@ export const ERROR_CODES = {
   // S4 co-editing: the realtime room names no co-editable canvas document
   // (unknown target, or an e-mail template that is not a v2 canvas).
   CANVAS_COLLAB_NOT_FOUND: { code: 'CANVAS_COLLAB_NOT_FOUND', status: 404 },
+  // The AI site generator got no usable answer (after its repair turns).
+  SITE_AI_FAILED: { code: 'SITE_AI_FAILED', status: 502 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
