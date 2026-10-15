@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
 import { LandingPageTracker } from '@/app/_components/crm/landing-page/landing-page-tracker'
 import { LandingPageWebPreview } from '@/app/_components/crm/landing-page/landing-page-web-preview'
 import { NO_INDEX } from '@/src/lib/seo/metadata'
 import { CrmLandingPageService } from '@/src/services/crm-landing-page.service'
+import { SitePublicService } from '@/src/services/site-public.service'
 
 type PageProps = { params: Promise<{ shareToken: string }> }
 
@@ -23,6 +25,10 @@ export default async function PublicCrmLandingPage({ params }: PageProps) {
   await connection()
 
   const { shareToken } = await params
+  // Migrated to a site that is live: the old link follows it.
+  const migrated = await SitePublicService.landingRedirect(shareToken)
+  if (migrated.ok && migrated.value) redirect(migrated.value)
+
   const result = await CrmLandingPageService.getPublicByShareToken(shareToken)
 
   if (!result.ok) {

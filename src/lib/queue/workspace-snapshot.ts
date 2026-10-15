@@ -79,6 +79,11 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   wikiPageFavorite: (ws) => ({ wikiPage: { workspaceId: ws } }),
   // Whiteboard: the version history reaches the workspace through the board.
   whiteboardVersion: (ws) => ({ whiteboard: { workspaceId: ws } }),
+  // Site builder: pages, globals, published versions and views of a site.
+  sitePage: (ws) => ({ site: { workspaceId: ws } }),
+  siteGlobal: (ws) => ({ site: { workspaceId: ws } }),
+  siteVersion: (ws) => ({ site: { workspaceId: ws } }),
+  siteView: (ws) => ({ site: { workspaceId: ws } }),
 }
 
 /**

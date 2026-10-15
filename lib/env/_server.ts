@@ -82,6 +82,7 @@ const serverEnv = {
   SENTRY_PROJECT: process.env.SENTRY_PROJECT,
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
   CANVAS_LAB: process.env.CANVAS_LAB,
+  SITES_ROOT_DOMAIN: process.env.SITES_ROOT_DOMAIN,
 }
 
 /** String opcional que trata `""` como ausente (não só `undefined`). */
@@ -369,6 +370,19 @@ export const serverEnvSchema = z.object({
   // Playground do editor Steel Canvas (`/[workspace]/canvas-lab`). Fora de
   // produção ele sempre abre; em produção só com `'true'` (homologação, prints).
   CANVAS_LAB: flag,
+  // Root domain of the published sites (`<slug>.<SITES_ROOT_DOMAIN>`, e.g.
+  // `sites.steel.app`), behind a wildcard DNS record and certificate. Optional:
+  // without it sites are served only at `/s/<slug>` on the app's own domain.
+  SITES_ROOT_DOMAIN: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .regex(
+        /^(?=.{1,200}$)([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]*[a-z0-9])?$/,
+        'SITES_ROOT_DOMAIN must be a lower-case domain (e.g. sites.steel.app)',
+      )
+      .optional(),
+  ),
 }).superRefine(requireBillingCredentials)
 
 const validatedServerEnv =
@@ -457,6 +471,7 @@ export const {
   SENTRY_PROJECT,
   SENTRY_AUTH_TOKEN,
   CANVAS_LAB,
+  SITES_ROOT_DOMAIN,
 } = validatedServerEnv
 
 /** The Steel Canvas playground opens in dev/test, and in production only

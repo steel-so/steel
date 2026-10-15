@@ -804,6 +804,24 @@ export const ERROR_CODES = {
     status: 503,
   },
 
+  // Site builder (sites wave S1)
+  SITE_NOT_FOUND: { code: 'SITE_NOT_FOUND', status: 404 },
+  // The slug doubles as the subdomain: unique across every workspace.
+  SITE_SLUG_TAKEN: { code: 'SITE_SLUG_TAKEN', status: 409 },
+  SITE_PAGE_NOT_FOUND: { code: 'SITE_PAGE_NOT_FOUND', status: 404 },
+  // Another page of the same site already answers on this path.
+  SITE_PAGE_PATH_TAKEN: { code: 'SITE_PAGE_PATH_TAKEN', status: 409 },
+  // The home page, the last page or a page with subpages cannot be deleted;
+  // a page cannot become its own ancestor.
+  SITE_PAGE_PROTECTED: { code: 'SITE_PAGE_PROTECTED', status: 409 },
+  SITE_GLOBAL_NOT_FOUND: { code: 'SITE_GLOBAL_NOT_FOUND', status: 404 },
+  // A site has at most one header and one footer.
+  SITE_GLOBAL_KIND_TAKEN: { code: 'SITE_GLOBAL_KIND_TAKEN', status: 409 },
+  SITE_VERSION_NOT_FOUND: { code: 'SITE_VERSION_NOT_FOUND', status: 404 },
+  // A canvas document failed the `site` catalog validation.
+  SITE_DOCUMENT_INVALID: { code: 'SITE_DOCUMENT_INVALID', status: 422 },
+  SITE_LIMIT_REACHED: { code: 'SITE_LIMIT_REACHED', status: 409 },
+
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
   DATABASE_ERROR: { code: 'DATABASE_ERROR', status: 500 },
