@@ -136,7 +136,7 @@ function ExperimentCard({
 
   return (
     <article
-      className='grid gap-4 rounded-xl border bg-card p-4 sm:p-5'
+      className='grid min-w-0 gap-4 rounded-xl border bg-card p-4 sm:p-5'
       data-testid='experiment-card'
       aria-labelledby={`experiment-${experiment.id}`}
     >
@@ -529,7 +529,7 @@ export function SiteExperiments({
           </p>
         </div>
       ) : (
-        <div className='grid gap-4'>
+        <div className='grid min-w-0 gap-4'>
           {list.map((experiment) => (
             <ExperimentCard
               key={experiment.id}

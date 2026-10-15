@@ -37,7 +37,7 @@ export function ExperimentResults({
   const winnerName = results.variants.find((item) => item.key === winner)?.name
 
   return (
-    <div className='grid gap-3'>
+    <div className='grid min-w-0 gap-3'>
       {!results.enoughData ? (
         <div
           role='status'
@@ -104,7 +104,7 @@ export function ExperimentResults({
         </p>
       )}
 
-      <div className='overflow-x-auto'>
+      <div className='min-w-0 overflow-x-auto'>
         <table className='w-full min-w-[34rem] text-sm'>
           <caption className='sr-only'>
             Resultados da rodada {results.run} de {experiment.name}
@@ -145,12 +145,15 @@ export function ExperimentResults({
                   data-variant={item.key}
                   className='border-b last:border-0'
                 >
-                  <th scope='row' className='py-2 pr-3 text-left font-medium'>
-                    <span className='flex items-center gap-1.5'>
+                  <th
+                    scope='row'
+                    className='min-w-44 py-2 pr-3 text-left font-medium'
+                  >
+                    <span className='flex flex-wrap items-center gap-1.5'>
                       <span className='flex size-5 shrink-0 items-center justify-center rounded bg-muted font-semibold text-[11px]'>
                         {item.key}
                       </span>
-                      <span className='truncate'>{item.name}</span>
+                      <span>{item.name}</span>
                       {leading ? (
                         <span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary'>
                           <SteelIcon icon={Crown02Icon} className='size-3' />
