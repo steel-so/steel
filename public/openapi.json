@@ -4520,7 +4520,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -4634,7 +4634,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -13469,7 +13469,7 @@
             "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
@@ -16296,7 +16296,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -16365,7 +16365,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16439,7 +16439,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
@@ -16505,7 +16505,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16583,10 +16583,10 @@
             "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_COMPETITOR_NO_POSTS"
@@ -16669,7 +16669,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
@@ -17465,7 +17465,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -17534,7 +17534,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -17600,7 +17600,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -18123,7 +18123,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -18254,7 +18254,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -18655,6 +18655,207 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/email-ai/rewrite": {
+      "post": {
+        "tags": ["CRM · IA"],
+        "summary": "Escrever ou reescrever o texto de um bloco de e-mail com IA",
+        "operationId": "postWorkspacesByIdCrmEmailAiRewrite",
+        "description": "`mode`: `write` (escreve a partir de `prompt`), `shorter`, `persuasive` ou `formal` (reescreve `text`). Vale para título, texto rico, botão, depoimento, cupom, evento, NPS e descrição de produto. O texto rico volta como HTML sanitizado. Usa a IA do workspace e consome a cota mensal.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "blockType": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["write", "shorter", "persuasive", "formal"]
+                  },
+                  "text": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "prompt": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "subject": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "required": ["blockType", "mode"]
+              },
+              "example": {
+                "blockType": "email.heading",
+                "mode": "persuasive",
+                "text": "Conheça o novo plano"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Texto sugerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailAiRewriteResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "402": {
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_CRM_EMAIL_AI_FAILED"
+          },
+          "503": {
+            "$ref": "#/components/responses/503_AI_PROVIDER_UNAVAILABLE_2"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/email-ai/section": {
+      "post": {
+        "tags": ["CRM · IA"],
+        "summary": "Gerar seção de e-mail com IA",
+        "operationId": "postWorkspacesByIdCrmEmailAiSection",
+        "description": "Monta uma seção (1 a 3 colunas com título, texto, botão, lista, depoimento, cupom, divisor e o produto escolhido) a partir de `prompt` e/ou de um produto do CRM. Cada bloco é criado com os padrões do catálogo e validado; blocos inválidos são descartados e a seção passa pela validação completa antes de voltar. Usa a IA do workspace e consome a cota mensal.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "productId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "subject": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                }
+              },
+              "example": {
+                "prompt": "Três benefícios da fibra para empresas"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seção gerada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailAiSectionResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "402": {
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_CRM_EMAIL_AI_FAILED"
+          },
+          "503": {
+            "$ref": "#/components/responses/503_AI_PROVIDER_UNAVAILABLE_2"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/email-brand": {
       "get": {
         "tags": ["CRM · E-mail marketing"],
@@ -18786,6 +18987,73 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/email-builder/contact-lists": {
+      "get": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Listas de e-mail de um contato",
+        "operationId": "getWorkspacesByIdCrmEmailBuilderContactLists",
+        "description": "Listas de e-mail de uma pessoa do CRM (pela pessoa ou por um dos seus e-mails), para a prévia do conteúdo condicional (\"Mostrar se: está na lista\").\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "personId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailContactLists"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -19704,6 +19972,360 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/email-saved-blocks": {
+      "get": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Listar blocos salvos do editor de e-mail",
+        "operationId": "getWorkspacesByIdCrmEmailSavedBlocks",
+        "description": "Seções e blocos salvos para reutilizar em qualquer template do workspace (aba \"Salvos\"), mais recentes primeiro (até 200). `q` busca no nome e na categoria.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blocos salvos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmEmailSavedBlock"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Salvar bloco do editor de e-mail",
+        "operationId": "postWorkspacesByIdCrmEmailSavedBlocks",
+        "description": "Salva uma seção (`email.section`) ou um bloco de conteúdo como fragmento reutilizável. O fragmento passa pela mesma validação do documento (regras do catálogo e props de cada nó; texto rico e HTML sanitizados). Limite de 200 blocos por workspace.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "category": {
+                    "default": "Outros",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "fragment": {
+                    "type": "object",
+                    "properties": {
+                      "rootId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "nodes": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      }
+                    },
+                    "required": ["rootId", "nodes"]
+                  },
+                  "thumbnail": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": ["name", "fragment"]
+              },
+              "example": {
+                "name": "Título do mês",
+                "category": "Cabeçalhos",
+                "fragment": {
+                  "rootId": "h1",
+                  "nodes": {
+                    "h1": {
+                      "id": "h1",
+                      "type": "email.heading",
+                      "props": {
+                        "text": "Novidades do mês",
+                        "level": "h2",
+                        "align": "left",
+                        "padding": {
+                          "top": 8,
+                          "right": 0,
+                          "bottom": 8,
+                          "left": 0
+                        },
+                        "visibility": {
+                          "base": true,
+                          "tablet": true,
+                          "mobile": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bloco salvo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailSavedBlock"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_EMAIL_SAVED_BLOCK_INVALID_CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/email-saved-blocks/{blockId}": {
+      "patch": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Renomear bloco salvo",
+        "operationId": "patchWorkspacesByIdCrmEmailSavedBlocksByBlockId",
+        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "description": "ID do bloco salvo.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "category": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  }
+                }
+              },
+              "example": {
+                "name": "Cabeçalho de outubro"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bloco atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailSavedBlock"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_EMAIL_SAVED_BLOCK_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Excluir bloco salvo",
+        "operationId": "deleteWorkspacesByIdCrmEmailSavedBlocksByBlockId",
+        "description": "Templates que já usam o bloco não mudam (o conteúdo foi copiado ao inserir).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `DELETE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "description": "ID do bloco salvo.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bloco excluído.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_EMAIL_SAVED_BLOCK_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/email-templates": {
       "get": {
         "tags": ["CRM · E-mail marketing"],
@@ -20043,7 +20665,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20752,13 +21374,13 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_EMAIL_TEMPLATE_NOT_BUILDER"
+            "$ref": "#/components/responses/409_CRM_EMAIL_TEMPLATE_NOT_BUILDER_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_EMAIL_BUILDER_STRUCTURE_LOCKED_CRM_EMAIL_CANVAS_INVALID_2"
@@ -20827,7 +21449,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20944,7 +21566,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_EMAIL_BUILDER_STRUCTURE_LOCKED_CRM_EMAIL_CANVAS_INVALID"
@@ -21062,7 +21684,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_EMAIL_BUILDER_STRUCTURE_LOCKED_CRM_EMAIL_CANVAS_INVALID"
@@ -21072,6 +21694,305 @@
           },
           "502": {
             "$ref": "#/components/responses/502_MAIL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/email-templates/{templateId}/versions": {
+      "get": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Histórico de versões do template",
+        "operationId": "getWorkspacesByIdCrmEmailTemplatesByTemplateIdVersions",
+        "description": "Versões de um template do novo editor (documento versão 2), mais recentes primeiro. Uma versão é gravada em \"Salvar versão\", no envio de teste, no uso numa campanha e na restauração; ficam as 50 mais recentes.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "description": "ID do template de e-mail.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versões.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmEmailTemplateVersion"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Salvar versão do template",
+        "operationId": "postWorkspacesByIdCrmEmailTemplatesByTemplateIdVersions",
+        "description": "Grava o template como está salvo agora, com um nome opcional. Sem mudança desde a última versão, devolve `data: null` (200) e não grava nada.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "description": "ID do template de e-mail.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 80
+                  }
+                }
+              },
+              "example": {
+                "label": "Antes da revisão"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Versão gravada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailTemplateVersion"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_EMAIL_TEMPLATE_NOT_BUILDER"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/email-templates/{templateId}/versions/{versionId}": {
+      "get": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Detalhe de uma versão do template",
+        "operationId": "getWorkspacesByIdCrmEmailTemplatesByTemplateIdVersionsByVersionId",
+        "description": "A versão com o documento completo (prévia no histórico).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "description": "ID do template de e-mail.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "description": "ID da versão do template.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versão.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailTemplateVersionDetail"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/email-templates/{templateId}/versions/{versionId}/restore": {
+      "post": {
+        "tags": ["CRM · E-mail marketing"],
+        "summary": "Restaurar versão do template",
+        "operationId": "postWorkspacesByIdCrmEmailTemplatesByTemplateIdVersionsByVersionIdRestore",
+        "description": "Salva o template com o documento e o assunto da versão (mesma validação do salvamento) e grava uma versão `RESTORE`. Nada é apagado.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "description": "ID do template de e-mail.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "description": "ID da versão do template.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template restaurado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmEmailTemplateRestore"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_CRM_EMAIL_CANVAS_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": [
@@ -21517,7 +22438,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -21712,7 +22633,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
@@ -21782,7 +22703,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -21846,7 +22767,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -21908,7 +22829,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -21975,7 +22896,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -24173,7 +25094,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -25412,7 +26333,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -25482,7 +26403,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -25546,7 +26467,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -25608,7 +26529,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -25675,7 +26596,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28438,7 +29359,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -28507,7 +29428,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28573,7 +29494,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28662,7 +29583,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_MAILING_LIST_MEMBER_CONFLICT"
@@ -28745,7 +29666,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -31004,7 +31925,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -31073,7 +31994,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -31139,7 +32060,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -31233,7 +32154,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -31324,7 +32245,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -35185,7 +36106,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -35671,7 +36592,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -35740,7 +36661,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -35803,7 +36724,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -35873,7 +36794,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36103,7 +37024,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
@@ -36169,7 +37090,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36254,7 +37175,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_SCHEDULED_POST_ALREADY_PUBLISHED"
@@ -36326,7 +37247,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36392,7 +37313,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36452,10 +37373,10 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_SCHEDULED_POST_ALREADY_PUBLISHED_2"
@@ -36538,10 +37459,10 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -56429,7 +57350,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -56491,7 +57412,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -56554,7 +57475,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -56620,7 +57541,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57130,7 +58051,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -57241,7 +58162,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -80964,7 +81885,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -81189,7 +82110,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
@@ -84501,7 +85422,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_23"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -84570,7 +85491,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_22"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -84636,7 +85557,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -85146,7 +86067,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -85266,7 +86187,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -87676,7 +88597,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88162,7 +89083,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -88231,7 +89152,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88294,7 +89215,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88365,7 +89286,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -99741,6 +100662,73 @@
                 }
               },
               "CRM_EMAIL_CANVAS_HTML_FORBIDDEN": {
+                "summary": "CRM_EMAIL_CANVAS_HTML_FORBIDDEN — A versão muda um bloco de HTML e quem pede não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Só administradores do workspace podem adicionar ou alterar blocos de HTML",
+                  "error": {
+                    "code": "CRM_EMAIL_CANVAS_HTML_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN_2": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `CRM_EMAIL_CANVAS_HTML_FORBIDDEN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "CRM_EMAIL_CANVAS_HTML_FORBIDDEN": {
                 "summary": "CRM_EMAIL_CANVAS_HTML_FORBIDDEN — Quem não é OWNER/ADMIN do workspace adicionou ou alterou um bloco de HTML",
                 "value": {
                   "success": false,
@@ -99755,7 +100743,130 @@
           }
         }
       },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN_3": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `CRM_EMAIL_CANVAS_HTML_FORBIDDEN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "CRM_EMAIL_CANVAS_HTML_FORBIDDEN": {
+                "summary": "CRM_EMAIL_CANVAS_HTML_FORBIDDEN — Quem não é OWNER/ADMIN tentou salvar um bloco de HTML",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Só administradores do workspace podem adicionar ou alterar blocos de HTML",
+                  "error": {
+                    "code": "CRM_EMAIL_CANVAS_HTML_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FEATURE_NOT_ENABLED": {
+                "summary": "FEATURE_NOT_ENABLED — Feature `crm.aiAssistant` desligada para o workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Esta funcionalidade não está disponível para este workspace",
+                  "error": {
+                    "code": "FEATURE_NOT_ENABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
         "content": {
           "application/json": {
@@ -99822,7 +100933,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
         "content": {
           "application/json": {
@@ -99865,62 +100976,6 @@
               },
               "FEATURE_NOT_ENABLED": {
                 "summary": "FEATURE_NOT_ENABLED — Feature `communication.broadcasts` desligada para o workspace (plano/override)",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Esta funcionalidade não está disponível para este workspace",
-                  "error": {
-                    "code": "FEATURE_NOT_ENABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              },
-              "FEATURE_NOT_ENABLED": {
-                "summary": "FEATURE_NOT_ENABLED — Feature `crm.aiAssistant` desligada para o workspace",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -105241,6 +106296,29 @@
           }
         }
       },
+      "404_CRM_EMAIL_SAVED_BLOCK_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_EMAIL_SAVED_BLOCK_NOT_FOUND": {
+                "summary": "CRM_EMAIL_SAVED_BLOCK_NOT_FOUND — Bloco inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Bloco salvo não encontrado",
+                  "error": {
+                    "code": "CRM_EMAIL_SAVED_BLOCK_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_CRM_EMAIL_TEMPLATE_NOT_FOUND_CRM_CAMPAIGN_NOT_FOUND": {
         "description": "Não encontrado: `CRM_EMAIL_TEMPLATE_NOT_FOUND`, `CRM_CAMPAIGN_NOT_FOUND`",
         "content": {
@@ -105268,6 +106346,29 @@
                   "message": "Template não encontrado",
                   "error": {
                     "code": "CRM_EMAIL_TEMPLATE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND": {
+                "summary": "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND — Versão inexistente para este template",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Versão do template não encontrada",
+                  "error": {
+                    "code": "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND"
                   }
                 }
               }
@@ -105730,6 +106831,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Template inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmEmailTemplate not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_4": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Concorrente inexistente",
                 "value": {
                   "success": false,
@@ -105744,7 +106868,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_4": {
+      "404_RESOURCE_NOT_FOUND_5": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105767,7 +106891,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_5": {
+      "404_RESOURCE_NOT_FOUND_6": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105790,7 +106914,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_6": {
+      "404_RESOURCE_NOT_FOUND_7": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105813,7 +106937,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_7": {
+      "404_RESOURCE_NOT_FOUND_8": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105836,7 +106960,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_8": {
+      "404_RESOURCE_NOT_FOUND_9": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105859,7 +106983,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_9": {
+      "404_RESOURCE_NOT_FOUND_10": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105882,7 +107006,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_10": {
+      "404_RESOURCE_NOT_FOUND_11": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105905,7 +107029,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_11": {
+      "404_RESOURCE_NOT_FOUND_12": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105928,7 +107052,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_12": {
+      "404_RESOURCE_NOT_FOUND_13": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105951,7 +107075,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_13": {
+      "404_RESOURCE_NOT_FOUND_14": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -105965,29 +107089,6 @@
                   "success": false,
                   "statusCode": 404,
                   "message": "CrmReport not found",
-                  "error": {
-                    "code": "RESOURCE_NOT_FOUND"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "404_RESOURCE_NOT_FOUND_14": {
-        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "RESOURCE_NOT_FOUND": {
-                "summary": "RESOURCE_NOT_FOUND — Template inexistente no workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "CrmEmailTemplate not found",
                   "error": {
                     "code": "RESOURCE_NOT_FOUND"
                   }
@@ -106773,11 +107874,11 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
-                "summary": "RESOURCE_NOT_FOUND — Token inexistente ou página em rascunho",
+                "summary": "RESOURCE_NOT_FOUND — Pessoa inexistente no workspace",
                 "value": {
                   "success": false,
                   "statusCode": 404,
-                  "message": "CrmLandingPage not found",
+                  "message": "CrmPerson not found",
                   "error": {
                     "code": "RESOURCE_NOT_FOUND"
                   }
@@ -106796,11 +107897,91 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Produto inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmProduct not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_47": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Token inexistente ou página em rascunho",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmLandingPage not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_48": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND",
                 "value": {
                   "success": false,
                   "statusCode": 404,
                   "message": "CrmLandingPage not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND": {
+                "summary": "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND — Versão inexistente para este template",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Versão do template não encontrada",
+                  "error": {
+                    "code": "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Template inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmEmailTemplate not found",
                   "error": {
                     "code": "RESOURCE_NOT_FOUND"
                   }
@@ -110863,6 +112044,29 @@
             },
             "examples": {
               "CRM_EMAIL_TEMPLATE_NOT_BUILDER": {
+                "summary": "CRM_EMAIL_TEMPLATE_NOT_BUILDER — O template não usa o novo editor (documento versão 2)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este template não foi criado no editor visual",
+                  "error": {
+                    "code": "CRM_EMAIL_TEMPLATE_NOT_BUILDER"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CRM_EMAIL_TEMPLATE_NOT_BUILDER_2": {
+        "description": "Conflito com o estado atual: `CRM_EMAIL_TEMPLATE_NOT_BUILDER`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_EMAIL_TEMPLATE_NOT_BUILDER": {
                 "summary": "CRM_EMAIL_TEMPLATE_NOT_BUILDER — `builderDocument` enviado para um template `LEGACY`",
                 "value": {
                   "success": false,
@@ -113035,6 +114239,28 @@
           }
         }
       },
+      "422_CRM_EMAIL_CANVAS_INVALID": {
+        "description": "Dados inválidos: `CRM_EMAIL_CANVAS_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_EMAIL_CANVAS_INVALID": {
+                "summary": "CRM_EMAIL_CANVAS_INVALID — A versão não passa mais nas regras atuais do catálogo",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "CRM_EMAIL_CANVAS_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_CRM_FORM_NOT_PUBLISHED": {
         "description": "Dados inválidos: `CRM_FORM_NOT_PUBLISHED`",
         "content": {
@@ -115170,6 +116396,56 @@
                   "message": "Nenhum destinatário elegível: a seleção está vazia ou todos se descadastraram",
                   "error": {
                     "code": "CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_CRM_EMAIL_SAVED_BLOCK_INVALID_CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `CRM_EMAIL_SAVED_BLOCK_INVALID`, `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "CRM_EMAIL_SAVED_BLOCK_INVALID": {
+                "summary": "CRM_EMAIL_SAVED_BLOCK_INVALID — Raiz que não é seção nem bloco, ou fragmento fora das regras do catálogo; `details.issues` lista os problemas",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "CRM_EMAIL_SAVED_BLOCK_INVALID"
+                  }
+                }
+              },
+              "CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED": {
+                "summary": "CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED — O workspace já tem 200 blocos salvos",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED"
                   }
                 }
               }
@@ -117858,6 +119134,28 @@
                   "message": "A IA não conseguiu gerar ideias agora — tente de novo em instantes",
                   "error": {
                     "code": "CRM_COMPETITOR_IDEAS_FAILED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_CRM_EMAIL_AI_FAILED": {
+        "description": "Falha em serviço externo: `CRM_EMAIL_AI_FAILED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_EMAIL_AI_FAILED": {
+                "summary": "CRM_EMAIL_AI_FAILED — O provedor falhou ou não devolveu nada que o catálogo de e-mail aceite",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "error": {
+                    "code": "CRM_EMAIL_AI_FAILED"
                   }
                 }
               }
@@ -125976,6 +127274,41 @@
         ],
         "description": "Conta de e-mail de contexto. Não há sincronização real com Gmail/Outlook: serve para agrupar e-mails e eventos registrados manualmente."
       },
+      "CrmEmailAiRewriteResult": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "example": "Sua internet nunca mais vai parar",
+            "description": "Texto pronto para o campo (HTML sanitizado no texto rico)."
+          }
+        },
+        "required": ["value"]
+      },
+      "CrmEmailAiSectionResult": {
+        "type": "object",
+        "properties": {
+          "reply": {
+            "type": "string",
+            "example": "Montei uma seção com o produto."
+          },
+          "fragment": {
+            "type": "object",
+            "properties": {
+              "rootId": {
+                "type": "string"
+              },
+              "nodes": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": ["rootId", "nodes"],
+            "description": "Fragmento do Steel Canvas (seção ou bloco do catálogo `email`), validado pelo catálogo."
+          }
+        },
+        "required": ["reply", "fragment"]
+      },
       "CrmEmailBrand": {
         "type": "object",
         "properties": {
@@ -126241,6 +127574,18 @@
           "createdAt"
         ]
       },
+      "CrmEmailContactLists": {
+        "type": "object",
+        "properties": {
+          "listIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["listIds"]
+      },
       "CrmEmailLinkTargets": {
         "type": "object",
         "properties": {
@@ -126444,6 +127789,102 @@
         },
         "required": ["subject", "html", "text"]
       },
+      "CrmEmailSavedBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1esbk0000ab7d3k1e5xyz"
+          },
+          "workspaceId": {
+            "type": "string",
+            "example": "ckw1wksp0000ab7d3k1e5xyz"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cabeçalho com logo"
+          },
+          "category": {
+            "type": "string",
+            "example": "Cabeçalhos"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["section", "block"]
+          },
+          "fragment": {
+            "type": "object",
+            "properties": {
+              "rootId": {
+                "type": "string"
+              },
+              "nodes": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": ["rootId", "nodes"],
+            "description": "Fragmento do Steel Canvas (seção ou bloco do catálogo `email`), validado pelo catálogo."
+          },
+          "nodeCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "example": 4
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdBy": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Quem criou (nulo se a conta foi removida)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "category",
+          "kind",
+          "fragment",
+          "nodeCount",
+          "thumbnail",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "CrmEmailTemplate": {
         "type": "object",
         "properties": {
@@ -126576,6 +128017,180 @@
           }
         },
         "required": ["html"]
+      },
+      "CrmEmailTemplateRestore": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "O template já com o conteúdo restaurado."
+          },
+          "version": {
+            "$ref": "#/components/schemas/CrmEmailTemplateVersion"
+          }
+        },
+        "required": ["template", "version"]
+      },
+      "CrmEmailTemplateVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1etvr0000ab7d3k1e5xyz"
+          },
+          "templateId": {
+            "type": "string",
+            "example": "ckw1etpl0000ab7d3k1e5xyz"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["SAVE", "TEST_SEND", "CAMPAIGN", "RESTORE"],
+            "description": "`SAVE` = \"Salvar versão\"; `TEST_SEND` = envio de teste; `CAMPAIGN` = uso numa campanha; `RESTORE` = restauração."
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "Antes da revisão"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Novidades de outubro"
+          },
+          "restoredFromId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdBy": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Quem criou (nulo se a conta foi removida)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "templateId",
+          "reason",
+          "label",
+          "subject",
+          "restoredFromId",
+          "createdBy",
+          "createdAt"
+        ]
+      },
+      "CrmEmailTemplateVersionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1etvr0000ab7d3k1e5xyz"
+          },
+          "templateId": {
+            "type": "string",
+            "example": "ckw1etpl0000ab7d3k1e5xyz"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["SAVE", "TEST_SEND", "CAMPAIGN", "RESTORE"],
+            "description": "`SAVE` = \"Salvar versão\"; `TEST_SEND` = envio de teste; `CAMPAIGN` = uso numa campanha; `RESTORE` = restauração."
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "Antes da revisão"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Novidades de outubro"
+          },
+          "restoredFromId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdBy": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Quem criou (nulo se a conta foi removida)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "document": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Documento versão 2 (Steel Canvas) desta versão."
+          }
+        },
+        "required": [
+          "id",
+          "templateId",
+          "reason",
+          "label",
+          "subject",
+          "restoredFromId",
+          "createdBy",
+          "createdAt",
+          "document"
+        ]
       },
       "CrmEmailTestSend": {
         "type": "object",
@@ -136974,6 +138589,11 @@
           "CRM_EMAIL_BUILDER_STRUCTURE_LOCKED",
           "CRM_EMAIL_CANVAS_INVALID",
           "CRM_EMAIL_CANVAS_HTML_FORBIDDEN",
+          "CRM_EMAIL_SAVED_BLOCK_NOT_FOUND",
+          "CRM_EMAIL_SAVED_BLOCK_INVALID",
+          "CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED",
+          "CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND",
+          "CRM_EMAIL_AI_FAILED",
           "CRM_CAMPAIGN_NOT_FOUND",
           "CRM_CAMPAIGN_LOCKED",
           "CRM_CAMPAIGN_INCOMPLETE",
@@ -137191,7 +138811,7 @@
           "BACKUP_FAILED",
           "BILLING_DISABLED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
       },
       "ErrorResponse": {
         "type": "object",
