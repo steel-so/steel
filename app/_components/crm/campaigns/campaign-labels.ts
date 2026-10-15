@@ -1,6 +1,8 @@
 import { CAMPAIGN_TIMEZONE } from '@/src/lib/crm-campaign/send-window'
 import type {
+  CrmCampaignConversionKindDTO,
   CrmCampaignDeliveryStatusDTO,
+  CrmCampaignDestinationTypeDTO,
   CrmCampaignLegalBasisDTO,
   CrmCampaignStatusDTO,
   CrmCampaignVariableSourceKind,
@@ -49,6 +51,25 @@ export const SKIP_REASON_LABEL: Record<string, string> = {
   opted_out: 'Descadastrado (LGPD)',
   missing: 'Sem contato no canal',
   canceled: 'Campanha cancelada',
+}
+
+export const CONVERSION_KIND_LABEL: Record<
+  CrmCampaignConversionKindDTO,
+  string
+> = {
+  LANDING_VIEW: 'visita na landing page',
+  FORM_SUBMISSION: 'formulário do CRM',
+  SITE_VIEW: 'visita no site',
+  SITE_FORM_SUBMISSION: 'formulário no site',
+}
+
+export const DESTINATION_TYPE_LABEL: Record<
+  CrmCampaignDestinationTypeDTO,
+  string
+> = {
+  SITE_PAGE: 'Página do site',
+  FORM: 'Formulário do CRM',
+  LANDING_PAGE: 'Landing page antiga',
 }
 
 export const VARIABLE_SOURCE_LABEL: Record<
