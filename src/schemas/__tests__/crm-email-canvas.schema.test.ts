@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createEmailDocumentFromLayout } from '@/src/lib/canvas-email/convert-v1'
+import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
 import {
   emailImageSchema,
   emailLinkSchema,
@@ -82,6 +83,24 @@ describe('builder document schemas', () => {
     expect(
       CreateCrmEmailTemplateSchema.safeParse({ ...base, builderVersion: 3 })
         .success,
+    ).toBe(false)
+  })
+
+  it('starts a builder template from a ready v2 document', () => {
+    const doc = createBlankEmailDocument()
+    const parsed = CreateCrmEmailTemplateSchema.safeParse({
+      name: 'N',
+      subject: 'S',
+      builderDocument: doc,
+    })
+    expect(parsed.success).toBe(true)
+    // v1 documents are not accepted here: they start from a layout.
+    expect(
+      CreateCrmEmailTemplateSchema.safeParse({
+        name: 'N',
+        subject: 'S',
+        builderDocument: { ...doc, version: 1 },
+      }).success,
     ).toBe(false)
   })
 })
