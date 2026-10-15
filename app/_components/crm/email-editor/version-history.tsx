@@ -333,7 +333,7 @@ export function VersionHistoryButton() {
         Histórico
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className='flex w-full flex-col gap-0 p-0 sm:max-w-4xl'>
+        <SheetContent className='flex w-full flex-col gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-4xl'>
           <SheetHeader className='border-b px-4 py-3'>
             <SheetTitle>Histórico de versões</SheetTitle>
             <SheetDescription>

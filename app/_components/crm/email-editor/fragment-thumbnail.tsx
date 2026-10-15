@@ -18,14 +18,20 @@ const RENDER_WIDTH = 648
 export function FragmentThumbnail({
   fragment,
   className,
+  maxHeight = 180,
 }: {
   fragment: CanvasFragment
   className?: string
+  /** Tallest the card grows to fit the fragment, in px. */
+  maxHeight?: number
 }) {
   const { brand, products } = useEmailEditorData()
   const productData = useMemo(() => toProductData(products), [products])
   const [html, setHtml] = useState<string | null>(null)
   const [scale, setScale] = useState(0.36)
+  // Rendered height of the fragment: the card fits it (capped) instead of
+  // showing a mostly empty frame for a small block.
+  const [contentHeight, setContentHeight] = useState<number | null>(null)
   const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -65,13 +71,25 @@ export function FragmentThumbnail({
         'pointer-events-none relative w-full overflow-hidden bg-muted/60',
         className,
       )}
+      style={
+        contentHeight
+          ? {
+              height: Math.min(Math.max(contentHeight * scale, 48), maxHeight),
+            }
+          : undefined
+      }
     >
       {html ? (
         <iframe
           title='Prévia do bloco'
           srcDoc={html}
           tabIndex={-1}
-          sandbox=''
+          // Same origin only to measure the content; no scripts run.
+          sandbox='allow-same-origin'
+          onLoad={(event) => {
+            const body = event.currentTarget.contentDocument?.body
+            if (body) setContentHeight(body.scrollHeight)
+          }}
           className='absolute top-0 left-0 origin-top-left border-0'
           style={{
             width: RENDER_WIDTH,
