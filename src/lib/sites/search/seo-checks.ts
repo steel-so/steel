@@ -250,13 +250,11 @@ function h1Check(ctx: CheckContext): Check {
         : undefined,
     )
   }
-  const ops: CanvasOp[] = h1s
-    .slice(1)
-    .map((heading) => ({
-      kind: 'update',
-      id: heading.id,
-      set: { level: 'h2' },
-    }))
+  const ops: CanvasOp[] = h1s.slice(1).map((heading) => ({
+    kind: 'update',
+    id: heading.id,
+    set: { level: 'h2' },
+  }))
   return check(
     'h1',
     'Título principal (H1)',

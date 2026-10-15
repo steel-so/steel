@@ -47,7 +47,14 @@ export type SiteRouteDecision =
   | { kind: 'not-found' }
 
 /** Paths the runtime serves itself (never a page or a redirect). */
-const OWN_PATHS = ['/sitemap.xml', '/robots.txt', '/_og']
+const OWN_PATHS = [
+  '/sitemap.xml',
+  '/robots.txt',
+  '/_og',
+  '/llms.txt',
+  '/llms-full.txt',
+  '/indexnow-key.txt',
+]
 
 /** `true` for the runtime's own files, which answer their own status. */
 export function isSiteFilePath(rawPath: string): boolean {

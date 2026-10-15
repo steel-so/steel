@@ -847,6 +847,9 @@ export const ERROR_CODES = {
   SITE_REDIRECT_PATH_TAKEN: { code: 'SITE_REDIRECT_PATH_TAKEN', status: 409 },
   // The redirect points to itself or closes a loop with another one.
   SITE_REDIRECT_LOOP: { code: 'SITE_REDIRECT_LOOP', status: 422 },
+  // Search engines ("Buscadores"): the AI provider failed or answered with
+  // something unusable.
+  SITE_SEARCH_AI_FAILED: { code: 'SITE_SEARCH_AI_FAILED', status: 502 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },

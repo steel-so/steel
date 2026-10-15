@@ -27,7 +27,8 @@ export async function GET(_request: Request, ctx: Params) {
       )
       .map(({ page, loc }) => ({
         loc,
-        lastModified,
+        // The page's own last edit when the snapshot has it.
+        lastModified: page.updatedAt ? new Date(page.updatedAt) : lastModified,
         priority: page.seo.sitemapPriority,
         changeFrequency: page.seo.changeFrequency,
       })),

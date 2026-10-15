@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { searchSettings } from '@/src/__tests__/factories/site-search.factory'
 import {
   businessNode,
   formatAddress,
@@ -8,6 +9,11 @@ import {
   phonesIn,
   profileCompleteness,
 } from '@/src/lib/sites/search/business'
+import {
+  isEmptyProfile,
+  keepStoredSearch,
+  suggestBusinessProfile,
+} from '@/src/lib/sites/search/context'
 import {
   STRUCTURED_DATA_HINTS,
   STRUCTURED_DATA_LABELS,
@@ -518,5 +524,87 @@ describe('search schemas', () => {
         verification: { bing: '<meta>' },
       }).success,
     ).toBe(false)
+  })
+})
+
+describe('stored search data and the profile draft', () => {
+  it('keeps the stored search block when an update omits it', () => {
+    const titled: { title: string; search?: unknown } = { title: 'A' }
+    expect(keepStoredSearch(titled, { search: { focusKeyword: 'x' } })).toEqual(
+      {
+        title: 'A',
+        search: { focusKeyword: 'x' },
+      },
+    )
+    expect(
+      keepStoredSearch(
+        { search: { summary: 'novo' } },
+        { search: { focusKeyword: 'x' } },
+      ),
+    ).toEqual({
+      search: { summary: 'novo' },
+    })
+    expect(keepStoredSearch(titled, { search: 'lixo' })).toEqual({
+      title: 'A',
+    })
+    expect(keepStoredSearch(titled, null)).toEqual({ title: 'A' })
+    expect(keepStoredSearch(titled, 'texto')).toEqual({ title: 'A' })
+  })
+
+  it('tells an empty profile apart', () => {
+    expect(isEmptyProfile({})).toBe(true)
+    expect(isEmptyProfile({ name: '', sameAs: [] })).toBe(true)
+    expect(isEmptyProfile({ name: 'X' })).toBe(false)
+  })
+
+  it('drafts the profile from the site, the brand and the workspace', () => {
+    const settings = searchSettings({
+      seo: {
+        organizationName: 'Org',
+        description: 'Desc',
+        sameAs: ['https://x.com/o'],
+      },
+    })
+    expect(
+      suggestBusinessProfile({
+        siteName: 'Site',
+        settings,
+        brand: {
+          companyName: 'Marca',
+          logoUrl: 'logo-relativo.png',
+          address: 'Rua B',
+          website: 'https://x.com/o',
+        },
+        workspace: { name: 'WS', logoUrl: '/ws.png' },
+      }),
+    ).toEqual({
+      name: 'Org',
+      description: 'Desc',
+      address: { street: 'Rua B' },
+      logoUrl: '/ws.png',
+      sameAs: ['https://x.com/o'],
+    })
+    expect(
+      suggestBusinessProfile({
+        siteName: 'Site',
+        settings: searchSettings(),
+        brand: {
+          companyName: '',
+          logoUrl: '',
+          address: '',
+          website: 'sem-protocolo.com',
+        },
+        workspace: { name: '', logoUrl: null },
+      }),
+    ).toEqual({ name: 'Site' })
+    expect(
+      suggestBusinessProfile({
+        siteName: 'Site',
+        settings: searchSettings(),
+        workspace: { name: 'WS', logoUrl: null },
+      }),
+    ).toEqual({
+      name: 'WS',
+    })
   })
 })
