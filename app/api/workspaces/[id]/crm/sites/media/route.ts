@@ -1,13 +1,11 @@
 import type { NextRequest } from 'next/server'
 import { withAxiom } from '@/lib/axiom/server'
-import { badRequest } from '@/src/errors'
+import { badRequest, validationError } from '@/src/errors'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { requireConsent } from '@/src/lib/consent'
 import { consume, uploadLimiter } from '@/src/lib/rate-limit'
-import {
-  type RemoveSiteMediaDTO,
-  RemoveSiteMediaSchema,
-} from '@/src/schemas/site-studio.schema'
+import { err } from '@/src/lib/result'
+import { RemoveSiteMediaSchema } from '@/src/schemas/site-studio.schema'
 import { SiteMediaService } from '@/src/services/site-media.service'
 import { handleError, successResponse } from '@/utils/http-response'
 import { siteRoute } from '../_lib/handler'
@@ -57,12 +55,14 @@ export const POST = withAxiom(
   },
 )
 
-/** Deletes an uploaded image (`{ id }`). */
-export const DELETE = siteRoute<Params, RemoveSiteMediaDTO>(
-  {
-    consent: '/api/workspaces/[id]/crm/sites/media',
-    body: RemoveSiteMediaSchema,
+/** Deletes an uploaded image (`?id=<file name>`). */
+export const DELETE = siteRoute<Params>(
+  { consent: '/api/workspaces/[id]/crm/sites/media' },
+  async ({ userId, params, request }) => {
+    const query = RemoveSiteMediaSchema.safeParse({
+      id: request.nextUrl.searchParams.get('id'),
+    })
+    if (!query.success) return err(validationError('Imagem inválida'))
+    return SiteMediaService.remove(userId, params.id, query.data.id)
   },
-  ({ userId, params, body }) =>
-    SiteMediaService.remove(userId, params.id, body.id),
 )

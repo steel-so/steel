@@ -160,7 +160,7 @@ export const crmSiteStudioRoutes: RouteConfig[] = [
       crmAccess('landing-pages', 'EDIT'),
     ),
     consent: true,
-    body: RemoveSiteMediaSchema,
+    query: RemoveSiteMediaSchema,
     responses: { 200: { description: 'Imagem excluída.', schema: null } },
     errors: [
       ...CRM_ERRORS,

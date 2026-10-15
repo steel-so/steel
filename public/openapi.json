@@ -37226,25 +37226,17 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "pattern": "^[0-9a-f-]{36}\\.(jpg|png|webp)$"
-                  }
-                },
-                "required": ["id"]
-              }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}\\.(jpg|png|webp)$"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "Imagem excluída.",
@@ -37280,7 +37272,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
