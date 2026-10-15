@@ -15,6 +15,7 @@ import { logger } from '@/lib/axiom/logger'
 import {
   CrmSalesMetricsRepository,
   type OpenDealRow,
+  type SalesPersonRow,
   type WaitingProposalRow,
   type WonDealRow,
 } from '@/src/repositories/crm-sales-metrics.repository'
@@ -34,14 +35,20 @@ const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
 const NOW = new Date('2026-10-15T15:00:00.000Z')
 const DAY = 86_400_000
 
-const ana = { id: 'u-ana', name: 'Ana Souza', image: 'https://img/ana.png' }
-const bruno = { id: 'u-bruno', name: 'Bruno Lima', image: null }
+const ana: SalesPersonRow = {
+  id: 'u-ana',
+  name: 'Ana Souza',
+  image: 'https://img/ana.png',
+}
+const bruno: SalesPersonRow = { id: 'u-bruno', name: 'Bruno Lima', image: null }
 
 function dec(value: number | null) {
   return value === null ? null : new Prisma.Decimal(value)
 }
 
-function won(overrides: Partial<WonDealRow> & { amount?: number | null }) {
+function won(
+  overrides: Partial<Omit<WonDealRow, 'amount'>> & { amount?: number | null },
+) {
   const { amount = 1000, ...rest } = overrides
   return {
     id: 'o1',
@@ -56,7 +63,9 @@ function won(overrides: Partial<WonDealRow> & { amount?: number | null }) {
   } as WonDealRow
 }
 
-function open(overrides: Partial<OpenDealRow> & { amount?: number | null }) {
+function open(
+  overrides: Partial<Omit<OpenDealRow, 'amount'>> & { amount?: number | null },
+) {
   const { amount = 1000, ...rest } = overrides
   return {
     id: 'op1',
@@ -79,7 +88,7 @@ function open(overrides: Partial<OpenDealRow> & { amount?: number | null }) {
   } as OpenDealRow
 }
 
-function quota(owner: typeof ana, target: number) {
+function quota(owner: SalesPersonRow, target: number) {
   return { ownerId: owner.id, targetAmount: new Prisma.Decimal(target), owner }
 }
 

@@ -282,13 +282,13 @@ const layoutShape = {
   y: z.number().int().min(0).max(1000).default(0),
   w: z.number().int().min(1).max(12).default(4),
   h: z.number().int().min(1).max(60).default(6),
-  /** Screen of the dashboard (0-based). */
+  /** Screen of the dashboard (0-based); absent = the first one. */
   page: z
     .number()
     .int()
     .min(0)
     .max(MAX_DASHBOARD_PAGES - 1)
-    .default(0),
+    .optional(),
 }
 
 export const CreateCrmDashboardWidgetSchema = z.discriminatedUnion('type', [
