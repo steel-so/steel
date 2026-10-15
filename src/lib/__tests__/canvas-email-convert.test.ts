@@ -9,11 +9,13 @@ import {
   openEmailDocument,
 } from '@/src/lib/canvas-email/convert-v1'
 import {
+  createBlankEmailDocument,
   EMAIL_PRESET_CATEGORIES,
   EMAIL_PRESETS,
   EMAIL_STARTERS,
 } from '@/src/lib/canvas-email/presets'
 import { renderEmailDocument } from '@/src/lib/canvas-email/render'
+import { validateEmailDocument } from '@/src/lib/canvas-email/validate'
 import {
   createBuilderDocument,
   EMAIL_LAYOUTS,
@@ -218,5 +220,17 @@ describe('presets ("Seções prontas") and starters', () => {
     const doc = EMAIL_STARTERS[0].document()
     expect(validateDocument(doc, emailCatalog).ok).toBe(true)
     expect(EMAIL_STARTERS[0].defaultSubject).toContain('{{')
+  })
+
+  it('starts a blank document with one empty column and the footer', () => {
+    const doc = createBlankEmailDocument()
+    expect(validateEmailDocument(doc).ok).toBe(true)
+    const root = doc.nodes[doc.rootId]
+    expect(root.children).toEqual(['section', 'footer'])
+    expect(doc.nodes.column.children).toEqual([])
+    expect(isEmailCanvasDocument(doc)).toBe(true)
+    // Fresh object every call (the editor mutates nothing, but the gallery
+    // must not share state between templates).
+    expect(createBlankEmailDocument()).not.toBe(doc)
   })
 })

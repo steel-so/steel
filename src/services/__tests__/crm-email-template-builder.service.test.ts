@@ -58,6 +58,7 @@ describe('CrmEmailTemplateService with the visual builder', () => {
         'ws1',
         createBuilderDocument('promocao'),
         'Oferta',
+        { privileged: false },
       )
       expect(mockedRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({

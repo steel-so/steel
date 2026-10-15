@@ -1,7 +1,7 @@
-import { LayoutTopIcon } from '@hugeicons-pro/core-stroke-rounded'
+import { MailAdd01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { EmailTemplateGallery } from '@/app/_components/crm/email-builder/email-template-gallery'
+import { EmailStarterGallery } from '@/app/_components/crm/email-editor/email-starter-gallery'
 import {
   HeaderBreadcrumbCrumb,
   HeaderBreadcrumbList,
@@ -12,11 +12,11 @@ import { getAuthSession } from '@/src/lib/auth-session'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
-  title: 'Galeria de modelos de e-mail | CRM | Steel',
-  description: 'Modelos prontos de e-mail para editar no editor visual',
+  title: 'Novo template de e-mail | CRM | Steel',
+  description: 'Comece um e-mail em branco ou a partir de um modelo pronto',
 }
 
-export default async function CrmEmailTemplateGalleryPage({
+export default async function CrmNewEmailTemplatePage({
   params,
 }: {
   params: Promise<{ 'workspace-slug': string }>
@@ -36,9 +36,9 @@ export default async function CrmEmailTemplateGalleryPage({
     <div className='flex h-full w-full min-h-0 flex-col'>
       <HeaderInternalNavigation>
         <HeaderBreadcrumbList>
-          <HeaderBreadcrumbCrumb title='Galeria de modelos'>
+          <HeaderBreadcrumbCrumb title='Novo template'>
             <SteelIcon
-              icon={LayoutTopIcon}
+              icon={MailAdd01Icon}
               strokeWidth={2}
               className='text-primary'
             />
@@ -46,7 +46,7 @@ export default async function CrmEmailTemplateGalleryPage({
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
       <div className='min-h-0 flex-1'>
-        <EmailTemplateGallery
+        <EmailStarterGallery
           workspaceId={membership.value.workspaceId}
           slug={slug}
         />

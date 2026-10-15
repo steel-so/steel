@@ -24,13 +24,18 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import type { ReactNode } from 'react'
 import { Body, Head, Html, Preview } from 'react-email'
+import { getNode, parentOf } from '@/src/lib/canvas/ops'
 import {
   type CanvasCatalog,
   type CanvasComponentDefinition,
   type CanvasRenderProps,
   defineCatalog,
 } from '@/src/lib/canvas/registry'
-import type { CanvasProps } from '@/src/lib/canvas/types'
+import type {
+  CanvasDocument,
+  CanvasNode,
+  CanvasProps,
+} from '@/src/lib/canvas/types'
 import { HTML_BLOCK, htmlDefinition } from './components/advanced'
 import {
   buttonDefinition,
@@ -193,6 +198,27 @@ function EmailDocument({
   )
 }
 
+/**
+ * What an e-mail component reads from the rest of the document, so the
+ * editor redraws it when that changes: every component inherits the body
+ * defaults (font, colors, width) and a column splits the width with its
+ * siblings.
+ */
+export function emailDependencies(
+  doc: CanvasDocument,
+  node: CanvasNode,
+): readonly unknown[] {
+  const body = getNode(doc, doc.rootId)?.props
+  if (node.type !== COLUMN) return [body]
+  const parentId = parentOf(doc, node.id)
+  const siblings = (parentId && getNode(doc, parentId)?.children) || []
+  return [
+    body,
+    siblings.length,
+    ...siblings.map((id) => getNode(doc, id)?.props.width),
+  ]
+}
+
 export type EmailCatalogOptions = {
   /** `false` keeps the HTML block registered (documents that have one still
    * validate and render) but hides it from the palette — for members who
@@ -219,6 +245,7 @@ export function createEmailCatalog(
     definition: CanvasComponentDefinition,
   ): CanvasComponentDefinition => ({
     ...definition,
+    dependsOn: definition.type === BODY ? undefined : emailDependencies,
     render: (props) =>
       definition.render({ ...props, ctx: read() } as CanvasRenderProps),
   })

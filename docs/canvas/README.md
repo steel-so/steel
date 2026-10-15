@@ -123,6 +123,10 @@ Decisões do shell:
 - **Abaixo de 1024 px** o editor mostra "Use uma tela maior para editar": a
   barra lateral, o canvas e o inspetor não cabem lado a lado em tablet em pé.
 - O playground abre fora de produção; em produção só com `CANVAS_LAB=true`.
+- `store` (opcional): o chamador cria o store com `createCanvasStore` quando
+  o contexto de render do catálogo precisa ler o documento vivo (e-mail).
+- `dependsOn(doc, node)` na definição: o que o componente lê de outros nós;
+  o canvas redesenha o nó quando esses valores mudam.
 
 Atalhos: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+C / Ctrl+X / Ctrl+V,
 Ctrl+D, Delete/Backspace, ↑/↓ irmão anterior/próximo, Alt+↑/↓ move o

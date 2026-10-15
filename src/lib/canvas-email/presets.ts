@@ -1,5 +1,9 @@
 import { cloneFragment } from '@/src/lib/canvas/ops'
-import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
+import {
+  type CanvasDocument,
+  type CanvasFragment,
+  ROOT_ID,
+} from '@/src/lib/canvas/types'
 import { spacing } from '@/src/lib/canvas/values'
 import {
   EMAIL_LAYOUT_LIST,
@@ -9,10 +13,15 @@ import type {
   EmailBuilderLayoutId,
   EmailBuilderSectionType,
 } from '@/src/schemas/crm-email-builder.schema'
+import { EMAIL_CATALOG_ID, EMAIL_CATALOG_VERSION } from './catalog'
 import {
+  BODY,
   COLUMN,
+  defaultBodyProps,
   defaultColumnProps,
+  defaultFooterProps,
   defaultSectionProps,
+  FOOTER,
   SECTION,
 } from './components/layout'
 import { convertSection, createEmailDocumentFromLayout } from './convert-v1'
@@ -130,3 +139,34 @@ export const EMAIL_STARTERS: readonly EmailStarter[] = EMAIL_LAYOUT_LIST.map(
     document: () => createEmailDocumentFromLayout(layout.id),
   }),
 )
+
+/** Blank starting document: one empty single-column section and the
+ * required footer — the "Em branco" card of the gallery. */
+export function createBlankEmailDocument(): CanvasDocument {
+  return {
+    catalog: EMAIL_CATALOG_ID,
+    version: EMAIL_CATALOG_VERSION,
+    rootId: ROOT_ID,
+    nodes: {
+      [ROOT_ID]: {
+        id: ROOT_ID,
+        type: BODY,
+        props: defaultBodyProps(),
+        children: ['section', 'footer'],
+      },
+      section: {
+        id: 'section',
+        type: SECTION,
+        props: defaultSectionProps(),
+        children: ['column'],
+      },
+      column: {
+        id: 'column',
+        type: COLUMN,
+        props: defaultColumnProps(),
+        children: [],
+      },
+      footer: { id: 'footer', type: FOOTER, props: defaultFooterProps() },
+    },
+  }
+}

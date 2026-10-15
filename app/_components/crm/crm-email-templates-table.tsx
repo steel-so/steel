@@ -1,6 +1,6 @@
 'use client'
 
-import { LayoutTopIcon } from '@hugeicons-pro/core-stroke-rounded'
+import { MailAdd01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
@@ -13,9 +13,26 @@ import {
   type LookupKind,
   useCrmWorkspaceLookups,
 } from '@/src/hooks/use-crm-workspace-lookups'
+import { isEmailCanvasDocument } from '@/src/lib/canvas-email/convert-v1'
 import type { CrmEmailTemplateDTO } from '@/types/crm-email-marketing'
 
 const LOOKUP_KINDS: LookupKind[] = ['users']
+
+/** Display-only kind of BUILDER templates on the drag-and-drop editor (v2). */
+export const CANVAS_KIND = 'CANVAS'
+
+type TemplateRow = Omit<CrmEmailTemplateDTO, 'kind'> & {
+  kind: CrmEmailTemplateDTO['kind'] | typeof CANVAS_KIND
+}
+
+/** Rows of the table: v2 builder templates get the "Novo editor" badge. */
+export function toTemplateRows(items: CrmEmailTemplateDTO[]): TemplateRow[] {
+  return items.map((item) =>
+    item.kind === 'BUILDER' && isEmailCanvasDocument(item.builderDocument)
+      ? { ...item, kind: CANVAS_KIND }
+      : item,
+  )
+}
 
 const COLUMNS: GridColumn[] = [
   {
@@ -39,9 +56,11 @@ const COLUMNS: GridColumn[] = [
     kind: 'select',
     readonly: true,
     options: [
+      { value: CANVAS_KIND, label: 'Novo editor' },
       { value: 'BUILDER', label: 'Editor visual' },
       { value: 'LEGACY', label: 'HTML livre' },
     ],
+    optionStyles: { [CANVAS_KIND]: 'bg-primary/10 text-primary' },
   },
   {
     key: 'contentHtml',
@@ -81,6 +100,7 @@ export function CrmEmailTemplatesTable({
   )
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const columns = useMemo(() => COLUMNS, [])
+  const rows = useMemo(() => toTemplateRows(items), [items])
   const router = useRouter()
 
   return (
@@ -88,18 +108,17 @@ export function CrmEmailTemplatesTable({
       <div className='flex shrink-0 justify-end'>
         <Button
           size='sm'
-          variant='outline'
           nativeButton={false}
           render={<Link href={`/${slug}/crm/email-templates/new`} />}
         >
-          <SteelIcon icon={LayoutTopIcon} strokeWidth={2} />
-          Galeria de modelos
+          <SteelIcon icon={MailAdd01Icon} strokeWidth={2} />
+          Novo template
         </Button>
       </div>
       <div className='min-h-0 flex-1'>
         <DataTable
           columns={columns}
-          data={items}
+          data={rows}
           workspaceId={workspaceId}
           slug={slug}
           resource='email-templates'
@@ -111,7 +130,9 @@ export function CrmEmailTemplatesTable({
           // Visual-builder templates open the editor; free HTML keeps the
           // default record panel.
           onOpenRecord={(record) => {
-            if (record.kind !== 'BUILDER') return false
+            if (record.kind !== 'BUILDER' && record.kind !== CANVAS_KIND) {
+              return false
+            }
             router.push(`/${slug}/crm/email-templates/${record.id}`)
           }}
         />

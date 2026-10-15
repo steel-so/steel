@@ -7,6 +7,7 @@ import { createFakeMembership } from '@/src/__tests__/factories/membership.facto
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { crmEmailCanvasHtmlForbidden } from '@/src/errors'
 import { createEmailDocumentFromLayout } from '@/src/lib/canvas-email/convert-v1'
+import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
 import { createBuilderDocument } from '@/src/lib/crm-email-builder/layouts'
 import { err, ok } from '@/src/lib/result'
 import type { EmailCanvasDocument } from '@/src/schemas/crm-email-builder.schema'
@@ -61,13 +62,51 @@ describe('CrmEmailTemplateService with Steel Canvas (v2) documents', () => {
       }),
     )
     expect(dto.builderDocument).toMatchObject({ catalog: 'email', version: 2 })
-    expect(mockedBuild).toHaveBeenCalledWith('ws1', v2('promocao'), 'Oferta')
+    expect(mockedBuild).toHaveBeenCalledWith('ws1', v2('promocao'), 'Oferta', {
+      privileged: false,
+    })
     expect(mockedRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'BUILDER',
         builderDocument: v2('promocao'),
       }),
     )
+  })
+
+  it('creates a v2 template from a ready document (blank starter)', async () => {
+    asRole('OWNER')
+    const blank = createBlankEmailDocument() as unknown as EmailCanvasDocument
+    mockedBuild.mockResolvedValueOnce(ok(built(blank)))
+    mockedRepo.create.mockResolvedValueOnce(
+      ok(createFakeCrmEmailCanvasTemplate('newsletter')),
+    )
+    expectOk(
+      await CrmEmailTemplateService.create('u1', 'ws1', {
+        name: 'Em branco',
+        subject: 'Novidades',
+        builderDocument: blank,
+        builderLayout: 'promocao',
+      }),
+    )
+    // The document wins over the layout, and the owner may keep HTML blocks.
+    expect(mockedBuild).toHaveBeenCalledWith('ws1', blank, 'Novidades', {
+      privileged: true,
+    })
+    expect(mockedRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'BUILDER', builderDocument: blank }),
+    )
+  })
+
+  it('refuses a ready document the build rejects', async () => {
+    mockedBuild.mockResolvedValueOnce(err(crmEmailCanvasHtmlForbidden()))
+    const result = await CrmEmailTemplateService.create('u1', 'ws1', {
+      name: 'Em branco',
+      subject: 'Novidades',
+      builderDocument:
+        createBlankEmailDocument() as unknown as EmailCanvasDocument,
+    })
+    expect(expectErr(result).code).toBe('CRM_EMAIL_CANVAS_HTML_FORBIDDEN')
+    expect(mockedRepo.create).not.toHaveBeenCalled()
   })
 
   it('saves a v2 document with the member role and the previous document', async () => {

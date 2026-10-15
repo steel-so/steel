@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { notify } from '@/lib/notify'
+import { cn } from '@/lib/utils'
 import type { EmailBrand } from '@/src/lib/crm-email-builder/brand'
 import { CrmEmailBrandSchema } from '@/src/schemas/crm-email-builder.schema'
 import { ImageField } from './image-field'
@@ -20,12 +21,15 @@ export function BrandForm({
   saving,
   onPreview,
   onSave,
+  stacked = false,
 }: {
   workspaceId: string
   brand: EmailBrand
   saving: boolean
   onPreview: (brand: EmailBrand) => void
   onSave: (brand: EmailBrand) => Promise<void>
+  /** One column at any width (narrow side panels). */
+  stacked?: boolean
 }) {
   const [draft, setDraft] = useState(brand)
   useEffect(() => setDraft(brand), [brand])
@@ -48,8 +52,13 @@ export function BrandForm({
   const colorValid = /^#[0-9a-fA-F]{6}$/.test(draft.primaryColor)
 
   return (
-    <div className='grid min-w-0 gap-4 sm:grid-cols-2'>
-      <p className='text-muted-foreground text-xs sm:col-span-2'>
+    <div
+      className={cn(
+        'grid min-w-0 gap-4',
+        !stacked && 'sm:grid-cols-2 sm:[&>.brand-wide]:col-span-2',
+      )}
+    >
+      <p className='brand-wide text-muted-foreground text-xs'>
         A marca vale para todos os templates do editor visual deste workspace.
       </p>
       <div className='grid gap-1.5'>
@@ -87,7 +96,7 @@ export function BrandForm({
           />
         </div>
       </div>
-      <div className='sm:col-span-2'>
+      <div className='brand-wide'>
         <ImageField
           id='brand-logo'
           workspaceId={workspaceId}
@@ -128,7 +137,7 @@ export function BrandForm({
           onChange={(e) => update({ website: e.target.value })}
         />
       </div>
-      <div className='sm:col-span-2'>
+      <div className='brand-wide'>
         <Button type='button' onClick={handleSave} disabled={saving}>
           {saving ? 'Salvando…' : 'Salvar marca'}
         </Button>

@@ -10,6 +10,7 @@ import {
   putJson,
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
+import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
 import { createBuilderDocument } from '@/src/lib/crm-email-builder/layouts'
 
 async function createBuilderTemplate(workspaceId: string, cookie: string) {
@@ -195,6 +196,44 @@ describe('visual e-mail builder — Steel Canvas (v2) documents', () => {
     const email = (await rendered.json()).data
     expect(email.html).toContain('Título do canvas')
     expect(email.html).not.toContain('data-canvas-id')
+  })
+
+  it('creates a v2 template from a ready (blank) document', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const path = `/api/workspaces/${workspace.id}/crm/email-templates`
+    const res = await postJson(
+      path,
+      {
+        name: 'Em branco',
+        subject: 'Novidades',
+        builderDocument: createBlankEmailDocument(),
+      },
+      user.cookie,
+    )
+    expect(res.status).toBe(201)
+    const created = (await res.json()).data
+    expect(created.kind).toBe('BUILDER')
+    expect(created.builderDocument).toMatchObject({ catalog: 'email' })
+    expect(created.contentHtml).toContain('{{unsubscribe_url}}')
+
+    const blank = createBlankEmailDocument()
+    const { footer: _footer, ...withoutFooter } = blank.nodes
+    const invalid = await postJson(
+      path,
+      {
+        name: 'Sem rodapé',
+        subject: 'Novidades',
+        builderDocument: {
+          ...blank,
+          nodes: {
+            ...withoutFooter,
+            root: { ...blank.nodes.root, children: ['section'] },
+          },
+        },
+      },
+      user.cookie,
+    )
+    expect(invalid.status).toBe(422)
   })
 
   it('refuses invalid documents, downgrades and HTML from members', async () => {
