@@ -182,6 +182,8 @@ function isMissingBucket(error: unknown): boolean {
 export interface ListedObject {
   key: string
   size: number
+  /** When the object was written (absent if the store does not say). */
+  lastModified?: Date
 }
 
 /**
@@ -209,7 +211,13 @@ export async function listObjects(
       )
       for (const object of page.Contents ?? []) {
         if (object.Key)
-          objects.push({ key: object.Key, size: object.Size ?? 0 })
+          objects.push({
+            key: object.Key,
+            size: object.Size ?? 0,
+            ...(object.LastModified
+              ? { lastModified: object.LastModified }
+              : {}),
+          })
       }
       token = page.IsTruncated ? page.NextContinuationToken : undefined
     } while (token)
