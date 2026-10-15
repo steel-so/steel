@@ -55,22 +55,14 @@ interface Box {
   key: string
 }
 
-function measure(element: HTMLElement): Box {
-  const target = textElementOf(element)
-  const rect = target.getBoundingClientRect()
+type Typography = Record<string, string | number>
+
+/** Font, color and padding of the rendered text. Read once, before the
+ * original text is made transparent (later reads would copy that). */
+function readTypography(target: HTMLElement): Typography {
   const view = target.ownerDocument.defaultView as Window
   const computed = view.getComputedStyle(target)
-  const style: Record<string, string | number> = {
-    position: 'absolute',
-    left: rect.left,
-    top: rect.top,
-    width: rect.width,
-    minHeight: rect.height,
-    boxSizing: 'border-box',
-    zIndex: 2147483000,
-    background: 'transparent',
-    margin: 0,
-  }
+  const style: Typography = {}
   for (const key of COPIED_STYLES) style[key] = computed[key]
   for (const side of BORDERS) {
     style[`border${side}`] =
@@ -83,6 +75,23 @@ function measure(element: HTMLElement): Box {
     const pStyle = view.getComputedStyle(paragraph)
     style['--canvas-p-mt'] = pStyle.marginTop
     style['--canvas-p-mb'] = pStyle.marginBottom
+  }
+  return style
+}
+
+function measure(element: HTMLElement, typography: Typography): Box {
+  const rect = textElementOf(element).getBoundingClientRect()
+  const style: Record<string, string | number> = {
+    position: 'absolute',
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    minHeight: rect.height,
+    boxSizing: 'border-box',
+    zIndex: 2147483000,
+    background: 'transparent',
+    margin: 0,
+    ...typography,
   }
   return { style, key: JSON.stringify(style) }
 }
@@ -118,6 +127,7 @@ export function InlineTextEditor({ id }: { id: CanvasNodeId }) {
   const { store, catalog, frame } = useCanvasEditor()
   const hostRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState<Box | null>(null)
+  const typography = useRef<Typography | null>(null)
   const selected = useCanvasStore((state) => state.selection.includes(id))
   const node = useCanvasNode(id) ?? null
   const definition = node ? catalog.components[node.type] : undefined
@@ -129,23 +139,15 @@ export function InlineTextEditor({ id }: { id: CanvasNodeId }) {
   }, [selected, node, inline, store])
 
   // Follow the rendered element (typing grows it, the stage may resize).
-  useLayoutEffect(() => {
+  const follow = () => {
     const element = elementOf(frame, id)
     if (!element) return
-    const next = measure(element)
+    typography.current ??= readTypography(textElementOf(element))
+    const next = measure(element, typography.current)
     setBox((prev) => (prev?.key === next.key ? prev : next))
-  })
-
-  useEffect(
-    () =>
-      frame.subscribe(() => {
-        const element = elementOf(frame, id)
-        if (!element) return
-        const next = measure(element)
-        setBox((prev) => (prev?.key === next.key ? prev : next))
-      }),
-    [frame, id],
-  )
+  }
+  useLayoutEffect(follow)
+  useEffect(() => frame.subscribe(follow), [frame, id])
 
   // Hide the original text while the editor sits on top of it.
   useLayoutEffect(() => {

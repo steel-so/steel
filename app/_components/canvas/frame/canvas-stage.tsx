@@ -47,11 +47,10 @@ export function CanvasStage() {
     }
   }, [frame])
 
-  // Start (and switch breakpoints) at a zoom where the page fits.
+  // Open (and switch breakpoints) at the zoom where the page fits.
   useEffect(() => {
     if (available.width === 0) return
-    const fit = fitZoom(width, available.width)
-    if (store.getState().zoom > fit) store.setZoom(fit)
+    store.setZoom(fitZoom(width, available.width))
   }, [width, available.width > 0])
 
   useLayoutEffect(() => {
