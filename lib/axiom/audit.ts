@@ -181,6 +181,10 @@ export type AuditEntity =
   | 'whiteboard'
   | 'whiteboard_version'
   | 'whiteboard_settings'
+  // Site builder (sites wave S1): sites, pages, header/footer/symbols
+  | 'site'
+  | 'site_page'
+  | 'site_global'
 
 export type AuditAction =
   | 'create'
@@ -240,6 +244,8 @@ export type AuditAction =
   | 'lock'
   | 'unlock'
   | 'duplicate'
+  // Site builder: landing page → site migration
+  | 'migrate'
 
 type AuditOutcome = 'success' | 'failure'
 

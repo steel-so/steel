@@ -162,6 +162,11 @@ export const TAG_GROUPS = [
         name: 'CRM · Configurações',
         description: 'Configurações e membros do módulo CRM.',
       },
+      {
+        name: 'CRM · Sites',
+        description:
+          'Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração e migração das landing pages.',
+      },
     ],
   },
   {
@@ -367,6 +372,11 @@ export const TAG_GROUPS = [
         name: 'CRM público · Campanhas',
         description:
           'Link rastreado, pixel de abertura e webhook do Resend das campanhas multicanal.',
+      },
+      {
+        name: 'CRM público · Sites',
+        description:
+          'Registro anônimo de visualizações dos sites publicados (sem sessão; o slug do site é o acesso).',
       },
     ],
   },

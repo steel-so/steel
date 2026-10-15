@@ -176,6 +176,8 @@ const OUT = [
   '(public)/servicedesk/approval/',
   '(public)/suporte/',
   '(public)/unsubscribe/',
+  // Published customer sites: their own header/footer globals, no Steel shell.
+  '(sites)/',
   'onboarding/',
   'upgrade/',
   'jobs/',
