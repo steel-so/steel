@@ -128,3 +128,10 @@ Atalhos: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+C / Ctrl+X / Ctrl+V,
 Ctrl+D, Delete/Backspace, ↑/↓ irmão anterior/próximo, Alt+↑/↓ move o
 elemento, ← pai, → primeiro filho, Esc sobe para o pai, Enter edita o texto,
 Ctrl+S salva, Ctrl+= / Ctrl+- / Ctrl+0 zoom.
+
+## Catálogo de e-mail (`src/lib/canvas-email/`)
+
+Fase E1 entregue: catálogo `email` versão 2 (corpo → seção → coluna →
+blocos, rodapé obrigatório), render idêntico no editor e no envio, conversor
+da v1, seções prontas e checklist. Detalhes, regras e o que a fatia do editor
+precisa saber: [email-catalog.md](./email-catalog.md).

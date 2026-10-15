@@ -10,6 +10,7 @@ import {
   putJson,
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
+import { createBuilderDocument } from '@/src/lib/crm-email-builder/layouts'
 
 async function createBuilderTemplate(workspaceId: string, cookie: string) {
   const res = await postJson(
@@ -135,6 +136,142 @@ describe('visual e-mail builder — templates', () => {
     const viewer = await addMember(workspace.id, 'VIEWER')
     const denied = await postJson(path, {}, viewer.cookie)
     expect(denied.status).toBe(403)
+  })
+})
+
+describe('visual e-mail builder — Steel Canvas (v2) documents', () => {
+  async function createCanvasTemplate(workspaceId: string, cookie: string) {
+    const res = await postJson(
+      `/api/workspaces/${workspaceId}/crm/email-templates`,
+      {
+        name: 'Promoção livre',
+        subject: 'Oi {{primeiro_nome|cliente}}',
+        builderLayout: 'promocao',
+        builderVersion: 2,
+      },
+      cookie,
+    )
+    expect(res.status).toBe(201)
+    return (await res.json()).data
+  }
+
+  it('creates a v2 template, saves edits and renders without editor markup', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const created = await createCanvasTemplate(workspace.id, user.cookie)
+    expect(created.builderDocument).toMatchObject({
+      catalog: 'email',
+      version: 2,
+      rootId: 'root',
+    })
+    expect(created.contentHtml).toContain('{{unsubscribe_url}}')
+    expect(created.contentHtml).not.toContain('data-canvas-id')
+
+    const doc = created.builderDocument
+    const heading = Object.values(
+      doc.nodes as Record<string, { id: string; type: string; props: object }>,
+    ).find((node) => node.type === 'email.heading')
+    if (!heading) throw new Error('heading missing')
+    const edited = {
+      ...doc,
+      nodes: {
+        ...doc.nodes,
+        [heading.id]: {
+          ...heading,
+          props: { ...heading.props, text: 'Título do canvas' },
+        },
+      },
+    }
+    const path = `/api/workspaces/${workspace.id}/crm/email-templates/${created.id}`
+    const saved = await patchJson(
+      path,
+      { builderDocument: edited },
+      user.cookie,
+    )
+    expect(saved.status).toBe(200)
+    expect((await saved.json()).data.contentHtml).toContain('Título do canvas')
+
+    const rendered = await postJson(`${path}/render`, {}, user.cookie)
+    expect(rendered.status).toBe(200)
+    const email = (await rendered.json()).data
+    expect(email.html).toContain('Título do canvas')
+    expect(email.html).not.toContain('data-canvas-id')
+  })
+
+  it('refuses invalid documents, downgrades and HTML from members', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const created = await createCanvasTemplate(workspace.id, user.cookie)
+    const doc = created.builderDocument
+    const path = `/api/workspaces/${workspace.id}/crm/email-templates/${created.id}`
+
+    const withoutFooter = {
+      ...doc,
+      nodes: Object.fromEntries(
+        Object.entries(doc.nodes as Record<string, { type: string }>).filter(
+          ([, node]) => node.type !== 'email.footer',
+        ),
+      ),
+    }
+    const invalid = await patchJson(
+      path,
+      { builderDocument: withoutFooter },
+      user.cookie,
+    )
+    expect(invalid.status).toBe(422)
+    const body = await invalid.json()
+    expect(body.error.code).toBe('CRM_EMAIL_CANVAS_INVALID')
+
+    const downgrade = await patchJson(
+      path,
+      { builderDocument: createBuilderDocument('promocao') },
+      user.cookie,
+    )
+    expect(downgrade.status).toBe(422)
+    expect((await downgrade.json()).error.code).toBe(
+      'CRM_EMAIL_BUILDER_STRUCTURE_LOCKED',
+    )
+
+    const member = await addMember(workspace.id, 'MEMBER')
+    const firstColumn = Object.values(
+      doc.nodes as Record<
+        string,
+        { id: string; type: string; children?: string[] }
+      >,
+    ).find((node) => node.type === 'email.column')
+    if (!firstColumn) throw new Error('column missing')
+    const withHtml = {
+      ...doc,
+      nodes: {
+        ...doc.nodes,
+        [firstColumn.id]: {
+          ...firstColumn,
+          children: [...(firstColumn.children ?? []), 'rawhtml'],
+        },
+        rawhtml: {
+          id: 'rawhtml',
+          type: 'email.html',
+          props: {
+            html: '<p>oi</p>',
+            padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            visibility: { base: true, tablet: true, mobile: true },
+          },
+        },
+      },
+    }
+    const forbidden = await patchJson(
+      path,
+      { builderDocument: withHtml },
+      member.cookie,
+    )
+    expect(forbidden.status).toBe(403)
+    expect((await forbidden.json()).error.code).toBe(
+      'CRM_EMAIL_CANVAS_HTML_FORBIDDEN',
+    )
+    const allowed = await patchJson(
+      path,
+      { builderDocument: withHtml },
+      user.cookie,
+    )
+    expect(allowed.status).toBe(200)
   })
 })
 

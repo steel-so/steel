@@ -524,6 +524,20 @@ export const crmEmailTemplateNotBuilder = (): AppError =>
 export const crmEmailBuilderStructureLocked = (
   message = 'A estrutura deste modelo não pode ser alterada — edite apenas o conteúdo',
 ): AppError => appError('CRM_EMAIL_BUILDER_STRUCTURE_LOCKED', message)
+
+/** E-mail canvas document refused; `details.issues` lists every problem. */
+export const crmEmailCanvasInvalid = (issues: string[]): AppError =>
+  appError(
+    'CRM_EMAIL_CANVAS_INVALID',
+    issues[0] ?? 'O conteúdo do e-mail é inválido',
+    { issues },
+  )
+
+export const crmEmailCanvasHtmlForbidden = (): AppError =>
+  appError(
+    'CRM_EMAIL_CANVAS_HTML_FORBIDDEN',
+    'Só administradores do workspace podem adicionar ou alterar blocos de HTML',
+  )
 export const crmCampaignNotFound = (): AppError =>
   appError('CRM_CAMPAIGN_NOT_FOUND', 'Campanha não encontrada')
 

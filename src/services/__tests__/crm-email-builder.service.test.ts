@@ -299,7 +299,9 @@ describe('buildBuilderTemplateContent()', () => {
     const built = expectOk(
       await buildBuilderTemplateContent('ws1', dirty, 'Assunto'),
     )
-    const intro = built.document.sections.find((s) => s.id === 'intro')
+    const intro = (built.document as EmailBuilderDocument).sections.find(
+      (s) => s.id === 'intro',
+    )
     expect(intro?.type === 'text' && intro.props.body).toBe(
       '<p>Oi {{nome}}</p>',
     )

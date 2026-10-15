@@ -5,9 +5,23 @@ import { baseEmailUrl } from '@/lib/base-email-url'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
 import {
   crmEmailBuilderStructureLocked,
+  crmEmailCanvasHtmlForbidden,
+  crmEmailCanvasInvalid,
   mailError,
   notFound,
 } from '@/src/errors'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
+import {
+  isEmailCanvasDocument,
+  openEmailDocument,
+} from '@/src/lib/canvas-email/convert-v1'
+import { renderEmailDocument } from '@/src/lib/canvas-email/render'
+import {
+  changesHtmlBlocks,
+  normalizeEmailDocument,
+  productIdsOf,
+  validateEmailDocument,
+} from '@/src/lib/canvas-email/validate'
 import {
   type EmailBrand,
   resolveEmailBrand,
@@ -36,6 +50,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import {
   toCrmEmailBrandDTO,
   toCrmEmailLinkTargetsDTO,
+  toEmailProductData,
 } from '@/src/mappers/crm-email-builder.mapper'
 import {
   CrmEmailBuilderRepository,
@@ -47,6 +62,7 @@ import {
   type EmailBuilderContact,
   type EmailBuilderDocument,
   EmailBuilderDocumentSchema,
+  type EmailCanvasDocument,
   type RenderCrmEmailTemplateDTO,
 } from '@/src/schemas/crm-email-builder.schema'
 import type {
@@ -122,26 +138,102 @@ function sanitizeDocument(
   } as EmailBuilderDocument
 }
 
+export type BuilderTemplateDocument = EmailBuilderDocument | EmailCanvasDocument
+
+export type BuildBuilderContentOptions = {
+  /** Workspace OWNER/ADMIN — may add or change HTML blocks (v2). */
+  privileged?: boolean
+  /** Document stored before this save (v1 or v2), to tell which HTML
+   * blocks are new or changed. */
+  previous?: unknown
+}
+
 /**
- * Validates the locked structure, sanitizes and renders a document with the
- * workspace brand. Used when a builder template is created or saved.
+ * Validates, sanitizes and renders a document with the workspace brand.
+ * Used when a builder template is created or saved. v1 documents keep the
+ * locked-layout rules; v2 (Steel Canvas) documents are checked against the
+ * e-mail catalog, and only admins may add or change HTML blocks.
  */
 export async function buildBuilderTemplateContent(
   workspaceId: string,
-  document: EmailBuilderDocument,
+  document: BuilderTemplateDocument,
   subject: string,
+  options: BuildBuilderContentOptions = {},
 ): Promise<
-  Result<{ document: EmailBuilderDocument; html: string; text: string }>
+  Result<{ document: BuilderTemplateDocument; html: string; text: string }>
 > {
-  const violation = validateLayoutStructure(document)
+  if (isEmailCanvasDocument(document)) {
+    return buildCanvasContent(workspaceId, document, subject, options)
+  }
+  const v1 = document as EmailBuilderDocument
+  const violation = validateLayoutStructure(v1)
   if (violation) return err(crmEmailBuilderStructureLocked(violation))
 
   const brand = await resolveBrand(workspaceId)
   if (!brand.ok) return brand
 
-  const clean = sanitizeDocument(document)
+  const clean = sanitizeDocument(v1)
   const rendered = await renderBuilderEmail(clean, brand.value, { subject })
   return ok({ document: clean, html: rendered.html, text: rendered.text })
+}
+
+async function buildCanvasContent(
+  workspaceId: string,
+  input: unknown,
+  subject: string,
+  options: BuildBuilderContentOptions,
+): Promise<
+  Result<{ document: BuilderTemplateDocument; html: string; text: string }>
+> {
+  const validated = validateEmailDocument(normalizeEmailDocument(input))
+  if (!validated.ok) return err(crmEmailCanvasInvalid(validated.error))
+  const doc = validated.value
+
+  if (!options.privileged) {
+    const before = openEmailDocument(options.previous)
+    if (changesHtmlBlocks(before && normalizeEmailDocument(before), doc)) {
+      return err(crmEmailCanvasHtmlForbidden())
+    }
+  }
+
+  const rendered = await renderCanvas(workspaceId, doc, subject)
+  if (!rendered.ok) return rendered
+  return ok({
+    document: doc as unknown as EmailCanvasDocument,
+    html: rendered.value.html,
+    text: rendered.value.text,
+  })
+}
+
+/** Brand + CRM products of a v2 document, then the shared render. */
+async function renderCanvas(
+  workspaceId: string,
+  doc: CanvasDocument,
+  subject: string,
+  cacheKey?: string,
+): Promise<Result<RenderedEmail>> {
+  const brand = await resolveBrand(workspaceId)
+  if (!brand.ok) return brand
+  const rows = await CrmEmailBuilderRepository.findProducts(
+    workspaceId,
+    productIdsOf(doc),
+  )
+  if (!rows.ok) return rows
+  const products = toEmailProductData(rows.value)
+
+  const key = cacheKey
+    ? `${cacheKey}:${JSON.stringify(brand.value)}:${JSON.stringify(products)}`
+    : null
+  const cached = key ? renderCache.get(key) : undefined
+  if (cached) return ok(cached)
+
+  const rendered = await renderEmailDocument(doc, {
+    brand: brand.value,
+    subject,
+    products,
+  })
+  if (key) remember(key, rendered)
+  return ok(rendered)
 }
 
 /** Base render (variables intact) of any template, cached per version. */
@@ -158,6 +250,24 @@ async function renderTemplateBase(
       html,
       text: template.contentText ?? emailHtmlToText(html),
     })
+  }
+
+  if (isEmailCanvasDocument(template.builderDocument)) {
+    const validated = validateEmailDocument(template.builderDocument)
+    if (!validated.ok) {
+      logger.warn('crm_email_builder.invalid_canvas_document', {
+        component: 'CrmEmailBuilderService',
+        templateId: template.id,
+        issues: validated.error.slice(0, 5),
+      })
+      return err(crmEmailCanvasInvalid(validated.error))
+    }
+    return renderCanvas(
+      workspaceId,
+      validated.value,
+      template.subject,
+      `${template.id}:${template.updatedAt.getTime()}`,
+    )
   }
 
   const parsed = EmailBuilderDocumentSchema.safeParse(template.builderDocument)

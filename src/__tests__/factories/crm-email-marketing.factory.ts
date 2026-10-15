@@ -6,7 +6,9 @@ import type {
   CrmEmailTemplate,
   CrmMailingList,
   CrmMailingListMember,
+  Prisma,
 } from '@prisma/client'
+import { createEmailDocumentFromLayout } from '@/src/lib/canvas-email/convert-v1'
 import { createBuilderDocument } from '@/src/lib/crm-email-builder/layouts'
 import { prisma } from '@/src/lib/prisma'
 import type { EmailBuilderLayoutId } from '@/src/schemas/crm-email-builder.schema'
@@ -193,6 +195,19 @@ export function createFakeCrmEmailBuilderTemplate(
     contentHtml: '<html>{{unsubscribe_url}}</html>',
     contentText: 'Descadastrar {{unsubscribe_url}}',
     subject: 'Oi {{primeiro_nome}}',
+    ...overrides,
+  })
+}
+
+/** BUILDER template holding a Steel Canvas (v2) document. */
+export function createFakeCrmEmailCanvasTemplate(
+  layout: EmailBuilderLayoutId = 'newsletter',
+  overrides?: Partial<CrmEmailTemplate>,
+): CrmEmailTemplate {
+  return createFakeCrmEmailBuilderTemplate(layout, {
+    builderDocument: createEmailDocumentFromLayout(
+      layout,
+    ) as unknown as Prisma.JsonObject,
     ...overrides,
   })
 }
