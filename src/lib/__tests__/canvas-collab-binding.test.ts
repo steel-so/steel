@@ -363,6 +363,25 @@ describe('bindCanvasStore — remote validation', () => {
     expect(a.rejected.flat()).toContain('b1')
   })
 
+  it('ignores an update that removes the root or the header', () => {
+    const { net, server, peers } = setup()
+    const [a] = peers
+    const before = a.store.getState().doc
+    server.transact(() => nodesOf(server).delete('root'))
+    net.flush()
+    expect(a.store.getState().doc).toBe(before)
+    expect(a.rejected).toContainEqual(['root'])
+
+    server.transact(() => {
+      const header = server.getMap('canvas.header')
+      for (const key of [...header.keys()]) header.delete(key)
+      const t1 = nodesOf(server).get('t1') as Y.Map<unknown>
+      ;(t1.get('props') as Y.Map<unknown>).set('text', 'sem cabeçalho')
+    })
+    net.flush()
+    expect(a.store.getState().doc).toBe(before)
+  })
+
   it('ignores an update that breaks the root', () => {
     const { net, server, peers } = setup()
     const [a] = peers
@@ -459,6 +478,21 @@ describe('bindCanvasStore — lifecycle', () => {
     const [a, b] = peers
     const ops: CanvasOp[] = [
       { kind: 'meta', id: 't1', set: { name: 'Título', locked: true } },
+      { kind: 'update', id: 't1', set: { text: 'com meta' } },
+      {
+        kind: 'batch',
+        ops: [
+          {
+            kind: 'insert',
+            fragment: {
+              rootId: 'n1',
+              nodes: { n1: node('n1', 'demo.text', { text: 'novo' }) },
+            },
+            at: { parentId: 's2', index: 0 },
+          },
+          { kind: 'move', id: 'n1', to: { parentId: 's2', index: 2 } },
+        ],
+      },
       {
         kind: 'batch',
         ops: [

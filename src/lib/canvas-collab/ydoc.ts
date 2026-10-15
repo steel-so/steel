@@ -44,11 +44,8 @@ export function hasCanvas(ydoc: Y.Doc): boolean {
   return typeof headerOf(ydoc).get('rootId') === 'string'
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (!isRecord(value)) return false
-  const proto = Object.getPrototypeOf(value)
-  return proto === Object.prototype || proto === null
-}
+/** JSON object (props are JSON: no class instances). */
+const isPlainObject = isRecord
 
 /** Structural equality of JSON-like values. */
 export function deepEqual(a: unknown, b: unknown): boolean {
@@ -130,7 +127,6 @@ export function unflatten(
     }
     const last = segments[segments.length - 1]
     const value = entries[key]
-    if (isPlainObject(target[last]) && isPlainObject(value)) continue
     target[last] = isPlainObject(value) ? { ...value } : value
   }
   return root
@@ -344,7 +340,7 @@ export function touchedIds(
   switch (op.kind) {
     case 'insert':
       out.add(op.at.parentId)
-      for (const id of Object.keys(op.fragment.nodes ?? {})) out.add(id)
+      for (const id of Object.keys(op.fragment.nodes)) out.add(id)
       break
     case 'remove':
       addParents(op.id)

@@ -110,10 +110,12 @@ export function bindCanvasStore(
   ) => {
     for (const event of events) {
       if (event.target === ynodes) {
-        for (const key of event.keysChanged) cache.delete(key)
+        for (const key of (event as Y.YMapEvent<unknown>).keysChanged) {
+          cache.delete(key)
+        }
       } else {
-        const id = event.path[0]
-        if (typeof id === 'string') cache.delete(id)
+        // Nested change: the first path segment is the node id.
+        cache.delete(event.path[0] as string)
       }
     }
     if (started && tr.origin !== origin) project()

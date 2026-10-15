@@ -41,6 +41,11 @@ export default async function CrmEmailTemplateEditorPage({
           slug={slug}
           templateId={templateId}
           allowHtml={isPrivilegedRole(membership.value.role)}
+          collabUser={{
+            id: session.value.user.id,
+            name: session.value.user.name || session.value.user.email,
+            image: session.value.user.image ?? null,
+          }}
         />
       </div>
     </FocusedScreen>

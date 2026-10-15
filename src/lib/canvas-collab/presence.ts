@@ -134,5 +134,5 @@ export function textLocks(peers: CanvasPeer[]): Map<CanvasNodeId, CanvasPeer> {
 
 /** First name for compact labels ("Ana está editando este texto"). */
 export function shortName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name
+  return name.trim().split(/\s+/)[0]
 }

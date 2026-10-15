@@ -46,7 +46,11 @@ const WS = 'ws1'
 const PAGE = canvasDocumentName('site-page', 'p1')
 const GLOBAL = canvasDocumentName('site-global', 'g1')
 const EMAIL = canvasDocumentName('email-template', 't1')
-const member = ok(createFakeMembership({ role: 'MEMBER' }))
+const member = ok({
+  ...createFakeMembership({ role: 'MEMBER' }),
+  isPrivileged: false,
+  permissions: null,
+} as never)
 
 let stored: CanvasDocument
 
