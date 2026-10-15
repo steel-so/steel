@@ -184,6 +184,20 @@ describe('collectSlots', () => {
       role: 'Texto pequeno',
     })
     expect(collectSlots({ rootId: 'missing', nodes: {} })).toEqual([])
+    const odd = {
+      rootId: 'root',
+      nodes: {
+        root: {
+          id: 'root',
+          type: SITE_TYPES.page,
+          props: {},
+          children: ['x'],
+        },
+        x: { id: 'x', type: 'site.unknown', props: {}, children: ['h'] },
+        h: { id: 'h', type: SITE_TYPES.heading, props: { text: 'Oi' } },
+      },
+    }
+    expect(collectSlots(odd)[0].section).toBe('site.unknown')
   })
 
   it('treats odd props as empty', () => {

@@ -131,7 +131,7 @@ export function keepValidSections(
   const root = doc.nodes[doc.rootId]
   const dropped: string[] = []
   const kept: string[] = []
-  for (const sectionId of root.children ?? []) {
+  for (const sectionId of root.children as string[]) {
     const single: CanvasDocument = {
       ...doc,
       nodes: { ...doc.nodes, [doc.rootId]: { ...root, children: [sectionId] } },

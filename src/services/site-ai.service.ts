@@ -177,7 +177,7 @@ function usageMeter(
   let costUsd = 0
   return {
     onUsage: async (usage: AiUsageTokens) => {
-      costUsd += AiUsageService.price(call, usage) || 0
+      costUsd += AiUsageService.price(call, usage)
       await AiUsageService.record(call, {
         workspaceId,
         userId: actorId,
@@ -1040,15 +1040,17 @@ export const SiteAiService = {
       validate: (value) => checkFields(slots, value.fields),
       onUsage: meter.onUsage,
     })
-    const fields = copy.ok ? copy.value.fields : copy.partial?.fields
-    if (!fields) {
+    if (!copy.ok && !copy.partial) {
       logger.warn('site_ai.section_copy_failed', {
         component: COMPONENT,
         workspaceId,
-        reason: copy.ok ? null : copy.reason,
+        reason: copy.reason,
       })
       return err(aiFailed())
     }
+    const fields = copy.ok
+      ? copy.value.fields
+      : (copy.partial as { fields: Array<{ id: string; text: string }> }).fields
     fillSlots(fragment.nodes, slots, fields)
     replaceSampleBrand(fragment.nodes, site.value.name)
     fixLinks(fragment.nodes, contactLink)

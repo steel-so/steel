@@ -208,6 +208,28 @@ describe('normalizePlan', () => {
     expect(plan.pages[0].sections.at(-1)).not.toBe('contact')
   })
 
+  it('drops a countdown without an event and keeps products already there', () => {
+    const plan = normalizePlan(
+      answer({
+        pages: [
+          { kind: 'home', title: 'Início', sections: ['countdown', 'about'] },
+          { kind: 'products', title: 'Loja', sections: ['products', 'faq'] },
+        ],
+      }),
+      brief({ pages: ['products', 'contact'] }),
+      { products: true, testimonials: false, event: false },
+    )
+    expect(plan.pages[0].sections).toEqual(['hero', 'about'])
+    expect(plan.pages[1].sections).toEqual(['intro', 'products', 'faq'])
+
+    const without = normalizePlan(
+      answer({ pages: [{ kind: 'products', title: 'Loja', sections: [] }] }),
+      brief({ pages: ['products', 'contact'] }),
+      NONE,
+    )
+    expect(without.pages[1].sections).toEqual(['intro', 'cta'])
+  })
+
   it('lists the requested kinds with home first', () => {
     expect(requestedKinds({ pages: ['faq', 'about'] })).toEqual([
       'home',

@@ -302,5 +302,7 @@ describe('siteAiSseResponse', () => {
     await reader.cancel()
     resume()
     await vi.waitFor(() => expect(finished).toHaveBeenCalled())
+    // Let the stream reach its (skipped) close.
+    await new Promise((resolve) => setTimeout(resolve, 10))
   })
 })

@@ -247,4 +247,15 @@ describe('keepValidSections', () => {
     root.nodes[root.rootId].props.background = 'bad'
     expect(keepValidSections(root).ok).toBe(false)
   })
+
+  it('drops sections pointing at missing or repeated nodes', () => {
+    const doc = buildPageDocument(['cta', 'cta'], context('agency'))
+    const [first, second] = doc.nodes[doc.rootId].children as string[]
+    const firstChildren = doc.nodes[first].children as string[]
+    doc.nodes[first].children = [...firstChildren, 'ghost']
+    const secondChildren = doc.nodes[second].children as string[]
+    doc.nodes[second].children = [...secondChildren, secondChildren[0]]
+    const checked = keepValidSections(doc)
+    expect(checked.ok && checked.value.dropped).toHaveLength(2)
+  })
 })
