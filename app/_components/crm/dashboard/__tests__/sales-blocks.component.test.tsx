@@ -94,10 +94,10 @@ describe('<GoalBlock />', () => {
     expect(screen.getByTestId('sales-goal-won').textContent).toBe('R$ 33.000')
     expect(screen.getByText(/de R\$ 66.000 · 2 negócios ganhos/)).toBeTruthy()
     expect(screen.getByTestId('sales-goal-pct').textContent).toBe('50%')
-    expect(screen.getByText('12 restantes')).toBeTruthy()
+    expect(screen.getByText('12')).toBeTruthy()
     expect(screen.getByText('R$ 2.750')).toBeTruthy()
     expect(screen.getByTestId('sales-goal-pace').textContent).toBe(
-      'fecha em R$ 70.000',
+      'No ritmo atual, fecha o mês em R$ 70.000',
     )
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe(
       '50',
@@ -131,7 +131,8 @@ describe('<GoalBlock />', () => {
         })}
       />,
     )
-    expect(screen.getAllByText('—')).toHaveLength(2)
+    expect(screen.getAllByText('—')).toHaveLength(1)
+    expect(screen.queryByTestId('sales-goal-pace')).toBeNull()
   })
 })
 

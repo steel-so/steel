@@ -2,6 +2,7 @@
 
 import {
   Cancel01Icon,
+  ChampionIcon,
   FullScreenIcon,
   RefreshIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -13,6 +14,7 @@ import ReactGridLayout, {
 } from 'react-grid-layout'
 import { DashboardDisplayProvider } from '@/app/_components/crm/dashboard/dashboard-display'
 import { winSentence } from '@/app/_components/crm/dashboard/sales/sales-blocks'
+import { SALES_TONE_TEXT } from '@/app/_components/crm/dashboard/sales/sales-tone'
 import {
   pageOfWidget,
   widgetTitle,
@@ -279,12 +281,15 @@ export function CelebrationOverlay({
             'motion-safe:fade-in-0 motion-safe:zoom-in-90 motion-safe:animate-in motion-safe:duration-500',
         )}
       >
-        <span
+        <SteelIcon
+          icon={ChampionIcon}
+          strokeWidth={1.8}
           aria-hidden
-          className='block text-[clamp(3rem,9vh,8rem)] leading-none'
-        >
-          🎉
-        </span>
+          className={cn(
+            'mx-auto size-[clamp(3rem,10vh,8rem)]',
+            SALES_TONE_TEXT.gold,
+          )}
+        />
         <span className='mt-4 block font-semibold text-[clamp(1.8rem,5.5vh,5rem)] text-foreground leading-tight'>
           {winSentence(win)}
         </span>

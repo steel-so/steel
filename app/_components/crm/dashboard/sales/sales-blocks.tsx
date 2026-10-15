@@ -3,8 +3,10 @@
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
+  ChampionIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import type * as React from 'react'
+import { useDashboardDisplay } from '@/app/_components/crm/dashboard/dashboard-display'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -36,10 +38,19 @@ import {
  * editor e a 5 m de distância numa TV 1080p ou 4K.
  */
 
-/** Tamanho de fonte que acompanha o bloco: `clamp(min, cq·cqmin, max)`. */
+/**
+ * Tamanho de fonte que acompanha o bloco: `clamp(min, cq·cqmin, max)`. No
+ * modo TV os limites crescem (`--sales-scale`): um bloco baixo continua
+ * legível a 5 m.
+ */
 function fluid(min: number, cq: number, max: number): React.CSSProperties {
-  return { fontSize: `clamp(${min}rem, ${cq}cqmin, ${max}rem)` }
+  return {
+    fontSize: `clamp(calc(${min}rem * var(--sales-scale, 1)), ${cq}cqmin, calc(${max}rem * var(--sales-scale, 1)))`,
+  }
 }
+
+/** Escala dos limites de fonte no modo TV. */
+const TV_SCALE = 1.7
 
 function Shell({
   children,
@@ -48,10 +59,16 @@ function Shell({
   children: React.ReactNode
   className?: string
 }) {
+  const { variant } = useDashboardDisplay()
   return (
     <div
       className={cn('flex h-full min-h-0 flex-col', className)}
-      style={{ containerType: 'size' }}
+      style={
+        {
+          containerType: 'size',
+          ...(variant === 'tv' ? { '--sales-scale': TV_SCALE } : {}),
+        } as React.CSSProperties
+      }
     >
       {children}
     </div>
@@ -214,7 +231,7 @@ export function GoalBlock({ metric }: { metric: SalesMetricOf<'goal'> }) {
           <p
             data-testid='sales-goal-won'
             className='truncate font-semibold text-foreground tabular-nums leading-none'
-            style={fluid(1.6, 17, 7)}
+            style={fluid(1.6, 13, 6)}
           >
             {won}
           </p>
@@ -231,7 +248,7 @@ export function GoalBlock({ metric }: { metric: SalesMetricOf<'goal'> }) {
             'font-semibold tabular-nums leading-none',
             SALES_TONE_TEXT[tone],
           )}
-          style={fluid(1.4, 13, 5.5)}
+          style={fluid(1.4, 11, 5)}
         >
           {formatPct(pct)}
         </p>
@@ -269,33 +286,38 @@ export function GoalBlock({ metric }: { metric: SalesMetricOf<'goal'> }) {
           )}
           style={fluid(0.85, 6, 2.4)}
         >
-          Meta batida! 🎉
+          Meta batida!
         </p>
       ) : (
-        <div className='grid grid-cols-2 gap-x-4 gap-y-1 @md:grid-cols-4'>
-          <Stat label='Falta' value={formatBrl(metric.remaining ?? 0, true)} />
-          <Stat
-            label='Dias úteis'
-            value={`${formatInt(metric.businessDays.left)} restantes`}
-          />
-          <Stat
-            label='Por dia útil'
-            value={
-              metric.requiredPerDay === null
-                ? '—'
-                : formatBrl(metric.requiredPerDay, true)
-            }
-          />
-          <Stat
-            label='No ritmo atual'
-            value={
-              metric.paceAmount === null
-                ? '—'
-                : `fecha em ${formatBrl(metric.paceAmount, true)}`
-            }
-            tone={tone}
-            testId='sales-goal-pace'
-          />
+        <div className='space-y-2'>
+          <div className='grid grid-cols-3 gap-x-4'>
+            <Stat
+              label='Falta'
+              value={formatBrl(metric.remaining ?? 0, true)}
+            />
+            <Stat
+              label='Úteis restantes'
+              value={formatInt(metric.businessDays.left)}
+            />
+            <Stat
+              label='Por dia útil'
+              value={
+                metric.requiredPerDay === null
+                  ? '—'
+                  : formatBrl(metric.requiredPerDay, true)
+              }
+            />
+          </div>
+          {metric.paceAmount !== null ? (
+            <p
+              data-testid='sales-goal-pace'
+              className={cn('truncate font-semibold', SALES_TONE_TEXT[tone])}
+              style={fluid(0.8, 5.5, 2.2)}
+            >
+              No ritmo atual, fecha o mês em{' '}
+              {formatBrl(metric.paceAmount, true)}
+            </p>
+          ) : null}
         </div>
       )}
     </Shell>
@@ -719,7 +741,7 @@ export function StalledBlock({ metric }: { metric: SalesMetricOf<'stalled'> }) {
   if (metric.total === 0) {
     return (
       <SalesEmpty
-        title={`Nenhum negócio parado há ${metric.days}+ dias. 👏`}
+        title={`Nenhum negócio parado há ${metric.days}+ dias.`}
         hint='Toda oportunidade aberta teve atividade recente.'
       />
     )
@@ -899,12 +921,12 @@ export function ScoreboardBlock({
     },
   ]
   return (
-    <Shell className='justify-center gap-1'>
-      <div className='grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2'>
+    <Shell className='gap-1'>
+      <div className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2'>
         {tiles.map((tile) => (
           <div
             key={tile.id}
-            className='min-w-0 rounded-lg bg-muted/50 px-2 py-1'
+            className='flex min-w-0 flex-col justify-center rounded-lg bg-muted/50 px-3 py-1'
           >
             <p
               className='truncate text-muted-foreground uppercase tracking-wide'
@@ -986,16 +1008,24 @@ export function WinsFeedBlock({
                   ),
               )}
             >
-              <span aria-hidden className='shrink-0' style={fluid(0.9, 6, 2.2)}>
-                🎉
-              </span>
+              <SteelIcon
+                icon={ChampionIcon}
+                strokeWidth={2}
+                aria-hidden
+                className={cn('shrink-0', SALES_TONE_TEXT.gold)}
+                style={{
+                  width: '1.4em',
+                  height: '1.4em',
+                  ...fluid(0.9, 6, 2.2),
+                }}
+              />
               <PersonAvatar
                 person={row.owner}
                 className='size-[clamp(1.25rem,8cqmin,3rem)]'
               />
               <div className='min-w-0 flex-1'>
                 <p
-                  className='truncate font-medium text-foreground'
+                  className='line-clamp-2 font-medium text-foreground leading-tight'
                   style={fluid(0.72, 4.6, 1.7)}
                 >
                   {winSentence(row)}

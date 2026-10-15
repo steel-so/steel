@@ -18755,7 +18755,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -18892,7 +18891,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -18943,7 +18941,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -18993,7 +18990,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -19079,7 +19075,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -69075,7 +69070,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -69212,7 +69206,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -69263,7 +69256,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -69313,7 +69305,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -69399,7 +69390,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -97465,7 +97455,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -97602,7 +97591,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -97653,7 +97641,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -97703,7 +97690,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
@@ -97789,7 +97775,6 @@
                         "maximum": 60
                       },
                       "page": {
-                        "default": 0,
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 2
