@@ -128,3 +128,63 @@ Atalhos: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+C / Ctrl+X / Ctrl+V,
 Ctrl+D, Delete/Backspace, ↑/↓ irmão anterior/próximo, Alt+↑/↓ move o
 elemento, ← pai, → primeiro filho, Esc sobe para o pai, Enter edita o texto,
 Ctrl+S salva, Ctrl+= / Ctrl+- / Ctrl+0 zoom.
+
+## Catálogo de sites (`src/lib/canvas-site/`)
+
+Catálogo `site`, versão 1, breakpoints `base` (≥ 1024 px), `tablet`
+(768–1023 px) e `mobile` (< 768 px).
+
+| Arquivo | O quê |
+|---|---|
+| `catalog.tsx` | `createSiteCatalog(ctx)`, `siteCatalog` (sem contexto, para validar) e `validateSiteDocument` |
+| `schemas.ts` | Props de cada componente (Zod); campos responsivos com `responsiveSchema` |
+| `theme.ts` | Tema do site: paleta (`token:<id>`), fontes, estilos de texto h1–h6/lead/body/small/overline, botões, links, escala de espaçamento, cantos, sombras, largura do conteúdo; `parseSiteTheme` completa e corrige entradas parciais |
+| `styles.ts` + `css.ts` | Compilador de CSS: props → classes `s-<hash>` determinísticas e media queries por breakpoint |
+| `components/` | Renderização em HTML semântico; `attributes` só no editor |
+| `render.tsx` | `SiteDocument` (saída final, sem código do editor), `needsFormScript` |
+| `presets/` | Seções prontas (15 tipos × 3 estilos) e 5 modelos de página |
+
+Estrutura: `site.page` → `site.section` (faixa de largura total: fundo cor,
+gradiente, imagem ou vídeo, sobreposição, altura mínima, âncora) →
+`site.container` (flex ou grade, aninhável, tudo responsivo) → elementos
+(`heading`, `text`, `button`, `image`, `icon`, `video`, `divider`, `spacer`,
+`list`, `form`, `menu`, `social`, `embed`). `site.columns` é só um item da
+paleta que insere uma grade com colunas.
+
+Regras do compilador:
+
+- Cada tipo tem uma função de estilo que recebe as props já resolvidas para
+  um breakpoint. `tablet` guarda só o que muda em relação a `base`, e
+  `mobile` só o que muda em relação a `tablet`; propriedade que some volta
+  a `initial`. O conjunto vira um hash, então estilos iguais dividem a
+  mesma classe e o mesmo documento sempre gera o mesmo CSS.
+- Cores do tema ficam como `var(--canvas-<token>)`: trocar o tema muda só a
+  folha do tema, nunca as classes dos nós.
+- Tema e regras estruturais ficam na camada `@layer s-base`; qualquer regra
+  de nó vence, sem disputa de especificidade.
+- Visibilidade por breakpoint usa as classes `s-hide-<bp>` (no editor o nó
+  fica esmaecido em vez de sumir).
+- Valores digitados (fontes, URLs, modelo de colunas) passam por
+  `cssValue`, que impede fechar a regra ou o `<style>`.
+
+Para quem usa:
+
+- **Editor (site-ui)**: `createSiteCatalog({ pages, currentPageId, canEmbed,
+  formPicker })`, `frameHead={<SiteFrameStyles theme />}`
+  (`app/_components/canvas-site/`), `colorTokens={siteColorTokens(theme)}`,
+  `viewportWidths={SITE_VIEWPORT_WIDTHS}`, `presets={SITE_PRESETS}`.
+- **Runtime público**: `<SiteDocument doc context />` para cada documento
+  (página e globais; globais usam `tag: 'div'` na raiz) e
+  `compileSiteCss([globais, página], { theme })` num `<style>`. Quando
+  `needsFormScript(docs)`, inclua `SITE_FORM_SCRIPT` uma vez, com o nonce da
+  CSP. O formulário posta JSON em `/api/crm/forms/<token>/submit` (troque
+  com `formAction`).
+- **CSP**: vídeos do Vimeo precisam de `player.vimeo.com` em `frame-src`;
+  o `site.embed` em modo HTML usa `srcdoc` com `sandbox` e herda a CSP da
+  página.
+- `site.embed` só aparece na paleta com `canEmbed` (administradores); o
+  backend deve recusar documentos com `SITE_ADMIN_ONLY_TYPES` vindos de
+  quem não é administrador.
+
+O playground (`/<workspace>/canvas-lab`) tem a chave **Demonstração / Site**
+e um seletor de modelo no modo Site.
