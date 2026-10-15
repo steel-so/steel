@@ -85,6 +85,10 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   siteVersion: (ws) => ({ site: { workspaceId: ws } }),
   siteView: (ws) => ({ site: { workspaceId: ws } }),
   siteRedirect: (ws) => ({ site: { workspaceId: ws } }),
+  siteExperiment: (ws) => ({ site: { workspaceId: ws } }),
+  siteExperimentEvent: (ws) => ({
+    experiment: { site: { workspaceId: ws } },
+  }),
 }
 
 /**
