@@ -81,6 +81,7 @@ const serverEnv = {
   SENTRY_ORG: process.env.SENTRY_ORG,
   SENTRY_PROJECT: process.env.SENTRY_PROJECT,
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+  CANVAS_LAB: process.env.CANVAS_LAB,
 }
 
 /** String opcional que trata `""` como ausente (não só `undefined`). */
@@ -365,6 +366,9 @@ export const serverEnvSchema = z.object({
   SENTRY_ORG: blankOptional,
   SENTRY_PROJECT: blankOptional,
   SENTRY_AUTH_TOKEN: blankOptional,
+  // Playground do editor Steel Canvas (`/[workspace]/canvas-lab`). Fora de
+  // produção ele sempre abre; em produção só com `'true'` (homologação, prints).
+  CANVAS_LAB: flag,
 }).superRefine(requireBillingCredentials)
 
 const validatedServerEnv =
@@ -452,4 +456,10 @@ export const {
   SENTRY_ORG,
   SENTRY_PROJECT,
   SENTRY_AUTH_TOKEN,
+  CANVAS_LAB,
 } = validatedServerEnv
+
+/** The Steel Canvas playground opens in dev/test, and in production only
+ * with `CANVAS_LAB=true`. */
+export const CANVAS_LAB_ENABLED =
+  process.env.NODE_ENV !== 'production' || CANVAS_LAB === 'true'

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
+import type { CanvasColorToken } from '@/src/lib/canvas/values'
 
 /** A tab in the left sidebar. The shell always provides "Adicionar"
  * (palette from the catalog) and "Camadas"; catalogs add the rest
@@ -42,4 +43,13 @@ export interface CanvasEditorProps {
   onSave: (doc: CanvasDocument) => Promise<boolean>
   /** Dark-mode preview toggle (e-mail). */
   darkPreview?: boolean
+  /** Uploads a file picked in an image control and resolves its public URL
+   * (`null` when it failed — the caller already told the user). Without it
+   * image controls accept URLs only. */
+  onUploadImage?: (file: File) => Promise<string | null>
+  /** Theme colors offered by color controls (`token:<id>`). */
+  colorTokens?: CanvasColorToken[]
+  /** Font families offered by the typography control (CSS `font-family`
+   * values with fallbacks). Defaults to a safe system/web list. */
+  fonts?: Array<{ label: string; value: string }>
 }
