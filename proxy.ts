@@ -14,6 +14,14 @@ import {
 } from '@/lib/env/env'
 import { POSTHOG_PROXY_PATH } from '@/lib/posthog/constants'
 import { geolocateRequest } from '@/src/lib/analytics/geoip'
+import { SITES_ROOT_DOMAIN } from '@/lib/env/server'
+import {
+  SITE_REQUEST_HEADER,
+  SITE_VIA_HOST_HEADER,
+  parseSiteHost,
+  siteRewritePath,
+  siteSlugFromPath,
+} from '@/src/lib/sites/host'
 
 const PUBLIC_ROUTES = [
   '/', '/sign-in', '/sign-up', '/forget-password',
@@ -57,6 +65,10 @@ const PUBLIC_ROUTES = [
   // Published wiki pages: read-only link and its media, no session (the
   // random token in the URL is the credential; unpublishing revokes it).
   '/w', '/api/wiki/public',
+  // Published sites (site builder): the runtime at /s/<slug> and its
+  // page-view beacon. Sites on <slug>.<SITES_ROOT_DOMAIN> are rewritten to
+  // /s/<slug> before this check.
+  '/s', '/api/sites',
   // Proxy reverso do PostHog (o next.config.ts reescreve direto para o
   // PostHog). Analytics é coletado nas páginas públicas também, onde ninguém
   // tem sessão, então o gate de autenticação responderia cada beacon com um
@@ -149,7 +161,7 @@ function buildCspHeader(nonce: string): string {
     media-src 'self' blob: https:;
     font-src 'self';
     connect-src 'self' blob: data: https://*.axiom.co https://cdn.jsdelivr.net${realtimeConnectSrc()}${sentryConnectSrc()}${ga.connect}${NODE_ENV === 'development' ? ' ws://localhost:4444' : ''};
-    frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://docs.google.com;
+    frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com;
     frame-ancestors 'none';
     form-action 'self';
     base-uri 'self';
@@ -204,6 +216,27 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
   requestHeaders.set('Content-Security-Policy', buildCspHeader(nonce))
 
   const { pathname } = request.nextUrl
+  // Only the proxy says what is a site request.
+  requestHeaders.delete(SITE_REQUEST_HEADER)
+  requestHeaders.delete(SITE_VIA_HOST_HEADER)
+
+  // <slug>.<SITES_ROOT_DOMAIN>/<path> is served by /s/<slug>/<path>.
+  const hostSlug = parseSiteHost(request.headers.get('host'), SITES_ROOT_DOMAIN)
+  if (hostSlug) {
+    const target = siteRewritePath(hostSlug, pathname)
+    if (target) {
+      requestHeaders.set(SITE_REQUEST_HEADER, hostSlug)
+      requestHeaders.set(SITE_VIA_HOST_HEADER, '1')
+      const url = request.nextUrl.clone()
+      url.pathname = target
+      return withSecurityHeaders(
+        NextResponse.rewrite(url, { request: { headers: requestHeaders } }),
+        nonce,
+      )
+    }
+  }
+  const pathSlug = siteSlugFromPath(pathname)
+  if (pathSlug) requestHeaders.set(SITE_REQUEST_HEADER, pathSlug)
 
   if (
     NODE_ENV === 'development' &&
