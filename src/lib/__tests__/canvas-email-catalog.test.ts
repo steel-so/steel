@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import {
   emailBlock,
@@ -338,4 +340,35 @@ describe('editing render (the canvas the shell shows)', () => {
     }
     expect(emailBlock({ type: 'email.text' }).props).toHaveProperty('html')
   })
+})
+
+describe('editor attributes (shell contract)', () => {
+  it.each(definitions.map((d) => [d.type, d] as const))(
+    '%s spreads attributes on its outermost element, only when editing',
+    (_type, definition) => {
+      const node = {
+        id: 'n1',
+        type: definition.type,
+        props: definition.defaultProps(),
+        ...(definition.accepts === false ? {} : { children: [] }),
+      }
+      const editing = renderToStaticMarkup(
+        definition.render({
+          node,
+          breakpoint: 'base',
+          editing: true,
+          attributes: { 'data-canvas-id': 'n1' },
+        }) as ReactElement,
+      )
+      expect(editing).toMatch(/^<[a-z]+[^>]*\sdata-canvas-id="n1"/)
+      const output = renderToStaticMarkup(
+        definition.render({
+          node,
+          breakpoint: 'base',
+          editing: false,
+        }) as ReactElement,
+      )
+      expect(output).not.toContain('data-canvas-id')
+    },
+  )
 })
