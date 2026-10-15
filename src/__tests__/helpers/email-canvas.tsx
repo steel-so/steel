@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { getNode } from '@/src/lib/canvas/nodes'
+import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type {
   CanvasBreakpoint,
   CanvasDocument,
   CanvasNode,
 } from '@/src/lib/canvas/types'
-import { emailCatalog } from '@/src/lib/canvas-email/catalog'
+import {
+  createEmailCatalog,
+  emailCatalog,
+} from '@/src/lib/canvas-email/catalog'
 import {
   BODY,
   COLUMN,
@@ -20,7 +24,6 @@ import {
 import {
   createEmailRenderContext,
   type EmailRenderContext,
-  EmailRenderProvider,
 } from '@/src/lib/canvas-email/theme'
 
 /** Test builders for e-mail canvas documents (catalog `email`, v2). */
@@ -106,16 +109,24 @@ function EditingTree({
   doc,
   id,
   breakpoint,
+  catalog,
 }: {
   doc: CanvasDocument
   id: string
   breakpoint: CanvasBreakpoint
+  catalog: CanvasCatalog
 }): ReactNode {
   const node = getNode(doc, id)
   if (!node || node.meta?.hidden) return null
-  const definition = emailCatalog.components[node.type]
+  const definition = catalog.components[node.type]
   const children = node.children?.map((child) => (
-    <EditingTree key={child} doc={doc} id={child} breakpoint={breakpoint} />
+    <EditingTree
+      key={child}
+      doc={doc}
+      id={child}
+      breakpoint={breakpoint}
+      catalog={catalog}
+    />
   ))
   return definition.render({
     node,
@@ -135,23 +146,23 @@ export function renderEditing(
   } = {},
 ): string {
   const ctx = createEmailRenderContext({
-    lookup: (id) => getNode(doc, id),
+    doc: () => doc,
     ...options.context,
   })
+  const catalog = createEmailCatalog({ context: () => ctx })
   const root = getNode(doc, doc.rootId) as CanvasNode
   return renderToStaticMarkup(
-    <EmailRenderProvider value={ctx}>
-      {emailCatalog.renderDocument({
-        children: (
-          <EditingTree
-            doc={doc}
-            id={doc.rootId}
-            breakpoint={options.breakpoint ?? 'base'}
-          />
-        ),
-        rootProps: root.props,
-        editing: true,
-      })}
-    </EmailRenderProvider>,
+    catalog.renderDocument({
+      children: (
+        <EditingTree
+          doc={doc}
+          id={doc.rootId}
+          breakpoint={options.breakpoint ?? 'base'}
+          catalog={catalog}
+        />
+      ),
+      rootProps: root.props,
+      editing: true,
+    }),
   )
 }

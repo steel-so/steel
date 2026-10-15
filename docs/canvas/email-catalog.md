@@ -84,8 +84,12 @@ modelos, o texto, os links e as imagens do e-mail antigo e do convertido.
 
 ## Para a fatia do editor
 
-- Envolver o `CanvasEditor` com `EmailRenderProvider` (marca, produtos e
-  `lookup` lendo o documento do store — a coluna usa para dividir larguras).
+- Montar o catálogo com o contexto de render:
+  `createEmailCatalog({ allowHtml, context: () => ({ ...ctx, doc: () => store.getState().doc }) })`
+  (marca, produtos e o documento — a coluna usa para dividir larguras). O
+  contexto é um valor passado como prop (`ctx`), não contexto do React: as
+  rotas do servidor renderizam o e-mail no ambiente de Server Components,
+  onde `createContext` não existe.
 - `createEmailCatalog({ allowHtml })` esconde o bloco de HTML da paleta de
   quem não é admin; `EMAIL_TYPOGRAPHY_FONTS` alimenta o controle de
   tipografia; `emailColorTokens(brand)` os tokens de cor.

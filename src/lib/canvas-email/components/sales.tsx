@@ -1,9 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Img, Link, Text } from 'react-email'
-import {
-  type CanvasRenderProps,
-  defineComponent,
-} from '@/src/lib/canvas/registry'
+import { defineComponent } from '@/src/lib/canvas/registry'
 import { spacing } from '@/src/lib/canvas/values'
 import { CAMPAIGN_LINK } from '@/src/lib/crm-email-builder/variables'
 import { BLOCK_LAYOUT_SECTION, colorField, linkField } from '../inspector'
@@ -17,10 +14,10 @@ import {
 import {
   EMAIL_PALETTE,
   type EmailProductData,
+  type EmailViewProps,
   emailColor,
-  useEmailContext,
 } from '../theme'
-import { useEmailBody } from './layout'
+import { emailBody, emailView } from './layout'
 
 // ─── product ──────────────────────────────────────────────────────────────
 
@@ -39,10 +36,10 @@ export function resolveProduct(
   }
 }
 
-function ProductView(props: CanvasRenderProps<EmailProductProps>) {
+function ProductView(props: EmailViewProps<EmailProductProps>) {
   const { node, editing } = props
-  const { tokens, products } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens, products } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const data = resolveProduct(p, products)
   if (!data.name && !editing) return null
@@ -273,15 +270,15 @@ export const productDefinition = defineComponent<EmailProductProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <ProductView {...props} />,
+  render: emailView(ProductView),
 })
 
 // ─── coupon ───────────────────────────────────────────────────────────────
 
-function CouponView(props: CanvasRenderProps<EmailCouponProps>) {
+function CouponView(props: EmailViewProps<EmailCouponProps>) {
   const { node, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const accent = emailColor(p.accentColor, tokens) ?? EMAIL_PALETTE.fg
   const small: CSSProperties = {
@@ -404,5 +401,5 @@ export const couponDefinition = defineComponent<EmailCouponProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <CouponView {...props} />,
+  render: emailView(CouponView),
 })

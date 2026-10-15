@@ -1,15 +1,11 @@
-import {
-  type Context,
-  type CSSProperties,
-  createContext,
-  useContext,
-} from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Container, Hr, Link, Text } from 'react-email'
+import { getNode, parentOf } from '@/src/lib/canvas/ops'
 import {
   type CanvasRenderProps,
   defineComponent,
 } from '@/src/lib/canvas/registry'
-import type { CanvasFragment } from '@/src/lib/canvas/types'
+import type { CanvasFragment, CanvasProps } from '@/src/lib/canvas/types'
 import {
   type CanvasBackground,
   type CanvasColorToken,
@@ -43,7 +39,23 @@ import {
   footerSchema,
   sectionSchema,
 } from '../schemas'
-import { EMAIL_PALETTE, emailColor, emailFont, useEmailContext } from '../theme'
+import {
+  EMAIL_PALETTE,
+  type EmailRenderContext,
+  type EmailViewProps,
+  emailColor,
+  emailFont,
+} from '../theme'
+
+/** `render` of a definition whose view takes the e-mail context (the
+ * catalog injects `ctx`; see `EmailViewProps`). */
+export function emailView<P extends CanvasProps>(
+  View: (props: EmailViewProps<P>) => ReactNode,
+) {
+  return (props: CanvasRenderProps<P>) => (
+    <View {...(props as EmailViewProps<P>)} />
+  )
+}
 
 export const BODY = 'email.body'
 export const SECTION = 'email.section'
@@ -65,16 +77,20 @@ export type EmailBodyDefaults = {
   linkColor: string
 }
 
-const BodyContext: Context<EmailBodyDefaults> =
-  createContext<EmailBodyDefaults>({
-    width: 600,
-    fontStack: emailFont('system').stack,
-    textColor: EMAIL_PALETTE.fg2,
-    linkColor: '#2893CC',
-  })
+const DEFAULT_BODY: EmailBodyDefaults = {
+  width: 600,
+  fontStack: emailFont('system').stack,
+  textColor: EMAIL_PALETTE.fg2,
+  linkColor: '#2893CC',
+}
 
-export function useEmailBody(): EmailBodyDefaults {
-  return useContext(BodyContext)
+/** Body defaults of the document being rendered (font, colors, width). */
+export function emailBody(ctx: EmailRenderContext): EmailBodyDefaults {
+  const doc = ctx.doc?.()
+  const root = doc && getNode(doc, doc.rootId)
+  return root?.type === BODY
+    ? bodyDefaults(root.props as EmailBodyProps, ctx.tokens)
+    : DEFAULT_BODY
 }
 
 export function bodyDefaults(
@@ -107,10 +123,10 @@ function BodyView({
   children,
   attributes,
   editing,
-}: CanvasRenderProps<EmailBodyProps>) {
-  const { tokens } = useEmailContext()
+  ctx,
+}: EmailViewProps<EmailBodyProps>) {
+  const { tokens } = ctx
   const p = node.props
-  const defaults = bodyDefaults(p, tokens)
   const style: CSSProperties = {
     maxWidth: p.width,
     width: '100%',
@@ -119,7 +135,7 @@ function BodyView({
     overflow: 'hidden',
   }
   return (
-    <BodyContext.Provider value={defaults}>
+    <>
       {editing ? (
         <div
           {...attributes}
@@ -136,7 +152,7 @@ function BodyView({
           <span data-ec-mso={MSO_CLOSE_MARKER} />
         </>
       )}
-    </BodyContext.Provider>
+    </>
   )
 }
 
@@ -196,7 +212,7 @@ export const bodyDefinition = defineComponent<EmailBodyProps>({
       ],
     },
   ],
-  render: (props) => <BodyView {...props} />,
+  render: emailView(BodyView),
 })
 
 // ─── section ──────────────────────────────────────────────────────────────
@@ -263,17 +279,15 @@ export function columnWidths(widths: Array<number | null>): number[] {
   return raw.map((w) => Math.round((w / total) * 10000) / 100)
 }
 
-/** Ids of the columns of the section being rendered (in order). */
-const ColumnSiblingsContext = createContext<readonly string[]>([])
-
 function SectionView({
   node,
   children,
   attributes,
   breakpoint,
   editing,
-}: CanvasRenderProps<EmailSectionProps>) {
-  const { tokens } = useEmailContext()
+  ctx,
+}: EmailViewProps<EmailSectionProps>) {
+  const { tokens } = ctx
   const p = node.props
   const background = emailBackground(p.background, tokens)
   const border = p.border
@@ -293,20 +307,18 @@ function SectionView({
           : {}),
       }}
     >
-      <ColumnSiblingsContext.Provider value={node.children ?? []}>
-        <table
-          role='presentation'
-          width='100%'
-          cellPadding={0}
-          cellSpacing={0}
-          border={0}
-          style={{ width: '100%', tableLayout: 'fixed' }}
-        >
-          <tbody>
-            <tr>{children}</tr>
-          </tbody>
-        </table>
-      </ColumnSiblingsContext.Provider>
+      <table
+        role='presentation'
+        width='100%'
+        cellPadding={0}
+        cellSpacing={0}
+        border={0}
+        style={{ width: '100%', tableLayout: 'fixed' }}
+      >
+        <tbody>
+          <tr>{children}</tr>
+        </tbody>
+      </table>
     </BlockFrame>
   )
 }
@@ -374,13 +386,32 @@ export const sectionDefinition = defineComponent<EmailSectionProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <SectionView {...props} />,
+  render: emailView(SectionView),
 })
 
 /** Legacy HTML attributes (`bgcolor`) React's types do not list; React
  * still renders them as written. */
 function legacyAttrs(attrs: Record<string, string | undefined>) {
   return attrs as Record<string, string>
+}
+
+/** Columns of the section holding `columnId`, with their widths (the
+ * column alone when the document is not available). */
+function columnSiblings(
+  ctx: EmailRenderContext,
+  columnId: string,
+): Array<{ id: string; width: number | null }> {
+  const doc = ctx.doc?.()
+  const parentId = doc ? parentOf(doc, columnId) : null
+  const ids = (doc && parentId && getNode(doc, parentId)?.children) || [
+    columnId,
+  ]
+  return ids.map((id) => ({
+    id,
+    width:
+      ((doc && getNode(doc, id)?.props.width) as number | null | undefined) ??
+      null,
+  }))
 }
 
 // ─── column ───────────────────────────────────────────────────────────────
@@ -400,19 +431,13 @@ function ColumnView({
   attributes,
   breakpoint,
   editing,
-}: CanvasRenderProps<EmailColumnProps>) {
-  const { tokens, lookup } = useEmailContext()
-  const siblings = useContext(ColumnSiblingsContext)
+  ctx,
+}: EmailViewProps<EmailColumnProps>) {
+  const { tokens } = ctx
   const p = node.props
-  const index = siblings.indexOf(node.id)
-  const widths = columnWidths(
-    siblings.map((id) =>
-      id === node.id
-        ? p.width
-        : ((lookup?.(id)?.props.width as number | null | undefined) ?? null),
-    ),
-  )
-  const width = index === -1 ? 100 : widths[index]
+  const siblings = columnSiblings(ctx, node.id)
+  const widths = columnWidths(siblings.map((column) => column.width))
+  const width = widths[siblings.findIndex((c) => c.id === node.id)] ?? 100
   const stacked = editing && breakpoint === 'mobile' && p.stackOnMobile
   const background = emailColor(p.backgroundColor, tokens)
   const empty = !node.children?.length
@@ -490,7 +515,7 @@ export const columnDefinition = defineComponent<EmailColumnProps>({
       ],
     },
   ],
-  render: (props) => <ColumnView {...props} />,
+  render: emailView(ColumnView),
 })
 
 // ─── footer (required, LGPD) ──────────────────────────────────────────────
@@ -514,9 +539,10 @@ function FooterView({
   attributes,
   breakpoint,
   editing,
-}: CanvasRenderProps<EmailFooterProps>) {
-  const { brand, tokens } = useEmailContext()
-  const { fontStack } = useEmailBody()
+  ctx,
+}: EmailViewProps<EmailFooterProps>) {
+  const { brand, tokens } = ctx
+  const { fontStack } = emailBody(ctx)
   const p = node.props
   const color = emailColor(p.textColor, tokens) ?? EMAIL_PALETTE.fg3
   const line: CSSProperties = {
@@ -644,5 +670,5 @@ export const footerDefinition = defineComponent<EmailFooterProps>({
       ],
     },
   ],
-  render: (props) => <FooterView {...props} />,
+  render: emailView(FooterView),
 })

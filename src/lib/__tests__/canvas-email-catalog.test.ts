@@ -199,7 +199,7 @@ describe('theme', () => {
     expect(ctx.brand).toBe(DEFAULT_EMAIL_BRAND)
     expect(ctx.products).toEqual({})
     expect(ctx.mobileCss).toBe('')
-    expect(ctx.lookup).toBeUndefined()
+    expect(ctx.doc).toBeUndefined()
   })
 })
 
@@ -322,11 +322,11 @@ describe('editing render (the canvas the shell shows)', () => {
     )
   })
 
-  it('does not drop a block without a lookup (widths fall back)', () => {
+  it('renders without a document reader (widths fall back)', () => {
     const doc = emailDocument([[[{ type: 'email.text' }], []]], {
       column: { width: 30 },
     })
-    expect(renderEditing(doc, { context: { lookup: undefined } })).toContain(
+    expect(renderEditing(doc, { context: { doc: undefined } })).toContain(
       'width:',
     )
   })

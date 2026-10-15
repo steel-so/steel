@@ -1,9 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Button, Heading, Hr, Img, Link } from 'react-email'
-import {
-  type CanvasRenderProps,
-  defineComponent,
-} from '@/src/lib/canvas/registry'
+import { defineComponent } from '@/src/lib/canvas/registry'
 import { spacing, spacingToCss } from '@/src/lib/canvas/values'
 import { CAMPAIGN_LINK } from '@/src/lib/crm-email-builder/variables'
 import {
@@ -42,8 +39,8 @@ import {
   spacerSchema,
   textSchema,
 } from '../schemas'
-import { EMAIL_PALETTE, emailColor, useEmailContext } from '../theme'
-import { useEmailBody } from './layout'
+import { EMAIL_PALETTE, type EmailViewProps, emailColor } from '../theme'
+import { emailBody, emailView } from './layout'
 
 const blockPadding = () => spacing(8, 0)
 
@@ -55,10 +52,10 @@ export const HEADING_SIZES = {
   h3: { fontSize: 17, lineHeight: '24px' },
 } as const
 
-function HeadingView(props: CanvasRenderProps<EmailHeadingProps>) {
+function HeadingView(props: EmailViewProps<EmailHeadingProps>) {
   const { node, breakpoint, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   if (!p.text.trim() && !editing) return null
   return (
@@ -132,15 +129,15 @@ export const headingDefinition = defineComponent<EmailHeadingProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <HeadingView {...props} />,
+  render: emailView(HeadingView),
 })
 
 // ─── text ─────────────────────────────────────────────────────────────────
 
-function TextView(props: CanvasRenderProps<EmailTextProps>) {
+function TextView(props: EmailViewProps<EmailTextProps>) {
   const { node, breakpoint, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const html = emailRichTextHtml(
     p.html,
@@ -210,15 +207,15 @@ export const textDefinition = defineComponent<EmailTextProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <TextView {...props} />,
+  render: emailView(TextView),
 })
 
 // ─── button ───────────────────────────────────────────────────────────────
 
-function ButtonView(props: CanvasRenderProps<EmailButtonProps>) {
+function ButtonView(props: EmailViewProps<EmailButtonProps>) {
   const { node, breakpoint, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   if (!p.label.trim() && !editing) return null
   const border = p.border
@@ -317,14 +314,14 @@ export const buttonDefinition = defineComponent<EmailButtonProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <ButtonView {...props} />,
+  render: emailView(ButtonView),
 })
 
 // ─── image ────────────────────────────────────────────────────────────────
 
-function ImageView(props: CanvasRenderProps<EmailImageProps>) {
+function ImageView(props: EmailViewProps<EmailImageProps>) {
   const { node, editing } = props
-  const body = useEmailBody()
+  const body = emailBody(props.ctx)
   const p = node.props
   const src = p.image.src.trim()
   if (!src && !editing) return null
@@ -417,13 +414,13 @@ export const imageDefinition = defineComponent<EmailImageProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <ImageView {...props} />,
+  render: emailView(ImageView),
 })
 
 // ─── divider ──────────────────────────────────────────────────────────────
 
-function DividerView(props: CanvasRenderProps<EmailDividerProps>) {
-  const { tokens } = useEmailContext()
+function DividerView(props: EmailViewProps<EmailDividerProps>) {
+  const { tokens } = props.ctx
   const p = props.node.props
   return (
     <BlockFrame {...props} align='center'>
@@ -488,12 +485,12 @@ export const dividerDefinition = defineComponent<EmailDividerProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <DividerView {...props} />,
+  render: emailView(DividerView),
 })
 
 // ─── spacer ───────────────────────────────────────────────────────────────
 
-function SpacerView(props: CanvasRenderProps<EmailSpacerProps>) {
+function SpacerView(props: EmailViewProps<EmailSpacerProps>) {
   const { node, breakpoint, editing } = props
   const height = pick(node.props.height, breakpoint, editing)
   return (
@@ -540,17 +537,17 @@ export const spacerDefinition = defineComponent<EmailSpacerProps>({
       ],
     },
   ],
-  render: (props) => <SpacerView {...props} />,
+  render: emailView(SpacerView),
 })
 
 // ─── list ─────────────────────────────────────────────────────────────────
 
 const MARKERS = { bullet: '•', check: '✓' } as const
 
-function ListView(props: CanvasRenderProps<EmailListProps>) {
+function ListView(props: EmailViewProps<EmailListProps>) {
   const { node, breakpoint, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const accent = emailColor(p.markerColor, tokens) ?? EMAIL_PALETTE.fg
   const textColor = emailColor(p.color, tokens) ?? body.textColor
@@ -713,5 +710,5 @@ export const listDefinition = defineComponent<EmailListProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <ListView {...props} />,
+  render: emailView(ListView),
 })

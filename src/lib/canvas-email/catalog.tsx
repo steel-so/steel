@@ -27,6 +27,7 @@ import { Body, Head, Html, Preview } from 'react-email'
 import {
   type CanvasCatalog,
   type CanvasComponentDefinition,
+  type CanvasRenderProps,
   defineCatalog,
 } from '@/src/lib/canvas/registry'
 import type { CanvasProps } from '@/src/lib/canvas/types'
@@ -63,7 +64,13 @@ import {
 } from './components/relationship'
 import { couponDefinition, productDefinition } from './components/sales'
 import type { EmailBodyProps } from './schemas'
-import { emailColor, emailFont, googleFontHref, useEmailContext } from './theme'
+import {
+  createEmailRenderContext,
+  type EmailRenderContext,
+  emailColor,
+  emailFont,
+  googleFontHref,
+} from './theme'
 
 /**
  * The e-mail catalog of Steel Canvas (`email`, version 2): body → section →
@@ -139,12 +146,13 @@ function EmailDocument({
   rootProps,
   editing,
   children,
+  ctx,
 }: {
   rootProps: CanvasProps
   editing: boolean
   children: ReactNode
+  ctx: EmailRenderContext
 }) {
-  const ctx = useEmailContext()
   const props = rootProps as EmailBodyProps
   const defaults = bodyDefaults(props, ctx.tokens)
   const font = emailFont(props.fontFamily)
@@ -185,32 +193,51 @@ function EmailDocument({
   )
 }
 
+export type EmailCatalogOptions = {
+  /** `false` keeps the HTML block registered (documents that have one still
+   * validate and render) but hides it from the palette — for members who
+   * are not workspace admins. */
+  allowHtml?: boolean
+  /** Render context (brand, products, document reader…), read on every
+   * render: the editor passes a getter over its state, the server a fixed
+   * value per e-mail. */
+  context?: EmailRenderContext | (() => EmailRenderContext)
+}
+
 /**
- * Builds the catalog. `allowHtml: false` keeps the HTML block registered
- * (documents that have one still validate and render) but hides it from the
- * palette — for members who are not workspace admins.
+ * Builds the catalog. Components get the render context as a prop (`ctx`)
+ * injected here — not React context, which server route handlers do not
+ * have.
  */
 export function createEmailCatalog(
-  options: { allowHtml?: boolean } = {},
+  options: EmailCatalogOptions = {},
 ): CanvasCatalog {
   const allowHtml = options.allowHtml ?? true
-  const column: CanvasComponentDefinition = {
-    ...columnDefinition,
-    accepts: EMAIL_BLOCK_TYPES,
-  }
+  const context = options.context ?? createEmailRenderContext()
+  const read = typeof context === 'function' ? context : () => context
+  const withContext = (
+    definition: CanvasComponentDefinition,
+  ): CanvasComponentDefinition => ({
+    ...definition,
+    render: (props) =>
+      definition.render({ ...props, ctx: read() } as CanvasRenderProps),
+  })
   const blocks = BLOCKS.map(
     (block): CanvasComponentDefinition =>
       block.type === HTML_BLOCK && !allowHtml
         ? { ...block, category: undefined, parents: [COLUMN] }
         : { ...block, parents: [COLUMN] },
   )
-  const components: Record<string, CanvasComponentDefinition> = {
-    [BODY]: bodyDefinition,
-    [sectionDefinition.type]: sectionDefinition,
-    [COLUMN]: column,
-    [footerDefinition.type]: footerDefinition,
+  const components: Record<string, CanvasComponentDefinition> = {}
+  for (const definition of [
+    bodyDefinition,
+    sectionDefinition,
+    { ...columnDefinition, accepts: EMAIL_BLOCK_TYPES },
+    footerDefinition,
+    ...blocks,
+  ]) {
+    components[definition.type] = withContext(definition)
   }
-  for (const block of blocks) components[block.type] = block
   return defineCatalog({
     id: EMAIL_CATALOG_ID,
     version: EMAIL_CATALOG_VERSION,
@@ -220,7 +247,7 @@ export function createEmailCatalog(
     breakpoints: ['base', 'mobile'],
     icons: ICONS,
     renderDocument: ({ children, rootProps, editing }) => (
-      <EmailDocument rootProps={rootProps} editing={editing}>
+      <EmailDocument rootProps={rootProps} editing={editing} ctx={read()}>
         {children}
       </EmailDocument>
     ),

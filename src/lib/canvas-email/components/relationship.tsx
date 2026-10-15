@@ -1,9 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Button, Heading, Img, Link, Text } from 'react-email'
-import {
-  type CanvasRenderProps,
-  defineComponent,
-} from '@/src/lib/canvas/registry'
+import { defineComponent } from '@/src/lib/canvas/registry'
 import { spacing } from '@/src/lib/canvas/values'
 import { readableTextOn } from '@/src/lib/crm-email-builder/brand'
 import { CAMPAIGN_LINK } from '@/src/lib/crm-email-builder/variables'
@@ -19,8 +16,8 @@ import {
   quoteSchema,
   videoSchema,
 } from '../schemas'
-import { EMAIL_PALETTE, emailColor, useEmailContext } from '../theme'
-import { useEmailBody } from './layout'
+import { EMAIL_PALETTE, type EmailViewProps, emailColor } from '../theme'
+import { emailBody, emailView } from './layout'
 
 /** Readable text on `color` when it is a #RRGGBB; white otherwise. */
 function onColor(color: string | undefined): string {
@@ -31,10 +28,10 @@ function onColor(color: string | undefined): string {
 
 // ─── quote ────────────────────────────────────────────────────────────────
 
-function QuoteView(props: CanvasRenderProps<EmailQuoteProps>) {
+function QuoteView(props: EmailViewProps<EmailQuoteProps>) {
   const { node, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   if (!p.text.trim() && !editing) return null
   const accent = emailColor(p.accentColor, tokens) ?? EMAIL_PALETTE.fg
@@ -142,7 +139,7 @@ export const quoteDefinition = defineComponent<EmailQuoteProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <QuoteView {...props} />,
+  render: emailView(QuoteView),
 })
 
 // ─── NPS ──────────────────────────────────────────────────────────────────
@@ -156,10 +153,10 @@ export function npsHref(url: string | undefined, score: number): string {
   return `${base}${base.includes('?') ? '&' : '?'}nota=${score}${tail}`
 }
 
-function NpsView(props: CanvasRenderProps<EmailNpsProps>) {
+function NpsView(props: EmailViewProps<EmailNpsProps>) {
   const { node } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const accent = emailColor(p.accentColor, tokens) ?? EMAIL_PALETTE.fg
   const url = emailHref(p.link)
@@ -303,15 +300,15 @@ export const npsDefinition = defineComponent<EmailNpsProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <NpsView {...props} />,
+  render: emailView(NpsView),
 })
 
 // ─── event ────────────────────────────────────────────────────────────────
 
-function EventView(props: CanvasRenderProps<EmailEventProps>) {
+function EventView(props: EmailViewProps<EmailEventProps>) {
   const { node } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const accent = emailColor(p.accentColor, tokens) ?? EMAIL_PALETTE.fg
   const rows = (
@@ -486,7 +483,7 @@ export const eventDefinition = defineComponent<EmailEventProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <EventView {...props} />,
+  render: emailView(EventView),
 })
 
 // ─── video ────────────────────────────────────────────────────────────────
@@ -495,10 +492,10 @@ export const eventDefinition = defineComponent<EmailEventProps>({
  * E-mail clients do not play video: the block is the thumbnail linked to
  * the video page plus a play label under it.
  */
-function VideoView(props: CanvasRenderProps<EmailVideoProps>) {
+function VideoView(props: EmailViewProps<EmailVideoProps>) {
   const { node, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const href = emailHref(p.link)
   const src = p.thumbnail.src.trim()
@@ -601,5 +598,5 @@ export const videoDefinition = defineComponent<EmailVideoProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <VideoView {...props} />,
+  render: emailView(VideoView),
 })

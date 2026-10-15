@@ -12,7 +12,7 @@ import {
   emailHtmlToText,
   type RenderedEmail,
 } from '@/src/lib/crm-email-builder/render'
-import { emailCatalog, MSO_FONT_MARKER } from './catalog'
+import { createEmailCatalog, MSO_FONT_MARKER } from './catalog'
 import {
   BODY,
   FOOTER,
@@ -21,11 +21,7 @@ import {
 } from './components/layout'
 import { collectMobileCss } from './mobile'
 import type { EmailBodyProps } from './schemas'
-import {
-  createEmailRenderContext,
-  type EmailProductData,
-  EmailRenderProvider,
-} from './theme'
+import { createEmailRenderContext, type EmailProductData } from './theme'
 
 /**
  * Final render of an e-mail canvas document: the very same catalog
@@ -92,7 +88,6 @@ export type RenderEmailDocumentOptions = {
   subject: string
   /** CRM products referenced by `email.product` blocks, by id. */
   products?: Record<string, EmailProductData>
-  catalog?: CanvasCatalog
 }
 
 /** Renders a validated v2 document to e-mail HTML + plain text. */
@@ -100,7 +95,6 @@ export async function renderEmailDocument(
   doc: CanvasDocument,
   options: RenderEmailDocumentOptions,
 ): Promise<RenderedEmail> {
-  const catalog = options.catalog ?? emailCatalog
   const root = getNode(doc, doc.rootId) as CanvasNode
   const rootProps = root.props as EmailBodyProps
   const ctx = createEmailRenderContext({
@@ -108,17 +102,14 @@ export async function renderEmailDocument(
     subject: options.subject,
     products: options.products,
     mobileCss: collectMobileCss(doc, rootProps.width),
-    lookup: (id) => getNode(doc, id),
+    doc: () => doc,
   })
-  const element = (
-    <EmailRenderProvider value={ctx}>
-      {catalog.renderDocument({
-        children: <NodeTree doc={doc} id={doc.rootId} catalog={catalog} />,
-        rootProps,
-        editing: false,
-      })}
-    </EmailRenderProvider>
-  )
+  const catalog = createEmailCatalog({ context: ctx })
+  const element = catalog.renderDocument({
+    children: <NodeTree doc={doc} id={doc.rootId} catalog={catalog} />,
+    rootProps,
+    editing: false,
+  })
   const html = applyOutlookMarkers(await render(element), rootProps.width)
   return { subject: options.subject, html, text: emailHtmlToText(html) }
 }

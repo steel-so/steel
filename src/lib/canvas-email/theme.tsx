@@ -1,5 +1,5 @@
-import { createContext, useContext } from 'react'
-import type { CanvasNode, CanvasNodeId } from '@/src/lib/canvas/types'
+import type { CanvasRenderProps } from '@/src/lib/canvas/registry'
+import type { CanvasDocument, CanvasProps } from '@/src/lib/canvas/types'
 import {
   type CanvasColorToken,
   isTokenColor,
@@ -166,10 +166,20 @@ export type EmailRenderContext = {
   subject: string
   /** Mobile media-query rules collected from the document (final output). */
   mobileCss: string
-  /** Reads another node of the document (a column needs its siblings'
-   * widths). The editor passes a reader over the store's document. */
-  lookup?: (id: CanvasNodeId) => CanvasNode | undefined
+  /** The document being rendered: blocks read the body defaults and a
+   * column its siblings' widths. The editor passes a reader over the
+   * store (`() => store.getState().doc`). */
+  doc?: () => CanvasDocument
 }
+
+/**
+ * Props of an e-mail component view: the engine's render props plus the
+ * render context, injected by the catalog (`createEmailCatalog`). A plain
+ * value, not React context — the server renders e-mails inside route
+ * handlers, where React context is not available.
+ */
+export type EmailViewProps<P extends CanvasProps = CanvasProps> =
+  CanvasRenderProps<P> & { ctx: EmailRenderContext }
 
 export const DEFAULT_EMAIL_BRAND: EmailBrand = {
   companyName: 'Sua empresa',
@@ -189,19 +199,8 @@ export function createEmailRenderContext(
     products: partial.products ?? {},
     subject: partial.subject ?? '',
     mobileCss: partial.mobileCss ?? '',
-    lookup: partial.lookup,
+    doc: partial.doc,
   }
-}
-
-const EmailContext = createContext<EmailRenderContext>(
-  createEmailRenderContext(),
-)
-
-/** Wrap the editor canvas (next slice) and the server render with this. */
-export const EmailRenderProvider = EmailContext.Provider
-
-export function useEmailContext(): EmailRenderContext {
-  return useContext(EmailContext)
 }
 
 /**

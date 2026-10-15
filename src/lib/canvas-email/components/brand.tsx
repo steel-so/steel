@@ -1,9 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Img, Link, Text } from 'react-email'
-import {
-  type CanvasRenderProps,
-  defineComponent,
-} from '@/src/lib/canvas/registry'
+import { defineComponent } from '@/src/lib/canvas/registry'
 import { spacing } from '@/src/lib/canvas/values'
 import {
   alignField,
@@ -33,15 +30,15 @@ import {
   signatureSchema,
   socialSchema,
 } from '../schemas'
-import { EMAIL_PALETTE, emailColor, useEmailContext } from '../theme'
-import { useEmailBody } from './layout'
+import { EMAIL_PALETTE, type EmailViewProps, emailColor } from '../theme'
+import { emailBody, emailView } from './layout'
 
 // ─── logo ─────────────────────────────────────────────────────────────────
 
-function LogoView(props: CanvasRenderProps<EmailLogoProps>) {
+function LogoView(props: EmailViewProps<EmailLogoProps>) {
   const { node } = props
-  const { brand } = useEmailContext()
-  const body = useEmailBody()
+  const { brand } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const src = p.image.src.trim() || brand.logoUrl
   const alt = p.image.alt.trim() || brand.companyName
@@ -124,7 +121,7 @@ export const logoDefinition = defineComponent<EmailLogoProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <LogoView {...props} />,
+  render: emailView(LogoView),
 })
 
 // ─── social ───────────────────────────────────────────────────────────────
@@ -145,10 +142,10 @@ export const SOCIAL_LABELS: Record<(typeof SOCIAL_NETWORKS)[number], string> = {
  * depend on an external host and are blocked by default in many clients,
  * while text pills always show and stay readable in dark mode.
  */
-function SocialView(props: CanvasRenderProps<EmailSocialProps>) {
+function SocialView(props: EmailViewProps<EmailSocialProps>) {
   const { node } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const color = emailColor(p.color, tokens) ?? EMAIL_PALETTE.fg
   const pill: CSSProperties = {
@@ -261,15 +258,15 @@ export const socialDefinition = defineComponent<EmailSocialProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <SocialView {...props} />,
+  render: emailView(SocialView),
 })
 
 // ─── menu ─────────────────────────────────────────────────────────────────
 
-function MenuView(props: CanvasRenderProps<EmailMenuProps>) {
+function MenuView(props: EmailViewProps<EmailMenuProps>) {
   const { node, breakpoint, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const color = emailColor(p.color, tokens) ?? EMAIL_PALETTE.fg2
   return (
@@ -370,15 +367,15 @@ export const menuDefinition = defineComponent<EmailMenuProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <MenuView {...props} />,
+  render: emailView(MenuView),
 })
 
 // ─── signature ────────────────────────────────────────────────────────────
 
-function SignatureView(props: CanvasRenderProps<EmailSignatureProps>) {
+function SignatureView(props: EmailViewProps<EmailSignatureProps>) {
   const { node, breakpoint, editing } = props
-  const { tokens } = useEmailContext()
-  const body = useEmailBody()
+  const { tokens } = props.ctx
+  const body = emailBody(props.ctx)
   const p = node.props
   const color = emailColor(p.color, tokens) ?? body.textColor
   const line: CSSProperties = {
@@ -497,5 +494,5 @@ export const signatureDefinition = defineComponent<EmailSignatureProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <SignatureView {...props} />,
+  render: emailView(SignatureView),
 })

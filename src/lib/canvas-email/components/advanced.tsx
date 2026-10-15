@@ -1,19 +1,17 @@
-import {
-  type CanvasRenderProps,
-  defineComponent,
-} from '@/src/lib/canvas/registry'
+import { defineComponent } from '@/src/lib/canvas/registry'
 import { spacing } from '@/src/lib/canvas/values'
 import { BLOCK_LAYOUT_SECTION } from '../inspector'
 import { BlockFrame, EditorHint, SHOWN } from '../primitives'
 import { sanitizeEmailHtml } from '../sanitize-html'
 import { type EmailHtmlProps, htmlSchema } from '../schemas'
-import { useEmailBody } from './layout'
+import type { EmailViewProps } from '../theme'
+import { emailBody, emailView } from './layout'
 
 export const HTML_BLOCK = 'email.html'
 
-function HtmlView(props: CanvasRenderProps<EmailHtmlProps>) {
+function HtmlView(props: EmailViewProps<EmailHtmlProps>) {
   const { node, editing } = props
-  const body = useEmailBody()
+  const body = emailBody(props.ctx)
   const html = sanitizeEmailHtml(node.props.html).trim()
   if (!html && !editing) return null
   return (
@@ -61,5 +59,5 @@ export const htmlDefinition = defineComponent<EmailHtmlProps>({
     },
     BLOCK_LAYOUT_SECTION,
   ],
-  render: (props) => <HtmlView {...props} />,
+  render: emailView(HtmlView),
 })
