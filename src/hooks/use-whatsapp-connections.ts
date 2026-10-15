@@ -120,3 +120,46 @@ export function useWhatsAppConnectionQrCode(
       query.state.data?.status === 'connected' ? false : 4000,
   })
 }
+
+export interface MetaEmbeddedSignupInput {
+  code: string
+  phoneNumberId: string
+  wabaId: string
+  label?: string
+}
+
+export function useConnectWhatsAppViaMeta(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: MetaEmbeddedSignupInput) =>
+      apiFetch<WhatsAppConnectionDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/connections/embedded-signup`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        },
+        'Erro ao conectar o número pela Meta',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CONNECTIONS_KEY(workspaceId) })
+    },
+  })
+}
+
+export function useRefreshWhatsAppConnectionStatus(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (connectionId: string) =>
+      apiFetch<WhatsAppConnectionDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/connections/${connectionId}/status`,
+        { method: 'POST' },
+        'Erro ao verificar o status da conexão',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CONNECTIONS_KEY(workspaceId) })
+    },
+  })
+}

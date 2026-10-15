@@ -42,13 +42,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  NEXT_PUBLIC_META_APP_ID,
+  NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID,
+} from '@/lib/env/env'
 import { notify } from '@/lib/notify'
 import {
+  useConnectWhatsAppViaMeta,
   useCreateWhatsAppConnection,
   useDeleteWhatsAppConnection,
+  useRefreshWhatsAppConnectionStatus,
   useWhatsAppConnectionQrCode,
   useWhatsAppConnections,
 } from '@/src/hooks/use-whatsapp-connections'
+import { launchEmbeddedSignup } from '@/src/lib/whatsapp/embedded-signup-client'
 import type {
   WhatsAppConnectionDTO,
   WhatsAppProviderDTO,
@@ -265,6 +272,64 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
   )
 }
 
+/** "Conectar com a Meta": Embedded Signup. Hidden when not configured. */
+function MetaSignupButton({ workspaceId }: { workspaceId: string }) {
+  const [pending, setPending] = useState(false)
+  const connect = useConnectWhatsAppViaMeta(workspaceId)
+
+  if (!NEXT_PUBLIC_META_APP_ID || !NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID) {
+    return null
+  }
+  const appId = NEXT_PUBLIC_META_APP_ID
+  const configId = NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID
+
+  async function handleClick() {
+    setPending(true)
+    const result = await launchEmbeddedSignup({ appId, configId })
+    if (!result.ok) {
+      setPending(false)
+      if (result.reason === 'error') notify.error(result.message)
+      else notify.info(result.message)
+      return
+    }
+    connect.mutate(
+      {
+        code: result.code,
+        phoneNumberId: result.phoneNumberId,
+        wabaId: result.wabaId,
+      },
+      {
+        onSuccess: (connection) => {
+          setPending(false)
+          if (connection.status === 'CONNECTED') {
+            notify.success('Número conectado e pronto para uso')
+          } else {
+            notify.warning(
+              connection.statusError ??
+                'Número conectado, mas a Meta ainda não o liberou',
+            )
+          }
+        },
+        onError: (error) => {
+          setPending(false)
+          notify.error(error, 'Não foi possível conectar pela Meta')
+        },
+      },
+    )
+  }
+
+  return (
+    <Button
+      size='sm'
+      variant='outline'
+      onClick={handleClick}
+      disabled={pending}
+    >
+      {pending ? 'Conectando...' : 'Conectar com a Meta'}
+    </Button>
+  )
+}
+
 function ZapiQrCodeDialog({
   workspaceId,
   connectionId,
@@ -322,6 +387,7 @@ export function WhatsappSettingsConnections({
     useState<WhatsAppConnectionDTO | null>(null)
   const connections = useWhatsAppConnections(workspaceId)
   const deleteConnection = useDeleteWhatsAppConnection(workspaceId)
+  const refreshStatus = useRefreshWhatsAppConnectionStatus(workspaceId)
 
   return (
     <div className='space-y-4'>
@@ -332,7 +398,10 @@ export function WhatsappSettingsConnections({
             Números conectados via Z-API ou Meta Cloud API
           </p>
         </div>
-        <CreateConnectionDialog workspaceId={workspaceId} />
+        <div className='flex items-center gap-2'>
+          <MetaSignupButton workspaceId={workspaceId} />
+          <CreateConnectionDialog workspaceId={workspaceId} />
+        </div>
       </div>
 
       <div className='grid gap-3 md:grid-cols-2'>
@@ -358,6 +427,21 @@ export function WhatsappSettingsConnections({
                   workspaceId={workspaceId}
                   connectionId={connection.id}
                 />
+              )}
+              {connection.provider === 'META' && (
+                <Button
+                  size='xs'
+                  variant='outline'
+                  disabled={refreshStatus.isPending}
+                  onClick={() =>
+                    refreshStatus.mutate(connection.id, {
+                      onError: (error) =>
+                        notify.error(error, 'Não foi possível verificar'),
+                    })
+                  }
+                >
+                  Atualizar status
+                </Button>
               )}
               <Button
                 size='xs'

@@ -1,6 +1,14 @@
+import type { WhatsAppConnection } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { logger } from '@/lib/axiom/logger'
+import { NEXT_PUBLIC_META_APP_ID } from '@/lib/env/env'
+import {
+  WHATSAPP_META_APP_ID,
+  WHATSAPP_META_APP_SECRET,
+} from '@/lib/env/server'
 import {
   badRequest,
+  featureNotEnabled,
   whatsappConnectionNotFound,
   whatsappProviderError,
 } from '@/src/errors'
@@ -9,6 +17,14 @@ import {
   encryptConnectionSecret,
 } from '@/src/lib/crypto'
 import { err, ok, type Result } from '@/src/lib/result'
+import { createMetaClient } from '@/src/lib/whatsapp/meta-client'
+import {
+  exchangeSignupCode,
+  fetchPhoneInfo,
+  generateRegistrationPin,
+  registerPhoneNumber,
+  subscribeAppToWaba,
+} from '@/src/lib/whatsapp/meta-signup'
 import { createZapiClient } from '@/src/lib/whatsapp/zapi-client'
 import {
   toWhatsAppConnectionCreatedDTO,
@@ -17,6 +33,7 @@ import {
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import type {
   CreateWhatsAppConnectionDTO,
+  MetaEmbeddedSignupDTO,
   UpdateWhatsAppConnectionDTO,
 } from '@/src/schemas/whatsapp-connection.schema'
 import type {
@@ -24,6 +41,50 @@ import type {
   WhatsAppConnectionDTO,
 } from '@/types/whatsapp-connection'
 import { assertModuleMember, assertModulePrivileged } from './authz'
+import { WhatsAppConnectionHealthService } from './whatsapp-connection-health.service'
+
+/**
+ * Checks a Meta number against the Graph API and persists the verdict:
+ * CONNECTED, ERROR (blocked / bad token) or DISCONNECTED (not registered
+ * yet), with the pt-BR reason in `statusError`.
+ */
+async function applyMetaStatus(
+  connection: WhatsAppConnection,
+  source: 'test',
+  actorId: string,
+): Promise<Result<WhatsAppConnection>> {
+  if (
+    !connection.metaPhoneNumberId ||
+    !connection.metaWabaId ||
+    !connection.encryptedMetaAccessToken
+  ) {
+    return err(badRequest('Conexão Meta sem credenciais configuradas'))
+  }
+  const client = createMetaClient({
+    phoneNumberId: connection.metaPhoneNumberId,
+    wabaId: connection.metaWabaId,
+    accessToken: await decryptConnectionSecret(
+      connection.encryptedMetaAccessToken,
+    ),
+  })
+  const check = await client.getConnectionStatus()
+  if (check.connected) {
+    const updated = await WhatsAppConnectionRepository.update(connection.id, {
+      status: 'CONNECTED',
+      statusError: null,
+    })
+    return updated
+  }
+  const status = check.failed ? 'ERROR' : 'DISCONNECTED'
+  const down = await WhatsAppConnectionHealthService.markDown(connection, {
+    status,
+    error: check.error ?? null,
+    source,
+    actorId,
+  })
+  if (!down.ok) return down
+  return ok({ ...connection, status, statusError: check.error ?? null })
+}
 
 export const WhatsAppConnectionService = {
   async list(
@@ -112,7 +173,161 @@ export const WhatsAppConnectionService = {
       meta: { provider: dto.provider },
     })
 
-    return ok(toWhatsAppConnectionCreatedDTO(result.value))
+    // A Meta number is verified right away; Z-API stays CONNECTING until its
+    // webhook / QR flow says otherwise.
+    let created = result.value
+    if (dto.provider === 'META') {
+      const checked = await applyMetaStatus(created, 'test', actorId)
+      if (checked.ok) created = checked.value
+    }
+
+    return ok(toWhatsAppConnectionCreatedDTO(created))
+  },
+
+  /** Re-checks a Meta connection on the Graph API (button "Atualizar status"). */
+  async refreshStatus(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+  ): Promise<Result<WhatsAppConnectionDTO>> {
+    const privileged = await assertModulePrivileged(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+    )
+    if (!privileged.ok) return privileged
+
+    const existing = await WhatsAppConnectionRepository.findById(
+      id,
+      workspaceId,
+    )
+    if (!existing.ok) return existing
+    if (!existing.value) return err(whatsappConnectionNotFound())
+    if (existing.value.provider !== 'META') {
+      return err(
+        badRequest('A verificação de status vale apenas para conexões Meta'),
+      )
+    }
+
+    const checked = await applyMetaStatus(existing.value, 'test', actorId)
+    if (!checked.ok) return checked
+    auditMutation({
+      entity: 'whatsapp_connection',
+      action: 'update',
+      actorId,
+      targetId: id,
+      meta: { refreshedStatus: checked.value.status },
+    })
+    return ok(toWhatsAppConnectionDTO(checked.value))
+  },
+
+  /**
+   * Meta Embedded Signup: turns the popup result (code + ids) into a ready
+   * connection. Exchanges the code, subscribes the app to the WABA, registers
+   * the number with a random PIN (stored encrypted for support), reads the
+   * display data and creates the connection. Tokens and PINs are never logged.
+   */
+  async connectViaEmbeddedSignup(
+    actorId: string,
+    workspaceId: string,
+    dto: MetaEmbeddedSignupDTO,
+  ): Promise<Result<WhatsAppConnectionCreatedDTO>> {
+    const fail = (reason: string) =>
+      auditMutation({
+        entity: 'whatsapp_connection',
+        action: 'create',
+        actorId,
+        outcome: 'failure',
+        reason,
+        meta: { via: 'embedded_signup' },
+      })
+
+    const privileged = await assertModulePrivileged(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+    )
+    if (!privileged.ok) {
+      fail(privileged.error.code)
+      return privileged
+    }
+
+    const appId = WHATSAPP_META_APP_ID ?? NEXT_PUBLIC_META_APP_ID
+    if (!appId || !WHATSAPP_META_APP_SECRET) {
+      return err(
+        featureNotEnabled(
+          'A conexão pela Meta não está configurada neste ambiente',
+        ),
+      )
+    }
+
+    const token = await exchangeSignupCode(
+      { appId, appSecret: WHATSAPP_META_APP_SECRET },
+      dto.code,
+    )
+    if (!token.ok) {
+      fail(token.error.code)
+      return token
+    }
+
+    const subscribed = await subscribeAppToWaba(token.value, dto.wabaId)
+    if (!subscribed.ok) {
+      fail(subscribed.error.code)
+      return subscribed
+    }
+
+    const pin = generateRegistrationPin()
+    const registered = await registerPhoneNumber(
+      token.value,
+      dto.phoneNumberId,
+      pin,
+    )
+    if (!registered.ok) {
+      fail(registered.error.code)
+      return registered
+    }
+
+    const info = await fetchPhoneInfo(token.value, dto.phoneNumberId)
+    if (!info.ok) {
+      fail(info.error.code)
+      return info
+    }
+
+    const created = await WhatsAppConnectionRepository.create({
+      workspaceId,
+      provider: 'META',
+      label:
+        dto.label ?? info.value.verifiedName ?? info.value.displayPhoneNumber,
+      phoneNumber: info.value.displayPhoneNumber,
+      metaPhoneNumberId: dto.phoneNumberId,
+      metaWabaId: dto.wabaId,
+      encryptedMetaAccessToken: await encryptConnectionSecret(token.value),
+      encryptedMetaPin: await encryptConnectionSecret(pin),
+      createdById: actorId,
+    })
+    if (!created.ok) {
+      fail(created.error.code)
+      return created
+    }
+
+    logger.info('whatsapp.connection.embedded_signup', {
+      workspaceId,
+      connectionId: created.value.id,
+    })
+    auditMutation({
+      entity: 'whatsapp_connection',
+      action: 'create',
+      actorId,
+      targetId: created.value.id,
+      meta: { provider: 'META', via: 'embedded_signup' },
+    })
+
+    const checked = await applyMetaStatus(created.value, 'test', actorId)
+    return ok(
+      toWhatsAppConnectionCreatedDTO(
+        checked.ok ? checked.value : created.value,
+      ),
+    )
   },
 
   async update(

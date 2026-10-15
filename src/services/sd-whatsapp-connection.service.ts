@@ -268,10 +268,13 @@ export const SdWhatsappConnectionService = {
             connection.encryptedMetaAccessToken,
           ),
         })
-        connected = (await client.getConnectionStatus()).connected
+        const check = await client.getConnectionStatus()
+        connected = check.connected
+        failed = check.failed ?? false
+        error = check.error ?? null
       }
       if (!connected)
-        error = 'O provedor informou que o número não está conectado'
+        error ??= 'O provedor informou que o número não está conectado'
     } catch (cause) {
       failed = true
       error =

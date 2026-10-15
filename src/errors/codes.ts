@@ -130,6 +130,20 @@ export const ERROR_CODES = {
     status: 404,
   },
   WHATSAPP_PROVIDER_ERROR: { code: 'WHATSAPP_PROVIDER_ERROR', status: 502 },
+  // Meta Embedded Signup: user-fixable problems on the Meta side (422 — the
+  // request is fine, the customer's Meta account needs attention).
+  WHATSAPP_SIGNUP_PAYMENT_REQUIRED: {
+    code: 'WHATSAPP_SIGNUP_PAYMENT_REQUIRED',
+    status: 422,
+  },
+  WHATSAPP_SIGNUP_NAME_NOT_APPROVED: {
+    code: 'WHATSAPP_SIGNUP_NAME_NOT_APPROVED',
+    status: 422,
+  },
+  WHATSAPP_SIGNUP_PERMISSION_DENIED: {
+    code: 'WHATSAPP_SIGNUP_PERMISSION_DENIED',
+    status: 422,
+  },
   // Monthly Communication limits: 402 like AI_QUOTA_EXCEEDED — a spent
   // budget, not a rate limit; retrying won't help until an admin raises the
   // limit or the month turns.

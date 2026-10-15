@@ -257,6 +257,12 @@ export const POST = withAxiom(async (request: NextRequest) => {
   }
 
   const status = value.statuses?.[0]
+  // A signed event for this number proves it is reachable: bring a
+  // CONNECTING / DISCONNECTED / ERROR connection back to CONNECTED (no-op when
+  // already up). A failed status below may take it down again.
+  if (status?.status !== 'failed') {
+    await WhatsAppConnectionHealthService.markUp(connection)
+  }
   // A failure that says the number itself stopped working (token expired,
   // account restricted…) takes the connection down — once per transition.
   if (status?.status === 'failed') {

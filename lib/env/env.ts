@@ -14,6 +14,9 @@ const publicEnv = {
   NEXT_PUBLIC_POSTHOG_HOST:
     process.env.NEXT_PUBLIC_POSTHOG_HOST || POSTHOG_DEFAULT_HOST,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_META_APP_ID: process.env.NEXT_PUBLIC_META_APP_ID,
+  NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID:
+    process.env.NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID,
   NEXT_PUBLIC_SENTRY_RELEASE: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
   NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
 }
@@ -48,6 +51,12 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: z.url().startsWith('https://'),
   // Mesmo contrato para o Sentry: sem DSN, sem SDK, sem rede.
   NEXT_PUBLIC_SENTRY_DSN: blankOptional(z.url().startsWith('https://')),
+  // WhatsApp Embedded Signup (build time): without both, the "Conectar com a
+  // Meta" button stays hidden and the CSP gets no Facebook origin.
+  NEXT_PUBLIC_META_APP_ID: blankOptional(z.string().regex(/^\d+$/)),
+  NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID: blankOptional(
+    z.string().regex(/^\d+$/),
+  ),
   NEXT_PUBLIC_SENTRY_RELEASE: blankOptional(z.string().min(1).max(200)),
   NEXT_PUBLIC_SENTRY_ENVIRONMENT: blankOptional(z.string().min(1).max(64)),
 })
@@ -67,6 +76,8 @@ export const {
   NEXT_PUBLIC_POSTHOG_KEY,
   NEXT_PUBLIC_POSTHOG_HOST,
   NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_META_APP_ID,
+  NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID,
   NEXT_PUBLIC_SENTRY_RELEASE,
   NEXT_PUBLIC_SENTRY_ENVIRONMENT,
 } = validatedPublicEnv
