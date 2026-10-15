@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { COOKIE_NAME, parseCookieConsent } from '@/lib/cookie-consent/types'
 import { auth } from '@/src/lib/auth'
 import { SITE_REQUEST_HEADER } from '@/src/lib/sites/host'
+import { TV_REQUEST_HEADER } from '@/src/lib/tv-request'
 import { CookieConsentProvider } from './provider'
 
 // Server component: reads the consent cookie and the current session
@@ -12,9 +13,13 @@ import { CookieConsentProvider } from './provider'
 
 export async function CookieConsentInit({ children }: { children: ReactNode }) {
   const requestHeaders = await headers()
-  // Published customer sites have their own consent banner: Steel's banner,
-  // trackers and the session lookup stay off there (set by proxy.ts).
-  if (requestHeaders.get(SITE_REQUEST_HEADER)) {
+  // Published customer sites have their own consent banner, and the public
+  // TV pages run on a screen nobody clicks: Steel's banner, trackers and the
+  // session lookup stay off there (both headers are set by proxy.ts).
+  if (
+    requestHeaders.get(SITE_REQUEST_HEADER) ||
+    requestHeaders.get(TV_REQUEST_HEADER)
+  ) {
     return (
       <CookieConsentProvider initial='rejected' isAuthenticated={false}>
         {children}

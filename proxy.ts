@@ -33,6 +33,7 @@ import {
   siteRewritePath,
   siteSlugFromPath,
 } from '@/src/lib/sites/host'
+import { isPublicTvPath, TV_REQUEST_HEADER } from '@/src/lib/tv-request'
 
 const PUBLIC_ROUTES = [
   '/', '/sign-in', '/sign-up', '/forget-password',
@@ -307,6 +308,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // Only the proxy says what is a site request.
   requestHeaders.delete(SITE_REQUEST_HEADER)
   requestHeaders.delete(SITE_VIA_HOST_HEADER)
+  // Only the proxy says what is a public TV page (no cookie banner there).
+  requestHeaders.delete(TV_REQUEST_HEADER)
+  if (isPublicTvPath(pathname)) requestHeaders.set(TV_REQUEST_HEADER, '1')
 
   // <slug>.<SITES_ROOT_DOMAIN>/<path> is served by /s/<slug>/<path>.
   const hostSlug = parseSiteHost(request.headers.get('host'), SITES_ROOT_DOMAIN)
