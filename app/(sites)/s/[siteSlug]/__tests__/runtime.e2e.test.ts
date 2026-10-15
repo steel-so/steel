@@ -51,9 +51,9 @@ describe('public site runtime', () => {
     expect(html).toContain('<title>Contato | Clínica E2E</title>')
     expect(html).toContain(`/s/${slug}/contato`)
 
-    // Streamed inside the root layout's Suspense: the 404 boundary renders
-    // (with noindex) after the shell, so assert on the content.
+    // Sites have their own root layout without Suspense: a real 404.
     const missing = await fetch(`${BASE_URL}/s/${slug}/nao-existe`)
+    expect(missing.status).toBe(404)
     expect(await missing.text()).toContain('Página não encontrada')
   })
 
