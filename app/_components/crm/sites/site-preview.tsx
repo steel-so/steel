@@ -73,6 +73,7 @@ export function pageForHref(
  * breakpoints apply exactly as on the published page. */
 function PreviewFrame({
   docs,
+  symbols,
   css,
   links,
   currentPageId,
@@ -84,6 +85,8 @@ function PreviewFrame({
     page: CanvasDocument
     footer?: CanvasDocument
   }
+  /** Reusable component masters shown by `site.symbol` instances. */
+  symbols: Record<string, CanvasDocument>
   css: string
   links: SitePageLink[]
   currentPageId: string
@@ -149,8 +152,8 @@ function PreviewFrame({
   }, [mount, currentPageId])
 
   const catalog = useMemo(
-    () => createSiteCatalog({ pages: links, currentPageId }),
-    [links, currentPageId],
+    () => createSiteCatalog({ pages: links, currentPageId, symbols }),
+    [links, currentPageId, symbols],
   )
 
   return (
@@ -226,6 +229,13 @@ export function SitePreview({
   )
   const header = globals.data?.find((global) => global.kind === 'HEADER')
   const footer = globals.data?.find((global) => global.kind === 'FOOTER')
+  const symbols = useMemo(() => {
+    const out: Record<string, CanvasDocument> = {}
+    for (const global of globals.data ?? []) {
+      if (global.kind === 'SYMBOL') out[global.id] = global.document
+    }
+    return out
+  }, [globals.data])
   const docs = useMemo(
     () =>
       page.data
@@ -241,13 +251,16 @@ export function SitePreview({
     () =>
       docs
         ? compileSiteCss(
-            [docs.header, docs.page, docs.footer].filter(
-              (doc): doc is CanvasDocument => doc !== undefined,
-            ),
+            [
+              ...[docs.header, docs.page, docs.footer].filter(
+                (doc): doc is CanvasDocument => doc !== undefined,
+              ),
+              ...Object.values(symbols),
+            ],
             { theme },
           )
         : '',
-    [docs, theme],
+    [docs, theme, symbols],
   )
 
   // Keep the address in sync (shareable with the team, survives reload).
@@ -356,6 +369,7 @@ export function SitePreview({
         ) : docs && currentId ? (
           <PreviewFrame
             docs={docs}
+            symbols={symbols}
             css={css}
             links={links}
             currentPageId={currentId}

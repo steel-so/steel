@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ComponentIcon,
   Files01Icon,
   Image01Icon,
   LayoutTopIcon,
@@ -64,6 +65,8 @@ import {
   useSiteEditor,
 } from './site-editor-context'
 import { SiteEditorActions, SiteEditorTitle } from './site-top-bar'
+import { SymbolOverridesControl } from './symbol-overrides-control'
+import { SymbolsPanel } from './symbols-panel'
 import { ThemePanel } from './theme-panel'
 import { useOpenTarget } from './use-open-target'
 
@@ -75,6 +78,7 @@ const TAB_ICONS = {
   'site-theme': PaintBoardIcon,
   'site-globals': LayoutTopIcon,
   'site-media': Image01Icon,
+  'site-symbols': ComponentIcon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -101,6 +105,12 @@ const TABS: CanvasSidebarTab[] = [
     label: 'Mídia',
     icon: 'site-media',
     render: () => <MediaPanel />,
+  },
+  {
+    id: 'site-symbols',
+    label: 'Componentes',
+    icon: 'site-symbols',
+    render: () => <SymbolsPanel />,
   },
 ]
 
@@ -225,6 +235,15 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
   const canEmbed = useIsPrivileged()
   const forms = useLiveForms(workspaceId)
 
+  // Reusable components drawn by `site.symbol` instances (live masters).
+  const symbols = useMemo(() => {
+    const out: Record<string, CanvasDocument> = {}
+    for (const global of globals) {
+      if (global.kind === 'SYMBOL') out[global.id] = global.document
+    }
+    return out
+  }, [globals])
+
   const catalog = useMemo(() => {
     const base = createSiteCatalog({
       pages: pageLinks,
@@ -232,20 +251,25 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
       canEmbed,
       formPicker: SiteFormPicker,
       forms,
+      symbols,
+      symbolControl: SymbolOverridesControl,
     })
     return { ...base, icons: { ...base.icons, ...TAB_ICONS } }
-  }, [pageLinks, target, canEmbed, forms])
+  }, [pageLinks, target, canEmbed, forms, symbols])
 
   const header = globals.find((global) => global.kind === 'HEADER')
   const footer = globals.find((global) => global.kind === 'FOOTER')
   const around = useMemo(
-    () =>
-      target.kind === 'page'
+    () => [
+      ...(target.kind === 'page'
         ? [header?.document, footer?.document].filter(
             (doc): doc is CanvasDocument => doc !== undefined,
           )
-        : [],
-    [target.kind, header, footer],
+        : []),
+      // Styles of every component master, for the instances on the canvas.
+      ...Object.values(symbols),
+    ],
+    [target.kind, header, footer, symbols],
   )
 
   const tokens = useMemo(() => siteColorTokens(theme), [theme])
