@@ -390,3 +390,90 @@ O iframe do editor começa em `about:blank` (modo quirks). O shell agora
 escreve um documento com `<!doctype html>` antes de montar, a raiz tem a
 altura mínima do palco e um documento sozinho ocupa o palco todo (fundo do
 e-mail). O ajuste da S1 que encolhia cabeçalho e rodapé saiu.
+
+## Sites — Buscadores (SEO, AEO e GEO)
+
+Três frentes, uma nota de 0 a 100 cada, calculadas por verificações
+**determinísticas e puras** em `src/lib/sites/search/`:
+
+| Frente | Para quem | O que pesa |
+|---|---|---|
+| **SEO** | Google e Bing | palavra-chave, título e descrição (tamanho e termo), endereço, um H1 e hierarquia, texto alternativo, links internos e externos, quantidade de texto, títulos repetidos no site, canônico/noindex, imagem social |
+| **AEO** | trechos em destaque, "As pessoas também perguntam", assistentes de voz | títulos em forma de pergunta, resposta direta de 40–60 palavras logo depois, FAQ visível (acordeão → `FAQPage`), perguntas cadastradas, listas e tabelas, HowTo, resumo falável |
+| **GEO** | ChatGPT, Perplexity, Gemini, Visões gerais do Google | perfil do negócio completo, NAP consistente (telefone do perfil = telefone do site), fatos com números/datas, resumo citável no topo, fontes de referência (.gov.br, .edu, .org, Wikipédia), atualização (data visível e `dateModified`), dados estruturados válidos, HTML semântico, acesso das IAs (robots.txt e llms.txt) |
+
+Cada verificação devolve `pass`/`warn`/`fail`, um peso, a explicação em
+pt-BR e, quando dá, uma **correção de um clique** (`SearchFix`): `patch` no
+SEO da página, `canvas` (operações desfazíveis, ex.: rebaixar H1 extras),
+`select` (seleciona o nó no inspetor), `insert-faq`, `insert-summary`,
+`open` (leva ao campo/aba certa) e `ai`. A nota é a soma ponderada (aviso
+vale metade). O editor e o relatório usam as mesmas funções, então a nota
+do painel (documento ao vivo) e a do relatório (rascunho salvo) batem.
+
+### Modelo de dados (sem migração)
+
+- **Site** → `sites.settings.search` (`SiteSearchSettingsSchema`):
+  `business` (perfil do negócio: tipo schema.org, nome, razão social,
+  descrição, categoria, endereço, geo, telefone, e-mail, horários, área
+  atendida, fundação, logo, `sameAs`, pessoas, faixa de preço), `crawlers`
+  (`false` bloqueia o robô), `llms` (liga/desliga + recado), `indexNow`
+  (liga/desliga + chave gerada pelo servidor) e `verification` (Google
+  Search Console, Bing). Vai no snapshot: entra no ar ao publicar.
+- **Conteúdo** → `seo.search` (`SearchContentSchema`): `focusKeyword`,
+  `synonyms`, `questions` (pergunta + resposta direta), `summary`,
+  `speakable`, `showUpdatedDate` e `structuredData` (Article, Product,
+  Service, Event, HowTo, FAQPage, LocalBusiness; BreadcrumbList é
+  automático).
+
+**Blog e outros conteúdos reutilizam o mesmo modelo**: guarde
+`SearchContentSchema` no JSON de SEO do post (`seo.search`), monte um
+`SearchPageInput` (`page` = o post, `document` = o canvas do post,
+`siblings` = os outros posts/páginas para títulos repetidos) e chame
+`analyzeSearchPage`; os campos de UI (`KeywordFields`, `QuestionsEditor`,
+`SummaryFields` em `app/_components/crm/sites/search/search-fields.tsx`) e o
+`StructuredDataDialog` recebem `search` + `onSave(patch)` e não sabem se é
+página ou post. Para o JSON-LD, `structuredDataNode` monta Article e os
+demais; o perfil do negócio vem de `resolveBusinessProfile(settings)`.
+
+Diálogos antigos que regravam `settings`/`seo` inteiros sem o bloco `search`
+não o apagam: `keepStoredSearch` mantém o que estava salvo (site e página).
+
+### Telas
+
+- **Editor → aba Buscadores**: as três notas da página aberta (ao vivo),
+  palavra-chave e sinônimos, verificações com correção, prévia do Google
+  (computador/celular) e das redes, perguntas (salvar e "Inserir como seção
+  na página" — vira um acordeão, logo `FAQPage`), resumo citável,
+  speakable, "Atualizado em", "Como a IA resumiria esta página" e dados
+  estruturados (com produto do CRM, validação e prévia do JSON-LD).
+- **Configurações da página**: palavra-chave e as três notas.
+- **`/<ws>/crm/sites/<id>/search`** (ícone de lupa na barra do editor):
+  *Saúde* (médias, problemas por impacto somado, páginas com notas e
+  "Otimizar com IA" em lote com revisão antes de aplicar), *Perfil do
+  negócio* (rascunho preenchido com workspace, marca de e-mail e SEO do
+  site) e *Rastreadores e feeds* (robô por robô, treino × busca explicado,
+  prévia do robots.txt, llms.txt, IndexNow e verificação).
+
+### Runtime público
+
+| Arquivo | O quê |
+|---|---|
+| `/robots.txt` | um grupo `Disallow` por robô bloqueado, depois `*` liberado, sitemap e o link do llms.txt |
+| `/llms.txt` | resumo em Markdown (llmstxt.org): perfil, fatos, páginas com resumo, perguntas frequentes |
+| `/llms-full.txt` | texto de todas as páginas indexáveis em Markdown (até 400 mil caracteres) |
+| `/indexnow-key.txt` | chave do IndexNow (só com ele ligado) |
+| `/sitemap.xml` | `lastmod` da própria página (`updatedAt` no snapshot) |
+| página | metatags de verificação, JSON-LD com perfil (Organization ou LocalBusiness), `dateModified`, `abstract`, `speakable` e os itens estruturados; "Atualizado em" no fuso do site |
+
+**IndexNow**: a cada publicação, com ele ligado, as URLs indexáveis vão
+para `api.indexnow.org` (Bing, Yandex, Seznam, Naver) — melhor esforço,
+nunca bloqueia a publicação, resultado no Axiom (`site_indexnow.*`).
+
+### IA
+
+`POST …/search/ai/summary` (resumo como um mecanismo generativo leria, com
+entidades, perguntas e sugestões) e `POST …/search/ai/optimize` (títulos,
+descrições e respostas diretas para até 10 páginas, uma chamada por
+página). Mesmo provedor, permissão de plano (`crm.aiAssistant`) e cota
+mensal das outras IAs do CRM. Nada é gravado pela IA: `POST …/search/apply`
+salva só o que o usuário marcou. Falha do provedor: `SITE_SEARCH_AI_FAILED`.
