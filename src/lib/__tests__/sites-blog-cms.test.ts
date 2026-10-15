@@ -1068,3 +1068,23 @@ describe('CMS styles', () => {
     expect(css).toContain('.s-post-body')
   })
 })
+
+describe('search results header', () => {
+  it('shows what was searched in an archive list', () => {
+    const doc = siteDoc([
+      list({ source: 'archive' }),
+      list({ source: 'latest' }),
+    ])
+    const html = renderSite(doc, {
+      cms: resolveCms({
+        docs: [doc],
+        blog,
+        request: request({ query: 'seo' }),
+        href,
+      }),
+    })
+    expect(
+      html.match(/<h2 class="s-t-h2">Resultados para “seo”<\/h2>/g),
+    ).toHaveLength(1)
+  })
+})

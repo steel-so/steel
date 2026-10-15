@@ -389,11 +389,17 @@ export function postListDefinition(ctx: SiteRenderContext) {
     }: CanvasRenderProps<SitePostListProps>) => {
       const p = node.props
       const list = ctx.cms?.lists?.[node.id] ?? ctx.cms?.postList?.(node.id, p)
-      const archive = p.showArchiveHeader ? ctx.cms?.archive : undefined
+      // Search results always say what was searched (as a subtitle: the
+      // page keeps its own title).
+      const search =
+        p.source === 'archive' && ctx.cms?.archive?.kind === 'search'
+      const archive =
+        p.showArchiveHeader || search ? ctx.cms?.archive : undefined
       const posts = list?.posts ?? []
+      const Title = search ? 'h2' : 'h1'
       const header = archive ? (
         <header className='s-plist-head'>
-          <h1 className='s-t-h2'>{archive.title}</h1>
+          <Title className='s-t-h2'>{archive.title}</Title>
           {archive.description ? <p>{archive.description}</p> : null}
         </header>
       ) : null
