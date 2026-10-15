@@ -85,6 +85,15 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   siteVersion: (ws) => ({ site: { workspaceId: ws } }),
   siteView: (ws) => ({ site: { workspaceId: ws } }),
   siteRedirect: (ws) => ({ site: { workspaceId: ws } }),
+  // Site blog and collections (slice site-blog), parents first.
+  siteAuthor: (ws) => ({ site: { workspaceId: ws } }),
+  siteBlogCategory: (ws) => ({ site: { workspaceId: ws } }),
+  siteBlogTag: (ws) => ({ site: { workspaceId: ws } }),
+  sitePost: (ws) => ({ site: { workspaceId: ws } }),
+  sitePostCategory: (ws) => ({ post: { site: { workspaceId: ws } } }),
+  sitePostTag: (ws) => ({ post: { site: { workspaceId: ws } } }),
+  siteCollection: (ws) => ({ site: { workspaceId: ws } }),
+  siteCollectionItem: (ws) => ({ collection: { site: { workspaceId: ws } } }),
 }
 
 /**
