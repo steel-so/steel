@@ -1,8 +1,8 @@
 import z from 'zod'
 import { isMarketingTemplateId } from '@/src/lib/crm-marketing-templates'
 import {
-  EmailBuilderDocumentSchema,
   EmailBuilderLayoutIdSchema,
+  EmailTemplateDocumentSchema,
 } from './crm-email-builder.schema'
 
 const TemplatePropsSchema = z.record(z.string(), z.string())
@@ -26,6 +26,9 @@ export const CreateCrmEmailTemplateSchema = z
     // Visual builder: starts a BUILDER template with the layout's default
     // content (the server renders contentHtml/contentText).
     builderLayout: EmailBuilderLayoutIdSchema.optional(),
+    // 2 starts the layout as a Steel Canvas document (free editor); 1 or
+    // omitted keeps the locked v1 layout.
+    builderVersion: z.union([z.literal(1), z.literal(2)]).optional(),
   })
   .refine(
     (data) =>
@@ -49,8 +52,9 @@ export const UpdateCrmEmailTemplateSchema = z.object({
   contentJson: z.string().max(200_000).optional(),
   templateId: MarketingTemplateIdSchema.optional(),
   templateProps: TemplatePropsSchema.optional(),
-  // Visual builder (BUILDER templates only): full document, autosaved.
-  builderDocument: EmailBuilderDocumentSchema.optional(),
+  // Visual builder (BUILDER templates only): full document, autosaved —
+  // v1 (locked layout) or v2 (Steel Canvas, validated by the service).
+  builderDocument: EmailTemplateDocumentSchema.optional(),
 })
 
 export type UpdateCrmEmailTemplateDTO = z.infer<

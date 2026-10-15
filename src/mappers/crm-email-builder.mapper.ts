@@ -1,6 +1,10 @@
 import type { CrmEmailBrand } from '@prisma/client'
+import type { EmailProductData } from '@/src/lib/canvas-email/theme'
 import type { EmailBrand } from '@/src/lib/crm-email-builder/brand'
-import type { EmailLinkTargets } from '@/src/repositories/crm-email-builder.repository'
+import type {
+  EmailLinkTargets,
+  EmailProductRow,
+} from '@/src/repositories/crm-email-builder.repository'
 import type {
   CrmEmailBrandDTO,
   CrmEmailLinkTargetsDTO,
@@ -36,4 +40,25 @@ export function toCrmEmailLinkTargetsDTO(
       url: `${base}/f/${form.publicToken}`,
     })),
   }
+}
+
+/** CRM products → what product blocks show, by id (price in pt-BR). */
+export function toEmailProductData(
+  products: EmailProductRow[],
+): Record<string, EmailProductData> {
+  return Object.fromEntries(
+    products.map((product) => [
+      product.id,
+      {
+        name: product.name,
+        description: product.description ?? '',
+        price: new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: /^[A-Z]{3}$/.test(product.currency)
+            ? product.currency
+            : 'BRL',
+        }).format(Number(product.unitPrice)),
+      },
+    ]),
+  )
 }

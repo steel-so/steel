@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import { seedCrmCompany } from '@/src/__tests__/factories/crm-company.factory'
 import {
@@ -7,6 +8,7 @@ import {
 import { seedCrmForm } from '@/src/__tests__/factories/crm-form.factory'
 import { seedCrmLandingPage } from '@/src/__tests__/factories/crm-landing-page.factory'
 import { seedCrmPerson } from '@/src/__tests__/factories/crm-person.factory'
+import { seedCrmProduct } from '@/src/__tests__/factories/crm-product.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
@@ -184,6 +186,57 @@ describe('CrmEmailBuilderRepository', () => {
       )
       expectErr(
         await CrmEmailBuilderRepository.findContacts('w', ['p']),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+
+  describe('findProducts()', () => {
+    it('should return live products of the workspace only', async () => {
+      const [workspace, other, user] = await Promise.all([
+        seedWorkspace(),
+        seedWorkspace(),
+        seedUser(),
+      ])
+      const [live, deleted, foreign] = await Promise.all([
+        seedCrmProduct(workspace.id, user.id, {
+          name: 'Plano Pro',
+          unitPrice: new Prisma.Decimal('99.9'),
+        }),
+        seedCrmProduct(workspace.id, user.id, { deletedAt: new Date() }),
+        seedCrmProduct(other.id, user.id),
+      ])
+      const rows = expectOk(
+        await CrmEmailBuilderRepository.findProducts(workspace.id, [
+          live.id,
+          deleted.id,
+          foreign.id,
+        ]),
+      )
+      expect(rows).toHaveLength(1)
+      expect(rows[0]).toMatchObject({
+        id: live.id,
+        name: 'Plano Pro',
+        description: null,
+        currency: 'BRL',
+      })
+      expect(rows[0].unitPrice.toString()).toBe('99.9')
+    })
+
+    it('should not query when no ids are given', async () => {
+      const spy = vi.spyOn(prisma.crmProduct, 'findMany')
+      expect(
+        expectOk(await CrmEmailBuilderRepository.findProducts('w', [])),
+      ).toEqual([])
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('should return DATABASE_ERROR when the query throws', async () => {
+      vi.spyOn(prisma.crmProduct, 'findMany').mockRejectedValueOnce(
+        new Error('boom'),
+      )
+      expectErr(
+        await CrmEmailBuilderRepository.findProducts('w', ['p']),
         'DATABASE_ERROR',
       )
     })

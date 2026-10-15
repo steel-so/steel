@@ -207,6 +207,31 @@ export const EmailBuilderDocumentSchema = z.object({
 
 export type EmailBuilderDocument = z.infer<typeof EmailBuilderDocumentSchema>
 
+/**
+ * Steel Canvas e-mail document (`catalog: 'email'`, version 2 — ADR 0026):
+ * a normalized tree of sections, columns and blocks. This schema only checks
+ * the envelope; the server validates every node against the e-mail catalog
+ * (`validateEmailDocument` in src/lib/canvas-email/validate.ts).
+ */
+export const EmailCanvasDocumentSchema = z.object({
+  catalog: z.literal('email'),
+  version: z.literal(2),
+  rootId: z.string().min(1).max(64),
+  nodes: z
+    .record(z.string().max(64), z.record(z.string(), z.unknown()))
+    .refine((nodes) => Object.keys(nodes).length <= 1500, {
+      message: 'O e-mail passou do limite de 1500 elementos',
+    }),
+})
+
+export type EmailCanvasDocument = z.infer<typeof EmailCanvasDocumentSchema>
+
+/** What `builderDocument` accepts on save: v1 (locked layouts) or v2. */
+export const EmailTemplateDocumentSchema = z.union([
+  EmailBuilderDocumentSchema,
+  EmailCanvasDocumentSchema,
+])
+
 /** Workspace branding applied to every builder template. */
 export const CrmEmailBrandSchema = z.object({
   companyName: text(120),

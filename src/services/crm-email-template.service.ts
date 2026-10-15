@@ -1,22 +1,32 @@
-import type { CrmEmailTemplate } from '@prisma/client'
+import type { CrmEmailTemplate, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import {
   crmEmailBuilderStructureLocked,
   crmEmailTemplateNotBuilder,
 } from '@/src/errors'
+import {
+  createEmailDocumentFromLayout,
+  isEmailCanvasDocument,
+} from '@/src/lib/canvas-email/convert-v1'
 import { createBuilderDocument } from '@/src/lib/crm-email-builder/layouts'
 import { renderMarketingTemplate } from '@/src/lib/crm-marketing-templates.render'
 import { err, ok, type Result } from '@/src/lib/result'
 import { toCrmEmailTemplateDTO } from '@/src/mappers/crm-email-marketing.mapper'
 import { CrmEmailTemplateRepository } from '@/src/repositories/crm-email-template.repository'
-import type { EmailBuilderDocument } from '@/src/schemas/crm-email-builder.schema'
+import type {
+  EmailBuilderDocument,
+  EmailCanvasDocument,
+} from '@/src/schemas/crm-email-builder.schema'
 import type {
   CreateCrmEmailTemplateDTO,
   UpdateCrmEmailTemplateDTO,
 } from '@/src/schemas/crm-email-template.schema'
 import type { CrmEmailTemplateDTO } from '@/types/crm-email-marketing'
 import { assertModuleMember } from './authz'
-import { buildBuilderTemplateContent } from './crm-email-builder.service'
+import {
+  type BuilderTemplateDocument,
+  buildBuilderTemplateContent,
+} from './crm-email-builder.service'
 
 /** Layout fixo informado: HTML é sempre recalculado a partir dele, ignorando
  * qualquer `contentHtml` vindo do editor de blocos livre. */
@@ -64,10 +74,15 @@ export const CrmEmailTemplateService = {
 
     let data: Parameters<typeof CrmEmailTemplateRepository.create>[0]
     if (dto.builderLayout) {
-      // Visual builder: starts from the layout's default content.
+      // Visual builder: starts from the layout's default content, as a
+      // locked v1 layout or (builderVersion 2) a Steel Canvas document.
       const built = await buildBuilderTemplateContent(
         workspaceId,
-        createBuilderDocument(dto.builderLayout),
+        dto.builderVersion === 2
+          ? (createEmailDocumentFromLayout(
+              dto.builderLayout,
+            ) as unknown as EmailCanvasDocument)
+          : createBuilderDocument(dto.builderLayout),
         dto.subject,
       )
       if (!built.ok) return built
@@ -77,7 +92,7 @@ export const CrmEmailTemplateService = {
         name: dto.name,
         subject: dto.subject,
         kind: 'BUILDER',
-        builderDocument: built.value.document,
+        builderDocument: built.value.document as Prisma.InputJsonValue,
         contentHtml: built.value.html,
         contentText: built.value.text,
       }
@@ -136,7 +151,13 @@ export const CrmEmailTemplateService = {
     if (!existing.ok) return existing
 
     if (existing.value.kind === 'BUILDER') {
-      return updateBuilderTemplate(actorId, workspaceId, existing.value, dto)
+      return updateBuilderTemplate(
+        actorId,
+        workspaceId,
+        existing.value,
+        dto,
+        membership.value.isPrivileged,
+      )
     }
     if (dto.builderDocument) return err(crmEmailTemplateNotBuilder())
 
@@ -247,13 +268,16 @@ export const CrmEmailTemplateService = {
 
 /**
  * Saves a visual-builder template: content edits (autosave), subject or
- * name. The layout and its structure are locked; free HTML is refused.
+ * name. A v1 document keeps its layout and locked structure; a v2 (Steel
+ * Canvas) document is validated against the e-mail catalog. A template may
+ * move from v1 to v2, never back. Free HTML is refused.
  */
 async function updateBuilderTemplate(
   actorId: string,
   workspaceId: string,
   existing: CrmEmailTemplate,
   dto: UpdateCrmEmailTemplateDTO,
+  privileged: boolean,
 ): Promise<Result<CrmEmailTemplateDTO>> {
   if (dto.contentHtml || dto.templateId || dto.templateProps) {
     return err(
@@ -262,27 +286,43 @@ async function updateBuilderTemplate(
       ),
     )
   }
-  const current = existing.builderDocument as EmailBuilderDocument
-  if (dto.builderDocument && dto.builderDocument.layout !== current.layout) {
-    return err(
-      crmEmailBuilderStructureLocked('O modelo de um template não pode mudar'),
-    )
+  const current = existing.builderDocument as unknown as BuilderTemplateDocument
+  const next = dto.builderDocument as BuilderTemplateDocument | undefined
+  if (next && !isEmailCanvasDocument(next)) {
+    if (isEmailCanvasDocument(current)) {
+      return err(
+        crmEmailBuilderStructureLocked(
+          'Este template já usa o novo editor e não pode voltar para o modelo antigo',
+        ),
+      )
+    }
+    if (
+      (next as EmailBuilderDocument).layout !==
+      (current as EmailBuilderDocument).layout
+    ) {
+      return err(
+        crmEmailBuilderStructureLocked(
+          'O modelo de um template não pode mudar',
+        ),
+      )
+    }
   }
 
   let rendered: {
-    builderDocument?: EmailBuilderDocument
+    builderDocument?: Prisma.InputJsonValue
     contentHtml?: string
     contentText?: string
   } = {}
-  if (dto.builderDocument || dto.subject) {
+  if (next || dto.subject) {
     const built = await buildBuilderTemplateContent(
       workspaceId,
-      dto.builderDocument ?? current,
+      next ?? current,
       dto.subject ?? existing.subject,
+      { privileged, previous: current },
     )
     if (!built.ok) return built
     rendered = {
-      builderDocument: built.value.document,
+      builderDocument: built.value.document as Prisma.InputJsonValue,
       contentHtml: built.value.html,
       contentText: built.value.text,
     }
@@ -301,7 +341,11 @@ async function updateBuilderTemplate(
     action: 'update',
     actorId,
     targetId: existing.id,
-    meta: { fields: Object.keys(dto), kind: 'BUILDER' },
+    meta: {
+      fields: Object.keys(dto),
+      kind: 'BUILDER',
+      version: isEmailCanvasDocument(next ?? current) ? 2 : 1,
+    },
   })
 
   return ok(toCrmEmailTemplateDTO(result.value))
