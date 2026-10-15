@@ -26,7 +26,12 @@ import {
   crmSitesKeys,
   type SitePublishProblem,
 } from '@/src/hooks/use-crm-sites'
+import {
+  siteExperimentKeys,
+  useSiteExperimentImpact,
+} from '@/src/hooks/use-site-experiments'
 import type { SiteChangeItem, SiteChangesDTO } from '@/types/site-studio'
+import { ExperimentPublishNotice } from './experiments/publish-notice'
 import { useSiteEditor } from './site-editor-context'
 import { useOpenTarget } from './use-open-target'
 
@@ -140,6 +145,13 @@ export function PublishDialog({
   const openTarget = useOpenTarget()
   const queryClient = useQueryClient()
   const [phase, setPhase] = useState<Phase>({ step: 'loading' })
+  // Running A/B tests whose variants this publish changes (restarted).
+  const impact = useSiteExperimentImpact(
+    workspaceId,
+    site.id,
+    open && phase.step === 'review',
+  )
+  const restarts = impact.data?.experiments.length ?? 0
 
   useEffect(() => {
     if (!open) return
@@ -194,6 +206,9 @@ export function PublishDialog({
       })
       void queryClient.invalidateQueries({
         queryKey: crmSitesKeys.list(workspaceId),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: siteExperimentKeys.list(workspaceId, site.id),
       })
       setPhase({
         step: 'done',
@@ -293,6 +308,10 @@ export function PublishDialog({
               <Summary changes={phase.changes} />
             ) : null}
 
+            {phase.step === 'review' || phase.step === 'publishing' ? (
+              <ExperimentPublishNotice impact={impact.data} />
+            ) : null}
+
             {phase.step === 'error' ? (
               <p
                 role='alert'
@@ -360,7 +379,9 @@ export function PublishDialog({
                 >
                   {phase.step === 'publishing'
                     ? 'Publicando…'
-                    : 'Publicar agora'}
+                    : restarts > 0
+                      ? 'Publicar e reiniciar testes'
+                      : 'Publicar agora'}
                 </Button>
               ) : null}
             </DialogFooter>

@@ -855,6 +855,23 @@ export const ERROR_CODES = {
   // Search engines ("Buscadores"): the AI provider failed or answered with
   // something unusable.
   SITE_SEARCH_AI_FAILED: { code: 'SITE_SEARCH_AI_FAILED', status: 502 },
+  // A/B test of a site (s4-ab).
+  SITE_EXPERIMENT_NOT_FOUND: { code: 'SITE_EXPERIMENT_NOT_FOUND', status: 404 },
+  // Changing the variants, split or goal of a running test needs a restart
+  // (`restart: true`), so the results of two setups never mix.
+  SITE_EXPERIMENT_RUNNING: { code: 'SITE_EXPERIMENT_RUNNING', status: 409 },
+  // The action does not apply to the test's status (start an ended test…).
+  SITE_EXPERIMENT_INVALID_STATE: {
+    code: 'SITE_EXPERIMENT_INVALID_STATE',
+    status: 409,
+  },
+  // Another running test already uses this section or page.
+  SITE_EXPERIMENT_CONFLICT: { code: 'SITE_EXPERIMENT_CONFLICT', status: 409 },
+  // A variant is missing from the published version: publish first.
+  SITE_EXPERIMENT_NOT_PUBLISHED: {
+    code: 'SITE_EXPERIMENT_NOT_PUBLISHED',
+    status: 422,
+  },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },

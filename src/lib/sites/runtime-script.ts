@@ -17,8 +17,9 @@ import { hasTrackers, type SiteTrackingIds } from './csp'
  *   the banner, even when its own banner switch is off. The scripts carry
  *   the page's nonce (allowed by the site's CSP, see `csp.ts`).
  *
- * The choice lives in `localStorage` (`steel-site-consent:<slug>`); nothing
- * else is stored on the device by Steel.
+ * The choice lives in `localStorage` (`steel-site-consent:<slug>`); an
+ * acceptance is also announced as `steel:site-consent` (the A/B tests
+ * store their cookie only then, see `experiment-runtime.ts`).
  */
 
 export const SITE_RUNTIME_CONFIG_ID = 'ss-config'
@@ -89,7 +90,7 @@ if(t.ga){window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};w
 if(t.gtm){window.dataLayer.push({'gtm.start':Date.now(),event:'gtm.js'});load('https://www.googletagmanager.com/gtm.js?id='+encodeURIComponent(t.gtm))}
 if(t.pixel&&!window.fbq){var f=window.fbq=function(){f.callMethod?f.callMethod.apply(f,arguments):f.queue.push(arguments)};window._fbq=f;f.push=f;f.loaded=true;f.version='2.0';f.queue=[];f('init',t.pixel);f('track','PageView');load('https://connect.facebook.net/en_US/fbevents.js')}
 }
-function grant(){if(granted)return;granted=true;if(c.banner)view();trackers()}
+function grant(){if(granted)return;granted=true;if(c.banner)view();trackers();try{document.dispatchEvent(new CustomEvent('steel:site-consent',{detail:'accepted'}))}catch(e){}}
 document.addEventListener('${SITE_FORM_SUBMITTED_EVENT}',function(e){
 if(c.banner&&!granted)return;
 var a=(e&&e.detail&&e.detail.action)||'',m=/\\/forms\\/([^/?#]+)\\/submit/.exec(a),b={pageId:c.pageId,path:c.path,kind:'CONVERSION'};

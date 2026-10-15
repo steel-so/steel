@@ -4,6 +4,7 @@ import {
   AiMagicIcon,
   ComponentIcon,
   Files01Icon,
+  FlaskConicalIcon,
   Image01Icon,
   LayoutTopIcon,
   PaintBoardIcon,
@@ -63,6 +64,7 @@ import {
   SiteChildAdder,
   SiteWhatsappPicker,
 } from './element-controls'
+import { AbPanel } from './experiments/ab-panel'
 import { SiteFormPicker } from './form-picker'
 import { GlobalsPanel } from './globals-panel'
 import { MediaPanel } from './media-panel'
@@ -92,6 +94,7 @@ const TAB_ICONS = {
   'site-symbols': ComponentIcon,
   'site-ai': AiMagicIcon,
   'site-search': SearchFocusIcon,
+  'site-ab': FlaskConicalIcon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -136,6 +139,12 @@ const TABS: CanvasSidebarTab[] = [
     label: 'Buscadores',
     icon: 'site-search',
     render: () => <SearchPanel />,
+  },
+  {
+    id: 'site-ab',
+    label: 'Testes A/B',
+    icon: 'site-ab',
+    render: () => <AbPanel />,
   },
 ]
 
