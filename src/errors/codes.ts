@@ -335,6 +335,26 @@ export const ERROR_CODES = {
     code: 'CRM_EMAIL_CANVAS_HTML_FORBIDDEN',
     status: 403,
   },
+  // E-mail editor E2/E3: saved blocks, template versions and AI on blocks.
+  CRM_EMAIL_SAVED_BLOCK_NOT_FOUND: {
+    code: 'CRM_EMAIL_SAVED_BLOCK_NOT_FOUND',
+    status: 404,
+  },
+  // The fragment is not a section/block or fails the e-mail catalog rules.
+  CRM_EMAIL_SAVED_BLOCK_INVALID: {
+    code: 'CRM_EMAIL_SAVED_BLOCK_INVALID',
+    status: 422,
+  },
+  CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED: {
+    code: 'CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED',
+    status: 422,
+  },
+  CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND: {
+    code: 'CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND',
+    status: 404,
+  },
+  // The provider failed or returned nothing the catalog accepts.
+  CRM_EMAIL_AI_FAILED: { code: 'CRM_EMAIL_AI_FAILED', status: 502 },
   // Multichannel campaigns (ADR 0025)
   CRM_CAMPAIGN_NOT_FOUND: { code: 'CRM_CAMPAIGN_NOT_FOUND', status: 404 },
   // Edit/launch outside DRAFT, or an invalid pause/resume/cancel transition.

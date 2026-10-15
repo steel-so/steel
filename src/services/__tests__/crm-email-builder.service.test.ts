@@ -24,6 +24,8 @@ vi.mock('@/lib/base-email-url', () => ({ baseEmailUrl: 'https://steel.test' }))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-email-template.repository')
 vi.mock('@/src/repositories/crm-email-builder.repository')
+// Version history (E2) is covered in crm-email-template-version.service.test.
+vi.mock('@/src/services/crm-email-template-history')
 vi.mock('@/src/lib/mail/send', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/src/lib/mail/client', () => ({
   defaultFrom: 'steel <suporte@stratustelecom.com.br>',
