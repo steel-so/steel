@@ -3,7 +3,12 @@
 import * as React from 'react'
 import type { Row } from './widget-data'
 
-type ApiResponse = { success: boolean; data?: Row[]; message?: string }
+/** Workspace routes answer the rows; the TV link answers `{ rows }`. */
+type ApiResponse = {
+  success: boolean
+  data?: Row[] | { rows?: Row[] }
+  message?: string
+}
 
 type Entry = { at: number; promise: Promise<Row[]> }
 
@@ -17,7 +22,7 @@ async function load(url: string): Promise<Row[]> {
   if (!response.ok || !json.success || !json.data) {
     throw new Error(json?.message ?? 'Não foi possível carregar os dados.')
   }
-  return json.data
+  return Array.isArray(json.data) ? json.data : (json.data.rows ?? [])
 }
 
 /** Busca compartilhada: N widgets da mesma fonte = 1 requisição. */
@@ -42,28 +47,41 @@ export function clearDashboardRowsCache() {
   cache.clear()
 }
 
+/** Widget aberto pelo link público da TV: os dados vêm pelo token. */
+export interface TvRowsSource {
+  token: string
+  widgetId: string
+}
+
 /**
  * Linhas de uma fonte (`/api/workspaces/<id>/<path>`) para os widgets. Ao
  * mudar `refreshKey` (auto-refresh do modo TV), rebusca mantendo as linhas
- * anteriores na tela até chegarem as novas.
+ * anteriores na tela até chegarem as novas. Com `tv`, busca as linhas do
+ * widget pelo link da TV (sem dados de contato).
  */
 export function useDashboardRows(
   workspaceId: string,
   path: string,
   refreshKey = 0,
+  tv?: TvRowsSource,
 ): { items: Row[]; isLoading: boolean; error: string | null } {
   const [items, setItems] = React.useState<Row[]>([])
   const [isLoading, setIsLoading] = React.useState(Boolean(path))
   const [error, setError] = React.useState<string | null>(null)
   const loadedPath = React.useRef<string | null>(null)
 
+  const tvToken = tv?.token
+  const tvWidgetId = tv?.widgetId
+
   React.useEffect(() => {
-    if (!workspaceId || !path) {
+    if ((!workspaceId && !tvToken) || !path) {
       setIsLoading(false)
       return
     }
     let active = true
-    const url = `/api/workspaces/${workspaceId}/${path}`
+    const url = tvToken
+      ? `/api/crm/tv/${tvToken}/widgets/${tvWidgetId}`
+      : `/api/workspaces/${workspaceId}/${path}`
     // Troca de fonte limpa a tela; refresh da mesma fonte, não.
     if (loadedPath.current !== url) setIsLoading(true)
     fetchDashboardRows(url, refreshKey)
@@ -83,7 +101,7 @@ export function useDashboardRows(
     return () => {
       active = false
     }
-  }, [workspaceId, path, refreshKey])
+  }, [workspaceId, path, refreshKey, tvToken, tvWidgetId])
 
   return { items, isLoading, error }
 }

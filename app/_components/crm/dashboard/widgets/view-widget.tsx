@@ -4,11 +4,13 @@ import * as React from 'react'
 import { useDashboardDisplay } from '@/app/_components/crm/dashboard/dashboard-display'
 import { useDashboardRows } from '@/app/_components/crm/dashboard/use-dashboard-rows'
 import {
-  formatValue,
+  formatCell,
+  refLabelsOf,
   viewRows,
   withDerivedFields,
 } from '@/app/_components/crm/dashboard/widget-data'
 import {
+  sourceNeedsLookups,
   sourceResource,
   VIEW_SOURCE_FIELDS,
 } from '@/app/_components/crm/dashboard/widget-meta'
@@ -21,22 +23,36 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { useDashboardLookups } from '@/src/hooks/use-crm-dashboard-tv'
 import type { ViewConfig } from '@/src/schemas/crm-dashboard.schema'
 
 export function ViewWidget({
   workspaceId,
   config,
+  widgetId,
 }: {
   workspaceId: string
   config: ViewConfig
+  /** Id do widget: no link da TV, os dados vêm por ele. */
+  widgetId?: string
 }) {
-  const { variant, refreshKey } = useDashboardDisplay()
+  const { variant, refreshKey, tvToken, lookups } = useDashboardDisplay()
   const tv = variant === 'tv'
+  const tvSource = React.useMemo(
+    () => (tvToken && widgetId ? { token: tvToken, widgetId } : undefined),
+    [tvToken, widgetId],
+  )
   const { items, isLoading } = useDashboardRows(
     workspaceId,
     sourceResource(config.source),
     refreshKey,
+    tvSource,
   )
+  const names = useDashboardLookups(
+    tvToken || !sourceNeedsLookups(config.source) ? null : workspaceId,
+    lookups,
+  )
+  const labels = React.useMemo(() => refLabelsOf(names), [names])
 
   const fields = React.useMemo(() => {
     const all = VIEW_SOURCE_FIELDS[config.source] ?? []
@@ -48,8 +64,14 @@ export function ViewWidget({
   }, [config.source, config.fields])
 
   const rows = React.useMemo(
-    () => viewRows(withDerivedFields(config.source, items), config),
-    [items, config],
+    () =>
+      viewRows(
+        withDerivedFields(config.source, items),
+        config,
+        undefined,
+        labels,
+      ),
+    [items, config, labels],
   )
 
   if (isLoading) {
@@ -104,7 +126,7 @@ export function ViewWidget({
                   key={field.key}
                   className={cn('whitespace-nowrap', tv && 'py-2.5')}
                 >
-                  {formatValue(row[field.key])}
+                  {formatCell(field.key, row[field.key], labels)}
                 </TableCell>
               ))}
             </TableRow>

@@ -2,6 +2,7 @@ import { DashboardSquare01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { CrmDashboardsTable } from '@/app/_components/crm/crm-dashboards-table'
+import { SalesTvTemplateButton } from '@/app/_components/crm/dashboard/sales-tv-template-button'
 import {
   HeaderBreadcrumbCrumb,
   HeaderBreadcrumbList,
@@ -45,11 +46,17 @@ export default async function CrmDashboardsPage({
           </HeaderBreadcrumbCrumb>
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1 p-6'>
-        <CrmDashboardsTable
+      <div className='flex min-h-0 flex-1 flex-col gap-4 p-6'>
+        <SalesTvTemplateButton
           workspaceId={membership.value.workspaceId}
           slug={slug}
         />
+        <div className='min-h-0 flex-1'>
+          <CrmDashboardsTable
+            workspaceId={membership.value.workspaceId}
+            slug={slug}
+          />
+        </div>
       </div>
     </div>
   )

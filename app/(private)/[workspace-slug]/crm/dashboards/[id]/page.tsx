@@ -30,6 +30,7 @@ export default async function CrmDashboardPage({
       <DashboardCanvas
         workspaceId={membership.value.workspaceId}
         dashboardId={id}
+        slug={slug}
       />
     </div>
   )

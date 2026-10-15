@@ -4,6 +4,10 @@ import { Cancel01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import dynamic from 'next/dynamic'
 import * as React from 'react'
 import {
+  defaultSalesConfig,
+  SalesEditor,
+} from '@/app/_components/crm/dashboard/sales/sales-editor'
+import {
   AGGREGATION_LABELS,
   CHART_SOURCE_LABELS,
   CHART_TYPE_META,
@@ -12,10 +16,11 @@ import {
   moduleOfBasePath,
   PERIOD_LABELS,
   SOCIAL_METRIC_LABELS,
+  salesKindMeta,
   sourcesForBasePath,
   VIEW_SOURCE_FIELDS,
   VIEW_SOURCE_LABELS,
-  WIDGET_TYPE_META,
+  widgetTypesForBasePath,
 } from '@/app/_components/crm/dashboard/widget-meta'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -68,6 +73,10 @@ import {
   type ViewSource,
   type WidgetType,
 } from '@/src/schemas/crm-dashboard.schema'
+import {
+  type SalesConfig,
+  SalesConfigSchema,
+} from '@/src/schemas/crm-sales-metrics.schema'
 import {
   CRM_SOCIAL_PLATFORM_LABELS,
   CRM_SOCIAL_PLATFORMS,
@@ -122,6 +131,7 @@ const DEFAULT_SIZE: Record<WidgetType, { w: number; h: number }> = {
   VIEW: { w: 6, h: 8 },
   IFRAME: { w: 6, h: 8 },
   RICH_TEXT: { w: 4, h: 6 },
+  SALES: { w: 5, h: 7 },
 }
 
 /** Fonte inicial de um widget novo conforme o módulo do dashboard. */
@@ -148,6 +158,8 @@ function defaultConfig(
       return { url: '' }
     case 'RICH_TEXT':
       return { html: '' }
+    case 'SALES':
+      return defaultSalesConfig()
   }
 }
 
@@ -173,6 +185,7 @@ export function WidgetPanel({
   basePath = 'crm',
   editing,
   nextY,
+  page = 0,
   onCreated,
   onUpdated,
 }: {
@@ -184,6 +197,8 @@ export function WidgetPanel({
   basePath?: string
   editing: CrmDashboardWidgetDTO | null
   nextY: number
+  /** Tela onde o widget novo entra. */
+  page?: number
   onCreated: (widget: CrmDashboardWidgetDTO) => void
   onUpdated: (widget: CrmDashboardWidgetDTO) => void
 }) {
@@ -218,7 +233,12 @@ export function WidgetPanel({
           workspaceId,
           dashboardId,
           editing.id,
-          { config },
+          {
+            config:
+              type === 'SALES'
+                ? { ...config, ...withDefaultTitle(config as SalesConfig) }
+                : config,
+          },
           basePath,
         )
         if (!res.ok || !res.data) {
@@ -227,17 +247,25 @@ export function WidgetPanel({
         }
         onUpdated(res.data)
       } else {
-        const { w, h } = DEFAULT_SIZE[type]
+        const { w, h } =
+          type === 'SALES'
+            ? salesKindMeta((config as SalesConfig).kind).size
+            : DEFAULT_SIZE[type]
+        const payload =
+          type === 'SALES'
+            ? { ...config, ...withDefaultTitle(config as SalesConfig) }
+            : config
         const res = await createCrmDashboardWidget(
           workspaceId,
           dashboardId,
           {
             type,
-            config,
+            config: payload,
             x: 0,
             y: nextY,
             w,
             h,
+            page,
           } as Parameters<typeof createCrmDashboardWidget>[2],
           basePath,
         )
@@ -276,7 +304,7 @@ export function WidgetPanel({
 
         <div className='min-h-0 flex-1 space-y-5 overflow-y-auto p-4'>
           {!type ? (
-            <TypePicker onPick={chooseType} />
+            <TypePicker onPick={chooseType} basePath={basePath} />
           ) : (
             <>
               {!isEditing ? (
@@ -315,6 +343,16 @@ export function WidgetPanel({
                   onEdit={() => setRichOpen(true)}
                 />
               ) : null}
+              {type === 'SALES' ? (
+                <SalesEditor
+                  config={SalesConfigSchema.parse({
+                    ...defaultSalesConfig(),
+                    ...config,
+                  })}
+                  onChange={setConfig}
+                  workspaceId={workspaceId}
+                />
+              ) : null}
             </>
           )}
         </div>
@@ -343,14 +381,25 @@ export function WidgetPanel({
 
 /* --------------------------------- passo 1 --------------------------------- */
 
-function TypePicker({ onPick }: { onPick: (type: WidgetType) => void }) {
+/** Título vazio vira o nome da métrica (o cabeçalho da TV nunca fica em branco). */
+function withDefaultTitle(config: SalesConfig): Pick<SalesConfig, 'title'> {
+  return { title: config.title?.trim() || salesKindMeta(config.kind).label }
+}
+
+function TypePicker({
+  onPick,
+  basePath,
+}: {
+  onPick: (type: WidgetType) => void
+  basePath: string
+}) {
   return (
     <div className='space-y-3'>
       <p className='text-muted-foreground text-sm'>
         Escolha o tipo de widget para adicionar ao dashboard.
       </p>
       <div className='grid grid-cols-2 gap-2'>
-        {WIDGET_TYPE_META.map((meta) => (
+        {widgetTypesForBasePath(basePath).map((meta) => (
           <button
             key={meta.type}
             type='button'

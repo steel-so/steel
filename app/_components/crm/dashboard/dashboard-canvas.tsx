@@ -3,27 +3,47 @@
 import {
   Add01Icon,
   Delete02Icon,
+  Link01Icon,
   PencilEdit02Icon,
   Tick02Icon,
+  Tv01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
 import * as React from 'react'
 import ReactGridLayout, {
   type Layout,
   useContainerWidth,
 } from 'react-grid-layout'
-import { WIDGET_TYPE_META } from '@/app/_components/crm/dashboard/widget-meta'
+import { DashboardScreens } from '@/app/_components/crm/dashboard/tv/dashboard-screens'
+import { TvLinkDialog } from '@/app/_components/crm/dashboard/tv/tv-link-dialog'
 import { WidgetPanel } from '@/app/_components/crm/dashboard/widget-panel'
+import {
+  pageOfWidget,
+  widgetTitle,
+} from '@/app/_components/crm/dashboard/widget-title'
 import { WidgetView } from '@/app/_components/crm/dashboard/widget-view'
 import { SteelIcon } from '@/components/icon/icon'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import {
+  updateCrmDashboardSettings,
+  useCrmDashboard,
+} from '@/src/hooks/use-crm-dashboard-tv'
 import {
   applyCrmDashboardWidgetLayout,
   deleteCrmDashboardWidget,
   useCrmDashboardWidgets,
 } from '@/src/hooks/use-crm-dashboard-widget'
+import {
+  type CrmDashboardSettings,
+  CrmDashboardSettingsSchema,
+  TV_MAX_BLOCKS_PER_PAGE,
+} from '@/src/schemas/crm-dashboard.schema'
 import type { CrmDashboardWidgetDTO } from '@/types/crm-dashboard'
+
+// Re-exported: the ServiceDesk TV imports the title from here.
+export { pageOfWidget, widgetTitle }
 
 const COLS = 12
 const ROW_HEIGHT = 40
@@ -35,40 +55,122 @@ function layoutSignature(layout: Layout): string {
     .join('|')
 }
 
-function typeLabel(type: CrmDashboardWidgetDTO['type']): string {
-  return WIDGET_TYPE_META.find((meta) => meta.type === type)?.label ?? type
-}
-
-/** Título do widget (config.title) ou, na falta, o nome do tipo. */
-export function widgetTitle(widget: CrmDashboardWidgetDTO): string {
-  const title = (widget.config as { title?: unknown }).title
-  return typeof title === 'string' && title.trim()
-    ? title.trim()
-    : typeLabel(widget.type)
-}
+const DEFAULT_SETTINGS: CrmDashboardSettings = CrmDashboardSettingsSchema.parse(
+  {},
+)
 
 export function DashboardCanvas({
   workspaceId,
   dashboardId,
   basePath = 'crm',
+  slug,
 }: {
   workspaceId: string
   dashboardId: string
   /** Segmento de módulo da API (`crm` ou `whatsapp`). */
   basePath?: string
+  /** Slug do workspace (link do modo TV). */
+  slug?: string
 }) {
-  const { widgets, setWidgets, isLoading } = useCrmDashboardWidgets(
-    workspaceId,
-    dashboardId,
-    basePath,
-  )
+  const {
+    widgets: allWidgets,
+    setWidgets,
+    isLoading,
+  } = useCrmDashboardWidgets(workspaceId, dashboardId, basePath)
   const { width, containerRef, mounted } = useContainerWidth()
+  // Telas e modo TV são do CRM (o painel de Vendas vive lá).
+  const isCrm = basePath === 'crm'
+  const { dashboard, setDashboard } = useCrmDashboard(
+    isCrm ? workspaceId : '',
+    dashboardId,
+  )
+  const settings = dashboard?.settings ?? DEFAULT_SETTINGS
+  const pageCount = settings.pages.length
+  const [page, setPage] = React.useState(0)
+  const currentPage = Math.min(page, pageCount - 1)
+
+  const widgets = React.useMemo(
+    () => allWidgets.filter((w) => pageOfWidget(w, pageCount) === currentPage),
+    [allWidgets, pageCount, currentPage],
+  )
+  const counts = React.useMemo(
+    () =>
+      settings.pages.map(
+        (_, index) =>
+          allWidgets.filter((w) => pageOfWidget(w, pageCount) === index).length,
+      ),
+    [allWidgets, settings.pages, pageCount],
+  )
 
   const [editMode, setEditMode] = React.useState(false)
   const [panelOpen, setPanelOpen] = React.useState(false)
+  const [tvLinkOpen, setTvLinkOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<CrmDashboardWidgetDTO | null>(
     null,
   )
+
+  async function saveSettings(next: CrmDashboardSettings) {
+    const previous = dashboard
+    if (dashboard) setDashboard({ ...dashboard, settings: next })
+    try {
+      setDashboard(
+        await updateCrmDashboardSettings(workspaceId, dashboardId, next),
+      )
+    } catch (error) {
+      setDashboard(previous)
+      notify.error(error)
+    }
+  }
+
+  /** Remove uma tela: apaga os widgets dela e sobe as telas seguintes. */
+  async function removeScreen(index: number) {
+    const doomed = allWidgets.filter(
+      (w) => pageOfWidget(w, pageCount) === index,
+    )
+    for (const widget of doomed) {
+      const res = await deleteCrmDashboardWidget(
+        workspaceId,
+        dashboardId,
+        widget.id,
+        basePath,
+      )
+      if (!res.ok) {
+        notify.error(res.message ?? 'Não foi possível remover a tela.')
+        return
+      }
+    }
+    const moved: CrmDashboardWidgetDTO[] = []
+    const shifted = allWidgets
+      .filter((w) => !doomed.includes(w))
+      .map((w) => {
+        const p = pageOfWidget(w, pageCount)
+        if (p <= index) return w
+        const next = { ...w, page: p - 1 }
+        moved.push(next)
+        return next
+      })
+    setWidgets(shifted)
+    if (moved.length > 0) {
+      await applyCrmDashboardWidgetLayout(
+        workspaceId,
+        dashboardId,
+        moved.map((w) => ({
+          id: w.id,
+          x: w.x,
+          y: w.y,
+          w: w.w,
+          h: w.h,
+          page: w.page,
+        })),
+        basePath,
+      )
+    }
+    setPage(Math.max(0, index - 1))
+    await saveSettings({
+      ...settings,
+      pages: settings.pages.filter((_, i) => i !== index),
+    })
+  }
 
   const layout: Layout = React.useMemo(
     () =>
@@ -142,7 +244,7 @@ export function DashboardCanvas({
   }
 
   async function handleDelete(widget: CrmDashboardWidgetDTO) {
-    const previous = widgets
+    const previous = allWidgets
     setWidgets((prev) => prev.filter((w) => w.id !== widget.id))
     const res = await deleteCrmDashboardWidget(
       workspaceId,
@@ -158,7 +260,43 @@ export function DashboardCanvas({
 
   return (
     <div className='flex h-full flex-col'>
-      <div className='flex shrink-0 items-center justify-end gap-2 border-b px-4 py-2'>
+      <div className='flex shrink-0 flex-wrap items-center justify-end gap-2 border-b px-4 py-2'>
+        {isCrm && dashboard ? (
+          <div className='mr-auto min-w-0'>
+            <DashboardScreens
+              settings={settings}
+              current={currentPage}
+              counts={counts}
+              onSelect={setPage}
+              onChange={(next) => void saveSettings(next)}
+              onRemove={(index) => void removeScreen(index)}
+            />
+          </div>
+        ) : null}
+        {isCrm && widgets.length > TV_MAX_BLOCKS_PER_PAGE ? (
+          <span className='text-muted-foreground text-xs'>
+            Na TV, até {TV_MAX_BLOCKS_PER_PAGE} blocos por tela leem bem.
+          </span>
+        ) : null}
+        {isCrm && slug ? (
+          <>
+            <Link
+              href={`/${slug}/crm/dashboards/${dashboardId}/tv`}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              <SteelIcon icon={Tv01Icon} strokeWidth={2} />
+              Modo TV
+            </Link>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setTvLinkOpen(true)}
+            >
+              <SteelIcon icon={Link01Icon} strokeWidth={2} />
+              Link da TV
+            </Button>
+          </>
+        ) : null}
         <Button variant='outline' size='sm' onClick={openNew}>
           <SteelIcon icon={Add01Icon} strokeWidth={2} />
           Adicionar widget
@@ -180,7 +318,9 @@ export function DashboardCanvas({
         {widgets.length === 0 && !isLoading ? (
           <div className='flex h-[60vh] flex-col items-center justify-center gap-3 text-center'>
             <p className='text-muted-foreground text-sm'>
-              Este dashboard ainda não tem widgets.
+              {pageCount > 1
+                ? 'Esta tela ainda não tem widgets.'
+                : 'Este dashboard ainda não tem widgets.'}
             </p>
             <Button variant='outline' size='sm' onClick={openNew}>
               <SteelIcon icon={Add01Icon} strokeWidth={2} />
@@ -256,6 +396,7 @@ export function DashboardCanvas({
         basePath={basePath}
         editing={editing}
         nextY={nextY}
+        page={currentPage}
         onCreated={(widget) => setWidgets((prev) => [...prev, widget])}
         onUpdated={(widget) =>
           setWidgets((prev) =>
@@ -263,6 +404,14 @@ export function DashboardCanvas({
           )
         }
       />
+      {isCrm ? (
+        <TvLinkDialog
+          open={tvLinkOpen}
+          onOpenChange={setTvLinkOpen}
+          workspaceId={workspaceId}
+          dashboardId={dashboardId}
+        />
+      ) : null}
     </div>
   )
 }

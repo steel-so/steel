@@ -129,7 +129,14 @@ export async function deleteCrmDashboardWidget(
 export async function applyCrmDashboardWidgetLayout(
   workspaceId: string,
   dashboardId: string,
-  items: { id: string; x: number; y: number; w: number; h: number }[],
+  items: {
+    id: string
+    x: number
+    y: number
+    w: number
+    h: number
+    page?: number
+  }[],
   basePath = 'crm',
 ): Promise<void> {
   try {

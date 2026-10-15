@@ -1,4 +1,5 @@
 import {
+  Award01Icon,
   BarChartHorizontalIcon,
   BarChartIcon,
   Calculator01Icon,
@@ -25,6 +26,10 @@ import type {
   ViewSource,
   WidgetType,
 } from '@/src/schemas/crm-dashboard.schema'
+import type {
+  SalesKind,
+  SalesPeriod,
+} from '@/src/schemas/crm-sales-metrics.schema'
 
 export type WidgetTypeMeta = {
   type: WidgetType
@@ -58,7 +63,21 @@ export const WIDGET_TYPE_META: WidgetTypeMeta[] = [
     description: 'Texto livre formatado.',
     icon: TextFontIcon,
   },
+  {
+    type: 'SALES',
+    label: 'Vendas',
+    description:
+      'Meta, ranking, pipeline, vitórias e mais — prontos para a TV.',
+    icon: Award01Icon,
+  },
 ]
+
+/** Tipos oferecidos no seletor: o kit de Vendas só existe no CRM. */
+export function widgetTypesForBasePath(basePath: string): WidgetTypeMeta[] {
+  return WIDGET_TYPE_META.filter(
+    (meta) => meta.type !== 'SALES' || moduleOfBasePath(basePath) === 'CRM',
+  )
+}
 
 export type ChartTypeMeta = {
   type: ChartType
@@ -100,8 +119,12 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
   ],
   opportunities: [
     { key: 'name', label: 'Nome' },
-    { key: 'stageId', label: 'Estágio' },
+    { key: 'stageId', label: 'Etapa' },
+    { key: 'pipelineId', label: 'Pipeline' },
+    { key: 'ownerId', label: 'Responsável' },
     { key: 'amount', label: 'Valor' },
+    { key: 'probability', label: 'Probabilidade' },
+    { key: 'source', label: 'Origem' },
     { key: 'closeDate', label: 'Fechamento' },
     { key: 'createdAt', label: 'Criado em' },
   ],
@@ -109,12 +132,16 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
     { key: 'name', label: 'Nome' },
     { key: 'company', label: 'Empresa' },
     { key: 'source', label: 'Origem' },
-    { key: 'status', label: 'Status' },
+    { key: 'channel', label: 'Canal' },
+    { key: 'stage', label: 'Etapa' },
+    { key: 'ownerId', label: 'Responsável' },
+    { key: 'score', label: 'Pontuação' },
     { key: 'createdAt', label: 'Criado em' },
   ],
   tasks: [
     { key: 'title', label: 'Título' },
     { key: 'status', label: 'Status' },
+    { key: 'assigneeId', label: 'Responsável' },
     { key: 'dueDate', label: 'Vencimento' },
     { key: 'createdAt', label: 'Criado em' },
   ],
@@ -246,6 +273,20 @@ const SOURCE_PATH: Record<ViewSource, string> = {
   ...SD_SOURCE_PATH,
 }
 
+/**
+ * Fontes cujas linhas trazem ids de etapa, pipeline ou pessoa: só elas
+ * buscam os nomes (`crm/dashboards/lookups`).
+ */
+export function sourceNeedsLookups(source: ChartSource): boolean {
+  return (
+    source === 'opportunities' ||
+    source === 'leads' ||
+    source === 'tasks' ||
+    source === 'companies' ||
+    source === 'notes'
+  )
+}
+
 /** Traduz a fonte (valor do enum) para o caminho de API completo. */
 export function sourceResource(source: ChartSource): string {
   if (source === 'socials') return ''
@@ -288,4 +329,105 @@ export const PERIOD_LABELS: Record<Period, string> = {
   '90d': 'Últimos 90 dias',
   month: 'Mês atual',
   year: 'Ano atual',
+}
+
+/* ------------------------------- kit de Vendas ------------------------------ */
+
+export interface SalesKindMeta {
+  kind: SalesKind
+  label: string
+  description: string
+  /** Tamanho inicial no grid (12 colunas). */
+  size: { w: number; h: number }
+  /** Campos de configuração que o widget usa. */
+  uses: {
+    period?: boolean
+    pipeline?: boolean
+    stalledDays?: boolean
+    limit?: number
+  }
+}
+
+export const SALES_KIND_META: SalesKindMeta[] = [
+  {
+    kind: 'goal',
+    label: 'Meta do mês',
+    description: 'Ganho × meta, % atingido, falta, dias úteis e ritmo.',
+    size: { w: 5, h: 7 },
+    uses: { period: true },
+  },
+  {
+    kind: 'ranking',
+    label: 'Ranking de vendedores',
+    description: 'Valor ganho e % da meta individual, pódio em destaque.',
+    size: { w: 4, h: 7 },
+    uses: { period: true, limit: 6 },
+  },
+  {
+    kind: 'wins-feed',
+    label: 'Feed de vitórias',
+    description: 'Últimos ganhos, atualizado a cada 15 s.',
+    size: { w: 3, h: 7 },
+    uses: { limit: 5 },
+  },
+  {
+    kind: 'scoreboard',
+    label: 'Placar do dia',
+    description: 'Vendas, valor, reuniões, atividades e leads de hoje.',
+    size: { w: 12, h: 3 },
+    uses: {},
+  },
+  {
+    kind: 'pipeline',
+    label: 'Pipeline ponderado',
+    description: 'Abertas por etapa: valor e valor × probabilidade.',
+    size: { w: 6, h: 6 },
+    uses: { pipeline: true },
+  },
+  {
+    kind: 'forecast',
+    label: 'Previsão',
+    description: 'Comprometido, ponderado e melhor cenário do período.',
+    size: { w: 3, h: 6 },
+    uses: { period: true, pipeline: true },
+  },
+  {
+    kind: 'conversion',
+    label: 'Conversão',
+    description: 'Lead → oportunidade → ganho, contra o período anterior.',
+    size: { w: 3, h: 6 },
+    uses: { period: true },
+  },
+  {
+    kind: 'deal-stats',
+    label: 'Ticket e ciclo médios',
+    description: 'Valor médio e dias até o ganho, com tendência.',
+    size: { w: 3, h: 4 },
+    uses: { period: true },
+  },
+  {
+    kind: 'stalled',
+    label: 'Negócios parados',
+    description: 'Abertas sem atividade há N dias.',
+    size: { w: 5, h: 4 },
+    uses: { pipeline: true, stalledDays: true, limit: 4 },
+  },
+  {
+    kind: 'proposals',
+    label: 'Propostas',
+    description: 'Aguardando resposta e vencendo nesta semana.',
+    size: { w: 4, h: 4 },
+    uses: { limit: 4 },
+  },
+]
+
+export function salesKindMeta(kind: SalesKind): SalesKindMeta {
+  return (
+    SALES_KIND_META.find((meta) => meta.kind === kind) ?? SALES_KIND_META[0]
+  )
+}
+
+export const SALES_PERIOD_LABELS: Record<SalesPeriod, string> = {
+  month: 'Mês atual',
+  quarter: 'Trimestre atual',
 }

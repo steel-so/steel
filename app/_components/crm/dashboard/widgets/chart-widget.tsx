@@ -16,11 +16,16 @@ import {
   aggregateTotal,
   formatAggregate,
   type Row,
+  refLabelsOf,
   withDerivedFields,
 } from '@/app/_components/crm/dashboard/widget-data'
-import { sourceResource } from '@/app/_components/crm/dashboard/widget-meta'
+import {
+  sourceNeedsLookups,
+  sourceResource,
+} from '@/app/_components/crm/dashboard/widget-meta'
 import { SteelIcon } from '@/components/icon/icon'
 import { cn } from '@/lib/utils'
+import { useDashboardLookups } from '@/src/hooks/use-crm-dashboard-tv'
 import type { ChartConfig } from '@/src/schemas/crm-dashboard.schema'
 
 const COLORS = [
@@ -88,12 +93,18 @@ function useChartRows(
   workspaceId: string,
   source: ChartConfig['source'],
   refreshKey: number,
+  tv?: { token: string; widgetId: string },
 ): {
   items: Row[]
   isLoading: boolean
 } {
   const path = source === 'socials' ? '' : sourceResource(source)
-  const { items, isLoading } = useDashboardRows(workspaceId, path, refreshKey)
+  const { items, isLoading } = useDashboardRows(
+    workspaceId,
+    path,
+    refreshKey,
+    tv,
+  )
   const derived = React.useMemo(
     () => withDerivedFields(source, items),
     [source, items],
@@ -171,31 +182,44 @@ export function AggregateTile({
 export function ChartWidget({
   workspaceId,
   config,
+  widgetId,
 }: {
   workspaceId: string
   config: ChartConfig
+  /** Id do widget: no link da TV, os dados vêm por ele. */
+  widgetId?: string
 }) {
-  const { variant, refreshKey } = useDashboardDisplay()
+  const { variant, refreshKey, tvToken, lookups } = useDashboardDisplay()
   const tv = variant === 'tv'
   const theme = tv ? TV_THEME : THEME
   const palette = tv ? TV_COLORS : COLORS
+  const tvSource = React.useMemo(
+    () => (tvToken && widgetId ? { token: tvToken, widgetId } : undefined),
+    [tvToken, widgetId],
+  )
   const { items, isLoading } = useChartRows(
     workspaceId,
     config.source,
     refreshKey,
+    tvSource,
   )
+  const names = useDashboardLookups(
+    tvToken || !sourceNeedsLookups(config.source) ? null : workspaceId,
+    lookups,
+  )
+  const labels = React.useMemo(() => refLabelsOf(names), [names])
 
   const data = React.useMemo(
-    () => aggregateChart(items, config),
-    [items, config],
+    () => aggregateChart(items, config, undefined, labels),
+    [items, config, labels],
   )
   const total = React.useMemo(
-    () => aggregateTotal(items, config),
-    [items, config],
+    () => aggregateTotal(items, config, undefined, labels),
+    [items, config, labels],
   )
   const compare = React.useMemo(
-    () => aggregateCompare(items, config),
-    [items, config],
+    () => aggregateCompare(items, config, undefined, labels),
+    [items, config, labels],
   )
 
   if (isLoading) return <Empty message='Carregando…' />

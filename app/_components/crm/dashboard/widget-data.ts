@@ -7,6 +7,7 @@ import type {
   ViewConfig,
   ViewSource,
 } from '@/src/schemas/crm-dashboard.schema'
+import type { CrmDashboardLookupsDTO } from '@/types/crm-dashboard'
 
 export type Row = Record<string, unknown>
 type Filter = ViewConfig['filters'][number]
@@ -32,19 +33,78 @@ export function formatValue(value: unknown): string {
   return String(value)
 }
 
-export function passesFilters(row: Row, filters: Filter[]): boolean {
+/* ------------------------------ nomes dos ids ------------------------------ */
+
+/** Campo → (id → nome): resolve `stageId`, `ownerId`… para exibição. */
+export type RefLabels = Record<string, Map<string, string>>
+
+/** Rótulos fixos de enums que aparecem crus nas linhas. */
+const LEAD_STAGE_LABELS: [string, string][] = [
+  ['RECEIVED', 'Recebido'],
+  ['IN_CONTACT', 'Em contato'],
+  ['QUALIFIED', 'Qualificado'],
+  ['OPPORTUNITY', 'Oportunidade'],
+  ['PROPOSAL', 'Proposta'],
+  ['CLOSED', 'Fechado'],
+]
+
+/**
+ * Mapas de nome por campo a partir dos lookups do workspace. Os campos de
+ * pessoa (`ownerId`, `assigneeId`…) usam os membros; um id sem membro
+ * (quem saiu do workspace) continua aparecendo cru.
+ */
+export function refLabelsOf(
+  lookups: CrmDashboardLookupsDTO | null | undefined,
+): RefLabels {
+  if (!lookups) return {}
+  const users = new Map(lookups.users.map((user) => [user.id, user.name]))
+  return {
+    stageId: new Map(lookups.stages.map((stage) => [stage.id, stage.name])),
+    pipelineId: new Map(lookups.pipelines.map((p) => [p.id, p.name])),
+    ownerId: users,
+    assigneeId: users,
+    responsibleId: users,
+    createdById: users,
+    updatedById: users,
+    stage: new Map(LEAD_STAGE_LABELS),
+  }
+}
+
+/** Texto de uma célula, trocando ids conhecidos pelo nome. */
+export function formatCell(
+  field: string,
+  value: unknown,
+  labels?: RefLabels,
+): string {
+  if (typeof value === 'string') {
+    const label = labels?.[field]?.get(value)
+    if (label) return label
+  }
+  return formatValue(value)
+}
+
+export function passesFilters(
+  row: Row,
+  filters: Filter[],
+  labels?: RefLabels,
+): boolean {
   return filters.every((filter) => {
     const raw = row[filter.field]
     const text = Array.isArray(raw) ? raw.join(' ') : String(raw ?? '')
     const needle = (filter.value ?? '').toLowerCase()
     const hay = text.toLowerCase()
+    // "Etapa igual a Proposta enviada" casa pelo nome, não só pelo id.
+    const label =
+      typeof raw === 'string'
+        ? (labels?.[filter.field]?.get(raw)?.toLowerCase() ?? null)
+        : null
     switch (filter.operator) {
       case 'contains':
-        return hay.includes(needle)
+        return hay.includes(needle) || (label?.includes(needle) ?? false)
       case 'equals':
-        return hay === needle
+        return hay === needle || label === needle
       case 'not_equals':
-        return hay !== needle
+        return hay !== needle && label !== needle
       case 'is_empty':
         return raw === null || raw === undefined || text === ''
       case 'is_not_empty':
@@ -293,6 +353,7 @@ export function aggregateChart(
   rows: Row[],
   config: ChartConfig,
   now: Date = new Date(),
+  labels?: RefLabels,
 ): ChartData {
   const empty: ChartData = {
     categories: [],
@@ -304,7 +365,7 @@ export function aggregateChart(
   const xField = config.xField
 
   const filtered = applyPeriod(
-    rows.filter((row) => passesFilters(row, config.filters)),
+    rows.filter((row) => passesFilters(row, config.filters, labels)),
     config,
     now,
   )
@@ -320,9 +381,9 @@ export function aggregateChart(
     const bucket = config.dateBucket
       ? dateBucketOf(raw, config.dateBucket)
       : null
-    const category = bucket ? bucket.label : formatValue(raw)
+    const category = bucket ? bucket.label : formatCell(xField, raw, labels)
     const series = config.groupBy
-      ? formatValue(row[config.groupBy])
+      ? formatCell(config.groupBy, row[config.groupBy], labels)
       : SINGLE_SERIES
     seriesSet.add(series)
     let inner = accs.get(category)
@@ -414,9 +475,10 @@ export function aggregateTotal(
   rows: Row[],
   config: ChartConfig,
   now: Date = new Date(),
+  labels?: RefLabels,
 ): number {
   const filtered = applyPeriod(
-    rows.filter((row) => passesFilters(row, config.filters)),
+    rows.filter((row) => passesFilters(row, config.filters, labels)),
     config,
     now,
   )
@@ -448,6 +510,7 @@ export function aggregateCompare(
   rows: Row[],
   config: ChartConfig,
   now: Date = new Date(),
+  labels?: RefLabels,
 ): CompareResult | null {
   if (!config.compareRange) return null
 
@@ -457,7 +520,9 @@ export function aggregateCompare(
   const currentStart = end - days * DAY_MS
   const previousStart = end - days * 2 * DAY_MS
 
-  const filtered = rows.filter((row) => passesFilters(row, config.filters))
+  const filtered = rows.filter((row) =>
+    passesFilters(row, config.filters, labels),
+  )
   const currentRows: Row[] = []
   const previousRows: Row[] = []
 
@@ -501,9 +566,10 @@ export function viewRows(
   rows: Row[],
   config: ViewConfig,
   now: Date = new Date(),
+  labels?: RefLabels,
 ): Row[] {
   const filtered = applyPeriod(
-    rows.filter((row) => passesFilters(row, config.filters)),
+    rows.filter((row) => passesFilters(row, config.filters, labels)),
     config,
     now,
   )
