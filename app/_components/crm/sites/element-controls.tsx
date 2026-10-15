@@ -106,9 +106,9 @@ export function anchorTargets(
     const popup = node.type === SITE_TYPES.popup
     if (!anchor && !popup) continue
     const name =
-      node.meta?.name ??
-      (popup ? (node.props.name as string | undefined) : undefined) ??
-      labels[node.type] ??
+      node.meta?.name ||
+      (popup ? (node.props.name as string | undefined) : undefined) ||
+      labels[node.type] ||
       node.type
     out.push({
       anchor: anchor || `popup-${node.id}`,

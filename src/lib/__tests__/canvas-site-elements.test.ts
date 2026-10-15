@@ -111,7 +111,9 @@ describe('gallery', () => {
 describe('carousel', () => {
   it('renders a region with a scroll-snap track and controls', () => {
     const html = bare(out(slides(3, { autoplay: true, interval: 5 })))
-    expect(html).toMatch(/<section class="s-carousel s-[0-9a-z]+" aria-roledescription="carrossel"/)
+    expect(html).toMatch(
+      /<section class="s-carousel s-[0-9a-z]+" aria-roledescription="carrossel"/,
+    )
     expect(html).toContain('aria-label="Destaques"')
     expect(html).toContain('data-s-carousel=""')
     expect(html).toContain('data-autoplay="5"')
@@ -940,15 +942,19 @@ describe('edge cases', () => {
   it('skips missing children and compiles image backgrounds of slides', () => {
     const doc = siteDoc([
       spec(SITE_TYPES.carousel, {}, [
-        spec(SITE_TYPES.slide, {
-          background: {
-            kind: 'image',
-            url: '/bg.png',
-            position: 'center',
-            size: 'cover',
-            repeat: false,
+        spec(
+          SITE_TYPES.slide,
+          {
+            background: {
+              kind: 'image',
+              url: '/bg.png',
+              position: 'center',
+              size: 'cover',
+              repeat: false,
+            },
           },
-        }, [text('Oi')]),
+          [text('Oi')],
+        ),
       ]),
     ])
     doc.nodes.root = {
