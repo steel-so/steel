@@ -1,0 +1,82 @@
+---
+title: Equipes no WhatsApp e botões que fazem o trabalho
+slug: equipes-e-botoes-com-acoes-no-whatsapp
+date: 2026-10-14
+summary: Modelos da Meta com imagem, vídeo ou documento e até dois botões, ações automáticas no clique, botões nas mensagens rápidas, selo de qualidade dos modelos e Equipes com líderes, agentes e visibilidade das conversas por equipe.
+tags: [COMUNICACAO, CRM]
+cover: /changelog/2026-10-14/capa-whatsapp.jpg
+---
+
+## Botões com ações
+
+Um botão de resposta agora pode fazer coisas quando o cliente toca nele. Monte
+até **5 ações**, que rodam na ordem que você definir:
+
+- **Responder automaticamente** com um texto pronto;
+- **Atribuir a um atendente** ou **mover para uma equipe**;
+- **Mudar o status** da conversa (em atendimento ou encerrada, com motivo);
+- **Disparar um workflow do CRM**;
+- **Chamar uma API externa**;
+- **Pedir à Steel AI** que responda seguindo uma instrução sua.
+
+Se uma ação falhar, as seguintes continuam. Botões de link abrem o endereço,
+mas não disparam ações: o WhatsApp não avisa quando um link é aberto.
+
+![Mensagem rápida com dois botões: "Quero agendar", que responde, move a conversa para a equipe Suporte N1 e muda o status, e "Ver tratamentos", um link; à direita, a prévia no estilo do WhatsApp](/changelog/2026-10-14/whatsapp-botoes.webp)
+
+## Modelos da Meta com mídia e botões
+
+Ao criar um modelo, escolha um cabeçalho de **texto, imagem, vídeo ou
+documento**, escreva o corpo e o rodapé e adicione **até 2 botões**, vendo a
+prévia ao lado. Nos modelos aprovados, **Ações dos botões** deixa configurar o
+que cada botão faz sem mandar o modelo para nova aprovação.
+
+## Botões nas mensagens rápidas
+
+As mensagens rápidas também levam botões, com as mesmas ações, tanto na Z-API
+quanto na Meta. No composer, a mensagem com botões aparece como um cartão antes
+de enviar, e na conversa você vê os botões enviados e qual deles o cliente
+tocou.
+
+<Callout>
+  **Na Meta**, botões fora de um modelo só vão dentro da janela de 24 horas após
+  a última mensagem do contato. **Na Z-API**, eles dependem do suporte do
+  WhatsApp a APIs não oficiais e podem não aparecer em alguns aparelhos.
+</Callout>
+
+## Qualidade dos modelos
+
+Cada modelo da Meta mostra um selo de qualidade **verde, amarelo ou vermelho**,
+e os status **pausado** e **desativado** aparecem com o motivo. O selo também
+aparece na escolha do modelo na conversa e nas transmissões, com um aviso nos
+vermelhos. Donos e administradores recebem uma notificação quando um modelo cai
+para vermelho, é pausado, desativado ou rejeitado.
+
+## Equipes
+
+Em **Comunicação › Equipes**, donos e administradores criam equipes e definem
+quem é **líder** e quem é **agente** em cada uma. Na caixa de entrada, filtre
+por **Todas, Minhas, Fila** ou por equipe, mova a conversa para outra equipe ou
+devolva-a para a fila.
+
+![Tela de Equipes com as equipes Comercial e Suporte N1, seus líderes e agentes](/changelog/2026-10-14/whatsapp-equipes.webp)
+
+## Quem vê cada conversa
+
+Até aqui, todo membro via todas as conversas. A partir de agora:
+
+- O **dono do workspace** vê tudo.
+- **Administradores** veem tudo, a menos que façam parte de alguma equipe.
+- **Líderes** veem as conversas da sua equipe, as dos seus agentes e a fila da
+  equipe, e podem atribuí-las.
+- **Agentes** veem as conversas atribuídas a eles e a fila das suas equipes.
+
+<Callout>
+  **Atenção:** quem não está em nenhuma equipe (e não é dono nem administrador)
+  passa a ver **só as próprias conversas e a fila geral** — inclusive em
+  workspaces que ainda não criaram equipes. Monte as equipes para que cada
+  pessoa continue vendo o que precisa.
+</Callout>
+
+A regra vale em todo lugar: na lista, nas notificações, na busca, nos
+relatórios e na Steel AI.
