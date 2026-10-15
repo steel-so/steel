@@ -1,8 +1,9 @@
 creation_rules:
   - path_regex: secrets/.*\.env$
     age: >-
-      age1lv0wq4td3kclpmt9djut50r6sw84wtyu4angtqwruj3xyu26yeeq7kd2ed
-    # Par age próprio do Steel (independente do nexo). A chave privada vive
-    # apenas no segredo SOPS_AGE_KEY do GitHub Actions — nunca é commitada.
-    # Rotacionada em 02/10/2026 junto da entrada das chaves de Sentry,
-    # PostHog e Backblaze; a anterior não estava em nenhuma máquina local.
+      age1jlwemm39uvtlcufcvv4ye6zya695lwcaj8xxpvdgl4ueqfa0uc2q3442jq
+    # Par age próprio do Steel (independente do nexo). A chave privada vive no
+    # segredo SOPS_AGE_KEY do GitHub Actions e na máquina de desenvolvimento do
+    # responsável (~/.config/sops/age/keys.txt) — nunca é commitada.
+    # Rotacionada em 15/10/2026: a chave de 02/10 não estava em nenhuma máquina,
+    # então o arquivo da homologação foi recriado a partir do .env do servidor.
