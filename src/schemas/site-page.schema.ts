@@ -16,8 +16,14 @@ export function parseSitePageSeo(value: unknown): SitePageSeoDTO {
   return parsed.success ? parsed.data : {}
 }
 
-/** Canvas document of the `site` catalog; validated by the service. */
-const DocumentSchema = z.record(z.string(), z.unknown())
+/** Canvas document envelope (`CanvasDocument`); the service validates the
+ * tree against the `site` catalog. */
+export const SiteDocumentInputSchema = z.object({
+  catalog: z.string(),
+  version: z.number(),
+  rootId: z.string(),
+  nodes: z.record(z.string(), z.unknown()),
+})
 
 export const CreateSitePageSchema = z.object({
   title: z.string().trim().min(1, 'Título é obrigatório').max(120),
@@ -25,7 +31,7 @@ export const CreateSitePageSchema = z.object({
   slug: SitePageSlugSchema.optional(),
   parentId: z.string().min(1).nullable().optional(),
   /** Optional: a blank page when absent. */
-  document: DocumentSchema.optional(),
+  document: SiteDocumentInputSchema.optional(),
   seo: SitePageSeoSchema.optional(),
 })
 
@@ -36,7 +42,7 @@ export const UpdateSitePageSchema = z
     title: z.string().trim().min(1, 'Título é obrigatório').max(120).optional(),
     slug: SitePageSlugSchema.optional(),
     parentId: z.string().min(1).nullable().optional(),
-    document: DocumentSchema.optional(),
+    document: SiteDocumentInputSchema.optional(),
     seo: SitePageSeoSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {

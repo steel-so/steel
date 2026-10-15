@@ -214,7 +214,7 @@ describe('SitePageService.create', () => {
     expectErr(
       await SitePageService.create('u1', WS, SITE, {
         title: 'x',
-        document: { a: 1 },
+        document: { a: 1 } as never,
       }),
       'SITE_DOCUMENT_INVALID',
     )
@@ -299,7 +299,9 @@ describe('SitePageService.update', () => {
       'SITE_PAGE_PROTECTED',
     )
     expectErr(
-      await SitePageService.update('u1', WS, SITE, 'contato', { document: {} }),
+      await SitePageService.update('u1', WS, SITE, 'contato', {
+        document: {} as never,
+      }),
       'SITE_DOCUMENT_INVALID',
     )
     pages.update.mockResolvedValueOnce(

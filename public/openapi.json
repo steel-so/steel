@@ -37455,7 +37455,22 @@
                   },
                   "document": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "properties": {
+                      "catalog": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "rootId": {
+                        "type": "string"
+                      },
+                      "nodes": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": ["catalog", "version", "rootId", "nodes"]
                   }
                 },
                 "required": ["kind", "name"]
@@ -37629,7 +37644,22 @@
                   },
                   "document": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "properties": {
+                      "catalog": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "rootId": {
+                        "type": "string"
+                      },
+                      "nodes": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": ["catalog", "version", "rootId", "nodes"]
                   }
                 }
               }
@@ -37873,7 +37903,22 @@
                   },
                   "document": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "properties": {
+                      "catalog": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "rootId": {
+                        "type": "string"
+                      },
+                      "nodes": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": ["catalog", "version", "rootId", "nodes"]
                   },
                   "seo": {
                     "type": "object",
@@ -38175,7 +38220,22 @@
                   },
                   "document": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "properties": {
+                      "catalog": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "rootId": {
+                        "type": "string"
+                      },
+                      "nodes": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": ["catalog", "version", "rootId", "nodes"]
                   },
                   "seo": {
                     "type": "object",

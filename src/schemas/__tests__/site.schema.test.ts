@@ -88,6 +88,14 @@ describe('site schemas', () => {
       CreateSitePageSchema.safeParse({ title: 'x', slug: 'a b' }).success,
     ).toBe(false)
     expect(UpdateSitePageSchema.safeParse({}).success).toBe(false)
+    expect(
+      UpdateSitePageSchema.safeParse({ document: { catalog: 'site' } }).success,
+    ).toBe(false)
+    expect(
+      UpdateSitePageSchema.safeParse({
+        document: { catalog: 'site', version: 1, rootId: 'root', nodes: {} },
+      }).success,
+    ).toBe(true)
     expect(UpdateSitePageSchema.safeParse({ parentId: null }).success).toBe(
       true,
     )

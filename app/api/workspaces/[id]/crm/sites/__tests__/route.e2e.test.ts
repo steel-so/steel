@@ -84,7 +84,7 @@ describe('site lifecycle', () => {
 
     const badDoc = await patchJson(
       `${base}/${site.id}/pages/${pageBody.id}`,
-      { document: { catalog: 'email' } },
+      { document: { ...document, catalog: 'email' } },
       user.cookie,
     )
     expect(badDoc.status).toBe(422)

@@ -140,7 +140,7 @@ describe('SiteGlobalService', () => {
       await SiteGlobalService.create('u1', WS, SITE, {
         kind: 'SYMBOL',
         name: 'x',
-        document: { catalog: 'email' },
+        document: { catalog: 'email' } as never,
       }),
       'SITE_DOCUMENT_INVALID',
     )
@@ -165,7 +165,9 @@ describe('SiteGlobalService', () => {
     await SiteGlobalService.update('u1', WS, SITE, 'g1', { name: 'Só nome' })
     expect(globals.update.mock.calls[1][1].document).toBeUndefined()
     expectErr(
-      await SiteGlobalService.update('u1', WS, SITE, 'g1', { document: {} }),
+      await SiteGlobalService.update('u1', WS, SITE, 'g1', {
+        document: {} as never,
+      }),
       'SITE_DOCUMENT_INVALID',
     )
     globals.update.mockResolvedValueOnce(err(databaseError()))
