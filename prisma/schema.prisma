@@ -209,6 +209,9 @@ model User {
   sdIntegrationLinksCreated SdIntegrationLink[]        @relation("SdIntegrationLinkCreatedBy")
   workspaceExportsRequested WorkspaceExport[]          @relation("WorkspaceExportRequestedBy")
   integrationsCreated       WorkspaceIntegration[]     @relation("WorkspaceIntegrationCreatedBy")
+  sitesCreated              Site[]                     @relation("SiteCreatedBy")
+  sitesUpdated              Site[]                     @relation("SiteUpdatedBy")
+  siteVersionsPublished     SiteVersion[]              @relation("SiteVersionPublishedBy")
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -553,6 +556,7 @@ model Workspace {
   searchDocuments           SearchDocument[]
   workspaceExports          WorkspaceExport[]
   integrations              WorkspaceIntegration[]
+  sites                     Site[]
 
   @@index([status])
   @@map("workspaces")
@@ -7469,4 +7473,144 @@ model WhiteboardVersion {
 
   @@index([whiteboardId, kind, createdAt])
   @@map("whiteboard_versions")
+}
+
+// ─── Site builder (ADR 0026, phase S1) ────────────────────────────────────
+
+enum SiteStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SiteGlobalKind {
+  HEADER
+  FOOTER
+  SYMBOL
+}
+
+/// A website built with the Steel Canvas `site` catalog. `slug` is globally
+/// unique because it doubles as the subdomain (`<slug>.<SITES_ROOT_DOMAIN>`);
+/// a soft-deleted site gets its slug rewritten so the name is freed. The draft
+/// lives in the pages/globals/theme rows; the public runtime only ever reads
+/// `publishedVersion` (an immutable snapshot).
+model Site {
+  id                  String     @id @default(cuid())
+  workspaceId         String     @map("workspace_id")
+  name                String
+  slug                String     @unique
+  status              SiteStatus @default(DRAFT)
+  /// Theme of the `site` catalog (palette, typography, buttons, spacing).
+  theme               Json       @default("{}")
+  /// SEO defaults, favicon, social image, tracking ids, cookie banner.
+  settings            Json       @default("{}")
+  homePageId          String?    @map("home_page_id")
+  publishedVersionId  String?    @unique @map("published_version_id")
+  publishedAt         DateTime?  @map("published_at")
+  /// Landing page this site was migrated from (idempotent migration).
+  sourceLandingPageId String?    @unique @map("source_landing_page_id")
+  createdById         String     @map("created_by_id")
+  updatedById         String?    @map("updated_by_id")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  deletedAt           DateTime?  @map("deleted_at")
+
+  workspace        Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy        User          @relation("SiteCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?         @relation("SiteUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  publishedVersion SiteVersion?  @relation("SitePublishedVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  pages            SitePage[]
+  globals          SiteGlobal[]
+  versions         SiteVersion[] @relation("SiteVersions")
+  views            SiteView[]
+
+  @@index([workspaceId])
+  @@index([deletedAt])
+  @@map("sites")
+}
+
+/// One page of a site. `slug` is the last URL segment; `path` is the full
+/// path (parent slugs joined by `/`), unique per site. The home page is
+/// served at `/` and also at its own path.
+model SitePage {
+  id        String   @id @default(cuid())
+  siteId    String   @map("site_id")
+  parentId  String?  @map("parent_id")
+  title     String
+  slug      String
+  path      String
+  /// Canvas document of the `site` catalog.
+  document  Json
+  /// Title, description, social image, noindex.
+  seo       Json     @default("{}")
+  position  Int      @default(0)
+  isHome    Boolean  @default(false) @map("is_home")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  site     Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  parent   SitePage?  @relation("SitePageTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children SitePage[] @relation("SitePageTree")
+
+  @@unique([siteId, path])
+  @@index([siteId, position])
+  @@index([parentId])
+  @@map("site_pages")
+}
+
+/// Shared document of a site: the header and footer around every page, and
+/// symbols (reusable blocks) referenced by `meta.symbolId`.
+model SiteGlobal {
+  id        String         @id @default(cuid())
+  siteId    String         @map("site_id")
+  kind      SiteGlobalKind
+  name      String
+  document  Json
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, kind])
+  @@map("site_globals")
+}
+
+/// Immutable snapshot of a publication: theme, settings, globals and pages.
+/// Restoring copies it back into the draft rows.
+model SiteVersion {
+  id            String   @id @default(cuid())
+  siteId        String   @map("site_id")
+  number        Int
+  snapshot      Json
+  publishedById String?  @map("published_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  site          Site  @relation("SiteVersions", fields: [siteId], references: [id], onDelete: Cascade)
+  publishedBy   User? @relation("SiteVersionPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  publishedSite Site? @relation("SitePublishedVersion")
+
+  @@unique([siteId, number])
+  @@map("site_versions")
+}
+
+/// Anonymous page view of a published site. No PII: `visitorHash` is a
+/// daily-salted hash (IP + user agent + site + day), the referrer keeps only
+/// its host and UTM values are capped.
+model SiteView {
+  id          String   @id @default(cuid())
+  siteId      String   @map("site_id")
+  pageId      String?  @map("page_id")
+  path        String
+  visitorHash String   @map("visitor_hash")
+  referrer    String?
+  utmSource   String?  @map("utm_source")
+  utmMedium   String?  @map("utm_medium")
+  utmCampaign String?  @map("utm_campaign")
+  utmTerm     String?  @map("utm_term")
+  utmContent  String?  @map("utm_content")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt])
+  @@map("site_views")
 }
