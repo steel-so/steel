@@ -1,4 +1,4 @@
-import type { CrmEmailBrand } from '@prisma/client'
+import type { CrmEmailBrand, Prisma } from '@prisma/client'
 import { notFound } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -14,6 +14,15 @@ export type PersonalizationContact = {
   city: string | null
   jobTitle: string | null
   companyName: string | null
+}
+
+/** CRM product fields an e-mail product block shows. */
+export type EmailProductRow = {
+  id: string
+  name: string
+  description: string | null
+  unitPrice: Prisma.Decimal
+  currency: string
 }
 
 export type EmailLinkTargets = {
@@ -93,6 +102,29 @@ export const CrmEmailBuilderRepository = {
       )
     } catch (error) {
       return err(dbError('Failed to find CRM contacts for e-mail', error))
+    }
+  },
+
+  /** Products of the workspace (not deleted) used by product blocks. */
+  async findProducts(
+    workspaceId: string,
+    productIds: string[],
+  ): Promise<Result<EmailProductRow[]>> {
+    if (productIds.length === 0) return ok([])
+    try {
+      const products = await prisma.crmProduct.findMany({
+        where: { id: { in: productIds }, workspaceId, deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          unitPrice: true,
+          currency: true,
+        },
+      })
+      return ok(products)
+    } catch (error) {
+      return err(dbError('Failed to find CRM products for e-mail', error))
     }
   },
 

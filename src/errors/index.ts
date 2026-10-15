@@ -41,6 +41,8 @@ export {
   crmEmailCampaignAlreadySent,
   crmEmailCampaignNoRecipients,
   crmEmailCampaignNotFound,
+  crmEmailCanvasHtmlForbidden,
+  crmEmailCanvasInvalid,
   crmEmailMessageNotFound,
   crmEmailTemplateNotBuilder,
   crmEmailTemplateNotFound,

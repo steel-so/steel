@@ -129,6 +129,14 @@ export function EmailBuilderEditorPage({
       </div>
     )
   }
+  if (template.data.builderDocument.version !== 1) {
+    return (
+      <div className='p-6 text-muted-foreground text-sm'>
+        Este template usa o novo editor de arrastar e soltar, que ainda está
+        chegando a esta tela.
+      </div>
+    )
+  }
   return (
     <EmailBuilderEditor
       workspaceId={workspaceId}

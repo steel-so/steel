@@ -114,3 +114,12 @@ variáveis no HTML já renderizado.
 Campanhas criadas pela tela atual com um template `BUILDER` gravam
 `templateId`, `campaignLink` e o HTML/texto renderizados na criação (cache
 por campanha); no envio cada destinatário recebe as variáveis resolvidas.
+
+## Versão 2 (Steel Canvas)
+
+O editor de arrastar e soltar (ADR 0026) grava em `builderDocument` um
+documento `{ catalog: "email", version: 2, rootId, nodes }`. O catálogo, o
+conversor da versão 1, as regras do servidor e o checklist estão em
+[docs/canvas/email-catalog.md](canvas/email-catalog.md). Os modelos desta
+página continuam valendo: viram os documentos iniciais e as "Seções prontas"
+do editor novo.

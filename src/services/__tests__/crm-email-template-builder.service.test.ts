@@ -127,7 +127,10 @@ describe('CrmEmailTemplateService with the visual builder', () => {
           builderDocument: doc,
         }),
       )
-      expect(mockedBuild).toHaveBeenCalledWith('ws1', doc, 'Antigo')
+      expect(mockedBuild).toHaveBeenCalledWith('ws1', doc, 'Antigo', {
+        privileged: false,
+        previous: existing.builderDocument,
+      })
       expect(mockedRepo.update).toHaveBeenCalledWith(
         't1',
         expect.objectContaining({
@@ -158,6 +161,7 @@ describe('CrmEmailTemplateService with the visual builder', () => {
         'ws1',
         createBuilderDocument('newsletter'),
         'Novo',
+        { privileged: false, previous: existing.builderDocument },
       )
     })
 

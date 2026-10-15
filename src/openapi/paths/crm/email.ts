@@ -78,6 +78,14 @@ const NOT_BUILDER: ErrorEntry = {
   code: 'CRM_EMAIL_TEMPLATE_NOT_BUILDER',
   when: '`builderDocument` enviado para um template `LEGACY`',
 }
+const CANVAS_INVALID: ErrorEntry = {
+  code: 'CRM_EMAIL_CANVAS_INVALID',
+  when: 'Documento versão 2 fora das regras do catálogo de e-mail (bloco fora de uma coluna, mais de 4 colunas, rodapé ausente ou fora do fim, propriedades inválidas); `details.issues` lista todos os problemas',
+}
+const CANVAS_HTML_FORBIDDEN: ErrorEntry = {
+  code: 'CRM_EMAIL_CANVAS_HTML_FORBIDDEN',
+  when: 'Quem não é OWNER/ADMIN do workspace adicionou ou alterou um bloco de HTML',
+}
 const STRUCTURE_LOCKED: ErrorEntry = {
   code: 'CRM_EMAIL_BUILDER_STRUCTURE_LOCKED',
   when: 'Documento fora da estrutura travada do modelo (seção adicionada, removida, de outro tipo, ocultada sem ser opcional ou fora de posição), troca de modelo ou HTML livre num template `BUILDER`',
@@ -114,7 +122,12 @@ const builderRoutes: RouteConfig[] = [
     responses: {
       200: { description: 'E-mail renderizado.', schema: CrmEmailRenderDTO },
     },
-    errors: [...CRM_ERRORS, TEMPLATE_NOT_FOUND, STRUCTURE_LOCKED],
+    errors: [
+      ...CRM_ERRORS,
+      TEMPLATE_NOT_FOUND,
+      STRUCTURE_LOCKED,
+      CANVAS_INVALID,
+    ],
   },
   {
     method: 'post',
@@ -130,7 +143,13 @@ const builderRoutes: RouteConfig[] = [
     responses: {
       200: { description: 'Teste enviado.', schema: CrmEmailTestSendDTO },
     },
-    errors: [...CRM_ERRORS, TEMPLATE_NOT_FOUND, STRUCTURE_LOCKED, 'MAIL_ERROR'],
+    errors: [
+      ...CRM_ERRORS,
+      TEMPLATE_NOT_FOUND,
+      STRUCTURE_LOCKED,
+      CANVAS_INVALID,
+      'MAIL_ERROR',
+    ],
   },
   {
     method: 'get',
@@ -240,7 +259,7 @@ export const crmEmailRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Criar template de e-mail',
     description: describe(
-      'Conteúdo livre (`contentHtml`, com o estado do editor em `contentJson`) **ou** a partir de um layout fixo (`templateId` + `templateProps`) — nesse caso o HTML é renderizado pelo servidor e `contentHtml` pode ser omitido.',
+      'Conteúdo livre (`contentHtml`, com o estado do editor em `contentJson`) **ou** a partir de um layout fixo (`templateId` + `templateProps`) — nesse caso o HTML é renderizado pelo servidor e `contentHtml` pode ser omitido. Com `builderLayout`, cria um template do editor visual com o conteúdo do modelo: versão 1 (estrutura travada) por padrão, ou documento Steel Canvas com `builderVersion: 2`.',
       crmAccess('email', 'CREATE'),
     ),
     consent: true,
@@ -290,7 +309,7 @@ export const crmEmailRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Atualizar template de e-mail',
     description: describe(
-      'Atualização parcial. Mudar `templateId` ou `templateProps` re-renderiza o HTML a partir do layout (ignorando `contentHtml`); senão, `contentHtml` enviado é gravado como está.',
+      'Atualização parcial. Mudar `templateId` ou `templateProps` re-renderiza o HTML a partir do layout (ignorando `contentHtml`); senão, `contentHtml` enviado é gravado como está. Em templates `BUILDER`, `builderDocument` aceita a versão 1 ou a 2 (Steel Canvas); um template passa da 1 para a 2, nunca o contrário. Blocos de HTML só podem ser adicionados ou alterados por OWNER/ADMIN.',
       crmAccess('email', 'EDIT'),
     ),
     params: { templateId: TEMPLATE_ID },
@@ -305,6 +324,8 @@ export const crmEmailRoutes: RouteConfig[] = [
       LAYOUT_UNKNOWN,
       NOT_BUILDER,
       STRUCTURE_LOCKED,
+      CANVAS_INVALID,
+      CANVAS_HTML_FORBIDDEN,
     ],
   },
   {

@@ -328,6 +328,13 @@ export const ERROR_CODES = {
     code: 'CRM_EMAIL_BUILDER_STRUCTURE_LOCKED',
     status: 422,
   },
+  // E-mail canvas (v2) document fails the catalog rules/props schemas.
+  CRM_EMAIL_CANVAS_INVALID: { code: 'CRM_EMAIL_CANVAS_INVALID', status: 422 },
+  // Only workspace admins may add or change an HTML block.
+  CRM_EMAIL_CANVAS_HTML_FORBIDDEN: {
+    code: 'CRM_EMAIL_CANVAS_HTML_FORBIDDEN',
+    status: 403,
+  },
   // Multichannel campaigns (ADR 0025)
   CRM_CAMPAIGN_NOT_FOUND: { code: 'CRM_CAMPAIGN_NOT_FOUND', status: 404 },
   // Edit/launch outside DRAFT, or an invalid pause/resume/cancel transition.

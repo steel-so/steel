@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
   createFakeCrmEmailBrand,
@@ -10,6 +11,7 @@ import { createBuilderDocument } from '@/src/lib/crm-email-builder/layouts'
 import {
   toCrmEmailBrandDTO,
   toCrmEmailLinkTargetsDTO,
+  toEmailProductData,
 } from '../crm-email-builder.mapper'
 import {
   toCrmEmailCampaignDTO,
@@ -169,5 +171,41 @@ describe('toCrmEmailCampaignDTO() counts and dates', () => {
       toCrmEmailCampaignRecipientDTO(createFakeCrmEmailCampaignRecipient())
         .sentAt,
     ).toBeNull()
+  })
+})
+
+describe('toEmailProductData()', () => {
+  it('should index products by id with the price in pt-BR', () => {
+    const data = toEmailProductData([
+      {
+        id: 'p1',
+        name: 'Plano',
+        description: null,
+        unitPrice: new Prisma.Decimal('1290.5'),
+        currency: 'BRL',
+      },
+      {
+        id: 'p2',
+        name: 'Global',
+        description: 'Em dólar',
+        unitPrice: new Prisma.Decimal('10'),
+        currency: 'USD',
+      },
+      {
+        id: 'p3',
+        name: 'Moeda estranha',
+        description: '',
+        unitPrice: new Prisma.Decimal('1'),
+        currency: 'real',
+      },
+    ])
+    expect(data.p1).toEqual({
+      name: 'Plano',
+      description: '',
+      price: expect.stringMatching(/^R\$\s1\.290,50$/),
+    })
+    expect(data.p2.price).toMatch(/US\$\s10,00/)
+    expect(data.p2.description).toBe('Em dólar')
+    expect(data.p3.price).toMatch(/^R\$\s1,00$/)
   })
 })

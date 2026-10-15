@@ -1,4 +1,7 @@
-import type { EmailBuilderDocument } from '@/src/schemas/crm-email-builder.schema'
+import type {
+  EmailBuilderDocument,
+  EmailCanvasDocument,
+} from '@/src/schemas/crm-email-builder.schema'
 
 export interface CrmEmailTemplateDTO {
   id: string
@@ -10,7 +13,9 @@ export interface CrmEmailTemplateDTO {
   templateProps: Record<string, string> | null
   /** LEGACY = free HTML/old layout; BUILDER = visual editor document. */
   kind: 'LEGACY' | 'BUILDER'
-  builderDocument: EmailBuilderDocument | null
+  /** v1 (locked layout) or v2 (Steel Canvas — open both with
+   * `openEmailDocument` from src/lib/canvas-email/convert-v1). */
+  builderDocument: EmailBuilderDocument | EmailCanvasDocument | null
   contentText: string | null
   workspaceId: string
   createdById: string

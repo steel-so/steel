@@ -36,7 +36,7 @@ export const CrmEmailTemplateDTO = dto(
     }),
     builderDocument: z.unknown().nullable().meta({
       description:
-        'Documento do editor visual: `{ version: 1, layout, previewText, sections: [{ id, type, hidden, props }] }`. A estrutura é travada pelo modelo.',
+        'Documento do editor visual. Versão 1: `{ version: 1, layout, previewText, sections: [{ id, type, hidden, props }] }`, com a estrutura travada pelo modelo. Versão 2 (Steel Canvas, ADR 0026): `{ catalog: "email", version: 2, rootId, nodes }` — árvore livre de seções, colunas e blocos validada pelo catálogo de e-mail.',
     }),
     contentText: z.string().nullable().meta({
       description:
