@@ -78,6 +78,7 @@ pnpm restore:full --list-offsite                         # list off-site copies
 pnpm restore:full <backupId> --offsite [--target=<dbUrl>] # restore from the off-site copy
 pnpm restore:workspace <backupId>
 pnpm seed:crm-pipeline | seed:whatsapp-dashboards | seed:user-timezone   # backfills
+pnpm seed:dev                          # local only: verified users, workspace /demo with all modules, a zap team (password Steel@dev2026)
 ```
 
 ### Other

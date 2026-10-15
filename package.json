@@ -44,6 +44,7 @@
     "openapi:generate": "SKIP_ENV_VALIDATION=true tsx --tsconfig tsconfig.worker.json scripts/generate-openapi.ts",
     "seed:whatsapp-dashboards": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-whatsapp-dashboards.ts",
     "seed:crm-pipeline": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-crm-default-pipeline.ts",
+    "seed:dev": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/seed-dev.ts",
     "seed:servicedesk": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-servicedesk-defaults.ts",
     "seed:user-timezone": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-user-timezone.ts",
     "search:reindex": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/search-reindex.ts",
