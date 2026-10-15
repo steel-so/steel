@@ -15,6 +15,7 @@ import {
 import { POSTHOG_PROXY_PATH } from '@/lib/posthog/constants'
 import { geolocateRequest } from '@/src/lib/analytics/geoip'
 import { SITES_ROOT_DOMAIN } from '@/lib/env/server'
+import { siteHeaderCsp } from '@/src/lib/sites/csp'
 import {
   SITE_REQUEST_HEADER,
   SITE_VIA_HOST_HEADER,
@@ -172,11 +173,24 @@ function buildCspHeader(nonce: string): string {
     .trim()
 }
 
+/**
+ * Published sites (`/s/<slug>`, `<slug>.<SITES_ROOT_DOMAIN>`) get their own
+ * policy: none of Steel's services, plus the origins of the trackers a site
+ * may load after consent. The page narrows it per site with a
+ * `<meta http-equiv>` (see `src/lib/sites/csp.ts`).
+ */
+function cspFor(nonce: string, site: boolean): string {
+  return site
+    ? siteHeaderCsp({ nonce, development: NODE_ENV === 'development' })
+    : buildCspHeader(nonce)
+}
+
 function withSecurityHeaders(
   response: NextResponse,
   nonce: string,
+  site = false,
 ): NextResponse {
-  response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
+  response.headers.set('Content-Security-Policy', cspFor(nonce, site))
   response.headers.set(
     'Strict-Transport-Security',
     'max-age=63072000; includeSubDomains; preload',
@@ -227,16 +241,21 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     if (target) {
       requestHeaders.set(SITE_REQUEST_HEADER, hostSlug)
       requestHeaders.set(SITE_VIA_HOST_HEADER, '1')
+      requestHeaders.set('Content-Security-Policy', cspFor(nonce, true))
       const url = request.nextUrl.clone()
       url.pathname = target
       return withSecurityHeaders(
         NextResponse.rewrite(url, { request: { headers: requestHeaders } }),
         nonce,
+        true,
       )
     }
   }
   const pathSlug = siteSlugFromPath(pathname)
-  if (pathSlug) requestHeaders.set(SITE_REQUEST_HEADER, pathSlug)
+  if (pathSlug) {
+    requestHeaders.set(SITE_REQUEST_HEADER, pathSlug)
+    requestHeaders.set('Content-Security-Policy', cspFor(nonce, true))
+  }
 
   if (
     NODE_ENV === 'development' &&
@@ -253,6 +272,7 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     return withSecurityHeaders(
       NextResponse.next({ request: { headers: requestHeaders } }),
       nonce,
+      pathSlug !== null,
     )
   }
 

@@ -1,4 +1,5 @@
 import {
+  ComponentIcon,
   ContainerIcon,
   Cursor01Icon,
   DashedLine01Icon,
@@ -45,6 +46,7 @@ import {
   videoDefinition,
 } from './components/media'
 import { menuDefinition, socialDefinition } from './components/navigation'
+import { SITE_SYMBOL_TYPE, symbolDefinition } from './components/symbol'
 import {
   SITE_BREAKPOINTS,
   SITE_CATALOG_ID,
@@ -80,6 +82,7 @@ const ICONS = {
   menu: Menu01Icon,
   social: Share08Icon,
   form: DocumentValidationIcon,
+  symbol: ComponentIcon,
 }
 
 /** Builds the catalog for one render context (pages, live forms, role). */
@@ -102,7 +105,17 @@ export function createSiteCatalog(ctx: SiteRenderContext = {}): CanvasCatalog {
     socialDefinition,
     formDefinition(ctx),
     embedDefinition(ctx),
+    symbolDefinition(ctx, createSiteCatalog),
   ]
+  // Reusable component instances sit in the page like sections.
+  const pageIndex = definitions.findIndex((def) => def.type === 'site.page')
+  const page = definitions[pageIndex]
+  if (page && Array.isArray(page.accepts)) {
+    definitions[pageIndex] = {
+      ...page,
+      accepts: [...page.accepts, SITE_SYMBOL_TYPE],
+    }
+  }
   return defineCatalog({
     id: SITE_CATALOG_ID,
     version: SITE_CATALOG_VERSION,

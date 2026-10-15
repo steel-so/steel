@@ -147,4 +147,25 @@ describe('site snapshot', () => {
       'User-agent: *\nDisallow: /\n',
     )
   })
+
+  it('writes sitemap priorities and change frequencies when set', () => {
+    const xml = renderSitemapXml([
+      {
+        loc: 'https://a.app/s/x',
+        lastModified: new Date('2026-10-14T00:00:00Z'),
+        priority: 0.8,
+        changeFrequency: 'weekly',
+      },
+      {
+        loc: 'https://a.app/s/x/y',
+        lastModified: new Date('2026-10-14T00:00:00Z'),
+        priority: 1.7,
+      },
+    ])
+    expect(xml).toContain(
+      '<changefreq>weekly</changefreq><priority>0.8</priority></url>',
+    )
+    expect(xml).toContain('<priority>1.0</priority>')
+    expect(xml.match(/<changefreq>/g)).toHaveLength(1)
+  })
 })

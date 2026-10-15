@@ -122,4 +122,24 @@ describe('SITE_FORM_SCRIPT', () => {
       'Não foi possível enviar. Tente novamente.',
     )
   })
+
+  it('announces a sent form to the site runtime (conversions)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ success: true }), { status: 201 }),
+      ),
+    )
+    const events: string[] = []
+    const listener = (event: Event) =>
+      events.push((event as CustomEvent<{ action: string }>).detail.action)
+    document.addEventListener('steel:site-form-submitted', listener)
+    submit(mount())
+    await flush()
+    await flush()
+    document.removeEventListener('steel:site-form-submitted', listener)
+    expect(events).toHaveLength(1)
+    expect(events[0]).toContain('/api/crm/forms/tok/submit')
+  })
 })

@@ -211,15 +211,28 @@ function escapeXml(value: string): string {
     .replace(/'/g, '&apos;')
 }
 
-/** `sitemap.xml` of a published site. */
+/** `sitemap.xml` of a published site (`priority` 0–1 and `changeFrequency`
+ * come from each page's SEO settings). */
 export function renderSitemapXml(
-  urls: Array<{ loc: string; lastModified: Date }>,
+  urls: Array<{
+    loc: string
+    lastModified: Date
+    priority?: number
+    changeFrequency?: string
+  }>,
 ): string {
   const entries = urls
-    .map(
-      (url) =>
-        `  <url><loc>${escapeXml(url.loc)}</loc><lastmod>${url.lastModified.toISOString()}</lastmod></url>`,
-    )
+    .map((url) => {
+      const extra = [
+        url.changeFrequency
+          ? `<changefreq>${escapeXml(url.changeFrequency)}</changefreq>`
+          : '',
+        url.priority !== undefined
+          ? `<priority>${Math.min(1, Math.max(0, url.priority)).toFixed(1)}</priority>`
+          : '',
+      ].join('')
+      return `  <url><loc>${escapeXml(url.loc)}</loc><lastmod>${url.lastModified.toISOString()}</lastmod>${extra}</url>`
+    })
     .join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`
 }

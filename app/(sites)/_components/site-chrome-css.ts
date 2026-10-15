@@ -1,11 +1,15 @@
 import { SITE_ROOT_CLASS } from '@/src/lib/canvas-site'
 
 /**
- * Styles of what the runtime adds around the catalog's output: the site's
- * cookie banner and the 404 page. Theme tokens (`--canvas-*`) come from the
+ * Styles of what the runtime adds around the catalog's output: the
+ * document reset (sites have their own root layout, without Steel's
+ * styles), the site's cookie banner and the 404 page. Theme tokens (`--canvas-*`) come from the
  * site theme compiled by `compileSiteCss`.
  */
 export const SITE_CHROME_CSS = `
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0}
+.ss-cookie[hidden]{display:none}
 .ss-cookie{position:fixed;inset-inline:12px;bottom:12px;z-index:50;margin-inline:auto;max-width:42rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px;border-radius:12px;border:1px solid var(--canvas-border,#e2e8f0);background:var(--canvas-background,#fff);color:var(--canvas-text,#0f172a);box-shadow:0 8px 24px rgb(15 23 42 / .12);font-size:.9rem;font-family:var(--s-font-body,system-ui,sans-serif)}
 .ss-cookie p{margin:0;flex:1 1 16rem}
 .ss-cookie a{color:var(--canvas-primary,#1d4ed8)}
