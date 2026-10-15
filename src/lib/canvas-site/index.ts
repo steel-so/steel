@@ -7,6 +7,14 @@
 export { createSiteCatalog, siteCatalog, validateSiteDocument } from './catalog'
 export { SITE_FORM_SCRIPT } from './components/form'
 export {
+  applySymbolOverrides,
+  SITE_SYMBOL_TYPE,
+  type SiteSymbolProps,
+  siteSymbolSchema,
+  symbolTextNodes,
+  usedSymbolIds,
+} from './components/symbol'
+export {
   SITE_ADMIN_ONLY_TYPES,
   SITE_BREAKPOINTS,
   SITE_CATALOG_ID,

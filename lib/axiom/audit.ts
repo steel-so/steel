@@ -187,6 +187,8 @@ export type AuditEntity =
   | 'site_global'
   // Site builder UI (site-ui): image library of the site editor
   | 'site_media'
+  // Sites wave S2 (platform): 301 redirects manager
+  | 'site_redirect'
   // CRM e-mail editor: saved blocks and v2 template versions
   | 'crm_email_saved_block'
   | 'crm_email_template_version'

@@ -262,3 +262,58 @@ describe('SiteGlobalService admin-only elements', () => {
     )
   })
 })
+
+describe('SiteGlobalService reusable components', () => {
+  const withInstance = () => {
+    const doc = createSiteDocument()
+    return {
+      ...doc,
+      nodes: {
+        ...doc.nodes,
+        root: { ...doc.nodes.root, children: ['s1', 'i1'] },
+        i1: {
+          id: 'i1',
+          type: 'site.symbol',
+          props: { symbolId: 'other', overrides: {} },
+        },
+      },
+    }
+  }
+
+  it('refuses a component inside a component', async () => {
+    expectErr(
+      await SiteGlobalService.create('u1', WS, SITE, {
+        kind: 'SYMBOL',
+        name: 'CTA',
+        document: withInstance(),
+      }),
+      'SITE_DOCUMENT_INVALID',
+    )
+    globals.findById.mockResolvedValueOnce(
+      ok(createFakeSiteGlobal({ id: 'g2', siteId: SITE, kind: 'SYMBOL' })),
+    )
+    expectErr(
+      await SiteGlobalService.update('u1', WS, SITE, 'g2', {
+        document: withInstance(),
+      }),
+      'SITE_DOCUMENT_INVALID',
+    )
+    expect(globals.create).not.toHaveBeenCalled()
+    expect(globals.update).not.toHaveBeenCalled()
+  })
+
+  it('lets a header hold component instances', async () => {
+    expectOk(
+      await SiteGlobalService.create('u1', WS, SITE, {
+        kind: 'HEADER',
+        name: 'Topo',
+        document: withInstance(),
+      }),
+    )
+    expectOk(
+      await SiteGlobalService.update('u1', WS, SITE, 'g1', {
+        document: withInstance(),
+      }),
+    )
+  })
+})

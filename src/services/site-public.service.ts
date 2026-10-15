@@ -1,12 +1,19 @@
 import { BETTER_AUTH_SECRET } from '@/lib/env/server'
+import { siteRouteCache } from '@/src/cache/site-route.cache'
 import { appError } from '@/src/errors/app-error'
 import type { SiteLiveForm } from '@/src/lib/canvas-site'
 import { err, ok, type Result } from '@/src/lib/result'
 import { publicSiteUrl } from '@/src/lib/sites/public-url'
+import {
+  buildSiteRouteIndex,
+  type SiteRouteIndex,
+  UNPUBLISHED_ROUTE_INDEX,
+} from '@/src/lib/sites/route-index'
 import { parseSiteSnapshot, type SiteSnapshot } from '@/src/lib/sites/snapshot'
 import { referrerHost, siteVisitorHash } from '@/src/lib/sites/visitor'
 import { toCrmFormPublicDTO } from '@/src/mappers/crm-form.mapper'
 import { SiteRepository } from '@/src/repositories/site.repository'
+import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
 import type { RecordSiteViewDTO } from '@/src/schemas/site-view.schema'
 import { assertModuleEnabled } from './authz'
 
@@ -73,9 +80,10 @@ export const SitePublicService = {
     return ok(byToken)
   },
 
-  /** Anonymous page view (see `siteVisitorHash`). The runtime only sends it
-   * when the visitor accepted the site's cookie banner, or when the site has
-   * none (nothing is stored on the device either way). */
+  /** Anonymous page view or form conversion (see `siteVisitorHash`). The
+   * runtime only sends it when the visitor accepted the site's cookie
+   * banner, or when the site has none (nothing is stored on the device
+   * either way). */
   async recordView(
     slug: string,
     request: {
@@ -84,7 +92,9 @@ export const SitePublicService = {
       host: string | null
       now?: Date
     },
-    dto: RecordSiteViewDTO,
+    dto: Omit<RecordSiteViewDTO, 'kind'> & {
+      kind?: RecordSiteViewDTO['kind']
+    },
   ): Promise<Result<void>> {
     const published = await SitePublicService.getPublished(slug)
     if (!published.ok) return published
@@ -112,7 +122,38 @@ export const SitePublicService = {
       utmCampaign: dto.utmCampaign,
       utmTerm: dto.utmTerm,
       utmContent: dto.utmContent,
+      kind: dto.kind ?? 'VIEW',
+      formToken: dto.kind === 'CONVERSION' ? dto.formToken : undefined,
     })
+  },
+
+  /** Public paths and redirects of a site (see `SiteRouteIndex`), read
+   * through Redis. An unknown or unpublished site is an index with
+   * `published: false`; a database failure is an error (the proxy then
+   * lets the page decide). */
+  async routeIndex(slug: string): Promise<Result<SiteRouteIndex>> {
+    const cached = await siteRouteCache.get(slug)
+    if (cached) return ok(cached)
+
+    const published = await SitePublicService.getPublished(slug)
+    if (!published.ok) {
+      if (published.error.code !== 'SITE_NOT_FOUND') return published
+      await siteRouteCache.set(slug, UNPUBLISHED_ROUTE_INDEX)
+      return ok(UNPUBLISHED_ROUTE_INDEX)
+    }
+    const redirects = await SiteRedirectRepository.listBySiteSlug(slug)
+    if (!redirects.ok) return redirects
+
+    const index = buildSiteRouteIndex(
+      published.value.snapshot,
+      redirects.value.map((redirect) => ({
+        fromPath: redirect.fromPath,
+        toPath: redirect.toPath,
+        permanent: redirect.permanent,
+      })),
+    )
+    await siteRouteCache.set(slug, index)
+    return ok(index)
   },
 
   /** Where `/l/<shareToken>` goes once its landing page became a published

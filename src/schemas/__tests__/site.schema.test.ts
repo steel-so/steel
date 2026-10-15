@@ -117,7 +117,7 @@ describe('site schemas', () => {
       CreateSiteGlobalSchema.safeParse({ kind: 'MENU', name: 'x' }).success,
     ).toBe(false)
     expect(UpdateSiteGlobalSchema.safeParse({}).success).toBe(false)
-    expect(RecordSiteViewSchema.parse({})).toEqual({ path: '' })
+    expect(RecordSiteViewSchema.parse({})).toEqual({ path: '', kind: 'VIEW' })
     expect(
       RecordSiteViewSchema.safeParse({ utmSource: 'x'.repeat(121) }).success,
     ).toBe(false)

@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: { warn: vi.fn() } }))
+vi.mock('@/src/cache/site-route.cache', () => ({
+  siteRouteCache: { invalidate: vi.fn(async () => {}) },
+}))
 
 import { revalidateTag } from 'next/cache'
 import { logger } from '@/lib/axiom/logger'
+import { siteRouteCache } from '@/src/cache/site-route.cache'
 import { revalidateSites, siteCacheTag } from '@/src/lib/sites/cache'
 import { publicSiteUrl } from '@/src/lib/sites/public-url'
 
@@ -18,6 +22,8 @@ describe('site cache', () => {
     expect(siteCacheTag('a')).toBe('site:a')
     expect(revalidateTag).toHaveBeenCalledTimes(2)
     expect(revalidateTag).toHaveBeenCalledWith('site:a', { expire: 0 })
+    expect(siteRouteCache.invalidate).toHaveBeenCalledWith('a')
+    expect(siteRouteCache.invalidate).toHaveBeenCalledTimes(2)
   })
 
   it('only logs outside a Next request', () => {

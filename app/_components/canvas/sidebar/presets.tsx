@@ -11,7 +11,7 @@ import { normalizeSearch } from '../lib/palette'
 import type { CanvasPresetItem } from '../types'
 import { PaletteSearch } from './palette'
 
-function PresetCard({ preset }: { preset: CanvasPresetItem }) {
+export function PresetCard({ preset }: { preset: CanvasPresetItem }) {
   const { catalog, store } = useCanvasEditor()
   const fragment = useMemo(() => preset.fragment(), [preset])
   const rootType = fragment.nodes[fragment.rootId]?.type

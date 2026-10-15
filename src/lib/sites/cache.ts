@@ -1,5 +1,6 @@
 import { revalidateTag } from 'next/cache'
 import { logger } from '@/lib/axiom/logger'
+import { siteRouteCache } from '@/src/cache/site-route.cache'
 
 /**
  * Cache tags of the public runtime. Every cached read of a published site is
@@ -15,6 +16,8 @@ export function siteCacheTag(slug: string): string {
  * no cache to expire, so a failure is only logged. */
 export function revalidateSites(...slugs: string[]): void {
   for (const slug of new Set(slugs)) {
+    // The proxy's route index (HTTP status of each path) goes with it.
+    void siteRouteCache.invalidate(slug)
     try {
       revalidateTag(siteCacheTag(slug), { expire: 0 })
     } catch (error) {

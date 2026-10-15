@@ -8,6 +8,7 @@ import {
   CarouselHorizontalIcon,
   CenterFocusIcon,
   ChartColumnIcon,
+  ComponentIcon,
   ContainerIcon,
   Cursor01Icon,
   DashedLine01Icon,
@@ -81,6 +82,7 @@ import {
   statsDefinition,
   testimonialsDefinition,
 } from './components/showcase'
+import { SITE_SYMBOL_TYPE, symbolDefinition } from './components/symbol'
 import {
   SITE_BREAKPOINTS,
   SITE_CATALOG_ID,
@@ -118,6 +120,7 @@ const ICONS = {
   menu: Menu01Icon,
   social: Share08Icon,
   form: DocumentValidationIcon,
+  symbol: ComponentIcon,
   gallery: GalleryThumbnailsIcon,
   carousel: CarouselHorizontalIcon,
   slide: CarouselHorizontal02Icon,
@@ -212,6 +215,17 @@ export function createSiteCatalog(ctx: SiteRenderContext = {}): CanvasCatalog {
     ],
     render: withEffects(definition.render, ctx),
   }))
+  // Reusable component instances (no S2 effects of their own: what they
+  // show comes from the symbol) sit in the page like sections.
+  definitions.push(symbolDefinition(ctx, createSiteCatalog))
+  const pageIndex = definitions.findIndex((def) => def.type === 'site.page')
+  const page = definitions[pageIndex]
+  if (page && Array.isArray(page.accepts)) {
+    definitions[pageIndex] = {
+      ...page,
+      accepts: [...page.accepts, SITE_SYMBOL_TYPE],
+    }
+  }
   return defineCatalog({
     id: SITE_CATALOG_ID,
     version: SITE_CATALOG_VERSION,

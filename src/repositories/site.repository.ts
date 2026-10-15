@@ -426,6 +426,8 @@ export const SiteRepository = {
     utmCampaign?: string
     utmTerm?: string
     utmContent?: string
+    kind?: 'VIEW' | 'CONVERSION'
+    formToken?: string
   }): Promise<Result<void>> {
     try {
       await prisma.siteView.create({ data })

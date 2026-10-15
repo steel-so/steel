@@ -13,6 +13,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
@@ -87,7 +94,23 @@ interface Draft {
   cookieBanner: boolean
   cookieMessage: string
   policyUrl: string
+  timezone: string
+  organizationName: string
+  logoUrl: string
+  /** Social profiles, one per line. */
+  sameAs: string
 }
+
+/** Timezones offered for the site's metrics (Brazil first). */
+export const SITE_TIMEZONES = [
+  { value: 'America/Sao_Paulo', label: 'Brasília (São Paulo)' },
+  { value: 'America/Manaus', label: 'Manaus' },
+  { value: 'America/Cuiaba', label: 'Cuiabá' },
+  { value: 'America/Rio_Branco', label: 'Rio Branco' },
+  { value: 'America/Noronha', label: 'Fernando de Noronha' },
+  { value: 'Europe/Lisbon', label: 'Lisboa' },
+  { value: 'UTC', label: 'UTC' },
+]
 
 function toDraft(name: string, slug: string, settings: SiteSettingsDTO): Draft {
   return {
@@ -104,7 +127,20 @@ function toDraft(name: string, slug: string, settings: SiteSettingsDTO): Draft {
     cookieBanner: settings.cookieBanner.enabled,
     cookieMessage: settings.cookieBanner.message ?? '',
     policyUrl: settings.cookieBanner.policyUrl ?? '',
+    timezone: settings.timezone ?? 'America/Sao_Paulo',
+    organizationName: settings.seo.organizationName ?? '',
+    logoUrl: settings.seo.logoUrl ?? '',
+    sameAs: (settings.seo.sameAs ?? []).join('\n'),
   }
+}
+
+/** Social profile lines → URLs (blank lines dropped). */
+export function parseSameAs(value: string): string[] | undefined {
+  const urls = value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  return urls.length ? urls : undefined
 }
 
 function toSettings(draft: Draft): SiteSettingsDTO {
@@ -113,7 +149,11 @@ function toSettings(draft: Draft): SiteSettingsDTO {
       titleTemplate: opt(draft.titleTemplate),
       description: opt(draft.description),
       noindex: draft.noindex || undefined,
+      organizationName: opt(draft.organizationName),
+      logoUrl: opt(draft.logoUrl),
+      sameAs: parseSameAs(draft.sameAs),
     },
+    timezone: draft.timezone,
     faviconUrl: opt(draft.faviconUrl),
     socialImageUrl: opt(draft.socialImageUrl),
     tracking: {
@@ -301,7 +341,91 @@ export function SiteSettingsDialog({
             </section>
 
             <section className='grid gap-3'>
+              <h3 className='font-medium text-sm'>Empresa nos buscadores</h3>
+              <p className='-mt-2 text-muted-foreground text-xs'>
+                Vai nos dados estruturados (schema.org) de todas as páginas.
+              </p>
+              <div className='grid gap-3 sm:grid-cols-2'>
+                <SettingsField
+                  label='Nome da empresa'
+                  htmlFor={`${id}-org`}
+                  hint='Vazio usa o nome do site.'
+                >
+                  <Input
+                    id={`${id}-org`}
+                    value={draft.organizationName}
+                    maxLength={120}
+                    onChange={(event) =>
+                      set('organizationName', event.target.value)
+                    }
+                  />
+                </SettingsField>
+                <SettingsField label='Logo' htmlFor={`${id}-logo`}>
+                  <div className='flex gap-2'>
+                    <Input
+                      id={`${id}-logo`}
+                      value={draft.logoUrl}
+                      placeholder='https://'
+                      onChange={(event) => set('logoUrl', event.target.value)}
+                    />
+                    <MediaPickButton
+                      workspaceId={workspaceId}
+                      label='Mídia'
+                      onPick={(url) => set('logoUrl', url)}
+                    />
+                  </div>
+                </SettingsField>
+              </div>
+              <SettingsField
+                label='Perfis nas redes sociais'
+                htmlFor={`${id}-same`}
+                hint='Um endereço completo por linha (Instagram, LinkedIn…).'
+              >
+                <Textarea
+                  id={`${id}-same`}
+                  rows={2}
+                  value={draft.sameAs}
+                  placeholder='https://instagram.com/suaempresa'
+                  onChange={(event) => set('sameAs', event.target.value)}
+                />
+              </SettingsField>
+            </section>
+
+            <section className='grid gap-3'>
               <h3 className='font-medium text-sm'>Métricas</h3>
+              <SettingsField
+                label='Fuso horário das métricas'
+                htmlFor={`${id}-tz`}
+                hint='Os dias das métricas do site são contados neste fuso.'
+              >
+                <Select
+                  value={draft.timezone}
+                  onValueChange={(value) => {
+                    if (typeof value === 'string') set('timezone', value)
+                  }}
+                >
+                  <SelectTrigger id={`${id}-tz`} className='w-full'>
+                    <SelectValue>
+                      {(value: string | null) =>
+                        SITE_TIMEZONES.find((tz) => tz.value === value)
+                          ?.label ?? value
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SITE_TIMEZONES.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingsField>
+              <p className='text-muted-foreground text-xs'>
+                Google Analytics, Tag Manager e Pixel só carregam depois que o
+                visitante aceita os cookies: com qualquer um deles preenchido, o
+                aviso de cookies aparece mesmo desligado abaixo (LGPD).
+              </p>
               <div className='grid gap-3 sm:grid-cols-3'>
                 <SettingsField label='Google Analytics' htmlFor={`${id}-ga`}>
                   <Input

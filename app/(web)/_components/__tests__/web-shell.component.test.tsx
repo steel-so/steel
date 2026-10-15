@@ -20,6 +20,15 @@ vi.mock('../footer', () => ({
   ),
 }))
 
+// The Steel root (<html>, fonts, providers) wraps the group layout; this
+// test is about the web shell inside it.
+vi.mock('@/app/_components/root/steel-root', () => ({
+  SteelRootLayout: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  steelMetadata: (own: object) => own,
+}))
+
 import LegalsLayout from '@/app/(public)/legals/layout'
 import StatusLayout from '@/app/(public)/status/layout'
 import { DocsShell } from '../../docs/_components/docs-shell'
@@ -163,7 +172,7 @@ const SHELL = ['(web)/', '(public)/legals/', '(public)/status/']
  * and everything behind sign-in.
  */
 const OUT = [
-  'page.tsx', // `/` only redirects
+  '(public)/page.tsx', // `/` only redirects
   '(public)/sign-in/',
   '(public)/sign-up/',
   '(public)/forget-password/',

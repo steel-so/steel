@@ -2,12 +2,15 @@ import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { requireConsent } from '@/src/lib/consent'
+import {
+  SteelRootLayout,
+  steelRootMetadata,
+} from '../_components/root/steel-root'
 
-export default async function PrivateLayout({
-  children,
-}: {
-  children: ReactNode
-}) {
+export const metadata = steelRootMetadata
+
+/** Session + consent gate. Runs inside the root's Suspense boundary. */
+async function PrivateGate({ children }: { children: ReactNode }) {
   const session = await getAuthSession()
   if (!session.ok) redirect('/sign-in')
 
@@ -21,4 +24,12 @@ export default async function PrivateLayout({
   if (!consent.ok) redirect('/onboarding/consent-setup')
 
   return <>{children}</>
+}
+
+export default function PrivateLayout({ children }: { children: ReactNode }) {
+  return (
+    <SteelRootLayout>
+      <PrivateGate>{children}</PrivateGate>
+    </SteelRootLayout>
+  )
 }

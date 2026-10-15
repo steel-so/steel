@@ -110,6 +110,25 @@ describe('CanvasEditor', () => {
     )
   })
 
+  it('renders the canvas in standards mode with a doctype (no quirks)', async () => {
+    setup()
+    const frame = screen.getByTestId('canvas-frame') as HTMLIFrameElement
+    await waitFor(() =>
+      expect(frame.contentDocument?.getElementById('canvas-root')).toBeTruthy(),
+    )
+    const frameDoc = frame.contentDocument as Document
+    expect(frameDoc.compatMode).toBe('CSS1Compat')
+    expect(frameDoc.doctype?.name).toBe('html')
+    expect(frameDoc.documentElement.lang).toBe('pt-BR')
+    // One root, at least as tall as the stage; no quirks-mode stretching.
+    expect(frameDoc.querySelectorAll('#canvas-root')).toHaveLength(1)
+    const root = frameDoc.getElementById('canvas-root') as HTMLElement
+    expect(root.style.minHeight).toMatch(/^\d+px$/)
+    const base = frameDoc.querySelector('style[data-canvas-base]')?.textContent
+    expect(base).toContain('#canvas-root>:only-child{flex:1 0 auto}')
+    expect(base).not.toContain('min-height:100%')
+  })
+
   it('inserts a palette item at the selection on click', () => {
     setup()
     act(() => store.select('hero-text'))

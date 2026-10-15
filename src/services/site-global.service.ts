@@ -1,8 +1,10 @@
 import type { Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { appError } from '@/src/errors/app-error'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { err, ok, type Result } from '@/src/lib/result'
 import { createEmptySiteDocument } from '@/src/lib/sites/document'
+import { hasSymbolInstances } from '@/src/lib/sites/symbols'
 import { toSiteGlobalDTO } from '@/src/mappers/site.mapper'
 import { SiteGlobalRepository } from '@/src/repositories/site-global.repository'
 import type {
@@ -15,6 +17,17 @@ import { assertAdminOnlyAllowed, checkSiteDocument } from './site-page.service'
 
 /** Abuse guard: header + footer + symbols. */
 export const MAX_GLOBALS_PER_SITE = 50
+
+/** A reusable component (SYMBOL) cannot hold another one. */
+function nestedSymbolError(kind: string, document: unknown) {
+  if (kind !== 'SYMBOL' || !hasSymbolInstances(document as CanvasDocument)) {
+    return null
+  }
+  return appError(
+    'SITE_DOCUMENT_INVALID',
+    'Um componente reutilizável não pode conter outro componente reutilizável',
+  )
+}
 
 export const SiteGlobalService = {
   async list(
@@ -80,6 +93,8 @@ export const SiteGlobalService = {
       dto.document ?? createEmptySiteDocument(),
     )
     if (!document.ok) return document
+    const nested = nestedSymbolError(dto.kind, document.value)
+    if (nested) return err(nested)
     const allowed = await assertAdminOnlyAllowed(
       actorId,
       workspaceId,
@@ -123,6 +138,8 @@ export const SiteGlobalService = {
     if (dto.document !== undefined) {
       const checked = checkSiteDocument(dto.document)
       if (!checked.ok) return checked
+      const nested = nestedSymbolError(existing.value.kind, checked.value)
+      if (nested) return err(nested)
       const allowed = await assertAdminOnlyAllowed(
         actorId,
         workspaceId,

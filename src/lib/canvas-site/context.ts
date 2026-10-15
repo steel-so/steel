@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import type { CustomControlProps } from '@/src/lib/canvas/registry'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { type CanvasLink, linkHref } from '@/src/lib/canvas/values'
 import { safeHref } from './sanitize'
 import type { SiteFormField } from './schemas'
@@ -44,6 +45,14 @@ export interface SiteRenderContext {
   /** Inspector control that picks a CRM form (site-ui provides it);
    * without it the token is typed in a text field. */
   formPicker?: ComponentType<CustomControlProps>
+  /** Reusable components (SYMBOL globals) by id: what a `site.symbol`
+   * instance renders. */
+  symbols?: Record<string, CanvasDocument>
+  /** Symbols being rendered around this one (internal: stops a symbol
+   * from rendering inside itself). */
+  symbolStack?: string[]
+  /** Inspector control of an instance's text overrides (site-ui). */
+  symbolControl?: ComponentType<CustomControlProps>
   /** Inspector control that picks an anchor of the document (interaction
    * targets); without it the anchor is typed. */
   anchorPicker?: ComponentType<CustomControlProps>

@@ -124,9 +124,14 @@ export function SiteSnapshot({
     return () => observer.disconnect()
   }, [layout])
 
+  // Reusable component masters (context.symbols) style their instances.
+  const symbols = context?.symbols
   const css = useMemo(
-    () => (root ? compileSiteCss(docs, { theme }) : ''),
-    [root, docs, theme],
+    () =>
+      root
+        ? compileSiteCss([...docs, ...Object.values(symbols ?? {})], { theme })
+        : '',
+    [root, docs, theme, symbols],
   )
   const catalog = useMemo(() => createSiteCatalog(context ?? {}), [context])
 

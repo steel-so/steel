@@ -1,10 +1,12 @@
 import { cacheLife, cacheTag } from 'next/cache'
 import type { SiteLiveForm } from '@/src/lib/canvas-site'
 import { siteCacheTag } from '@/src/lib/sites/cache'
+import type { SiteRedirectRule } from '@/src/lib/sites/redirects'
 import {
   type PublishedSite,
   SitePublicService,
 } from '@/src/services/site-public.service'
+import { SiteRedirectService } from '@/src/services/site-redirect.service'
 
 /**
  * Cached reads of the public runtime, tagged `site:<slug>`: publishing,
@@ -35,4 +37,16 @@ export async function loadSiteForms(
   cacheLife('minutes')
   const result = await SitePublicService.getForms(workspaceId, formTokens)
   return result.ok ? result.value : {}
+}
+
+/** Redirect rules of a site (live as soon as saved: every change expires
+ * the site's tag). */
+export async function loadSiteRedirects(
+  slug: string,
+): Promise<SiteRedirectRule[]> {
+  'use cache'
+  cacheTag(siteCacheTag(slug))
+  cacheLife('days')
+  const result = await SiteRedirectService.rulesForSlug(slug)
+  return result.ok ? result.value : []
 }

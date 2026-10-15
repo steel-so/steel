@@ -187,6 +187,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     webpackMemoryOptimizations: true,
+    // The app has one root layout per top-level group (Steel screens and
+    // the published customer sites, app/(sites)); `app/global-not-found.tsx`
+    // answers URLs that match no route at all.
+    globalNotFound: true,
     // Low-memory mode, only for image builds on the ~3.8GB self-hosted runner
     // (still used by promote-production.yml; CI/CD build on 16GB hosted
     // runners since ADR 0009). There, Turbopack grows until the OOM killer

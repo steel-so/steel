@@ -275,3 +275,116 @@ Editor:
 - Seções prontas novas (12 tipos × 3 estilos) e o modelo "Evento e
   lançamento".
 
+
+## Sites — fase S2, plataforma
+
+### Documento próprio dos sites publicados
+
+O app tem **uma raiz por grupo**: cada grupo do Steel (`(private)`,
+`(public)`, `(web)`, `onboarding`, `upgrade`) renderiza
+`app/_components/root/steel-root.tsx` (estilos, JSON-LD, cookies e
+rastreadores do Steel), e o site publicado tem a sua em
+`app/(sites)/s/[siteSlug]/layout.tsx`: `lang="pt-BR"`, a CSP do site como
+primeiro item do `<head>`, a fonte Geist e nada do Steel. URLs que não casam
+com rota nenhuma caem em `app/global-not-found.tsx`
+(`experimental.globalNotFound`). Navegar entre duas raízes recarrega a
+página — o que já acontecia na prática entre esses grupos.
+
+O App Router começa a responder (200) antes de a página decidir que não
+existe, então o **status HTTP é decidido no `proxy.ts`**: ele lê um índice
+de rotas do site publicado (caminhos das páginas + redirecionamentos,
+`SitePublicService.routeIndex`, em cache no Redis `site-routes:<slug>` e
+expirado junto com a tag do site a cada publicação, renomeação, exclusão ou
+mudança de redirecionamento). Página inexistente responde **404 de
+verdade** (uma página "Página não encontrada" simples, sem scripts, com link
+para a inicial), redirecionamento **301/302**. Se o Redis e o banco falharem, a página decide sozinha (404
+vira tela com `noindex`, redirecionamento vira 308/307).
+
+O runtime não leva mais componente React de cliente: um script inline
+(`src/lib/sites/runtime-script.ts`) cuida do aviso de cookies, do beacon de
+visita e conversão e dos rastreadores.
+
+### Rastreamento (GA4, Tag Manager, Pixel) e LGPD
+
+- Os IDs ficam em **Configurações do site → Métricas**.
+- Rastreador **só carrega depois que o visitante clica em Aceitar** no aviso
+  de cookies do site. Com qualquer ID preenchido o aviso aparece **mesmo com
+  a chave do aviso desligada**. "Rejeitar" não carrega nada. A escolha fica no
+  `localStorage` (`steel-site-consent:<slug>`).
+- A métrica anônima do Steel (sem cookie, hash diário no servidor) segue a
+  regra da S1: sem aviso, conta na hora; com aviso ligado, só depois do
+  Aceitar.
+- Envio de formulário do CRM vira **conversão** (`kind = CONVERSION` em
+  `site_views`) e, com consentimento, `generate_lead` no GA4,
+  `steel_form_submit` no `dataLayer` e `Lead` no Pixel.
+
+**CSP em duas camadas** (`src/lib/sites/csp.ts`), ambas aplicadas pelo
+navegador (vale a interseção):
+
+1. Cabeçalho, no `proxy.ts`, para `/s/<slug>` e `<slug>.<SITES_ROOT_DOMAIN>`:
+   scripts do próprio site por nonce + origens dos três rastreadores. Nenhum
+   serviço do Steel (Axiom, Sentry, socket da Wiki) entra.
+2. `<meta http-equiv="Content-Security-Policy">` por site: a mesma política
+   só com as origens dos rastreadores que **aquele** site configurou.
+
+Os rastreadores são injetados com o nonce da página. Tags do Tag Manager que
+carregam scripts de outras origens (fora do Google) são bloqueadas pela CSP;
+use as integrações nativas (GA4, Pixel) para elas. `frame-src https:` cobre
+vídeos e o `site.embed` (só administradores, com `sandbox`).
+
+### Métricas
+
+- `GET /api/workspaces/{id}/crm/sites/{siteId}/analytics?from&to` (até 366
+  dias; padrão 30): visitas, visitantes por dia, páginas, origens, UTM e
+  conversões por página, com o período anterior para comparação.
+- `GET /api/workspaces/{id}/crm/sites/analytics?days=14`: série diária de
+  cada site (gráfico pequeno nos cards da lista).
+- Dias contados no **fuso do site** (`settings.timezone`, padrão São Paulo).
+  O visitante é o hash diário, então "visitantes" conta uma pessoa por dia.
+- Tela: `/<workspace>/crm/sites/<siteId>/metrics` (também no menu do card e
+  no ícone da barra do editor).
+
+### SEO
+
+- Cada página publica um grafo schema.org (`Organization`, `WebSite`,
+  `WebPage`, `BreadcrumbList`). Nome, logo e perfis sociais da organização
+  ficam em Configurações do site; sem eles, nome do site e favicon.
+- Página com acordeão ganha também um `FAQPage`: cada item com título e
+  resposta vira uma pergunta (itens ocultos ficam de fora).
+- Imagem social por página (envio) → do site → **cartão gerado** em
+  `/<site>/_og?page=<id>` (1200×630, cores do tema).
+- Endereço canônico por página; página com canônico apontando para fora sai
+  do sitemap. Prioridade e frequência de mudança vão para o `sitemap.xml`.
+- Sem favicon próprio, o site usa a inicial do nome na cor primária — nunca
+  o ícone do Steel.
+
+### Redirecionamentos
+
+- Tabela `site_redirects`, gerenciada em **Redirecionamentos** (ícone na
+  barra do editor). Vale **na hora**, sem publicar.
+- Origem exata (`/antigo`) ou prefixo (`/blog/*`); destino é caminho do
+  site ou URL https. Destino terminado em `/*` leva o resto do caminho.
+- Roda **antes** da busca da página. Permanente responde **301**,
+  temporário **302**.
+- Laços (direto ou em cadeia) são recusados (`SITE_REDIRECT_LOOP`).
+
+### Componentes reutilizáveis (símbolos)
+
+- Aba **Componentes** do editor: selecione uma seção e "Criar componente" —
+  ela vira um global `SYMBOL` e a seção vira a primeira cópia (um passo de
+  desfazer).
+- Arraste (ou clique) um componente para inserir uma cópia: o nó
+  `site.symbol` guarda só `symbolId` e `overrides` (texto por nó do
+  componente: título, texto, rótulo de botão).
+- "Editar" abre o componente no canvas; ao salvar, todas as cópias mudam.
+- No inspetor da cópia, cada texto pode ser trocado só naquela cópia; vazio
+  segue o componente.
+- Um componente não pode conter outro (`SITE_DOCUMENT_INVALID`). Cópia de
+  componente excluído não aparece no site.
+
+### Canvas em modo padrão
+
+O iframe do editor começa em `about:blank` (modo quirks). O shell agora
+escreve um documento com `<!doctype html>` antes de montar, a raiz tem a
+altura mínima do palco e um documento sozinho ocupa o palco todo (fundo do
+e-mail). O ajuste da S1 que encolhia cabeçalho e rodapé saiu.

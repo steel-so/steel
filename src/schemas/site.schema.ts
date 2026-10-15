@@ -71,6 +71,27 @@ const CookieBannerSchema = z.object({
   policyUrl: SiteUrlSchema.optional(),
 })
 
+/** Default timezone of a site's metrics (days are counted in it). */
+export const DEFAULT_SITE_TIMEZONE = 'America/Sao_Paulo'
+
+export function isValidSiteTimeZone(timezone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('pt-BR', { timeZone: timezone })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Absolute http(s) URL only (canonical addresses, social profiles). */
+export const SiteAbsoluteUrlSchema = z
+  .string()
+  .trim()
+  .max(2000)
+  .refine((value) => /^https?:\/\/[^\s/]+/i.test(value), {
+    message: 'Use um endereço completo começando com https://',
+  })
+
 /** Site-wide settings: SEO defaults, icons, tracking ids, cookie banner. */
 export const SiteSettingsSchema = z.object({
   seo: z
@@ -79,8 +100,21 @@ export const SiteSettingsSchema = z.object({
       titleTemplate: z.string().trim().max(120).optional(),
       description: z.string().trim().max(320).optional(),
       noindex: z.boolean().optional(),
+      /** Organization of the JSON-LD (defaults to the site name). */
+      organizationName: z.string().trim().max(120).optional(),
+      /** Organization logo of the JSON-LD (defaults to the favicon). */
+      logoUrl: SiteUrlSchema.optional(),
+      /** Social profiles of the organization (`sameAs`). */
+      sameAs: z.array(SiteAbsoluteUrlSchema).max(10).optional(),
     })
     .default({}),
+  /** IANA timezone the site's metrics count days in. */
+  timezone: z
+    .string()
+    .trim()
+    .max(64)
+    .refine(isValidSiteTimeZone, { message: 'Fuso horário inválido' })
+    .optional(),
   faviconUrl: SiteUrlSchema.optional(),
   socialImageUrl: SiteUrlSchema.optional(),
   tracking: TrackingSchema.default({}),

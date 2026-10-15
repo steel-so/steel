@@ -71,7 +71,7 @@ function wrap(fragment: CanvasFragment): CanvasDocument {
 describe('site catalog', () => {
   it('registers every component with valid default props', () => {
     expect(siteCatalog.id).toBe(SITE_CATALOG_ID)
-    expect(Object.keys(siteCatalog.components)).toHaveLength(33)
+    expect(Object.keys(siteCatalog.components)).toHaveLength(34)
     for (const definition of Object.values(siteCatalog.components)) {
       const parsed = definition.propsSchema.safeParse(definition.defaultProps())
       expect(parsed.success, definition.type).toBe(true)
@@ -88,7 +88,9 @@ describe('site catalog', () => {
       SITE_TYPES.accordionItem,
     ])
     for (const type of Object.keys(siteCatalog.components)) {
-      if (nested.has(type)) continue
+      // Reusable component instances sit in the page
+      // (canvas-site-symbol.test.ts).
+      if (nested.has(type) || type === 'site.symbol') continue
       const fragment = fragmentForType(siteCatalog, type) as CanvasFragment
       const result = validateDocument(wrap(fragment), siteCatalog)
       expect(result.ok, type).toBe(true)

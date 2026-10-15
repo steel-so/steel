@@ -10,8 +10,18 @@ import { appError } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/site.repository')
+vi.mock('@/src/repositories/site-redirect.repository')
+vi.mock('@/src/cache/site-route.cache', () => ({
+  siteRouteCache: {
+    get: vi.fn(async () => null),
+    set: vi.fn(async () => {}),
+    invalidate: vi.fn(async () => {}),
+  },
+}))
 
+import { siteRouteCache } from '@/src/cache/site-route.cache'
 import { SiteRepository } from '@/src/repositories/site.repository'
+import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { SitePublicService } from '../site-public.service'
 
@@ -161,6 +171,28 @@ describe('SitePublicService.recordView', () => {
     expect(sites.recordView.mock.calls[1][0].pageId).toBeNull()
   })
 
+  it('records form conversions with their token only', async () => {
+    await SitePublicService.recordView('clinica', request, {
+      pageId: 'home',
+      path: '/',
+      kind: 'CONVERSION',
+      formToken: 'tok',
+    })
+    expect(sites.recordView.mock.calls[0][0]).toMatchObject({
+      kind: 'CONVERSION',
+      formToken: 'tok',
+    })
+    await SitePublicService.recordView('clinica', request, {
+      path: '/',
+      kind: 'VIEW',
+      formToken: 'tok',
+    })
+    expect(sites.recordView.mock.calls[1][0]).toMatchObject({
+      kind: 'VIEW',
+      formToken: undefined,
+    })
+  })
+
   it('refuses unpublished sites', async () => {
     sites.findPublishedBySlug.mockResolvedValueOnce(
       err(appError('SITE_NOT_FOUND', 'x')),
@@ -187,5 +219,59 @@ describe('SitePublicService.landingRedirect', () => {
       err(databaseError()),
     )
     expectErr(await SitePublicService.landingRedirect('tok'), 'DATABASE_ERROR')
+  })
+})
+
+describe('SitePublicService.routeIndex', () => {
+  const cache = vi.mocked(siteRouteCache)
+  const redirects = vi.mocked(SiteRedirectRepository)
+
+  it('builds the index of a live site and caches it', async () => {
+    cache.get.mockResolvedValueOnce(null)
+    redirects.listBySiteSlug.mockResolvedValueOnce(
+      ok([
+        {
+          id: 'r1',
+          siteId: 'site1',
+          fromPath: '/antigo',
+          toPath: '/',
+          permanent: true,
+          createdAt,
+          updatedAt: createdAt,
+        },
+      ]),
+    )
+    const index = expectOk(await SitePublicService.routeIndex('clinica'))
+    expect(index).toEqual({
+      published: true,
+      name: 'Clínica',
+      paths: ['/'],
+      redirects: [{ fromPath: '/antigo', toPath: '/', permanent: true }],
+    })
+    expect(cache.set).toHaveBeenCalledWith('clinica', index)
+  })
+
+  it('serves the cache and marks unknown sites unpublished', async () => {
+    const cached = { published: true, paths: ['/x'], redirects: [] }
+    cache.get.mockResolvedValueOnce(cached)
+    expect(expectOk(await SitePublicService.routeIndex('clinica'))).toBe(cached)
+    expect(sites.findPublishedBySlug).not.toHaveBeenCalled()
+
+    cache.get.mockResolvedValueOnce(null)
+    sites.findPublishedBySlug.mockResolvedValueOnce(
+      err(appError('SITE_NOT_FOUND', 'x')),
+    )
+    expect(expectOk(await SitePublicService.routeIndex('nada')).published).toBe(
+      false,
+    )
+  })
+
+  it('propagates database failures without caching them', async () => {
+    cache.get.mockResolvedValue(null)
+    sites.findPublishedBySlug.mockResolvedValueOnce(err(databaseError()))
+    expectErr(await SitePublicService.routeIndex('clinica'), 'DATABASE_ERROR')
+    redirects.listBySiteSlug.mockResolvedValueOnce(err(databaseError()))
+    expectErr(await SitePublicService.routeIndex('clinica'), 'DATABASE_ERROR')
+    expect(cache.set).not.toHaveBeenCalled()
   })
 })
