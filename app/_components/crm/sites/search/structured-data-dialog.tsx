@@ -353,7 +353,6 @@ export function StructuredDataDialog({
   const [items, setItems] = useState<StructuredDataItem[]>(initial)
   const [selected, setSelected] = useState(0)
   const [saving, setSaving] = useState(false)
-  const typeId = useId()
   useEffect(() => {
     if (open) {
       setItems(initial)
@@ -449,29 +448,29 @@ export function StructuredDataDialog({
                 </li>
               ))}
             </ul>
-            <Label htmlFor={typeId} className='sr-only'>
-              Adicionar tipo
-            </Label>
-            <Select
-              value={null}
-              onValueChange={(type) => {
-                if (typeof type !== 'string') return
-                setItems((list) => [...list, { type } as StructuredDataItem])
-                setSelected(items.length)
-              }}
-            >
-              <SelectTrigger id={typeId} size='sm' className='w-full text-xs'>
-                <SteelIcon icon={Add01Icon} className='size-3.5' />
-                <SelectValue placeholder='Adicionar tipo' />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
+            <div className='grid gap-1'>
+              <p className='text-muted-foreground text-xs'>Adicionar</p>
+              <div className='flex flex-wrap gap-1'>
                 {available.map((type) => (
-                  <SelectItem key={type} value={type}>
+                  <Button
+                    key={type}
+                    type='button'
+                    size='xs'
+                    variant='outline'
+                    onClick={() => {
+                      setItems((list) => [
+                        ...list,
+                        { type } as StructuredDataItem,
+                      ])
+                      setSelected(items.length)
+                    }}
+                  >
+                    <SteelIcon icon={Add01Icon} data-icon='inline-start' />
                     {STRUCTURED_DATA_LABELS[type]}
-                  </SelectItem>
+                  </Button>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            </div>
           </div>
           {current ? (
             <div className='grid min-w-0 content-start gap-3'>

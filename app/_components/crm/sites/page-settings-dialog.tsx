@@ -97,6 +97,23 @@ function DefaultableSelect({
   )
 }
 
+/**
+ * `seo.search` with the edited focus keyword. Left out when the page never
+ * had search data and no keyword was typed (nothing to store); sent, even
+ * empty, when it had some (the server keeps an absent block as it was).
+ */
+export function searchPatch(
+  seo: SitePageSeoDTO,
+  keyword: string,
+): { search?: SitePageSeoDTO['search'] } {
+  const stored = parseSearchContent(seo.search)
+  const next = { ...stored, focusKeyword: keyword.trim() || undefined }
+  if (!next.focusKeyword) delete next.focusKeyword
+  return Object.keys(next).length || Object.keys(stored).length
+    ? { search: next }
+    : {}
+}
+
 /** Ids of `pageId` and every page below it (cannot become its parent). */
 export function descendantIds(
   pages: SitePageSummaryDTO[],
@@ -224,10 +241,7 @@ export function PageSettingsDialog({
             frequency === DEFAULT
               ? undefined
               : (frequency as SitePageSeoDTO['changeFrequency']),
-          search: {
-            ...parseSearchContent(page.seo.search),
-            focusKeyword: keyword.trim() || undefined,
-          },
+          ...searchPatch(page.seo, keyword),
         },
       })
       notify.success('Página atualizada.')
