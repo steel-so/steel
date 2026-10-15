@@ -38,7 +38,9 @@ Decisão de arquitetura: [ADR 0026](../adr/0026-steel-canvas-shared-drag-and-dro
 | E3 | Bloco condicional por contato, produtos dinâmicos, ajustes só no celular, IA nos blocos |
 | S1 | Sites: site e páginas, layout em fluxo, ~15 elementos, tema, breakpoints, formulário do CRM, subdomínio, migração das landing pages, menu "Sites" |
 | S2 | Nível Wix: galeria, carrossel, abas, popups, animações, posição livre, componentes globais, mídia, versões, SEO |
-| S3 | Nível WordPress: blog, coleções, domínio próprio com TLS, redirecionamentos, sitemap, conversões |
+| S3 | Só domínios: subdomínio do Steel e domínio próprio do cliente com TLS (depende de infraestrutura — issue #91). Até lá, os sites ficam em `/s/<site>` |
+| Conteúdo | Blog e coleções (CMS), antes previstos no S3; redirecionamentos, sitemap e conversões já entraram na S2 |
+| Buscadores | SEO, AEO e GEO: perfil do negócio, notas por página, robots por robô de IA, `llms.txt`, editor de dados estruturados |
 | S4 | Coedição (Yjs), gerador de site com IA, teste A/B; loja e área de membros a decidir |
 
 ## Núcleo do motor (`src/lib/canvas/`)
