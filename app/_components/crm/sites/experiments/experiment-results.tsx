@@ -104,7 +104,7 @@ export function ExperimentResults({
         </p>
       )}
 
-      <div className='min-w-0 overflow-x-auto'>
+      <div className='relative min-w-0 overflow-x-auto'>
         <table className='w-full min-w-[34rem] text-sm'>
           <caption className='sr-only'>
             Resultados da rodada {results.run} de {experiment.name}
