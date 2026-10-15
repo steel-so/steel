@@ -544,6 +544,60 @@ export const CrmWorkflowService = {
   },
 
   /**
+   * System launch (no session) from another module — e.g. a WhatsApp button
+   * click action. Runs the ACTIVE version as a manual launch, acting as the
+   * workflow's creator, with `payload` as the trigger payload.
+   */
+  async triggerFromSystem(
+    workspaceId: string,
+    workflowId: string,
+    payload: unknown,
+  ): Promise<Result<CrmWorkflowRunDTO>> {
+    const moduleEnabled = await assertModuleEnabled(workspaceId, 'CRM')
+    if (!moduleEnabled.ok) return moduleEnabled
+
+    const existing = await loadInWorkspace(workspaceId, workflowId)
+    if (!existing.ok) return existing
+    const version = await CrmWorkflowVersionRepository.findActive(workflowId)
+    if (!version.ok) return version
+    if (existing.value.status !== 'ACTIVE' || !version.value) {
+      return err(crmWorkflowVersionNotFound())
+    }
+
+    const created = await CrmWorkflowRunRepository.create({
+      workflowId,
+      versionId: version.value.id,
+      triggerType: triggerTypeToPrisma('launch-manually'),
+      triggerPayload: (payload ?? {}) as object,
+      startedById: null,
+    })
+    if (!created.ok) return created
+
+    try {
+      await runCrmWorkflow({
+        runId: created.value.id,
+        workspaceId,
+        actingUserId: existing.value.createdById,
+        definition: parseCrmWorkflowDefinition(version.value.definition),
+        triggerType: 'launch-manually',
+        triggerPayload: payload,
+        testMode: false,
+      })
+    } catch (cause) {
+      return err(
+        crmWorkflowExecutionFailed('Falha ao executar o workflow', {
+          message: cause instanceof Error ? cause.message : String(cause),
+        }),
+      )
+    }
+
+    const reloaded = await CrmWorkflowRunRepository.findById(created.value.id)
+    if (!reloaded.ok) return reloaded
+    if (!reloaded.value) return err(crmWorkflowNotFound())
+    return ok(toCrmWorkflowRunDTO(reloaded.value))
+  },
+
+  /**
    * Disparo pelo endpoint público `/api/crm/workflows/webhook/<token>`. Sem
    * auth — a posse vem do próprio token. Roda contra a versão ACTIVE.
    */

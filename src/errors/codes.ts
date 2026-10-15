@@ -89,6 +89,18 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_QUICK_REPLY_CONFLICT',
     status: 409,
   },
+  WHATSAPP_TEAM_NOT_FOUND: {
+    code: 'WHATSAPP_TEAM_NOT_FOUND',
+    status: 404,
+  },
+  WHATSAPP_TEAM_CONFLICT: {
+    code: 'WHATSAPP_TEAM_CONFLICT',
+    status: 409,
+  },
+  WHATSAPP_BUTTONS_UNSUPPORTED: {
+    code: 'WHATSAPP_BUTTONS_UNSUPPORTED',
+    status: 422,
+  },
   WHATSAPP_TEMPLATE_NOT_FOUND: {
     code: 'WHATSAPP_TEMPLATE_NOT_FOUND',
     status: 404,

@@ -58,6 +58,8 @@ function conversation(
     contactAvatarUrl: null,
     status: 'IN_PROGRESS',
     assignedUserId: 'u_2',
+    teamId: null,
+    team: null,
     aiActive: false,
     aiHandoff: false,
     unreadCount: 0,
@@ -91,6 +93,8 @@ function message(overrides: Partial<WhatsAppMessageDTO>): WhatsAppMessageDTO {
     reactionEmoji: null,
     reactedByContact: null,
     contactPayload: null,
+    buttons: null,
+    buttonPayload: null,
     createdAt: '2026-01-01T12:00:00.000Z',
     ...overrides,
   }
@@ -744,6 +748,314 @@ describe('<WhatsappConversationView />', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('composer').dataset.reply).toBe('m1'),
+    )
+  })
+})
+
+describe('<WhatsappConversationView /> · Equipes', () => {
+  function team(
+    id: string,
+    name: string,
+    roles: [string, 'LEADER' | 'AGENT'][],
+  ) {
+    return {
+      id,
+      workspaceId: 'ws_1',
+      name,
+      description: null,
+      members: roles.map(([userId, role]) => ({
+        userId,
+        name: userId,
+        email: `${userId}@x.com`,
+        image: null,
+        role,
+      })),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    }
+  }
+
+  const TEAMS = [
+    team('tm_sales', 'Vendas', [
+      ['u_1', 'LEADER'],
+      ['u_2', 'AGENT'],
+    ]),
+    team('tm_support', 'Suporte', [['u_3', 'AGENT']]),
+  ]
+  const MEMBERS = [
+    ...members,
+    { id: 'u_3', name: 'Caio', email: 'caio@x.com', image: null },
+  ]
+
+  function event(
+    id: string,
+    kind: 'ASSIGNED' | 'TEAM_CHANGED',
+    reason: string | null,
+    actorName: string | null,
+  ) {
+    return {
+      id,
+      conversationId: 'cv_1',
+      kind,
+      source: 'AGENT',
+      actorUserId: actorName ? 'u_2' : null,
+      actorName,
+      reason,
+      createdAt: `2026-01-01T12:0${id.slice(-1)}:00.000Z`,
+    }
+  }
+
+  function setupScope(
+    scope: {
+      mode: 'ALL' | 'SCOPED'
+      leadsTeamIds: string[]
+      memberTeamIds: string[]
+    },
+    extra: FetchRoute[] = [],
+    teams = TEAMS,
+  ) {
+    return mockFetch([
+      ...extra,
+      { match: `${API}/teams/me`, data: scope },
+      { match: `${API}/teams`, data: teams },
+      { match: MESSAGES, data: [] },
+      { match: `${API}/assignable-members`, data: MEMBERS },
+      { match: '/api/users/me', data: { id: 'u_1', name: 'Eu Mesmo' } },
+      {
+        match: `${API}/conversations/cv_1/events`,
+        data: [
+          event('ev1', 'ASSIGNED', 'Eu Mesmo', 'Beatriz'),
+          event('ev2', 'ASSIGNED', null, null),
+          event('ev3', 'TEAM_CHANGED', 'Vendas', 'Beatriz'),
+          event('ev4', 'TEAM_CHANGED', null, null),
+        ],
+      },
+    ])
+  }
+
+  async function openTransfer() {
+    fireEvent.click(screen.getByRole('button', { name: 'Transferir conversa' }))
+    return screen.findByRole('menu')
+  }
+
+  it('shows the team badge and the assignment/team events', async () => {
+    setupScope({ mode: 'ALL', leadsTeamIds: [], memberTeamIds: [] })
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({
+          teamId: 'tm_sales',
+          team: { id: 'tm_sales', name: 'Vendas' },
+        })}
+      />,
+    )
+    expect(screen.getByTitle('Equipe Vendas')).toBeTruthy()
+    expect(
+      await screen.findByText(/Conversa atribuída a Eu Mesmo por Beatriz/),
+    ).toBeTruthy()
+    expect(screen.getByText(/Conversa devolvida para a fila/)).toBeTruthy()
+    expect(
+      screen.getByText(/Conversa movida para a equipe Vendas por Beatriz/),
+    ).toBeTruthy()
+    expect(screen.getByText(/Conversa tirada da equipe/)).toBeTruthy()
+    expect(screen.queryByText(/Motivo:/)).toBeNull()
+  })
+
+  it('lets a scoped agent only take a queue item', async () => {
+    setupScope({ mode: 'SCOPED', leadsTeamIds: [], memberTeamIds: [] }, [], [])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({ assignedUserId: null })}
+      />,
+    )
+    await screen.findByText(/Conversa tirada da equipe/)
+    const menu = await openTransfer()
+    await within(menu).findByRole('menuitem', { name: 'Eu Mesmo (você)' })
+    await waitFor(() =>
+      expect(
+        within(menu).queryByRole('menuitem', { name: 'Beatriz' }),
+      ).toBeNull(),
+    )
+    expect(
+      within(menu).queryByRole('menuitem', { name: 'Devolver para a fila' }),
+    ).toBeNull()
+    // Agents do not move conversations between teams.
+    expect(
+      screen.queryByRole('button', { name: 'Mover para outra equipe' }),
+    ).toBeNull()
+  })
+
+  it('hands an own conversation back to the queue', async () => {
+    const onSelectConversation = vi.fn()
+    const fetchSpy = setupScope(
+      { mode: 'SCOPED', leadsTeamIds: [], memberTeamIds: [] },
+      [
+        {
+          method: 'PATCH',
+          match: `${API}/conversations/cv_1/assign`,
+          data: conversation({ assignedUserId: null }),
+        },
+      ],
+      [],
+    )
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({ assignedUserId: 'u_1' })}
+        onSelectConversation={onSelectConversation}
+      />,
+    )
+    await screen.findByText(/Conversa tirada da equipe/)
+    const menu = await openTransfer()
+    fireEvent.click(
+      await within(menu).findByRole('menuitem', {
+        name: 'Devolver para a fila',
+      }),
+    )
+    await waitFor(() =>
+      expect(
+        fetchBody(fetchSpy, `${API}/conversations/cv_1/assign`, 'PATCH'),
+      ).toEqual({ assignedUserId: null }),
+    )
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Conversa devolvida à fila'),
+    )
+    expect(onSelectConversation).toHaveBeenCalled()
+  })
+
+  it('reports a refused assignment', async () => {
+    setupScope({ mode: 'ALL', leadsTeamIds: [], memberTeamIds: [] }, [
+      {
+        method: 'PATCH',
+        match: `${API}/conversations/cv_1/assign`,
+        status: 403,
+        error: 'Você não pode transferir esta conversa',
+      },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+    await screen.findByText(/Conversa tirada da equipe/)
+    const menu = await openTransfer()
+    fireEvent.click(await within(menu).findByRole('menuitem', { name: 'Caio' }))
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.anything(),
+        'Não foi possível transferir a conversa',
+      ),
+    )
+  })
+
+  it('lets a leader assign inside the team and take it out of the team', async () => {
+    const fetchSpy = setupScope(
+      {
+        mode: 'SCOPED',
+        leadsTeamIds: ['tm_sales'],
+        memberTeamIds: ['tm_sales'],
+      },
+      [
+        {
+          method: 'PATCH',
+          match: `${API}/conversations/cv_1/team`,
+          data: conversation({ assignedUserId: null, teamId: null }),
+        },
+      ],
+    )
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({
+          assignedUserId: null,
+          teamId: 'tm_sales',
+          team: { id: 'tm_sales', name: 'Vendas' },
+        })}
+      />,
+    )
+    await screen.findByText(/Conversa tirada da equipe/)
+
+    const menu = await openTransfer()
+    await within(menu).findByRole('menuitem', { name: 'Beatriz' })
+    expect(within(menu).queryByRole('menuitem', { name: 'Caio' })).toBeNull()
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Mover para outra equipe' }),
+    )
+    const teamMenu = await screen.findByRole('menu')
+    expect(
+      within(teamMenu)
+        .getByRole('menuitem', { name: 'Vendas (atual)' })
+        .getAttribute('aria-disabled'),
+    ).toBe('true')
+    expect(
+      within(teamMenu).queryByRole('menuitem', { name: 'Suporte' }),
+    ).toBeNull()
+    fireEvent.click(
+      within(teamMenu).getByRole('menuitem', { name: 'Tirar da equipe' }),
+    )
+    await waitFor(() =>
+      expect(
+        fetchBody(fetchSpy, `${API}/conversations/cv_1/team`, 'PATCH'),
+      ).toEqual({ teamId: null }),
+    )
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe'),
+    )
+  })
+
+  it('lets the owner move a conversation to any team and reports failures', async () => {
+    const fetchSpy = setupScope(
+      { mode: 'ALL', leadsTeamIds: [], memberTeamIds: [] },
+      [
+        {
+          method: 'PATCH',
+          match: `${API}/conversations/cv_1/team`,
+          handler: (_url, init) =>
+            JSON.parse(String(init?.body)).teamId === 'tm_support'
+              ? conversation({ teamId: 'tm_support' })
+              : new Response(
+                  JSON.stringify({ success: false, statusCode: 403 }),
+                  { status: 403 },
+                ),
+        },
+      ],
+    )
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Mover para outra equipe' }),
+    )
+    const teamMenu = await screen.findByRole('menu')
+    fireEvent.click(within(teamMenu).getByRole('menuitem', { name: 'Suporte' }))
+    await waitFor(() =>
+      expect(
+        fetchBody(fetchSpy, `${API}/conversations/cv_1/team`, 'PATCH'),
+      ).toEqual({ teamId: 'tm_support' }),
+    )
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Conversa movida de equipe'),
+    )
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mover para outra equipe' }),
+    )
+    const again = await screen.findByRole('menu')
+    fireEvent.click(within(again).getByRole('menuitem', { name: 'Vendas' }))
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.anything(),
+        'Não foi possível mover a conversa de equipe',
+      ),
     )
   })
 })

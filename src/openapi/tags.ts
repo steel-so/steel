@@ -203,6 +203,11 @@ export const TAG_GROUPS = [
         name: 'Comunicação · Tempo real e webhooks',
         description: 'SSE de eventos e webhooks de entrada da Meta e da Z-API.',
       },
+      {
+        name: 'Comunicação · Equipes',
+        description:
+          'Equipes de atendimento (líderes e agentes) e a visibilidade das conversas.',
+      },
     ],
   },
   {

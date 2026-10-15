@@ -6,6 +6,7 @@ import {
   CheckmarkCircle02Icon,
   ComputerVideoCallIcon,
   RefreshIcon,
+  UserGroup03Icon,
   UserSwitchIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { format } from 'date-fns'
@@ -22,7 +23,10 @@ import { MessageScroller } from '@/components/ui/chat/message-scroller'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -52,6 +56,11 @@ import {
   useSendWhatsAppTextMessage,
   useWhatsAppMessages,
 } from '@/src/hooks/use-whatsapp-messages'
+import {
+  useSetWhatsAppConversationTeam,
+  useWhatsAppConversationScope,
+  useWhatsAppTeams,
+} from '@/src/hooks/use-whatsapp-teams'
 import type {
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
@@ -66,6 +75,12 @@ import {
 import { WhatsappConversationEventChip } from './whatsapp-conversation-event-chip'
 import { WhatsappHandoffBanner } from './whatsapp-handoff-banner'
 import { WhatsappPhoneCallBanner } from './whatsapp-phone-call-banner'
+import {
+  canAssignTo,
+  canMoveToTeam,
+  clientConversationScope,
+} from './whatsapp-team-access'
+import { WhatsappTeamBadge } from './whatsapp-team-badge'
 import { WhatsappVideoCallDialog } from './whatsapp-video-call-dialog'
 
 const STATUS_LABEL: Record<WhatsAppConversationDTO['status'], string> = {
@@ -152,6 +167,55 @@ export function WhatsappConversationView({
     workspaceId,
     conversation.id,
   )
+  // Equipes: offer only the assignments and team moves the API accepts.
+  const teams = useWhatsAppTeams(workspaceId)
+  const conversationScope = useWhatsAppConversationScope(workspaceId)
+  const setTeam = useSetWhatsAppConversationTeam(workspaceId, conversation.id)
+  const viewerScope = clientConversationScope(
+    conversationScope.data,
+    teams.data,
+    currentUser.data?.id,
+  )
+  const assignTargets = (assignableMembers.data ?? []).filter(
+    (member) =>
+      member.id === conversation.assignedUserId ||
+      canAssignTo(viewerScope, conversation, member.id),
+  )
+  const canReturnToQueue =
+    conversation.assignedUserId !== null &&
+    canAssignTo(viewerScope, conversation, null)
+  const teamTargets = (teams.data ?? []).filter((team) =>
+    canMoveToTeam(viewerScope, conversation, team.id),
+  )
+  const canClearTeam =
+    conversation.teamId !== null &&
+    canMoveToTeam(viewerScope, conversation, null)
+
+  function handleAssign(assignedUserId: string | null) {
+    assignConversation.mutate(assignedUserId, {
+      onSuccess: (updated) => {
+        notify.success(
+          assignedUserId ? 'Conversa transferida' : 'Conversa devolvida à fila',
+        )
+        onSelectConversation?.(updated)
+      },
+      onError: (error) =>
+        notify.error(error, 'Não foi possível transferir a conversa'),
+    })
+  }
+
+  function handleSetTeam(teamId: string | null) {
+    setTeam.mutate(teamId, {
+      onSuccess: (updated) => {
+        notify.success(
+          teamId ? 'Conversa movida de equipe' : 'Conversa sem equipe',
+        )
+        onSelectConversation?.(updated)
+      },
+      onError: (error) =>
+        notify.error(error, 'Não foi possível mover a conversa de equipe'),
+    })
+  }
   const sendText = useSendWhatsAppTextMessage(workspaceId, conversation.id)
   const reactToMessage = useReactToWhatsAppMessage(workspaceId, conversation.id)
   const deleteMessage = useDeleteWhatsAppMessage(workspaceId, conversation.id)
@@ -277,9 +341,12 @@ export function WhatsappConversationView({
                       .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className='font-medium text-sm'>
-                    {conversation.contactName ?? conversation.contactWaId}
+                <div className='min-w-0'>
+                  <p className='flex items-center gap-1.5 font-medium text-sm'>
+                    <span className='truncate'>
+                      {conversation.contactName ?? conversation.contactWaId}
+                    </span>
+                    <WhatsappTeamBadge team={conversation.team} />
                   </p>
                   <p className='text-muted-foreground text-xs'>
                     {conversation.contactWaId}
@@ -376,6 +443,50 @@ export function WhatsappConversationView({
           >
             <SteelIcon icon={ComputerVideoCallIcon} size={18} />
           </Button>
+          {teamTargets.length > 0 || canClearTeam ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    aria-label='Mover para outra equipe'
+                    title='Equipe da conversa'
+                  >
+                    <SteelIcon icon={UserGroup03Icon} size={18} />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align='end'>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Mover para a equipe</DropdownMenuLabel>
+                  {teamTargets.map((team) => (
+                    <DropdownMenuItem
+                      key={team.id}
+                      disabled={
+                        setTeam.isPending || team.id === conversation.teamId
+                      }
+                      onClick={() => handleSetTeam(team.id)}
+                    >
+                      {team.name}
+                      {team.id === conversation.teamId ? ' (atual)' : ''}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+                {canClearTeam ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={setTeam.isPending}
+                      onClick={() => handleSetTeam(null)}
+                    >
+                      Tirar da equipe
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           <DropdownMenu open={transferOpen} onOpenChange={setTransferOpen}>
             <DropdownMenuTrigger
               render={
@@ -389,25 +500,39 @@ export function WhatsappConversationView({
               }
             />
             <DropdownMenuContent align='end'>
-              {assignableMembers.data?.length ? (
-                assignableMembers.data.map((member) => (
-                  <DropdownMenuItem
-                    key={member.id}
-                    disabled={
-                      assignConversation.isPending ||
-                      member.id === conversation.assignedUserId
-                    }
-                    onClick={() => assignConversation.mutate(member.id)}
-                  >
-                    {member.name}
-                    {member.id === currentUser.data?.id ? ' (você)' : ''}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Transferir para</DropdownMenuLabel>
+                {assignTargets.length ? (
+                  assignTargets.map((member) => (
+                    <DropdownMenuItem
+                      key={member.id}
+                      disabled={
+                        assignConversation.isPending ||
+                        member.id === conversation.assignedUserId
+                      }
+                      onClick={() => handleAssign(member.id)}
+                    >
+                      {member.name}
+                      {member.id === currentUser.data?.id ? ' (você)' : ''}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled>
+                    Nenhum membro disponível
                   </DropdownMenuItem>
-                ))
-              ) : (
-                <DropdownMenuItem disabled>
-                  Nenhum membro disponível
-                </DropdownMenuItem>
-              )}
+                )}
+              </DropdownMenuGroup>
+              {canReturnToQueue ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={assignConversation.isPending}
+                    onClick={() => handleAssign(null)}
+                  >
+                    Devolver para a fila
+                  </DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

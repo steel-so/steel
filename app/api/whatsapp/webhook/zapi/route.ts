@@ -37,6 +37,13 @@ interface ZapiPayload {
   location?: unknown
   reaction?: { value?: string; referencedMessage?: { messageId?: string } }
   contact?: { displayName?: string; vcard?: string }
+  // Click on a button we sent (`buttonId` = our payload).
+  buttonsResponseMessage?: { buttonId?: string; message?: string }
+  listResponseMessage?: {
+    message?: string
+    title?: string
+    selectedRowId?: string
+  }
   // Present on the payload when this message is a reply/quote to another one.
   referenceMessageId?: string
   // DisconnectedCallback: why the instance dropped.
@@ -53,7 +60,24 @@ function extractMessageContent(payload: ZapiPayload): {
   text?: string
   rawMediaUrl?: string
   contactPayload?: { name: string; waId: string }
+  buttonPayload?: string
 } {
+  if (payload.buttonsResponseMessage) {
+    return {
+      type: 'BUTTON',
+      text: payload.buttonsResponseMessage.message,
+      buttonPayload: payload.buttonsResponseMessage.buttonId,
+    }
+  }
+  if (payload.listResponseMessage) {
+    return {
+      type: 'BUTTON',
+      text:
+        payload.listResponseMessage.title ??
+        payload.listResponseMessage.message,
+      buttonPayload: payload.listResponseMessage.selectedRowId,
+    }
+  }
   if (payload.contact) {
     const waId = waIdFromVcard(payload.contact.vcard)
     if (waId) {

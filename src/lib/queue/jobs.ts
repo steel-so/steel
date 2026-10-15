@@ -38,6 +38,7 @@ export const QueueName = {
   WorkspaceIntegrations: 'workspace-integrations',
   CrmCampaigns: 'crm-campaigns',
   CrmWorkflowDelay: 'crm-workflow-delay',
+  WhatsappButtonActions: 'whatsapp-button-actions',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -111,6 +112,28 @@ export type WhatsappAiReplyJobPayload = {
   [WhatsappAiReplyJob.GenerateAiReply]: {
     conversationId: string
     messageId: string
+  }
+}
+
+/** Click on a reply button (template or quick reply): runs the actions the
+ * workspace configured for it, in order. */
+export const WhatsappButtonActionsJob = {
+  RunButtonActions: 'run-button-actions',
+} as const
+
+export type WhatsappButtonActionsJob =
+  (typeof WhatsappButtonActionsJob)[keyof typeof WhatsappButtonActionsJob]
+
+export type WhatsappButtonActionsJobPayload = {
+  [WhatsappButtonActionsJob.RunButtonActions]: {
+    workspaceId: string
+    conversationId: string
+    /** The IN message that carried the click. */
+    messageId: string
+    sourceType: 'TEMPLATE' | 'QUICK_REPLY'
+    sourceId: string
+    buttonId: string
+    clickedAt: string
   }
 }
 

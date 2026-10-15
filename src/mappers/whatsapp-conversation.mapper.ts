@@ -39,6 +39,10 @@ export function toWhatsAppConversationDTO(
     contactAvatarUrl: conversation.contact.avatarUrl,
     status: conversation.status,
     assignedUserId: conversation.assignedUserId,
+    teamId: conversation.teamId,
+    team: conversation.team
+      ? { id: conversation.team.id, name: conversation.team.name }
+      : null,
     aiActive: conversation.aiActive,
     aiHandoff: conversation.aiHandoff,
     unreadCount: conversation.unreadCount,

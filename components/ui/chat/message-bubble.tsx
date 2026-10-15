@@ -1,12 +1,15 @@
 'use client'
 
 import {
+  ArrowTurnBackwardIcon,
+  ArrowUpRight01Icon,
   Contact01Icon,
   Delete02Icon,
   Download01Icon,
   Robot01Icon,
   SmileIcon,
   Tick01Icon,
+  TouchInteraction01Icon,
   Tick02Icon,
   UserAdd01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -126,6 +129,43 @@ function MessageBubbleMedia({
   }
 }
 
+/** Buttons sent with an OUT message, the way the contact got them: reply
+ * buttons are inert here (the contact clicks on their phone), links open. */
+function MessageButtons({ message }: { message: WhatsAppMessageDTO }) {
+  if (!message.buttons?.length) return null
+  return (
+    <div
+      aria-label='Botões enviados'
+      className='mt-1 flex w-full min-w-48 max-w-xs flex-col gap-1'
+    >
+      {message.buttons.map((button) =>
+        button.type === 'URL' ? (
+          <a
+            key={button.id}
+            href={button.url}
+            target='_blank'
+            rel='noreferrer'
+            className='flex items-center justify-center gap-1.5 rounded-xl border bg-background px-3 py-1.5 font-medium text-primary text-xs shadow-xs hover:bg-muted'
+          >
+            <SteelIcon icon={ArrowUpRight01Icon} size={14} />
+            <span className='truncate'>{button.label}</span>
+          </a>
+        ) : (
+          <span
+            key={button.id}
+            aria-disabled='true'
+            title='O contato responde tocando no botão'
+            className='flex cursor-default items-center justify-center gap-1.5 rounded-xl border bg-background px-3 py-1.5 font-medium text-muted-foreground text-xs'
+          >
+            <SteelIcon icon={ArrowTurnBackwardIcon} size={14} />
+            <span className='truncate'>{button.label}</span>
+          </span>
+        ),
+      )}
+    </div>
+  )
+}
+
 export function MessageBubble({
   message,
   replyToMessage,
@@ -149,7 +189,9 @@ export function MessageBubble({
     type: 'IMAGE' | 'VIDEO'
   } | null>(null)
   const isOutbound = message.direction === 'OUT'
-  const showTextBelowMedia = message.text && message.type !== 'DOCUMENT'
+  const isButtonClick = !isOutbound && message.type === 'BUTTON'
+  const showTextBelowMedia =
+    message.text && message.type !== 'DOCUMENT' && !isButtonClick
 
   return (
     <div
@@ -211,6 +253,17 @@ export function MessageBubble({
                 message={message}
                 onOpenLightbox={setLightboxMedia}
               />
+              {isButtonClick && (
+                <p className='flex items-center gap-1.5'>
+                  <SteelIcon
+                    icon={TouchInteraction01Icon}
+                    size={14}
+                    className='shrink-0 opacity-70'
+                  />
+                  <span className='opacity-70'>Clicou em:</span>
+                  <span className='font-medium'>{message.text ?? 'botão'}</span>
+                </p>
+              )}
               {showTextBelowMedia && (
                 <p className='whitespace-pre-wrap break-words'>{message.text}</p>
               )}
@@ -224,6 +277,7 @@ export function MessageBubble({
                 {isOutbound && <MessageStatusTicks status={message.status} />}
               </div>
             </div>
+            {isOutbound && <MessageButtons message={message} />}
             {message.reactionEmoji && (
               <span className='-mt-1.5 rounded-full border bg-background px-1.5 py-0.5 text-xs shadow-sm'>
                 {message.reactionEmoji}

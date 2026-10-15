@@ -7,25 +7,38 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import {
   badRequest,
+  forbidden,
   whatsappConnectionNotFound,
   whatsappContactNotFound,
   whatsappConversationAlreadyClosed,
   whatsappConversationNotClosed,
   whatsappConversationNotFound,
+  whatsappTeamNotFound,
 } from '@/src/errors'
+import type { PermissionAction } from '@/src/lib/permissions'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
+import {
+  canAssignConversation,
+  canChangeConversationTeam,
+  canSeeConversation,
+  scopeVisibility,
+  type WhatsAppConversationScope,
+} from '@/src/lib/whatsapp/conversation-scope'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppConversationEventDTO } from '@/src/mappers/whatsapp-conversation-event.mapper'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { UserRepository } from '@/src/repositories/user.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import {
   WhatsAppConversationRepository,
   type WhatsAppConversationStatusFilter,
+  type WhatsAppConversationWithPreview,
 } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
+import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import type {
   CloseWhatsAppConversationDTO,
   StartWhatsAppConversationDTO,
@@ -35,8 +48,17 @@ import type {
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
 } from '@/types/whatsapp-conversation'
-import { assertMember, assertModuleMember } from './authz'
+import {
+  assertMember,
+  assertModuleMember,
+  type MembershipContext,
+} from './authz'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import {
+  loadVisibleConversation,
+  resolveConversationScope,
+  whatsAppTeamMemberIds,
+} from './whatsapp-conversation-scope.service'
 import {
   notifyWhatsAppUsers,
   whatsAppConversationPath,
@@ -47,6 +69,58 @@ import { WhatsAppUsageService } from './whatsapp-usage.service'
 /** Máximo de conversas fechadas por inatividade a cada tick do job. */
 const AUTO_CLOSE_BATCH = 500
 const HOUR_MS = 60 * 60 * 1000
+
+interface ViewerAccess {
+  membership: MembershipContext
+  scope: WhatsAppConversationScope
+}
+
+/**
+ * Module member with the permission + the conversation visibility scope
+ * (Equipes) — the gate of every method below.
+ */
+async function authorizeViewer(
+  actorId: string,
+  workspaceId: string,
+  action: PermissionAction,
+): Promise<Result<ViewerAccess>> {
+  const membership = await assertModuleMember(
+    actorId,
+    workspaceId,
+    'COMMUNICATION',
+    { resource: 'conversations', action },
+  )
+  if (!membership.ok) return membership
+
+  const scope = await resolveConversationScope(
+    actorId,
+    workspaceId,
+    membership.value.role,
+  )
+  if (!scope.ok) return scope
+  return ok({ membership: membership.value, scope: scope.value })
+}
+
+/** `authorizeViewer` + a conversation the viewer can see (else 404). */
+async function authorizeConversation(
+  actorId: string,
+  workspaceId: string,
+  id: string,
+  action: PermissionAction,
+): Promise<
+  Result<ViewerAccess & { conversation: WhatsAppConversationWithPreview }>
+> {
+  const access = await authorizeViewer(actorId, workspaceId, action)
+  if (!access.ok) return access
+
+  const conversation = await loadVisibleConversation(
+    access.value.scope,
+    workspaceId,
+    id,
+  )
+  if (!conversation.ok) return conversation
+  return ok({ ...access.value, conversation: conversation.value })
+}
 
 async function publishConversation(
   workspaceId: string,
@@ -162,17 +236,13 @@ export const WhatsAppConversationService = {
       connectionId?: string
     } = {},
   ): Promise<Result<WhatsAppConversationDTO[]>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'VIEW' },
-    )
-    if (!membership.ok) return membership
+    const access = await authorizeViewer(actorId, workspaceId, 'VIEW')
+    if (!access.ok) return access
 
     const result = await WhatsAppConversationRepository.listByWorkspace(
       workspaceId,
       filters,
+      scopeVisibility(access.value.scope),
     )
     if (!result.ok) return result
 
@@ -184,13 +254,8 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     dto: StartWhatsAppConversationDTO,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'CREATE' },
-    )
-    if (!membership.ok) return membership
+    const access = await authorizeViewer(actorId, workspaceId, 'CREATE')
+    if (!access.ok) return access
 
     const contact = await WhatsAppContactRepository.findById(
       dto.contactId,
@@ -214,6 +279,13 @@ export const WhatsAppConversationService = {
 
     let conversationId: string
     if (existing.value) {
+      // The contact is already being served by someone the actor cannot
+      // see: say so without exposing that conversation.
+      if (!canSeeConversation(access.value.scope, existing.value)) {
+        return err(
+          forbidden('Este contato já está em atendimento com outra pessoa'),
+        )
+      }
       conversationId = existing.value.id
     } else {
       const allowed = await WhatsAppUsageService.assertCanSend(
@@ -266,22 +338,10 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'VIEW' },
-    )
-    if (!membership.ok) return membership
+    const access = await authorizeConversation(actorId, workspaceId, id, 'VIEW')
+    if (!access.ok) return access
 
-    const result = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!result.ok) return result
-    if (!result.value) return err(whatsappConversationNotFound())
-
-    return ok(toWhatsAppConversationDTO(result.value))
+    return ok(toWhatsAppConversationDTO(access.value.conversation))
   },
 
   async markRead(
@@ -289,23 +349,12 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'VIEW' },
-    )
-    if (!membership.ok) return membership
+    const access = await authorizeConversation(actorId, workspaceId, id, 'VIEW')
+    if (!access.ok) return access
+    const existing = access.value.conversation
 
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
-
-    if (existing.value.unreadCount === 0) {
-      return ok(toWhatsAppConversationDTO(existing.value))
+    if (existing.unreadCount === 0) {
+      return ok(toWhatsAppConversationDTO(existing))
     }
 
     const updated = await WhatsAppConversationRepository.update(id, {
@@ -331,20 +380,8 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
 
     const updated = await WhatsAppConversationRepository.update(id, {
       aiActive: false,
@@ -379,20 +416,8 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
 
     const updated = await WhatsAppConversationRepository.update(id, {
       aiActive: true,
@@ -427,20 +452,8 @@ export const WhatsAppConversationService = {
     id: string,
     pinned: boolean,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
 
     const updated = await WhatsAppConversationRepository.update(id, {
       pinnedAt: pinned ? new Date() : null,
@@ -466,20 +479,8 @@ export const WhatsAppConversationService = {
     id: string,
     archived: boolean,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
 
     const updated = await WhatsAppConversationRepository.update(id, {
       archivedAt: archived ? new Date() : null,
@@ -513,20 +514,13 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<{ id: string }>> {
-    const membership = await assertModuleMember(
+    const access = await authorizeConversation(
       actorId,
       workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'DELETE' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
       id,
-      workspaceId,
+      'DELETE',
     )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    if (!access.ok) return access
 
     const updated = await WhatsAppConversationRepository.update(id, {
       deletedAt: new Date(),
@@ -554,20 +548,13 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
+    const access = await authorizeConversation(
       actorId,
       workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'DELETE' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
       id,
-      workspaceId,
+      'DELETE',
     )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    if (!access.ok) return access
 
     const updated = await WhatsAppConversationRepository.update(id, {
       clearedAt: new Date(),
@@ -623,26 +610,24 @@ export const WhatsAppConversationService = {
     )
   },
 
+  /**
+   * Assigns (or, with `null`, returns to the queue). Unscoped viewers assign
+   * freely; a team leader assigns inside the teams they lead; anyone else
+   * only takes an unassigned queue item or hands their own back.
+   */
   async assign(
     actorId: string,
     workspaceId: string,
     id: string,
     assignedUserId: string | null,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
+    const existing = access.value.conversation
 
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value) return err(whatsappConversationNotFound())
+    if (!canAssignConversation(access.value.scope, existing, assignedUserId)) {
+      return err(forbidden('Você não pode transferir esta conversa'))
+    }
 
     if (assignedUserId) {
       const targetMembership = await assertMember(assignedUserId, workspaceId)
@@ -653,11 +638,33 @@ export const WhatsAppConversationService = {
       }
     }
 
+    const changed = assignedUserId !== existing.assignedUserId
     const updated = await WhatsAppConversationRepository.update(id, {
       assignedUserId,
-      status: 'IN_PROGRESS',
+      // Back to the queue = NEW again; a closed one stays closed.
+      status:
+        existing.status === 'CLOSED'
+          ? 'CLOSED'
+          : assignedUserId
+            ? 'IN_PROGRESS'
+            : 'NEW',
     })
     if (!updated.ok) return updated
+
+    if (changed) {
+      const assignee = assignedUserId
+        ? await UserRepository.findById(assignedUserId)
+        : null
+      const event = await WhatsAppConversationEventRepository.create({
+        workspaceId,
+        conversationId: id,
+        kind: 'ASSIGNED',
+        source: 'AGENT',
+        actorUserId: actorId,
+        reason: assignee?.ok ? assignee.value.name : null,
+      })
+      if (!event.ok) return event
+    }
 
     const fresh = await WhatsAppConversationRepository.findById(id, workspaceId)
     if (!fresh.ok) return fresh
@@ -679,7 +686,7 @@ export const WhatsAppConversationService = {
 
     // The new assignee hears about it — not on self-assign (the actor is
     // filtered out) nor when nothing changed.
-    if (assignedUserId && assignedUserId !== existing.value.assignedUserId) {
+    if (assignedUserId && changed) {
       const contact = fresh.value.contact
       await notifyWhatsAppUsers({
         workspaceId,
@@ -700,6 +707,80 @@ export const WhatsAppConversationService = {
     void indexSearchDocument('zap-conversation', workspaceId, id)
     return ok(dto)
   },
+
+  /**
+   * Moves the conversation to a team (`null` removes it). Unscoped viewers
+   * move freely; a leader moves between the teams they lead. An unassigned
+   * conversation lands in the team queue and its members are told.
+   */
+  async setTeam(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+    teamId: string | null,
+  ): Promise<Result<WhatsAppConversationDTO>> {
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
+    const existing = access.value.conversation
+
+    let teamName: string | null = null
+    if (teamId) {
+      const team = await WhatsAppTeamRepository.findById(teamId, workspaceId)
+      if (!team.ok) return team
+      if (!team.value) return err(whatsappTeamNotFound())
+      teamName = team.value.name
+    }
+
+    if (!canChangeConversationTeam(access.value.scope, existing, teamId)) {
+      return err(forbidden('Você não pode mover esta conversa de equipe'))
+    }
+
+    if (existing.teamId === teamId) {
+      return ok(toWhatsAppConversationDTO(existing))
+    }
+
+    const updated = await WhatsAppConversationRepository.update(id, { teamId })
+    if (!updated.ok) return updated
+
+    const event = await WhatsAppConversationEventRepository.create({
+      workspaceId,
+      conversationId: id,
+      kind: 'TEAM_CHANGED',
+      source: 'AGENT',
+      actorUserId: actorId,
+      reason: teamName,
+    })
+    if (!event.ok) return event
+
+    const published = await publishConversation(workspaceId, id)
+    if (!published.ok) return published
+
+    auditMutation({
+      entity: 'whatsapp_conversation',
+      action: 'update',
+      actorId,
+      targetId: id,
+      meta: { teamId, previousTeamId: existing.teamId },
+    })
+
+    if (teamId && !existing.assignedUserId) {
+      const contact = existing.contact
+      await notifyWhatsAppUsers({
+        workspaceId,
+        kind: 'WHATSAPP_CONVERSATION_ASSIGNED',
+        userIds: await whatsAppTeamMemberIds(workspaceId, teamId),
+        actorId,
+        title: `Nova conversa na fila da equipe ${teamName}`,
+        body: `${contact.name ?? contact.waId} aguarda atendimento.`,
+        path: whatsAppConversationPath(id),
+        meta: { conversationId: id, teamId, via: 'team_queue' },
+      })
+    }
+
+    void indexSearchDocument('zap-conversation', workspaceId, id)
+    return published
+  },
+
   /** Fecha a conversa (atendente/admin), com motivo opcional. */
   async close(
     actorId: string,
@@ -707,27 +788,15 @@ export const WhatsAppConversationService = {
     id: string,
     dto: CloseWhatsAppConversationDTO,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value || existing.value.deletedAt) {
-      return err(whatsappConversationNotFound())
-    }
-    if (existing.value.status === 'CLOSED') {
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
+    const existing = access.value.conversation
+    if (existing.deletedAt) return err(whatsappConversationNotFound())
+    if (existing.status === 'CLOSED') {
       return err(whatsappConversationAlreadyClosed())
     }
 
-    const closed = await applyClose(existing.value, {
+    const closed = await applyClose(existing, {
       actorUserId: actorId,
       source: 'AGENT',
       reason: dto.reason,
@@ -744,23 +813,11 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationDTO>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'EDIT' },
-    )
-    if (!membership.ok) return membership
-
-    const existing = await WhatsAppConversationRepository.findById(
-      id,
-      workspaceId,
-    )
-    if (!existing.ok) return existing
-    if (!existing.value || existing.value.deletedAt) {
-      return err(whatsappConversationNotFound())
-    }
-    if (existing.value.status !== 'CLOSED') {
+    const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
+    if (!access.ok) return access
+    const existing = access.value.conversation
+    if (existing.deletedAt) return err(whatsappConversationNotFound())
+    if (existing.status !== 'CLOSED') {
       return err(whatsappConversationNotClosed())
     }
 
@@ -771,7 +828,7 @@ export const WhatsAppConversationService = {
     )
     if (!allowed.ok) return allowed
 
-    const reopened = await reopenWhatsAppConversation(existing.value, {
+    const reopened = await reopenWhatsAppConversation(existing, {
       actorUserId: actorId,
       source: 'AGENT',
     })
@@ -788,13 +845,8 @@ export const WhatsAppConversationService = {
     workspaceId: string,
     id: string,
   ): Promise<Result<WhatsAppConversationEventDTO[]>> {
-    const membership = await assertModuleMember(
-      actorId,
-      workspaceId,
-      'COMMUNICATION',
-      { resource: 'conversations', action: 'VIEW' },
-    )
-    if (!membership.ok) return membership
+    const access = await authorizeConversation(actorId, workspaceId, id, 'VIEW')
+    if (!access.ok) return access
 
     const events = await WhatsAppConversationEventRepository.listByConversation(
       id,

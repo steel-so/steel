@@ -7,6 +7,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { WhatsAppUsageService } from '@/src/services/whatsapp-usage.service'
 import { createMetaClient } from './meta-client'
 import type {
+  WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
@@ -132,6 +133,16 @@ export const WhatsAppSend = {
     options?: WhatsAppSendOptions,
   ): Promise<Result<WhatsAppSendResult>> {
     return withProvider(connection, (client) => client.sendContact(input), {
+      metered: !options?.unmetered,
+    })
+  },
+
+  buttons(
+    connection: WhatsAppConnection,
+    input: WhatsAppOutboundButtons,
+    options?: WhatsAppSendOptions,
+  ): Promise<Result<WhatsAppSendResult>> {
+    return withProvider(connection, (client) => client.sendButtons(input), {
       metered: !options?.unmetered,
     })
   },

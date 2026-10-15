@@ -36,6 +36,7 @@ import { getCrmCampaignsQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
 import { resolveBroadcastMediaKind } from '@/src/lib/whatsapp/broadcast-media'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
+import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import { buildMetaSendComponents } from '@/src/lib/whatsapp/template-variables'
 import type { WhatsAppSendResult } from '@/src/lib/whatsapp/types'
 import {
@@ -247,7 +248,10 @@ export async function sendCampaignWhatsApp(
       to: to.waId,
       templateName: template.value.name,
       language: template.value.language,
-      components: buildMetaSendComponents(fields, values),
+      components: applyTemplateSendExtras(
+        template.value,
+        buildMetaSendComponents(fields, values),
+      ).components,
     })
   }
 

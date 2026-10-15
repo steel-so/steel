@@ -43,6 +43,12 @@ const template = {
   category: 'UTILITY',
   status: 'APPROVED',
   components: [],
+  quality: 'UNKNOWN',
+  qualityUpdatedAt: null,
+  statusReason: null,
+  headerFormat: null,
+  headerMediaUrl: null,
+  buttons: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 }
@@ -62,8 +68,11 @@ describe('<WhatsappSettingsTemplates />', () => {
 
     expect(await screen.findByText('confirmacao_exame')).toBeTruthy()
     expect(screen.getByText('pt_BR')).toBeTruthy()
-    expect(screen.getByText('UTILITY')).toBeTruthy()
-    expect(screen.getByText('APPROVED')).toBeTruthy()
+    expect(screen.getByText('Utilidade')).toBeTruthy()
+    expect(screen.getByText('Aprovado')).toBeTruthy()
+    expect(
+      screen.getByRole('img', { name: 'Qualidade ainda não avaliada' }),
+    ).toBeTruthy()
   })
 
   it('shows the empty state when nothing was synced', async () => {
@@ -211,28 +220,23 @@ describe('<CreateTemplateDialog /> (via templates settings)', () => {
     })
   })
 
-  it('caps buttons at three and lets them be removed', async () => {
+  it('caps buttons at two through the shared editor', async () => {
     const { dialog } = await openDialog()
-    const add = () =>
+    const add = async (kind: RegExp) => {
       fireEvent.click(
         within(dialog).getByRole('button', { name: 'Adicionar botão' }),
       )
-    add()
-    add()
-    add()
-    expect(
-      within(dialog).getAllByRole('button', { name: 'Remover botão' }),
-    ).toHaveLength(3)
+      fireEvent.click(await screen.findByRole('menuitem', { name: kind }))
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    }
+    await add(/Resposta/)
+    await add(/Link/)
     expect(
       within(dialog).queryByRole('button', { name: 'Adicionar botão' }),
     ).toBeNull()
-
     fireEvent.click(
-      within(dialog).getAllByRole('button', { name: 'Remover botão' })[0],
+      within(dialog).getByRole('button', { name: 'Remover botão 1' }),
     )
-    expect(
-      within(dialog).getAllByRole('button', { name: 'Remover botão' }),
-    ).toHaveLength(2)
     expect(
       within(dialog).getByRole('button', { name: 'Adicionar botão' }),
     ).toBeTruthy()

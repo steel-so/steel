@@ -43,6 +43,7 @@ import { WhatsAppAiKnowledgeDocumentRepository } from '@/src/repositories/whatsa
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import {
   AiUsageService,
   type PreparedAiCall,
@@ -270,6 +271,46 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     expect(auditMutation).not.toHaveBeenCalled()
   })
 
+  it('answers a button AI instruction even with the AI off', async () => {
+    arrange({ conversation: { aiActive: false }, aiConfigActive: false })
+    const chat = vi.fn(async () => response('Temos o plano Pro!'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+        instruction: 'Ofereça o plano Pro',
+      }),
+    )
+
+    expect(outcome).toMatchObject({ status: 'sent' })
+    const call = (chat.mock.calls[0] as unknown as [{ system: string }])[0]
+    expect(call.system).toContain('Prompt base.')
+    expect(call.system).toContain(
+      'Instrução para esta resposta (o cliente clicou num botão): Ofereça o plano Pro',
+    )
+  })
+
+  it('answers a button AI instruction without any AI config', async () => {
+    arrange()
+    mockedAiConfigRepo.findByWorkspace.mockResolvedValue(ok(null))
+    const chat = vi.fn(async () => response('Claro!'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+        instruction: 'Seja breve',
+      }),
+    )
+
+    expect(outcome).toMatchObject({ status: 'sent' })
+    const call = (chat.mock.calls[0] as unknown as [{ system: string }])[0]
+    expect(call.system.startsWith('\n\nSe o cliente pedir')).toBe(true)
+  })
+
   it('should hand off to a human when the marker is present', async () => {
     arrange()
     const chat = vi.fn(async () =>
@@ -421,6 +462,25 @@ describe('WhatsAppAiReplyService · handoff notice', () => {
     expectOk(await handoff({ assignedUserId: null }))
     expect(admins).toHaveBeenCalledWith(WS)
     expect(notify.mock.calls[0][0].userIds).toEqual(['owner', 'admin'])
+  })
+
+  it('tells the team of an unassigned team conversation (Equipes)', async () => {
+    vi.mocked(
+      WhatsAppTeamRepository.listMembershipSnapshot,
+    ).mockResolvedValueOnce(
+      ok([
+        {
+          id: 'team1',
+          members: [
+            { userId: 'lia', role: 'LEADER' },
+            { userId: 'ana', role: 'AGENT' },
+          ],
+        },
+      ]),
+    )
+    expectOk(await handoff({ assignedUserId: null, teamId: 'team1' }))
+    expect(admins).not.toHaveBeenCalled()
+    expect(notify.mock.calls[0][0].userIds).toEqual(['lia', 'ana'])
   })
 
   it('never notifies a regular AI reply', async () => {

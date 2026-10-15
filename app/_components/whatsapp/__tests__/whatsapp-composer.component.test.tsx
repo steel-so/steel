@@ -55,6 +55,12 @@ function template(
     category: 'UTILITY',
     status,
     components,
+    quality: 'UNKNOWN',
+    qualityUpdatedAt: null,
+    statusReason: null,
+    headerFormat: null,
+    headerMediaUrl: null,
+    buttons: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   }
@@ -74,6 +80,8 @@ function setup(
           shortcut: 'oi',
           title: 'Oi',
           body: 'Olá {nome_cliente}, aqui é {nome_usuario}!',
+          mediaUrl: null,
+          buttons: [],
         },
       ],
     },
@@ -145,6 +153,8 @@ const replyTarget: WhatsAppMessageDTO = {
   reactionEmoji: null,
   reactedByContact: null,
   contactPayload: null,
+  buttons: null,
+  buttonPayload: null,
   createdAt: '2026-01-01T12:00:00.000Z',
 }
 
@@ -293,7 +303,7 @@ describe('<WhatsappComposer /> quick replies and templates', () => {
     renderComposer()
 
     fireEvent.click(screen.getByRole('button', { name: 'Template' }))
-    fireEvent.click(await screen.findByRole('button', { name: /^pedido/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /pedido/ }))
 
     const dialog = await screen.findByRole('dialog')
     expect(fetchBody(fetchSpy, `${MESSAGES}/template`)).toBeUndefined()
@@ -418,6 +428,7 @@ describe('<WhatsappComposer /> slash quick replies', () => {
       title: 'Boa tarde',
       body: 'Boa tarde, {nome_cliente}!',
       mediaUrl: null,
+      buttons: [],
     },
     {
       // Saved with the slash and an accent: `/saudacao` must still find it.
@@ -426,6 +437,7 @@ describe('<WhatsappComposer /> slash quick replies', () => {
       title: 'Saudação',
       body: 'Olá {nome_cliente}, tudo bem?',
       mediaUrl: null,
+      buttons: [],
     },
     {
       id: 'qr_3',
@@ -433,6 +445,7 @@ describe('<WhatsappComposer /> slash quick replies', () => {
       title: 'Tabela de preços',
       body: 'Segue a tabela, {nome_cliente}.',
       mediaUrl: 'https://cdn.test/media/ws_1/tabela.pdf',
+      buttons: [],
     },
     {
       id: 'qr_4',
@@ -440,6 +453,7 @@ describe('<WhatsappComposer /> slash quick replies', () => {
       title: 'Logo',
       body: 'Nossa marca',
       mediaUrl: 'https://cdn.test/media/ws_1/logo.png',
+      buttons: [],
     },
   ]
 
@@ -637,5 +651,147 @@ describe('<WhatsappComposer /> slash quick replies', () => {
     expect(mediaCalls(spy)).toEqual([
       { mediaUrl: 'https://cdn/x.pdf', type: 'DOCUMENT', fileName: 'a.pdf' },
     ])
+  })
+})
+
+describe('<WhatsappComposer /> quick replies with buttons', () => {
+  const SURVEY = {
+    id: 'qr_btn',
+    shortcut: 'pesquisa',
+    title: 'Pesquisa',
+    body: 'Resolvido, {nome_cliente}?',
+    mediaUrl: null,
+    buttons: [
+      { id: 'b1', type: 'REPLY', label: 'Sim', actions: [] },
+      { id: 'b2', type: 'REPLY', label: 'Não', actions: [] },
+    ],
+  }
+  const QUICK_REPLY_SEND = `${MESSAGES}/quick-reply`
+
+  function setupButtons(extra: FetchRoute[] = []) {
+    notify.error.mockClear()
+    return setup(
+      [
+        ...extra,
+        { method: 'POST', match: QUICK_REPLY_SEND, data: {} },
+        { method: 'POST', match: MESSAGES, data: {} },
+      ],
+      { quickReplies: [SURVEY] },
+    )
+  }
+
+  it('stages a slash quick reply with buttons and sends it through its endpoint', async () => {
+    const spy = setupButtons()
+    renderComposer()
+
+    fireEvent.change(textarea(), { target: { value: '/pesquisa' } })
+    const list = await screen.findByRole('listbox')
+    expect(within(list).getByLabelText('Com botões')).toBeTruthy()
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+
+    // Staged as-is: the box is cleared, the preview shows text and buttons.
+    expect(textarea().value).toBe('')
+    expect(
+      screen.getByText('Mensagem rápida com botões · /pesquisa'),
+    ).toBeTruthy()
+    expect(screen.getByText('Resolvido, Ana?')).toBeTruthy()
+    expect(screen.getByText('Sim')).toBeTruthy()
+
+    await waitFor(() => expect(sendButton().disabled).toBe(false))
+    fireEvent.click(sendButton())
+    await waitFor(() =>
+      expect(fetchBody(spy, QUICK_REPLY_SEND)).toEqual({
+        quickReplyId: 'qr_btn',
+        variables: { nome_cliente: 'Ana', nome_usuario: 'Joana' },
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByText(/Mensagem rápida com botões/)).toBeNull(),
+    )
+    // Never as plain text (the buttons would be lost).
+    expect(fetchBody(spy, new RegExp(`${MESSAGES}$`))).toBeUndefined()
+  })
+
+  it('sends an exact shortcut with buttons straight from the send button', async () => {
+    const spy = setupButtons()
+    renderComposer({ contactName: null })
+
+    fireEvent.change(textarea(), { target: { value: '/pesquisa' } })
+    await screen.findByRole('listbox')
+    fireEvent.click(sendButton())
+    await waitFor(() =>
+      expect(fetchBody(spy, QUICK_REPLY_SEND)).toMatchObject({
+        quickReplyId: 'qr_btn',
+        variables: { nome_cliente: 'cliente' },
+      }),
+    )
+  })
+
+  it('stages from the quick reply menu and can be cancelled', async () => {
+    setupButtons()
+    renderComposer()
+
+    fireEvent.change(textarea(), { target: { value: 'rascunho' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Mensagem rápida' }))
+    fireEvent.click(await screen.findByText('/pesquisa'))
+    expect(
+      await screen.findByText('Mensagem rápida com botões · /pesquisa'),
+    ).toBeTruthy()
+    // Picked from the menu, the draft stays.
+    expect(textarea().value).toBe('rascunho')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cancelar mensagem rápida' }),
+    )
+    expect(screen.queryByText(/Mensagem rápida com botões/)).toBeNull()
+  })
+
+  it('explains the Meta length limit for buttons', async () => {
+    setupButtons([
+      {
+        method: 'POST',
+        match: QUICK_REPLY_SEND,
+        handler: () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              statusCode: 422,
+              message: 'unsupported',
+              error: { code: 'WHATSAPP_BUTTONS_UNSUPPORTED' },
+            }),
+            { status: 422, headers: { 'content-type': 'application/json' } },
+          ),
+      },
+    ])
+    renderComposer()
+
+    fireEvent.change(textarea(), { target: { value: '/pesquisa' } })
+    await screen.findByRole('listbox')
+    fireEvent.click(sendButton())
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.stringContaining('mais de 1024 caracteres'),
+      ),
+    )
+  })
+
+  it('keeps the staged reply when the send fails', async () => {
+    setupButtons([
+      { method: 'POST', match: QUICK_REPLY_SEND, status: 422, error: 'x' },
+    ])
+    renderComposer()
+
+    fireEvent.change(textarea(), { target: { value: '/pesquisa' } })
+    await screen.findByRole('listbox')
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    await waitFor(() => expect(sendButton().disabled).toBe(false))
+    fireEvent.click(sendButton())
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.anything(),
+        'Erro ao enviar mensagem rápida',
+      ),
+    )
+    expect(screen.getByText(/Mensagem rápida com botões/)).toBeTruthy()
   })
 })

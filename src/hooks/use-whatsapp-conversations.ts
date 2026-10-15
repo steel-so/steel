@@ -246,6 +246,10 @@ export function useAssignWhatsAppConversation(
       queryClient.invalidateQueries({
         queryKey: ['whatsapp-conversations', workspaceId],
       })
+      // The assignment is an ASSIGNED event in the timeline.
+      queryClient.invalidateQueries({
+        queryKey: WHATSAPP_CONVERSATION_EVENTS_KEY(workspaceId, conversationId),
+      })
     },
   })
 }

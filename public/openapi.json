@@ -177,6 +177,10 @@
       "description": "SSE de eventos e webhooks de entrada da Meta e da Z-API."
     },
     {
+      "name": "Comunicação · Equipes",
+      "description": "Equipes de atendimento (líderes e agentes) e a visibilidade das conversas."
+    },
+    {
       "name": "ServiceDesk · Chamados",
       "description": "Chamados ITIL (incidente, requisição, mudança, problema): abertura, quadro kanban, fases, SLA, participantes, escalonamento, rastreabilidade e tempo real. Agentes veem todos; solicitantes só os próprios."
     },
@@ -401,7 +405,8 @@
         "Comunicação · IA",
         "Comunicação · Dashboards e relatórios",
         "Comunicação · Configurações",
-        "Comunicação · Tempo real e webhooks"
+        "Comunicação · Tempo real e webhooks",
+        "Comunicação · Equipes"
       ]
     },
     {
@@ -1328,7 +1333,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_19"
+            "$ref": "#/components/responses/400_BAD_REQUEST_20"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -4457,7 +4462,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_22"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_24"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -5072,7 +5077,7 @@
             "$ref": "#/components/responses/404_CRM_WORKFLOW_WEBHOOK_INVALID"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -8871,7 +8876,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           }
         },
         "security": [
@@ -8946,7 +8951,7 @@
         "tags": ["Comunicação · Tempo real e webhooks"],
         "summary": "Webhook de eventos (Meta)",
         "operationId": "postWhatsappWebhookMeta",
-        "description": "Recebe as notificações da WhatsApp Cloud API (`entry[0].changes[0].value`: mensagens, reações e status).\n\n**Assinatura:** o header `X-Hub-Signature-256: sha256=<hex>` precisa ser o HMAC-SHA256 do **corpo bruto** com o App Secret (`WHATSAPP_META_APP_SECRET`), comparado em tempo constante; sem o segredo configurado, tudo é recusado com `401`. A conexão é localizada por `value.metadata.phone_number_id`.\n\nMensagem recebida: cria/atualiza o contato, abre (ou reabre) a conversa, grava a mensagem (deduplicada pelo id do provedor), enfileira o download de mídia, a resposta da IA (se ativa na conversa) e a análise de sentimento, trata a palavra-chave de descadastro das transmissões e publica no SSE. Status (`sent`/`delivered`/`read`) e reações atualizam a mensagem original. Respostas em texto puro (fora do envelope). A conexão precisa existir e o módulo Comunicação estar habilitado no workspace dela. Rate limit **por conexão** (120 eventos/min).",
+        "description": "Recebe as notificações da WhatsApp Cloud API (`entry[0].changes[0].value`: mensagens, reações e status).\n\n**Assinatura:** o header `X-Hub-Signature-256: sha256=<hex>` precisa ser o HMAC-SHA256 do **corpo bruto** com o App Secret (`WHATSAPP_META_APP_SECRET`), comparado em tempo constante; sem o segredo configurado, tudo é recusado com `401`. A conexão é localizada por `value.metadata.phone_number_id`.\n\n**Templates:** os campos `message_template_status_update` (aprovado, reprovado, pausado, desativado — com o motivo) e `message_template_quality_update` (verde/amarelo/vermelho) chegam por WABA (`entry[0].id`) e atualizam o template salvo; quando a qualidade cai para vermelho ou o template é pausado/desativado (ou reprovado), os OWNER/ADMIN são notificados. Responde `TEMPLATE_UPDATE_RECEIVED`.\n\n**Botões:** um clique (`type: button` de template ou `interactive.button_reply`) é salvo como mensagem `BUTTON` com o payload em `buttonPayload`; payloads do Steel (`stl:<t|q>:...`) geram o evento `BUTTON_CLICKED` e enfileiram as ações do botão (`whatsapp-button-actions`) — e nesse caso a IA não responde à mensagem.\n\nMensagem recebida: cria/atualiza o contato, abre (ou reabre) a conversa, grava a mensagem (deduplicada pelo id do provedor), enfileira o download de mídia, a resposta da IA (se ativa na conversa) e a análise de sentimento, trata a palavra-chave de descadastro das transmissões e publica no SSE. Status (`sent`/`delivered`/`read`) e reações atualizam a mensagem original. Respostas em texto puro (fora do envelope). A conexão precisa existir e o módulo Comunicação estar habilitado no workspace dela. Rate limit **por conexão** (120 eventos/min).",
         "requestBody": {
           "required": true,
           "content": {
@@ -8972,7 +8977,7 @@
         },
         "responses": {
           "200": {
-            "description": "Evento aceito: `EVENT_RECEIVED`, `STATUS_RECEIVED`, `REACTION_RECEIVED`, ou ignorado sem erro (`SEM_PHONE_NUMBER_ID`, `SEM_MENSAGEM`).",
+            "description": "Evento aceito: `EVENT_RECEIVED`, `STATUS_RECEIVED`, `REACTION_RECEIVED`, `TEMPLATE_UPDATE_RECEIVED`, ou ignorado sem erro (`SEM_PHONE_NUMBER_ID`, `SEM_MENSAGEM`).",
             "content": {
               "text/plain": {
                 "schema": {
@@ -9081,7 +9086,7 @@
         "tags": ["Comunicação · Tempo real e webhooks"],
         "summary": "Webhook de eventos (Z-API)",
         "operationId": "postWhatsappWebhookZapi",
-        "description": "Recebe os callbacks da Z-API (`ReceivedCallback` e `StatusCallback`; outros `type` são ignorados). Cadastre na Z-API a URL `https://<host>/api/whatsapp/webhook/zapi?secret=<webhookSecret>` — o segredo é **por conexão**, devolvido só na criação da conexão.\n\n**Verificação:** a conexão é localizada pelo `instanceId` do corpo e o `secret` da query precisa ser igual ao `webhookSecret` dela (comparação em tempo constante); senão `401`.\n\nMensagem recebida: cria/atualiza o contato, abre (ou reabre) a conversa, grava a mensagem (deduplicada pelo id do provedor), enfileira o download de mídia, a resposta da IA (se ativa na conversa) e a análise de sentimento, trata a palavra-chave de descadastro das transmissões e publica no SSE. Status (`sent`/`delivered`/`read`) e reações atualizam a mensagem original. Também processa mensagens de grupos (`isGroup`) e mensagens enviadas pelo próprio aparelho pareado (`fromMe`), que entram como saída na conversa. Respostas em texto puro (fora do envelope). A conexão precisa existir e o módulo Comunicação estar habilitado no workspace dela. Rate limit **por conexão** (120 eventos/min).",
+        "description": "Recebe os callbacks da Z-API (`ReceivedCallback` e `StatusCallback`; outros `type` são ignorados). Cadastre na Z-API a URL `https://<host>/api/whatsapp/webhook/zapi?secret=<webhookSecret>` — o segredo é **por conexão**, devolvido só na criação da conexão.\n\n**Verificação:** a conexão é localizada pelo `instanceId` do corpo e o `secret` da query precisa ser igual ao `webhookSecret` dela (comparação em tempo constante); senão `401`.\n\nMensagem recebida: cria/atualiza o contato, abre (ou reabre) a conversa, grava a mensagem (deduplicada pelo id do provedor), enfileira o download de mídia, a resposta da IA (se ativa na conversa) e a análise de sentimento, trata a palavra-chave de descadastro das transmissões e publica no SSE. Status (`sent`/`delivered`/`read`) e reações atualizam a mensagem original. Também processa mensagens de grupos (`isGroup`) e mensagens enviadas pelo próprio aparelho pareado (`fromMe`), que entram como saída na conversa. Cliques em botões (`buttonsResponseMessage.buttonId` e `listResponseMessage.selectedRowId`) viram mensagens `BUTTON` e, com payload do Steel, disparam as ações do botão. Respostas em texto puro (fora do envelope). A conexão precisa existir e o módulo Comunicação estar habilitado no workspace dela. Rate limit **por conexão** (120 eventos/min).",
         "requestBody": {
           "required": true,
           "content": {
@@ -11603,7 +11608,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_14"
+            "$ref": "#/components/responses/400_BAD_REQUEST_15"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -12908,7 +12913,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -13178,7 +13183,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_CONNECTION_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_20"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -13248,7 +13253,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -13467,7 +13472,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_26"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -18360,7 +18365,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_24"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_26"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -18840,7 +18845,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST"
+            "$ref": "#/components/responses/400_BAD_REQUEST_2"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -21634,7 +21639,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_15"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -22442,7 +22447,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -22510,7 +22515,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
@@ -23862,7 +23867,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_11"
+            "$ref": "#/components/responses/400_BAD_REQUEST_12"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -24016,7 +24021,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_10"
+            "$ref": "#/components/responses/400_BAD_REQUEST_11"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -29329,7 +29334,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_17"
+            "$ref": "#/components/responses/400_BAD_REQUEST_18"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -33353,7 +33358,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST"
+            "$ref": "#/components/responses/400_BAD_REQUEST_2"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -33847,7 +33852,7 @@
             "$ref": "#/components/responses/409_CRM_PROPOSAL_EXPIRED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_20"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_21"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -33990,7 +33995,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_CRM_PROPOSAL_NOT_FOUND"
@@ -33999,7 +34004,7 @@
             "$ref": "#/components/responses/409_CONFLICT_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -34345,7 +34350,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_QUOTA_CONFLICT"
@@ -34427,7 +34432,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
@@ -34496,7 +34501,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
@@ -36025,7 +36030,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_18"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36587,7 +36592,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -37188,7 +37193,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37375,7 +37380,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_15"
+            "$ref": "#/components/responses/400_BAD_REQUEST_16"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -37582,13 +37587,13 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_7"
+            "$ref": "#/components/responses/400_BAD_REQUEST_8"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_SOCIAL_CONNECTION_NOT_FOUND"
@@ -37597,7 +37602,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37683,7 +37688,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_9"
+            "$ref": "#/components/responses/400_BAD_REQUEST_10"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -42373,7 +42378,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -42592,7 +42597,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -43417,6 +43422,7 @@
                             "WHATSAPP_CONNECTION_LOST",
                             "WHATSAPP_BROADCAST_FINISHED",
                             "WHATSAPP_TEMPLATE_REJECTED",
+                            "WHATSAPP_TEMPLATE_QUALITY",
                             "WHATSAPP_USAGE_WARNING",
                             "WHATSAPP_USAGE_LIMIT_REACHED",
                             "AGENT_APPROVAL_REQUESTED",
@@ -44296,7 +44302,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -53855,7 +53861,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -56267,7 +56273,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57270,7 +57276,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -62114,7 +62120,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_18"
+            "$ref": "#/components/responses/400_BAD_REQUEST_19"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -66887,7 +66893,7 @@
             "$ref": "#/components/responses/404_SD_PHASE_NOT_FOUND_SD_CONFIG_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_21"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_23"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67202,7 +67208,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67279,7 +67285,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_17"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -72843,7 +72849,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -74762,7 +74768,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_13"
+            "$ref": "#/components/responses/400_BAD_REQUEST_14"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -79391,7 +79397,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_4"
+            "$ref": "#/components/responses/400_BAD_REQUEST_5"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -79827,7 +79833,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_8"
+            "$ref": "#/components/responses/400_BAD_REQUEST_9"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -80723,7 +80729,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -80972,7 +80978,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_2"
+            "$ref": "#/components/responses/400_BAD_REQUEST_3"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -81167,7 +81173,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -81531,7 +81537,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_3"
+            "$ref": "#/components/responses/400_BAD_REQUEST_4"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -82122,7 +82128,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Listar conversas",
         "operationId": "getWorkspacesByIdWhatsappConversations",
-        "description": "Conversas do workspace (excluídas nunca aparecem), fixadas primeiro e depois pela última mensagem. Sem paginação. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Conversas do workspace que o usuário pode ver (excluídas nunca aparecem), fixadas primeiro e depois pela última mensagem. Sem paginação. Visibilidade por **Equipes**: o OWNER vê todas; um ADMIN vê todas, a menos que pertença a alguma equipe; os demais veem as conversas atribuídas a eles, as dos agentes e das equipes que lideram e a fila (sem responsável, sem equipe ou de uma equipe deles). Conversa fora do alcance responde como inexistente (404). Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -82187,7 +82193,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -82260,7 +82266,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_CONVERSATION_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_42"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND"
@@ -82389,7 +82395,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -82452,7 +82458,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -82531,7 +82537,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -82555,7 +82561,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Atribuir conversa",
         "operationId": "patchWorkspacesByIdWhatsappConversationsByConversationIdAssign",
-        "description": "Define o atendente responsável (ou remove, com `null`) e move a conversa para `IN_PROGRESS`. A conversa atualizada é publicada no SSE `GET /whatsapp/events` (`conversation.updated`). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Define o atendente responsável (ou devolve à fila, com `null`): `IN_PROGRESS` com responsável, `NEW` sem (fechada continua fechada). Registra o evento `ASSIGNED` na linha do tempo. Quem tem escopo de equipe: o líder atribui dentro das equipes que lidera; o agente só assume uma conversa da fila ou devolve a própria. Visibilidade por **Equipes**: o OWNER vê todas; um ADMIN vê todas, a menos que pertença a alguma equipe; os demais veem as conversas atribuídas a eles, as dos agentes e das equipes que lideram e a fila (sem responsável, sem equipe ou de uma equipe deles). Conversa fora do alcance responde como inexistente (404). A conversa atualizada é publicada no SSE `GET /whatsapp/events` (`conversation.updated`). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -82619,13 +82625,13 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_16"
+            "$ref": "#/components/responses/400_BAD_REQUEST_17"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -82786,7 +82792,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -82932,7 +82938,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83084,7 +83090,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83156,7 +83162,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -83238,7 +83244,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83326,7 +83332,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83418,7 +83424,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83525,7 +83531,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83535,6 +83541,109 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED_3"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/conversations/{conversationId}/messages/quick-reply": {
+      "post": {
+        "tags": ["Comunicação · Conversas"],
+        "summary": "Enviar mensagem pronta",
+        "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessagesQuickReply",
+        "description": "Envia uma mensagem pronta com corpo, mídia e botões. As variáveis `{nome_cliente}`, `{nome_usuario}` e `{workspace}` são resolvidas no servidor; `variables` sobrescreve qualquer `{token}`. Botões: na **Z-API** saem como botões de ação (`/send-button-actions`, resposta + link) ou lista de botões (`/send-button-list`, só resposta) — dependem do suporte do WhatsApp a APIs não oficiais e podem não aparecer em alguns aparelhos; na **Meta** saem como mensagem interativa (só dentro da janela de 24 h): até 2 botões de resposta, ou um link (`cta_url`); um link junto de resposta vai no fim do texto. Mídia que o provedor não aceita junto dos botões (áudio; vídeo/documento na Z-API) sai antes, como mensagem própria. Os botões de resposta levam o payload `stl:q:<quickReplyId>:<botão>`, então o clique dispara as ações configuradas. Bloqueado enquanto a IA atende a conversa. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Devolve a última mensagem criada (com `buttons`); todas são publicadas no SSE (`message.created` + `conversation.updated`). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "description": "Id da conversa.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quickReplyId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "variables": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^\\w{1,50}$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 1000
+                    }
+                  }
+                },
+                "required": ["quickReplyId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mensagem enviada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppMessage"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "402": {
+            "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_QUICK_REPLY_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_BUTTONS_UNSUPPORTED"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED_3"
@@ -83626,7 +83735,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_MESSAGE_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83707,7 +83816,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_MESSAGE_NOT_FOUND"
@@ -83796,7 +83905,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_MESSAGE_NOT_FOUND"
@@ -83884,7 +83993,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -83950,7 +84059,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -84016,13 +84125,103 @@
             "$ref": "#/components/responses/402_WHATSAPP_CONVERSATION_LIMIT_REACHED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
             "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_NOT_CLOSED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/conversations/{conversationId}/team": {
+      "patch": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Mover conversa de equipe",
+        "operationId": "patchWorkspacesByIdWhatsappConversationsByConversationIdTeam",
+        "description": "Coloca a conversa numa equipe (ou tira, com `null`) e registra o evento `TEAM_CHANGED`. Sem responsável, ela entra na fila da equipe e os membros são avisados. OWNER e ADMIN fora de equipe movem livremente; um líder move entre as equipes que lidera; agentes não movem. Visibilidade por **Equipes**: o OWNER vê todas; um ADMIN vê todas, a menos que pertença a alguma equipe; os demais veem as conversas atribuídas a eles, as dos agentes e das equipes que lideram e a fila (sem responsável, sem equipe ou de uma equipe deles). Conversa fora do alcance responde como inexistente (404). A conversa atualizada é publicada no SSE `GET /whatsapp/events` (`conversation.updated`). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "description": "Id da conversa.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teamId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["teamId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversa atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppConversation"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_TEAM_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -84988,7 +85187,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_42"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
@@ -85102,7 +85301,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_23"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -86143,13 +86342,13 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_12"
+            "$ref": "#/components/responses/400_BAD_REQUEST_13"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -86206,7 +86405,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -86255,6 +86454,177 @@
                     "type": "string",
                     "maxLength": 2048,
                     "format": "uri"
+                  },
+                  "buttons": {
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "REPLY"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 20
+                            },
+                            "actions": {
+                              "default": [],
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "REPLY"
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096
+                                      }
+                                    },
+                                    "required": ["kind", "text"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ASSIGN_USER"
+                                      },
+                                      "userId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "userId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ASSIGN_TEAM"
+                                      },
+                                      "teamId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "teamId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "SET_STATUS"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": ["IN_PROGRESS", "CLOSED"]
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      }
+                                    },
+                                    "required": ["kind", "status"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "CRM_WORKFLOW"
+                                      },
+                                      "workflowId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "workflowId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "HTTP_WEBHOOK"
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 2048,
+                                        "format": "uri"
+                                      },
+                                      "secret": {
+                                        "type": "string",
+                                        "maxLength": 200
+                                      }
+                                    },
+                                    "required": ["kind", "url"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "AI_INSTRUCTION"
+                                      },
+                                      "instruction": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000
+                                      }
+                                    },
+                                    "required": ["kind", "instruction"]
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "required": ["id", "type", "label"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "URL"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 20
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "format": "uri"
+                            }
+                          },
+                          "required": ["id", "type", "label", "url"]
+                        }
+                      ]
+                    }
                   }
                 },
                 "required": ["shortcut", "title", "body"]
@@ -86289,7 +86659,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
           },
           "409": {
             "$ref": "#/components/responses/409_WHATSAPP_QUICK_REPLY_CONFLICT"
@@ -86355,6 +86725,184 @@
                     "type": "string",
                     "maxLength": 2048,
                     "format": "uri"
+                  },
+                  "buttons": {
+                    "anyOf": [
+                      {
+                        "maxItems": 2,
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "const": "REPLY"
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 20
+                                },
+                                "actions": {
+                                  "default": [],
+                                  "maxItems": 5,
+                                  "type": "array",
+                                  "items": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "REPLY"
+                                          },
+                                          "text": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 4096
+                                          }
+                                        },
+                                        "required": ["kind", "text"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "ASSIGN_USER"
+                                          },
+                                          "userId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "userId"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "ASSIGN_TEAM"
+                                          },
+                                          "teamId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "teamId"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "SET_STATUS"
+                                          },
+                                          "status": {
+                                            "type": "string",
+                                            "enum": ["IN_PROGRESS", "CLOSED"]
+                                          },
+                                          "reason": {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          }
+                                        },
+                                        "required": ["kind", "status"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "CRM_WORKFLOW"
+                                          },
+                                          "workflowId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "workflowId"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "HTTP_WEBHOOK"
+                                          },
+                                          "url": {
+                                            "type": "string",
+                                            "maxLength": 2048,
+                                            "format": "uri"
+                                          },
+                                          "secret": {
+                                            "type": "string",
+                                            "maxLength": 200
+                                          }
+                                        },
+                                        "required": ["kind", "url"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "AI_INSTRUCTION"
+                                          },
+                                          "instruction": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000
+                                          }
+                                        },
+                                        "required": ["kind", "instruction"]
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": ["id", "type", "label"]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "const": "URL"
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 20
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "format": "uri"
+                                }
+                              },
+                              "required": ["id", "type", "label", "url"]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -86388,7 +86936,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -86460,7 +87008,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -87899,7 +88447,453 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_17"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_18"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/teams": {
+      "get": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Listar equipes",
+        "operationId": "getWorkspacesByIdWhatsappTeams",
+        "description": "Equipes do workspace por nome, com líderes e agentes. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equipes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WhatsAppTeam"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Criar equipe",
+        "operationId": "postWorkspacesByIdWhatsappTeams",
+        "description": "Os membros (`members`) precisam ser membros do workspace e aparecer uma vez só; quando enviados, substituem a lista inteira. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace. Líderes não editam equipes.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "members": {
+                    "default": [],
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "role": {
+                          "default": "AGENT",
+                          "type": "string",
+                          "enum": ["LEADER", "AGENT"]
+                        }
+                      },
+                      "required": ["userId"]
+                    }
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Equipe criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppTeam"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_BAD_REQUEST"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_TEAM_CONFLICT"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_22"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/teams/me": {
+      "get": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Meu escopo de conversas",
+        "operationId": "getWorkspacesByIdWhatsappTeamsMe",
+        "description": "Como o usuário vê as conversas: `ALL` (OWNER, ou ADMIN fora de equipe) ou `SCOPED`, com as equipes que lidera e das quais participa. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Escopo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppConversationScope"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/teams/{teamId}": {
+      "get": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Ver equipe",
+        "operationId": "getWorkspacesByIdWhatsappTeamsByTeamId",
+        "description": "Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "description": "Id da equipe.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equipe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppTeam"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_TEAM_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Atualizar equipe",
+        "operationId": "patchWorkspacesByIdWhatsappTeamsByTeamId",
+        "description": "Atualização parcial. Os membros (`members`) precisam ser membros do workspace e aparecer uma vez só; quando enviados, substituem a lista inteira. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "description": "Id da equipe.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "members": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "role": {
+                          "default": "AGENT",
+                          "type": "string",
+                          "enum": ["LEADER", "AGENT"]
+                        }
+                      },
+                      "required": ["userId"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Equipe atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppTeam"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_BAD_REQUEST"
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_TEAM_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_TEAM_CONFLICT"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Excluir equipe",
+        "operationId": "deleteWorkspacesByIdWhatsappTeamsByTeamId",
+        "description": "As conversas da equipe continuam, sem equipe (voltam para a fila geral). Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "description": "Id da equipe.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equipe excluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppDeletedId"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_TEAM_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -87953,7 +88947,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88001,9 +88995,18 @@
                     "type": "string",
                     "enum": ["UTILITY", "MARKETING", "AUTHENTICATION"]
                   },
+                  "headerFormat": {
+                    "type": "string",
+                    "enum": ["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]
+                  },
                   "headerText": {
                     "type": "string",
                     "maxLength": 60
+                  },
+                  "headerMediaUrl": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "format": "uri"
                   },
                   "body": {
                     "type": "string",
@@ -88023,77 +89026,172 @@
                     "maxLength": 60
                   },
                   "buttons": {
-                    "maxItems": 3,
+                    "maxItems": 2,
                     "type": "array",
                     "items": {
                       "oneOf": [
                         {
                           "type": "object",
                           "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "QUICK_REPLY"
-                            },
-                            "text": {
+                            "id": {
                               "type": "string",
                               "minLength": 1,
-                              "maxLength": 25
+                              "maxLength": 64
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "REPLY"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 20
+                            },
+                            "actions": {
+                              "default": [],
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "REPLY"
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096
+                                      }
+                                    },
+                                    "required": ["kind", "text"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ASSIGN_USER"
+                                      },
+                                      "userId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "userId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ASSIGN_TEAM"
+                                      },
+                                      "teamId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "teamId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "SET_STATUS"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": ["IN_PROGRESS", "CLOSED"]
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      }
+                                    },
+                                    "required": ["kind", "status"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "CRM_WORKFLOW"
+                                      },
+                                      "workflowId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "workflowId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "HTTP_WEBHOOK"
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 2048,
+                                        "format": "uri"
+                                      },
+                                      "secret": {
+                                        "type": "string",
+                                        "maxLength": 200
+                                      }
+                                    },
+                                    "required": ["kind", "url"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "AI_INSTRUCTION"
+                                      },
+                                      "instruction": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000
+                                      }
+                                    },
+                                    "required": ["kind", "instruction"]
+                                  }
+                                ]
+                              }
                             }
                           },
-                          "required": ["type", "text"]
+                          "required": ["id", "type", "label"]
                         },
                         {
                           "type": "object",
                           "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
                             "type": {
                               "type": "string",
                               "const": "URL"
                             },
-                            "text": {
+                            "label": {
                               "type": "string",
                               "minLength": 1,
-                              "maxLength": 25
+                              "maxLength": 20
                             },
                             "url": {
                               "type": "string",
+                              "maxLength": 2000,
                               "format": "uri"
                             }
                           },
-                          "required": ["type", "text", "url"]
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "PHONE_NUMBER"
-                            },
-                            "text": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 25
-                            },
-                            "phone_number": {
-                              "type": "string",
-                              "minLength": 1
-                            }
-                          },
-                          "required": ["type", "text", "phone_number"]
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "type": {
-                              "type": "string",
-                              "const": "COPY_CODE"
-                            },
-                            "text": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 25
-                            }
-                          },
-                          "required": ["type"]
+                          "required": ["id", "type", "label", "url"]
                         }
                       ]
                     }
@@ -88128,7 +89226,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_5"
+            "$ref": "#/components/responses/400_BAD_REQUEST_6"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -88209,19 +89307,269 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_6"
+            "$ref": "#/components/responses/400_BAD_REQUEST_7"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/templates/{templateId}/buttons": {
+      "patch": {
+        "tags": ["Comunicação · Templates e respostas rápidas"],
+        "summary": "Configurar ações dos botões do template",
+        "operationId": "patchWorkspacesByIdWhatsappTemplatesByTemplateIdButtons",
+        "description": "Define o que cada botão de **resposta** do template faz quando o contato clica (responder, atribuir a um atendente ou equipe, mudar o status/fechar, disparar um workflow do CRM, chamar uma URL externa assinada com HMAC-SHA256 em `X-Steel-Signature`, instrução para a IA). Vale também para templates sincronizados da Meta (ids `b1`, `b2`…). Os botões precisam ser **os mesmos do template aprovado** — mesma ordem, tipo, rótulo e link; só os ids e as ações mudam. Auditado. Módulo **Comunicação** habilitado e permissão `message-templates` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "description": "Id do template.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buttons": {
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "REPLY"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 20
+                            },
+                            "actions": {
+                              "default": [],
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "REPLY"
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096
+                                      }
+                                    },
+                                    "required": ["kind", "text"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ASSIGN_USER"
+                                      },
+                                      "userId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "userId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ASSIGN_TEAM"
+                                      },
+                                      "teamId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "teamId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "SET_STATUS"
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": ["IN_PROGRESS", "CLOSED"]
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      }
+                                    },
+                                    "required": ["kind", "status"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "CRM_WORKFLOW"
+                                      },
+                                      "workflowId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "workflowId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "HTTP_WEBHOOK"
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 2048,
+                                        "format": "uri"
+                                      },
+                                      "secret": {
+                                        "type": "string",
+                                        "maxLength": 200
+                                      }
+                                    },
+                                    "required": ["kind", "url"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "AI_INSTRUCTION"
+                                      },
+                                      "instruction": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000
+                                      }
+                                    },
+                                    "required": ["kind", "instruction"]
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "required": ["id", "type", "label"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "URL"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 20
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "format": "uri"
+                            }
+                          },
+                          "required": ["id", "type", "label", "url"]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": ["buttons"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Template atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppTemplate"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_TEMPLATE_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_15"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -92652,7 +94000,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -92764,7 +94112,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -94061,6 +95409,29 @@
             },
             "examples": {
               "BAD_REQUEST": {
+                "summary": "BAD_REQUEST — Algum `userId` não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 400,
+                  "message": "Usuário informado não pertence a este workspace",
+                  "error": {
+                    "code": "BAD_REQUEST"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "400_BAD_REQUEST_2": {
+        "description": "Requisição inválida: `BAD_REQUEST`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "BAD_REQUEST": {
                 "summary": "BAD_REQUEST — Sem header `Content-Type`",
                 "value": {
                   "success": false,
@@ -94086,7 +95457,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_2": {
+      "400_BAD_REQUEST_3": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94109,7 +95480,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_3": {
+      "400_BAD_REQUEST_4": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94143,7 +95514,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_4": {
+      "400_BAD_REQUEST_5": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94166,7 +95537,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_5": {
+      "400_BAD_REQUEST_6": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94200,7 +95571,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_6": {
+      "400_BAD_REQUEST_7": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94234,7 +95605,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_7": {
+      "400_BAD_REQUEST_8": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94290,7 +95661,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_8": {
+      "400_BAD_REQUEST_9": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94313,7 +95684,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_9": {
+      "400_BAD_REQUEST_10": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94327,40 +95698,6 @@
                   "success": false,
                   "statusCode": 400,
                   "message": "Plataforma inválida para este endpoint",
-                  "error": {
-                    "code": "BAD_REQUEST"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "400_BAD_REQUEST_10": {
-        "description": "Requisição inválida: `BAD_REQUEST`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "BAD_REQUEST": {
-                "summary": "BAD_REQUEST — Sem header Content-Type",
-                "value": {
-                  "success": false,
-                  "statusCode": 400,
-                  "message": "Content-Type é obrigatório",
-                  "error": {
-                    "code": "BAD_REQUEST"
-                  }
-                }
-              },
-              "BAD_REQUEST_2": {
-                "summary": "BAD_REQUEST — Content-Length acima do limite",
-                "value": {
-                  "success": false,
-                  "statusCode": 400,
-                  "message": "Arquivo muito grande. Máximo 25 MB",
                   "error": {
                     "code": "BAD_REQUEST"
                   }
@@ -94394,7 +95731,7 @@
                 "value": {
                   "success": false,
                   "statusCode": 400,
-                  "message": "Arquivo muito grande. Máximo 5 MB",
+                  "message": "Arquivo muito grande. Máximo 25 MB",
                   "error": {
                     "code": "BAD_REQUEST"
                   }
@@ -94405,6 +95742,40 @@
         }
       },
       "400_BAD_REQUEST_12": {
+        "description": "Requisição inválida: `BAD_REQUEST`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "BAD_REQUEST": {
+                "summary": "BAD_REQUEST — Sem header Content-Type",
+                "value": {
+                  "success": false,
+                  "statusCode": 400,
+                  "message": "Content-Type é obrigatório",
+                  "error": {
+                    "code": "BAD_REQUEST"
+                  }
+                }
+              },
+              "BAD_REQUEST_2": {
+                "summary": "BAD_REQUEST — Content-Length acima do limite",
+                "value": {
+                  "success": false,
+                  "statusCode": 400,
+                  "message": "Arquivo muito grande. Máximo 5 MB",
+                  "error": {
+                    "code": "BAD_REQUEST"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "400_BAD_REQUEST_13": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94449,7 +95820,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_13": {
+      "400_BAD_REQUEST_14": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94471,7 +95842,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_14": {
+      "400_BAD_REQUEST_15": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94493,7 +95864,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_15": {
+      "400_BAD_REQUEST_16": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94527,7 +95898,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_16": {
+      "400_BAD_REQUEST_17": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94550,7 +95921,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_17": {
+      "400_BAD_REQUEST_18": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94573,7 +95944,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_18": {
+      "400_BAD_REQUEST_19": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -94595,7 +95966,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_19": {
+      "400_BAD_REQUEST_20": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -95781,7 +97152,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `VIEW`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -95818,6 +97189,51 @@
         }
       },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `EDIT`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -95873,51 +97289,6 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `CREATE`",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_10": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
@@ -95927,7 +97298,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97576,7 +98947,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97605,6 +98976,17 @@
                   "message": "Módulo não habilitado para esta workspace",
                   "error": {
                     "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — O contato tem uma conversa ativa que o usuário não pode ver (Equipes)",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este contato já está em atendimento com outra pessoa",
+                  "error": {
+                    "code": "FORBIDDEN"
                   }
                 }
               }
@@ -97621,7 +99003,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97650,6 +99032,17 @@
                   "message": "Módulo não habilitado para esta workspace",
                   "error": {
                     "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — A regra de equipes não permite essa atribuição",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Você não pode transferir esta conversa",
+                  "error": {
+                    "code": "FORBIDDEN"
                   }
                 }
               }
@@ -97666,7 +99059,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97697,6 +99090,17 @@
                     "code": "MODULE_DISABLED"
                   }
                 }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Agente, ou líder movendo para/de uma equipe que não lidera",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Você não pode mover esta conversa de equipe",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
               }
             }
           }
@@ -97711,7 +99115,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97756,7 +99160,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `DELETE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97801,7 +99205,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97846,7 +99250,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `VIEW`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -97883,6 +99287,186 @@
         }
       },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `CREATE`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `DELETE`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `EDIT`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `VIEW`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -97938,7 +99522,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -97983,7 +99567,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -108138,6 +109722,51 @@
           }
         }
       },
+      "404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_QUICK_REPLY_NOT_FOUND": {
+        "description": "Não encontrado: `WHATSAPP_CONNECTION_NOT_FOUND`, `WHATSAPP_CONVERSATION_NOT_FOUND`, `WHATSAPP_QUICK_REPLY_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_CONVERSATION_NOT_FOUND": {
+                "summary": "WHATSAPP_CONVERSATION_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Conversa não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_CONVERSATION_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_QUICK_REPLY_NOT_FOUND": {
+                "summary": "WHATSAPP_QUICK_REPLY_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Mensagem rápida não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_QUICK_REPLY_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_CONNECTION_NOT_FOUND": {
+                "summary": "WHATSAPP_CONNECTION_NOT_FOUND — A conexão da conversa foi removida",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Conexão do WhatsApp não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_CONNECTION_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND": {
         "description": "Não encontrado: `WHATSAPP_CONNECTION_NOT_FOUND`, `WHATSAPP_GROUP_NOT_FOUND`",
         "content": {
@@ -108286,6 +109915,40 @@
           }
         }
       },
+      "404_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_TEAM_NOT_FOUND": {
+        "description": "Não encontrado: `WHATSAPP_CONVERSATION_NOT_FOUND`, `WHATSAPP_TEAM_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_CONVERSATION_NOT_FOUND": {
+                "summary": "WHATSAPP_CONVERSATION_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Conversa não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_CONVERSATION_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_TEAM_NOT_FOUND": {
+                "summary": "WHATSAPP_TEAM_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Equipe não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_TEAM_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_WHATSAPP_GROUP_NOT_FOUND": {
         "description": "Não encontrado: `WHATSAPP_GROUP_NOT_FOUND`",
         "content": {
@@ -108325,6 +109988,52 @@
                   "message": "Mensagem rápida não encontrada",
                   "error": {
                     "code": "WHATSAPP_QUICK_REPLY_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_WHATSAPP_TEAM_NOT_FOUND": {
+        "description": "Não encontrado: `WHATSAPP_TEAM_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_TEAM_NOT_FOUND": {
+                "summary": "WHATSAPP_TEAM_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Equipe não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_TEAM_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_WHATSAPP_TEMPLATE_NOT_FOUND": {
+        "description": "Não encontrado: `WHATSAPP_TEMPLATE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_TEMPLATE_NOT_FOUND": {
+                "summary": "WHATSAPP_TEMPLATE_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Template não encontrado",
+                  "error": {
+                    "code": "WHATSAPP_TEMPLATE_NOT_FOUND"
                   }
                 }
               }
@@ -110753,6 +112462,29 @@
           }
         }
       },
+      "409_WHATSAPP_TEAM_CONFLICT": {
+        "description": "Conflito com o estado atual: `WHATSAPP_TEAM_CONFLICT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_TEAM_CONFLICT": {
+                "summary": "WHATSAPP_TEAM_CONFLICT",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Já existe uma equipe com este nome",
+                  "error": {
+                    "code": "WHATSAPP_TEAM_CONFLICT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "409_WHITEBOARD_LOCKED_WHITEBOARD_REVISION_CONFLICT": {
         "description": "Conflito com o estado atual: `WHITEBOARD_LOCKED`, `WHITEBOARD_REVISION_CONFLICT`",
         "content": {
@@ -111720,6 +113452,47 @@
                 }
               },
               "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — Botões diferentes dos aprovados pela Meta (quantidade, tipo, rótulo ou link)",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Os botões precisam ser os mesmos do template aprovado — só as ações podem mudar",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_16": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
                 "summary": "VALIDATION_ERROR — Campo aponta para uma fase inexistente após o merge com o salvo",
                 "value": {
                   "success": false,
@@ -111734,7 +113507,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_16": {
+      "422_VALIDATION_ERROR_17": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -111775,7 +113548,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_17": {
+      "422_VALIDATION_ERROR_18": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -111816,7 +113589,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_18": {
+      "422_VALIDATION_ERROR_19": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -111857,7 +113630,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_19": {
+      "422_VALIDATION_ERROR_20": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -111898,7 +113671,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_20": {
+      "422_VALIDATION_ERROR_21": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -111939,7 +113712,48 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_21": {
+      "422_VALIDATION_ERROR_22": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — O mesmo `userId` repetido em `members`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Um membro aparece mais de uma vez na equipe",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_23": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -111980,7 +113794,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_22": {
+      "422_VALIDATION_ERROR_24": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112028,7 +113842,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_23": {
+      "422_VALIDATION_ERROR_25": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112069,7 +113883,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_24": {
+      "422_VALIDATION_ERROR_26": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112110,7 +113924,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_25": {
+      "422_VALIDATION_ERROR_27": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112151,7 +113965,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_26": {
+      "422_VALIDATION_ERROR_28": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112199,7 +114013,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_27": {
+      "422_VALIDATION_ERROR_29": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112240,7 +114054,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_28": {
+      "422_VALIDATION_ERROR_30": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112270,77 +114084,6 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_29": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "422_VALIDATION_ERROR_30": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "422_VALIDATION_ERROR_31": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
@@ -112350,18 +114093,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -112402,7 +114134,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR",
+                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -112424,6 +114156,88 @@
         }
       },
       "422_VALIDATION_ERROR_33": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_34": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_35": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112457,7 +114271,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_34": {
+      "422_VALIDATION_ERROR_36": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112491,7 +114305,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_35": {
+      "422_VALIDATION_ERROR_37": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112514,7 +114328,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_36": {
+      "422_VALIDATION_ERROR_38": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112544,7 +114358,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_37": {
+      "422_VALIDATION_ERROR_39": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112567,7 +114381,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_38": {
+      "422_VALIDATION_ERROR_40": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112590,7 +114404,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_39": {
+      "422_VALIDATION_ERROR_41": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -112613,7 +114427,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_40": {
+      "422_VALIDATION_ERROR_42": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -114886,6 +116700,46 @@
                   "message": "Não foi possível identificar o tipo da mídia. Envie imagem, vídeo, áudio ou documento.",
                   "error": {
                     "code": "WHATSAPP_BROADCAST_MEDIA_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_WHATSAPP_BUTTONS_UNSUPPORTED": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `WHATSAPP_BUTTONS_UNSUPPORTED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "WHATSAPP_BUTTONS_UNSUPPORTED": {
+                "summary": "WHATSAPP_BUTTONS_UNSUPPORTED — Meta: o texto com botões passa de 1024 caracteres",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "WHATSAPP_BUTTONS_UNSUPPORTED"
                   }
                 }
               }
@@ -134878,6 +136732,9 @@
           "WHATSAPP_CONVERSATION_AI_HANDLING",
           "WHATSAPP_QUICK_REPLY_NOT_FOUND",
           "WHATSAPP_QUICK_REPLY_CONFLICT",
+          "WHATSAPP_TEAM_NOT_FOUND",
+          "WHATSAPP_TEAM_CONFLICT",
+          "WHATSAPP_BUTTONS_UNSUPPORTED",
           "WHATSAPP_TEMPLATE_NOT_FOUND",
           "WHATSAPP_TEMPLATE_NOT_APPROVED",
           "WHATSAPP_BROADCAST_NOT_FOUND",
@@ -135169,7 +137026,7 @@
           "BACKUP_FAILED",
           "BILLING_DISABLED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -135634,6 +137491,7 @@
                     "WHATSAPP_CONNECTION_LOST",
                     "WHATSAPP_BROADCAST_FINISHED",
                     "WHATSAPP_TEMPLATE_REJECTED",
+                    "WHATSAPP_TEMPLATE_QUALITY",
                     "WHATSAPP_USAGE_WARNING",
                     "WHATSAPP_USAGE_LIMIT_REACHED",
                     "AGENT_APPROVAL_REQUESTED",
@@ -154213,6 +156071,174 @@
         },
         "required": ["broadcastList", "createdCount", "rejectedRows"]
       },
+      "WhatsAppButton": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "type": {
+                "type": "string",
+                "const": "REPLY"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "actions": {
+                "default": [],
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "REPLY"
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096
+                        }
+                      },
+                      "required": ["kind", "text"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "ASSIGN_USER"
+                        },
+                        "userId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "userId"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "ASSIGN_TEAM"
+                        },
+                        "teamId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "teamId"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "SET_STATUS"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["IN_PROGRESS", "CLOSED"]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "required": ["kind", "status"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "CRM_WORKFLOW"
+                        },
+                        "workflowId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "workflowId"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "HTTP_WEBHOOK"
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 2048,
+                          "format": "uri"
+                        },
+                        "secret": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "required": ["kind", "url"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "AI_INSTRUCTION"
+                        },
+                        "instruction": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": ["kind", "instruction"]
+                    }
+                  ]
+                }
+              }
+            },
+            "required": ["id", "type", "label", "actions"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "type": {
+                "type": "string",
+                "const": "URL"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri"
+              }
+            },
+            "required": ["id", "type", "label", "url"]
+          }
+        ],
+        "description": "Até 2 por template/mensagem pronta. `REPLY` dispara as `actions` (em ordem; uma ação que falha é registrada e a próxima roda) quando o contato clica; `URL` só abre o link (os provedores não avisam o clique). O clique volta com o payload `stl:<t|q>:<idDaOrigem>:<id>`."
+      },
       "WhatsAppConnection": {
         "type": "object",
         "properties": {
@@ -154563,6 +156589,37 @@
               }
             ]
           },
+          "teamId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Equipe da conversa. Sem responsável, a conversa fica na fila dessa equipe."
+          },
+          "team": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Equipe (id e nome), ou `null`."
+          },
           "aiActive": {
             "type": "boolean",
             "description": "A IA está atendendo — envios manuais são bloqueados até removê-la (`PATCH .../ai`)."
@@ -154658,6 +156715,8 @@
           "contactAvatarUrl",
           "status",
           "assignedUserId",
+          "teamId",
+          "team",
           "aiActive",
           "aiHandoff",
           "unreadCount",
@@ -154684,7 +156743,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["CLOSED", "REOPENED", "SENTIMENT_ALERT"]
+            "enum": ["CLOSED", "REOPENED", "SENTIMENT_ALERT", "ASSIGNED", "TEAM_CHANGED"]
           },
           "source": {
             "type": "string",
@@ -154737,6 +156796,29 @@
           "createdAt"
         ],
         "description": "Evento da linha do tempo da conversa."
+      },
+      "WhatsAppConversationScope": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["ALL", "SCOPED"],
+            "description": "`ALL` = vê todas as conversas (OWNER, ou ADMIN fora de equipe); `SCOPED` = vê as próprias, as das equipes que lidera e a fila."
+          },
+          "leadsTeamIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "memberTeamIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["mode", "leadsTeamIds", "memberTeamIds"]
       },
       "WhatsAppDashboard": {
         "type": "object",
@@ -155209,6 +157291,67 @@
             ],
             "description": "Cartão de contato (mensagens `CONTACT`)."
           },
+          "buttons": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "const": "REPLY"
+                        },
+                        "label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "type", "label"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "const": "URL"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "type", "label", "url"]
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Botões enviados com a mensagem (OUT: template ou mensagem pronta), sem as ações."
+          },
+          "buttonPayload": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Clique recebido (IN, tipo `BUTTON`): payload do botão (`stl:t:<templateId>:<botão>` ou `stl:q:<respostaId>:<botão>`) ou o id cru de um botão de fora do Steel."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -155229,6 +157372,8 @@
           "reactionEmoji",
           "reactedByContact",
           "contactPayload",
+          "buttons",
+          "buttonPayload",
           "createdAt"
         ]
       },
@@ -155276,6 +157421,12 @@
               }
             ]
           },
+          "buttons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WhatsAppButton"
+            }
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -155292,6 +157443,7 @@
           "title",
           "body",
           "mediaUrl",
+          "buttons",
           "createdAt",
           "updatedAt"
         ]
@@ -155516,6 +157668,74 @@
           "sentimentAlertCooldownHours"
         ]
       },
+      "WhatsAppTeam": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckv9x2p0h0000tm7d3k1e5abc"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "image": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["LEADER", "AGENT"],
+                  "description": "`LEADER` vê as conversas dos agentes e da fila da equipe e atribui dentro dela; `AGENT` atende."
+                }
+              },
+              "required": ["userId", "name", "email", "image", "role"]
+            },
+            "description": "Líderes primeiro, depois agentes, por nome."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "workspaceId", "name", "description", "members", "createdAt", "updatedAt"]
+      },
       "WhatsAppTemplate": {
         "type": "object",
         "properties": {
@@ -155542,12 +157762,68 @@
           },
           "status": {
             "type": "string",
-            "enum": ["APPROVED", "PENDING", "REJECTED"]
+            "enum": ["APPROVED", "PENDING", "REJECTED", "PAUSED", "DISABLED"]
           },
           "components": {
             "type": "array",
             "items": {},
             "description": "Componentes do template como a Graph API da Meta os devolve (`HEADER`, `BODY`, `FOOTER`, `BUTTONS`)."
+          },
+          "quality": {
+            "type": "string",
+            "enum": ["GREEN", "YELLOW", "RED", "UNKNOWN"],
+            "description": "Qualidade da Meta (`quality_score`): `YELLOW` = caindo, `RED` = risco de pausa/desativação. Atualizada na sincronização e pelo webhook `message_template_quality_update`."
+          },
+          "qualityUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "statusReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Motivo da reprovação/pausa informado pela Meta."
+          },
+          "headerFormat": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "headerMediaUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cópia da mídia do cabeçalho no storage do Steel — enviada como parâmetro do cabeçalho a cada disparo."
+          },
+          "buttons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WhatsAppButton"
+            },
+            "description": "Botões com as ações; em templates sincronizados da Meta sem ações configuradas, derivados de `components` (ids `b1`, `b2`…)."
           },
           "createdAt": {
             "type": "string",
@@ -155567,6 +157843,12 @@
           "category",
           "status",
           "components",
+          "quality",
+          "qualityUpdatedAt",
+          "statusReason",
+          "headerFormat",
+          "headerMediaUrl",
+          "buttons",
           "createdAt",
           "updatedAt"
         ]

@@ -68,6 +68,8 @@ import {
   type WhatsappAiReplyJobPayload,
   type WhatsappBroadcastJob,
   type WhatsappBroadcastJobPayload,
+  type WhatsappButtonActionsJob,
+  type WhatsappButtonActionsJobPayload,
   type WhatsappConversationLifecycleJob,
   type WhatsappConversationLifecycleJobPayload,
   type WhatsappMediaJob,
@@ -95,6 +97,7 @@ let dataExportQueue: Queue | null = null
 let trialLifecycleQueue: Queue | null = null
 let whatsappMediaQueue: Queue | null = null
 let whatsappAiReplyQueue: Queue | null = null
+let whatsappButtonActionsQueue: Queue | null = null
 let whatsappSentimentQueue: Queue | null = null
 let whatsappBroadcastQueue: Queue | null = null
 let whatsappTemplateSyncQueue: Queue | null = null
@@ -234,6 +237,24 @@ export function getWhatsappAiReplyQueue(): Queue<
     WhatsappAiReplyJobPayload[WhatsappAiReplyJob],
     unknown,
     WhatsappAiReplyJob
+  >
+}
+
+export function getWhatsappButtonActionsQueue(): Queue<
+  WhatsappButtonActionsJobPayload[WhatsappButtonActionsJob],
+  unknown,
+  WhatsappButtonActionsJob
+> {
+  if (!whatsappButtonActionsQueue) {
+    whatsappButtonActionsQueue = new Queue(QueueName.WhatsappButtonActions, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return whatsappButtonActionsQueue as Queue<
+    WhatsappButtonActionsJobPayload[WhatsappButtonActionsJob],
+    unknown,
+    WhatsappButtonActionsJob
   >
 }
 
@@ -744,6 +765,7 @@ export async function closeQueues(): Promise<void> {
     trialLifecycleQueue?.close(),
     whatsappMediaQueue?.close(),
     whatsappAiReplyQueue?.close(),
+    whatsappButtonActionsQueue?.close(),
     whatsappSentimentQueue?.close(),
     whatsappBroadcastQueue?.close(),
     whatsappTemplateSyncQueue?.close(),
@@ -781,6 +803,7 @@ export async function closeQueues(): Promise<void> {
   trialLifecycleQueue = null
   whatsappMediaQueue = null
   whatsappAiReplyQueue = null
+  whatsappButtonActionsQueue = null
   whatsappSentimentQueue = null
   whatsappBroadcastQueue = null
   whatsappTemplateSyncQueue = null
@@ -1022,6 +1045,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WorkspaceIntegrations]: getWorkspaceIntegrationsQueue,
   [QueueName.CrmCampaigns]: getCrmCampaignsQueue,
   [QueueName.CrmWorkflowDelay]: getCrmWorkflowDelayQueue,
+  [QueueName.WhatsappButtonActions]: getWhatsappButtonActionsQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */

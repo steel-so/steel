@@ -1,9 +1,11 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
 import type { WhatsAppConnection } from '@prisma/client'
-import { storageError } from '@/src/errors'
+import { MINIO_ENDPOINT, MINIO_PUBLIC_URL } from '@/lib/env/_server'
+import { storageError, validationError } from '@/src/errors'
 import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { err, ok, type Result } from '@/src/lib/result'
+import { getObjectWithContentType } from '@/src/lib/storage/s3'
 import { persistObject } from '@/src/services/media/_media'
 
 const BUCKET = 'whatsapp-media'
@@ -125,4 +127,26 @@ export async function resolveInboundMediaSource(
   if (!body.url) throw new Error('Meta não retornou URL de mídia')
 
   return { url: body.url, headers: { Authorization: `Bearer ${accessToken}` } }
+}
+
+/**
+ * Reads back a file this workspace uploaded through `POST .../whatsapp/media/
+ * upload` (the media header of a new template). Only our own bucket and the
+ * workspace prefix are accepted — the server never fetches an arbitrary URL.
+ */
+export async function readWorkspaceMedia(
+  workspaceId: string,
+  url: string,
+): Promise<Result<{ body: Buffer; contentType: string; fileName: string }>> {
+  const prefix = `${MINIO_PUBLIC_URL ?? MINIO_ENDPOINT}/${BUCKET}/`
+  const key = url.startsWith(prefix) ? url.slice(prefix.length) : ''
+  if (!key.startsWith(`${workspaceId}/`) || key.includes('..')) {
+    return err(validationError('Envie a mídia do cabeçalho pelo upload do zap'))
+  }
+  try {
+    const object = await getObjectWithContentType({ bucket: BUCKET, key })
+    return ok({ ...object, fileName: key.split('/').pop() ?? key })
+  } catch {
+    return err(storageError('Falha ao ler a mídia do cabeçalho'))
+  }
 }

@@ -15,6 +15,7 @@ export function createFakeWhatsAppConversation(
     contactId: createId(),
     status: 'NEW',
     assignedUserId: null,
+    teamId: null,
     aiActive: false,
     aiHandoff: false,
     unreadCount: 0,
@@ -37,9 +38,10 @@ export function createFakeWhatsAppConversationWithPreview(
   overrides?: Partial<WhatsAppConversation> & {
     contact?: ReturnType<typeof createFakeWhatsAppContact>
     messages?: ReturnType<typeof createFakeWhatsAppMessage>[]
+    team?: { id: string; name: string } | null
   },
 ): WhatsAppConversationWithPreview {
-  const { contact, messages, ...conversationOverrides } = overrides ?? {}
+  const { contact, messages, team, ...conversationOverrides } = overrides ?? {}
   const conversation = createFakeWhatsAppConversation(conversationOverrides)
 
   return {
@@ -47,5 +49,11 @@ export function createFakeWhatsAppConversationWithPreview(
     contact:
       contact ?? createFakeWhatsAppContact({ id: conversation.contactId }),
     messages: messages ?? [],
+    team:
+      team !== undefined
+        ? team
+        : conversation.teamId
+          ? { id: conversation.teamId, name: 'Equipe' }
+          : null,
   }
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { WhatsAppButtonSchema } from '@/src/schemas/whatsapp-button.schema'
 import { dto } from '../common'
 
 /**
@@ -16,6 +17,28 @@ const waId = () =>
     description: 'Número do WhatsApp só com dígitos (DDI + DDD + número).',
     example: '5511987654321',
   })
+
+/* --------------------------------- botões -------------------------------- */
+
+/** Botão de template/mensagem pronta, com as ações do clique. */
+export const WhatsAppButtonDTO = dto(
+  'WhatsAppButton',
+  WhatsAppButtonSchema.meta({
+    description:
+      'Até 2 por template/mensagem pronta. `REPLY` dispara as `actions` (em ordem; uma ação que falha é registrada e a próxima roda) quando o contato clica; `URL` só abre o link (os provedores não avisam o clique). O clique volta com o payload `stl:<t|q>:<idDaOrigem>:<id>`.',
+  }),
+)
+
+/** Botão como enviado numa mensagem — sem as ações. */
+const WhatsAppMessageButtonDTO = z.discriminatedUnion('type', [
+  z.object({ id: z.string(), type: z.literal('REPLY'), label: z.string() }),
+  z.object({
+    id: z.string(),
+    type: z.literal('URL'),
+    label: z.string(),
+    url: z.string(),
+  }),
+])
 
 /* -------------------------------- conexões ------------------------------- */
 
@@ -84,6 +107,14 @@ export const WhatsAppConversationDTO = dto(
     contactAvatarUrl: z.string().nullable(),
     status: z.enum(['NEW', 'IN_PROGRESS', 'CLOSED']),
     assignedUserId: z.string().nullable(),
+    teamId: z.string().nullable().meta({
+      description:
+        'Equipe da conversa. Sem responsável, a conversa fica na fila dessa equipe.',
+    }),
+    team: z
+      .object({ id: z.string(), name: z.string() })
+      .nullable()
+      .meta({ description: 'Equipe (id e nome), ou `null`.' }),
     aiActive: z.boolean().meta({
       description:
         'A IA está atendendo — envios manuais são bloqueados até removê-la (`PATCH .../ai`).',
@@ -113,7 +144,13 @@ export const WhatsAppConversationEventDTO = dto(
     .object({
       id: z.string(),
       conversationId: z.string(),
-      kind: z.enum(['CLOSED', 'REOPENED', 'SENTIMENT_ALERT']),
+      kind: z.enum([
+        'CLOSED',
+        'REOPENED',
+        'SENTIMENT_ALERT',
+        'ASSIGNED',
+        'TEAM_CHANGED',
+      ]),
       source: z.enum(['AGENT', 'CONTACT', 'INACTIVITY', 'SENTIMENT']),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -181,6 +218,14 @@ export const WhatsAppMessageDTO = dto(
       .object({ name: z.string(), waId: waId() })
       .nullable()
       .meta({ description: 'Cartão de contato (mensagens `CONTACT`).' }),
+    buttons: z.array(WhatsAppMessageButtonDTO).nullable().meta({
+      description:
+        'Botões enviados com a mensagem (OUT: template ou mensagem pronta), sem as ações.',
+    }),
+    buttonPayload: z.string().nullable().meta({
+      description:
+        'Clique recebido (IN, tipo `BUTTON`): payload do botão (`stl:t:<templateId>:<botão>` ou `stl:q:<respostaId>:<botão>`) ou o id cru de um botão de fora do Steel.',
+    }),
     createdAt: dateTime(),
   }),
 )
@@ -330,10 +375,27 @@ export const WhatsAppTemplateDTO = dto(
     name: z.string().meta({ example: 'lembrete_consulta' }),
     language: z.string().meta({ example: 'pt_BR' }),
     category: z.string().meta({ example: 'UTILITY' }),
-    status: z.enum(['APPROVED', 'PENDING', 'REJECTED']),
+    status: z.enum(['APPROVED', 'PENDING', 'REJECTED', 'PAUSED', 'DISABLED']),
     components: z.array(z.unknown()).meta({
       description:
         'Componentes do template como a Graph API da Meta os devolve (`HEADER`, `BODY`, `FOOTER`, `BUTTONS`).',
+    }),
+    quality: z.enum(['GREEN', 'YELLOW', 'RED', 'UNKNOWN']).meta({
+      description:
+        'Qualidade da Meta (`quality_score`): `YELLOW` = caindo, `RED` = risco de pausa/desativação. Atualizada na sincronização e pelo webhook `message_template_quality_update`.',
+    }),
+    qualityUpdatedAt: nullableDateTime(),
+    statusReason: z.string().nullable().meta({
+      description: 'Motivo da reprovação/pausa informado pela Meta.',
+    }),
+    headerFormat: z.enum(['TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT']).nullable(),
+    headerMediaUrl: z.string().nullable().meta({
+      description:
+        'Cópia da mídia do cabeçalho no storage do Steel — enviada como parâmetro do cabeçalho a cada disparo.',
+    }),
+    buttons: z.array(WhatsAppButtonDTO).meta({
+      description:
+        'Botões com as ações; em templates sincronizados da Meta sem ações configuradas, derivados de `components` (ids `b1`, `b2`…).',
     }),
     createdAt: dateTime(),
     updatedAt: dateTime(),
@@ -349,6 +411,7 @@ export const WhatsAppQuickReplyDTO = dto(
     title: z.string(),
     body: z.string(),
     mediaUrl: z.string().nullable(),
+    buttons: z.array(WhatsAppButtonDTO),
     createdAt: dateTime(),
     updatedAt: dateTime(),
   }),
@@ -543,5 +606,45 @@ export const WhatsAppReportDataDTO = dto(
     }),
     grouped: z.boolean(),
     total: z.number(),
+  }),
+)
+
+/* -------------------------------- equipes -------------------------------- */
+
+export const WhatsAppTeamDTO = dto(
+  'WhatsAppTeam',
+  z.object({
+    id: id('ckv9x2p0h0000tm7d3k1e5abc'),
+    workspaceId: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    members: z
+      .array(
+        z.object({
+          userId: z.string(),
+          name: z.string(),
+          email: z.string(),
+          image: z.string().nullable(),
+          role: z.enum(['LEADER', 'AGENT']).meta({
+            description:
+              '`LEADER` vê as conversas dos agentes e da fila da equipe e atribui dentro dela; `AGENT` atende.',
+          }),
+        }),
+      )
+      .meta({ description: 'Líderes primeiro, depois agentes, por nome.' }),
+    createdAt: dateTime(),
+    updatedAt: dateTime(),
+  }),
+)
+
+export const WhatsAppConversationScopeDTO = dto(
+  'WhatsAppConversationScope',
+  z.object({
+    mode: z.enum(['ALL', 'SCOPED']).meta({
+      description:
+        '`ALL` = vê todas as conversas (OWNER, ou ADMIN fora de equipe); `SCOPED` = vê as próprias, as das equipes que lidera e a fila.',
+    }),
+    leadsTeamIds: z.array(z.string()),
+    memberTeamIds: z.array(z.string()),
   }),
 )

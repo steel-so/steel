@@ -1,12 +1,40 @@
 import type { ModuleKind, Prisma, WhatsAppConversation } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
+import type {
+  ConversationVisibilityTarget,
+  WhatsAppConversationVisibility,
+} from '@/src/lib/whatsapp/conversation-scope'
 import { dbError } from './db-error'
 
 const conversationListInclude = {
   contact: true,
+  team: { select: { id: true, name: true } },
   messages: { orderBy: { createdAt: 'desc' as const }, take: 1 },
 } satisfies Prisma.WhatsAppConversationInclude
+
+/**
+ * Prisma form of the Equipes visibility rule for a scoped viewer — must
+ * match `canSeeConversation` in `src/lib/whatsapp/conversation-scope.ts`.
+ */
+export function conversationVisibilityWhere(
+  visibility: WhatsAppConversationVisibility,
+): Prisma.WhatsAppConversationWhereInput {
+  const or: Prisma.WhatsAppConversationWhereInput[] = [
+    { assignedUserId: visibility.userId },
+    { assignedUserId: null, teamId: null },
+  ]
+  if (visibility.ledAgentIds.length > 0) {
+    or.push({ assignedUserId: { in: visibility.ledAgentIds } })
+  }
+  if (visibility.leadsTeamIds.length > 0) {
+    or.push({ teamId: { in: visibility.leadsTeamIds } })
+  }
+  if (visibility.memberTeamIds.length > 0) {
+    or.push({ assignedUserId: null, teamId: { in: visibility.memberTeamIds } })
+  }
+  return { OR: or }
+}
 
 export type WhatsAppConversationWithPreview =
   Prisma.WhatsAppConversationGetPayload<{
@@ -54,12 +82,15 @@ export const WhatsAppConversationRepository = {
       archived?: boolean
       connectionId?: string
     } = {},
+    /** Scoped viewer (Equipes); `undefined` = every conversation. */
+    visibility?: WhatsAppConversationVisibility,
   ): Promise<Result<WhatsAppConversationWithPreview[]>> {
     try {
       const conversations = await prisma.whatsAppConversation.findMany({
         where: {
           workspaceId,
           ...ZAP_ONLY,
+          ...(visibility ? conversationVisibilityWhere(visibility) : {}),
           deletedAt: null,
           archivedAt: filters.archived ? { not: null } : null,
           ...(filters.status === 'OPEN'
@@ -99,6 +130,26 @@ export const WhatsAppConversationRepository = {
       return ok(conversation)
     } catch (error) {
       return err(dbError('Failed to find whatsapp conversation', error))
+    }
+  },
+
+  /** Assignee and team of zap conversations — what the visibility rule
+   * needs (realtime fan-out, search). Missing ids are left out. */
+  async listVisibilityTargets(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<(ConversationVisibilityTarget & { id: string })[]>> {
+    if (ids.length === 0) return ok([])
+    try {
+      const rows = await prisma.whatsAppConversation.findMany({
+        where: { workspaceId, id: { in: ids }, ...ZAP_ONLY },
+        select: { id: true, assignedUserId: true, teamId: true },
+      })
+      return ok(rows)
+    } catch (error) {
+      return err(
+        dbError('Failed to list whatsapp conversation visibility', error),
+      )
     }
   },
 

@@ -44,6 +44,9 @@ export interface MetaTemplateHeaderComponent {
   type: 'HEADER'
   format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'LOCATION'
   text?: string
+  // Media header sample: the Resumable Upload handle (on create) or a URL
+  // Meta hosts (on read).
+  example?: { header_handle: string[] }
 }
 
 export interface MetaTemplateBodyComponent {
