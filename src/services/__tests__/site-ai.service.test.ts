@@ -218,7 +218,7 @@ beforeEach(() => {
   sites.countByWorkspace.mockResolvedValue(ok(1))
   sites.isSlugTaken.mockResolvedValue(ok(false))
   sites.createWithPages.mockImplementation(async ({ site: row }) =>
-    ok(createFakeSite({ id: 'new-site', ...row })),
+    ok(createFakeSite({ id: 'new-site', ...(row as object) })),
   )
   pages.listBySite.mockResolvedValue(
     ok([

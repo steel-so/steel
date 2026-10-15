@@ -166,6 +166,9 @@ export function useSiteAiGeneration(workspaceId: string) {
       if (running.current) return state
       running.current = true
       let current: SiteAiGenerationState = { status: 'running', steps: [] }
+      // Read through a typed getter: the stream callback reassigns
+      // `current`, which control-flow narrowing cannot see.
+      const latest = (): SiteAiGenerationState => current
       update(() => current)
       try {
         const res = await fetch(`${base(workspaceId)}/ai/generate`, {
@@ -186,19 +189,21 @@ export function useSiteAiGeneration(workspaceId: string) {
             current = applySiteAiEvent(current, raw as unknown as SiteAiEvent)
             update(() => current)
           })
-          if (current.status === 'running') {
+          const last = latest()
+          if (last.status === 'running') {
             current = {
               status: 'error',
-              steps: current.steps,
+              steps: last.steps,
               code: null,
               message: 'A conexão caiu antes do fim. Confira a lista de sites.',
             }
           }
         }
       } catch {
+        const last = latest()
         current = {
           status: 'error',
-          steps: current.status === 'idle' ? [] : current.steps,
+          steps: last.status === 'idle' ? [] : last.steps,
           code: null,
           message: 'A conexão caiu antes do fim. Confira a lista de sites.',
         }
@@ -208,7 +213,7 @@ export function useSiteAiGeneration(workspaceId: string) {
       void queryClient.invalidateQueries({
         queryKey: siteAiKeys.context(workspaceId),
       })
-      if (current.status === 'done') {
+      if (latest().status === 'done') {
         void queryClient.invalidateQueries({
           queryKey: crmSitesKeys.list(workspaceId),
         })
