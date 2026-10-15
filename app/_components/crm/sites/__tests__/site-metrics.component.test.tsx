@@ -48,6 +48,7 @@ function analytics(
       },
       { path: '/sumiu', label: null, views: 10, conversions: 1, rate: 0.1 },
     ],
+    campaigns: [],
     ...overrides,
   }
 }
