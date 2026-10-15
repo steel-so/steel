@@ -12,6 +12,7 @@ import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { createSiteCatalog } from '@/src/lib/canvas-site/catalog'
+import { SITE_VIEWPORT_WIDTHS } from '@/src/lib/canvas-site/constants'
 import type { SiteRenderContext } from '@/src/lib/canvas-site/context'
 import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SiteDocument } from '@/src/lib/canvas-site/render'
@@ -55,12 +56,38 @@ export function useNearViewport(
   return near
 }
 
+/**
+ * Layout width that matches the site breakpoint the window is in: the
+ * shadow root shares the page's media queries, so on a phone the site's
+ * mobile rules apply and the miniature must be laid out at a phone width.
+ */
+export function useLayoutWidth(width: number): number {
+  const [layout, setLayout] = useState(width)
+  useEffect(() => {
+    const pick = () => {
+      const viewport = window.innerWidth
+      setLayout(
+        viewport < 768
+          ? Math.min(width, SITE_VIEWPORT_WIDTHS.mobile)
+          : viewport < 1024
+            ? Math.min(width, SITE_VIEWPORT_WIDTHS.tablet)
+            : width,
+      )
+    }
+    pick()
+    window.addEventListener('resize', pick)
+    return () => window.removeEventListener('resize', pick)
+  }, [width])
+  return layout
+}
+
 export interface SiteSnapshotProps {
   /** Rendered top to bottom (header, page, footer). */
   docs: CanvasDocument[]
   theme: SiteTheme
   context?: SiteRenderContext
-  /** Layout width before scaling (a desktop viewport). */
+  /** Layout width before scaling (a desktop viewport); narrower windows
+   * use the site's tablet/phone width. */
   width?: number
   /** Box size and look (aspect ratio, corners); the content is clipped. */
   className?: string
@@ -78,6 +105,7 @@ export function SiteSnapshot({
   const near = useNearViewport(boxRef)
   const [root, setRoot] = useState<ShadowRoot | null>(null)
   const [scale, setScale] = useState(0)
+  const layout = useLayoutWidth(width)
 
   useLayoutEffect(() => {
     const host = hostRef.current
@@ -88,13 +116,13 @@ export function SiteSnapshot({
   useEffect(() => {
     const box = boxRef.current
     if (!box) return
-    const measure = () => setScale(box.clientWidth / width)
+    const measure = () => setScale(box.clientWidth / layout)
     measure()
     if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(measure)
     observer.observe(box)
     return () => observer.disconnect()
-  }, [width])
+  }, [layout])
 
   const css = useMemo(
     () => (root ? compileSiteCss(docs, { theme }) : ''),
@@ -113,18 +141,14 @@ export function SiteSnapshot({
         ref={hostRef}
         inert
         className='pointer-events-none absolute top-0 left-0 origin-top-left select-none'
-        style={{ width, transform: `scale(${scale})` }}
+        style={{ width: layout, transform: `scale(${scale})` }}
       />
       {root &&
         createPortal(
           <>
             <style>{`:host{display:block}${css}`}</style>
             {docs.map((doc, index) => (
-              <SiteDocument
-                key={index}
-                doc={doc}
-                catalog={catalog}
-              />
+              <SiteDocument key={index} doc={doc} catalog={catalog} />
             ))}
           </>,
           root,
