@@ -66,6 +66,18 @@ export interface SiteAnalyticsDTO {
   utmMediums: SiteAnalyticsCountDTO[]
   utmCampaigns: SiteAnalyticsCountDTO[]
   conversionsByPage: SiteAnalyticsConversionDTO[]
+  /** Traffic attributed to CRM campaigns (ADR 0025): views and forms sent
+   * on this site per campaign. */
+  campaigns: SiteAnalyticsCampaignDTO[]
+}
+
+export interface SiteAnalyticsCampaignDTO {
+  campaignId: string
+  name: string
+  /** `utm_campaign` value. */
+  slug: string
+  views: number
+  formSubmissions: number
 }
 
 /** Daily views of one site (list sparkline). */

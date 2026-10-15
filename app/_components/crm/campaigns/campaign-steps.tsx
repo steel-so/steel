@@ -1,26 +1,11 @@
 'use client'
 
-import {
-  BrowserIcon,
-  Copy01Icon,
-  FormIcon,
-  LinkSquare02Icon,
-  RefreshIcon,
-} from '@hugeicons-pro/core-stroke-rounded'
+import { Copy01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { SteelIcon } from '@/components/icon/icon'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { notify } from '@/lib/notify'
-import { cn } from '@/lib/utils'
 import {
   buildDestinationUrl,
   CAMPAIGN_FIRST_NAME_MERGE_TAG,
@@ -28,12 +13,38 @@ import {
   withCampaignParams,
 } from '@/src/lib/crm-campaign/campaign-url'
 import type {
-  CrmCampaignDetailDTO,
+  CrmCampaignChecklistItemDTO,
   CrmCampaignEmailPreviewDTO,
   CrmCampaignOptionsDTO,
 } from '@/types/crm-campaign'
 import type { CampaignDraft, DraftChange } from './campaign-draft'
+import { EmailTemplatePicker } from './campaign-email-template-picker'
+import { EmailPreview } from './campaign-previews'
 import { CampaignWhatsAppPanel } from './campaign-whatsapp-panel'
+
+/** Public URL of the draft's destination, from the picker options. */
+export function destinationUrlOf(
+  draft: CampaignDraft,
+  options: CrmCampaignOptionsDTO,
+): string | null {
+  if (draft.destinationType === 'SITE_PAGE') {
+    return (
+      options.sites
+        .find((site) => site.id === draft.siteId)
+        ?.pages.find((page) => page.id === draft.sitePageId)?.url ?? null
+    )
+  }
+  const token =
+    draft.destinationType === 'FORM'
+      ? options.forms.find((f) => f.id === draft.formId)?.publicToken
+      : options.landingPages.find((p) => p.id === draft.landingPageId)
+          ?.shareToken
+  if (!draft.destinationType || !token) return null
+  return buildDestinationUrl(options.baseUrl, {
+    type: draft.destinationType,
+    token,
+  })
+}
 
 /** Public links per channel, computed from the draft (no save needed). */
 export function campaignLinks(
@@ -41,16 +52,8 @@ export function campaignLinks(
   slug: string,
   options: CrmCampaignOptionsDTO,
 ): { email: string; whatsapp: string } | null {
-  const token =
-    draft.destinationType === 'FORM'
-      ? options.forms.find((f) => f.id === draft.formId)?.publicToken
-      : options.landingPages.find((p) => p.id === draft.landingPageId)
-          ?.shareToken
-  if (!draft.destinationType || !token) return null
-  const destination = buildDestinationUrl(options.baseUrl, {
-    type: draft.destinationType,
-    token,
-  })
+  const destination = destinationUrlOf(draft, options)
+  if (!destination) return null
   const params = { medium: draft.utmMedium || 'campanha', campaign: slug }
   return {
     email: withCampaignParams(destination, { ...params, source: 'email' }),
@@ -91,196 +94,72 @@ export function CopyLinkRow({ label, url }: { label: string; url: string }) {
   )
 }
 
-export function DestinationStep({
-  draft,
-  onChange,
-  options,
-  campaign,
-  workspaceSlug,
-  onRefreshOptions,
+/** The e-mail checklist of the chosen template (errors block the launch). */
+export function EmailChecklistList({
+  items,
 }: {
-  draft: CampaignDraft
-  onChange: DraftChange
-  options: CrmCampaignOptionsDTO
-  campaign: CrmCampaignDetailDTO
-  workspaceSlug: string
-  onRefreshOptions: () => void
+  items: CrmCampaignChecklistItemDTO[]
 }) {
-  const isForm = draft.destinationType === 'FORM'
-  const items = isForm
-    ? options.forms.map((f) => ({
-        value: f.id,
-        label: f.name,
-        published: f.published,
-      }))
-    : options.landingPages.map((p) => ({
-        value: p.id,
-        label: p.title,
-        published: p.published,
-      }))
-  const selectedId = isForm ? draft.formId : draft.landingPageId
-  const selected = items.find((item) => item.value === selectedId)
-  const links = campaignLinks(draft, campaign.slug, options)
-
-  const types = [
-    {
-      value: 'LANDING_PAGE' as const,
-      label: 'Landing page',
-      description: 'Uma página de oferta publicada no Steel.',
-      icon: BrowserIcon,
-    },
-    {
-      value: 'FORM' as const,
-      label: 'Formulário',
-      description: 'Captura o contato e já cria o lead.',
-      icon: FormIcon,
-    },
-  ]
-
+  if (items.length === 0) return null
   return (
-    <div className='flex flex-col gap-6'>
-      <div className='grid gap-3 sm:grid-cols-2'>
-        {types.map((type) => (
-          <button
-            key={type.value}
-            type='button'
-            aria-pressed={draft.destinationType === type.value}
-            onClick={() =>
-              onChange({
-                destinationType: type.value,
-                landingPageId: null,
-                formId: null,
-              })
+    <ul
+      aria-label='Checklist do e-mail'
+      className='flex flex-col gap-1 text-sm'
+    >
+      {items.map((item) => (
+        <li
+          key={`${item.level}-${item.message}`}
+          className='flex items-start gap-2'
+        >
+          <span
+            aria-hidden='true'
+            className={
+              item.level === 'error'
+                ? 'mt-1.5 size-2 shrink-0 rounded-full bg-destructive'
+                : 'mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/60'
             }
-            className={cn(
-              'flex min-w-0 items-start gap-3 rounded-xl border p-4 text-left transition-colors hover:bg-muted/40',
-              draft.destinationType === type.value &&
-                'border-primary ring-1 ring-primary',
-            )}
-          >
-            <SteelIcon icon={type.icon} size={20} className='text-primary' />
-            <span className='min-w-0'>
-              <span className='block font-medium'>{type.label}</span>
-              <span className='text-muted-foreground text-xs'>
-                {type.description}
-              </span>
+          />
+          <span>
+            <span className='sr-only'>
+              {item.level === 'error' ? 'Erro: ' : 'Aviso: '}
             </span>
-          </button>
-        ))}
-      </div>
-
-      {draft.destinationType ? (
-        <div className='flex flex-col gap-2'>
-          <Label htmlFor='destination'>
-            {isForm ? 'Formulário' : 'Landing page'}
-          </Label>
-          <div className='flex flex-col gap-2 sm:flex-row'>
-            <Select
-              items={items.map(({ value, label }) => ({ value, label }))}
-              value={selectedId}
-              onValueChange={(value) =>
-                onChange(
-                  isForm
-                    ? { formId: value as string }
-                    : { landingPageId: value as string },
-                )
-              }
-            >
-              <SelectTrigger id='destination' className='w-full sm:flex-1'>
-                <SelectValue
-                  placeholder={
-                    items.length === 0 ? 'Nenhum criado ainda' : 'Escolha…'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {items.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                    {item.published ? '' : ' (rascunho)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className='flex gap-2'>
-              <Button
-                variant='outline'
-                nativeButton={false}
-                render={
-                  <a
-                    href={`/${workspaceSlug}/crm/${isForm ? 'forms' : 'landing-pages'}`}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                  >
-                    <SteelIcon icon={LinkSquare02Icon} />
-                    {isForm ? 'Criar formulário' : 'Criar página'}
-                  </a>
-                }
-              />
-              <Button
-                type='button'
-                variant='ghost'
-                onClick={onRefreshOptions}
-                aria-label='Atualizar lista'
-              >
-                <SteelIcon icon={RefreshIcon} />
-              </Button>
-            </div>
-          </div>
-          {selected && !selected.published ? (
-            <p className='text-muted-foreground text-xs'>
-              <Badge variant='outline'>Rascunho</Badge> Publique antes de enviar
-              — senão o link abre uma página indisponível.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className='flex flex-col gap-2'>
-        <Label htmlFor='utm-medium'>utm_medium</Label>
-        <Input
-          id='utm-medium'
-          className='sm:w-64'
-          value={draft.utmMedium}
-          onChange={(e) =>
-            onChange({ utmMedium: e.target.value.replace(/[^a-z0-9_-]/gi, '') })
-          }
-        />
-        <p className='text-muted-foreground text-xs'>
-          utm_source é o canal (email ou whatsapp) e utm_campaign é{' '}
-          <code>{campaign.slug}</code>.
-        </p>
-      </div>
-
-      {links ? (
-        <div className='flex flex-col gap-3 rounded-xl border bg-muted/30 p-4'>
-          <p className='font-medium text-sm'>Links da campanha</p>
-          <CopyLinkRow label='Link do e-mail' url={links.email} />
-          <CopyLinkRow label='Link do WhatsApp' url={links.whatsapp} />
-          <p className='text-muted-foreground text-xs'>
-            Nos envios, cada contato recebe a própria versão rastreada destes
-            links — é ela que conta cliques e conversões.
-          </p>
-        </div>
-      ) : null}
-    </div>
+            {item.message}
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
+/**
+ * Step 2 — "Conteúdo": envelope, the e-mail template (cards with
+ * thumbnails, "Criar novo template" in the full-screen editor) with its
+ * preview and checklist, and the optional WhatsApp message.
+ */
 export function ContentStep({
   draft,
   onChange,
   options,
-  workspaceSlug,
+  workspaceId,
   preview,
   previewLoading,
+  checklist,
+  onCreateTemplate,
+  onOpenTemplate,
+  sampleLink,
 }: {
   draft: CampaignDraft
   onChange: DraftChange
   options: CrmCampaignOptionsDTO
-  workspaceSlug: string
+  workspaceId: string
   preview: CrmCampaignEmailPreviewDTO | undefined
   previewLoading: boolean
+  /** Checklist of the saved template choice. */
+  checklist: CrmCampaignChecklistItemDTO[]
+  onCreateTemplate: () => void
+  onOpenTemplate: (templateId: string) => void
+  /** Campaign WhatsApp link for the message preview. */
+  sampleLink?: string | null
 }) {
   return (
     <div className='flex flex-col gap-6'>
@@ -316,104 +195,34 @@ export function ContentStep({
             />
           </div>
           <div className='flex flex-col gap-2'>
-            <Label htmlFor='email-template'>Visual do e-mail</Label>
-            <div className='flex flex-col gap-2 sm:flex-row'>
-              <Select
-                items={options.emailTemplates.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                }))}
-                value={draft.emailTemplateId}
-                onValueChange={(value) =>
-                  onChange({ emailTemplateId: value as string })
-                }
-              >
-                <SelectTrigger id='email-template' className='w-full sm:flex-1'>
-                  <SelectValue
-                    placeholder={
-                      options.emailTemplates.length === 0
-                        ? 'Nenhum visual criado'
-                        : 'Escolha o visual'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {options.emailTemplates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className='flex gap-2'>
-                <Button
-                  variant='outline'
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={
-                        draft.emailTemplateId
-                          ? `/${workspaceSlug}/crm/email-templates/${draft.emailTemplateId}`
-                          : `/${workspaceSlug}/crm/email-templates/new`
-                      }
-                      target='_blank'
-                      rel='noopener noreferrer'
-                    >
-                      <SteelIcon icon={LinkSquare02Icon} />
-                      {draft.emailTemplateId
-                        ? 'Abrir no editor'
-                        : 'Criar visual'}
-                    </a>
-                  }
-                />
-                {draft.emailTemplateId ? (
-                  <Button
-                    variant='ghost'
-                    nativeButton={false}
-                    render={
-                      <a
-                        href={`/${workspaceSlug}/crm/email-templates/new`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                      >
-                        Galeria
-                      </a>
-                    }
-                  />
-                ) : null}
-              </div>
-            </div>
+            <span className='font-medium text-sm'>Visual do e-mail</span>
+            <EmailTemplatePicker
+              workspaceId={workspaceId}
+              templates={options.emailTemplates}
+              value={draft.emailTemplateId}
+              onChange={(id) => onChange({ emailTemplateId: id })}
+              onCreate={onCreateTemplate}
+              onOpen={onOpenTemplate}
+            />
             <p className='text-muted-foreground text-xs'>
-              No editor, escolha <strong>Link da campanha</strong> (
+              No editor, use <strong>Link da campanha</strong> (
               <code>{CAMPAIGN_LINK_MERGE_TAG}</code>) no botão para levar ao
-              destino, e use <code>{CAMPAIGN_FIRST_NAME_MERGE_TAG}</code> para
-              personalizar. Depois de salvar no editor, volte e atualize a
-              prévia.
+              destino, e <code>{CAMPAIGN_FIRST_NAME_MERGE_TAG}</code> para
+              personalizar. Blocos com &ldquo;Mostrar se&rdquo; são avaliados
+              para cada contato no envio.
             </p>
           </div>
         </div>
-        <div className='flex min-w-0 flex-col gap-2'>
+        <div className='flex min-w-0 flex-col gap-3'>
           <span className='font-medium text-sm'>Prévia</span>
           {draft.emailTemplateId ? (
-            previewLoading ? (
-              <div className='h-80 animate-pulse rounded-xl bg-muted' />
-            ) : preview ? (
-              <iframe
-                title='Prévia do e-mail'
-                sandbox=''
-                srcDoc={preview.html}
-                className='h-80 w-full rounded-xl border bg-white lg:h-[28rem]'
-              />
-            ) : (
-              <p className='text-muted-foreground text-sm'>
-                Salve para ver a prévia.
-              </p>
-            )
+            <EmailPreview preview={preview} loading={previewLoading} />
           ) : (
             <p className='rounded-xl border border-dashed p-6 text-center text-muted-foreground text-sm'>
               Escolha o visual para ver a prévia.
             </p>
           )}
+          <EmailChecklistList items={checklist} />
         </div>
       </div>
 
@@ -421,6 +230,7 @@ export function ContentStep({
         draft={draft}
         onChange={onChange}
         options={options}
+        sampleLink={sampleLink}
       />
     </div>
   )

@@ -4224,6 +4224,14 @@
                       "utmSource": {
                         "type": "string",
                         "maxLength": 200
+                      },
+                      "siteSlug": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "sitePageId": {
+                        "type": "string",
+                        "maxLength": 40
                       }
                     }
                   }
@@ -4597,6 +4605,14 @@
                       "utmSource": {
                         "type": "string",
                         "maxLength": 200
+                      },
+                      "siteSlug": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "sitePageId": {
+                        "type": "string",
+                        "maxLength": 40
                       }
                     }
                   }
@@ -7234,6 +7250,10 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 64
+                  },
+                  "ref": {
+                    "type": "string",
+                    "maxLength": 200
                   }
                 }
               },
@@ -14341,7 +14361,7 @@
                     "anyOf": [
                       {
                         "type": "string",
-                        "enum": ["LANDING_PAGE", "FORM"]
+                        "enum": ["LANDING_PAGE", "FORM", "SITE_PAGE"]
                       },
                       {
                         "type": "null"
@@ -14360,6 +14380,28 @@
                     ]
                   },
                   "formId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "siteId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sitePageId": {
                     "anyOf": [
                       {
                         "type": "string",
@@ -14572,6 +14614,17 @@
                         "type": "string",
                         "maxLength": 1000,
                         "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "whatsappQuickReplyId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
                       },
                       {
                         "type": "null"
@@ -129153,12 +129206,13 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["LANDING_PAGE", "FORM"]
+                "enum": ["LANDING_PAGE", "FORM", "SITE_PAGE"]
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); LANDING_PAGE = landing page antiga."
           },
           "landingPageId": {
             "anyOf": [
@@ -129171,6 +129225,26 @@
             ]
           },
           "formId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "siteId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sitePageId": {
             "anyOf": [
               {
                 "type": "string"
@@ -129360,6 +129434,17 @@
               }
             ]
           },
+          "whatsappQuickReplyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Z-API: resposta rápida cujos botões vão com o texto (ações mantidas)."
+          },
           "whatsappDelayHours": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -129505,6 +129590,50 @@
             },
             "required": ["destination", "email", "whatsapp"]
           },
+          "destination": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["LANDING_PAGE", "FORM", "SITE_PAGE"]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "pageTitle": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "published": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["type", "name", "pageTitle", "url", "published"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resumo do destino (nome, página e endereço)."
+          },
           "issues": {
             "type": "array",
             "items": {
@@ -129521,6 +129650,23 @@
               "required": ["step", "message"]
             },
             "description": "O que ainda impede o envio, por passo."
+          },
+          "emailChecklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "type": "string",
+                  "enum": ["error", "warning"]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["level", "message"]
+            },
+            "description": "Checklist do template de e-mail; os erros também entram em `issues` e bloqueiam o envio."
           }
         },
         "required": [
@@ -129532,6 +129678,8 @@
           "destinationType",
           "landingPageId",
           "formId",
+          "siteId",
+          "sitePageId",
           "utmMedium",
           "emailFrom",
           "emailSubject",
@@ -129545,6 +129693,7 @@
           "whatsappVariables",
           "whatsappText",
           "whatsappMediaUrl",
+          "whatsappQuickReplyId",
           "whatsappDelayHours",
           "whatsappLegalBasis",
           "scheduledAt",
@@ -129559,7 +129708,9 @@
           "createdAt",
           "updatedAt",
           "links",
-          "issues"
+          "destination",
+          "issues",
+          "emailChecklist"
         ]
       },
       "CrmCampaignEmailPreview": {
@@ -129604,12 +129755,13 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["LANDING_PAGE", "FORM"]
+                "enum": ["LANDING_PAGE", "FORM", "SITE_PAGE"]
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); LANDING_PAGE = landing page antiga."
           },
           "landingPageId": {
             "anyOf": [
@@ -129622,6 +129774,26 @@
             ]
           },
           "formId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "siteId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sitePageId": {
             "anyOf": [
               {
                 "type": "string"
@@ -129811,6 +129983,17 @@
               }
             ]
           },
+          "whatsappQuickReplyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Z-API: resposta rápida cujos botões vão com o texto (ações mantidas)."
+          },
           "whatsappDelayHours": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -129955,6 +130138,50 @@
               }
             },
             "required": ["destination", "email", "whatsapp"]
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["LANDING_PAGE", "FORM", "SITE_PAGE"]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "pageTitle": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "published": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["type", "name", "pageTitle", "url", "published"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resumo do destino (nome, página e endereço)."
           },
           "kpis": {
             "type": "object",
@@ -130021,6 +130248,8 @@
           "destinationType",
           "landingPageId",
           "formId",
+          "siteId",
+          "sitePageId",
           "utmMedium",
           "emailFrom",
           "emailSubject",
@@ -130034,6 +130263,7 @@
           "whatsappVariables",
           "whatsappText",
           "whatsappMediaUrl",
+          "whatsappQuickReplyId",
           "whatsappDelayHours",
           "whatsappLegalBasis",
           "scheduledAt",
@@ -130048,6 +130278,7 @@
           "createdAt",
           "updatedAt",
           "links",
+          "destination",
           "kpis"
         ]
       },
@@ -130056,6 +130287,58 @@
         "properties": {
           "baseUrl": {
             "type": "string"
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "published": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "isHome": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["id", "title", "path", "url", "isHome"]
+                  }
+                }
+              },
+              "required": ["id", "name", "slug", "url", "published", "updatedAt", "pages"]
+            }
           },
           "landingPages": {
             "type": "array",
@@ -130094,9 +130377,36 @@
                 },
                 "publicToken": {
                   "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "embeds": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "siteId": {
+                        "type": "string"
+                      },
+                      "siteName": {
+                        "type": "string"
+                      },
+                      "pageId": {
+                        "type": "string"
+                      },
+                      "pageTitle": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["siteId", "siteName", "pageId", "pageTitle", "url"]
+                  }
                 }
               },
-              "required": ["id", "name", "published", "publicToken"]
+              "required": ["id", "name", "published", "publicToken", "url", "embeds"]
             }
           },
           "emailTemplates": {
@@ -130112,9 +130422,17 @@
                 },
                 "subject": {
                   "type": "string"
+                },
+                "editor": {
+                  "type": "string",
+                  "enum": ["v2", "v1", "html"]
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
                 }
               },
-              "required": ["id", "name", "subject"]
+              "required": ["id", "name", "subject", "editor", "updatedAt"]
             }
           },
           "mailingLists": {
@@ -130183,6 +130501,79 @@
                           "category": {
                             "type": "string"
                           },
+                          "status": {
+                            "type": "string",
+                            "enum": ["APPROVED", "PAUSED", "DISABLED"]
+                          },
+                          "quality": {
+                            "type": "string",
+                            "enum": ["GREEN", "YELLOW", "RED", "UNKNOWN"]
+                          },
+                          "headerFormat": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": ["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "headerMediaUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "buttons": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": ["REPLY", "URL"]
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "dynamic": {
+                                  "type": "boolean"
+                                },
+                                "actionCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": ["type", "label", "url", "dynamic", "actionCount"]
+                            }
+                          },
+                          "blockedReason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "fields": {
                             "type": "object",
                             "properties": {
@@ -130211,18 +130602,103 @@
                             "required": ["headerVariables", "bodyVariables", "bodyText", "urlButtons"]
                           }
                         },
-                        "required": ["id", "name", "language", "category", "fields"]
+                        "required": [
+                          "id",
+                          "name",
+                          "language",
+                          "category",
+                          "status",
+                          "quality",
+                          "headerFormat",
+                          "headerMediaUrl",
+                          "buttons",
+                          "blockedReason",
+                          "fields"
+                        ]
                       }
                     }
                   },
                   "required": ["id", "label", "provider", "phoneNumber", "templates"]
                 }
+              },
+              "quickReplies": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "shortcut": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "mediaUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "buttons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["REPLY", "URL"]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "dynamic": {
+                            "type": "boolean"
+                          },
+                          "actionCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": ["type", "label", "url", "dynamic", "actionCount"]
+                      }
+                    }
+                  },
+                  "required": ["id", "shortcut", "title", "body", "mediaUrl", "buttons"]
+                }
               }
             },
-            "required": ["available", "reason", "connections"]
+            "required": ["available", "reason", "connections", "quickReplies"]
           }
         },
-        "required": ["baseUrl", "landingPages", "forms", "emailTemplates", "mailingLists", "whatsapp"]
+        "required": [
+          "baseUrl",
+          "sites",
+          "landingPages",
+          "forms",
+          "emailTemplates",
+          "mailingLists",
+          "whatsapp"
+        ]
       },
       "CrmCampaignRecipientPage": {
         "type": "object",
@@ -130690,9 +131166,35 @@
                   }
                 },
                 "required": ["email", "whatsapp", "unknown"]
+              },
+              "byDestination": {
+                "type": "object",
+                "properties": {
+                  "siteView": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "siteForm": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "crmForm": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "landingView": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": ["siteView", "siteForm", "crmForm", "landingView"]
               }
             },
-            "required": ["total", "visits", "submissions", "byChannel"]
+            "required": ["total", "visits", "submissions", "byChannel", "byDestination"]
           },
           "convertedContacts": {
             "type": "array",
@@ -130704,7 +131206,7 @@
                 },
                 "kind": {
                   "type": "string",
-                  "enum": ["LANDING_VIEW", "FORM_SUBMISSION"]
+                  "enum": ["LANDING_VIEW", "FORM_SUBMISSION", "SITE_VIEW", "SITE_FORM_SUBMISSION"]
                 },
                 "channel": {
                   "anyOf": [
@@ -161573,6 +162075,35 @@
               },
               "required": ["path", "label", "views", "conversions", "rate"]
             }
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campaignId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "formSubmissions": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["campaignId", "name", "slug", "views", "formSubmissions"]
+            },
+            "description": "Tráfego vindo de campanhas do CRM: visitas e formulários enviados no site por campanha."
           }
         },
         "required": [
@@ -161588,7 +162119,8 @@
           "utmSources",
           "utmMediums",
           "utmCampaigns",
-          "conversionsByPage"
+          "conversionsByPage",
+          "campaigns"
         ],
         "description": "Métricas anônimas do site no período (dias no fuso do site): visitas, visitantes por dia, páginas, origens, UTM e conversões de formulário por página, com o período anterior de mesmo tamanho para comparação."
       },

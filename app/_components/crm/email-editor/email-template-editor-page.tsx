@@ -131,6 +131,7 @@ export function EmailTemplateEditorPage({
   templateId,
   allowHtml,
   collabUser,
+  returnTo = null,
 }: {
   workspaceId: string
   slug: string
@@ -138,6 +139,8 @@ export function EmailTemplateEditorPage({
   allowHtml: boolean
   /** Who is editing, for real-time co-editing (presence, outlines). */
   collabUser?: CanvasCollaboration['user']
+  /** Campaign wizard that opened the editor (see `UseInCampaignButton`). */
+  returnTo?: string | null
 }) {
   const template = useCrmEmailTemplate(workspaceId, templateId)
   const brand = useCrmEmailBrand(workspaceId)
@@ -187,6 +190,7 @@ export function EmailTemplateEditorPage({
         initialDocument={doc}
         allowHtml={allowHtml}
         collabUser={collabUser}
+        returnTo={returnTo}
       />
     )
   }

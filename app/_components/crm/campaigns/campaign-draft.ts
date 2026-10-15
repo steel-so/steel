@@ -8,6 +8,8 @@ export type CampaignDraft = Pick<
   | 'destinationType'
   | 'landingPageId'
   | 'formId'
+  | 'siteId'
+  | 'sitePageId'
   | 'emailFrom'
   | 'emailSubject'
   | 'emailPreheader'
@@ -20,6 +22,7 @@ export type CampaignDraft = Pick<
   | 'whatsappVariables'
   | 'whatsappText'
   | 'whatsappMediaUrl'
+  | 'whatsappQuickReplyId'
   | 'whatsappDelayHours'
   | 'whatsappLegalBasis'
   | 'scheduledAt'
@@ -37,6 +40,8 @@ export function draftFromCampaign(c: CrmCampaignDetailDTO): CampaignDraft {
     destinationType: c.destinationType,
     landingPageId: c.landingPageId,
     formId: c.formId,
+    siteId: c.siteId,
+    sitePageId: c.sitePageId,
     emailFrom: c.emailFrom,
     emailSubject: c.emailSubject,
     emailPreheader: c.emailPreheader,
@@ -49,6 +54,7 @@ export function draftFromCampaign(c: CrmCampaignDetailDTO): CampaignDraft {
     whatsappVariables: c.whatsappVariables,
     whatsappText: c.whatsappText,
     whatsappMediaUrl: c.whatsappMediaUrl,
+    whatsappQuickReplyId: c.whatsappQuickReplyId,
     whatsappDelayHours: c.whatsappDelayHours,
     whatsappLegalBasis: c.whatsappLegalBasis,
     scheduledAt: c.scheduledAt,

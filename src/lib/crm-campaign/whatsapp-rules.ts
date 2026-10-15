@@ -34,10 +34,57 @@ export const META_DAILY_CONVERSATION_LIMIT = 1000
 
 export interface CampaignWhatsAppConfig {
   provider: CampaignWhatsAppProvider
-  template: { status: string; components: unknown } | null
+  template: {
+    status: string
+    components: unknown
+    quality?: string
+    statusReason?: string | null
+  } | null
   variables: CrmCampaignWhatsAppVariables | null
   text: string | null
   mediaUrl: string | null
+  /** Z-API quick reply sent as the content (its buttons go along);
+   * `undefined` = none chosen, `null` = chosen but deleted since. */
+  quickReply?: { buttons: { type: string; url?: string }[] } | null
+}
+
+/**
+ * Why a Meta template cannot carry a campaign, in pt-BR; `null` when it
+ * can. Paused/disabled templates are refused by Meta, and a red quality
+ * one is one complaint away from being paused — sending a whole campaign
+ * on it risks the number's quality rating too.
+ */
+export function templateBlockedReason(template: {
+  status: string
+  quality?: string
+  statusReason?: string | null
+}): string | null {
+  const reason = template.statusReason?.trim()
+  const suffix = reason ? ` Motivo informado: ${reason}.` : ''
+  if (template.status === 'DISABLED') {
+    return `A Meta desativou este template por qualidade baixa. Crie outro em Comunicação › Templates.${suffix}`
+  }
+  if (template.status === 'PAUSED') {
+    return `A Meta pausou este template por qualidade baixa. Ele volta sozinho em algumas horas — ou é desativado se a qualidade não melhorar.${suffix}`
+  }
+  if (template.status !== 'APPROVED') {
+    return 'O template escolhido não está aprovado pela Meta'
+  }
+  if (template.quality === 'RED') {
+    return 'Qualidade baixa (vermelha) na Meta: um disparo em massa pode pausar o template e derrubar a qualidade do número. Use outro template.'
+  }
+  return null
+}
+
+/** `{link}` in the URL of a quick reply button → the campaign link. */
+export function quickReplyCarriesLink(
+  buttons: { type: string; url?: string }[],
+): boolean {
+  return buttons.some(
+    (button) =>
+      button.type === 'URL' &&
+      Boolean(button.url?.includes(ZAPI_TEXT_TOKENS.link)),
+  )
 }
 
 export function templateFields(components: unknown): TemplateFillableFields {
@@ -62,18 +109,21 @@ export function validateCampaignWhatsApp(
   config: CampaignWhatsAppConfig,
 ): string[] {
   if (config.provider === 'ZAPI') {
+    if (config.quickReply === null) {
+      return ['A resposta rápida escolhida não existe mais']
+    }
     const text = config.text?.trim() ?? ''
     if (!text) return ['Escreva a mensagem do WhatsApp']
-    if (!text.includes(ZAPI_TEXT_TOKENS.link)) {
+    const linkInButton = quickReplyCarriesLink(config.quickReply?.buttons ?? [])
+    if (!text.includes(ZAPI_TEXT_TOKENS.link) && !linkInButton) {
       return ['Inclua {link} na mensagem para levar o contato ao destino']
     }
     return []
   }
 
   if (!config.template) return ['Escolha um template aprovado pela Meta']
-  if (config.template.status !== 'APPROVED') {
-    return ['O template escolhido não está aprovado pela Meta']
-  }
+  const blocked = templateBlockedReason(config.template)
+  if (blocked) return [blocked]
   const fields = templateFields(config.template.components)
   const variables = config.variables
   const missing =
@@ -151,6 +201,12 @@ export function resolveTemplateValues(
     body: resolveMap(fields.body.variableCount, variables?.body, ctx),
     buttons,
   }
+}
+
+/** URL of a quick reply button for one recipient (`{link}` → the
+ * campaign link). */
+export function renderButtonUrl(url: string, ctx: CampaignMessageContext) {
+  return url.replaceAll(ZAPI_TEXT_TOKENS.link, ctx.link)
 }
 
 /** Z-API free text for one recipient. */

@@ -46,3 +46,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0025 | [Campanha multicanal: e-mail + WhatsApp opcional, sem grafo de etapas](./0025-crm-multichannel-campaign-execution.md) | Aceita | 2026-10-09 |
 | 0026 | [Steel Canvas: um motor de arrastar e soltar para e-mail e sites](./0026-steel-canvas-shared-drag-and-drop-engine.md) | Aceita | 2026-10-14 |
 | 0027 | [Coedição em tempo real do Steel Canvas sobre o servidor realtime da Wiki](./0027-canvas-real-time-co-editing.md) | Aceita | 2026-10-15 |
+| 0029 | [Campanhas apontam para páginas de site; a atribuição acontece no site](./0029-crm-campaigns-target-site-pages.md) | Aceita | 2026-10-15 |

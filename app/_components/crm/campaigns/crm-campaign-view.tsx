@@ -14,11 +14,14 @@ export function CrmCampaignView({
   workspaceSlug,
   campaignId,
   initialStep = 0,
+  initialEmailTemplateId = null,
 }: {
   workspaceId: string
   workspaceSlug: string
   campaignId: string
   initialStep?: number
+  /** Back from the e-mail editor (`?emailTemplate=`). */
+  initialEmailTemplateId?: string | null
 }) {
   const campaign = useCrmCampaign(workspaceId, campaignId)
   const options = useCrmCampaignOptions(workspaceId)
@@ -49,6 +52,7 @@ export function CrmCampaignView({
         options={options.data}
         onRefreshOptions={() => void options.refetch()}
         initialStep={initialStep}
+        initialEmailTemplateId={initialEmailTemplateId}
       />
     )
   }

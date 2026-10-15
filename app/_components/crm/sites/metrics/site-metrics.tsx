@@ -30,6 +30,7 @@ import type {
   SiteAnalyticsDTO,
 } from '@/types/site-platform'
 import { SiteStatusBadge } from '../site-status-badge'
+import { SiteCampaignsPanel } from './site-campaigns-panel'
 
 /*
  * "Métricas" of a site. Colors follow the app's dataviz convention
@@ -410,6 +411,7 @@ function MetricsBody({ data }: { data: SiteAnalyticsDTO }) {
           <ConversionsTable data={data} />
         </Panel>
       </div>
+      <SiteCampaignsPanel data={data} />
       <p className='text-muted-foreground text-xs'>
         Métricas anônimas: o visitante é contado por um código diário gerado no
         servidor, sem cookies. Com o aviso de cookies ligado, só conta quem

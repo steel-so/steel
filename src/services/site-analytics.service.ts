@@ -8,6 +8,7 @@ import {
   resolveAnalyticsRange,
   startOfLocalDay,
 } from '@/src/lib/sites/analytics'
+import { CrmCampaignConversionRepository } from '@/src/repositories/crm-campaign.repository'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import {
   SiteAnalyticsRepository,
@@ -109,6 +110,7 @@ export const SiteAnalyticsService = {
       SiteAnalyticsRepository.breakdown(window, 'utmCampaign'),
       SiteAnalyticsRepository.conversionsByPage(window),
       SitePageRepository.listBySite(siteId),
+      CrmCampaignConversionRepository.countBySite(siteId, window),
     ] as const)
     if (!all.ok) return all
     const [
@@ -122,6 +124,7 @@ export const SiteAnalyticsService = {
       campaigns,
       conversions,
       sitePages,
+      campaignRows,
     ] = all.value
 
     const titles = new Map(
@@ -160,6 +163,7 @@ export const SiteAnalyticsService = {
         conversions: row.conversions,
         rate: ratio(row.conversions, row.views),
       })),
+      campaigns: campaignRows,
     })
   },
 

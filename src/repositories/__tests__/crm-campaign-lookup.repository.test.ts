@@ -100,11 +100,13 @@ describe('CrmCampaignLookupRepository', () => {
       id: s.page.id,
       token: s.page.shareToken,
       published: true,
+      name: 'LP',
     })
     expect(expectOk(await R.findForm(ws, s.form.id))).toEqual({
       id: s.form.id,
       token: s.form.publicToken,
       published: false,
+      name: 'Form',
     })
     expect(
       expectOk(await R.findEmailTemplate(ws, s.template.id))?.subject,

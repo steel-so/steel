@@ -117,6 +117,23 @@ describe('SITE_RUNTIME_SCRIPT', () => {
     expect(document.getElementById(SITE_COOKIE_BANNER_ID)).toBeNull()
   })
 
+  it('forwards the CRM campaign link token with the view', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/contato?utm_source=email&utm_campaign=bf&stc=r1-e.sig',
+    )
+    mount({ banner: false })
+    await flush()
+    expect(bodies(fetchMock)[0]).toEqual({
+      pageId: 'p1',
+      path: '/contato',
+      utmSource: 'email',
+      utmCampaign: 'bf',
+      ref: 'r1-e.sig',
+    })
+  })
+
   it('sends the view and loads GA4, GTM and the Pixel after accepting', async () => {
     mount({
       banner: true,

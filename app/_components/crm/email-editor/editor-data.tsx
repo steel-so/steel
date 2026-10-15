@@ -38,6 +38,17 @@ export interface EmailEditorData {
   /** Loads a template the server changed (a restored version) into the
    * open editor: document, subject and name, all marked as saved. */
   applyTemplate: (template: CrmEmailTemplateDTO) => void
+  /** Opened from a campaign wizard ("Criar novo template"): where "Usar na
+   * campanha" goes back to (an in-app path), `null` otherwise. */
+  returnTo?: string | null
+}
+
+/** Wizard URL with the template to select (`emailTemplate=<id>`). */
+export function campaignReturnHref(returnTo: string, templateId: string) {
+  const [path, query = ''] = returnTo.split('?')
+  const params = new URLSearchParams(query)
+  params.set('emailTemplate', templateId)
+  return `${path}?${params.toString()}`
 }
 
 const EmailEditorDataContext = createContext<EmailEditorData>({

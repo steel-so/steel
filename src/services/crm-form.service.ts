@@ -420,8 +420,21 @@ export const CrmFormService = {
     })
     if (!result.ok) return result
 
-    // Multichannel campaign attribution (best-effort, never fails the submit).
-    if (dto.campaign) {
+    // Multichannel campaign attribution (best-effort, never fails the
+    // submit). Sent from a site page (`site.form`) it counts as a site form.
+    if (dto.campaign?.siteSlug) {
+      await CrmCampaignTrackingService.attributeSiteForm(
+        {
+          workspaceId: form.value.workspaceId,
+          submissionId: result.value.id,
+          formId: form.value.id,
+          leadId: createdLeadId,
+          personId: createdPersonId,
+          ref: dto.campaign,
+        },
+        new Date(),
+      )
+    } else if (dto.campaign) {
       await CrmCampaignTrackingService.attribute(
         {
           workspaceId: form.value.workspaceId,

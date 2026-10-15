@@ -1,5 +1,6 @@
 import type { CrmCampaign } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createFakeCampaignSite } from '@/src/__tests__/factories/campaign-site.factory'
 import {
   createFakeCrmCampaign,
   createFakeCrmCampaignRecipient,
@@ -20,7 +21,11 @@ import {
   CrmCampaignRepository,
 } from '@/src/repositories/crm-campaign.repository'
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
-import { CrmCampaignTrackingService } from '../crm-campaign-tracking.service'
+import {
+  CrmCampaignTrackingService,
+  convertsRecipient,
+  matchesDestination,
+} from '../crm-campaign-tracking.service'
 
 const campaigns = vi.mocked(CrmCampaignRepository)
 const recipients = vi.mocked(CrmCampaignRecipientRepository)
@@ -171,6 +176,9 @@ describe('attribute()', () => {
       sourceRef: 'sub1',
       leadId: 'lead1',
       personId: null,
+      siteId: null,
+      sitePageId: null,
+      formId: 'f1',
     })
     expect(recipients.markFirst).toHaveBeenCalledWith(
       { id: 'r1' },
@@ -452,5 +460,232 @@ describe('onWhatsAppInbound()', () => {
     )
     recipients.markReplied.mockResolvedValue(err(databaseError('x')))
     expectErr(await T.onWhatsAppInbound(input, NOW), 'DATABASE_ERROR')
+  })
+})
+
+describe('site destinations', () => {
+  const site = (overrides?: Partial<CrmCampaign>) =>
+    campaign({
+      destinationType: 'SITE_PAGE',
+      formId: null,
+      siteId: 'site1',
+      sitePageId: 'contato',
+      ...overrides,
+    })
+
+  it('should redirect a click to the site page with UTMs and the token', async () => {
+    lookup.findSite.mockResolvedValue(ok(createFakeCampaignSite()))
+    withRecipient(site())
+    const token = createCampaignLinkToken('r1', 'WHATSAPP')
+    const url = new URL(expectOk(await T.resolveClick(token, NOW)))
+    expect(url.pathname).toBe('/s/clinica/contato')
+    expect(url.searchParams.get('utm_source')).toBe('whatsapp')
+    expect(url.searchParams.get('utm_campaign')).toBe('bf')
+    expect(url.searchParams.get('stc')).toBe(token)
+  })
+
+  it('should refuse a click when the page is not live or the site is gone', async () => {
+    const token = createCampaignLinkToken('r1', 'EMAIL')
+    lookup.findSite.mockResolvedValue(ok(createFakeCampaignSite()))
+    withRecipient(site({ sitePageId: 'nova' }))
+    expectErr(await T.resolveClick(token, NOW), 'CRM_CAMPAIGN_LINK_INVALID')
+
+    lookup.findSite.mockResolvedValue(ok(null))
+    withRecipient(site())
+    expectErr(await T.resolveClick(token, NOW), 'CRM_CAMPAIGN_LINK_INVALID')
+
+    lookup.findSite.mockResolvedValue(err(databaseError('x')))
+    expectErr(await T.resolveClick(token, NOW), 'DATABASE_ERROR')
+  })
+
+  it('should attribute a site view and convert on the chosen page', async () => {
+    withRecipient(site())
+    const ref = createCampaignLinkToken('r1', 'EMAIL')
+    expect(
+      expectOk(
+        await T.attribute(
+          {
+            workspaceId: 'ws1',
+            kind: 'SITE_VIEW',
+            sourceRef: 'hash:contato',
+            siteId: 'site1',
+            sitePageId: 'contato',
+            ref: { ref },
+          },
+          NOW,
+        ),
+      ),
+    ).toBe(true)
+    expect(conversions.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'SITE_VIEW',
+        siteId: 'site1',
+        sitePageId: 'contato',
+        formId: null,
+        channel: 'EMAIL',
+      }),
+    )
+    expect(recipients.markFirst).toHaveBeenCalledWith(
+      { id: 'r1' },
+      'convertedAt',
+      NOW,
+    )
+
+    // Another page of the same site counts, without converting.
+    recipients.markFirst.mockClear()
+    expectOk(
+      await T.attribute(
+        {
+          workspaceId: 'ws1',
+          kind: 'SITE_VIEW',
+          sourceRef: 'hash:home',
+          siteId: 'site1',
+          sitePageId: 'home',
+          ref: { ref },
+        },
+        NOW,
+      ),
+    )
+    expect(recipients.markFirst).not.toHaveBeenCalled()
+  })
+
+  it('should attribute a form sent on a site page through the slug', async () => {
+    lookup.findSiteIdBySlug.mockResolvedValue(ok('site1'))
+    campaigns.findBySlug.mockResolvedValue(ok(site()))
+    expect(
+      expectOk(
+        await T.attributeSiteForm(
+          {
+            workspaceId: 'ws1',
+            submissionId: 'sub9',
+            formId: 'f7',
+            leadId: 'lead9',
+            ref: {
+              utmCampaign: 'bf',
+              utmSource: 'email',
+              siteSlug: 'clinica',
+              sitePageId: 'home',
+            },
+          },
+          NOW,
+        ),
+      ),
+    ).toBe(true)
+    expect(lookup.findSiteIdBySlug).toHaveBeenCalledWith('ws1', 'clinica')
+    expect(conversions.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'SITE_FORM_SUBMISSION',
+        sourceRef: 'sub9',
+        siteId: 'site1',
+        sitePageId: 'home',
+        formId: 'f7',
+        leadId: 'lead9',
+        channel: 'EMAIL',
+      }),
+    )
+  })
+
+  it('should skip site forms without a slug, of an unknown site or on failure', async () => {
+    const input = {
+      workspaceId: 'ws1',
+      submissionId: 's',
+      formId: 'f1',
+      ref: { utmCampaign: 'bf', siteSlug: 'clinica' },
+    }
+    expect(
+      expectOk(
+        await T.attributeSiteForm(
+          { ...input, ref: { utmCampaign: 'bf' } },
+          NOW,
+        ),
+      ),
+    ).toBe(false)
+    lookup.findSiteIdBySlug.mockResolvedValueOnce(ok(null))
+    expect(expectOk(await T.attributeSiteForm(input, NOW))).toBe(false)
+    lookup.findSiteIdBySlug.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await T.attributeSiteForm(input, NOW), 'DATABASE_ERROR')
+  })
+})
+
+describe('matchesDestination() / convertsRecipient()', () => {
+  const form = {
+    destinationType: 'FORM' as const,
+    landingPageId: null,
+    formId: 'f1',
+    siteId: null,
+  }
+  const onSite = {
+    destinationType: 'SITE_PAGE' as const,
+    landingPageId: null,
+    formId: null,
+    siteId: 's1',
+  }
+
+  it('should match each kind to its destination', () => {
+    expect(
+      matchesDestination(form, { kind: 'FORM_SUBMISSION', formId: 'f1' }),
+    ).toBe(true)
+    expect(
+      matchesDestination(form, {
+        kind: 'SITE_FORM_SUBMISSION',
+        formId: 'f1',
+        siteId: 'x',
+      }),
+    ).toBe(true)
+    expect(matchesDestination(form, { kind: 'SITE_VIEW', siteId: 's1' })).toBe(
+      false,
+    )
+    expect(
+      matchesDestination(onSite, { kind: 'SITE_VIEW', siteId: 's1' }),
+    ).toBe(true)
+    expect(
+      matchesDestination(onSite, { kind: 'SITE_VIEW', siteId: 's2' }),
+    ).toBe(false)
+    expect(
+      matchesDestination(onSite, {
+        kind: 'SITE_FORM_SUBMISSION',
+        siteId: 's1',
+        formId: 'any',
+      }),
+    ).toBe(true)
+    expect(
+      matchesDestination(onSite, { kind: 'FORM_SUBMISSION', formId: 'f1' }),
+    ).toBe(false)
+    expect(
+      matchesDestination(onSite, { kind: 'LANDING_VIEW', landingPageId: 'l1' }),
+    ).toBe(false)
+  })
+
+  it('should convert on forms, landing views and the chosen site page', () => {
+    expect(
+      convertsRecipient(
+        { destinationType: 'LANDING_PAGE', sitePageId: null },
+        { kind: 'LANDING_VIEW' },
+      ),
+    ).toBe(true)
+    expect(
+      convertsRecipient(
+        { destinationType: 'FORM', sitePageId: null },
+        { kind: 'LANDING_VIEW' },
+      ),
+    ).toBe(false)
+    expect(
+      convertsRecipient(
+        { destinationType: 'SITE_PAGE', sitePageId: 'p1' },
+        { kind: 'SITE_VIEW', sitePageId: 'p1' },
+      ),
+    ).toBe(true)
+    expect(
+      convertsRecipient(
+        { destinationType: 'SITE_PAGE', sitePageId: 'p1' },
+        { kind: 'SITE_VIEW', sitePageId: 'p2' },
+      ),
+    ).toBe(false)
+    expect(
+      convertsRecipient(
+        { destinationType: 'FORM', sitePageId: null },
+        { kind: 'SITE_FORM_SUBMISSION' },
+      ),
+    ).toBe(true)
   })
 })

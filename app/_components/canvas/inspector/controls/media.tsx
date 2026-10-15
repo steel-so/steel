@@ -302,6 +302,30 @@ export function LinkControl({
           className={inputClass}
         />
       </div>
+      {control.quickValues?.length ? (
+        <div className='flex flex-wrap gap-1'>
+          {control.quickValues.map((quick) => {
+            const active =
+              current.type === 'url' && current.value === quick.value
+            return (
+              <button
+                key={quick.value}
+                type='button'
+                aria-pressed={active}
+                onClick={() =>
+                  onChange({ ...current, type: 'url', value: quick.value })
+                }
+                className={cn(
+                  'rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-muted',
+                  active && 'border-primary bg-primary/10 text-foreground',
+                )}
+              >
+                {quick.label}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
       {(current.type === 'url' ||
         current.type === 'file' ||
         current.type === 'page') && (

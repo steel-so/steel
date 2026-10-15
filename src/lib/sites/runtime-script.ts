@@ -7,6 +7,8 @@ import { hasTrackers, type SiteTrackingIds } from './csp'
  *
  * - sends the anonymous page view to `/api/sites/<slug>/views` — right
  *   away when the site has no cookie banner, after "Aceitar" when it has;
+ *   with the UTM parameters and the CRM campaign link token (`stc`), which
+ *   attribute the view to a campaign (ADR 0025);
  * - records a CONVERSION when a CRM form of the page is sent
  *   (`steel:site-form-submitted`, dispatched by `SITE_FORM_SCRIPT`), under
  *   the same rule;
@@ -79,7 +81,7 @@ var anyTracker=!!(t.ga||t.gtm||t.pixel),ask=c.banner||anyTracker;
 function read(){try{var v=localStorage.getItem(key);return v==='accepted'||v==='rejected'?v:null}catch(e){return null}}
 function write(v){try{localStorage.setItem(key,v)}catch(e){}}
 function send(b){try{fetch('/api/sites/'+encodeURIComponent(c.slug)+'/views',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),keepalive:true}).catch(function(){})}catch(e){}}
-function view(){var q=new URLSearchParams(location.search),b={pageId:c.pageId,path:c.path};if(document.referrer)b.referrer=document.referrer;['source','medium','campaign','term','content'].forEach(function(k){var v=q.get('utm_'+k);if(v)b['utm'+k.charAt(0).toUpperCase()+k.slice(1)]=v});send(b)}
+function view(){var q=new URLSearchParams(location.search),b={pageId:c.pageId,path:c.path};if(document.referrer)b.referrer=document.referrer;['source','medium','campaign','term','content'].forEach(function(k){var v=q.get('utm_'+k);if(v)b['utm'+k.charAt(0).toUpperCase()+k.slice(1)]=v});var r=q.get('stc');if(r)b.ref=r;send(b)}
 function load(src){var s=document.createElement('script');s.async=true;s.src=src;if(nonce)s.setAttribute('nonce',nonce);document.head.appendChild(s)}
 function trackers(){
 if(t.ga||t.gtm){window.dataLayer=window.dataLayer||[]}

@@ -58,6 +58,8 @@ export type InspectorControl =
   | {
       kind: 'link'
       targets?: Array<'url' | 'page' | 'anchor' | 'email' | 'phone' | 'file'>
+      /** One-click URL values (e.g. the e-mail's `{{campaign_link}}`). */
+      quickValues?: Array<{ label: string; value: string }>
     }
   /** Width/height with units (px, %, auto, fill). */
   | { kind: 'size'; units?: Array<'px' | '%' | 'auto' | 'fill' | 'vh'> }

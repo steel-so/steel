@@ -40,7 +40,9 @@ import type {
 import {
   CAMPAIGN_STATUS_LABEL,
   CAMPAIGN_STATUS_VARIANT,
+  CONVERSION_KIND_LABEL,
   DELIVERY_LABEL,
+  DESTINATION_TYPE_LABEL,
   formatCampaignDate,
   percent,
   SKIP_REASON_LABEL,
@@ -119,6 +121,53 @@ function Tile({
   )
 }
 
+/** Conversions split by where they happened: site page views, forms sent
+ * on site pages, the CRM form page and legacy landing pages. */
+export function ConversionsByDestination({
+  conversions,
+}: {
+  conversions: CrmCampaignStatsDTO['conversions']
+}) {
+  const split = conversions.byDestination
+  const rows = [
+    { key: 'siteView', label: 'Visitas no site', value: split.siteView },
+    { key: 'siteForm', label: 'Formulários no site', value: split.siteForm },
+    { key: 'crmForm', label: 'Formulário do CRM', value: split.crmForm },
+    {
+      key: 'landingView',
+      label: 'Landing page antiga',
+      value: split.landingView,
+    },
+  ].filter((row) => row.value > 0 || row.key !== 'landingView')
+  const max = Math.max(1, ...rows.map((row) => row.value))
+  return (
+    <section
+      aria-labelledby='conversions-by-destination'
+      className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'
+    >
+      <h2 id='conversions-by-destination' className='font-medium text-sm'>
+        Conversões por destino
+      </h2>
+      <ul className='grid gap-2.5 sm:grid-cols-2'>
+        {rows.map((row) => (
+          <li key={row.key} className='flex min-w-0 flex-col gap-1'>
+            <div className='flex items-baseline justify-between gap-2 text-sm'>
+              <span className='truncate'>{row.label}</span>
+              <span className='font-medium tabular-nums'>{row.value}</span>
+            </div>
+            <div className='h-1.5 w-full rounded-sm bg-muted' aria-hidden>
+              <div
+                className='h-full rounded-sm bg-primary'
+                style={{ width: `${(row.value / max) * 100}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /** Funnel and conversion numbers of one campaign. */
 export function CampaignResults({
   stats,
@@ -175,6 +224,7 @@ export function CampaignResults({
           />
         ) : null}
       </div>
+      <ConversionsByDestination conversions={conversions} />
       <section
         aria-label='Convertidos'
         className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'
@@ -211,7 +261,7 @@ export function CampaignResults({
                   )}
                   <span className='text-muted-foreground'>
                     {' '}
-                    · {row.kind === 'FORM_SUBMISSION' ? 'formulário' : 'visita'}
+                    · {CONVERSION_KIND_LABEL[row.kind]}
                     {row.channel
                       ? ` via ${row.channel === 'EMAIL' ? 'e-mail' : 'WhatsApp'}`
                       : ''}
@@ -499,6 +549,17 @@ export function CrmCampaignDashboard({
         </div>
       </div>
 
+      {campaign.destination ? (
+        <p className='min-w-0 truncate text-muted-foreground text-sm'>
+          {DESTINATION_TYPE_LABEL[campaign.destination.type]}:{' '}
+          <span className='text-foreground'>
+            {campaign.destination.name}
+            {campaign.destination.pageTitle
+              ? ` › ${campaign.destination.pageTitle}`
+              : ''}
+          </span>
+        </p>
+      ) : null}
       {campaign.links.email ? (
         <div className='grid gap-3 rounded-xl border bg-muted/30 p-4 lg:grid-cols-2'>
           <CopyLinkRow label='Link do e-mail' url={campaign.links.email} />
