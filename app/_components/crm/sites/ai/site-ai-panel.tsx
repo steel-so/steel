@@ -337,7 +337,7 @@ function RewriteBlock({
       description='Mesmo conteúdo em outro tom ou tamanho. Produtos, preços, depoimentos e o logo ficam como estão.'
     >
       <form onSubmit={submit} className='grid gap-2'>
-        <div className='grid grid-cols-2 gap-2'>
+        <div className='grid gap-2'>
           <ChoiceSelect
             label='Tom'
             value={tone}
