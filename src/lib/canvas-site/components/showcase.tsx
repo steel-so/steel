@@ -1075,6 +1075,9 @@ export const statsDefinition = defineComponent<SiteStatsProps>({
             <li key={index} className='s-stat'>
               <span
                 className='s-stat-num'
+                // The count-up script rewrites the number before React
+                // hydrates the page.
+                suppressHydrationWarning
                 data-s-count={count ? value : undefined}
                 data-decimals={
                   count && item.decimals ? item.decimals : undefined
@@ -1290,7 +1293,12 @@ export const countdownDefinition = defineComponent<SiteCountdownProps>({
       >
         {units.map((unit) => (
           <div key={unit} className='s-cd-unit'>
-            <span className='s-cd-num' data-unit={unit}>
+            <span
+              className='s-cd-num'
+              data-unit={unit}
+              // Ticks every second, before and after hydration.
+              suppressHydrationWarning
+            >
               {String(parts[unit]).padStart(2, '0')}
             </span>
             {p.showLabels && (

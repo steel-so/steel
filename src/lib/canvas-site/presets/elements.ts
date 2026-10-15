@@ -108,7 +108,11 @@ function heroSlider(kit: SiteKit): NodeSpec {
                       preset: 'h2',
                       color: kit.heroText,
                     }),
-                    text(copy, { preset: 'lead', color: 'token:muted' }),
+                    text(copy, {
+                      preset: 'lead',
+                      // Readable on the kit's hero band (dark in SaaS).
+                      color: kit.heroText ? '#ffffffcc' : 'token:muted',
+                    }),
                     button('Comece agora', anchor('contato'), {
                       size: 'lg',
                     }),

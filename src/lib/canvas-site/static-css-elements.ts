@@ -33,7 +33,9 @@ const GALLERY = [
 ]
 
 const CAROUSEL = [
-  `${r} .s-carousel{position:relative;min-width:0}`,
+  // Full width even in a centered flex column: the track must not size the
+  // carousel by its (scrolling) content.
+  `${r} .s-carousel{position:relative;width:100%;max-width:100%;min-width:0}`,
   `${r} .s-carousel-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;overscroll-behavior-x:contain;list-style:none;margin:0;padding:0}`,
   `${r} .s-carousel-track::-webkit-scrollbar{display:none}`,
   `${r} .s-carousel-track>*{scroll-snap-align:start;min-width:0}`,
