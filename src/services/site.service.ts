@@ -1,5 +1,6 @@
 import type { Prisma, Site, SiteVersion } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { logger } from '@/lib/axiom/logger'
 import { appError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 import { revalidateSites } from '@/src/lib/sites/cache'
@@ -33,6 +34,7 @@ import {
 } from '@/src/schemas/site.schema'
 import type { SiteDTO, SiteSummaryDTO, SiteVersionDTO } from '@/types/site'
 import { assertSitesPermission, authorizeSite } from './site-access'
+import { SiteExperimentService } from './site-experiment.service'
 
 /** Abuse guard, far above any real workspace. */
 export const MAX_SITES_PER_WORKSPACE = 100
@@ -333,6 +335,18 @@ export const SiteService = {
         reason: published.error.code,
       })
       return published
+    }
+
+    // A/B tests whose variants this publish changed start a new run.
+    const synced = await SiteExperimentService.syncWithPublication(
+      siteId,
+      snapshot.value,
+    )
+    if (!synced.ok) {
+      logger.warn('sites.experiment.sync_failed', {
+        siteId,
+        code: synced.error.code,
+      })
     }
 
     auditMutation({

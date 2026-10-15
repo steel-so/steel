@@ -19,6 +19,7 @@ vi.mock('@/src/repositories/site-page.repository')
 vi.mock('@/src/repositories/site-global.repository')
 vi.mock('@/src/lib/sites/cache')
 vi.mock('@/lib/axiom/audit')
+vi.mock('@/src/services/site-experiment.service')
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { revalidateSites } from '@/src/lib/sites/cache'
@@ -27,6 +28,7 @@ import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteGlobalRepository } from '@/src/repositories/site-global.repository'
 import { SitePageRepository } from '@/src/repositories/site-page.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import { SiteExperimentService } from '@/src/services/site-experiment.service'
 import {
   findFreeSiteSlug,
   MAX_SITES_PER_WORKSPACE,
@@ -305,6 +307,25 @@ describe('SiteService.publish', () => {
   beforeEach(() => {
     pages.listWithDocuments.mockResolvedValue(ok([home]))
     globals.listBySite.mockResolvedValue(ok([header]))
+    vi.mocked(SiteExperimentService.syncWithPublication).mockResolvedValue(
+      ok([]),
+    )
+  })
+
+  it('restarts the A/B tests the publish changed, never failing on them', async () => {
+    const version = createFakeSiteVersion({ siteId: site.id, number: 5 })
+    sites.publish.mockResolvedValue(
+      ok({ site: { ...site, status: 'PUBLISHED' }, version }),
+    )
+    expectOk(await SiteService.publish('u1', WS, site.id))
+    expect(SiteExperimentService.syncWithPublication).toHaveBeenCalledWith(
+      site.id,
+      expect.objectContaining({ pages: expect.any(Array) }),
+    )
+    vi.mocked(SiteExperimentService.syncWithPublication).mockResolvedValueOnce(
+      err(databaseError()),
+    )
+    expectOk(await SiteService.publish('u1', WS, site.id))
   })
 
   it('snapshots the draft into a live version', async () => {

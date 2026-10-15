@@ -37,6 +37,7 @@ import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SiteDocument } from '@/src/lib/canvas-site/render'
 import { siteRuntimeScripts } from '@/src/lib/canvas-site/runtime'
 import { parseSiteTheme } from '@/src/lib/canvas-site/theme'
+import { applyVariantChoices } from '@/src/lib/sites/experiments'
 import { orderPages, toPageLinks } from './site-editor-context'
 import { SiteStatusBadge } from './site-status-badge'
 
@@ -269,7 +270,9 @@ export function SitePreview({
       page.data
         ? {
             header: header?.document,
-            page: page.data.document,
+            // A/B variants stay out of the preview: it shows the original,
+            // as a visitor without a running test sees it.
+            page: applyVariantChoices(page.data.document),
             footer: footer?.document,
           }
         : null,
