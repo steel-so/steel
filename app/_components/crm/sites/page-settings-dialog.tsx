@@ -20,13 +20,20 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
+import { useSiteSearchReport } from '@/src/hooks/use-site-search'
+import {
+  SEARCH_PILLAR_LABELS,
+  SEARCH_PILLARS,
+} from '@/src/lib/sites/search/types'
 import { SITE_OG_IMAGE_PATH } from '@/src/lib/sites/seo'
 import {
   SITEMAP_CHANGE_FREQUENCIES,
   type SitePageSeoDTO,
 } from '@/src/schemas/site-page.schema'
+import { parseSearchContent } from '@/src/schemas/site-search.schema'
 import type { SitePageSummaryDTO } from '@/types/site'
 import { MediaPickButton } from './media-pick-button'
+import { ScorePill, SEARCH_TONE_VARS } from './search/search-ui'
 import { orderPages, useSiteEditor } from './site-editor-context'
 import { SettingsField, SwitchRow } from './site-settings-dialog'
 
@@ -144,7 +151,7 @@ export function PageSettingsDialog({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
-  const { site, pages, api, workspaceId } = useSiteEditor()
+  const { site, pages, api, workspaceId, slug: workspaceSlug } = useSiteEditor()
   const id = useId()
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
@@ -156,7 +163,11 @@ export function PageSettingsDialog({
   const [canonical, setCanonical] = useState('')
   const [priority, setPriority] = useState(DEFAULT)
   const [frequency, setFrequency] = useState(DEFAULT)
+  const [keyword, setKeyword] = useState('')
   const [saving, setSaving] = useState(false)
+  // Scores of the saved draft ("Buscadores"), only while open.
+  const report = useSiteSearchReport(workspaceId, site.id, page !== null)
+  const scores = report.data?.pages.find((item) => item.id === page?.id)?.scores
 
   useEffect(() => {
     if (!page) return
@@ -174,6 +185,7 @@ export function PageSettingsDialog({
         : String(page.seo.sitemapPriority),
     )
     setFrequency(page.seo.changeFrequency ?? DEFAULT)
+    setKeyword(parseSearchContent(page.seo.search).focusKeyword ?? '')
   }, [page])
 
   if (!page) return null
@@ -212,6 +224,10 @@ export function PageSettingsDialog({
             frequency === DEFAULT
               ? undefined
               : (frequency as SitePageSeoDTO['changeFrequency']),
+          search: {
+            ...parseSearchContent(page.seo.search),
+            focusKeyword: keyword.trim() || undefined,
+          },
         },
       })
       notify.success('Página atualizada.')
@@ -290,6 +306,39 @@ export function PageSettingsDialog({
             )}
 
             <h3 className='pt-1 font-medium text-sm'>SEO</h3>
+            <div
+              className={`flex flex-wrap items-center gap-2 ${SEARCH_TONE_VARS}`}
+              data-testid='page-search-scores'
+            >
+              {scores
+                ? SEARCH_PILLARS.map((pillar) => (
+                    <ScorePill
+                      key={pillar}
+                      score={scores[pillar]}
+                      label={SEARCH_PILLAR_LABELS[pillar]}
+                    />
+                  ))
+                : null}
+              <a
+                href={`/${workspaceSlug}/crm/sites/${site.id}/search`}
+                className='text-primary text-xs underline-offset-4 hover:underline'
+              >
+                Buscadores: análise completa
+              </a>
+            </div>
+            <SettingsField
+              label='Palavra-chave principal'
+              htmlFor={`${id}-keyword`}
+              hint='A busca que esta página deve responder. Guia as verificações de SEO, AEO e GEO.'
+            >
+              <Input
+                id={`${id}-keyword`}
+                value={keyword}
+                maxLength={100}
+                placeholder='Ex.: implante dentário em São Paulo'
+                onChange={(event) => setKeyword(event.target.value)}
+              />
+            </SettingsField>
             <SearchPreview
               title={seoTitle || title}
               description={description || site.settings.seo.description || ''}
