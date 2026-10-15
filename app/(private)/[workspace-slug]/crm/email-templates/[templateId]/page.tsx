@@ -1,7 +1,7 @@
 import { Mail01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { EmailBuilderEditorPage } from '@/app/_components/crm/email-builder/email-builder-editor'
+import { EmailTemplateEditorPage } from '@/app/_components/crm/email-editor/email-template-editor-page'
 import {
   HeaderBreadcrumbCrumb,
   HeaderBreadcrumbList,
@@ -9,6 +9,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { SteelIcon } from '@/components/icon/icon'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { isPrivilegedRole } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
@@ -46,10 +47,11 @@ export default async function CrmEmailTemplateEditorPage({
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
       <div className='min-h-0 flex-1'>
-        <EmailBuilderEditorPage
+        <EmailTemplateEditorPage
           workspaceId={membership.value.workspaceId}
           slug={slug}
           templateId={templateId}
+          allowHtml={isPrivilegedRole(membership.value.role)}
         />
       </div>
     </div>

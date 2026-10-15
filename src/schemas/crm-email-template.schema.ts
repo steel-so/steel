@@ -2,6 +2,7 @@ import z from 'zod'
 import { isMarketingTemplateId } from '@/src/lib/crm-marketing-templates'
 import {
   EmailBuilderLayoutIdSchema,
+  EmailCanvasDocumentSchema,
   EmailTemplateDocumentSchema,
 } from './crm-email-builder.schema'
 
@@ -29,12 +30,16 @@ export const CreateCrmEmailTemplateSchema = z
     // 2 starts the layout as a Steel Canvas document (free editor); 1 or
     // omitted keeps the locked v1 layout.
     builderVersion: z.union([z.literal(1), z.literal(2)]).optional(),
+    // A ready Steel Canvas document (v2) — e.g. the blank starter of the
+    // gallery. Wins over `builderLayout`; validated by the service.
+    builderDocument: EmailCanvasDocumentSchema.optional(),
   })
   .refine(
     (data) =>
       Boolean(data.templateId) ||
       Boolean(data.contentHtml) ||
-      Boolean(data.builderLayout),
+      Boolean(data.builderLayout) ||
+      Boolean(data.builderDocument),
     {
       message: 'Informe o conteúdo ou escolha um layout',
       path: ['contentHtml'],

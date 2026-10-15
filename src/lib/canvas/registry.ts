@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from 'react'
 import type { ZodType } from 'zod'
 import type {
   CanvasBreakpoint,
+  CanvasDocument,
   CanvasFragment,
   CanvasNode,
   CanvasProps,
@@ -145,6 +146,14 @@ export interface CanvasComponentDefinition<
   /** Optional fragment inserted from the palette instead of a lone node
    * (e.g. "2 colunas" inserts a row with two columns). */
   template?: () => CanvasFragment
+  /**
+   * What the render reads from the document besides the node itself (a
+   * column's sibling widths, the body font a block inherits). The editor
+   * re-renders the node whenever one of these values changes (compared
+   * entry by entry with `Object.is`); without it a memoized node only
+   * redraws when its own object changes.
+   */
+  dependsOn?: (doc: CanvasDocument, node: CanvasNode<P>) => readonly unknown[]
   render: (props: CanvasRenderProps<P>) => ReactNode
 }
 

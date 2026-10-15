@@ -15,6 +15,7 @@ import { toCrmEmailTemplateDTO } from '@/src/mappers/crm-email-marketing.mapper'
 import { CrmEmailTemplateRepository } from '@/src/repositories/crm-email-template.repository'
 import type {
   EmailBuilderDocument,
+  EmailBuilderLayoutId,
   EmailCanvasDocument,
 } from '@/src/schemas/crm-email-builder.schema'
 import type {
@@ -73,17 +74,20 @@ export const CrmEmailTemplateService = {
     if (!membership.ok) return membership
 
     let data: Parameters<typeof CrmEmailTemplateRepository.create>[0]
-    if (dto.builderLayout) {
-      // Visual builder: starts from the layout's default content, as a
-      // locked v1 layout or (builderVersion 2) a Steel Canvas document.
+    if (dto.builderDocument || dto.builderLayout) {
+      // Visual builder: a ready Steel Canvas document, or the layout's
+      // default content as a locked v1 layout or (builderVersion 2) a Steel
+      // Canvas document.
       const built = await buildBuilderTemplateContent(
         workspaceId,
-        dto.builderVersion === 2
-          ? (createEmailDocumentFromLayout(
-              dto.builderLayout,
-            ) as unknown as EmailCanvasDocument)
-          : createBuilderDocument(dto.builderLayout),
+        dto.builderDocument ??
+          (dto.builderVersion === 2
+            ? (createEmailDocumentFromLayout(
+                dto.builderLayout as EmailBuilderLayoutId,
+              ) as unknown as EmailCanvasDocument)
+            : createBuilderDocument(dto.builderLayout as EmailBuilderLayoutId)),
         dto.subject,
+        { privileged: membership.value.isPrivileged },
       )
       if (!built.ok) return built
       data = {

@@ -13,17 +13,21 @@ import {
   ZoomOutAreaIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
-  useCrmEmailBrand,
-  useCrmEmailTemplate,
   useSaveCrmEmailBrand,
   useSaveCrmEmailBuilderTemplate,
   useSendCrmEmailTest,
@@ -93,75 +97,26 @@ function isTypingTarget(target: EventTarget | null) {
   )
 }
 
-/** Loads the template and the brand, then mounts the editor. */
-export function EmailBuilderEditorPage({
-  workspaceId,
-  slug,
-  templateId,
-}: {
-  workspaceId: string
-  slug: string
-  templateId: string
-}) {
-  const template = useCrmEmailTemplate(workspaceId, templateId)
-  const brand = useCrmEmailBrand(workspaceId)
-
-  if (template.isError || brand.isError) {
-    return (
-      <div className='p-6 text-muted-foreground text-sm'>
-        Não foi possível carregar o template.
-      </div>
-    )
-  }
-  if (!template.data || !brand.data) {
-    return (
-      <div className='flex h-full flex-col gap-3 p-4'>
-        <Skeleton className='h-10 w-full' />
-        <Skeleton className='min-h-0 flex-1' />
-      </div>
-    )
-  }
-  if (template.data.kind !== 'BUILDER' || !template.data.builderDocument) {
-    return (
-      <div className='p-6 text-muted-foreground text-sm'>
-        Este template foi criado no editor livre — abra-o pela lista de
-        templates.
-      </div>
-    )
-  }
-  if (template.data.builderDocument.version !== 1) {
-    return (
-      <div className='p-6 text-muted-foreground text-sm'>
-        Este template usa o novo editor de arrastar e soltar, que ainda está
-        chegando a esta tela.
-      </div>
-    )
-  }
-  return (
-    <EmailBuilderEditor
-      workspaceId={workspaceId}
-      slug={slug}
-      template={template.data}
-      brand={brand.data}
-    />
-  )
-}
-
 /**
  * Visual e-mail builder: the rendered e-mail on top (desktop/mobile, light/
  * dark simulation, zoom), the content controls in the bottom panel. Edits
- * have undo/redo and autosave; the structure of the layout is locked.
+ * have undo/redo and autosave; the structure of the layout is locked. Opens
+ * v1 templates only; `EmailTemplateEditorPage` (crm/email-editor) loads the
+ * template and picks this or the canvas editor.
  */
 export function EmailBuilderEditor({
   workspaceId,
   slug,
   template,
   brand: savedBrand,
+  topBarExtra,
 }: {
   workspaceId: string
   slug: string
   template: CrmEmailTemplateDTO
   brand: CrmEmailBrandDTO
+  /** Extra top-bar content (the "Abrir no novo editor" action). */
+  topBarExtra?: ReactNode
 }) {
   const initial = useMemo<Draft>(
     () => ({
@@ -389,6 +344,7 @@ export function EmailBuilderEditor({
         >
           {SAVE_LABEL[saveState]}
         </span>
+        {topBarExtra}
 
         <div className='ml-auto flex flex-wrap items-center gap-1'>
           <Button

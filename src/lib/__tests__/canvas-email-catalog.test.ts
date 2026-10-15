@@ -6,6 +6,7 @@ import {
   emailDocument,
   renderEditing,
 } from '@/src/__tests__/helpers/email-canvas'
+import { getNode } from '@/src/lib/canvas/nodes'
 import {
   applyOp,
   canDrop,
@@ -15,6 +16,7 @@ import {
 } from '@/src/lib/canvas/ops'
 import { getIn } from '@/src/lib/canvas/path'
 import type { InspectorField } from '@/src/lib/canvas/registry'
+import type { CanvasNode } from '@/src/lib/canvas/types'
 import {
   createEmailCatalog,
   EMAIL_BLOCK_TYPES,
@@ -22,6 +24,7 @@ import {
   EMAIL_CATALOG_VERSION,
   EMAIL_CATEGORIES,
   emailCatalog,
+  emailDependencies,
 } from '@/src/lib/canvas-email/catalog'
 import { columnWidths } from '@/src/lib/canvas-email/components/layout'
 import {
@@ -371,4 +374,40 @@ describe('editor attributes (shell contract)', () => {
       expect(output).not.toContain('data-canvas-id')
     },
   )
+})
+
+describe('render dependencies (editor redraws)', () => {
+  const doc = emailDocument([[[{ type: 'email.text' }], [], []]])
+  const deps = (d: typeof doc, id: string) =>
+    emailDependencies(d, getNode(d, id) as CanvasNode)
+
+  it('blocks and sections depend on the body props only', () => {
+    expect(deps(doc, 'b0')).toEqual([doc.nodes.root.props])
+    expect(deps(doc, 's0')).toEqual([doc.nodes.root.props])
+    expect(emailCatalog.components['email.text'].dependsOn).toBe(
+      emailDependencies,
+    )
+    expect(emailCatalog.components['email.body'].dependsOn).toBeUndefined()
+  })
+
+  it('a column depends on the widths of all its siblings', () => {
+    const before = deps(doc, 's0c1')
+    expect(before).toEqual([doc.nodes.root.props, 3, null, null, null])
+    const resized = applyOp(
+      doc,
+      { kind: 'update', id: 's0c0', set: { width: 50 } },
+      emailCatalog,
+    )
+    if (!resized.ok) throw new Error('update refused')
+    const after = deps(resized.value.doc, 's0c1')
+    expect(after).toEqual([doc.nodes.root.props, 3, 50, null, null])
+    // The sibling's render really changes with it: 50% + 25% + 25%.
+    const html = renderEditing(resized.value.doc)
+    expect(html).toMatch(/data-canvas-id="s0c1"[^>]*width="25%"/)
+  })
+
+  it('a detached column depends on the body alone', () => {
+    const orphan = { id: 'x', type: 'email.column', props: {}, children: [] }
+    expect(emailDependencies(doc, orphan)).toEqual([doc.nodes.root.props, 0])
+  })
 })

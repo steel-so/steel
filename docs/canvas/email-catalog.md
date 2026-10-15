@@ -82,16 +82,45 @@ modelos, o texto, os links e as imagens do e-mail antigo e do convertido.
   alternativo, botão/NPS/vídeo sem link, variável desconhecida ou mal
   escrita.
 
-## Para a fatia do editor
+## Editor no CRM
 
-- Montar o catálogo com o contexto de render:
-  `createEmailCatalog({ allowHtml, context: () => ({ ...ctx, doc: () => store.getState().doc }) })`
-  (marca, produtos e o documento — a coluna usa para dividir larguras). O
-  contexto é um valor passado como prop (`ctx`), não contexto do React: as
-  rotas do servidor renderizam o e-mail no ambiente de Server Components,
-  onde `createContext` não existe.
-- `createEmailCatalog({ allowHtml })` esconde o bloco de HTML da paleta de
-  quem não é admin; `EMAIL_TYPOGRAPHY_FONTS` alimenta o controle de
-  tipografia; `emailColorTokens(brand)` os tokens de cor.
-- O campo `productId` usa um controle de texto provisório: trocar por um
-  seletor de produtos do CRM (`custom`).
+`/<workspace>/crm/email-templates/new` e `/<workspace>/crm/email-templates/<id>`
+(código em `app/_components/crm/email-editor/`).
+
+- **Novo template**: galeria com "Em branco" (`createBlankEmailDocument`:
+  uma coluna vazia e o rodapé) e os `EMAIL_STARTERS` com miniatura real na
+  marca do workspace, filtro por categoria. Cria com
+  `POST …/email-templates` — `builderLayout` + `builderVersion: 2` para um
+  modelo, `builderDocument` para o em branco.
+- **Editor**: `CanvasEditor` com o catálogo de `createEditorEmailCatalog`
+  (contexto de render lido a cada render, bloco de HTML só para
+  OWNER/ADMIN, seletor de produtos do CRM no lugar do campo de texto de
+  `productId`). O store é criado pela página e passado em `store`, porque o
+  contexto do catálogo lê o documento vivo.
+- **Barra superior**: voltar, nome do template e o "envelope" (assunto e
+  texto de pré-visualização num popover). Nome e assunto salvam sozinhos
+  (1 s) pelo `PATCH` do template; o documento, pelo autosave do shell como
+  `builderDocument` v2. À direita: Checklist, Visualizar e Enviar teste.
+- **Checklist** (`emailChecklist`): contador na barra; clicar num item
+  seleciona o bloco. Antes do teste o checklist aparece de novo — erros
+  (assunto vazio, variável errada) impedem o envio, avisos não.
+- **Visualizar**: o HTML exato do envio, no computador ou celular, claro ou
+  escuro, com as variáveis de um contato do CRM, do contato de exemplo ou
+  cruas, e a linha da caixa de entrada (remetente, assunto, pré-visualização).
+- **Abas extras**: "Estilos globais" (fonte, cores e largura do e-mail;
+  estilo de todos os botões de uma vez; marca do workspace) e "Variáveis"
+  (adiciona a variável ao título/texto/botão selecionado, ao assunto, ou
+  copia).
+- **Templates v1** abrem no editor antigo com "Abrir no novo editor":
+  converte com `openEmailDocument` e salva como v2 depois de uma
+  confirmação. Não tem volta.
+- **Lista**: o tipo "Novo editor" marca os templates v2.
+
+### Redesenho entre nós
+
+Um componente cuja aparência depende de outros nós declara `dependsOn(doc,
+node)` (registro do motor). O `NodeView` assina esses valores e redesenha
+o nó quando um deles muda. O catálogo de e-mail declara as props do corpo
+para todos (fonte, cores, largura) e as larguras das irmãs para a coluna —
+antes, mudar a largura de uma coluna só redesenhava as outras na próxima
+mudança da seção.

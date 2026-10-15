@@ -1,5 +1,10 @@
 # CRM · Editor visual de e-mail (templates prontos)
 
+> **Templates novos usam o editor de arrastar e soltar** (Steel Canvas,
+> documento v2): ver [canvas/email-catalog.md](./canvas/email-catalog.md).
+> Este documento descreve o editor da versão 1, que continua abrindo os
+> templates antigos até o usuário escolher "Abrir no novo editor".
+
 Editor de e-mail do CRM no estilo do Storybook / react.email: o e-mail
 renderizado fica em cima, e uma **barra inferior** edita o **conteúdo** do
 bloco selecionado. A estrutura do template é travada — o usuário troca
