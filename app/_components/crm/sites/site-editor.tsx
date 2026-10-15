@@ -7,6 +7,7 @@ import {
   Image01Icon,
   LayoutTopIcon,
   PaintBoardIcon,
+  SearchFocusIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -66,6 +67,7 @@ import { SiteFormPicker } from './form-picker'
 import { GlobalsPanel } from './globals-panel'
 import { MediaPanel } from './media-panel'
 import { PagesPanel } from './pages-panel'
+import { SearchPanel } from './search/search-panel'
 import {
   type SiteEditorContextValue,
   SiteEditorProvider,
@@ -89,6 +91,7 @@ const TAB_ICONS = {
   'site-media': Image01Icon,
   'site-symbols': ComponentIcon,
   'site-ai': AiMagicIcon,
+  'site-search': SearchFocusIcon,
 }
 
 const TABS: CanvasSidebarTab[] = [
@@ -127,6 +130,12 @@ const TABS: CanvasSidebarTab[] = [
     label: 'IA',
     icon: 'site-ai',
     render: ({ store }) => <SiteAiPanel store={store} />,
+  },
+  {
+    id: 'site-search',
+    label: 'Buscadores',
+    icon: 'site-search',
+    render: () => <SearchPanel />,
   },
 ]
 

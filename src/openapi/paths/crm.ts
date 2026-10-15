@@ -16,6 +16,7 @@ import { crmReportsRoutes } from './crm/reports'
 import { crmSettingsRoutes } from './crm/settings'
 import { crmSiteAiRoutes } from './crm/site-ai'
 import { crmSitePlatformRoutes } from './crm/site-platform'
+import { crmSiteSearchRoutes } from './crm/site-search'
 import { crmSiteStudioRoutes } from './crm/site-studio'
 import { crmSitesRoutes } from './crm/sites'
 import { crmSocialRoutes } from './crm/social'
@@ -48,6 +49,7 @@ const routes: RouteConfig[] = [
   ...crmSiteStudioRoutes,
   ...crmSiteAiRoutes,
   ...crmSitePlatformRoutes,
+  ...crmSiteSearchRoutes,
   ...crmSocialRoutes,
   ...crmWorkflowsRoutes,
 ]

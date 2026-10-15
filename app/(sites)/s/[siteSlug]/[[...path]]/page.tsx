@@ -19,6 +19,7 @@ import {
   siteLinkBase,
 } from '@/src/lib/sites/host'
 import { matchRedirect } from '@/src/lib/sites/redirects'
+import { searchSettingsOf } from '@/src/lib/sites/search/context'
 import {
   canonicalUrlOf,
   fallbackFavicon,
@@ -34,6 +35,8 @@ import {
   publicPathOf,
   type SiteSnapshot,
 } from '@/src/lib/sites/snapshot'
+import { DEFAULT_SITE_TIMEZONE } from '@/src/schemas/site.schema'
+import { parseSearchContent } from '@/src/schemas/site-search.schema'
 import { SITE_CHROME_CSS } from '../../../_components/site-chrome-css'
 import { SiteRuntime } from '../../../_components/site-runtime'
 import {
@@ -72,6 +75,8 @@ export async function generateMetadata({
   ]
   const noindex = Boolean(settings.seo.noindex || page.seo.noindex)
   const { colors } = parseSiteTheme(site.snapshot.theme)
+  // Ownership checks of Google Search Console and Bing Webmaster Tools.
+  const { verification } = searchSettingsOf(settings)
 
   return {
     metadataBase: new URL(site.baseUrl),
@@ -90,6 +95,16 @@ export async function generateMetadata({
       ...(settings.faviconUrl ? { apple: settings.faviconUrl } : {}),
     },
     manifest: null,
+    ...(verification.google || verification.bing
+      ? {
+          verification: {
+            ...(verification.google ? { google: verification.google } : {}),
+            ...(verification.bing
+              ? { other: { 'msvalidate.01': verification.bing } }
+              : {}),
+          },
+        }
+      : {}),
     openGraph: {
       type: 'website',
       locale: 'pt_BR',
@@ -190,6 +205,14 @@ export default async function PublishedSitePage({ params }: PageProps) {
     formAction: (token) => `/api/crm/forms/${encodeURIComponent(token)}/submit`,
     symbols,
   }
+  // "Atualizado em …" (Buscadores → freshness), in the site's timezone.
+  const updatedLabel =
+    page.updatedAt && parseSearchContent(page.seo.search).showUpdatedDate
+      ? `Atualizado em ${new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'long',
+          timeZone: snapshot.settings.timezone ?? DEFAULT_SITE_TIMEZONE,
+        }).format(new Date(page.updatedAt))}`
+      : null
   const css = compileSiteCss(documents, {
     theme: parseSiteTheme(snapshot.theme),
   })
@@ -227,6 +250,11 @@ export default async function PublishedSitePage({ params }: PageProps) {
       />
       {header ? <SiteDocument doc={header} context={context} /> : null}
       <SiteDocument doc={page.document} context={context} />
+      {updatedLabel && page.updatedAt ? (
+        <p className='ss-updated'>
+          <time dateTime={page.updatedAt}>{updatedLabel}</time>
+        </p>
+      ) : null}
       {footer ? <SiteDocument doc={footer} context={context} /> : null}
       {runtime.scripts.map((script) => (
         <script

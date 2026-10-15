@@ -12086,7 +12086,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "402": {
-            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED_2"
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED_3"
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_AI_AGENT_MODE_DISABLED_AI_DISABLED_AI_AUTOPILOT_DISABLED"
@@ -37958,6 +37958,258 @@
                             "maxLength": 2000
                           }
                         }
+                      },
+                      "search": {
+                        "type": "object",
+                        "properties": {
+                          "business": {
+                            "default": {},
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "Organization",
+                                  "LocalBusiness",
+                                  "ProfessionalService",
+                                  "MedicalBusiness",
+                                  "Dentist",
+                                  "LegalService",
+                                  "AccountingService",
+                                  "FinancialService",
+                                  "RealEstateAgent",
+                                  "Store",
+                                  "Restaurant",
+                                  "BeautySalon",
+                                  "AutomotiveBusiness",
+                                  "EducationalOrganization",
+                                  "HomeAndConstructionBusiness",
+                                  "SportsActivityLocation",
+                                  "TravelAgency"
+                                ]
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              "legalName": {
+                                "type": "string",
+                                "maxLength": 160
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 600
+                              },
+                              "category": {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              "address": {
+                                "type": "object",
+                                "properties": {
+                                  "street": {
+                                    "type": "string",
+                                    "maxLength": 200
+                                  },
+                                  "district": {
+                                    "type": "string",
+                                    "maxLength": 120
+                                  },
+                                  "city": {
+                                    "type": "string",
+                                    "maxLength": 120
+                                  },
+                                  "region": {
+                                    "type": "string",
+                                    "maxLength": 60
+                                  },
+                                  "postalCode": {
+                                    "type": "string",
+                                    "maxLength": 20
+                                  },
+                                  "country": {
+                                    "type": "string",
+                                    "maxLength": 2
+                                  }
+                                }
+                              },
+                              "geo": {
+                                "type": "object",
+                                "properties": {
+                                  "latitude": {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  "longitude": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  }
+                                },
+                                "required": ["latitude", "longitude"]
+                              },
+                              "phone": {
+                                "type": "string",
+                                "maxLength": 40
+                              },
+                              "email": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "format": "email"
+                              },
+                              "hours": {
+                                "maxItems": 14,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "days": {
+                                      "minItems": 1,
+                                      "maxItems": 7,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                                      }
+                                    },
+                                    "opens": {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    },
+                                    "closes": {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    }
+                                  },
+                                  "required": ["days", "opens", "closes"]
+                                }
+                              },
+                              "serviceArea": {
+                                "maxItems": 30,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120
+                                }
+                              },
+                              "foundingYear": {
+                                "type": "integer",
+                                "minimum": 1800,
+                                "maximum": 2100
+                              },
+                              "logoUrl": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sameAs": {
+                                "maxItems": 15,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                }
+                              },
+                              "people": {
+                                "maxItems": 10,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 120
+                                    },
+                                    "role": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    }
+                                  },
+                                  "required": ["name"]
+                                }
+                              },
+                              "priceRange": {
+                                "type": "string",
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "crawlers": {
+                            "default": {},
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string",
+                              "enum": [
+                                "Googlebot",
+                                "Bingbot",
+                                "GPTBot",
+                                "OAI-SearchBot",
+                                "ChatGPT-User",
+                                "PerplexityBot",
+                                "ClaudeBot",
+                                "Google-Extended",
+                                "CCBot"
+                              ]
+                            },
+                            "additionalProperties": {
+                              "type": "boolean"
+                            }
+                          },
+                          "llms": {
+                            "default": {
+                              "enabled": true
+                            },
+                            "type": "object",
+                            "properties": {
+                              "enabled": {
+                                "default": true,
+                                "type": "boolean"
+                              },
+                              "notes": {
+                                "type": "string",
+                                "maxLength": 1000
+                              }
+                            }
+                          },
+                          "indexNow": {
+                            "default": {
+                              "enabled": false
+                            },
+                            "type": "object",
+                            "properties": {
+                              "enabled": {
+                                "default": false,
+                                "type": "boolean"
+                              },
+                              "key": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{8,128}$"
+                              }
+                            }
+                          },
+                          "verification": {
+                            "default": {},
+                            "type": "object",
+                            "properties": {
+                              "google": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "pattern": "^[\\w-]*$"
+                              },
+                              "bing": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "pattern": "^[\\w-]*$"
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -38876,6 +39128,258 @@
                           "policyUrl": {
                             "type": "string",
                             "maxLength": 2000
+                          }
+                        }
+                      },
+                      "search": {
+                        "type": "object",
+                        "properties": {
+                          "business": {
+                            "default": {},
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "Organization",
+                                  "LocalBusiness",
+                                  "ProfessionalService",
+                                  "MedicalBusiness",
+                                  "Dentist",
+                                  "LegalService",
+                                  "AccountingService",
+                                  "FinancialService",
+                                  "RealEstateAgent",
+                                  "Store",
+                                  "Restaurant",
+                                  "BeautySalon",
+                                  "AutomotiveBusiness",
+                                  "EducationalOrganization",
+                                  "HomeAndConstructionBusiness",
+                                  "SportsActivityLocation",
+                                  "TravelAgency"
+                                ]
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              "legalName": {
+                                "type": "string",
+                                "maxLength": 160
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 600
+                              },
+                              "category": {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              "address": {
+                                "type": "object",
+                                "properties": {
+                                  "street": {
+                                    "type": "string",
+                                    "maxLength": 200
+                                  },
+                                  "district": {
+                                    "type": "string",
+                                    "maxLength": 120
+                                  },
+                                  "city": {
+                                    "type": "string",
+                                    "maxLength": 120
+                                  },
+                                  "region": {
+                                    "type": "string",
+                                    "maxLength": 60
+                                  },
+                                  "postalCode": {
+                                    "type": "string",
+                                    "maxLength": 20
+                                  },
+                                  "country": {
+                                    "type": "string",
+                                    "maxLength": 2
+                                  }
+                                }
+                              },
+                              "geo": {
+                                "type": "object",
+                                "properties": {
+                                  "latitude": {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  "longitude": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  }
+                                },
+                                "required": ["latitude", "longitude"]
+                              },
+                              "phone": {
+                                "type": "string",
+                                "maxLength": 40
+                              },
+                              "email": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "format": "email"
+                              },
+                              "hours": {
+                                "maxItems": 14,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "days": {
+                                      "minItems": 1,
+                                      "maxItems": 7,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                                      }
+                                    },
+                                    "opens": {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    },
+                                    "closes": {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    }
+                                  },
+                                  "required": ["days", "opens", "closes"]
+                                }
+                              },
+                              "serviceArea": {
+                                "maxItems": 30,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120
+                                }
+                              },
+                              "foundingYear": {
+                                "type": "integer",
+                                "minimum": 1800,
+                                "maximum": 2100
+                              },
+                              "logoUrl": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sameAs": {
+                                "maxItems": 15,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                }
+                              },
+                              "people": {
+                                "maxItems": 10,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 120
+                                    },
+                                    "role": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    }
+                                  },
+                                  "required": ["name"]
+                                }
+                              },
+                              "priceRange": {
+                                "type": "string",
+                                "maxLength": 40
+                              }
+                            }
+                          },
+                          "crawlers": {
+                            "default": {},
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string",
+                              "enum": [
+                                "Googlebot",
+                                "Bingbot",
+                                "GPTBot",
+                                "OAI-SearchBot",
+                                "ChatGPT-User",
+                                "PerplexityBot",
+                                "ClaudeBot",
+                                "Google-Extended",
+                                "CCBot"
+                              ]
+                            },
+                            "additionalProperties": {
+                              "type": "boolean"
+                            }
+                          },
+                          "llms": {
+                            "default": {
+                              "enabled": true
+                            },
+                            "type": "object",
+                            "properties": {
+                              "enabled": {
+                                "default": true,
+                                "type": "boolean"
+                              },
+                              "notes": {
+                                "type": "string",
+                                "maxLength": 1000
+                              }
+                            }
+                          },
+                          "indexNow": {
+                            "default": {
+                              "enabled": false
+                            },
+                            "type": "object",
+                            "properties": {
+                              "enabled": {
+                                "default": false,
+                                "type": "boolean"
+                              },
+                              "key": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{8,128}$"
+                              }
+                            }
+                          },
+                          "verification": {
+                            "default": {},
+                            "type": "object",
+                            "properties": {
+                              "google": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "pattern": "^[\\w-]*$"
+                              },
+                              "bing": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "pattern": "^[\\w-]*$"
+                              }
+                            }
                           }
                         }
                       }
@@ -40226,6 +40730,281 @@
                       "changeFrequency": {
                         "type": "string",
                         "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"]
+                      },
+                      "search": {
+                        "type": "object",
+                        "properties": {
+                          "focusKeyword": {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          "synonyms": {
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            }
+                          },
+                          "questions": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "question": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 300
+                                },
+                                "answer": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                }
+                              },
+                              "required": ["question", "answer"]
+                            }
+                          },
+                          "summary": {
+                            "type": "string",
+                            "maxLength": 600
+                          },
+                          "speakable": {
+                            "type": "boolean"
+                          },
+                          "showUpdatedDate": {
+                            "type": "boolean"
+                          },
+                          "structuredData": {
+                            "maxItems": 10,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Article"
+                                    },
+                                    "headline": {
+                                      "type": "string",
+                                      "maxLength": 110
+                                    },
+                                    "authorName": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "datePublished": {
+                                      "type": "string"
+                                    },
+                                    "image": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Product"
+                                    },
+                                    "crmProductId": {
+                                      "type": "string",
+                                      "maxLength": 40
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "sku": {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    "brand": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "image": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    "availability": {
+                                      "type": "string",
+                                      "enum": ["InStock", "OutOfStock", "PreOrder"]
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1000000000
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Service"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "serviceType": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "areaServed": {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1000000000
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Event"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "startDate": {
+                                      "type": "string"
+                                    },
+                                    "endDate": {
+                                      "type": "string"
+                                    },
+                                    "attendance": {
+                                      "type": "string",
+                                      "enum": ["offline", "online", "mixed"]
+                                    },
+                                    "locationName": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "locationAddress": {
+                                      "type": "string",
+                                      "maxLength": 300
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    "image": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1000000000
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "HowTo"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "totalTime": {
+                                      "type": "string",
+                                      "pattern": "^P(T?\\d+[HMSD])+$"
+                                    },
+                                    "steps": {
+                                      "maxItems": 30,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string",
+                                            "maxLength": 150
+                                          },
+                                          "text": {
+                                            "type": "string",
+                                            "maxLength": 600
+                                          }
+                                        },
+                                        "required": ["text"]
+                                      }
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "FAQPage"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "LocalBusiness"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                }
+                              ]
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -40556,6 +41335,281 @@
                       "changeFrequency": {
                         "type": "string",
                         "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"]
+                      },
+                      "search": {
+                        "type": "object",
+                        "properties": {
+                          "focusKeyword": {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          "synonyms": {
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            }
+                          },
+                          "questions": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "question": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 300
+                                },
+                                "answer": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                }
+                              },
+                              "required": ["question", "answer"]
+                            }
+                          },
+                          "summary": {
+                            "type": "string",
+                            "maxLength": 600
+                          },
+                          "speakable": {
+                            "type": "boolean"
+                          },
+                          "showUpdatedDate": {
+                            "type": "boolean"
+                          },
+                          "structuredData": {
+                            "maxItems": 10,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Article"
+                                    },
+                                    "headline": {
+                                      "type": "string",
+                                      "maxLength": 110
+                                    },
+                                    "authorName": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "datePublished": {
+                                      "type": "string"
+                                    },
+                                    "image": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Product"
+                                    },
+                                    "crmProductId": {
+                                      "type": "string",
+                                      "maxLength": 40
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "sku": {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    "brand": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "image": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    "availability": {
+                                      "type": "string",
+                                      "enum": ["InStock", "OutOfStock", "PreOrder"]
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1000000000
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Service"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "serviceType": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "areaServed": {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1000000000
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "Event"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "startDate": {
+                                      "type": "string"
+                                    },
+                                    "endDate": {
+                                      "type": "string"
+                                    },
+                                    "attendance": {
+                                      "type": "string",
+                                      "enum": ["offline", "online", "mixed"]
+                                    },
+                                    "locationName": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "locationAddress": {
+                                      "type": "string",
+                                      "maxLength": 300
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    "image": {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1000000000
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "HowTo"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "maxLength": 150
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "totalTime": {
+                                      "type": "string",
+                                      "pattern": "^P(T?\\d+[HMSD])+$"
+                                    },
+                                    "steps": {
+                                      "maxItems": 30,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string",
+                                            "maxLength": 150
+                                          },
+                                          "text": {
+                                            "type": "string",
+                                            "maxLength": 600
+                                          }
+                                        },
+                                        "required": ["text"]
+                                      }
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "FAQPage"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "LocalBusiness"
+                                    }
+                                  },
+                                  "required": ["type"]
+                                }
+                              ]
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -41247,6 +42301,762 @@
           },
           "404": {
             "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_REDIRECT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/search": {
+      "get": {
+        "tags": ["CRM · Sites"],
+        "summary": "Configurações dos Buscadores",
+        "operationId": "getWorkspacesByIdCrmSitesBySiteIdSearch",
+        "description": "Perfil do negócio, acesso por rastreador (Googlebot, GPTBot, PerplexityBot…), llms.txt, IndexNow e verificação de propriedade. Sem perfil salvo, devolve um rascunho montado com os dados do workspace, da marca de e-mail e do SEO do site (`prefilled: true`).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configurações.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteSearchSettingsView"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["CRM · Sites"],
+        "summary": "Salvar configurações dos Buscadores",
+        "operationId": "putWorkspacesByIdCrmSitesBySiteIdSearch",
+        "description": "Só os blocos enviados mudam. Ligar o IndexNow gera a chave do site (mantida se desligar e ligar de novo).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nFica no rascunho e entra no ar na próxima publicação (robots.txt, llms.txt, JSON-LD e metatags de verificação vêm da versão publicada).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "business": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Organization",
+                          "LocalBusiness",
+                          "ProfessionalService",
+                          "MedicalBusiness",
+                          "Dentist",
+                          "LegalService",
+                          "AccountingService",
+                          "FinancialService",
+                          "RealEstateAgent",
+                          "Store",
+                          "Restaurant",
+                          "BeautySalon",
+                          "AutomotiveBusiness",
+                          "EducationalOrganization",
+                          "HomeAndConstructionBusiness",
+                          "SportsActivityLocation",
+                          "TravelAgency"
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "legalName": {
+                        "type": "string",
+                        "maxLength": 160
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 600
+                      },
+                      "category": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "address": {
+                        "type": "object",
+                        "properties": {
+                          "street": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "district": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "city": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "region": {
+                            "type": "string",
+                            "maxLength": 60
+                          },
+                          "postalCode": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "country": {
+                            "type": "string",
+                            "maxLength": 2
+                          }
+                        }
+                      },
+                      "geo": {
+                        "type": "object",
+                        "properties": {
+                          "latitude": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          }
+                        },
+                        "required": ["latitude", "longitude"]
+                      },
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "email": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "format": "email"
+                      },
+                      "hours": {
+                        "maxItems": 14,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "days": {
+                              "minItems": 1,
+                              "maxItems": 7,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                              }
+                            },
+                            "opens": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "closes": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            }
+                          },
+                          "required": ["days", "opens", "closes"]
+                        }
+                      },
+                      "serviceArea": {
+                        "maxItems": 30,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        }
+                      },
+                      "foundingYear": {
+                        "type": "integer",
+                        "minimum": 1800,
+                        "maximum": 2100
+                      },
+                      "logoUrl": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "sameAs": {
+                        "maxItems": 15,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "people": {
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "role": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": ["name"]
+                        }
+                      },
+                      "priceRange": {
+                        "type": "string",
+                        "maxLength": 40
+                      }
+                    }
+                  },
+                  "crawlers": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "Googlebot",
+                        "Bingbot",
+                        "GPTBot",
+                        "OAI-SearchBot",
+                        "ChatGPT-User",
+                        "PerplexityBot",
+                        "ClaudeBot",
+                        "Google-Extended",
+                        "CCBot"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "boolean"
+                    }
+                  },
+                  "llms": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "notes": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    },
+                    "required": ["enabled"]
+                  },
+                  "indexNow": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["enabled"]
+                  },
+                  "verification": {
+                    "type": "object",
+                    "properties": {
+                      "google": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "pattern": "^[\\w-]*$"
+                      },
+                      "bing": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "pattern": "^[\\w-]*$"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Salvo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteSearchSettingsView"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/search/ai/optimize": {
+      "post": {
+        "tags": ["CRM · Sites"],
+        "summary": "Otimizar com IA",
+        "operationId": "postWorkspacesByIdCrmSitesBySiteIdSearchAiOptimize",
+        "description": "Sugestões de título, descrição e respostas diretas para até 10 páginas (uma chamada por página), para revisão. Nada é salvo: aplique o que aprovar com `search/apply`. Páginas em que o provedor falhou voltam em `failed`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pageIds": {
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "fields": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["title", "description", "answers"]
+                    }
+                  }
+                },
+                "required": ["pageIds", "fields"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sugestões.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteSearchAiOptimize"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "402": {
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED_2"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_PAGE_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_SITE_SEARCH_AI_FAILED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/search/ai/summary": {
+      "post": {
+        "tags": ["CRM · Sites"],
+        "summary": "Como a IA resumiria esta página",
+        "operationId": "postWorkspacesByIdCrmSitesBySiteIdSearchAiSummary",
+        "description": "Uma chamada ao provedor de IA do CRM simulando um mecanismo generativo: resumo, entidades reconhecidas, perguntas respondidas e sugestões para ser citado. Consome a cota mensal de IA.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pageId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["pageId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resumo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteSearchAiSummary"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "402": {
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED_2"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_PAGE_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_SITE_SEARCH_AI_FAILED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/search/apply": {
+      "post": {
+        "tags": ["CRM · Sites"],
+        "summary": "Aplicar sugestões revisadas",
+        "operationId": "postWorkspacesByIdCrmSitesBySiteIdSearchApply",
+        "description": "Grava título, descrição e respostas no SEO das páginas. Respostas são casadas pela pergunta; perguntas novas são acrescentadas.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nFica no rascunho e entra no ar na próxima publicação (robots.txt, llms.txt, JSON-LD e metatags de verificação vêm da versão publicada).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "pageId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 320
+                        },
+                        "questions": {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "question": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 300
+                              },
+                              "answer": {
+                                "type": "string",
+                                "maxLength": 2000
+                              }
+                            },
+                            "required": ["question", "answer"]
+                          }
+                        }
+                      },
+                      "required": ["pageId"]
+                    }
+                  }
+                },
+                "required": ["items"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Páginas alteradas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteSearchApplyResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND_SITE_PAGE_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/sites/{siteId}/search/report": {
+      "get": {
+        "tags": ["CRM · Sites"],
+        "summary": "Saúde nos buscadores",
+        "operationId": "getWorkspacesByIdCrmSitesBySiteIdSearchReport",
+        "description": "Notas de SEO, AEO e GEO (0 a 100) de cada página do rascunho, a partir de verificações determinísticas, e os problemas ordenados pelo impacto somado no site.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Id do site.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1site0000ab7d3k1e5xyz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relatório.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SiteSearchReport"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SITE_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -85683,7 +87493,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_5"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -85779,7 +87589,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_6"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_TEMPLATE_NOT_FOUND"
@@ -85908,7 +87718,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_5"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
@@ -97181,7 +98991,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "402": {
-            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED_3"
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED_4"
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_AI_DISABLED_WIKI_DISABLED_WIKI_PAGE_FORBIDDEN"
@@ -101239,6 +103049,28 @@
             },
             "examples": {
               "AI_QUOTA_EXCEEDED": {
+                "summary": "AI_QUOTA_EXCEEDED — A cota mensal de IA do workspace acabou",
+                "value": {
+                  "success": false,
+                  "statusCode": 402,
+                  "error": {
+                    "code": "AI_QUOTA_EXCEEDED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "402_AI_QUOTA_EXCEEDED_3": {
+        "description": "Cota esgotada: `AI_QUOTA_EXCEEDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "AI_QUOTA_EXCEEDED": {
                 "summary": "AI_QUOTA_EXCEEDED — Cota mensal de IA do workspace esgotada",
                 "value": {
                   "success": false,
@@ -101253,7 +103085,7 @@
           }
         }
       },
-      "402_AI_QUOTA_EXCEEDED_3": {
+      "402_AI_QUOTA_EXCEEDED_4": {
         "description": "Cota esgotada: `AI_QUOTA_EXCEEDED`",
         "content": {
           "application/json": {
@@ -104807,6 +106639,73 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FEATURE_NOT_ENABLED": {
+                "summary": "FEATURE_NOT_ENABLED — O plano não inclui o assistente de IA do CRM",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Esta funcionalidade não está disponível para este workspace",
+                  "error": {
+                    "code": "FEATURE_NOT_ENABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_5": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `CREATE`",
                 "value": {
                   "success": false,
@@ -104854,7 +106753,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_5": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_6": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
         "content": {
           "application/json": {
@@ -114746,6 +116645,38 @@
           }
         }
       },
+      "404_SITE_NOT_FOUND_SITE_PAGE_NOT_FOUND_2": {
+        "description": "Não encontrado: `SITE_NOT_FOUND`, `SITE_PAGE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SITE_NOT_FOUND": {
+                "summary": "SITE_NOT_FOUND — Site inexistente, excluído ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "error": {
+                    "code": "SITE_NOT_FOUND"
+                  }
+                }
+              },
+              "SITE_PAGE_NOT_FOUND": {
+                "summary": "SITE_PAGE_NOT_FOUND — Alguma página não existe ou é de outro site",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "error": {
+                    "code": "SITE_PAGE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_SITE_NOT_FOUND_SITE_REDIRECT_NOT_FOUND": {
         "description": "Não encontrado: `SITE_NOT_FOUND`, `SITE_REDIRECT_NOT_FOUND`",
         "content": {
@@ -124052,6 +125983,28 @@
                   "statusCode": 502,
                   "error": {
                     "code": "SITE_AI_FAILED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_SITE_SEARCH_AI_FAILED": {
+        "description": "Falha em serviço externo: `SITE_SEARCH_AI_FAILED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SITE_SEARCH_AI_FAILED": {
+                "summary": "SITE_SEARCH_AI_FAILED — O provedor de IA falhou ou devolveu algo inaproveitável",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "error": {
+                    "code": "SITE_SEARCH_AI_FAILED"
                   }
                 }
               }
@@ -143931,6 +145884,7 @@
           "SITE_REDIRECT_LOOP",
           "CANVAS_COLLAB_NOT_FOUND",
           "SITE_AI_FAILED",
+          "SITE_SEARCH_AI_FAILED",
           "INTERNAL_SERVER_ERROR",
           "DATABASE_ERROR",
           "STORAGE_ERROR",
@@ -143943,7 +145897,7 @@
           "BACKUP_FAILED",
           "BILLING_DISABLED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -161371,6 +163325,261 @@
                   }
                 },
                 "required": ["enabled"]
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "business": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Organization",
+                          "LocalBusiness",
+                          "ProfessionalService",
+                          "MedicalBusiness",
+                          "Dentist",
+                          "LegalService",
+                          "AccountingService",
+                          "FinancialService",
+                          "RealEstateAgent",
+                          "Store",
+                          "Restaurant",
+                          "BeautySalon",
+                          "AutomotiveBusiness",
+                          "EducationalOrganization",
+                          "HomeAndConstructionBusiness",
+                          "SportsActivityLocation",
+                          "TravelAgency"
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "legalName": {
+                        "type": "string",
+                        "maxLength": 160
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 600
+                      },
+                      "category": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "address": {
+                        "type": "object",
+                        "properties": {
+                          "street": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "district": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "city": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "region": {
+                            "type": "string",
+                            "maxLength": 60
+                          },
+                          "postalCode": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "country": {
+                            "type": "string",
+                            "maxLength": 2
+                          }
+                        }
+                      },
+                      "geo": {
+                        "type": "object",
+                        "properties": {
+                          "latitude": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          }
+                        },
+                        "required": ["latitude", "longitude"]
+                      },
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "email": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "format": "email"
+                      },
+                      "hours": {
+                        "maxItems": 14,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "days": {
+                              "minItems": 1,
+                              "maxItems": 7,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                              }
+                            },
+                            "opens": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "closes": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            }
+                          },
+                          "required": ["days", "opens", "closes"]
+                        }
+                      },
+                      "serviceArea": {
+                        "maxItems": 30,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        }
+                      },
+                      "foundingYear": {
+                        "type": "integer",
+                        "minimum": 1800,
+                        "maximum": 2100
+                      },
+                      "logoUrl": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "sameAs": {
+                        "maxItems": 15,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "people": {
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "role": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": ["name"]
+                        }
+                      },
+                      "priceRange": {
+                        "type": "string",
+                        "maxLength": 40
+                      }
+                    }
+                  },
+                  "crawlers": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "Googlebot",
+                        "Bingbot",
+                        "GPTBot",
+                        "OAI-SearchBot",
+                        "ChatGPT-User",
+                        "PerplexityBot",
+                        "ClaudeBot",
+                        "Google-Extended",
+                        "CCBot"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "boolean"
+                    }
+                  },
+                  "llms": {
+                    "default": {
+                      "enabled": true
+                    },
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "notes": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    },
+                    "required": ["enabled"]
+                  },
+                  "indexNow": {
+                    "default": {
+                      "enabled": false
+                    },
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "key": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{8,128}$"
+                      }
+                    },
+                    "required": ["enabled"]
+                  },
+                  "verification": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "google": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "pattern": "^[\\w-]*$"
+                      },
+                      "bing": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "pattern": "^[\\w-]*$"
+                      }
+                    }
+                  }
+                },
+                "required": ["business", "crawlers", "llms", "indexNow", "verification"]
               }
             },
             "required": ["seo", "tracking", "cookieBanner"]
@@ -162480,6 +164689,281 @@
               "changeFrequency": {
                 "type": "string",
                 "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"]
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "focusKeyword": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "synonyms": {
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  },
+                  "questions": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "question": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        },
+                        "answer": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": ["question", "answer"]
+                    }
+                  },
+                  "summary": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
+                  "speakable": {
+                    "type": "boolean"
+                  },
+                  "showUpdatedDate": {
+                    "type": "boolean"
+                  },
+                  "structuredData": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Article"
+                            },
+                            "headline": {
+                              "type": "string",
+                              "maxLength": 110
+                            },
+                            "authorName": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "datePublished": {
+                              "type": "string"
+                            },
+                            "image": {
+                              "type": "string",
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Product"
+                            },
+                            "crmProductId": {
+                              "type": "string",
+                              "maxLength": 40
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "sku": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "brand": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "image": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "availability": {
+                              "type": "string",
+                              "enum": ["InStock", "OutOfStock", "PreOrder"]
+                            },
+                            "price": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1000000000
+                            },
+                            "currency": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Service"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "serviceType": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "areaServed": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "price": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1000000000
+                            },
+                            "currency": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Event"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "startDate": {
+                              "type": "string"
+                            },
+                            "endDate": {
+                              "type": "string"
+                            },
+                            "attendance": {
+                              "type": "string",
+                              "enum": ["offline", "online", "mixed"]
+                            },
+                            "locationName": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "locationAddress": {
+                              "type": "string",
+                              "maxLength": 300
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "image": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "price": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1000000000
+                            },
+                            "currency": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "HowTo"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "totalTime": {
+                              "type": "string",
+                              "pattern": "^P(T?\\d+[HMSD])+$"
+                            },
+                            "steps": {
+                              "maxItems": 30,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "maxLength": 150
+                                  },
+                                  "text": {
+                                    "type": "string",
+                                    "maxLength": 600
+                                  }
+                                },
+                                "required": ["text"]
+                              }
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "FAQPage"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "LocalBusiness"
+                            }
+                          },
+                          "required": ["type"]
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             }
           },
@@ -162581,6 +165065,281 @@
               "changeFrequency": {
                 "type": "string",
                 "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"]
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "focusKeyword": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "synonyms": {
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  },
+                  "questions": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "question": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        },
+                        "answer": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": ["question", "answer"]
+                    }
+                  },
+                  "summary": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
+                  "speakable": {
+                    "type": "boolean"
+                  },
+                  "showUpdatedDate": {
+                    "type": "boolean"
+                  },
+                  "structuredData": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Article"
+                            },
+                            "headline": {
+                              "type": "string",
+                              "maxLength": 110
+                            },
+                            "authorName": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "datePublished": {
+                              "type": "string"
+                            },
+                            "image": {
+                              "type": "string",
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Product"
+                            },
+                            "crmProductId": {
+                              "type": "string",
+                              "maxLength": 40
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "sku": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "brand": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "image": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "availability": {
+                              "type": "string",
+                              "enum": ["InStock", "OutOfStock", "PreOrder"]
+                            },
+                            "price": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1000000000
+                            },
+                            "currency": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Service"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "serviceType": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "areaServed": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "price": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1000000000
+                            },
+                            "currency": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "Event"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "startDate": {
+                              "type": "string"
+                            },
+                            "endDate": {
+                              "type": "string"
+                            },
+                            "attendance": {
+                              "type": "string",
+                              "enum": ["offline", "online", "mixed"]
+                            },
+                            "locationName": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "locationAddress": {
+                              "type": "string",
+                              "maxLength": 300
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "image": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "price": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1000000000
+                            },
+                            "currency": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "HowTo"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 150
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "totalTime": {
+                              "type": "string",
+                              "pattern": "^P(T?\\d+[HMSD])+$"
+                            },
+                            "steps": {
+                              "maxItems": 30,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "maxLength": 150
+                                  },
+                                  "text": {
+                                    "type": "string",
+                                    "maxLength": 600
+                                  }
+                                },
+                                "required": ["text"]
+                              }
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "FAQPage"
+                            }
+                          },
+                          "required": ["type"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "LocalBusiness"
+                            }
+                          },
+                          "required": ["type"]
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             }
           },
@@ -162644,6 +165403,586 @@
           }
         },
         "required": ["id", "siteId", "fromPath", "toPath", "permanent", "createdAt", "updatedAt"]
+      },
+      "SiteSearchAiOptimize": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pageId": {
+                  "type": "string"
+                },
+                "pageTitle": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "object",
+                  "properties": {
+                    "current": {
+                      "type": "string"
+                    },
+                    "suggested": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["current", "suggested"]
+                },
+                "description": {
+                  "type": "object",
+                  "properties": {
+                    "current": {
+                      "type": "string"
+                    },
+                    "suggested": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["current", "suggested"]
+                },
+                "answers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "current": {
+                        "type": "string"
+                      },
+                      "suggested": {
+                        "type": "string"
+                      },
+                      "question": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["current", "suggested", "question"]
+                  }
+                }
+              },
+              "required": ["pageId", "pageTitle"]
+            }
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pageId": {
+                  "type": "string"
+                },
+                "pageTitle": {
+                  "type": "string"
+                }
+              },
+              "required": ["pageId", "pageTitle"]
+            }
+          }
+        },
+        "required": ["items", "failed"]
+      },
+      "SiteSearchAiSummary": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["summary", "entities", "questions", "suggestions"]
+      },
+      "SiteSearchApplyResult": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["updated"]
+      },
+      "SiteSearchReport": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completeness": {
+            "type": "object",
+            "properties": {
+              "percent": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "example": 78
+              },
+              "missing": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": ["telefone", "horário de funcionamento"]
+              }
+            },
+            "required": ["percent", "missing"]
+          },
+          "averages": {
+            "type": "object",
+            "properties": {
+              "seo": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "example": 82
+              },
+              "aeo": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "example": 55
+              },
+              "geo": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "example": 64
+              }
+            },
+            "required": ["seo", "aeo", "geo"]
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string",
+                  "example": "Implante dentário"
+                },
+                "path": {
+                  "type": "string",
+                  "example": "/implante-dentario"
+                },
+                "scores": {
+                  "type": "object",
+                  "properties": {
+                    "seo": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "example": 82
+                    },
+                    "aeo": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "example": 55
+                    },
+                    "geo": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "example": 64
+                    }
+                  },
+                  "required": ["seo", "aeo", "geo"]
+                },
+                "issues": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["id", "title", "path", "scores", "issues"]
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "checkId": {
+                  "type": "string",
+                  "example": "aeo.direct-answers"
+                },
+                "pillar": {
+                  "type": "string",
+                  "enum": ["seo", "aeo", "geo"]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "impact": {
+                  "type": "number"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": ["pass", "warn", "fail"]
+                      }
+                    },
+                    "required": ["id", "title", "status"]
+                  }
+                }
+              },
+              "required": ["checkId", "pillar", "label", "impact", "message", "pages"]
+            }
+          }
+        },
+        "required": ["generatedAt", "completeness", "averages", "pages", "issues"]
+      },
+      "SiteSearchSettingsView": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "object",
+            "properties": {
+              "business": {
+                "default": {},
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Organization",
+                      "LocalBusiness",
+                      "ProfessionalService",
+                      "MedicalBusiness",
+                      "Dentist",
+                      "LegalService",
+                      "AccountingService",
+                      "FinancialService",
+                      "RealEstateAgent",
+                      "Store",
+                      "Restaurant",
+                      "BeautySalon",
+                      "AutomotiveBusiness",
+                      "EducationalOrganization",
+                      "HomeAndConstructionBusiness",
+                      "SportsActivityLocation",
+                      "TravelAgency"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "legalName": {
+                    "type": "string",
+                    "maxLength": 160
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "address": {
+                    "type": "object",
+                    "properties": {
+                      "street": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "district": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "city": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "region": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "postalCode": {
+                        "type": "string",
+                        "maxLength": 20
+                      },
+                      "country": {
+                        "type": "string",
+                        "maxLength": 2
+                      }
+                    }
+                  },
+                  "geo": {
+                    "type": "object",
+                    "properties": {
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "required": ["latitude", "longitude"]
+                  },
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "format": "email"
+                  },
+                  "hours": {
+                    "maxItems": 14,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "days": {
+                          "minItems": 1,
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                          }
+                        },
+                        "opens": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        "closes": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        }
+                      },
+                      "required": ["days", "opens", "closes"]
+                    }
+                  },
+                  "serviceArea": {
+                    "maxItems": 30,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    }
+                  },
+                  "foundingYear": {
+                    "type": "integer",
+                    "minimum": 1800,
+                    "maximum": 2100
+                  },
+                  "logoUrl": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "sameAs": {
+                    "maxItems": 15,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000
+                    }
+                  },
+                  "people": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "role": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": ["name"]
+                    }
+                  },
+                  "priceRange": {
+                    "type": "string",
+                    "maxLength": 40
+                  }
+                }
+              },
+              "crawlers": {
+                "default": {},
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "enum": [
+                    "Googlebot",
+                    "Bingbot",
+                    "GPTBot",
+                    "OAI-SearchBot",
+                    "ChatGPT-User",
+                    "PerplexityBot",
+                    "ClaudeBot",
+                    "Google-Extended",
+                    "CCBot"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              },
+              "llms": {
+                "default": {
+                  "enabled": true
+                },
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": ["enabled"]
+              },
+              "indexNow": {
+                "default": {
+                  "enabled": false
+                },
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{8,128}$"
+                  }
+                },
+                "required": ["enabled"]
+              },
+              "verification": {
+                "default": {},
+                "type": "object",
+                "properties": {
+                  "google": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "pattern": "^[\\w-]*$"
+                  },
+                  "bing": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "pattern": "^[\\w-]*$"
+                  }
+                }
+              }
+            },
+            "required": ["business", "crawlers", "llms", "indexNow", "verification"]
+          },
+          "prefilled": {
+            "type": "boolean"
+          },
+          "completeness": {
+            "type": "object",
+            "properties": {
+              "percent": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "example": 78
+              },
+              "missing": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": ["telefone", "horário de funcionamento"]
+              }
+            },
+            "required": ["percent", "missing"]
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "urls": {
+            "type": "object",
+            "properties": {
+              "robots": {
+                "type": "string",
+                "example": "https://clinica.sites.steel.app/robots.txt"
+              },
+              "sitemap": {
+                "type": "string"
+              },
+              "llms": {
+                "type": "string",
+                "example": "https://clinica.sites.steel.app/llms.txt"
+              },
+              "llmsFull": {
+                "type": "string"
+              },
+              "indexNowKey": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["robots", "sitemap", "llms", "llmsFull", "indexNowKey"]
+          }
+        },
+        "required": ["settings", "prefilled", "completeness", "published", "urls"]
       },
       "SiteSlugAvailability": {
         "type": "object",
