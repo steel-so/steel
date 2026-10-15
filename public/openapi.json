@@ -37034,7 +37034,7 @@
                   },
                   "templateId": {
                     "type": "string",
-                    "enum": ["agencia", "empresa", "saas", "consultoria", "loja"]
+                    "enum": ["agencia", "empresa", "saas", "consultoria", "loja", "evento"]
                   },
                   "slug": {
                     "type": "string",
