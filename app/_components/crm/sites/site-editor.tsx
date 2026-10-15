@@ -139,10 +139,15 @@ function PresetPreview({
     <SiteSnapshot
       docs={docs}
       theme={theme}
-      className='size-full self-stretch bg-background'
+      className='size-full self-stretch bg-white'
     />
   )
 }
+
+/** The canvas iframe renders in quirks mode, where the page root's
+ * `min-height:100%` stretches to the viewport; header/footer bands keep
+ * their own height. */
+const GLOBAL_BAND_CSS = '[data-site-global] .s-page{min-height:0}'
 
 /** Stylesheet of the canvas iframe: theme, the page and the globals drawn
  * around it, compiled together like the published page. */
@@ -158,7 +163,7 @@ function SiteEditorFrameStyles({
     () => compileSiteCss([...around, doc], { theme, editing: true }),
     [around, doc, theme],
   )
-  return <style data-site-css=''>{css}</style>
+  return <style data-site-css=''>{`${css}\n${GLOBAL_BAND_CSS}`}</style>
 }
 
 /** Header/footer drawn around the page in the canvas, read-only, with a
@@ -251,12 +256,18 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
   const tokens = useMemo(() => siteColorTokens(theme), [theme])
   const presets = useMemo<CanvasPresetItem[]>(
     () =>
-      SITE_PRESETS.map((preset) => ({
-        ...preset,
-        preview: () => (
-          <PresetPreview fragment={preset.fragment} theme={theme} />
-        ),
-      })),
+      // Layout blocks are empty grids: their icon says more than a blank
+      // miniature. Sections are drawn with the site's theme.
+      SITE_PRESETS.map((preset) =>
+        preset.sectionType
+          ? {
+              ...preset,
+              preview: () => (
+                <PresetPreview fragment={preset.fragment} theme={theme} />
+              ),
+            }
+          : preset,
+      ),
     [theme],
   )
 

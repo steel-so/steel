@@ -52,6 +52,10 @@ const DEVICES: Array<{
   { id: 'mobile', label: 'Celular', icon: SmartPhone01Icon, width: 375 },
 ]
 
+/** Same rendering mode as the published page (no quirks). */
+const STANDARDS_DOC =
+  '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"></head><body></body></html>'
+
 const FRAME_BASE =
   'html,body{margin:0;padding:0}body{-webkit-font-smoothing:antialiased}'
 
@@ -99,7 +103,10 @@ function PreviewFrame({
     if (!frame) return
     const setup = () => {
       const doc = frame.contentDocument
-      if (!doc?.body || doc.getElementById('site-preview-root')) return
+      // Wait for the srcdoc document: the initial about:blank one renders
+      // in quirks mode, where percentage heights stretch to the viewport.
+      if (!doc?.body || doc.compatMode !== 'CSS1Compat') return
+      if (doc.getElementById('site-preview-root')) return
       const root = doc.createElement('div')
       root.id = 'site-preview-root'
       doc.body.appendChild(root)
@@ -151,6 +158,7 @@ function PreviewFrame({
       ref={iframe}
       title='Prévia do site'
       data-testid='site-preview-frame'
+      srcDoc={STANDARDS_DOC}
       className={cn(
         'block h-full border-0 bg-white',
         width ? 'rounded-lg shadow-lg ring-1 ring-border' : 'w-full',

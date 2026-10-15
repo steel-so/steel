@@ -123,7 +123,7 @@ function GlobalCard({
           docs={docs}
           theme={theme}
           context={context}
-          className='aspect-[16/5] bg-background'
+          className='aspect-[4/1] bg-white'
         />
       </button>
       <div className='flex items-center justify-between gap-2 border-t px-2 py-1.5'>

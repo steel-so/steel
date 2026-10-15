@@ -318,7 +318,7 @@ export function ThemePanel() {
             docs={previewDocs}
             theme={theme}
             width={640}
-            className='aspect-[4/3] rounded-lg border'
+            className='aspect-[2/1] rounded-lg border bg-white'
           />
         </div>
         <fieldset disabled={!canEdit} className='m-0 min-w-0 border-0 p-0'>

@@ -34,7 +34,7 @@ export default async function CrmNewEmailTemplatePage({
       <FocusedHeader
         backHref={`/${slug}/crm/email-templates`}
         backLabel='Voltar para os templates'
-        title='Novo template de e-mail'
+        title='Templates de e-mail'
       />
       <div className='min-h-0 flex-1 overflow-y-auto'>
         <EmailStarterGallery
