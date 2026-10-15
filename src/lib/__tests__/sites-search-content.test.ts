@@ -254,3 +254,28 @@ describe('one-click fix fragments', () => {
     expect(faqSectionLocation({ ...doc, rootId: 'missing' }).at.index).toBe(0)
   })
 })
+
+describe('extractPageContent with A/B variants', () => {
+  it('reads only the control, never the variant copies', () => {
+    const doc = searchDocument(
+      heading('h2', 'Versão original'),
+      heading('h2', 'Versão B'),
+    )
+    const [control, variant] = Object.values(doc.nodes).filter(
+      (node) => node.type === SITE_TYPES.heading,
+    )
+    const withVariant = {
+      ...doc,
+      nodes: {
+        ...doc.nodes,
+        [variant.id]: {
+          ...variant,
+          meta: { ...variant.meta, variantOf: control.id, variantKey: 'B' },
+        },
+      },
+    }
+
+    const headings = extractPageContent(withVariant).headings.map((h) => h.text)
+    expect(headings).toEqual(['Versão original'])
+  })
+})

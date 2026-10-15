@@ -2,6 +2,7 @@ import type { CanvasDocument, CanvasNode } from '@/src/lib/canvas/types'
 import { SITE_TYPES } from '@/src/lib/canvas-site/constants'
 import { richTextToPlain } from '@/src/lib/canvas-site/sanitize'
 import { parseSearchContent } from '@/src/schemas/site-search.schema'
+import { applyVariantChoices } from './experiments'
 import { sitePageUrl } from './host'
 import { businessNode, isLocalBusiness } from './search/business'
 import { resolveBusinessProfile } from './search/context'
@@ -111,8 +112,10 @@ function nodeText(doc: CanvasDocument, node: CanvasNode | undefined): string {
 /** Questions and answers of the page's accordions (title → content), for
  * a FAQPage node. Items without a title or an answer are left out. */
 export function faqOf(
-  doc: CanvasDocument,
+  source: CanvasDocument,
 ): Array<{ question: string; answer: string }> {
+  // A/B variant copies are not part of the page a visitor reads.
+  const doc = applyVariantChoices(source)
   const faq: Array<{ question: string; answer: string }> = []
   const visit = (id: string) => {
     const node = doc.nodes[id]

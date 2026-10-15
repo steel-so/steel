@@ -3,6 +3,7 @@ import type { CanvasDocument, CanvasNode } from '@/src/lib/canvas/types'
 import type { CanvasLink } from '@/src/lib/canvas/values'
 import { SITE_TYPES } from '@/src/lib/canvas-site/constants'
 import { richTextToPlain } from '@/src/lib/canvas-site/sanitize'
+import { applyVariantChoices } from '../experiments'
 import { countWords } from './text'
 
 /**
@@ -120,7 +121,10 @@ function subtreeText(doc: CanvasDocument, id: string): string {
   return own.filter(Boolean).join(' ')
 }
 
-export function extractPageContent(doc: CanvasDocument): PageContent {
+/** Reads what a visitor sees: A/B variant copies are dropped (the control
+ * stays), so search checks, llms.txt and FAQ data never count them twice. */
+export function extractPageContent(source: CanvasDocument): PageContent {
+  const doc = applyVariantChoices(source)
   const content: PageContent = {
     headings: [],
     blocks: [],
