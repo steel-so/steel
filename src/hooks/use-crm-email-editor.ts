@@ -189,16 +189,18 @@ export function useRestoreCrmEmailTemplateVersion(
 
 // ─── AI ───────────────────────────────────────────────────────────────────
 
-export function useCrmEmailAiRewrite(workspaceId: string) {
-  return useMutation({
-    mutationFn: (data: CrmEmailAiRewriteInput) =>
-      apiFetchJson<CrmEmailAiRewriteResultDTO>(
-        `${base(workspaceId)}/email-ai/rewrite`,
-        'POST',
-        data,
-        'A IA não conseguiu escrever agora',
-      ),
-  })
+/** A plain call: the inspector control keeps its own pending state, so it
+ * works anywhere the editor renders (no query client needed). */
+export function rewriteCrmEmailBlock(
+  workspaceId: string,
+  data: CrmEmailAiRewriteInput,
+) {
+  return apiFetchJson<CrmEmailAiRewriteResultDTO>(
+    `${base(workspaceId)}/email-ai/rewrite`,
+    'POST',
+    data,
+    'A IA não conseguiu escrever agora',
+  )
 }
 
 export function useCrmEmailAiSection(workspaceId: string) {
