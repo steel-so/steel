@@ -388,3 +388,35 @@ O iframe do editor começa em `about:blank` (modo quirks). O shell agora
 escreve um documento com `<!doctype html>` antes de montar, a raiz tem a
 altura mínima do palco e um documento sozinho ocupa o palco todo (fundo do
 e-mail). O ajuste da S1 que encolhia cabeçalho e rodapé saiu.
+
+## Coedição em tempo real (S4)
+
+Decisão em [ADR 0027](../adr/0027-canvas-real-time-co-editing.md).
+
+- **Onde liga:** `CanvasEditorProps.collaboration = { documentName, user }`.
+  O editor de sites (página ou global) e o de e-mail v2 passam a sala
+  (`canvasDocumentName('site-page' | 'site-global' | 'email-template', id)`)
+  e o usuário da sessão, que vem da página do servidor. Sem a prop o
+  editor funciona como antes.
+- **Peças:** `src/lib/canvas-collab/` — `ydoc.ts` (modelo Yjs, props planas
+  por caminho), `binding.ts` (`bindCanvasStore`: store ⇄ Y.Doc),
+  `project.ts` (projeção válida de um estado remoto), `presence.ts`
+  (awareness), `names.ts` (salas e mensagens). No shell,
+  `app/_components/canvas/collab/` — `session.ts` (conexão, presença,
+  flush), `hocuspocus.ts`, `collab-context.tsx`, `presence-bar.tsx`. No
+  servidor, `src/services/canvas-collab.service.ts` e
+  `canvas_collab_states`.
+- **Store:** ganhou `onChange` (toda mudança de documento, com a op),
+  `applyRemote` (sem passo de histórico) e `setTextGuard` (recusa editar
+  texto travado por outra pessoa). Desfazer continua por usuário.
+- **Salvar:** com a sala ao vivo, o servidor realtime grava (debounce do
+  Hocuspocus); "Salvar"/Ctrl+S, publicar e enviar teste pedem gravação
+  imediata (`canvas.flush`) e caem no REST se o servidor não confirmar. Sem
+  realtime, o autosave REST de sempre; o selo "Sem colaboração em tempo
+  real" aparece na barra.
+- **Presença:** avatares de quem está no documento na barra, contorno com a
+  cor e o nome da pessoa no que ela selecionou, e "Fulano está editando
+  este texto" no texto em edição (os outros não conseguem abrir o mesmo
+  texto).
+- **Proxy:** usa o `/realtime` da Wiki — nenhuma regra nova no nginx nem no
+  Apache de borda.
