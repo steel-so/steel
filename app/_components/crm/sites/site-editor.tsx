@@ -144,11 +144,6 @@ function PresetPreview({
   )
 }
 
-/** The canvas iframe renders in quirks mode, where the page root's
- * `min-height:100%` stretches to the viewport; header/footer bands keep
- * their own height. */
-const GLOBAL_BAND_CSS = '[data-site-global] .s-page{min-height:0}'
-
 /** Stylesheet of the canvas iframe: theme, the page and the globals drawn
  * around it, compiled together like the published page. */
 function SiteEditorFrameStyles({
@@ -163,7 +158,7 @@ function SiteEditorFrameStyles({
     () => compileSiteCss([...around, doc], { theme, editing: true }),
     [around, doc, theme],
   )
-  return <style data-site-css=''>{`${css}\n${GLOBAL_BAND_CSS}`}</style>
+  return <style data-site-css=''>{css}</style>
 }
 
 /** Header/footer drawn around the page in the canvas, read-only, with a

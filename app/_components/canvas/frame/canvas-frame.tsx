@@ -11,11 +11,23 @@ import { useCanvasStore } from '../use-canvas'
 import { InlineTextEditor } from './inline-text'
 import { DocumentView } from './node-view'
 
-/** Base styles of the canvas document. Nothing here reaches the output. */
+/** The canvas document is a standards-mode page, like the published
+ * output (a site page with `<!doctype html>`), not the quirks-mode
+ * `about:blank` an iframe starts with — where percentage heights stretch
+ * to the viewport. */
+export const FRAME_DOCUMENT =
+  '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"></head><body></body></html>'
+
+/** Base styles of the canvas document. Nothing here reaches the output.
+ * The root is at least as tall as the stage (`minHeight`, set inline) and
+ * a lone document grows to fill it (the e-mail body background), while a
+ * site page drawn between its header and footer keeps its own height. */
 const FRAME_CSS = `
 html,body{margin:0;padding:0}
-body{-webkit-font-smoothing:antialiased;min-height:100%}
-#canvas-root{min-height:100%}
+body{-webkit-font-smoothing:antialiased}
+#canvas-root{display:flex;flex-direction:column}
+#canvas-root>*{flex:none}
+#canvas-root>:only-child{flex:1 0 auto}
 *{-webkit-user-select:none;user-select:none}
 a,button{cursor:default}
 img{-webkit-user-drag:none}
@@ -76,6 +88,12 @@ export function CanvasFrame({
     const setup = () => {
       const doc = iframe.contentDocument
       if (!doc || doc === frame.document || !doc.body) return
+      if (doc.compatMode !== 'CSS1Compat') {
+        // Same document object, now in standards mode.
+        doc.open()
+        doc.write(FRAME_DOCUMENT)
+        doc.close()
+      }
       const style = doc.createElement('style')
       style.setAttribute('data-canvas-base', '')
       style.textContent = FRAME_CSS
@@ -96,6 +114,11 @@ export function CanvasFrame({
       frame.document = null
     }
   }, [frame])
+
+  // The root is never shorter than the stage.
+  useEffect(() => {
+    if (mount) mount.root.style.minHeight = `${minHeight}px`
+  }, [mount, minHeight])
 
   // Grow with the content.
   useEffect(() => {
