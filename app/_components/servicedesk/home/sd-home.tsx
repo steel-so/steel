@@ -29,9 +29,27 @@ import { SdCreateTicketSheet } from '../ticket/sd-create-ticket-sheet'
 import { useSdNow } from '../ticket/sd-ticket-badges'
 import { SD_TONE_TEXT, sdSlaSortKey } from '../ticket/sd-ticket-meta'
 
-/** "Bom dia", "Boa tarde", "Boa noite". */
-export function sdGreeting(now: Date = new Date()): string {
-  const hour = now.getHours()
+/** "Bom dia", "Boa tarde", "Boa noite" — by the hour in `timeZone`, so the
+ * server render (UTC) and the browser agree (hydration error #418 otherwise). */
+export function sdGreeting(
+  now: Date = new Date(),
+  timeZone = 'America/Sao_Paulo',
+): string {
+  const hourIn = (zone: string) =>
+    Number(
+      new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        hourCycle: 'h23',
+        timeZone: zone,
+      }).format(now),
+    )
+  let hour: number
+  try {
+    hour = hourIn(timeZone)
+  } catch {
+    // A malformed cookie value must not break the page.
+    hour = hourIn('America/Sao_Paulo')
+  }
   if (hour < 12) return 'Bom dia'
   if (hour < 18) return 'Boa tarde'
   return 'Boa noite'
@@ -188,10 +206,13 @@ export function SdHome({
   workspaceId,
   slug,
   userName,
+  timeZone = 'America/Sao_Paulo',
 }: {
   workspaceId: string
   slug: string
   userName: string
+  /** The user's preference timezone (cookie `steel.tz`). */
+  timeZone?: string
 }) {
   const now = useSdNow(60_000)
   const [creating, setCreating] = useState(false)
@@ -234,7 +255,7 @@ export function SdHome({
       <div className='flex flex-wrap items-end gap-3'>
         <div>
           <h1 className='font-semibold text-2xl tracking-tight'>
-            {sdGreeting(now)}
+            {sdGreeting(now, timeZone)}
             {firstName ? `, ${firstName}` : ''}
           </h1>
           <p className='text-muted-foreground text-sm'>
