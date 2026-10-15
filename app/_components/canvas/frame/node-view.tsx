@@ -1,12 +1,13 @@
 'use client'
 
-import { memo } from 'react'
-import { getNode } from '@/src/lib/canvas/ops'
-import type { CanvasNodeId } from '@/src/lib/canvas/types'
+import { memo, useRef } from 'react'
+import { childOnPath, getNode } from '@/src/lib/canvas/ops'
+import type { CanvasNode, CanvasNodeId } from '@/src/lib/canvas/types'
 import { useCanvasEditor } from '../editor-context'
 import { shallowEqual, useCanvasNode, useCanvasStore } from '../use-canvas'
 
 const NO_DEPS: readonly unknown[] = []
+const NO_NODES: CanvasNode[] = []
 
 /**
  * One document node rendered by its catalog component. Memoized per id: the
@@ -25,6 +26,26 @@ export const NodeView = memo(function NodeView({ id }: { id: CanvasNodeId }) {
     const dependsOn = current && catalog.components[current.type]?.dependsOn
     return dependsOn ? dependsOn(state.doc, current) : NO_DEPS
   }, shallowEqual)
+  // Carousels, tabs and popups show the child being edited: the one on the
+  // path to the selection, or the last one that was (selecting the carousel
+  // itself keeps the slide in view).
+  const tracks = !!(node && catalog.components[node.type]?.tracksSelection)
+  const onPath = useCanvasStore((state) =>
+    tracks ? childOnPath(state.doc, id, state.selection[0]) : null,
+  )
+  const reads = !!(node && catalog.components[node.type]?.readsChildren)
+  const childNodes = useCanvasStore((state) => {
+    if (!reads) return NO_NODES
+    const current = getNode(state.doc, id)
+    return (current?.children ?? [])
+      .map((child) => getNode(state.doc, child))
+      .filter((child): child is CanvasNode => child !== undefined)
+  }, shallowEqual)
+  const lastActive = useRef<CanvasNodeId | null>(null)
+  if (onPath) lastActive.current = onPath
+  if (lastActive.current && !node?.children?.includes(lastActive.current)) {
+    lastActive.current = null
+  }
   if (!node || node.meta?.hidden) return null
   const attributes = { 'data-canvas-id': id }
   const definition = catalog.components[node.type]
@@ -54,6 +75,8 @@ export const NodeView = memo(function NodeView({ id }: { id: CanvasNodeId }) {
         breakpoint,
         editing: true,
         attributes,
+        ...(tracks ? { activeChild: lastActive.current } : {}),
+        ...(reads ? { childNodes } : {}),
       })}
     </>
   )

@@ -22,6 +22,7 @@ import {
 import type { DropIndicator, Rect } from '../lib/drop-target'
 import { frameRectOf } from '../lib/frame-handle'
 import { useCanvasStore } from '../use-canvas'
+import { FreeDrag } from './free-drag'
 import { InlineToolbar } from './inline-toolbar'
 
 function sameRect(a: Rect | null, b: Rect | null) {
@@ -130,6 +131,16 @@ function SelectionBox({ id, primary }: { id: CanvasNodeId; primary: boolean }) {
   const dragging = useDragState(
     (state) => state.source?.kind === 'node' && state.source.id === id,
   )
+  // Child of a container in free positioning at this breakpoint: the box
+  // itself is dragged to place it (`parentId\nchildPath`).
+  const free = useCanvasStore((state) => {
+    const parentId = parentOf(state.doc, id)
+    const parent = parentId ? getNode(state.doc, parentId) : undefined
+    const layout = parent && catalog.components[parent.type]?.freeLayout
+    return parent && layout?.enabled(parent.props, state.breakpoint)
+      ? `${parentId}\n${layout.childPath}`
+      : null
+  })
   const label = nodeLabel(catalog, store, id)
   const draggable = useCanvasDraggable(`canvas-node:${id}`, {
     kind: 'node',
@@ -153,6 +164,15 @@ function SelectionBox({ id, primary }: { id: CanvasNodeId; primary: boolean }) {
       )}
       style={box}
     >
+      {free && primary && !locked && !editingText && (
+        <FreeDrag
+          id={id}
+          parentId={free.split('\n')[0]}
+          childPath={free.split('\n')[1]}
+          rect={rect}
+          scale={scale}
+        />
+      )}
       {primary && !isRoot && !editingText && (
         <div
           className={cn(

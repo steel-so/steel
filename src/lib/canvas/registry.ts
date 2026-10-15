@@ -6,6 +6,7 @@ import type {
   CanvasDocument,
   CanvasFragment,
   CanvasNode,
+  CanvasNodeId,
   CanvasProps,
 } from './types'
 
@@ -112,6 +113,13 @@ export interface CanvasRenderProps<P extends CanvasProps = CanvasProps> {
   breakpoint: CanvasBreakpoint
   /** true inside the editor canvas, false for the final output. */
   editing: boolean
+  /** Editor only, for definitions with `tracksSelection`: the child on the
+   * path to the selected node (the slide, tab or panel to show), or the
+   * last one that was. `undefined` in the final output. */
+  activeChild?: CanvasNodeId | null
+  /** The child nodes, in order, for definitions with `readsChildren` (tab
+   * labels, accordion titles drawn by the parent). */
+  childNodes?: CanvasNode[]
 }
 
 export interface CanvasComponentDefinition<
@@ -154,6 +162,23 @@ export interface CanvasComponentDefinition<
    * redraws when its own object changes.
    */
   dependsOn?: (doc: CanvasDocument, node: CanvasNode<P>) => readonly unknown[]
+  /** The canvas passes `activeChild` to `render` (carousels, tabs,
+   * accordions and popups show the child being edited). */
+  tracksSelection?: boolean
+  /** The render receives `childNodes` (it re-renders when a direct child's
+   * object changes, not on deeper edits). */
+  readsChildren?: boolean
+  /**
+   * Free positioning ("posição livre"): while `enabled` for the node's
+   * props at the active breakpoint, its children are placed by x/y instead
+   * of the flow. The canvas lets the selected child be dragged with snapping
+   * guides and writes the responsive numbers `<childPath>.x` and
+   * `<childPath>.y` of the child's props for the active breakpoint.
+   */
+  freeLayout?: {
+    childPath: string
+    enabled: (props: P, breakpoint: CanvasBreakpoint) => boolean
+  }
   render: (props: CanvasRenderProps<P>) => ReactNode
 }
 
