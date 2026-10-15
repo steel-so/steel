@@ -375,12 +375,12 @@ function PageSearch({ page }: { page: SitePageSummaryDTO }) {
             value={tab}
             onValueChange={(value) => setTab(value as SearchPillar)}
           >
-            <TabsList className='grid h-auto w-full grid-cols-3 gap-1 bg-transparent p-0'>
+            <TabsList className='grid h-auto w-full grid-cols-3 gap-1 bg-transparent p-0 group-data-horizontal/tabs:h-auto'>
               {SEARCH_PILLARS.map((pillar) => (
                 <TabsTrigger
                   key={pillar}
                   value={pillar}
-                  className='h-auto rounded-md border py-2 data-active:border-primary'
+                  className='h-auto rounded-md border py-2 data-active:border-primary group-data-horizontal/tabs:after:hidden'
                 >
                   <ScoreRing
                     score={analysis[pillar].score}
