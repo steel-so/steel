@@ -39,6 +39,7 @@ export const QueueName = {
   CrmCampaigns: 'crm-campaigns',
   CrmWorkflowDelay: 'crm-workflow-delay',
   WhatsappButtonActions: 'whatsapp-button-actions',
+  SitePosts: 'site-posts',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -765,4 +766,18 @@ export type CrmWorkflowDelayJob =
 
 export type CrmWorkflowDelayJobPayload = {
   [CrmWorkflowDelayJob.Resume]: { runId: string; stepId: string }
+}
+
+/**
+ * Site blog (slice site-blog): publishes scheduled posts whose date arrived
+ * and expires the published site's route index. Every minute.
+ */
+export const SitePostsJob = {
+  PublishDue: 'publish-due',
+} as const
+
+export type SitePostsJob = (typeof SitePostsJob)[keyof typeof SitePostsJob]
+
+export type SitePostsJobPayload = {
+  [SitePostsJob.PublishDue]: Record<string, never>
 }

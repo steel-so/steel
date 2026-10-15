@@ -30,13 +30,18 @@ export const UNPUBLISHED_ROUTE_INDEX: SiteRouteIndex = {
 export function buildSiteRouteIndex(
   snapshot: SiteSnapshot,
   redirects: SiteRedirectRule[],
+  /** Paths of dynamic pages (blog posts, archives, collection items). */
+  dynamicPaths: string[] = [],
 ): SiteRouteIndex {
   return {
     published: true,
     name: snapshot.name,
-    paths: snapshot.pages.map((page) =>
-      normalizeSitePath(`/${publicPathOf(snapshot, page)}`),
-    ),
+    paths: [
+      ...snapshot.pages.map((page) =>
+        normalizeSitePath(`/${publicPathOf(snapshot, page)}`),
+      ),
+      ...dynamicPaths.map(normalizeSitePath),
+    ],
     redirects,
   }
 }
@@ -47,7 +52,14 @@ export type SiteRouteDecision =
   | { kind: 'not-found' }
 
 /** Paths the runtime serves itself (never a page or a redirect). */
-const OWN_PATHS = ['/sitemap.xml', '/robots.txt', '/_og']
+const OWN_PATHS = [
+  '/sitemap.xml',
+  '/robots.txt',
+  '/_og',
+  // Blog feeds (slice site-blog).
+  '/feed.xml',
+  '/atom.xml',
+]
 
 /** `true` for the runtime's own files, which answer their own status. */
 export function isSiteFilePath(rawPath: string): boolean {

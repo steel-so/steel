@@ -56,6 +56,8 @@ import {
   type ServicedeskSlaJobPayload,
   type ServicedeskTaskRemindersJob,
   type ServicedeskTaskRemindersJobPayload,
+  type SitePostsJob,
+  type SitePostsJobPayload,
   type StatusCollectJob,
   type StatusCollectJobPayload,
   type SteelAgentsJob,
@@ -98,6 +100,7 @@ let trialLifecycleQueue: Queue | null = null
 let whatsappMediaQueue: Queue | null = null
 let whatsappAiReplyQueue: Queue | null = null
 let whatsappButtonActionsQueue: Queue | null = null
+let sitePostsQueue: Queue | null = null
 let whatsappSentimentQueue: Queue | null = null
 let whatsappBroadcastQueue: Queue | null = null
 let whatsappTemplateSyncQueue: Queue | null = null
@@ -1003,6 +1006,24 @@ export function getCrmWorkflowDelayQueue(): Queue<
   >
 }
 
+export function getSitePostsQueue(): Queue<
+  SitePostsJobPayload[SitePostsJob],
+  unknown,
+  SitePostsJob
+> {
+  if (!sitePostsQueue) {
+    sitePostsQueue = new Queue(QueueName.SitePosts, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return sitePostsQueue as Queue<
+    SitePostsJobPayload[SitePostsJob],
+    unknown,
+    SitePostsJob
+  >
+}
+
 // Typed as a full record so a new queue without an entry fails the build.
 const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DataRetention]: getDataRetentionQueue,
@@ -1046,6 +1067,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmCampaigns]: getCrmCampaignsQueue,
   [QueueName.CrmWorkflowDelay]: getCrmWorkflowDelayQueue,
   [QueueName.WhatsappButtonActions]: getWhatsappButtonActionsQueue,
+  [QueueName.SitePosts]: getSitePostsQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */

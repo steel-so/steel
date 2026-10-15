@@ -32,7 +32,7 @@ export interface SiteSnapshotPage {
 
 export interface SiteSnapshotGlobal {
   id: string
-  kind: 'HEADER' | 'FOOTER' | 'SYMBOL'
+  kind: 'HEADER' | 'FOOTER' | 'SYMBOL' | 'TEMPLATE'
   name: string
   document: CanvasDocument
 }
@@ -76,7 +76,7 @@ const SnapshotSchema = z.object({
   globals: z.array(
     z.object({
       id: z.string(),
-      kind: z.enum(['HEADER', 'FOOTER', 'SYMBOL']),
+      kind: z.enum(['HEADER', 'FOOTER', 'SYMBOL', 'TEMPLATE']),
       name: z.string(),
       document: DocumentShape,
     }),
@@ -102,7 +102,7 @@ export interface SnapshotSource {
   }>
   globals: Array<{
     id: string
-    kind: 'HEADER' | 'FOOTER' | 'SYMBOL'
+    kind: 'HEADER' | 'FOOTER' | 'SYMBOL' | 'TEMPLATE'
     name: string
     document: unknown
   }>

@@ -33,6 +33,7 @@ import type {
   SiteTextProps,
   SiteVideoProps,
 } from './schemas'
+import { CMS_STYLE_FNS } from './styles-cms'
 import { ELEMENT_STYLE_FNS } from './styles-elements'
 
 /**
@@ -437,4 +438,5 @@ export const SITE_STYLE_FNS: Record<string, SiteStyleFn> = {
   [SITE_TYPES.social]: social as SiteStyleFn,
   [SITE_TYPES.embed]: embed as SiteStyleFn,
   ...ELEMENT_STYLE_FNS,
+  ...CMS_STYLE_FNS,
 }

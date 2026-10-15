@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { CustomControlProps } from '@/src/lib/canvas/registry'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { type CanvasLink, linkHref } from '@/src/lib/canvas/values'
+import type { SiteCmsContext } from './cms'
 import { safeHref } from './sanitize'
 import type { SiteFormField } from './schemas'
 
@@ -62,6 +63,16 @@ export interface SiteRenderContext {
   /** Inspector control of carousels, tabs and accordions that adds a
    * slide/tab/item (it needs the editor store). */
   childAdder?: ComponentType<CustomControlProps>
+  /** Blog posts and collection items the page shows (slice site-blog). */
+  cms?: SiteCmsContext
+  /** Inspector control that picks a blog category/tag slug of the site;
+   * without it the slug is typed. */
+  blogTermPicker?: ComponentType<CustomControlProps>
+  /** Inspector control that picks a collection of the site. */
+  collectionPicker?: ComponentType<CustomControlProps>
+  /** Inspector control that picks a field of the node's collection (or of
+   * the collection whose item template is being edited). */
+  collectionFieldPicker?: ComponentType<CustomControlProps>
 }
 
 export function defaultFormAction(token: string): string {

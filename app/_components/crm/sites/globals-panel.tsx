@@ -26,7 +26,7 @@ import type { SiteGlobalDTO, SiteGlobalKindDTO } from '@/types/site'
 import { useSiteEditor } from './site-editor-context'
 import { useOpenTarget } from './use-open-target'
 
-type Kind = Exclude<SiteGlobalKindDTO, 'SYMBOL'>
+type Kind = Exclude<SiteGlobalKindDTO, 'SYMBOL' | 'TEMPLATE'>
 
 const COPY: Record<Kind, { title: string; name: string; hint: string }> = {
   HEADER: {

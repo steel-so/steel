@@ -35,6 +35,7 @@ import { processServicedeskReports } from '../src/lib/queue/processors/servicede
 import { processServicedeskRisk } from '../src/lib/queue/processors/servicedesk-risk'
 import { processServicedeskSla } from '../src/lib/queue/processors/servicedesk-sla'
 import { processServicedeskTaskReminders } from '../src/lib/queue/processors/servicedesk-task-reminders'
+import { processSitePosts } from '../src/lib/queue/processors/site-posts'
 import { processStatusCollect } from '../src/lib/queue/processors/status-collect'
 import { processSteelAgents } from '../src/lib/queue/processors/steel-agents'
 import { processUsageRollup } from '../src/lib/queue/processors/usage-rollup'
@@ -69,6 +70,7 @@ import {
   scheduleServicedeskRiskJobs,
   scheduleServicedeskSlaJobs,
   scheduleServicedeskTaskRemindersJobs,
+  scheduleSitePostsJobs,
   scheduleStatusCollectJobs,
   scheduleSteelAgentsJobs,
   scheduleTrialLifecycleJobs,
@@ -183,6 +185,7 @@ async function main(): Promise<void> {
     registerWorker(QueueName.CrmScheduledSend, processCrmScheduledSend),
   )
   workers.push(registerWorker(QueueName.CrmCampaigns, processCrmCampaigns))
+  workers.push(registerWorker(QueueName.SitePosts, processSitePosts))
   workers.push(
     registerWorker(QueueName.CrmWorkflowDelay, processCrmWorkflowDelay),
   )
@@ -280,6 +283,7 @@ async function main(): Promise<void> {
   await scheduleWorkspaceExportJobs()
   await scheduleWorkspaceIntegrationsJobs()
   await scheduleCrmCampaignsJobs()
+  await scheduleSitePostsJobs()
 
   logger.info('queue.worker.started', {
     component: 'Worker',

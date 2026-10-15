@@ -3,7 +3,7 @@ import type { SitePageSeoDTO } from '@/src/schemas/site-page.schema'
 import type { SiteSettingsDTO } from '@/src/schemas/site.schema'
 
 export type SiteStatusDTO = 'DRAFT' | 'PUBLISHED'
-export type SiteGlobalKindDTO = 'HEADER' | 'FOOTER' | 'SYMBOL'
+export type SiteGlobalKindDTO = 'HEADER' | 'FOOTER' | 'SYMBOL' | 'TEMPLATE'
 
 export interface SiteDTO {
   id: string

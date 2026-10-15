@@ -144,3 +144,6 @@ export const CommunicationWaitingCron = '*/5 * * * *' as const
 
 /** CRM multichannel campaigns safety-net tick: every 5 minutes. */
 export const CrmCampaignsTickCron = '*/5 * * * *' as const
+
+/** Site blog: publish the scheduled posts that are due — every minute. */
+export const SitePostsPublishCron = '* * * * *' as const

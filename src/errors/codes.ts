@@ -847,6 +847,33 @@ export const ERROR_CODES = {
   SITE_REDIRECT_PATH_TAKEN: { code: 'SITE_REDIRECT_PATH_TAKEN', status: 409 },
   // The redirect points to itself or closes a loop with another one.
   SITE_REDIRECT_LOOP: { code: 'SITE_REDIRECT_LOOP', status: 422 },
+  // Site blog and collections (slice site-blog).
+  SITE_POST_NOT_FOUND: { code: 'SITE_POST_NOT_FOUND', status: 404 },
+  SITE_POST_SLUG_TAKEN: { code: 'SITE_POST_SLUG_TAKEN', status: 409 },
+  SITE_BLOG_TERM_NOT_FOUND: { code: 'SITE_BLOG_TERM_NOT_FOUND', status: 404 },
+  SITE_BLOG_TERM_SLUG_TAKEN: { code: 'SITE_BLOG_TERM_SLUG_TAKEN', status: 409 },
+  SITE_AUTHOR_NOT_FOUND: { code: 'SITE_AUTHOR_NOT_FOUND', status: 404 },
+  SITE_AUTHOR_TAKEN: { code: 'SITE_AUTHOR_TAKEN', status: 409 },
+  SITE_COLLECTION_NOT_FOUND: { code: 'SITE_COLLECTION_NOT_FOUND', status: 404 },
+  SITE_COLLECTION_SLUG_TAKEN: {
+    code: 'SITE_COLLECTION_SLUG_TAKEN',
+    status: 409,
+  },
+  SITE_COLLECTION_ITEM_NOT_FOUND: {
+    code: 'SITE_COLLECTION_ITEM_NOT_FOUND',
+    status: 404,
+  },
+  SITE_COLLECTION_ITEM_SLUG_TAKEN: {
+    code: 'SITE_COLLECTION_ITEM_SLUG_TAKEN',
+    status: 409,
+  },
+  // Item data does not match the collection's field definitions.
+  SITE_COLLECTION_ITEM_INVALID: {
+    code: 'SITE_COLLECTION_ITEM_INVALID',
+    status: 422,
+  },
+  // The AI provider failed or returned an unusable blog draft.
+  SITE_BLOG_AI_FAILED: { code: 'SITE_BLOG_AI_FAILED', status: 502 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
