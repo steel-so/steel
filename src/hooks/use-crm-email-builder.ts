@@ -4,6 +4,7 @@ import type {
   EmailBuilderContact,
   EmailBuilderDocument,
   EmailBuilderLayoutId,
+  EmailCanvasDocument,
 } from '@/src/schemas/crm-email-builder.schema'
 import type {
   CrmEmailBrandDTO,
@@ -40,13 +41,17 @@ export function useCrmEmailTemplate(workspaceId: string, templateId: string) {
   })
 }
 
-/** Starts a BUILDER template from a gallery layout. */
+/** Starts a BUILDER template from a gallery layout or a v2 document. */
 export function useCreateCrmEmailBuilderTemplate(workspaceId: string) {
   return useMutation({
     mutationFn: (data: {
       name: string
       subject: string
-      builderLayout: EmailBuilderLayoutId
+      /** A gallery layout (v1, or v2 with `builderVersion: 2`)… */
+      builderLayout?: EmailBuilderLayoutId
+      builderVersion?: 1 | 2
+      /** …or a ready Steel Canvas document (blank starter). */
+      builderDocument?: EmailCanvasDocument
     }) =>
       apiFetch<CrmEmailTemplateDTO>(
         `/api/workspaces/${workspaceId}/crm/email-templates`,
@@ -56,22 +61,34 @@ export function useCreateCrmEmailBuilderTemplate(workspaceId: string) {
   })
 }
 
+export type SaveCrmEmailTemplateInput = {
+  name?: string
+  subject?: string
+  builderDocument?: EmailBuilderDocument | EmailCanvasDocument
+}
+
+/** PATCH of a builder template (document, subject, name). A plain call for
+ * editors that must not re-render on mutation state (the canvas editor). */
+export function saveCrmEmailTemplate(
+  workspaceId: string,
+  templateId: string,
+  data: SaveCrmEmailTemplateInput,
+) {
+  return apiFetch<CrmEmailTemplateDTO>(
+    `/api/workspaces/${workspaceId}/crm/email-templates/${templateId}`,
+    json('PATCH', data),
+    'Erro ao salvar o template',
+  )
+}
+
 /** Autosave of the editor (document, subject, name). */
 export function useSaveCrmEmailBuilderTemplate(
   workspaceId: string,
   templateId: string,
 ) {
   return useMutation({
-    mutationFn: (data: {
-      name?: string
-      subject?: string
-      builderDocument?: EmailBuilderDocument
-    }) =>
-      apiFetch<CrmEmailTemplateDTO>(
-        `/api/workspaces/${workspaceId}/crm/email-templates/${templateId}`,
-        json('PATCH', data),
-        'Erro ao salvar o template',
-      ),
+    mutationFn: (data: SaveCrmEmailTemplateInput) =>
+      saveCrmEmailTemplate(workspaceId, templateId, data),
   })
 }
 
