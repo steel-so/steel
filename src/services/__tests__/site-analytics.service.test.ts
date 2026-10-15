@@ -14,7 +14,9 @@ vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/site.repository')
 vi.mock('@/src/repositories/site-page.repository')
 vi.mock('@/src/repositories/site-analytics.repository')
+vi.mock('@/src/repositories/crm-campaign.repository')
 
+import { CrmCampaignConversionRepository } from '@/src/repositories/crm-campaign.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteAnalyticsRepository } from '@/src/repositories/site-analytics.repository'
@@ -84,6 +86,17 @@ beforeEach(() => {
       { path: '/sumiu', pageId: null, views: 0, conversions: 1 },
     ]),
   )
+  vi.mocked(CrmCampaignConversionRepository.countBySite).mockResolvedValue(
+    ok([
+      {
+        campaignId: 'c1',
+        name: 'Black Friday',
+        slug: 'bf',
+        views: 4,
+        formSubmissions: 1,
+      },
+    ]),
+  )
 })
 
 describe('SiteAnalyticsService.get', () => {
@@ -149,6 +162,23 @@ describe('SiteAnalyticsService.get', () => {
       },
       { path: '/sumiu', label: null, views: 0, conversions: 1, rate: 0 },
     ])
+    // Traffic of CRM campaigns, in the same window.
+    expect(result.campaigns).toEqual([
+      {
+        campaignId: 'c1',
+        name: 'Black Friday',
+        slug: 'bf',
+        views: 4,
+        formSubmissions: 1,
+      },
+    ])
+    const campaignWindow = vi.mocked(
+      CrmCampaignConversionRepository.countBySite,
+    ).mock.calls[0]
+    expect(campaignWindow[0]).toBe(SITE)
+    expect(campaignWindow[1].start.toISOString()).toBe(
+      '2026-10-13T04:00:00.000Z',
+    )
 
     // Manaus is UTC-4: the window starts at 04:00 UTC.
     const window = analytics.daily.mock.calls[0][0]
@@ -169,6 +199,13 @@ describe('SiteAnalyticsService.get', () => {
 
   it('returns the first failing read', async () => {
     analytics.breakdown.mockResolvedValueOnce(err(databaseError()))
+    expectErr(
+      await SiteAnalyticsService.get('u1', WS, SITE, {}, NOW),
+      'DATABASE_ERROR',
+    )
+    vi.mocked(
+      CrmCampaignConversionRepository.countBySite,
+    ).mockResolvedValueOnce(err(databaseError()))
     expectErr(
       await SiteAnalyticsService.get('u1', WS, SITE, {}, NOW),
       'DATABASE_ERROR',

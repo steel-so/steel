@@ -25,8 +25,11 @@ import {
 } from '../crm-campaign/tokens'
 import {
   firstName,
+  quickReplyCarriesLink,
+  renderButtonUrl,
   renderZapiText,
   resolveTemplateValues,
+  templateBlockedReason,
   templateFields,
   validateCampaignWhatsApp,
 } from '../crm-campaign/whatsapp-rules'
@@ -426,5 +429,74 @@ describe('WhatsApp provider rules', () => {
   it('should take the first name', () => {
     expect(firstName('  Ana  Souza ')).toBe('Ana')
     expect(firstName('')).toBe('')
+  })
+})
+
+describe('WhatsApp template blocking and quick replies', () => {
+  it('should explain why paused, disabled, unapproved or red templates are blocked', () => {
+    expect(
+      templateBlockedReason({ status: 'APPROVED', quality: 'GREEN' }),
+    ).toBeNull()
+    expect(templateBlockedReason({ status: 'APPROVED' })).toBeNull()
+    expect(
+      templateBlockedReason({ status: 'APPROVED', quality: 'RED' }),
+    ).toMatch(/Qualidade baixa/)
+    expect(
+      templateBlockedReason({
+        status: 'PAUSED',
+        statusReason: 'Muitas denúncias',
+      }),
+    ).toMatch(/pausou.*Motivo informado: Muitas denúncias\./)
+    expect(templateBlockedReason({ status: 'DISABLED' })).toMatch(/desativou/)
+    expect(templateBlockedReason({ status: 'PENDING' })).toMatch(
+      /não está aprovado/,
+    )
+    expect(
+      validateCampaignWhatsApp({
+        provider: 'META',
+        template: { status: 'APPROVED', quality: 'RED', components: [] },
+        variables: null,
+        text: null,
+        mediaUrl: null,
+      })[0],
+    ).toMatch(/Qualidade baixa/)
+  })
+
+  it('should accept the campaign link in a quick reply URL button', () => {
+    const buttons = [
+      { type: 'REPLY' },
+      { type: 'URL', url: 'https://x.test/{link}' },
+    ]
+    expect(quickReplyCarriesLink(buttons)).toBe(true)
+    expect(
+      quickReplyCarriesLink([{ type: 'URL', url: 'https://x.test' }]),
+    ).toBe(false)
+    expect(quickReplyCarriesLink([{ type: 'URL' }])).toBe(false)
+    const base = {
+      provider: 'ZAPI' as const,
+      template: null,
+      variables: null,
+      mediaUrl: null,
+      text: 'Oi {nome}',
+    }
+    expect(
+      validateCampaignWhatsApp({ ...base, quickReply: { buttons } }),
+    ).toEqual([])
+    expect(
+      validateCampaignWhatsApp({ ...base, quickReply: { buttons: [] } })[0],
+    ).toMatch(/\{link\}/)
+    expect(validateCampaignWhatsApp({ ...base, quickReply: null })).toEqual([
+      'A resposta rápida escolhida não existe mais',
+    ])
+  })
+
+  it('should put the recipient link in a button URL', () => {
+    expect(
+      renderButtonUrl('https://x.test/?to={link}', {
+        name: 'Ana',
+        link: 'https://l',
+        linkCode: 'c',
+      }),
+    ).toBe('https://x.test/?to=https://l')
   })
 })
