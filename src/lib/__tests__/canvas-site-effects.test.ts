@@ -34,7 +34,7 @@ import {
   siteRuntimeScripts,
 } from '@/src/lib/canvas-site/runtime'
 
-const node = (props: Record<string, unknown>, type = SITE_TYPES.text) =>
+const node = (props: Record<string, unknown>, type: string = SITE_TYPES.text) =>
   ({ id: 'n1', type, props }) as CanvasNode
 
 describe('click interactions', () => {
