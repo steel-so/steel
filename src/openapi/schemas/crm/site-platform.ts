@@ -64,6 +64,20 @@ export const SiteAnalyticsDTOSchema = dto(
           rate: z.number(),
         }),
       ),
+      campaigns: z
+        .array(
+          z.object({
+            campaignId: z.string(),
+            name: z.string(),
+            slug: z.string(),
+            views: z.number().int(),
+            formSubmissions: z.number().int(),
+          }),
+        )
+        .meta({
+          description:
+            'Tráfego vindo de campanhas do CRM: visitas e formulários enviados no site por campanha.',
+        }),
     })
     .meta({
       description:

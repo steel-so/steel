@@ -16,6 +16,7 @@ import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
 import type { RecordSiteViewDTO } from '@/src/schemas/site-view.schema'
 import { assertModuleEnabled } from './authz'
+import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 
 /** What the public runtime renders: the live snapshot and where it lives. */
 export interface PublishedSite {
@@ -105,17 +106,19 @@ export const SitePublicService = {
         ? dto.pageId
         : null
 
-    return SiteRepository.recordView({
+    const now = request.now ?? new Date()
+    const visitorHash = siteVisitorHash({
+      ip: request.ip,
+      userAgent: request.userAgent,
+      siteId: published.value.id,
+      secret: BETTER_AUTH_SECRET,
+      now,
+    })
+    const recorded = await SiteRepository.recordView({
       siteId: published.value.id,
       pageId,
       path: dto.path,
-      visitorHash: siteVisitorHash({
-        ip: request.ip,
-        userAgent: request.userAgent,
-        siteId: published.value.id,
-        secret: BETTER_AUTH_SECRET,
-        now: request.now ?? new Date(),
-      }),
+      visitorHash,
       referrer: referrerHost(dto.referrer, request.host),
       utmSource: dto.utmSource,
       utmMedium: dto.utmMedium,
@@ -125,6 +128,30 @@ export const SitePublicService = {
       kind: dto.kind ?? 'VIEW',
       formToken: dto.kind === 'CONVERSION' ? dto.formToken : undefined,
     })
+    if (!recorded.ok) return recorded
+
+    // CRM campaign attribution of the view (best-effort). The runtime only
+    // sends the beacon when the visitor's consent allows, and one view per
+    // visitor, page and day counts (the hash rotates daily). Form
+    // conversions are attributed by the form submission itself.
+    if ((dto.kind ?? 'VIEW') === 'VIEW' && (dto.ref || dto.utmCampaign)) {
+      await CrmCampaignTrackingService.attribute(
+        {
+          workspaceId: published.value.workspaceId,
+          kind: 'SITE_VIEW',
+          sourceRef: `${visitorHash}:${pageId ?? dto.path}`,
+          ref: {
+            ref: dto.ref,
+            utmCampaign: dto.utmCampaign,
+            utmSource: dto.utmSource,
+          },
+          siteId: published.value.id,
+          sitePageId: pageId ?? undefined,
+        },
+        now,
+      )
+    }
+    return ok(undefined)
   },
 
   /** Public paths and redirects of a site (see `SiteRouteIndex`), read
