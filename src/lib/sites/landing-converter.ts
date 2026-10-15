@@ -5,6 +5,11 @@ import { SITE_TYPES } from '@/src/lib/canvas-site'
 import type { SocialNetwork } from '@/src/lib/canvas-site/icons'
 import { SOCIAL_NETWORKS } from '@/src/lib/canvas-site/icons'
 import {
+  SECTION_BUILDERS,
+  SITE_KITS,
+  type SiteKitId,
+} from '@/src/lib/canvas-site/presets'
+import {
   anchor,
   box,
   button as buttonSpec,
@@ -16,13 +21,13 @@ import {
   overline,
   row,
   section,
-  solid,
   spec,
   text as textSpec,
   toDocument,
   url,
   video as videoSpec,
 } from '@/src/lib/canvas-site/presets/builder'
+import type { SiteTheme } from '@/src/lib/canvas-site/theme'
 import {
   type CrmLandingPageSectionContent,
   CrmLandingPageSectionContentSchema,
@@ -38,10 +43,25 @@ import {
  * passes `validateSiteDocument`), carrying the landing page's copy, links,
  * images and forms, with the same pt-BR anchor ids (`#servicos` keeps
  * working). The first HEADER/FOOTER become the site's header/footer globals.
- * The template-specific copy overrides (`texts`/`hrefs`) and decorative
- * dropdowns are not carried over; the visual style comes from the site
- * theme, not from the old template.
+ * The look comes from the catalog's "Seções prontas": each band takes the
+ * section props (background, padding, text color, landmark tag) of the
+ * preset of the same type in the kit closest to the old template, and the
+ * site gets that kit's theme. The template-specific copy overrides
+ * (`texts`/`hrefs`) and decorative dropdowns are not carried over.
  */
+
+/** Kit of the catalog closest to each landing page template. */
+const TEMPLATE_KITS: Record<string, SiteKitId> = {
+  agency: 'agency',
+  b2b: 'b2b',
+  consultation: 'b2b',
+  coworking: 'b2b',
+  'job-site': 'b2b',
+}
+
+export function kitForTemplate(templateKey: string): SiteKitId {
+  return TEMPLATE_KITS[templateKey] ?? 'saas'
+}
 
 export interface LandingSource {
   title: string
@@ -58,6 +78,8 @@ export interface ConvertedLanding {
   page: CanvasDocument
   header: CanvasDocument | null
   footer: CanvasDocument | null
+  /** Theme of the kit the sections were styled with. */
+  theme: SiteTheme
   /** Sections skipped because their stored content no longer parses. */
   skipped: number
 }
@@ -368,9 +390,16 @@ function convertSection(content: CrmLandingPageSectionContent): Maybe[] {
   }
 }
 
-const TAG: Partial<Record<CrmLandingPageSectionType, 'header' | 'footer'>> = {
-  HEADER: 'header',
-  FOOTER: 'footer',
+/** Section props of the kit's preset for this type (look, landmark tag),
+ * without its content-specific anchor. */
+function presetLook(
+  type: CrmLandingPageSectionType,
+  kit: SiteKitId,
+): Record<string, unknown> {
+  const builder =
+    SECTION_BUILDERS[type.toLowerCase() as keyof typeof SECTION_BUILDERS]
+  const { anchor: _anchor, ...props } = builder(SITE_KITS[kit]).props
+  return props
 }
 
 export function convertLandingPage(source: LandingSource): ConvertedLanding {
@@ -378,6 +407,7 @@ export function convertLandingPage(source: LandingSource): ConvertedLanding {
     .filter((section) => section.enabled)
     .sort((a, b) => a.order - b.order)
   const anchors = sectionAnchors(enabled)
+  const kit = kitForTemplate(source.templateKey)
 
   const page: NodeSpec[] = []
   let header: NodeSpec | null = null
@@ -391,13 +421,7 @@ export function convertLandingPage(source: LandingSource): ConvertedLanding {
       return
     }
     const band = section(
-      {
-        anchor: anchors[index].id,
-        ...(TAG[item.type] ? { tag: TAG[item.type] } : {}),
-        ...(item.type === 'TESTIMONIAL'
-          ? { background: solid('token:surface') }
-          : {}),
-      },
+      { ...presetLook(item.type, kit), anchor: anchors[index].id },
       compact(convertSection(parsed.data)),
     )
     if (item.type === 'HEADER' && !header) header = band
@@ -411,8 +435,9 @@ export function convertLandingPage(source: LandingSource): ConvertedLanding {
 
   return {
     page: toDocument(page),
-    header: header ? toDocument([header]) : null,
-    footer: footer ? toDocument([footer]) : null,
+    header: header ? toDocument([header], { tag: 'div' }) : null,
+    footer: footer ? toDocument([footer], { tag: 'div' }) : null,
+    theme: SITE_KITS[kit].theme,
     skipped,
   }
 }

@@ -9,6 +9,7 @@ import {
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
 import { appError } from '@/src/errors/app-error'
+import { siteCatalog } from '@/src/lib/canvas-site'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
@@ -417,6 +418,71 @@ describe('SitePageService.duplicate', () => {
     pages.create.mockResolvedValueOnce(err(databaseError()))
     expectErr(
       await SitePageService.duplicate('u1', WS, SITE, 'consultoria', {}),
+      'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('admin-only elements', () => {
+  function withEmbed(html = '<b>oi</b>') {
+    const doc = createSiteDocument()
+    doc.nodes.s1.children = ['h1', 'e1']
+    doc.nodes.e1 = {
+      id: 'e1',
+      type: 'site.embed',
+      props: {
+        ...siteCatalog.components['site.embed'].defaultProps(),
+        html,
+      },
+    }
+    return doc
+  }
+
+  it('blocks members from adding embedded code', async () => {
+    const error = expectErr(
+      await SitePageService.create('u1', WS, SITE, {
+        title: 'x',
+        document: withEmbed(),
+      }),
+      'FORBIDDEN',
+    )
+    expect(error.message).toContain('administradores')
+    expect(pages.create).not.toHaveBeenCalled()
+  })
+
+  it('lets admins add it and members keep an unchanged one', async () => {
+    membership.findByUserAndWorkspace.mockResolvedValue(
+      ok(createFakeMembership({ role: 'ADMIN' })),
+    )
+    expectOk(
+      await SitePageService.create('u1', WS, SITE, {
+        title: 'x',
+        document: withEmbed(),
+      }),
+    )
+
+    membership.findByUserAndWorkspace.mockResolvedValue(
+      ok(createFakeMembership({ role: 'MEMBER' })),
+    )
+    pages.findById.mockResolvedValue(
+      ok(page({ id: 'contato', document: withEmbed() as never })),
+    )
+    expectOk(
+      await SitePageService.update('u1', WS, SITE, 'contato', {
+        document: withEmbed(),
+      }),
+    )
+    expectErr(
+      await SitePageService.update('u1', WS, SITE, 'contato', {
+        document: withEmbed('<i>novo</i>'),
+      }),
+      'FORBIDDEN',
+    )
+    pages.findById.mockResolvedValueOnce(err(databaseError()))
+    expectErr(
+      await SitePageService.update('u1', WS, SITE, 'contato', {
+        document: withEmbed(),
+      }),
       'DATABASE_ERROR',
     )
   })

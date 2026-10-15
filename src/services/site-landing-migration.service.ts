@@ -108,7 +108,7 @@ export const SiteLandingMigrationService = {
         createdById: landing.createdById,
         name: landing.title,
         slug: slug.value,
-        theme: {},
+        theme: json(converted.theme),
         settings: json(DEFAULT_SITE_SETTINGS),
         sourceLandingPageId: landing.id,
       },

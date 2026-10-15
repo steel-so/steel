@@ -8,6 +8,7 @@ import {
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
 import { appError } from '@/src/errors/app-error'
+import { siteCatalog } from '@/src/lib/canvas-site'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
@@ -224,5 +225,40 @@ describe('SiteGlobalService', () => {
     ]) {
       expectErr(await call(), 'SITE_NOT_FOUND')
     }
+  })
+})
+
+describe('SiteGlobalService admin-only elements', () => {
+  const withEmbed = () => {
+    const doc = createSiteDocument()
+    doc.nodes.s1.children = ['h1', 'e1']
+    doc.nodes.e1 = {
+      id: 'e1',
+      type: 'site.embed',
+      props: siteCatalog.components['site.embed'].defaultProps(),
+    }
+    return doc
+  }
+
+  it('blocks members and keeps untouched embeds on update', async () => {
+    membership.findByUserAndWorkspace.mockResolvedValue(
+      ok(createFakeMembership({ role: 'MEMBER' })),
+    )
+    expectErr(
+      await SiteGlobalService.create('u1', WS, SITE, {
+        kind: 'SYMBOL',
+        name: 'x',
+        document: withEmbed(),
+      }),
+      'FORBIDDEN',
+    )
+    globals.findById.mockResolvedValue(
+      ok({ ...header, document: withEmbed() as never }),
+    )
+    expectOk(
+      await SiteGlobalService.update('u1', WS, SITE, 'g1', {
+        document: withEmbed(),
+      }),
+    )
   })
 })

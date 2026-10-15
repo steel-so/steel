@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   compileSiteCss,
-  createSiteCatalog,
   needsFormScript,
   parseSiteTheme,
   SITE_FORM_SCRIPT,
@@ -76,6 +76,20 @@ export async function generateMetadata({
   }
 }
 
+/** Header/footer globals render their root as `div` (their sections carry
+ * the landmarks); only the page root is `main`. */
+function asChrome(doc: CanvasDocument | undefined): CanvasDocument | undefined {
+  if (!doc) return undefined
+  const root = doc.nodes[doc.rootId]
+  return {
+    ...doc,
+    nodes: {
+      ...doc.nodes,
+      [doc.rootId]: { ...root, props: { ...root.props, tag: 'div' } },
+    },
+  }
+}
+
 export default async function PublishedSitePage({ params }: PageProps) {
   const { siteSlug, path = [] } = await params
   const site = await loadPublishedSite(siteSlug)
@@ -84,9 +98,9 @@ export default async function PublishedSitePage({ params }: PageProps) {
   if (!page) notFound()
 
   const { snapshot } = site
-  const header = globalOf(snapshot, 'HEADER')
-  const footer = globalOf(snapshot, 'FOOTER')
-  const documents = [header?.document, page.document, footer?.document].filter(
+  const header = asChrome(globalOf(snapshot, 'HEADER')?.document)
+  const footer = asChrome(globalOf(snapshot, 'FOOTER')?.document)
+  const documents = [header, page.document, footer].filter(
     (doc) => doc !== undefined,
   )
   const [forms, requestHeaders] = await Promise.all([
@@ -107,9 +121,10 @@ export default async function PublishedSitePage({ params }: PageProps) {
   const context: SiteRenderContext = {
     pages,
     currentPageId: page.id,
+    pageHref: (pageId) => pages.find((item) => item.id === pageId)?.path,
     forms,
+    formAction: (token) => `/api/crm/forms/${encodeURIComponent(token)}/submit`,
   }
-  const catalog = createSiteCatalog(context)
   const css = compileSiteCss(documents, {
     theme: parseSiteTheme(snapshot.theme),
   })
@@ -121,15 +136,12 @@ export default async function PublishedSitePage({ params }: PageProps) {
           and per-breakpoint media queries (no inline styles on elements). */}
       <style>{css}</style>
       <style>{SITE_CHROME_CSS}</style>
-      {header ? <SiteDocument doc={header.document} catalog={catalog} /> : null}
-      <main id='conteudo'>
-        <SiteDocument doc={page.document} catalog={catalog} />
-      </main>
-      {footer ? <SiteDocument doc={footer.document} catalog={catalog} /> : null}
+      {header ? <SiteDocument doc={header} context={context} /> : null}
+      <SiteDocument doc={page.document} context={context} />
+      {footer ? <SiteDocument doc={footer} context={context} /> : null}
       {needsFormScript(documents) ? (
         <script
           nonce={nonce}
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: constant script of the site catalog (no user input), inlined once with the CSP nonce.
           dangerouslySetInnerHTML={{ __html: SITE_FORM_SCRIPT }}
         />
       ) : null}

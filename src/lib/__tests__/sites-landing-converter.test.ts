@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
+import { SITE_KITS } from '@/src/lib/canvas-site/presets'
 import { validateSiteDocument } from '@/src/lib/sites/document'
 import {
   convertLandingPage,
+  kitForTemplate,
   type LandingSource,
 } from '@/src/lib/sites/landing-converter'
 
@@ -167,6 +169,32 @@ function props(doc: CanvasDocument, type: string) {
     .map((node) => node.props)
 }
 
+describe('kitForTemplate', () => {
+  it('maps templates to the closest kit', () => {
+    expect(kitForTemplate('agency')).toBe('agency')
+    expect(kitForTemplate('coworking')).toBe('b2b')
+    expect(kitForTemplate('web-application')).toBe('saas')
+  })
+
+  it('styles bands with the kit preset and returns its theme', () => {
+    const agency = convertLandingPage({
+      title: 'x',
+      templateKey: 'agency',
+      sections: sections({ HERO: { title: 'A' } }),
+    })
+    const saas = convertLandingPage({
+      title: 'x',
+      templateKey: 'saas-subscription',
+      sections: sections({ HERO: { title: 'A' } }),
+    })
+    expect(agency.theme).toEqual(SITE_KITS.agency.theme)
+    expect(saas.theme).toEqual(SITE_KITS.saas.theme)
+    const band = (doc: CanvasDocument) => props(doc, 'site.section')[0]
+    expect(band(agency.page)).toMatchObject({ anchor: 'destaque' })
+    expect(band(agency.page)).not.toEqual(band(saas.page))
+  })
+})
+
 describe('convertLandingPage', () => {
   it.each([
     ['full', FULL],
@@ -228,11 +256,10 @@ describe('convertLandingPage', () => {
       }),
     )
     expect(props(result.page, 'site.section')).toContainEqual(
-      expect.objectContaining({
-        anchor: 'depoimentos',
-        background: { kind: 'color', color: 'token:surface' },
-      }),
+      expect.objectContaining({ anchor: 'depoimentos' }),
     )
+    expect(result.header?.nodes.root.props).toMatchObject({ tag: 'div' })
+    expect(result.footer?.nodes.root.props).toMatchObject({ tag: 'div' })
     expect(
       props(result.header as CanvasDocument, 'site.menu')[0],
     ).toMatchObject({

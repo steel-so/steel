@@ -11,7 +11,7 @@ import type {
 } from '@/src/schemas/site-global.schema'
 import type { SiteGlobalDTO } from '@/types/site'
 import { authorizeSite } from './site-access'
-import { checkSiteDocument } from './site-page.service'
+import { assertAdminOnlyAllowed, checkSiteDocument } from './site-page.service'
 
 /** Abuse guard: header + footer + symbols. */
 export const MAX_GLOBALS_PER_SITE = 50
@@ -80,6 +80,13 @@ export const SiteGlobalService = {
       dto.document ?? createEmptySiteDocument(),
     )
     if (!document.ok) return document
+    const allowed = await assertAdminOnlyAllowed(
+      actorId,
+      workspaceId,
+      document.value,
+      async () => ok(null),
+    )
+    if (!allowed.ok) return allowed
 
     const created = await SiteGlobalRepository.create({
       siteId,
@@ -116,6 +123,13 @@ export const SiteGlobalService = {
     if (dto.document !== undefined) {
       const checked = checkSiteDocument(dto.document)
       if (!checked.ok) return checked
+      const allowed = await assertAdminOnlyAllowed(
+        actorId,
+        workspaceId,
+        checked.value,
+        async () => ok(existing.value.document),
+      )
+      if (!allowed.ok) return allowed
       document = checked.value
     }
 

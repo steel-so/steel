@@ -1,6 +1,9 @@
 import type { Prisma, SitePage } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { forbidden } from '@/src/errors'
 import { appError } from '@/src/errors/app-error'
+import type { CanvasNode } from '@/src/lib/canvas/types'
+import { SITE_ADMIN_ONLY_TYPES } from '@/src/lib/canvas-site'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
   createEmptySiteDocument,
@@ -18,6 +21,7 @@ import type {
   UpdateSitePageDTO,
 } from '@/src/schemas/site-page.schema'
 import type { SitePageDTO, SitePageSummaryDTO } from '@/types/site'
+import { assertModulePrivileged } from './authz'
 import { authorizeSite } from './site-access'
 
 /** Abuse guards. */
@@ -95,6 +99,49 @@ function parentPathOf(
   return pages.find((page) => page.id === parentId)?.path ?? null
 }
 
+/** Admin-only nodes (`site.embed`) of a document, by id → props JSON. */
+function adminOnlyNodes(doc: unknown): Map<string, string> {
+  const nodes = (doc as { nodes?: Record<string, CanvasNode> } | null)?.nodes
+  const found = new Map<string, string>()
+  for (const node of Object.values(nodes ?? {})) {
+    if (SITE_ADMIN_ONLY_TYPES.includes(node.type)) {
+      found.set(node.id, JSON.stringify(node.props))
+    }
+  }
+  return found
+}
+
+/**
+ * Admin-only elements (embedded code) can only be added or changed by
+ * workspace OWNER/ADMIN. Ones already in the document (`previous`) may stay
+ * untouched when a member edits the rest of the page.
+ */
+export async function assertAdminOnlyAllowed(
+  actorId: string,
+  workspaceId: string,
+  next: unknown,
+  previous: () => Promise<Result<unknown>>,
+): Promise<Result<true>> {
+  const incoming = adminOnlyNodes(next)
+  if (incoming.size === 0) return ok(true)
+  const before = await previous()
+  if (!before.ok) return before
+  const known = adminOnlyNodes(before.value)
+  const changed = [...incoming].some(([id, props]) => known.get(id) !== props)
+  if (!changed) return ok(true)
+  const privileged = await assertModulePrivileged(actorId, workspaceId, 'CRM')
+  if (!privileged.ok) {
+    return err(
+      forbidden(
+        'Só administradores podem adicionar ou editar código incorporado',
+      ),
+    )
+  }
+  return ok(true)
+}
+
+const NO_PREVIOUS = async (): Promise<Result<unknown>> => ok(null)
+
 async function loadPages(siteId: string): Promise<Result<SitePageSummary[]>> {
   return SitePageRepository.listBySite(siteId)
 }
@@ -159,6 +206,13 @@ export const SitePageService = {
       dto.document ?? createEmptySiteDocument(),
     )
     if (!document.ok) return document
+    const allowed = await assertAdminOnlyAllowed(
+      actorId,
+      workspaceId,
+      document.value,
+      NO_PREVIOUS,
+    )
+    if (!allowed.ok) return allowed
 
     const parentPath = parentPathOf(pages.value, parentId)
     const slug =
@@ -207,6 +261,16 @@ export const SitePageService = {
     if (dto.document !== undefined) {
       const checked = checkSiteDocument(dto.document)
       if (!checked.ok) return checked
+      const allowed = await assertAdminOnlyAllowed(
+        actorId,
+        workspaceId,
+        checked.value,
+        async () => {
+          const page = await SitePageRepository.findById(pageId, siteId)
+          return page.ok ? ok(page.value.document) : page
+        },
+      )
+      if (!allowed.ok) return allowed
       document = checked.value
     }
 
