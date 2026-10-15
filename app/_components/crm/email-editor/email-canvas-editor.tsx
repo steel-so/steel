@@ -49,6 +49,7 @@ import { ProductPickerControl } from './product-picker-control'
 import { SavedBlocksPanel } from './saved-blocks-panel'
 import { SendTestButton } from './send-test-dialog'
 import { createTemplateMetaStore, type TemplateMeta } from './template-meta'
+import { UseInCampaignButton } from './use-in-campaign-button'
 import { VariablesPanel } from './variables-panel'
 import { VersionHistoryButton } from './version-history'
 
@@ -73,6 +74,7 @@ function renderActions() {
       <VersionHistoryButton />
       <PreviewButton />
       <SendTestButton />
+      <UseInCampaignButton />
     </div>
   )
 }
@@ -98,6 +100,7 @@ export function EmailCanvasEditor({
   brand: savedBrand,
   initialDocument,
   allowHtml,
+  returnTo = null,
 }: {
   workspaceId: string
   slug: string
@@ -107,6 +110,8 @@ export function EmailCanvasEditor({
   initialDocument: CanvasDocument
   /** Workspace OWNER/ADMIN: the HTML block is offered in the palette. */
   allowHtml: boolean
+  /** Campaign wizard to go back to with this template selected. */
+  returnTo?: string | null
 }) {
   const queryClient = useQueryClient()
   // A plain call, not useMutation: the editor must not re-render (and redraw
@@ -353,6 +358,7 @@ export function EmailCanvasEditor({
       flushMeta,
       flushDocument,
       applyTemplate,
+      returnTo,
     }),
     [
       workspaceId,
@@ -365,6 +371,7 @@ export function EmailCanvasEditor({
       flushMeta,
       flushDocument,
       applyTemplate,
+      returnTo,
     ],
   )
 

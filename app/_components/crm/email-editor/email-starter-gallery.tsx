@@ -124,9 +124,12 @@ function StarterThumbnail({
 export function EmailStarterGallery({
   workspaceId,
   slug,
+  returnTo = null,
 }: {
   workspaceId: string
   slug: string
+  /** Campaign wizard that asked for a new template (kept for the editor). */
+  returnTo?: string | null
 }) {
   const router = useRouter()
   const { data: brandDto } = useCrmEmailBrand(workspaceId)
@@ -182,7 +185,11 @@ export function EmailStarterGallery({
               builderVersion: 2,
             },
       )
-      router.push(`/${slug}/crm/email-templates/${template.id}`)
+      router.push(
+        `/${slug}/crm/email-templates/${template.id}${
+          returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
+        }`,
+      )
     } catch (error) {
       notify.error(error)
     }

@@ -129,11 +129,14 @@ export function EmailTemplateEditorPage({
   slug,
   templateId,
   allowHtml,
+  returnTo = null,
 }: {
   workspaceId: string
   slug: string
   templateId: string
   allowHtml: boolean
+  /** Campaign wizard that opened the editor (see `UseInCampaignButton`). */
+  returnTo?: string | null
 }) {
   const template = useCrmEmailTemplate(workspaceId, templateId)
   const brand = useCrmEmailBrand(workspaceId)
@@ -182,6 +185,7 @@ export function EmailTemplateEditorPage({
         brand={brand.data}
         initialDocument={doc}
         allowHtml={allowHtml}
+        returnTo={returnTo}
       />
     )
   }

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { EmailTemplateEditorPage } from '@/app/_components/crm/email-editor/email-template-editor-page'
 import { FocusedScreen } from '@/app/_components/layout/focused-screen'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { safeRedirectPath } from '@/src/lib/safe-redirect'
 import { isPrivilegedRole } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
 
@@ -13,10 +14,14 @@ export const metadata: Metadata = {
 
 export default async function CrmEmailTemplateEditorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ 'workspace-slug': string; templateId: string }>
+  searchParams: Promise<{ returnTo?: string }>
 }) {
   const { 'workspace-slug': slug, templateId } = await params
+  // Opened from a campaign wizard: only in-app paths (no open redirect).
+  const returnTo = safeRedirectPath((await searchParams).returnTo)
 
   const session = await getAuthSession()
   if (!session.ok) redirect('/sign-in')
@@ -41,6 +46,7 @@ export default async function CrmEmailTemplateEditorPage({
           slug={slug}
           templateId={templateId}
           allowHtml={isPrivilegedRole(membership.value.role)}
+          returnTo={returnTo}
         />
       </div>
     </FocusedScreen>
