@@ -153,6 +153,7 @@ export default defineConfig({
         'src/lib/shortcuts/**',
         'src/lib/canvas/**',
         'src/lib/canvas-email/**',
+        'src/lib/canvas-site/**',
       ],
       exclude: [
         'node_modules/**',

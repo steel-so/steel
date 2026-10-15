@@ -1,7 +1,7 @@
 'use client'
 
 import { ViewIcon } from '@hugeicons-pro/core-stroke-rounded'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,8 +15,20 @@ import {
   demoDocument,
   demoPresets,
 } from './demo-catalog'
+import { LabModeSwitch, SiteLab } from './site-lab'
 
 const STORAGE_KEY = 'steel.canvas-lab.document'
+const MODE_KEY = 'steel.canvas-lab.mode'
+
+type LabMode = 'demo' | 'site'
+
+function loadMode(): LabMode {
+  try {
+    return window.localStorage.getItem(MODE_KEY) === 'site' ? 'site' : 'demo'
+  } catch {
+    return 'demo'
+  }
+}
 
 function loadDocument(): CanvasDocument {
   try {
@@ -47,9 +59,30 @@ function readAsDataUrl(file: File): Promise<string | null> {
   })
 }
 
-/** The playground: demo catalog, autosave to this browser's storage. */
+/** The playground: demo or site catalog, autosave to this browser's
+ * storage. */
 export function CanvasLab() {
   // Read storage after mount so the server and client renders match.
+  const [mode, setMode] = useState<LabMode | null>(null)
+  useEffect(() => setMode(loadMode()), [])
+  if (!mode) return null
+  const switchMode = (next: LabMode) => {
+    try {
+      window.localStorage.setItem(MODE_KEY, next)
+    } catch {
+      // Not persisted: the switch still applies to this visit.
+    }
+    setMode(next)
+  }
+  const modeSwitch = <LabModeSwitch mode={mode} onChange={switchMode} />
+  return mode === 'site' ? (
+    <SiteLab modeSwitch={modeSwitch} onUploadImage={readAsDataUrl} />
+  ) : (
+    <DemoLab modeSwitch={modeSwitch} />
+  )
+}
+
+function DemoLab({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [initial, setInitial] = useState<CanvasDocument | null>(null)
   useEffect(() => setInitial(loadDocument()), [])
   if (!initial) {
@@ -69,6 +102,7 @@ export function CanvasLab() {
       darkPreview
       title={
         <>
+          {modeSwitch}
           <span className='truncate'>Página de demonstração</span>
           <Badge variant='secondary' className='shrink-0'>
             Canvas Lab
