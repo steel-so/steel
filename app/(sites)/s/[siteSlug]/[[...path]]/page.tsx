@@ -129,7 +129,6 @@ export default async function PublishedSitePage({ params }: PageProps) {
       {needsFormScript(documents) ? (
         <script
           nonce={nonce}
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: constant script of the site catalog (no user input), inlined once with the CSP nonce.
           dangerouslySetInnerHTML={{ __html: SITE_FORM_SCRIPT }}
         />
       ) : null}
