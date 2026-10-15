@@ -44,7 +44,7 @@ const LOOP: ErrorEntry = {
   when: 'O destino leva de volta à origem (direto ou por uma cadeia)',
 }
 const LIVE =
-  'Vale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 308 (equivalente ao 301 para os buscadores); temporário, 307.'
+  'Vale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 301; temporário, 302 (decidido no proxy, antes da página).'
 
 export const crmSitePlatformRoutes: RouteConfig[] = [
   {

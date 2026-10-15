@@ -39422,7 +39422,7 @@
         "tags": ["CRM · Sites"],
         "summary": "Criar redirecionamento",
         "operationId": "postWorkspacesByIdCrmSitesBySiteIdRedirects",
-        "description": "Origem exata (`/antigo`) ou prefixo (`/blog/*`); o destino é um caminho do site ou um endereço https. Um destino terminado em `/*` leva o resto do caminho.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nVale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 308 (equivalente ao 301 para os buscadores); temporário, 307.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Origem exata (`/antigo`) ou prefixo (`/blog/*`); o destino é um caminho do site ou um endereço https. Um destino terminado em `/*` leva o resto do caminho.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nVale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 301; temporário, 302 (decidido no proxy, antes da página).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -39519,7 +39519,7 @@
         "tags": ["CRM · Sites"],
         "summary": "Alterar redirecionamento",
         "operationId": "patchWorkspacesByIdCrmSitesBySiteIdRedirectsByRedirectId",
-        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nVale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 308 (equivalente ao 301 para os buscadores); temporário, 307.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nVale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 301; temporário, 302 (decidido no proxy, antes da página).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -39622,7 +39622,7 @@
         "tags": ["CRM · Sites"],
         "summary": "Excluir redirecionamento",
         "operationId": "deleteWorkspacesByIdCrmSitesBySiteIdRedirectsByRedirectId",
-        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nVale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 308 (equivalente ao 301 para os buscadores); temporário, 307.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nVale na hora, sem publicar: o site no ar consulta os redirecionamentos a cada visita (com cache expirado a cada mudança). Permanente responde 301; temporário, 302 (decidido no proxy, antes da página).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"

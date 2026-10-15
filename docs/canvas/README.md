@@ -214,10 +214,15 @@ com rota nenhuma caem em `app/global-not-found.tsx`
 (`experimental.globalNotFound`). Navegar entre duas raízes recarrega a
 página — o que já acontecia na prática entre esses grupos.
 
-A raiz dos sites não tem `<Suspense>` (`export const instant = false`): a
-página é renderizada inteira antes da resposta, então página inexistente
-responde **404 de verdade** (não um 200 em streaming) e redirecionamento
-responde 308/307 no cabeçalho.
+O App Router começa a responder (200) antes de a página decidir que não
+existe, então o **status HTTP é decidido no `proxy.ts`**: ele lê um índice
+de rotas do site publicado (caminhos das páginas + redirecionamentos,
+`SitePublicService.routeIndex`, em cache no Redis `site-routes:<slug>` e
+expirado junto com a tag do site a cada publicação, renomeação, exclusão ou
+mudança de redirecionamento). Página inexistente responde **404 de
+verdade** (uma página "Página não encontrada" simples, sem scripts, com link
+para a inicial), redirecionamento **301/302**. Se o Redis e o banco falharem, a página decide sozinha (404
+vira tela com `noindex`, redirecionamento vira 308/307).
 
 O runtime não leva mais componente React de cliente: um script inline
 (`src/lib/sites/runtime-script.ts`) cuida do aviso de cookies, do beacon de
@@ -281,8 +286,8 @@ vídeos e o `site.embed` (só administradores, com `sandbox`).
   barra do editor). Vale **na hora**, sem publicar.
 - Origem exata (`/antigo`) ou prefixo (`/blog/*`); destino é caminho do
   site ou URL https. Destino terminado em `/*` leva o resto do caminho.
-- Roda **antes** da busca da página. Permanente responde **308** (o Next não
-  emite 301; para os buscadores é equivalente), temporário **307**.
+- Roda **antes** da busca da página. Permanente responde **301**,
+  temporário **302**.
 - Laços (direto ou em cadeia) são recusados (`SITE_REDIRECT_LOOP`).
 
 ### Componentes reutilizáveis (símbolos)
