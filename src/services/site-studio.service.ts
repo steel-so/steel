@@ -252,4 +252,23 @@ export const SiteStudioService = {
       ),
     )
   },
+
+  /** Site a landing page was migrated into (old builder links), scoped to
+   * the workspace; `null` when there is none. */
+  async findMigratedSite(
+    actorId: string,
+    workspaceId: string,
+    landingPageId: string,
+  ): Promise<Result<string | null>> {
+    const membership = await assertSitesPermission(actorId, workspaceId, 'VIEW')
+    if (!membership.ok) return membership
+    const site = await SiteRepository.findBySourceLandingPageId(landingPageId)
+    if (!site.ok) return site
+    const found = site.value
+    return ok(
+      found && found.workspaceId === workspaceId && !found.deletedAt
+        ? found.id
+        : null,
+    )
+  },
 }

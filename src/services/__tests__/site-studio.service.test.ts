@@ -59,7 +59,14 @@ beforeEach(() => {
   sites.countByWorkspace.mockResolvedValue(ok(1))
   sites.isSlugTaken.mockResolvedValue(ok(false))
   sites.createWithPages.mockImplementation(async (data) =>
-    ok(createFakeSite({ ...data.site, id: 'new' })),
+    ok(
+      createFakeSite({
+        id: 'new',
+        name: data.site.name,
+        slug: data.site.slug,
+        workspaceId: data.site.workspaceId,
+      }),
+    ),
   )
 })
 
@@ -348,6 +355,46 @@ describe('SiteStudioService.pendingChanges', () => {
     expectErr(
       await SiteStudioService.pendingChanges('u1', WS, 'site1'),
       'SITE_VERSION_NOT_FOUND',
+    )
+  })
+})
+
+describe('SiteStudioService.findMigratedSite', () => {
+  it('returns the site of the workspace, or null', async () => {
+    sites.findBySourceLandingPageId.mockResolvedValueOnce(ok(site))
+    expect(
+      expectOk(await SiteStudioService.findMigratedSite('u1', WS, 'lp1')),
+    ).toBe('site1')
+    sites.findBySourceLandingPageId.mockResolvedValueOnce(
+      ok({ ...site, workspaceId: 'other' }),
+    )
+    expect(
+      expectOk(await SiteStudioService.findMigratedSite('u1', WS, 'lp1')),
+    ).toBeNull()
+    sites.findBySourceLandingPageId.mockResolvedValueOnce(
+      ok({ ...site, deletedAt: new Date() }),
+    )
+    expect(
+      expectOk(await SiteStudioService.findMigratedSite('u1', WS, 'lp1')),
+    ).toBeNull()
+    sites.findBySourceLandingPageId.mockResolvedValueOnce(ok(null))
+    expect(
+      expectOk(await SiteStudioService.findMigratedSite('u1', WS, 'lp1')),
+    ).toBeNull()
+  })
+
+  it('propagates failures', async () => {
+    sites.findBySourceLandingPageId.mockResolvedValueOnce(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await SiteStudioService.findMigratedSite('u1', WS, 'lp1'),
+      'DATABASE_ERROR',
+    )
+    membership.findByUserAndWorkspace.mockResolvedValue(ok(null))
+    expectErr(
+      await SiteStudioService.findMigratedSite('u1', WS, 'lp1'),
+      'FORBIDDEN',
     )
   })
 })
