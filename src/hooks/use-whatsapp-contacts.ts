@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
+import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
 import { apiFetch, apiSend } from './_fetch'
 
 const CONTACTS_KEY = (workspaceId: string, search?: string) =>
@@ -162,6 +163,28 @@ export function useSetWhatsAppContactBroadcastOptOut(workspaceId: string) {
           body: JSON.stringify(data),
         },
         'Erro ao atualizar descadastro',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['whatsapp-contacts', workspaceId],
+      })
+    },
+  })
+}
+
+export function useImportWhatsAppContacts(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (csv: string) =>
+      apiFetch<WhatsAppContactImportResultDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/contacts/import`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csv }),
+        },
+        'Erro ao importar contatos',
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({

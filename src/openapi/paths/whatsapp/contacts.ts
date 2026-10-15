@@ -6,8 +6,12 @@ import {
   UpdateWhatsAppContactBroadcastOptOutSchema,
   UpdateWhatsAppContactSchema,
 } from '@/src/schemas/whatsapp-contact.schema'
+import { ImportWhatsAppContactsSchema } from '@/src/schemas/whatsapp-contact-import.schema'
 import type { RouteConfig } from '../../registry'
-import { WhatsAppContactDTO } from '../../schemas/whatsapp'
+import {
+  WhatsAppContactDTO,
+  WhatsAppContactImportResultDTO,
+} from '../../schemas/whatsapp'
 import {
   CONTACT_PARAM,
   PRIVILEGED,
@@ -49,6 +53,29 @@ export const contactRoutes: RouteConfig[] = [
         code: 'CONFLICT',
         message: 'Este contato já existe',
         when: 'Já existe contato com este número no workspace',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/contacts/import',
+    tags: [TAG],
+    summary: 'Importar contatos (CSV)',
+    description: `Importa contatos de uma planilha CSV (conteúdo em \`csv\`, separado por \`,\` ou \`;\`, até 1000 linhas e 1 MB). Colunas: \`Telefone\` (obrigatória, DDI + DDD + número, 10–15 dígitos), \`Nome\` e \`Descrição\` (opcionais). Telefone repetido na planilha é recusado; contato que já existe no workspace é atualizado (célula em branco não apaga dado) e nunca duplicado. Linhas inválidas voltam em \`rejected\` sem abortar a importação. Auditado. ${perm('contacts', 'CREATE')}`,
+    consent: true,
+    body: ImportWhatsAppContactsSchema,
+    responses: {
+      200: {
+        description: 'Resultado da importação.',
+        schema: WhatsAppContactImportResultDTO,
+      },
+    },
+    errors: [
+      ...permErrors('contacts', 'CREATE'),
+      {
+        code: 'BAD_REQUEST',
+        message: 'A planilha precisa ter a coluna "Telefone".',
+        when: 'CSV sem a coluna de telefone, vazio ou com mais de 1000 linhas',
       },
     ],
   },

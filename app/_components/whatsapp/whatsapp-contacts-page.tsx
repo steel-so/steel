@@ -52,6 +52,7 @@ import {
   useWhatsAppContacts,
 } from '@/src/hooks/use-whatsapp-contacts'
 import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
+import { WhatsAppContactImportDialog } from './whatsapp-contact-import-dialog'
 
 interface ContactFormState {
   waId: string
@@ -373,6 +374,8 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
   const contacts = useWhatsAppContacts(workspaceId, search)
   const deleteContact = useDeleteWhatsAppContact(workspaceId)
   const canDelete = useCan('contacts', 'DELETE')
+  const canCreate = useCan('contacts', 'CREATE')
+  const [importOpen, setImportOpen] = useState(false)
   // Opt-out de transmissões é só OWNER/ADMIN (assertModulePrivileged).
   const canManageOptOut = useIsPrivileged()
   const syncAvatar = useSyncWhatsAppContactAvatar(workspaceId)
@@ -386,7 +389,23 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
           onChange={(event) => setSearch(event.target.value)}
           className='max-w-xs'
         />
-        <CreateContactDialog workspaceId={workspaceId} />
+        <div className='flex items-center gap-2'>
+          {canCreate ? (
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() => setImportOpen(true)}
+            >
+              Importar planilha
+            </Button>
+          ) : null}
+          <CreateContactDialog workspaceId={workspaceId} />
+        </div>
+        <WhatsAppContactImportDialog
+          workspaceId={workspaceId}
+          open={importOpen}
+          onOpenChange={setImportOpen}
+        />
       </div>
 
       <div className='max-h-[calc(100vh-16rem)] overflow-auto rounded-lg border border-border'>
