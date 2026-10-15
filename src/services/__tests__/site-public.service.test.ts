@@ -11,6 +11,11 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/site.repository')
 vi.mock('@/src/repositories/site-redirect.repository')
+vi.mock('@/src/services/site-blog-public.service', () => ({
+  SiteBlogPublicService: {
+    routePaths: vi.fn(async () => ({ ok: true, value: [] })),
+  },
+}))
 vi.mock('@/src/cache/site-route.cache', () => ({
   siteRouteCache: {
     get: vi.fn(async () => null),
@@ -23,6 +28,7 @@ import { siteRouteCache } from '@/src/cache/site-route.cache'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import { SiteBlogPublicService } from '@/src/services/site-blog-public.service'
 import { SitePublicService } from '../site-public.service'
 
 const sites = vi.mocked(SiteRepository)
@@ -249,6 +255,23 @@ describe('SitePublicService.routeIndex', () => {
       redirects: [{ fromPath: '/antigo', toPath: '/', permanent: true }],
     })
     expect(cache.set).toHaveBeenCalledWith('clinica', index)
+  })
+
+  it('adds the blog and collection paths', async () => {
+    cache.get.mockResolvedValueOnce(null)
+    redirects.listBySiteSlug.mockResolvedValueOnce(ok([]))
+    vi.mocked(SiteBlogPublicService.routePaths).mockResolvedValueOnce(
+      ok(['/blog', '/blog/Ola']),
+    )
+    expect(
+      expectOk(await SitePublicService.routeIndex('clinica')).paths,
+    ).toEqual(['/', '/blog', '/blog/ola'])
+    cache.get.mockResolvedValueOnce(null)
+    redirects.listBySiteSlug.mockResolvedValueOnce(ok([]))
+    vi.mocked(SiteBlogPublicService.routePaths).mockResolvedValueOnce(
+      err(databaseError()),
+    )
+    expectErr(await SitePublicService.routeIndex('clinica'), 'DATABASE_ERROR')
   })
 
   it('serves the cache and marks unknown sites unpublished', async () => {
