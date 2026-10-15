@@ -112,6 +112,7 @@ function headingIds(value: PlateValue): Map<PlateNode, string> {
   const visit = (nodes: PlateNode[]) => {
     for (const node of nodes) {
       if (node.type && /^h[1-6]$/.test(node.type)) {
+        if (!nodeText(node).trim()) continue
         const base = slugify(nodeText(node), 60) || 'secao'
         let id = base
         for (let n = 2; used.has(id); n++) id = `${base}-${n}`
@@ -295,6 +296,7 @@ function isBlockType(type: string | undefined): boolean {
 
 interface OpenList {
   tag: 'ul' | 'ol'
+  todo: boolean
   indent: number
   liOpen: boolean
 }
@@ -317,10 +319,17 @@ function renderBlocks(nodes: PlateNode[], state: RenderState): string {
       continue
     }
     const tag = UNORDERED.has(listType) ? 'ul' : 'ol'
+    const todo = listType === 'todo'
     const indent = Math.max(1, Number(node.indent) || 1)
     while (stack.length && stack[stack.length - 1].indent > indent) closeTop()
     const top = stack[stack.length - 1]
-    if (top && top.indent === indent && top.tag !== tag) closeTop()
+    if (
+      top &&
+      top.indent === indent &&
+      (top.tag !== tag || top.todo !== todo)
+    ) {
+      closeTop()
+    }
     const current = stack[stack.length - 1]
     if (!current || current.indent < indent) {
       const start = Number(node.listStart)
@@ -328,9 +337,8 @@ function renderBlocks(nodes: PlateNode[], state: RenderState): string {
         tag === 'ol' && Number.isInteger(start) && start > 1
           ? ` start="${start}"`
           : ''
-      const todo = listType === 'todo' ? ' class="s-todo"' : ''
-      out.push(`<${tag}${startAttr}${todo}>`)
-      stack.push({ tag, indent, liOpen: false })
+      out.push(`<${tag}${startAttr}${todo ? ' class="s-todo"' : ''}>`)
+      stack.push({ tag, todo, indent, liOpen: false })
     } else if (current.liOpen) {
       out.push('</li>')
     }
@@ -340,7 +348,7 @@ function renderBlocks(nodes: PlateNode[], state: RenderState): string {
         ? renderBlock(node, state)
         : renderInline(childrenOf(node))
     const check =
-      listType === 'todo'
+      todo
         ? `<input type="checkbox" disabled${node.checked === true ? ' checked' : ''} aria-label="${node.checked === true ? 'Concluído' : 'Pendente'}"> `
         : ''
     out.push(`<li>${check}${body}`)

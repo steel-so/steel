@@ -91,7 +91,15 @@ export function siteLocalToIso(
   if (!match) return null
   const [, y, mo, d, h, mi] = match.map(Number)
   const guess = new Date(Date.UTC(y, mo - 1, d, h, mi))
-  if (Number.isNaN(guess.getTime())) return null
+  // Date.UTC rolls over (month 13, hour 25): only exact values are valid.
+  if (
+    guess.getUTCMonth() !== mo - 1 ||
+    guess.getUTCDate() !== d ||
+    guess.getUTCHours() !== h ||
+    guess.getUTCMinutes() !== mi
+  ) {
+    return null
+  }
   // Two passes settle the offset around daylight-saving changes.
   let instant = guess.getTime() - zoneOffsetMinutes(guess, timezone) * 60_000
   instant =

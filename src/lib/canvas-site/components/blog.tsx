@@ -338,7 +338,8 @@ export function postListDefinition(ctx: SiteRenderContext) {
             path: 'columns',
             label: 'Colunas',
             responsive: true,
-            showIf: (props) => props.layout !== 'list',
+            showIf: (props) =>
+              props.layout === 'grid' || props.layout === 'cards',
             control: { kind: 'number', min: 1, max: 4 },
           },
           {
