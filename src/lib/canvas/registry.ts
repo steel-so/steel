@@ -1,3 +1,4 @@
+import type { IconSvgElement } from '@hugeicons/react'
 import type { ComponentType, ReactNode } from 'react'
 import type { ZodType } from 'zod'
 import type {
@@ -95,8 +96,16 @@ export interface InspectorSection {
 
 // ─── Component definition ─────────────────────────────────────────────────
 
+/** Attributes the editor needs on a component's outermost DOM element
+ * (`data-canvas-id`, used for hit-testing, outlines and drop lines). Empty in
+ * the final output. */
+export type CanvasNodeAttributes = { 'data-canvas-id'?: string }
+
 export interface CanvasRenderProps<P extends CanvasProps = CanvasProps> {
   node: CanvasNode<P>
+  /** Spread on the component's outermost element: `<td {...attributes}>`.
+   * Without it the node cannot be selected or dropped into on the canvas. */
+  attributes?: CanvasNodeAttributes
   /** Rendered children, in order (already wrapped by the editor when editing). */
   children?: ReactNode
   breakpoint: CanvasBreakpoint
@@ -149,12 +158,23 @@ export interface CanvasCatalog {
   /** Palette group order. */
   categories: string[]
   breakpoints: readonly CanvasBreakpoint[]
+  /** Icons referenced by `icon` in the definitions (palette, layers, tabs).
+   * Unknown names fall back to a generic block icon. */
+  icons?: Record<string, IconSvgElement>
   /** Wraps the rendered tree (e-mail <Html>, site <body> styles). */
   renderDocument: (props: {
     children: ReactNode
     rootProps: CanvasProps
     editing: boolean
   }) => ReactNode
+}
+
+/** Types a definition with its own props (render receives `node.props` as
+ * `P`) and widens it for the catalog's `components` map. */
+export function defineComponent<P extends CanvasProps>(
+  definition: CanvasComponentDefinition<P>,
+): CanvasComponentDefinition {
+  return definition as unknown as CanvasComponentDefinition
 }
 
 /** Builds a catalog, checking at boot that every `accepts`/`parents`
