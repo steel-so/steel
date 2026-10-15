@@ -12,6 +12,11 @@ import {
 } from '@/src/errors'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
+  applyEmailConditions,
+  hasEmailConditions,
+  needsListMembership,
+} from '@/src/lib/canvas-email/conditions'
+import {
   isEmailCanvasDocument,
   openEmailDocument,
 } from '@/src/lib/canvas-email/convert-v1'
@@ -36,6 +41,7 @@ import {
 import { sanitizeRichText } from '@/src/lib/crm-email-builder/rich-text'
 import {
   contactToVariables,
+  type EmailVariableValues,
   SAMPLE_CONTACT,
   UNSUBSCRIBE_URL,
 } from '@/src/lib/crm-email-builder/variables'
@@ -56,6 +62,7 @@ import {
   CrmEmailBuilderRepository,
   type PersonalizationContact,
 } from '@/src/repositories/crm-email-builder.repository'
+import { CrmEmailConditionRepository } from '@/src/repositories/crm-email-condition.repository'
 import { CrmEmailTemplateRepository } from '@/src/repositories/crm-email-template.repository'
 import {
   type CrmEmailBrandInput,
@@ -72,6 +79,7 @@ import type {
   CrmEmailTestSendDTO,
 } from '@/types/crm-email-marketing'
 import { assertModuleMember } from './authz'
+import { snapshotTemplateVersion } from './crm-email-template-history'
 import { persistCrmEmailImage } from './media/crm-email-media.service'
 
 /**
@@ -321,6 +329,11 @@ export type RenderCampaignEmailOptions = {
   recipientId?: string
   /** Explicit unsubscribe URL (wins over `recipientId`). */
   unsubscribeUrl?: string
+  /** CRM person behind the contact (list membership of "Mostrar se"). */
+  personId?: string
+  /** Mailing lists of the contact, when the caller already knows them;
+   * otherwise they are looked up only if the e-mail has list conditions. */
+  listIds?: string[]
 }
 
 function unsubscribeUrlFor(options: {
@@ -350,15 +363,39 @@ export async function renderCampaignEmail(
 ): Promise<Result<CrmEmailRenderDTO>> {
   const base = await renderTemplateForCampaign(templateId, options.workspaceId)
   if (!base.ok) return base
-  return ok(
-    personalizeEmail(
-      base.value,
-      contactToVariables(contact, {
-        campaignLink: options.campaignLink,
-        unsubscribeUrl: unsubscribeUrlFor(options),
-      }),
-    ),
+  const values = contactToVariables(contact, {
+    campaignLink: options.campaignLink,
+    unsubscribeUrl: unsubscribeUrlFor(options),
+  })
+  const conditioned = await applyRecipientConditions(
+    base.value,
+    contact,
+    values,
+    options,
   )
+  if (!conditioned.ok) return conditioned
+  return ok(personalizeEmail(conditioned.value, values))
+}
+
+/** "Mostrar se" for one contact; list memberships are loaded only when
+ * the e-mail has list conditions and the caller did not pass them. */
+async function applyRecipientConditions(
+  email: RenderedEmail,
+  contact: EmailBuilderContact,
+  values: EmailVariableValues,
+  options: RenderCampaignEmailOptions,
+): Promise<Result<RenderedEmail>> {
+  if (!hasEmailConditions(email.html)) return ok(email)
+  let listIds = options.listIds ?? []
+  if (!options.listIds && needsListMembership(email.html)) {
+    const memberships = await CrmEmailConditionRepository.findListMemberships(
+      options.workspaceId,
+      [{ email: contact.email, personId: options.personId }],
+    )
+    if (!memberships.ok) return memberships
+    listIds = memberships.value.get(contact.email.trim().toLowerCase()) ?? []
+  }
+  return ok(applyEmailConditions(email, { values, listIds }))
 }
 
 /** CRM person → contact used by the variables. */
@@ -461,6 +498,7 @@ export const CrmEmailBuilderService = {
     return renderCampaignEmail(templateId, contact.value, {
       workspaceId,
       campaignLink: dto.campaignLink,
+      personId: dto.personId,
     })
   },
 
@@ -486,6 +524,7 @@ export const CrmEmailBuilderService = {
     const email = await renderCampaignEmail(templateId, contact.value, {
       workspaceId,
       campaignLink: dto.campaignLink,
+      personId: dto.personId,
     })
     if (!email.ok) return email
 
@@ -513,6 +552,8 @@ export const CrmEmailBuilderService = {
       targetId: templateId,
       meta: { workspaceId },
     })
+    // Version history (v2): what was tested is kept.
+    await snapshotTemplateVersion(templateId, workspaceId, actorId, 'TEST_SEND')
 
     return ok({ to: actor.value.email })
   },

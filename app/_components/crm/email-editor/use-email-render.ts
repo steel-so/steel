@@ -3,29 +3,31 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { renderEmailDocument } from '@/src/lib/canvas-email/render'
+import type { EmailProductData } from '@/src/lib/canvas-email/theme'
+import type { EmailBrand } from '@/src/lib/crm-email-builder/brand'
 import type { RenderedEmail } from '@/src/lib/crm-email-builder/render'
 import { toProductData, useEmailEditorData } from './editor-data'
 
 /**
- * The document rendered exactly as it is sent (`renderEmailDocument`, the
- * same components as the canvas, without editor markup), variables intact.
- * Re-renders after `delay` ms of quiet; `null` until the first render or
- * while `doc` is `null`.
+ * `doc` rendered exactly as it is sent (`renderEmailDocument`, the same
+ * components as the canvas, without editor markup), variables intact, with
+ * the given brand and products. Re-renders after `delay` ms of quiet; `null`
+ * until the first render or while `doc` is `null`.
  */
-export function useRenderedEmail(
+export function useRenderedEmailOnce(
   doc: CanvasDocument | null,
   subject: string,
-  delay = 150,
+  brand: EmailBrand,
+  products: Record<string, EmailProductData>,
+  delay = 0,
 ): RenderedEmail | null {
-  const { brand, products } = useEmailEditorData()
-  const productData = useMemo(() => toProductData(products), [products])
   const [rendered, setRendered] = useState<RenderedEmail | null>(null)
 
   useEffect(() => {
     if (!doc) return
     let cancelled = false
     const handle = setTimeout(() => {
-      renderEmailDocument(doc, { brand, subject, products: productData })
+      renderEmailDocument(doc, { brand, subject, products })
         .then((email) => {
           if (!cancelled) setRendered(email)
         })
@@ -38,7 +40,18 @@ export function useRenderedEmail(
       cancelled = true
       clearTimeout(handle)
     }
-  }, [doc, subject, brand, productData, delay])
+  }, [doc, subject, brand, products, delay])
 
   return rendered
+}
+
+/** The live document with the editor's brand and products. */
+export function useRenderedEmail(
+  doc: CanvasDocument | null,
+  subject: string,
+  delay = 150,
+): RenderedEmail | null {
+  const { brand, products } = useEmailEditorData()
+  const productData = useMemo(() => toProductData(products), [products])
+  return useRenderedEmailOnce(doc, subject, brand, productData, delay)
 }

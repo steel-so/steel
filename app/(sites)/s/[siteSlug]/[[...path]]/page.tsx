@@ -5,11 +5,10 @@ import { NODE_ENV } from '@/lib/env/env'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   compileSiteCss,
-  needsFormScript,
   parseSiteTheme,
-  SITE_FORM_SCRIPT,
   SiteDocument,
   type SiteRenderContext,
+  siteRuntimeScripts,
   usedSymbolIds,
 } from '@/src/lib/canvas-site'
 import { siteMetaCsp } from '@/src/lib/sites/csp'
@@ -195,6 +194,9 @@ export default async function PublishedSitePage({ params }: PageProps) {
     theme: parseSiteTheme(snapshot.theme),
   })
   const nonce = requestHeaders.get('x-nonce') ?? undefined
+  // Only the scripts of the features this page uses (forms, carousels,
+  // popups…), inlined with the CSP nonce; `boot` runs before the content.
+  const runtime = siteRuntimeScripts(documents)
 
   return (
     <>
@@ -207,6 +209,12 @@ export default async function PublishedSitePage({ params }: PageProps) {
           development: NODE_ENV === 'development',
         })}
       />
+      {runtime.boot ? (
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: runtime.boot }}
+        />
+      ) : null}
       {/* Compiled stylesheet of the published site: theme tokens, classes
           and per-breakpoint media queries (no inline styles on elements). */}
       <style>{css}</style>
@@ -220,12 +228,14 @@ export default async function PublishedSitePage({ params }: PageProps) {
       {header ? <SiteDocument doc={header} context={context} /> : null}
       <SiteDocument doc={page.document} context={context} />
       {footer ? <SiteDocument doc={footer} context={context} /> : null}
-      {needsFormScript(documents) ? (
+      {runtime.scripts.map((script) => (
         <script
+          key={script.id}
           nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: SITE_FORM_SCRIPT }}
+          data-site-runtime={script.id}
+          dangerouslySetInnerHTML={{ __html: script.code }}
         />
-      ) : null}
+      ))}
       <SiteRuntime
         slug={site.slug}
         pageId={page.id}

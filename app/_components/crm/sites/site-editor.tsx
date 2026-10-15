@@ -53,6 +53,11 @@ import {
   siteColorTokens,
 } from '@/src/lib/canvas-site/theme'
 import type { SiteGlobalDTO, SitePageSummaryDTO } from '@/types/site'
+import {
+  SiteAnchorPicker,
+  SiteChildAdder,
+  SiteWhatsappPicker,
+} from './element-controls'
 import { SiteFormPicker } from './form-picker'
 import { GlobalsPanel } from './globals-panel'
 import { MediaPanel } from './media-panel'
@@ -250,6 +255,9 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
       currentPageId: target.kind === 'page' ? target.id : undefined,
       canEmbed,
       formPicker: SiteFormPicker,
+      anchorPicker: SiteAnchorPicker,
+      whatsappPicker: SiteWhatsappPicker,
+      childAdder: SiteChildAdder,
       forms,
       symbols,
       symbolControl: SymbolOverridesControl,

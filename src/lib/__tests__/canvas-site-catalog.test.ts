@@ -42,7 +42,7 @@ import { siteThemeSchema } from '@/src/lib/canvas-site/theme'
 function wrap(fragment: CanvasFragment): CanvasDocument {
   const doc = createDocument(siteCatalog)
   const root = fragment.nodes[fragment.rootId]
-  if (root.type === SITE_TYPES.section) {
+  if (root.type === SITE_TYPES.section || root.type === SITE_TYPES.popup) {
     return {
       ...doc,
       nodes: {
@@ -71,7 +71,7 @@ function wrap(fragment: CanvasFragment): CanvasDocument {
 describe('site catalog', () => {
   it('registers every component with valid default props', () => {
     expect(siteCatalog.id).toBe(SITE_CATALOG_ID)
-    expect(Object.keys(siteCatalog.components)).toHaveLength(18)
+    expect(Object.keys(siteCatalog.components)).toHaveLength(34)
     for (const definition of Object.values(siteCatalog.components)) {
       const parsed = definition.propsSchema.safeParse(definition.defaultProps())
       expect(parsed.success, definition.type).toBe(true)
@@ -79,10 +79,18 @@ describe('site catalog', () => {
   })
 
   it('inserts every palette type into a valid document', () => {
+    // Slides, tabs and accordion items only live in their parent (whose
+    // template inserts them).
+    const nested = new Set<string>([
+      SITE_TYPES.page,
+      SITE_TYPES.slide,
+      SITE_TYPES.tab,
+      SITE_TYPES.accordionItem,
+    ])
     for (const type of Object.keys(siteCatalog.components)) {
-      // The page is the root; reusable component instances sit in the page
+      // Reusable component instances sit in the page
       // (canvas-site-symbol.test.ts).
-      if (type === SITE_TYPES.page || type === 'site.symbol') continue
+      if (nested.has(type) || type === 'site.symbol') continue
       const fragment = fragmentForType(siteCatalog, type) as CanvasFragment
       const result = validateDocument(wrap(fragment), siteCatalog)
       expect(result.ok, type).toBe(true)
@@ -92,18 +100,28 @@ describe('site catalog', () => {
 
   it('evaluates every conditional inspector field', () => {
     const samples: CanvasProps[] = [
-      { layout: 'grid', shape: 'none', icon: 'arrow' },
-      { layout: 'flex', shape: 'circle', icon: '' },
+      { layout: 'grid', shape: 'none', icon: 'arrow', autoplay: false },
+      { layout: 'flex', shape: 'circle', icon: '', trigger: 'click' },
+      {
+        layout: 'slider',
+        autoplay: true,
+        trigger: 'delay',
+        interaction: { action: 'popup' },
+        animation: { effect: 'fade-up' },
+      },
+      { interaction: { action: 'link' }, animation: { effect: 'none' } },
     ]
     let calls = 0
     for (const definition of Object.values(siteCatalog.components)) {
       for (const section of definition.inspector) {
         for (const field of section.fields) {
           if (typeof field.showIf === 'function') {
-            const results = samples.map((props) =>
-              (field.showIf as (p: CanvasProps) => boolean)(props),
+            const results = new Set(
+              samples.map((props) =>
+                (field.showIf as (p: CanvasProps) => boolean)(props),
+              ),
             )
-            expect(results[0]).not.toBe(results[1])
+            expect(results.size, `${definition.type} ${field.path}`).toBe(2)
             calls++
           }
         }
@@ -193,8 +211,8 @@ describe('presets', () => {
 })
 
 describe('templates', () => {
-  it('ships 5 valid full-page templates with their theme', () => {
-    expect(SITE_TEMPLATES).toHaveLength(5)
+  it('ships 6 valid full-page templates with their theme', () => {
+    expect(SITE_TEMPLATES).toHaveLength(6)
     for (const template of SITE_TEMPLATES) {
       const doc = template.document()
       const result = validateSiteDocument(doc)

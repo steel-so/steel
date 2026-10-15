@@ -2,7 +2,11 @@ import { createElement, Fragment, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { getNode } from '@/src/lib/canvas/nodes'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
-import type { CanvasDocument, CanvasNodeId } from '@/src/lib/canvas/types'
+import type {
+  CanvasDocument,
+  CanvasNode,
+  CanvasNodeId,
+} from '@/src/lib/canvas/types'
 import { createSiteCatalog } from '@/src/lib/canvas-site/catalog'
 import type { SiteRenderContext } from '@/src/lib/canvas-site/context'
 import {
@@ -30,6 +34,9 @@ export function renderSite(
 export function renderSiteEditing(
   doc: CanvasDocument,
   context: SiteRenderContext = {},
+  /** `activeChild` per parent id (what the canvas derives from the
+   * selection). */
+  activeChild?: Record<CanvasNodeId, CanvasNodeId>,
 ): string {
   const catalog = createSiteCatalog(context)
   const tree = (id: CanvasNodeId, cat: CanvasCatalog): ReactNode => {
@@ -45,6 +52,14 @@ export function renderSiteEditing(
       breakpoint: 'base',
       editing: true,
       attributes: { 'data-canvas-id': id },
+      activeChild: definition.tracksSelection
+        ? (activeChild?.[id] ?? null)
+        : undefined,
+      childNodes: definition.readsChildren
+        ? (node.children ?? []).map(
+            (child) => getNode(doc, child) as CanvasNode,
+          )
+        : undefined,
     })
   }
   const root = getNode(doc, doc.rootId)

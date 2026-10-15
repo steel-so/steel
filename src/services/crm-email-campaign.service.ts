@@ -1,10 +1,20 @@
 import { auditMutation } from '@/lib/axiom/audit'
+import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
 import {
   crmEmailCampaignAlreadySent,
   crmEmailCampaignNoRecipients,
 } from '@/src/errors'
-import { personalizeEmail } from '@/src/lib/crm-email-builder/render'
+import {
+  applyEmailConditionsToHtml,
+  type EmailRecipientFacts,
+  hasEmailConditions,
+  needsListMembership,
+} from '@/src/lib/canvas-email/conditions'
+import {
+  emailHtmlToText,
+  personalizeEmail,
+} from '@/src/lib/crm-email-builder/render'
 import {
   contactToVariables,
   UNSUBSCRIBE_URL,
@@ -29,6 +39,7 @@ import {
   CrmEmailCampaignRecipientRepository,
   CrmEmailCampaignRepository,
 } from '@/src/repositories/crm-email-campaign.repository'
+import { CrmEmailConditionRepository } from '@/src/repositories/crm-email-condition.repository'
 import {
   type CrmEmailOptOutIndex,
   CrmEmailOptOutRepository,
@@ -45,6 +56,7 @@ import type {
 } from '@/types/crm-email-marketing'
 import { assertModuleMember } from './authz'
 import { renderTemplateForCampaign } from './crm-email-builder.service'
+import { snapshotTemplateVersion } from './crm-email-template-history'
 import { notifyCrmCampaignFinished } from './crm-notifications'
 
 export const CrmEmailCampaignService = {
@@ -176,6 +188,15 @@ export const CrmEmailCampaignService = {
       targetId: result.value.id,
       meta: { recipientCount: recipients.value.length },
     })
+    // Version history (v2): the template as this campaign used it.
+    if (dto.templateId) {
+      await snapshotTemplateVersion(
+        dto.templateId,
+        workspaceId,
+        actorId,
+        'CAMPAIGN',
+      )
+    }
 
     return ok(toCrmEmailCampaignDTO(result.value))
   },
@@ -291,6 +312,11 @@ export const CrmEmailCampaignService = {
       campaign.value,
       recipients.value,
     )
+    const memberships = await loadListMemberships(
+      workspaceId,
+      campaign.value,
+      recipients.value,
+    )
 
     let failures = 0
     let skipped = 0
@@ -312,6 +338,7 @@ export const CrmEmailCampaignService = {
           recipient,
           contacts,
           urls.pageUrl,
+          memberships,
         )
         const response = await sendEmail({
           from: campaign.value.fromAddress,
@@ -376,11 +403,51 @@ type CampaignContent = {
 }
 
 function usesVariables(campaign: CampaignContent): boolean {
-  return [
-    campaign.subject,
-    campaign.contentHtml,
-    campaign.contentText ?? '',
-  ].some((part) => part.includes('{{'))
+  return (
+    hasEmailConditions(campaign.contentHtml) ||
+    [campaign.subject, campaign.contentHtml, campaign.contentText ?? ''].some(
+      (part) => part.includes('{{'),
+    )
+  )
+}
+
+/** Mailing lists of each recipient (by lower-cased e-mail), only when the
+ * content has "Mostrar se: está na lista". A failed lookup degrades to no
+ * lists (logged) — never blocks the send. */
+async function loadListMemberships(
+  workspaceId: string,
+  campaign: CampaignContent,
+  recipients: { email: string; personId: string | null }[],
+): Promise<Map<string, string[]>> {
+  if (!needsListMembership(campaign.contentHtml)) return new Map()
+  const memberships = await CrmEmailConditionRepository.findListMemberships(
+    workspaceId,
+    recipients,
+  )
+  if (memberships.ok) return memberships.value
+  logger.warn('crm_email_campaign.list_memberships_failed', {
+    component: 'CrmEmailCampaignService',
+    workspaceId,
+    code: memberships.error.code,
+  })
+  return new Map()
+}
+
+/** "Mostrar se" for one recipient: drops what does not apply and, when the
+ * campaign keeps a plain-text version, derives it again from the result. */
+function conditionContent(
+  campaign: CampaignContent,
+  html: string,
+  facts: EmailRecipientFacts,
+): { html: string; text: string } {
+  if (!hasEmailConditions(html)) {
+    return { html, text: campaign.contentText ?? '' }
+  }
+  const conditioned = applyEmailConditionsToHtml(html, facts)
+  return {
+    html: conditioned,
+    text: campaign.contentText ? emailHtmlToText(conditioned) : '',
+  }
 }
 
 /** CRM people behind the recipients, only when the content has variables.
@@ -406,6 +473,7 @@ function buildRecipientEmail(
   recipient: { email: string; name: string | null; personId: string | null },
   contacts: Map<string, PersonalizationContact>,
   unsubscribeUrl: string,
+  memberships: Map<string, string[]> = new Map(),
 ): { subject: string; html: string; text?: string } {
   const html = campaign.contentHtml.includes(UNSUBSCRIBE_URL)
     ? campaign.contentHtml
@@ -434,8 +502,12 @@ function buildRecipientEmail(
       unsubscribeUrl,
     },
   )
+  const content = conditionContent(campaign, html, {
+    values,
+    listIds: memberships.get(recipient.email.trim().toLowerCase()) ?? [],
+  })
   const email = personalizeEmail(
-    { subject: campaign.subject, html, text: campaign.contentText ?? '' },
+    { subject: campaign.subject, html: content.html, text: content.text },
     values,
   )
   return { ...email, text: campaign.contentText ? email.text : undefined }

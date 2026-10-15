@@ -128,3 +128,18 @@ export function collectSubtree(
   }
   return out
 }
+
+/** The child of `ancestorId` whose subtree holds `id` (`id` itself when it
+ * is a direct child); `null` when `id` is not below `ancestorId`. */
+export function childOnPath(
+  doc: CanvasDocument,
+  ancestorId: CanvasNodeId,
+  id: CanvasNodeId | null | undefined,
+): CanvasNodeId | null {
+  for (let current = id ?? null; current !== null; ) {
+    const parent = parentOf(doc, current)
+    if (parent === ancestorId) return current
+    current = parent
+  }
+  return null
+}

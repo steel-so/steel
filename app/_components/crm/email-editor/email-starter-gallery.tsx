@@ -246,6 +246,11 @@ export function EmailStarterGallery({
                 data-testid='starter-blank'
                 className='group flex w-full flex-col overflow-hidden rounded-xl border border-dashed bg-card text-left transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
               >
+                <div className='flex w-full items-center border-b border-dashed px-3 py-2'>
+                  <span className='rounded-full bg-muted px-2 py-0.5 font-medium text-[11px] text-muted-foreground'>
+                    Livre
+                  </span>
+                </div>
                 <div className='flex aspect-[4/5] w-full flex-col items-center justify-center gap-3 bg-muted/30'>
                   <span className='flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110'>
                     <SteelIcon icon={Add01Icon} className='size-6' />
@@ -278,11 +283,15 @@ export function EmailStarterGallery({
                 data-testid={`starter-${starter.id}`}
                 className='group flex w-full flex-col overflow-hidden rounded-xl border bg-card text-left transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
               >
-                <div className='relative w-full'>
-                  <StarterThumbnail starter={starter} brand={brand} />
-                  <span className='absolute top-3 left-3 rounded-full bg-background/90 px-2 py-0.5 font-medium text-[11px] text-foreground shadow-xs backdrop-blur'>
+                {/* Own row: on top of the thumbnail it covered the
+                    e-mail's first line. */}
+                <div className='flex w-full items-center border-b px-3 py-2'>
+                  <span className='rounded-full bg-muted px-2 py-0.5 font-medium text-[11px] text-muted-foreground'>
                     {starter.category}
                   </span>
+                </div>
+                <div className='relative w-full'>
+                  <StarterThumbnail starter={starter} brand={brand} />
                   <span className='absolute inset-x-0 bottom-3 flex justify-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100'>
                     <span className='rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground text-xs shadow-sm'>
                       Usar modelo

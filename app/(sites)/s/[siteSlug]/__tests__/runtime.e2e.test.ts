@@ -7,6 +7,7 @@ import {
   postJson,
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
+import { getSiteTemplate } from '@/src/lib/canvas-site/presets'
 
 const document = (text: string) => createSiteDocument(text)
 
@@ -85,6 +86,29 @@ describe('public site runtime', () => {
       body: JSON.stringify({ path: '/' }),
     })
     expect(unknown.status).toBe(404)
+  })
+
+  it('inlines only the element scripts a page uses, with the CSP nonce', async () => {
+    const { slug, user, base, site } = await publishedSite()
+    const plain = await (await fetch(`${BASE_URL}/s/${slug}/contato`)).text()
+    expect(plain).not.toContain('data-site-runtime')
+
+    const evento = getSiteTemplate('evento')?.document()
+    await postJson(
+      `${base}/${site.id}/pages`,
+      { title: 'Evento', document: evento },
+      user.cookie,
+    )
+    await postJson(`${base}/${site.id}/publish`, {}, user.cookie)
+    const html = await (await fetch(`${BASE_URL}/s/${slug}/evento`)).text()
+    for (const feature of ['carousel', 'tabs', 'actions', 'stats', 'map']) {
+      expect(html).toMatch(
+        new RegExp(`<script nonce="[^"]+" data-site-runtime="${feature}">`),
+      )
+    }
+    expect(html).not.toContain('data-site-runtime="lightbox"')
+    expect(html).toContain("classList.add('s-js')")
+    expect(html).toContain('data-s-popup')
   })
 
   it('shows the new version right after a publish and goes away on unpublish', async () => {

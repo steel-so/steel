@@ -1,12 +1,15 @@
-import type { ReactNode } from 'react'
+import { CenterFocusIcon } from '@hugeicons-pro/core-stroke-rounded'
+import { Children, type ReactNode } from 'react'
 import {
   type CanvasRenderProps,
   defineComponent,
 } from '@/src/lib/canvas/registry'
-import type { CanvasFragment } from '@/src/lib/canvas/types'
+import { resolveResponsive } from '@/src/lib/canvas/responsive'
+import type { CanvasFragment, CanvasNode } from '@/src/lib/canvas/types'
 import { spacing } from '@/src/lib/canvas/values'
 import { SITE_ELEMENT_TYPES, SITE_TYPES } from '../constants'
 import { classNames } from '../css'
+import { IconSvg } from '../icons'
 import { advancedSection, boxSection, marginField } from '../inspector'
 import { safeSrc } from '../sanitize'
 import {
@@ -34,7 +37,11 @@ export const pageDefinition = defineComponent<SitePageProps>({
   icon: 'page',
   propsSchema: sitePageSchema,
   defaultProps: () => ({ background: { kind: 'none' } }),
-  accepts: [SITE_TYPES.section],
+  accepts: [SITE_TYPES.section, SITE_TYPES.popup],
+  // Popups stay folded into a chip in the canvas until one of them (or
+  // something inside it) is selected.
+  tracksSelection: true,
+  readsChildren: true,
   inspector: [
     {
       id: 'page',
@@ -54,11 +61,24 @@ export const pageDefinition = defineComponent<SitePageProps>({
     children,
     attributes,
     editing,
+    activeChild,
+    childNodes,
   }: CanvasRenderProps<SitePageProps>) => {
     const Tag = node.props.tag ?? 'main'
+    let content: ReactNode = children
+    if (editing && childNodes) {
+      const kids = Children.toArray(children)
+      content = childNodes.map((child, index) =>
+        child.type === SITE_TYPES.popup && child.id !== activeChild ? (
+          <PopupChip key={child.id} node={child} />
+        ) : (
+          kids[index]
+        ),
+      )
+    }
     return (
       <Tag {...attributes} className={classNames(node, 's-page')}>
-        {children}
+        {content}
         {editing && !node.children?.length && (
           <EmptySlot label='Arraste uma Seção ou escolha uma em Seções prontas' />
         )}
@@ -66,6 +86,17 @@ export const pageDefinition = defineComponent<SitePageProps>({
     )
   },
 })
+
+/** A folded popup in the canvas: clicking it selects (and opens) it. */
+function PopupChip({ node }: { node: CanvasNode }) {
+  const name = (node.props.name as string | undefined) || 'Popup'
+  return (
+    <button type='button' className='s-popup-chip' data-canvas-id={node.id}>
+      <IconSvg icon={CenterFocusIcon} />
+      {`Popup: ${name}`}
+    </button>
+  )
+}
 
 // ─── section ──────────────────────────────────────────────────────────────
 
@@ -81,7 +112,9 @@ export function defaultSectionProps(): SiteSectionProps {
   }
 }
 
-const CHILD_TYPES = [
+/** What sections, containers, slides, tabs, accordion items and popups
+ * accept. */
+export const CHILD_TYPES = [
   SITE_TYPES.container,
   SITE_TYPES.columns,
   ...SITE_ELEMENT_TYPES,
@@ -310,7 +343,19 @@ export const containerDefinition = defineComponent<SiteContainerProps>({
   propsSchema: siteContainerSchema,
   defaultProps: () => defaultContainerProps(),
   accepts: CHILD_TYPES,
-  parents: [SITE_TYPES.section, SITE_TYPES.container],
+  parents: [
+    SITE_TYPES.section,
+    SITE_TYPES.container,
+    SITE_TYPES.slide,
+    SITE_TYPES.tab,
+    SITE_TYPES.accordionItem,
+    SITE_TYPES.popup,
+  ],
+  freeLayout: {
+    childPath: 'place',
+    enabled: (props, breakpoint) =>
+      resolveResponsive(props.positioning, breakpoint) === 'free',
+  },
   inspector: [
     {
       id: 'layout',
@@ -326,6 +371,19 @@ export const containerDefinition = defineComponent<SiteContainerProps>({
             options: [
               { value: 'flex', label: 'Fluxo' },
               { value: 'grid', label: 'Grade' },
+            ],
+          },
+        },
+        {
+          path: 'positioning',
+          label: 'Posicionamento',
+          help: 'Em "Livre", arraste cada elemento para onde quiser dentro do container (vale por tamanho de tela).',
+          responsive: true,
+          control: {
+            kind: 'segmented',
+            options: [
+              { value: 'flow', label: 'Em fluxo' },
+              { value: 'free', label: 'Livre' },
             ],
           },
         },
@@ -542,7 +600,14 @@ export const columnsDefinition = defineComponent<SiteColumnsProps>({
   propsSchema: siteColumnsSchema,
   defaultProps: () => ({}),
   accepts: false,
-  parents: [SITE_TYPES.section, SITE_TYPES.container],
+  parents: [
+    SITE_TYPES.section,
+    SITE_TYPES.container,
+    SITE_TYPES.slide,
+    SITE_TYPES.tab,
+    SITE_TYPES.accordionItem,
+    SITE_TYPES.popup,
+  ],
   template: () => columnsFragment(2),
   inspector: [],
   render: ({ attributes }: CanvasRenderProps<SiteColumnsProps>): ReactNode =>

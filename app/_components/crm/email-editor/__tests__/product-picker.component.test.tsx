@@ -59,6 +59,8 @@ function data(overrides: Partial<EmailEditorData> = {}): EmailEditorData {
     },
     meta: createTemplateMetaStore({ name: 'N', subject: 'S' }),
     flushMeta: async () => true,
+    flushDocument: async () => true,
+    applyTemplate: () => {},
     ...overrides,
   }
 }

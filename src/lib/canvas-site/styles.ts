@@ -33,6 +33,7 @@ import type {
   SiteTextProps,
   SiteVideoProps,
 } from './schemas'
+import { ELEMENT_STYLE_FNS } from './styles-elements'
 
 /**
  * Style functions of the site catalog: props resolved for one breakpoint →
@@ -191,8 +192,10 @@ const section = (p: Resolved<SiteSectionProps>): SiteRuleSet => {
 
 const container = (p: Resolved<SiteContainerProps>): SiteRuleSet => {
   const grid = p.layout === 'grid'
-  return {
+  const free = p.positioning === 'free'
+  const rules: SiteRuleSet = {
     '': {
+      position: free ? 'relative' : undefined,
       display: grid ? 'grid' : 'flex',
       'flex-direction': grid ? undefined : p.direction,
       'flex-wrap': grid ? undefined : p.wrap ? 'wrap' : 'nowrap',
@@ -207,7 +210,7 @@ const container = (p: Resolved<SiteContainerProps>): SiteRuleSet => {
       'min-width': 0,
       width: size(p.width),
       'max-width': size(p.maxWidth),
-      'min-height': size(p.minHeight),
+      'min-height': size(p.minHeight) ?? (free ? '320px' : undefined),
       padding: spacingToCss(p.padding),
       ...background(p.background),
       color: color(p.textColor),
@@ -216,6 +219,17 @@ const container = (p: Resolved<SiteContainerProps>): SiteRuleSet => {
       ...margin(p.margin),
     },
   }
+  if (free) {
+    // "Posição livre": each child sets --s-x/--s-y/--s-w/--s-z (effects).
+    rules[' > *'] = {
+      position: 'absolute',
+      left: 'var(--s-x,0px)',
+      top: 'var(--s-y,0px)',
+      width: 'var(--s-w,auto)',
+      'z-index': 'var(--s-z,auto)',
+    }
+  }
+  return rules
 }
 
 function textBlock(
@@ -238,6 +252,13 @@ const text = (p: Resolved<SiteTextProps>) => textBlock(p, p.align)
 
 const button = (p: Resolved<SiteButtonProps>): SiteRuleSet => {
   const custom = !!(p.background || p.textColor || p.borderColor)
+  const look: SiteDecls = {
+    width: p.align === 'stretch' ? '100%' : undefined,
+    'background-color': color(p.background),
+    color: color(p.textColor),
+    'border-color': color(p.borderColor),
+    'border-radius': px(p.radius),
+  }
   return {
     '': {
       display: 'flex',
@@ -245,14 +266,10 @@ const button = (p: Resolved<SiteButtonProps>): SiteRuleSet => {
         p.align === 'stretch' ? 'stretch' : ALIGN_FLEX[p.align],
       ...margin(p.margin),
     },
-    ' > a': {
-      width: p.align === 'stretch' ? '100%' : undefined,
-      'background-color': color(p.background),
-      color: color(p.textColor),
-      'border-color': color(p.borderColor),
-      'border-radius': px(p.radius),
-    },
+    ' > a': look,
     ' > a:hover': custom ? { filter: 'brightness(0.92)' } : {},
+    // A button without a link that runs an interaction (popup, scroll…).
+    ' > button': p.interaction && p.interaction.action !== 'none' ? look : {},
   }
 }
 
@@ -419,4 +436,5 @@ export const SITE_STYLE_FNS: Record<string, SiteStyleFn> = {
   [SITE_TYPES.menu]: menu as SiteStyleFn,
   [SITE_TYPES.social]: social as SiteStyleFn,
   [SITE_TYPES.embed]: embed as SiteStyleFn,
+  ...ELEMENT_STYLE_FNS,
 }

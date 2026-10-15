@@ -68,6 +68,7 @@ import {
   videoDefinition,
 } from './components/relationship'
 import { couponDefinition, productDefinition } from './components/sales'
+import { conditionOf, describeEmailCondition } from './conditions'
 import type { EmailBodyProps } from './schemas'
 import {
   createEmailRenderContext,
@@ -219,6 +220,23 @@ export function emailDependencies(
   ]
 }
 
+/** Attribute the editor frame CSS turns into the "Mostrar se" badge. */
+export const CONDITION_BADGE_ATTR = 'data-ec-cond'
+
+/** In the editor, a conditional node carries its condition as a badge
+ * (`data-ec-cond`, drawn by the frame CSS); the output never does. */
+function editorAttributes(
+  props: CanvasRenderProps,
+): CanvasRenderProps['attributes'] {
+  if (!props.editing || !props.attributes) return props.attributes
+  const condition = conditionOf(props.node)
+  if (!condition) return props.attributes
+  return {
+    ...props.attributes,
+    [CONDITION_BADGE_ATTR]: `Mostrar se: ${describeEmailCondition(condition)}`,
+  } as CanvasRenderProps['attributes']
+}
+
 export type EmailCatalogOptions = {
   /** `false` keeps the HTML block registered (documents that have one still
    * validate and render) but hides it from the palette — for members who
@@ -247,7 +265,11 @@ export function createEmailCatalog(
     ...definition,
     dependsOn: definition.type === BODY ? undefined : emailDependencies,
     render: (props) =>
-      definition.render({ ...props, ctx: read() } as CanvasRenderProps),
+      definition.render({
+        ...props,
+        attributes: editorAttributes(props),
+        ctx: read(),
+      } as CanvasRenderProps),
   })
   const blocks = BLOCKS.map(
     (block): CanvasComponentDefinition =>

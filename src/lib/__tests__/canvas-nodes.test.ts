@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applyOp, type CanvasOp, getNode } from '@/src/lib/canvas/ops'
+import {
+  applyOp,
+  type CanvasOp,
+  childOnPath,
+  getNode,
+} from '@/src/lib/canvas/ops'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { catalog, sampleDoc } from './canvas-fixture'
 
@@ -75,5 +80,24 @@ describe('overlay documents', () => {
     expect((next as unknown as { settings: unknown }).settings).toEqual({
       width: 600,
     })
+  })
+})
+
+describe('childOnPath', () => {
+  it('finds the direct child of an ancestor on the way to a node', () => {
+    const doc = sampleDoc()
+    expect(childOnPath(doc, 's1', 'b1')).toBe('cols')
+    expect(childOnPath(doc, 'cols', 'b1')).toBe('c1')
+    expect(childOnPath(doc, 'cols', 'c2')).toBe('c2')
+    expect(childOnPath(doc, 'root', 't2')).toBe('s2')
+  })
+
+  it('is null outside the subtree, for the ancestor itself and without a node', () => {
+    const doc = sampleDoc()
+    expect(childOnPath(doc, 's1', 't2')).toBeNull()
+    expect(childOnPath(doc, 's1', 's1')).toBeNull()
+    expect(childOnPath(doc, 's1', null)).toBeNull()
+    expect(childOnPath(doc, 's1', undefined)).toBeNull()
+    expect(childOnPath(doc, 's1', 'missing')).toBeNull()
   })
 })

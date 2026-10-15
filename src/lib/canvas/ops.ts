@@ -24,7 +24,7 @@ import {
 
 export { getNode } from './nodes'
 export { resolveResponsive } from './responsive'
-export { parentOf } from './tree'
+export { childOnPath, parentOf } from './tree'
 
 /**
  * Every change to a document is one of these operations. They are pure:
