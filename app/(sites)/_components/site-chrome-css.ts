@@ -15,5 +15,5 @@ export const SITE_CHROME_CSS = `
 .ss-404{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 16px;text-align:center;background:#fff;color:#161c2d;font-family:system-ui,sans-serif}
 .ss-404 h1{margin:0;font-size:1.75rem}
 .ss-404 p{margin:0;color:#5c6272}
-.${SITE_ROOT_CLASS}{min-height:100svh}
+main>.${SITE_ROOT_CLASS}{min-height:60svh}
 `.trim()

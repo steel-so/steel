@@ -248,6 +248,7 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
     [target.kind, header, footer],
   )
 
+  const tokens = useMemo(() => siteColorTokens(theme), [theme])
   const presets = useMemo<CanvasPresetItem[]>(
     () =>
       SITE_PRESETS.map((preset) => ({
@@ -298,7 +299,7 @@ function SiteCanvas({ document }: { document: CanvasDocument }) {
       viewportWidths={SITE_VIEWPORT_WIDTHS}
       presets={presets}
       extraTabs={TABS}
-      colorTokens={siteColorTokens(theme)}
+      colorTokens={tokens}
       fonts={FONTS}
       frameHead={<SiteEditorFrameStyles theme={theme} around={around} />}
       frameBefore={
