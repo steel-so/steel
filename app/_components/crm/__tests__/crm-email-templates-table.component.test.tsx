@@ -18,7 +18,7 @@ vi.mock('@/app/_components/crm/table/data-table', () => ({
   }) => (
     <ul>
       {props.data.map((r) => (
-        <li key={r.id}>
+        <li key={r.id} data-kind={r.kind}>
           <button
             type='button'
             onClick={() => opened.results.push(props.onOpenRecord?.(r))}
@@ -36,8 +36,24 @@ function setup() {
     {
       match: '/crm/email-templates',
       data: [
-        { id: 't1', name: 'Newsletter visual', kind: 'BUILDER' },
+        {
+          id: 't1',
+          name: 'Newsletter visual',
+          kind: 'BUILDER',
+          builderDocument: { version: 1, layout: 'newsletter', sections: [] },
+        },
         { id: 't2', name: 'HTML antigo', kind: 'LEGACY' },
+        {
+          id: 't3',
+          name: 'Promoção arrastar e soltar',
+          kind: 'BUILDER',
+          builderDocument: {
+            catalog: 'email',
+            version: 2,
+            rootId: 'root',
+            nodes: {},
+          },
+        },
       ],
     },
   ])
@@ -45,12 +61,12 @@ function setup() {
 }
 
 describe('<CrmEmailTemplatesTable />', () => {
-  it('links to the template gallery', async () => {
+  it('links "Novo template" to the starter gallery', async () => {
     setup()
     await screen.findByText('Newsletter visual')
     expect(
       screen
-        .getByText(/galeria de modelos/i)
+        .getByText(/novo template/i)
         .closest('a')
         ?.getAttribute('href'),
     ).toBe('/acme/crm/email-templates/new')
@@ -60,6 +76,18 @@ describe('<CrmEmailTemplatesTable />', () => {
     setup()
     fireEvent.click(await screen.findByText('Newsletter visual'))
     expect(push).toHaveBeenCalledWith('/acme/crm/email-templates/t1')
+  })
+
+  it('marks drag-and-drop (v2) templates with the "Novo editor" kind', async () => {
+    setup()
+    const v2 = await screen.findByText('Promoção arrastar e soltar')
+    expect(v2.closest('li')?.dataset.kind).toBe('CANVAS')
+    expect(
+      screen.getByText('Newsletter visual').closest('li')?.dataset.kind,
+    ).toBe('BUILDER')
+    push.mockClear()
+    fireEvent.click(v2)
+    expect(push).toHaveBeenCalledWith('/acme/crm/email-templates/t3')
   })
 
   it('keeps the default record panel for free-HTML templates', async () => {
