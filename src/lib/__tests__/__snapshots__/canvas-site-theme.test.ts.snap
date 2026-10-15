@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`site theme > compiles the theme stylesheet deterministically 1`] = `
+".s-site{--canvas-primary:#473bf0;--canvas-secondary:#68d585;--canvas-accent:#f64b4b;--canvas-dark:#161c2d;--canvas-text:#161c2d;--canvas-muted:#5c6272;--canvas-background:#ffffff;--canvas-surface:#f4f7fa;--canvas-border:#e7e9ed;--canvas-inverse:#ffffff;--s-font-heading:var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;--s-font-body:var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;--s-space-xs:4px;--s-space-sm:8px;--s-space-md:16px;--s-space-lg:32px;--s-space-xl:64px;--s-space-xxl:120px;--s-radius-sm:4px;--s-shadow-sm:0px 1px 3px 0px #161c2d1f;--s-radius-md:10px;--s-shadow-md:0px 12px 32px -8px #161c2d29;--s-radius-lg:20px;--s-shadow-lg:0px 32px 54px 0px #161c2d29;--s-content:1200px}
+.s-site{background:var(--canvas-background);color:var(--canvas-text);font-family:var(--s-font-body);font-size:17px;font-weight:400;line-height:1.7;letter-spacing:0px;text-transform:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.s-site *,.s-site *::before,.s-site *::after{box-sizing:border-box}
+.s-site :where(h1,h2,h3,h4,h5,h6,p,figure,blockquote,ul,ol,dl){margin:0}
+.s-site :where(ul,ol){padding:0}
+.s-site :where(img,video,svg,iframe){display:block;max-width:100%}
+.s-site :where(img,video){height:auto}
+.s-site :where(button,input,select,textarea){font:inherit;color:inherit}
+.s-site :where(a){color:var(--canvas-primary);text-decoration:none;text-underline-offset:.2em}
+.s-site :where(a):hover{color:var(--canvas-dark);text-decoration:underline}
+.s-site :where(:focus-visible){outline:2px solid var(--canvas-primary);outline-offset:2px}
+.s-site .s-rich :where(p+p,p+ul,p+ol,ul+p,ol+p){margin-top:.75em}
+.s-site .s-rich :where(ul,ol){padding-left:1.4em}
+.s-site .s-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.s-site :where(.s-t-h1){font-family:var(--s-font-heading);font-size:64px;font-weight:700;line-height:1.1;letter-spacing:-1.5px;text-transform:none}
+.s-site :where(.s-t-h2){font-family:var(--s-font-heading);font-size:44px;font-weight:700;line-height:1.15;letter-spacing:-1px;text-transform:none}
+.s-site :where(.s-t-h3){font-family:var(--s-font-heading);font-size:32px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;text-transform:none}
+.s-site :where(.s-t-h4){font-family:var(--s-font-heading);font-size:24px;font-weight:700;line-height:1.3;letter-spacing:-0.3px;text-transform:none}
+.s-site :where(.s-t-h5){font-family:var(--s-font-heading);font-size:20px;font-weight:700;line-height:1.4;letter-spacing:0px;text-transform:none}
+.s-site :where(.s-t-h6){font-family:var(--s-font-heading);font-size:17px;font-weight:700;line-height:1.4;letter-spacing:0px;text-transform:none}
+.s-site :where(.s-t-lead){font-family:var(--s-font-body);font-size:21px;font-weight:400;line-height:1.6;letter-spacing:0px;text-transform:none}
+.s-site :where(.s-t-body){font-family:var(--s-font-body);font-size:17px;font-weight:400;line-height:1.7;letter-spacing:0px;text-transform:none}
+.s-site :where(.s-t-small){font-family:var(--s-font-body);font-size:14px;font-weight:400;line-height:1.6;letter-spacing:0px;text-transform:none}
+.s-site :where(.s-t-overline){font-family:var(--s-font-body);font-size:13px;font-weight:700;line-height:1.4;letter-spacing:1.6px;text-transform:uppercase}
+.s-site :where(.s-btn){display:inline-flex;align-items:center;justify-content:center;gap:.5em;padding:14px 28px;border-radius:8px;border:1px solid transparent;font-family:var(--s-font-body);font-size:17px;font-weight:700;letter-spacing:-0.3px;text-transform:none;line-height:1.2;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s}
+.s-site :where(.s-btn-sm){padding:8px 17px;font-size:14px}
+.s-site :where(.s-btn-lg){padding:18px 36px;font-size:19px}
+.s-site :where(.s-btn-primary){background:var(--canvas-primary);color:var(--canvas-inverse);border-color:var(--canvas-primary)}
+.s-site :where(.s-btn-primary):hover{background:var(--canvas-dark);color:var(--canvas-inverse);text-decoration:none}
+.s-site :where(.s-btn-secondary){background:var(--canvas-dark);color:var(--canvas-inverse);border-color:var(--canvas-dark)}
+.s-site :where(.s-btn-secondary):hover{background:var(--canvas-primary);color:var(--canvas-inverse);text-decoration:none}
+.s-site :where(.s-btn-outline){background:transparent;color:var(--canvas-text);border-color:var(--canvas-border)}
+.s-site :where(.s-btn-outline):hover{background:var(--canvas-surface);color:var(--canvas-text);text-decoration:none}
+.s-site :where(.s-btn-link){background:transparent;padding-left:0;padding-right:0;color:var(--canvas-primary)}
+.s-site :where(.s-btn-link):hover{color:var(--canvas-dark);text-decoration:underline}
+@media (max-width: 1023.98px){.s-site :where(.s-t-h1){font-size:52px}.s-site :where(.s-t-h2){font-size:38px}.s-site :where(.s-t-h3){font-size:28px}.s-site :where(.s-t-h4){font-size:22px}.s-site :where(.s-t-h5){font-size:19px}.s-site :where(.s-t-h6){font-size:17px}.s-site :where(.s-t-lead){font-size:19px}}
+@media (max-width: 767.98px){.s-site :where(.s-t-h1){font-size:38px}.s-site :where(.s-t-h2){font-size:30px}.s-site :where(.s-t-h3){font-size:24px}.s-site :where(.s-t-h4){font-size:20px}.s-site :where(.s-t-h5){font-size:18px}.s-site :where(.s-t-h6){font-size:16px}.s-site :where(.s-t-lead){font-size:18px}}"
+`;
