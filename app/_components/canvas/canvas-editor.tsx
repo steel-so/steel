@@ -157,8 +157,9 @@ function EditorLayout({ title }: { title: CanvasEditorProps['title'] }) {
  * `src/lib/canvas`) holds the document, history and selection.
  */
 export function CanvasEditor(props: CanvasEditorProps) {
-  const [store] = useState(() =>
-    createCanvasStore(props.catalog, props.initialDocument),
+  const [store] = useState(
+    () =>
+      props.store ?? createCanvasStore(props.catalog, props.initialDocument),
   )
   const [drag] = useState(createDragStore)
   const [frame] = useState(createFrameHandle)

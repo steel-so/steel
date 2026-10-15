@@ -28,6 +28,11 @@ export interface CanvasPresetItem {
 export interface CanvasEditorProps {
   catalog: CanvasCatalog
   initialDocument: CanvasDocument
+  /** A store created by the caller (`createCanvasStore(catalog, doc)`),
+   * for catalogs whose render context reads the live document (the e-mail
+   * column splits widths with its siblings). Read once, on mount; without it
+   * the editor creates its own from `initialDocument`. */
+  store?: CanvasStore
   /** Canvas viewport width per breakpoint, in px (e-mail: 600/375). */
   viewportWidths: Partial<Record<'base' | 'tablet' | 'mobile', number>>
   /** Extra stylesheet injected in the canvas iframe (fonts, catalog CSS). */
