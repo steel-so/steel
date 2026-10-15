@@ -41,9 +41,17 @@ const campaignShape = {
     description: 'Valor de `utm_campaign`.',
   }),
   status,
-  destinationType: z.enum(['LANDING_PAGE', 'FORM']).nullable(),
+  destinationType: z
+    .enum(['LANDING_PAGE', 'FORM', 'SITE_PAGE'])
+    .nullable()
+    .meta({
+      description:
+        'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); LANDING_PAGE = landing page antiga.',
+    }),
   landingPageId: z.string().nullable(),
   formId: z.string().nullable(),
+  siteId: z.string().nullable(),
+  sitePageId: z.string().nullable(),
   utmMedium: z.string().meta({ example: 'campanha' }),
   emailFrom: z.string().nullable(),
   emailSubject: z.string().nullable(),
@@ -63,6 +71,10 @@ const campaignShape = {
     .nullable(),
   whatsappText: z.string().nullable(),
   whatsappMediaUrl: z.string().nullable(),
+  whatsappQuickReplyId: z.string().nullable().meta({
+    description:
+      'Z-API: resposta rápida cujos botões vão com o texto (ações mantidas).',
+  }),
   whatsappDelayHours: z.number().int(),
   whatsappLegalBasis: legalBasis.nullable(),
   scheduledAt: nullableDateTime(),
@@ -81,7 +93,31 @@ const campaignShape = {
     email: z.string().nullable(),
     whatsapp: z.string().nullable(),
   }),
+  destination: z
+    .object({
+      type: z.enum(['LANDING_PAGE', 'FORM', 'SITE_PAGE']),
+      name: z.string(),
+      pageTitle: z.string().nullable(),
+      url: z.string().nullable(),
+      published: z.boolean(),
+    })
+    .nullable()
+    .meta({ description: 'Resumo do destino (nome, página e endereço).' }),
 }
+
+const conversionKind = z.enum([
+  'LANDING_VIEW',
+  'FORM_SUBMISSION',
+  'SITE_VIEW',
+  'SITE_FORM_SUBMISSION',
+])
+const button = z.object({
+  type: z.enum(['REPLY', 'URL']),
+  label: z.string(),
+  url: z.string().nullable(),
+  dynamic: z.boolean(),
+  actionCount: z.number().int(),
+})
 
 export const CrmCampaignDetailDTO = dto(
   'CrmCampaignDetail',
@@ -95,6 +131,14 @@ export const CrmCampaignDetailDTO = dto(
         }),
       )
       .meta({ description: 'O que ainda impede o envio, por passo.' }),
+    emailChecklist: z
+      .array(
+        z.object({ level: z.enum(['error', 'warning']), message: z.string() }),
+      )
+      .meta({
+        description:
+          'Checklist do template de e-mail; os erros também entram em `issues` e bloqueiam o envio.',
+      }),
   }),
 )
 
@@ -153,11 +197,17 @@ export const CrmCampaignStatsDTO = dto(
         whatsapp: count(),
         unknown: count(),
       }),
+      byDestination: z.object({
+        siteView: count(),
+        siteForm: count(),
+        crmForm: count(),
+        landingView: count(),
+      }),
     }),
     convertedContacts: z.array(
       z.object({
         id: z.string(),
-        kind: z.enum(['LANDING_VIEW', 'FORM_SUBMISSION']),
+        kind: conversionKind,
         channel: z.enum(['EMAIL', 'WHATSAPP']).nullable(),
         recipientId: z.string().nullable(),
         name: z.string().nullable(),
@@ -222,6 +272,25 @@ export const CrmCampaignOptionsDTO = dto(
   'CrmCampaignOptions',
   z.object({
     baseUrl: z.string(),
+    sites: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        slug: z.string(),
+        url: z.string(),
+        published: z.boolean(),
+        updatedAt: z.iso.datetime(),
+        pages: z.array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            path: z.string(),
+            url: z.string(),
+            isHome: z.boolean(),
+          }),
+        ),
+      }),
+    ),
     landingPages: z.array(
       z.object({
         id: z.string(),
@@ -236,10 +305,26 @@ export const CrmCampaignOptionsDTO = dto(
         name: z.string(),
         published: z.boolean(),
         publicToken: z.string(),
+        url: z.string(),
+        embeds: z.array(
+          z.object({
+            siteId: z.string(),
+            siteName: z.string(),
+            pageId: z.string(),
+            pageTitle: z.string(),
+            url: z.string(),
+          }),
+        ),
       }),
     ),
     emailTemplates: z.array(
-      z.object({ id: z.string(), name: z.string(), subject: z.string() }),
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        subject: z.string(),
+        editor: z.enum(['v2', 'v1', 'html']),
+        updatedAt: z.iso.datetime(),
+      }),
     ),
     mailingLists: z.array(z.object({ id: z.string(), name: z.string() })),
     whatsapp: z.object({
@@ -257,6 +342,14 @@ export const CrmCampaignOptionsDTO = dto(
               name: z.string(),
               language: z.string(),
               category: z.string(),
+              status: z.enum(['APPROVED', 'PAUSED', 'DISABLED']),
+              quality: z.enum(['GREEN', 'YELLOW', 'RED', 'UNKNOWN']),
+              headerFormat: z
+                .enum(['TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT'])
+                .nullable(),
+              headerMediaUrl: z.string().nullable(),
+              buttons: z.array(button),
+              blockedReason: z.string().nullable(),
               fields: z.object({
                 headerVariables: count(),
                 bodyVariables: count(),
@@ -265,6 +358,16 @@ export const CrmCampaignOptionsDTO = dto(
               }),
             }),
           ),
+        }),
+      ),
+      quickReplies: z.array(
+        z.object({
+          id: z.string(),
+          shortcut: z.string(),
+          title: z.string(),
+          body: z.string(),
+          mediaUrl: z.string().nullable(),
+          buttons: z.array(button),
         }),
       ),
     }),

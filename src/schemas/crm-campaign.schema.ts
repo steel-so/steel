@@ -9,7 +9,11 @@ export const CRM_CAMPAIGN_LEGAL_BASES = [
 
 export const CrmCampaignLegalBasisEnum = z.enum(CRM_CAMPAIGN_LEGAL_BASES)
 
-export const CrmCampaignDestinationTypeEnum = z.enum(['LANDING_PAGE', 'FORM'])
+export const CrmCampaignDestinationTypeEnum = z.enum([
+  'LANDING_PAGE',
+  'FORM',
+  'SITE_PAGE',
+])
 
 export const CrmCampaignChannelEnum = z.enum(['EMAIL', 'WHATSAPP'])
 
@@ -81,6 +85,8 @@ export const UpdateCrmCampaignSchema = z
     destinationType: CrmCampaignDestinationTypeEnum.nullable(),
     landingPageId: nullableId,
     formId: nullableId,
+    siteId: nullableId,
+    sitePageId: nullableId,
     emailFrom: z.email('Remetente inválido').nullable(),
     emailSubject: z.string().trim().max(200).nullable(),
     emailPreheader: z.string().trim().max(200).nullable(),
@@ -93,6 +99,7 @@ export const UpdateCrmCampaignSchema = z
     whatsappVariables: CrmCampaignWhatsAppVariablesSchema.nullable(),
     whatsappText: z.string().max(4000).nullable(),
     whatsappMediaUrl: z.url('Link de mídia inválido').max(1000).nullable(),
+    whatsappQuickReplyId: nullableId,
     whatsappDelayHours: z.number().int().min(0).max(720),
     whatsappLegalBasis: CrmCampaignLegalBasisEnum.nullable(),
     scheduledAt: z.coerce.date().nullable(),
@@ -168,6 +175,9 @@ export const CrmCampaignRefSchema = z.object({
   ref: z.string().max(200).optional(),
   utmCampaign: z.string().max(200).optional(),
   utmSource: z.string().max(200).optional(),
+  /** Site page the form was sent from (the `site.form` element). */
+  siteSlug: z.string().max(80).optional(),
+  sitePageId: z.string().max(40).optional(),
 })
 
 export type CrmCampaignRefDTO = z.infer<typeof CrmCampaignRefSchema>

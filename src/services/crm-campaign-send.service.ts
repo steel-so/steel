@@ -2,6 +2,7 @@ import type {
   CrmCampaign,
   CrmCampaignChannel,
   CrmCampaignRecipient,
+  WhatsAppConnection,
 } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
@@ -22,6 +23,7 @@ import {
 import {
   type CampaignMessageContext,
   META_DAILY_CONVERSATION_LIMIT,
+  renderButtonUrl,
   renderZapiText,
   resolveTemplateValues,
   templateFields,
@@ -35,6 +37,8 @@ import { CrmCampaignsJob } from '@/src/lib/queue/jobs'
 import { getCrmCampaignsQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
 import { resolveBroadcastMediaKind } from '@/src/lib/whatsapp/broadcast-media'
+import { buildButtonPayload } from '@/src/lib/whatsapp/button-payload'
+import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import { buildMetaSendComponents } from '@/src/lib/whatsapp/template-variables'
@@ -166,6 +170,8 @@ export async function buildCampaignEmail(
     link: string
     openPixelUrl: string | null
     unsubscribePageUrl: string | null
+    /** CRM person of the recipient (profile variables, "Mostrar se"). */
+    personId?: string | null
   },
 ): Promise<Result<{ subject: string; html: string; text: string }>> {
   // The builder renders the template, `{{campaign_link}}` and the LGPD
@@ -178,6 +184,7 @@ export async function buildCampaignEmail(
       email: contact.email,
       campaignLink: contact.link,
       unsubscribeUrl: contact.unsubscribePageUrl ?? undefined,
+      personId: contact.personId,
     },
   )
   if (!rendered.ok) return rendered
@@ -199,6 +206,60 @@ export async function buildCampaignEmail(
     subject: campaign.emailSubject || rendered.value.subject,
     html,
     text: rendered.value.text,
+  })
+}
+
+/**
+ * Z-API text + the quick reply's buttons: reply buttons carry the quick
+ * reply payload (their configured actions run on click), URL buttons get
+ * `{link}` replaced by the recipient's campaign link. An image rides in the
+ * button message; other media go first, on their own.
+ */
+async function sendQuickReplyButtons(
+  connection: WhatsAppConnection,
+  input: {
+    to: CampaignMessageContext & { waId: string }
+    text: string
+    quickReplyId: string
+    buttons: ReturnType<typeof parseStoredButtons>
+    mediaUrl: string | null
+  },
+): Promise<Result<WhatsAppSendResult>> {
+  const kind = input.mediaUrl
+    ? (resolveBroadcastMediaKind({ url: input.mediaUrl }) ?? 'IMAGE')
+    : null
+  if (input.mediaUrl && kind && kind !== 'IMAGE' && kind !== 'AUDIO') {
+    const media = await WhatsAppSend.media(connection, {
+      to: input.to.waId,
+      mediaUrl: input.mediaUrl,
+      type: kind.toLowerCase() as 'video' | 'document',
+    })
+    if (!media.ok) return media
+  }
+  return WhatsAppSend.buttons(connection, {
+    to: input.to.waId,
+    text: input.text,
+    buttons: input.buttons.map((button) =>
+      button.type === 'URL'
+        ? {
+            type: 'URL' as const,
+            id: button.id,
+            label: button.label,
+            url: renderButtonUrl(button.url, input.to),
+          }
+        : {
+            type: 'REPLY' as const,
+            id: buildButtonPayload({
+              sourceType: 'QUICK_REPLY',
+              sourceId: input.quickReplyId,
+              buttonId: button.id,
+            }),
+            label: button.label,
+          },
+    ),
+    ...(input.mediaUrl && kind === 'IMAGE'
+      ? { media: { url: input.mediaUrl, type: 'image' as const } }
+      : {}),
   })
 }
 
@@ -256,14 +317,37 @@ export async function sendCampaignWhatsApp(
   }
 
   const text = renderZapiText(campaign.whatsappText ?? '', to)
-  if (campaign.whatsappMediaUrl) {
-    const kind =
-      resolveBroadcastMediaKind({ url: campaign.whatsappMediaUrl }) ?? 'IMAGE'
+  let mediaUrl = campaign.whatsappMediaUrl
+  if (campaign.whatsappQuickReplyId) {
+    const reply = await CrmCampaignLookupRepository.findQuickReply(
+      campaign.workspaceId,
+      campaign.whatsappQuickReplyId,
+    )
+    if (!reply.ok) return reply
+    if (!reply.value) {
+      return err(
+        crmCampaignWhatsappUnavailable('A resposta rápida não existe mais'),
+      )
+    }
+    mediaUrl = mediaUrl ?? reply.value.mediaUrl
+    const buttons = parseStoredButtons(reply.value.buttons)
+    if (buttons.length > 0) {
+      return sendQuickReplyButtons(connection.value, {
+        to,
+        text,
+        quickReplyId: reply.value.id,
+        buttons,
+        mediaUrl,
+      })
+    }
+  }
+  if (mediaUrl) {
+    const kind = resolveBroadcastMediaKind({ url: mediaUrl }) ?? 'IMAGE'
     const type = kind.toLowerCase() as 'image' | 'video' | 'audio' | 'document'
     if (type !== 'audio') {
       return WhatsAppSend.media(connection.value, {
         to: to.waId,
-        mediaUrl: campaign.whatsappMediaUrl,
+        mediaUrl,
         type,
         caption: text,
       })
@@ -287,6 +371,7 @@ async function sendEmailTo(
     link: campaignClickUrl(BETTER_AUTH_URL, token),
     openPixelUrl: campaignOpenPixelUrl(BETTER_AUTH_URL, token),
     unsubscribePageUrl: unsubscribe.pageUrl,
+    personId: recipient.personId,
   })
   if (!email.ok) return err({ retry: false, message: email.error.message })
   try {

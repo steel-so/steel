@@ -7,7 +7,7 @@ import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
 import { crmCampaignLinkInvalid } from '@/src/errors'
 import {
-  buildDestinationUrl,
+  campaignDestinationUrl,
   withCampaignParams,
 } from '@/src/lib/crm-campaign/campaign-url'
 import { verifyCampaignLinkToken } from '@/src/lib/crm-campaign/tokens'
@@ -23,6 +23,7 @@ import type {
   CrmCampaignRefDTO,
   ResendWebhookEvent,
 } from '@/src/schemas/crm-campaign.schema'
+import { resolveCampaignDestination } from './crm-campaign-destination'
 
 /**
  * Funnel tracking of multichannel campaigns (ADR 0025): e-mail open pixel
@@ -35,10 +36,67 @@ import type {
 /** A reply counts for campaign messages sent in the last 30 days. */
 const REPLY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
-function conversionKindOf(campaign: CrmCampaign): CrmCampaignConversionKind {
-  return campaign.destinationType === 'FORM'
-    ? 'FORM_SUBMISSION'
-    : 'LANDING_VIEW'
+/**
+ * Does a visit/submission belong to the campaign's destination?
+ *
+ * - landing page view → the campaign's landing page;
+ * - CRM form page submission → the campaign's form;
+ * - site page view → any page of the campaign's site (the visitor may land
+ *   on it from a menu link carrying the parameters);
+ * - form sent from a site page → the campaign's site, or the campaign's
+ *   form embedded in some site page.
+ */
+export function matchesDestination(
+  campaign: Pick<
+    CrmCampaign,
+    'destinationType' | 'landingPageId' | 'formId' | 'siteId'
+  >,
+  input: {
+    kind: CrmCampaignConversionKind
+    landingPageId?: string
+    formId?: string
+    siteId?: string
+  },
+): boolean {
+  const type = campaign.destinationType
+  switch (input.kind) {
+    case 'LANDING_VIEW':
+      return (
+        type === 'LANDING_PAGE' &&
+        campaign.landingPageId === input.landingPageId
+      )
+    case 'FORM_SUBMISSION':
+      return type === 'FORM' && campaign.formId === input.formId
+    case 'SITE_VIEW':
+      return type === 'SITE_PAGE' && campaign.siteId === input.siteId
+    case 'SITE_FORM_SUBMISSION':
+      return (
+        (type === 'SITE_PAGE' && campaign.siteId === input.siteId) ||
+        (type === 'FORM' && campaign.formId === input.formId)
+      )
+  }
+}
+
+/**
+ * Does it mark the recipient as converted? A form sent (from the form page
+ * or a site page) converts form and site campaigns; a view converts landing
+ * campaigns and site campaigns on their chosen page.
+ */
+export function convertsRecipient(
+  campaign: Pick<CrmCampaign, 'destinationType' | 'sitePageId'>,
+  input: { kind: CrmCampaignConversionKind; sitePageId?: string },
+): boolean {
+  switch (input.kind) {
+    case 'LANDING_VIEW':
+      return campaign.destinationType === 'LANDING_PAGE'
+    case 'SITE_VIEW':
+      return (
+        campaign.destinationType === 'SITE_PAGE' &&
+        campaign.sitePageId === input.sitePageId
+      )
+    default:
+      return true
+  }
 }
 
 function sourceChannel(value: string | undefined): CrmCampaignChannel | null {
@@ -76,20 +134,10 @@ export const CrmCampaignTrackingService = {
     }
     const { campaign } = recipient.value
 
-    const destination =
-      campaign.destinationType === 'FORM' && campaign.formId
-        ? await CrmCampaignLookupRepository.findForm(
-            campaign.workspaceId,
-            campaign.formId,
-          )
-        : campaign.landingPageId
-          ? await CrmCampaignLookupRepository.findLandingPage(
-              campaign.workspaceId,
-              campaign.landingPageId,
-            )
-          : ok(null)
+    const destination = await resolveCampaignDestination(campaign)
     if (!destination.ok) return destination
-    if (!destination.value || !campaign.destinationType) {
+    const ref = destination.value?.ref ?? null
+    if (!ref || !campaign.destinationType) {
       return err(crmCampaignLinkInvalid())
     }
 
@@ -115,10 +163,15 @@ export const CrmCampaignTrackingService = {
 
     return ok(
       withCampaignParams(
-        buildDestinationUrl(BETTER_AUTH_URL, {
-          type: campaign.destinationType,
-          token: destination.value.token,
-        }),
+        campaignDestinationUrl(
+          BETTER_AUTH_URL,
+          typeof ref === 'string'
+            ? {
+                type: campaign.destinationType as 'LANDING_PAGE' | 'FORM',
+                token: ref,
+              }
+            : { type: 'SITE_PAGE', url: ref.url },
+        ),
         {
           source: verified.channel === 'EMAIL' ? 'email' : 'whatsapp',
           medium: campaign.utmMedium,
@@ -130,10 +183,12 @@ export const CrmCampaignTrackingService = {
   },
 
   /**
-   * A visit (landing page) or submission (form) arriving with campaign
-   * parameters. Attributed to the recipient when the signed token matches,
-   * otherwise to the campaign by its `utm_campaign` slug. The destination
-   * must be the campaign's. Returns whether a conversion was recorded.
+   * A visit (landing page, site page) or submission (form page, form on a
+   * site page) arriving with campaign parameters. Attributed to the
+   * recipient when the signed token matches, otherwise to the campaign by
+   * its `utm_campaign` slug. The destination must be the campaign's (see
+   * `matchesDestination`). Idempotent by `sourceRef`. Returns whether a
+   * conversion was recorded.
    */
   async attribute(
     input: {
@@ -143,6 +198,8 @@ export const CrmCampaignTrackingService = {
       ref: CrmCampaignRefDTO
       landingPageId?: string
       formId?: string
+      siteId?: string
+      sitePageId?: string
       leadId?: string | null
       personId?: string | null
     },
@@ -177,13 +234,7 @@ export const CrmCampaignTrackingService = {
     if (!campaign || campaign.workspaceId !== input.workspaceId)
       return ok(false)
 
-    const matches =
-      input.kind === 'LANDING_VIEW'
-        ? campaign.destinationType === 'LANDING_PAGE' &&
-          campaign.landingPageId === input.landingPageId
-        : campaign.destinationType === 'FORM' &&
-          campaign.formId === input.formId
-    if (!matches) return ok(false)
+    if (!matchesDestination(campaign, input)) return ok(false)
 
     const recorded = await CrmCampaignConversionRepository.record({
       campaignId: campaign.id,
@@ -193,13 +244,12 @@ export const CrmCampaignTrackingService = {
       sourceRef: input.sourceRef,
       leadId: input.leadId ?? null,
       personId: input.personId ?? null,
+      siteId: input.siteId ?? null,
+      sitePageId: input.sitePageId ?? null,
+      formId: input.formId ?? null,
     })
     if (!recorded.ok) return recorded
-    if (
-      recorded.value &&
-      recipientId &&
-      input.kind === conversionKindOf(campaign)
-    ) {
+    if (recorded.value && recipientId && convertsRecipient(campaign, input)) {
       await CrmCampaignRecipientRepository.markFirst(
         { id: recipientId },
         'convertedAt',
@@ -207,6 +257,46 @@ export const CrmCampaignTrackingService = {
       )
     }
     return ok(recorded.value !== null)
+  },
+
+  /**
+   * A CRM form sent from a published site page (`site.form`): resolves the
+   * site by its public slug (same workspace only) and attributes the
+   * submission as SITE_FORM_SUBMISSION.
+   */
+  async attributeSiteForm(
+    input: {
+      workspaceId: string
+      submissionId: string
+      formId: string
+      ref: CrmCampaignRefDTO
+      leadId?: string | null
+      personId?: string | null
+    },
+    now: Date,
+  ): Promise<Result<boolean>> {
+    const slug = input.ref.siteSlug
+    if (!slug) return ok(false)
+    const siteId = await CrmCampaignLookupRepository.findSiteIdBySlug(
+      input.workspaceId,
+      slug,
+    )
+    if (!siteId.ok) return siteId
+    if (!siteId.value) return ok(false)
+    return CrmCampaignTrackingService.attribute(
+      {
+        workspaceId: input.workspaceId,
+        kind: 'SITE_FORM_SUBMISSION',
+        sourceRef: input.submissionId,
+        ref: input.ref,
+        formId: input.formId,
+        siteId: siteId.value,
+        sitePageId: input.ref.sitePageId,
+        leadId: input.leadId,
+        personId: input.personId,
+      },
+      now,
+    )
   },
 
   /** Resend webhook: delivery, bounce, complaint, open and click. */
