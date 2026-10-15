@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyOp } from '@/src/lib/canvas/ops'
+import { applyOp, type CanvasOpError } from '@/src/lib/canvas/ops'
 import type { InspectorField } from '@/src/lib/canvas/registry'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { demoCatalog, demoDocument } from '../__demo__/demo-catalog'
@@ -502,7 +502,7 @@ describe('palette, colors, messages and drag store', () => {
   })
 
   it('explains every refused operation in pt-BR', () => {
-    const cases = [
+    const cases: CanvasOpError[] = [
       {
         code: 'NOT_ACCEPTED',
         parentType: 'demo.column',
@@ -522,7 +522,7 @@ describe('palette, colors, messages and drag store', () => {
       { code: 'NODE_NOT_FOUND', id: 'x' },
       { code: 'DUPLICATE_ID', id: 'x' },
       { code: 'INVALID_DOCUMENT', reason: 'x' },
-    ] as const
+    ]
     for (const error of cases) {
       expect(opErrorMessage(error, demoCatalog)).toMatch(/\S/)
     }
