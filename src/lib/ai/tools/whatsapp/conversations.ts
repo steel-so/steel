@@ -138,7 +138,10 @@ export const zapConversationsListTool: SteelAiTool<ListArgs> = {
         type: 'string',
         description: '"me", "unassigned" ou o id do usuário responsável.',
       },
-      connectionId: { type: 'string' },
+      connectionId: {
+        type: 'string',
+        description: 'Id da conexão (de zap_connections_status).',
+      },
       unreadOnly: { type: 'boolean' },
       negativeSentiment: { type: 'boolean' },
       lastMessageAfter: {
@@ -211,7 +214,10 @@ export const zapConversationGetTool: SteelAiTool<GetArgs> = {
   parameters: {
     type: 'object',
     properties: {
-      conversationId: { type: 'string' },
+      conversationId: {
+        type: 'string',
+        description: 'Id da conversa (de zap_conversations_list).',
+      },
       messages: { ...limitParameter, description: 'Mensagens (padrão 20).' },
     },
     required: ['conversationId'],
@@ -268,7 +274,10 @@ export const zapConversationSummaryContextTool: SteelAiTool<SummaryArgs> = {
   parameters: {
     type: 'object',
     properties: {
-      conversationId: { type: 'string' },
+      conversationId: {
+        type: 'string',
+        description: 'Id da conversa (de zap_conversations_list).',
+      },
       messages: {
         type: 'integer',
         minimum: 1,
@@ -329,12 +338,16 @@ export const zapConversationAssignTool: SteelAiTool<AssignArgs> = {
   label: 'Atribuindo conversa',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Atribui (ou transfere, se já tiver responsável) uma conversa do WhatsApp a um membro. `userId` = id do usuário ou "me". Descubra o id com ws_members.',
   parameters: {
     type: 'object',
     properties: {
-      conversationId: { type: 'string' },
+      conversationId: {
+        type: 'string',
+        description: 'Id da conversa (de zap_conversations_list).',
+      },
       userId: { type: 'string', description: 'Id do usuário ou "me".' },
     },
     required: ['conversationId', 'userId'],
@@ -394,7 +407,12 @@ type ConversationArgs = z.infer<typeof ConversationArgs>
 
 const conversationParameters = {
   type: 'object',
-  properties: { conversationId: { type: 'string' } },
+  properties: {
+    conversationId: {
+      type: 'string',
+      description: 'Id da conversa (de zap_conversations_list).',
+    },
+  },
   required: ['conversationId'],
   additionalProperties: false,
 }
@@ -404,6 +422,7 @@ export const zapConversationUnassignTool: SteelAiTool<ConversationArgs> = {
   label: 'Removendo responsável da conversa',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Tira o responsável de uma conversa do WhatsApp (ela volta para a fila sem atendente).',
   parameters: conversationParameters,
@@ -463,12 +482,16 @@ export const zapConversationCloseTool: SteelAiTool<CloseArgs> = {
   label: 'Encerrando conversa',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Encerra uma conversa aberta do WhatsApp, com `reason` opcional (até 500 caracteres). Não envia nada ao cliente.',
   parameters: {
     type: 'object',
     properties: {
-      conversationId: { type: 'string' },
+      conversationId: {
+        type: 'string',
+        description: 'Id da conversa (de zap_conversations_list).',
+      },
       reason: { type: 'string', description: 'Motivo (opcional).' },
     },
     required: ['conversationId'],
@@ -524,6 +547,7 @@ export const zapConversationReopenTool: SteelAiTool<ConversationArgs> = {
   label: 'Reabrindo conversa',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Reabre uma conversa encerrada do WhatsApp (volta para "em atendimento" se tiver responsável, senão "nova").',
   parameters: conversationParameters,
@@ -579,12 +603,16 @@ export const zapConversationSetAiTool: SteelAiTool<SetAiArgs> = {
   label: 'Alterando a resposta automática da IA',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
-    'Liga (`enabled: true`) ou desliga (`enabled: false`) a resposta automática da IA do WhatsApp nesta conversa. Desligar passa a conversa para atendimento humano.',
+    'Liga (`enabled: true`) ou desliga (`enabled: false`) a resposta automática da IA do WhatsApp na conversa indicada. Ligada, a IA do workspace passa a responder ao cliente sozinha; desligada, a conversa fica com atendimento humano.',
   parameters: {
     type: 'object',
     properties: {
-      conversationId: { type: 'string' },
+      conversationId: {
+        type: 'string',
+        description: 'Id da conversa (de zap_conversations_list).',
+      },
       enabled: { type: 'boolean' },
     },
     required: ['conversationId', 'enabled'],

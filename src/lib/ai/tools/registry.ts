@@ -92,6 +92,49 @@ export function validateToolRegistry(
     if (tool.parameters.type !== 'object') {
       problems.push(`Tool "${tool.name}" parameters must be an object schema`)
     }
+    problems.push(...hintProblems(tool))
+  }
+  return problems
+}
+
+const LABEL_MAX_LENGTH = 40
+
+/**
+ * Consistency of the MCP-facing metadata (`label`, `annotations`,
+ * `customerFacing`). External clients trust these hints to decide what to
+ * confirm, so a wrong one is a security bug, not a cosmetic one.
+ */
+function hintProblems(tool: AnySteelAiTool): string[] {
+  const problems: string[] = []
+  const hints = tool.annotations ?? {}
+  const label = tool.label.trim()
+  if (label === '' || label.length > LABEL_MAX_LENGTH) {
+    problems.push(
+      `Tool "${tool.name}" label must have 1–${LABEL_MAX_LENGTH} chars`,
+    )
+  }
+  if (tool.kind === 'READ') {
+    if (hints.destructiveHint) {
+      problems.push(`Read tool "${tool.name}" cannot be destructive`)
+    }
+    if (tool.customerFacing) {
+      problems.push(`Read tool "${tool.name}" cannot be customer-facing`)
+    }
+    return problems
+  }
+  if (typeof hints.destructiveHint !== 'boolean') {
+    problems.push(`Write tool "${tool.name}" must declare destructiveHint`)
+  }
+  if (tool.kind === 'DELETE' && hints.destructiveHint === false) {
+    problems.push(`Delete tool "${tool.name}" must be destructive`)
+  }
+  if (tool.kind === 'CREATE' && hints.destructiveHint === true) {
+    problems.push(`Create tool "${tool.name}" must not be destructive`)
+  }
+  if (tool.customerFacing && hints.openWorldHint !== true) {
+    problems.push(
+      `Customer-facing tool "${tool.name}" must declare openWorldHint`,
+    )
   }
   return problems
 }

@@ -128,9 +128,12 @@ export const crmListProposalsTool: SteelAiTool<
     properties: {
       query: { type: 'string' },
       status: { type: 'string', enum: [...PROPOSAL_STATUS] },
-      opportunityId: { type: 'string' },
-      leadId: { type: 'string' },
-      companyId: { type: 'string' },
+      opportunityId: {
+        type: 'string',
+        description: 'Só as da oportunidade (id).',
+      },
+      leadId: { type: 'string', description: 'Só as do lead (id).' },
+      companyId: { type: 'string', description: 'Só as da empresa (id).' },
       responsible: ownerParameter,
       ...pageParameters,
     },
@@ -333,7 +336,10 @@ export const crmGetRecordTimelineTool: SteelAiTool<
     type: 'object',
     properties: {
       recordType: { type: 'string', enum: [...RECORD_TYPES] },
-      recordId: { type: 'string' },
+      recordId: {
+        type: 'string',
+        description: 'Id do registro (de uma listagem do CRM ou de ws_search).',
+      },
       ...pageParameters,
     },
     required: ['recordType', 'recordId'],
@@ -392,7 +398,10 @@ export const crmGetRecordTool: SteelAiTool<z.output<typeof GetRecordArgs>> = {
     type: 'object',
     properties: {
       recordType: { type: 'string', enum: [...RECORD_TYPES] },
-      recordId: { type: 'string' },
+      recordId: {
+        type: 'string',
+        description: 'Id do registro (de uma listagem do CRM ou de ws_search).',
+      },
     },
     required: ['recordType', 'recordId'],
     additionalProperties: false,

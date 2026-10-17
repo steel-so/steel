@@ -114,7 +114,7 @@ export const crmListOpportunitiesTool: SteelAiTool<z.output<typeof ListArgs>> =
         stage: { type: 'string', description: 'Nome ou id da etapa.' },
         status: { type: 'string', enum: ['OPEN', 'WON', 'LOST'] },
         owner: ownerParameter,
-        companyId: { type: 'string' },
+        companyId: { type: 'string', description: 'Só as da empresa (id).' },
         minAmount: { type: 'number' },
         maxAmount: { type: 'number' },
         closeDateFrom: { type: 'string', description: 'AAAA-MM-DD.' },
@@ -305,6 +305,7 @@ export const crmCreateOpportunityTool: SteelAiTool<
   label: 'Criando oportunidade',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria uma oportunidade (negócio). Sem pipeline/etapa, entra no pipeline padrão na primeira etapa em aberto. Empresa, contato, responsável, pipeline e etapa aceitam nome ou id; se o nome for ambíguo, a ferramenta devolve as opções.',
   parameters: {
@@ -409,12 +410,17 @@ export const crmUpdateOpportunityTool: SteelAiTool<
   label: 'Atualizando oportunidade',
   module: 'CRM',
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera dados de uma oportunidade (nome, valor, probabilidade, previsão de fechamento, empresa, contato, origem). Envie só o que muda; null limpa o campo. Para mudar de etapa use crm_move_opportunity_stage; para responsável, crm_assign_owner.',
   parameters: {
     type: 'object',
     properties: {
-      opportunityId: { type: 'string' },
+      opportunityId: {
+        type: 'string',
+        description:
+          'Id da oportunidade (de crm_list_opportunities ou ws_search).',
+      },
       name: { type: 'string' },
       amount: { type: ['number', 'null'] },
       probability: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
@@ -528,12 +534,17 @@ export const crmMoveOpportunityStageTool: SteelAiTool<
   label: 'Movendo oportunidade de etapa',
   module: 'CRM',
   kind: 'ACTION',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Move uma oportunidade para outra etapa (nome ou id). Sem `pipeline`, procura a etapa no pipeline atual da oportunidade; informe `pipeline` para movê-la para outro funil. Mover para uma etapa de categoria WON/LOST é como ganhar/perder o negócio; para uma etapa OPEN, reabre.',
   parameters: {
     type: 'object',
     properties: {
-      opportunityId: { type: 'string' },
+      opportunityId: {
+        type: 'string',
+        description:
+          'Id da oportunidade (de crm_list_opportunities ou ws_search).',
+      },
       stage: { type: 'string', description: 'Nome ou id da etapa de destino.' },
       pipeline: {
         type: 'string',
@@ -626,10 +637,18 @@ export const crmDeleteOpportunityTool: SteelAiTool<z.output<typeof IdArgs>> = {
   label: 'Excluindo oportunidade',
   module: 'CRM',
   kind: 'DELETE',
-  description: 'Exclui uma oportunidade do CRM.',
+  annotations: { idempotentHint: true, destructiveHint: true },
+  description:
+    'Exclui uma oportunidade do CRM: ela some do funil, das listas e da previsão de receita. Não há ferramenta para desfazer; para negócio perdido, prefira mover para uma etapa LOST com crm_move_opportunity_stage.',
   parameters: {
     type: 'object',
-    properties: { opportunityId: { type: 'string' } },
+    properties: {
+      opportunityId: {
+        type: 'string',
+        description:
+          'Id da oportunidade (de crm_list_opportunities ou ws_search).',
+      },
+    },
     required: ['opportunityId'],
     additionalProperties: false,
   },

@@ -144,7 +144,12 @@ export const zapBroadcastGetTool: SteelAiTool<GetArgs> = {
     'Detalhes de uma transmissão do WhatsApp: mensagem, status, estatísticas de entrega e até 20 destinatários com falha (com o erro do provedor).',
   parameters: {
     type: 'object',
-    properties: { broadcastId: { type: 'string' } },
+    properties: {
+      broadcastId: {
+        type: 'string',
+        description: 'Id da transmissão (de zap_broadcasts_list).',
+      },
+    },
     required: ['broadcastId'],
     additionalProperties: false,
   },
@@ -194,12 +199,17 @@ export const zapBroadcastCreateDraftTool: SteelAiTool<CreateArgs> = {
   label: 'Criando rascunho de transmissão',
   module: MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
-    'Cria uma transmissão do WhatsApp como RASCUNHO (texto, sem mídia) para até 1000 contatos (`contactIds`, obtidos com zap_contacts_search) na conexão `connectionId`. Nada é enviado: o disparo continua manual na tela de Transmissões. Contatos descadastrados (LGPD) ficam de fora automaticamente.',
+    'Cria uma transmissão do WhatsApp como RASCUNHO (texto, sem mídia) para até 1000 contatos (`contactIds`, obtidos com zap_contacts_search) na conexão `connectionId`. Nada é enviado: o disparo é feito por uma pessoa no app do Steel (Comunicação › Transmissões). Contatos descadastrados (LGPD) ficam de fora automaticamente.',
   parameters: {
     type: 'object',
     properties: {
-      connectionId: { type: 'string' },
+      connectionId: {
+        type: 'string',
+        description:
+          'Id da conexão que vai enviar (de zap_connections_status).',
+      },
       name: { type: 'string', description: 'Nome interno da transmissão.' },
       messageBody: { type: 'string', description: 'Texto da mensagem.' },
       contactIds: {
