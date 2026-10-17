@@ -76,7 +76,8 @@ describe('logMcpToolCall()', () => {
       outcome: 'failed',
       errorCode: 'INTERNAL_SERVER_ERROR',
     })
-    expect(JSON.parse(String(fields?.detail))).toEqual({
+    const detail = (fields as Record<string, unknown> | undefined)?.detail
+    expect(JSON.parse(String(detail))).toEqual({
       grantId: 'g1',
       clientName: 'Claude',
     })
