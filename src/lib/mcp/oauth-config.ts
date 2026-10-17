@@ -21,9 +21,12 @@ export const OAUTH_TOKEN_PREFIX = {
 /** Scopes the provider accepts: the MCP ones plus refresh tokens. */
 export const OAUTH_SCOPES = [...MCP_SCOPES, 'offline_access'] as const
 
-/** App origin without a trailing slash. */
+/**
+ * App origin without a trailing slash. Empty while env validation is skipped
+ * (the Docker build collects page data without the runtime `.env`).
+ */
 export function appOrigin(): string {
-  return BETTER_AUTH_URL.replace(/\/+$/, '')
+  return (BETTER_AUTH_URL ?? '').replace(/\/+$/, '')
 }
 
 /** Better Auth's base URL, which is also the OAuth issuer. */
