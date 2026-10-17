@@ -30,6 +30,11 @@ export const TAG_GROUPS = [
         description:
           'Consentimento de cookies, exportação e exclusão de dados (LGPD, art. 18).',
       },
+      {
+        name: 'Apps conectados (OAuth)',
+        description:
+          'Provedor OAuth 2.1 do Steel para integrações (servidor MCP): autorização com PKCE, registro dinâmico de cliente, tokens, consentimento por workspace e módulos, e a lista de apps conectados do usuário, com revogação (ADR 0033).',
+      },
     ],
   },
   {
