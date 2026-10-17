@@ -74,4 +74,5 @@ consome (nos testes, faz mock do módulo).
 | --- | --- | --- |
 | mcp-auth | 1 | provedor OAuth, consentimento, `IntegrationGrant`, `resolveMcpGrant`, Apps conectados do usuário |
 | mcp-server | 1 | `/api/mcp`, adaptador do registry (leitura), resources, prompts |
-| mcp-governance | 2 | escrita via `mcp:write`, interruptor do admin, Apps conectados do workspace, `/dev/mcp`, manual e changelog |
+| mcp-docs | 1b | `/dev/mcp` (guia com a lista de ferramentas gerada do registry no build), manual "Conectar o Steel ao Claude, ChatGPT ou Cursor", runbook `docs/runbooks/mcp-edge-proxy.md`, MCP em todos os planos (`docs/plans-review.md`) |
+| mcp-governance | 2 | escrita via `mcp:write`, interruptor do admin, Apps conectados do workspace, changelog; tira o aviso "Escrita em liberação" de `content/dev/mcp.mdx` |
