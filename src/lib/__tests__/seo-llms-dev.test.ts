@@ -74,4 +74,24 @@ describe('devPageMarkdown', () => {
     )
     expect(devPageMarkdown('<ErrorCodeTable />')).toMatch(/^#### 400 — /)
   })
+
+  it('swaps the MCP server url and the generated MCP tool table', () => {
+    expect(devPageMarkdown('Servidor: <McpServerUrl />.')).toBe(
+      'Servidor: `https://steel.test/api/mcp`.',
+    )
+    expect(devPageMarkdown('<McpToolTable />', '| tabela |')).toBe('| tabela |')
+    expect(devPageMarkdown('<McpToolTable />')).toBe(
+      'Lista de ferramentas: https://steel.test/dev/mcp',
+    )
+    expect(devPageMarkdown('Use `<McpToolTable />` aqui.', 'x')).toBe(
+      'Use `<McpToolTable />` aqui.',
+    )
+  })
+
+  it('passes the MCP tool table through to the guides in llms-full.txt', () => {
+    const mcp = { ...GUIDE, source: '## Ferramentas\n\n<McpToolTable />' }
+    const txt = buildLlmsFullTxt([ENTRY], [], [mcp], '#### ServiceDesk')
+    expect(txt).toContain('### Ferramentas\n\n##### ServiceDesk')
+    expect(txt).not.toContain('<McpToolTable')
+  })
 })

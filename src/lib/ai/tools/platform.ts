@@ -251,7 +251,7 @@ export const wsSearchTool: SteelAiTool<z.infer<typeof SearchArgs>> = {
   module: null,
   kind: 'READ',
   description:
-    'Busca global no workspace (a mesma do Ctrl+K): chamados (por código como INC-000123 ou número), artigos da base de conhecimento, clientes/contatos/itens de configuração do ServiceDesk, leads, oportunidades, pessoas, empresas, tarefas e propostas do CRM, conversas e contatos do WhatsApp e membros. Ordena por relevância (código exato, prefixo, texto, tolerância a erros de digitação) e só retorna o que o usuário pode abrir. Use para localizar um registro por nome, código, telefone ou e-mail antes de consultá-lo com a ferramenta do módulo.',
+    'Busca global no workspace: chamados (por código como INC-000123 ou número), artigos da base de conhecimento, clientes/contatos/itens de configuração do ServiceDesk, leads, oportunidades, pessoas, empresas, tarefas e propostas do CRM, conversas e contatos do WhatsApp e membros. Ordena por relevância (código exato, prefixo, texto, tolerância a erros de digitação) e só retorna o que o usuário pode abrir. Use para localizar um registro por nome, código, telefone ou e-mail antes de consultá-lo com a ferramenta do módulo.',
   parameters: {
     type: 'object',
     properties: {

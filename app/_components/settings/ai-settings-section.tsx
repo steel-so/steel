@@ -77,6 +77,7 @@ interface FormState {
   memoryEnabled: boolean
   autopilotEnabled: boolean
   usageWeeklyEmailEnabled: boolean
+  mcpWriteEnabled: boolean
 }
 
 type SwitchField =
@@ -85,6 +86,7 @@ type SwitchField =
   | 'memoryEnabled'
   | 'autopilotEnabled'
   | 'usageWeeklyEmailEnabled'
+  | 'mcpWriteEnabled'
 
 const SWITCHES: { field: SwitchField; label: string; hint: string }[] = [
   {
@@ -108,6 +110,11 @@ const SWITCHES: { field: SwitchField; label: string; hint: string }[] = [
     hint: 'Libera o modo Autopilot nas conversas. Desligado por padrão.',
   },
   {
+    field: 'mcpWriteEnabled',
+    label: 'Permitir escrita via MCP',
+    hint: 'Apps de IA conectados por MCP (Claude, ChatGPT, Cursor) podem criar, editar e executar ações quando a pessoa autorizou leitura e escrita. Desligado, eles só consultam dados. Desligado por padrão.',
+  },
+  {
     field: 'usageWeeklyEmailEnabled',
     label: 'Resumo semanal de consumo por e-mail',
     hint: 'Toda segunda-feira, às 08:00 (Brasília), os donos do espaço de trabalho recebem o gasto de IA da semana anterior, o andamento da cota e a projeção do mês.',
@@ -127,6 +134,7 @@ function toForm(settings: WorkspaceAiSettingsDTO): FormState {
     memoryEnabled: settings.memoryEnabled,
     autopilotEnabled: settings.autopilotEnabled,
     usageWeeklyEmailEnabled: settings.usageWeeklyEmailEnabled,
+    mcpWriteEnabled: settings.mcpWriteEnabled,
   }
 }
 
@@ -329,6 +337,7 @@ function AdminForm({
         memoryEnabled: form.memoryEnabled,
         autopilotEnabled: form.autopilotEnabled,
         usageWeeklyEmailEnabled: form.usageWeeklyEmailEnabled,
+        mcpWriteEnabled: form.mcpWriteEnabled,
       },
       {
         onSuccess: () => notify.success('Ajustes de IA salvos'),
@@ -489,6 +498,18 @@ function AdminForm({
                     e-mail) — sem a confirmação de ninguém. Tudo fica registrado
                     no histórico de ações da IA, mas não há como desfazer uma
                     mensagem enviada. Só ative se a equipe entender esse risco.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {item.field === 'mcpWriteEnabled' && form.mcpWriteEnabled ? (
+                <Alert>
+                  <AlertTitle>Como a escrita via MCP é controlada</AlertTitle>
+                  <AlertDescription>
+                    Cada app só escreve com a autorização de quem o conectou, e
+                    apenas nos módulos e permissões dessa pessoa. Exclusões
+                    nunca ficam disponíveis por MCP, e mensagens para clientes
+                    (WhatsApp e e-mail) pedem confirmação no Steel antes de
+                    sair. Os apps podem ser revogados em Apps conectados.
                   </AlertDescription>
                 </Alert>
               ) : null}

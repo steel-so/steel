@@ -72,7 +72,13 @@ export function BaseUrl() {
   return <code>{`${SITE_URL}/api`}</code>
 }
 
+/** The MCP server's url on the environment serving the page. */
+export function McpServerUrl() {
+  return <code className='break-all'>{`${SITE_URL}/api/mcp`}</code>
+}
+
 export const DEV_MDX_COMPONENTS: MDXComponents = {
   ErrorCodeTable,
   BaseUrl,
+  McpServerUrl,
 }

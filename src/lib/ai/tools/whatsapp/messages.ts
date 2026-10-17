@@ -35,13 +35,13 @@ import {
 export const whatsappContactOptedOut = () =>
   appError(
     'WHATSAPP_CONTACT_OPTED_OUT',
-    'Este contato pediu para não receber mensagens (LGPD): o Steel AI não envia mensagens a ele. Se for o caso, responda manualmente pela conversa.',
+    'Este contato pediu para não receber mensagens (LGPD): mensagens automáticas não são enviadas a ele. Se for o caso, responda manualmente pela conversa no Steel.',
   )
 
 export const whatsappSessionWindowClosed = () =>
   appError(
     'WHATSAPP_SESSION_WINDOW_CLOSED',
-    'Fora da janela de 24 h do WhatsApp (API oficial da Meta): texto livre não é permitido. Envie um modelo aprovado pela tela de conversas.',
+    'Fora da janela de 24 h do WhatsApp (API oficial da Meta): texto livre não é permitido. Envie um modelo aprovado pela tela de conversas do Steel.',
   )
 
 const closedConversation = () =>
@@ -111,12 +111,17 @@ export const zapMessageSendTextTool: SteelAiTool<SendTextArgs> = {
   label: 'Enviando mensagem no WhatsApp',
   module: 'COMMUNICATION',
   kind: 'ACTION',
+  annotations: { destructiveHint: false, openWorldHint: true },
+  customerFacing: true,
   description:
-    'Envia uma mensagem de TEXTO ao cliente numa conversa aberta do WhatsApp (até 4096 caracteres). A mensagem vai ao cliente de verdade e não pode ser desfeita. Recusa conversas encerradas, conversas sob resposta automática da IA, contatos descadastrados (LGPD) e, na API oficial da Meta, conversas fora da janela de 24 h (aí só modelo aprovado, pela tela). Escreva o texto final exatamente como deve chegar ao cliente.',
+    'Envia uma mensagem de TEXTO ao cliente numa conversa aberta do WhatsApp (até 4096 caracteres). A mensagem vai ao cliente de verdade e não pode ser desfeita. Recusa conversas encerradas, conversas sob resposta automática da IA, contatos descadastrados (LGPD) e, na API oficial da Meta, conversas fora da janela de 24 h (aí só um modelo aprovado, enviado por uma pessoa no app do Steel). Escreva o texto final exatamente como deve chegar ao cliente.',
   parameters: {
     type: 'object',
     properties: {
-      conversationId: { type: 'string' },
+      conversationId: {
+        type: 'string',
+        description: 'Id da conversa (de zap_conversations_list).',
+      },
       text: {
         type: 'string',
         description: 'Texto exato que o cliente vai receber.',

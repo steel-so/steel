@@ -45,7 +45,15 @@ const KNOWN_COMPONENTS = new Set([
   'Kbd',
   'ErrorCodeTable',
   'BaseUrl',
+  'McpServerUrl',
+  'McpToolTable',
 ])
+
+/**
+ * `/api/mcp` speaks MCP (JSON-RPC over Streamable HTTP), not REST: it is
+ * documented in the MCP guide (`/dev/mcp`), not in the REST reference.
+ */
+const NON_REST_PATHS = new Set(['/mcp'])
 
 /** Url patterns of every page and route handler under `app/`. */
 function appRoutes(): RegExp[] {
@@ -98,6 +106,7 @@ describe('developer guides (content/dev)', () => {
       '/dev/guias/abrir-chamado',
       '/dev/guias/disparar-workflow',
       '/dev/guias/eventos-github-gitlab',
+      '/dev/mcp',
       '/dev/changelog',
       '/dev/suporte',
     ])
@@ -160,6 +169,12 @@ describe('developer guides (content/dev)', () => {
     }
   })
 
+  it('the MCP guide renders the server url and the generated tool table', () => {
+    const mcp = pages.find((page) => page.href === '/dev/mcp')
+    expect(mcp?.source).toMatch(/^<McpToolTable \/>$/m)
+    expect(mcp?.source).toContain('<McpServerUrl />')
+  })
+
   it('the error guide renders the generated table', () => {
     const errors = pages.find((page) => page.href === '/dev/respostas-e-erros')
     expect(errors?.source).toMatch(/^<ErrorCodeTable \/>$/m)
@@ -188,6 +203,7 @@ describe('API calls in the guides exist in public/openapi.json', () => {
     for (const { where, calls } of sources()) {
       for (const call of calls) {
         const at = `${where}:${call.line} ${call.method ?? '*'} ${call.path}`
+        if (NON_REST_PATHS.has(call.path)) continue
         if (
           INTERNAL_PATH_PREFIXES.some((prefix) => call.path.startsWith(prefix))
         ) {

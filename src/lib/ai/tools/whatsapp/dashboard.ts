@@ -33,7 +33,10 @@ export const zapDashboardTool: SteelAiTool<DashboardArgs> = {
   parameters: {
     type: 'object',
     properties: {
-      connectionId: { type: 'string' },
+      connectionId: {
+        type: 'string',
+        description: 'Id da conexão (de zap_connections_status).',
+      },
       closedWindowDays: { type: 'integer', minimum: 1, maximum: 90 },
     },
     additionalProperties: false,

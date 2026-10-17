@@ -24,7 +24,7 @@ export const getSkillTool: SteelAiTool<z.infer<typeof Args>> = {
   module: null,
   kind: 'READ',
   description:
-    'Devolve as instruções de uma skill do Steel AI pelo comando (ex.: "my-work" para /my-work). Use quando o pedido corresponder a uma skill do catálogo ou quando as instruções citarem uma skill; depois siga as instruções devolvidas.',
+    'Devolve as instruções de uma skill do Steel AI habilitada no workspace, pelo comando (ex.: "my-work" para /my-work). Use quando o pedido citar uma skill ou corresponder a uma delas; depois siga as instruções devolvidas. Comando desconhecido devolve erro.',
   parameters: {
     type: 'object',
     properties: {

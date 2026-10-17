@@ -20,6 +20,17 @@ describe('UpdateWorkspaceAiSettingsSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('should accept the MCP write switch as a boolean only', () => {
+    const parsed = UpdateWorkspaceAiSettingsSchema.safeParse({
+      mcpWriteEnabled: true,
+    })
+    expect(parsed.success && parsed.data.mcpWriteEnabled).toBe(true)
+    expect(
+      UpdateWorkspaceAiSettingsSchema.safeParse({ mcpWriteEnabled: 'true' })
+        .success,
+    ).toBe(false)
+  })
+
   it('should reject a model outside the catalog', () => {
     expect(
       UpdateWorkspaceAiSettingsSchema.safeParse({

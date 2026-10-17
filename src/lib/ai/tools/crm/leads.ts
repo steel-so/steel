@@ -149,6 +149,7 @@ export const crmCreateLeadTool: SteelAiTool<
   label: 'Criando lead',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria um lead no CRM (entra na etapa "Lead recebido"; pontuação e responsável vêm das regras do workspace). Requer nome, origem e ao menos um e-mail ou telefone. Se já existir um lead em aberto com o mesmo contato, a criação é recusada.',
   parameters: {
@@ -212,12 +213,16 @@ export const crmUpdateLeadTool: SteelAiTool<z.output<typeof UpdateLeadArgs>> = {
   label: 'Atualizando lead',
   module: 'CRM',
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera dados cadastrais de um lead (nome, contatos, empresa, cargo, cidade, LinkedIn, origem, canal). Envie só os campos que mudam; listas (emails/phones) substituem as atuais. Para responsável use crm_assign_owner; para fechar/reabrir, as ferramentas próprias.',
   parameters: {
     type: 'object',
     properties: {
-      leadId: { type: 'string' },
+      leadId: {
+        type: 'string',
+        description: 'Id do lead (de crm_list_leads ou ws_search).',
+      },
       name: { type: 'string' },
       emails: { type: 'array', items: { type: 'string' } },
       phones: { type: 'array', items: { type: 'string' } },
@@ -288,10 +293,17 @@ export const crmDeleteLeadTool: SteelAiTool<z.output<typeof LeadIdArgs>> = {
   label: 'Excluindo lead',
   module: 'CRM',
   kind: 'DELETE',
-  description: 'Exclui um lead do CRM.',
+  annotations: { idempotentHint: true, destructiveHint: true },
+  description:
+    'Exclui um lead do CRM: ele some das listas, buscas e relatórios. Não há ferramenta para desfazer; para encerrar uma negociação, prefira crm_close_lead_lost.',
   parameters: {
     type: 'object',
-    properties: { leadId: { type: 'string' } },
+    properties: {
+      leadId: {
+        type: 'string',
+        description: 'Id do lead (de crm_list_leads ou ws_search).',
+      },
+    },
     required: ['leadId'],
     additionalProperties: false,
   },
@@ -355,12 +367,16 @@ export const crmCloseLeadWonTool: SteelAiTool<z.output<typeof CloseWonArgs>> = {
   label: 'Fechando lead como ganho',
   module: 'CRM',
   kind: 'ACTION',
+  annotations: { destructiveHint: true },
   description:
     'Fecha um lead como GANHO (contrato assinado). Só vale para leads na etapa "Proposta" com a apresentação da proposta registrada. Converte o lead em pessoa. Pergunte valor fechado, tipo de cobrança e data da assinatura se o usuário não disse.',
   parameters: {
     type: 'object',
     properties: {
-      leadId: { type: 'string' },
+      leadId: {
+        type: 'string',
+        description: 'Id do lead (de crm_list_leads ou ws_search).',
+      },
       closedAmount: { type: 'number', description: 'Valor fechado (R$).' },
       billingType: {
         type: 'string',
@@ -457,12 +473,16 @@ export const crmCloseLeadLostTool: SteelAiTool<z.output<typeof CloseLostArgs>> =
     label: 'Fechando lead como perdido',
     module: 'CRM',
     kind: 'ACTION',
+    annotations: { destructiveHint: false },
     description:
       'Fecha um lead como PERDIDO, com motivo obrigatório (e observação/data para tentar de novo, opcionais). Pergunte o motivo se o usuário não disse.',
     parameters: {
       type: 'object',
       properties: {
-        leadId: { type: 'string' },
+        leadId: {
+          type: 'string',
+          description: 'Id do lead (de crm_list_leads ou ws_search).',
+        },
         lostReason: { type: 'string', description: 'Motivo da perda.' },
         lostNote: { type: 'string' },
         retryAt: {
@@ -529,12 +549,16 @@ export const crmReopenLeadTool: SteelAiTool<z.output<typeof ReopenArgs>> = {
   label: 'Reabrindo lead',
   module: 'CRM',
   kind: 'ACTION',
+  annotations: { destructiveHint: false },
   description:
     'Reabre um lead PERDIDO (leads ganhos não reabrem). Ele volta para a etapa configurada no CRM, limitada ao que os registros do lead sustentam. Motivo obrigatório.',
   parameters: {
     type: 'object',
     properties: {
-      leadId: { type: 'string' },
+      leadId: {
+        type: 'string',
+        description: 'Id do lead (de crm_list_leads ou ws_search).',
+      },
       reason: { type: 'string', description: 'Motivo da reabertura.' },
     },
     required: ['leadId', 'reason'],

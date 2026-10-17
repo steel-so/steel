@@ -7,6 +7,7 @@ import { createFakeMembership } from '@/src/__tests__/factories/membership.facto
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/ai-settings.repository')
 vi.mock('@/src/services/platform-ai-settings.service', () => ({
@@ -21,6 +22,7 @@ vi.mock('@/src/lib/ai', async (importOriginal) => {
   }
 })
 
+import { auditMutation } from '@/lib/axiom/audit'
 import { isAiProviderConfigured } from '@/src/lib/ai'
 import {
   AiUsageRepository,
@@ -61,6 +63,7 @@ function withState(options?: {
         crmAssistantModel: data.crmAssistantModel,
         whatsappReplyModel: data.whatsappReplyModel,
         whatsappSentimentModel: data.whatsappSentimentModel,
+        mcpWriteEnabled: data.mcpWriteEnabled,
       }),
     ),
   )
@@ -205,6 +208,74 @@ describe('AiSettingsService', () => {
         'FORBIDDEN',
       )
       expect(mockedSettingsRepo.upsert).not.toHaveBeenCalled()
+    })
+
+    it('should let an ADMIN allow writes over MCP and audit the flip', async () => {
+      asRole('ADMIN')
+      withState()
+
+      const dto = expectOk(
+        await AiSettingsService.update('u1', 'ws1', { mcpWriteEnabled: true }),
+      )
+      expect(dto.mcpWriteEnabled).toBe(true)
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          mcpWriteEnabled: true,
+          agentModeEnabled: true,
+          autopilotEnabled: false,
+        }),
+      )
+      expect(vi.mocked(auditMutation)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity: 'workspace_ai_settings',
+          action: 'update',
+          actorId: 'u1',
+          meta: expect.objectContaining({
+            mcpWriteEnabled: true,
+            changedSwitches: ['mcpWriteEnabled'],
+          }),
+        }),
+      )
+    })
+
+    it('should keep MCP writes off by default and when the patch does not mention them', async () => {
+      asRole('OWNER')
+      withState()
+      expectOk(
+        await AiSettingsService.update('u1', 'ws1', { monthlyQuotaUsd: 10 }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenLastCalledWith(
+        'ws1',
+        expect.objectContaining({ mcpWriteEnabled: false }),
+      )
+
+      withState({
+        settings: createFakeWorkspaceAiSettings({ mcpWriteEnabled: true }),
+      })
+      expectOk(
+        await AiSettingsService.update('u1', 'ws1', { monthlyQuotaUsd: 10 }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenLastCalledWith(
+        'ws1',
+        expect.objectContaining({ mcpWriteEnabled: true }),
+      )
+      expect(vi.mocked(auditMutation)).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          meta: expect.objectContaining({ changedSwitches: [] }),
+        }),
+      )
+    })
+
+    it('should forbid a MEMBER from allowing writes over MCP', async () => {
+      asRole('MEMBER')
+      withState()
+      expectErr(
+        await AiSettingsService.update('u1', 'ws1', { mcpWriteEnabled: true }),
+        'FORBIDDEN',
+      )
+      expect(mockedSettingsRepo.upsert).not.toHaveBeenCalled()
+      expect(vi.mocked(auditMutation)).not.toHaveBeenCalled()
     })
 
     it('should forbid a MEMBER from allowing Autopilot', async () => {

@@ -17,6 +17,7 @@ export interface UpdateAiSettingsInput {
   memoryEnabled?: boolean
   autopilotEnabled?: boolean
   usageWeeklyEmailEnabled?: boolean
+  mcpWriteEnabled?: boolean
 }
 
 export function useAiSettings(workspaceId: string) {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { JsonLd } from '@/components/seo/json-ld'
+import { buildMcpToolCatalog } from '@/src/lib/dev/mcp-tools'
 import {
   getAdjacentDevPages,
   getAllDevPagesMeta,
@@ -13,6 +14,16 @@ import { DocsMdx } from '../../docs/_components/docs-mdx'
 import { DocsPager } from '../../docs/_components/docs-pager'
 import { DocsToc } from '../../docs/_components/docs-toc'
 import { DEV_MDX_COMPONENTS } from '../_components/dev-mdx-components'
+import { McpToolTable } from '../_components/mcp-tool-table'
+
+/**
+ * The MCP guide's tool table reads the Steel AI registry, which only the
+ * server has; the page is static, so it's fixed at build time.
+ */
+const COMPONENTS = {
+  ...DEV_MDX_COMPONENTS,
+  McpToolTable: () => <McpToolTable catalog={buildMcpToolCatalog()} />,
+}
 
 interface Props {
   params: Promise<{ slug: string[] }>
@@ -118,7 +129,7 @@ export default async function DevGuidePage({ params }: Props) {
           )}
         </header>
         <article className='min-w-0'>
-          <DocsMdx source={page.source} components={DEV_MDX_COMPONENTS} />
+          <DocsMdx source={page.source} components={COMPONENTS} />
         </article>
         <DocsPager prev={prev} next={next} />
       </main>

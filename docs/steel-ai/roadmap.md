@@ -1,0 +1,35 @@
+# Steel AI — próximos passos
+
+Levantamento de 2026-10-17, feito durante a onda do MCP. Ainda não é plano
+aprovado: é a lista do que falta para o Steel ser ainda mais forte em IA, na
+ordem sugerida. Quando uma frente for aprovada, ela ganha plano, ADR e
+contrato próprios.
+
+## O que já existe
+
+- Assistente com os modos explorar, agente, autopilot e teste, com
+  confirmação no servidor (ADRs 0018, 0021, 0023).
+- Steel Agents com dono, aprovações e gatilho por agendamento ou evento
+  (ADR 0020).
+- Memória, skills, provedor por workspace e cota de uso (ADRs 0007, 0019,
+  0022).
+- IA nos módulos: triagem, copiloto e pré-atendimento no ServiceDesk;
+  rascunho de artigo (KCS); risco preditivo (ADR 0016); resposta automática e
+  sentimento no WhatsApp; assistente do CRM; transcrição de áudio.
+- Servidor MCP público sobre as ferramentas do Steel AI (ADRs 0032, 0033).
+- Steel CLI planejado para depois do MCP.
+
+## O que falta, na ordem sugerida
+
+| # | Frente | Problema hoje | O que entregar |
+| --- | --- | --- | --- |
+| 1 | Base de conhecimento única | Não há índice vetorial; cada ferramenta busca por texto no seu canto | Índice semântico (pgvector) de artigos, Wiki, chamados resolvidos, documentos da IA do WhatsApp, notas e propostas do CRM; respeita as permissões do usuário; toda resposta cita a fonte; ferramenta `steel_search` no assistente, nos agentes e no MCP |
+| 2 | Avaliação e feedback | Não há como saber se a IA acerta | 👍/👎 com motivo em toda resposta de IA; conjuntos de teste por workspace; rodar o conjunto antes de trocar modelo, prompt ou skill; painel de qualidade (acerto, resolução sem humano, custo por resolução) |
+| 3 | IA proativa | Quase tudo começa com o usuário perguntando | Feed de alertas ("a fila vai estourar o SLA às 15h", "4 oportunidades sem contato há 10 dias", "sentimento do cliente caiu") e resumo diário por papel, sobre os gatilhos por evento dos Steel Agents |
+| 4 | Voz no PABX | Click-to-call e transcrição existem, mas a ligação não vira informação | Transcrição e resumo automáticos da ligação no chamado ou na oportunidade, com sentimento e próximos passos; depois, atendente de voz com IA na URA (abre chamado, consulta status, transfere com contexto) |
+| 5 | Proteções e LGPD | Dados pessoais e texto de terceiros vão direto ao provedor | Mascarar CPF, cartão e telefone antes de enviar, com política por workspace; detectar prompt injection em conteúdo de terceiros; assuntos proibidos e limite de alçada na resposta automática |
+| 6 | Modelo por tarefa e contingência | Um provedor por workspace | Modelo barato para classificação e sentimento, forte para agentes; troca automática de provedor quando um cair |
+
+As frentes 1 a 3 melhoram tudo o que já existe e vêm primeiro. A 4 é o
+diferencial de venda para uma empresa de telecom. As frentes 5 e 6 são
+menores e podem andar em paralelo.

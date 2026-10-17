@@ -68,6 +68,12 @@ export interface AiToolAccess {
   autopilotEnabled: boolean
   /** Steel AI memory tools offered (`resolveToolAccess` sets it; default on). */
   memoryEnabled?: boolean
+  /**
+   * MCP clients with `mcp:write` may be offered write tools
+   * (`resolveToolAccess` sets it; default off). Read by the MCP server only —
+   * `isToolAllowed` ignores it, so the in-app assistant is unaffected.
+   */
+  mcpWriteEnabled?: boolean
 }
 
 const TOOL_NAME = /^[a-z][a-z0-9_]{1,63}$/
@@ -92,6 +98,49 @@ export function validateToolRegistry(
     if (tool.parameters.type !== 'object') {
       problems.push(`Tool "${tool.name}" parameters must be an object schema`)
     }
+    problems.push(...hintProblems(tool))
+  }
+  return problems
+}
+
+const LABEL_MAX_LENGTH = 40
+
+/**
+ * Consistency of the MCP-facing metadata (`label`, `annotations`,
+ * `customerFacing`). External clients trust these hints to decide what to
+ * confirm, so a wrong one is a security bug, not a cosmetic one.
+ */
+function hintProblems(tool: AnySteelAiTool): string[] {
+  const problems: string[] = []
+  const hints = tool.annotations ?? {}
+  const label = tool.label.trim()
+  if (label === '' || label.length > LABEL_MAX_LENGTH) {
+    problems.push(
+      `Tool "${tool.name}" label must have 1–${LABEL_MAX_LENGTH} chars`,
+    )
+  }
+  if (tool.kind === 'READ') {
+    if (hints.destructiveHint) {
+      problems.push(`Read tool "${tool.name}" cannot be destructive`)
+    }
+    if (tool.customerFacing) {
+      problems.push(`Read tool "${tool.name}" cannot be customer-facing`)
+    }
+    return problems
+  }
+  if (typeof hints.destructiveHint !== 'boolean') {
+    problems.push(`Write tool "${tool.name}" must declare destructiveHint`)
+  }
+  if (tool.kind === 'DELETE' && hints.destructiveHint === false) {
+    problems.push(`Delete tool "${tool.name}" must be destructive`)
+  }
+  if (tool.kind === 'CREATE' && hints.destructiveHint === true) {
+    problems.push(`Create tool "${tool.name}" must not be destructive`)
+  }
+  if (tool.customerFacing && hints.openWorldHint !== true) {
+    problems.push(
+      `Customer-facing tool "${tool.name}" must declare openWorldHint`,
+    )
   }
   return problems
 }
@@ -178,7 +227,7 @@ export function toToolSpecs(tools: readonly AnySteelAiTool[]): AiToolSpec[] {
 /**
  * Resolves the caller's access in one go: membership (403 for strangers and
  * suspended workspaces), enabled modules, RBAC matrix and the workspace
- * switches (AI, agent mode, Steel Agents, Autopilot).
+ * switches (AI, agent mode, Steel Agents, Autopilot, MCP writes).
  */
 export async function resolveToolAccess(
   actorId: string,
@@ -203,6 +252,7 @@ export async function resolveToolAccess(
     agentsEnabled: settings.value?.agentsEnabled ?? true,
     autopilotEnabled: settings.value?.autopilotEnabled ?? false,
     memoryEnabled: settings.value?.memoryEnabled ?? true,
+    mcpWriteEnabled: settings.value?.mcpWriteEnabled ?? false,
   })
 }
 
