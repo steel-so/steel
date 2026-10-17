@@ -191,6 +191,8 @@ const OUT = [
   '(sites)/',
   'onboarding/',
   'upgrade/',
+  // OAuth consent of AI clients (MCP): a focused authorization card.
+  'oauth/',
   'jobs/',
   '(private)/',
   // Published CRM sites render their own document (no Steel chrome).
