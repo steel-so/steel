@@ -128,6 +128,7 @@ export const zapQuickReplyCreateTool: SteelAiTool<CreateArgs> = {
   label: 'Criando mensagem rápida',
   module: MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria uma mensagem rápida do WhatsApp: `shortcut` (atalho, sem a barra), `title` e `body` (texto).',
   parameters: {
@@ -198,12 +199,16 @@ export const zapQuickReplyUpdateTool: SteelAiTool<UpdateArgs> = {
   label: 'Atualizando mensagem rápida',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera atalho, título e/ou texto de uma mensagem rápida (omitir = sem alteração).',
   parameters: {
     type: 'object',
     properties: {
-      quickReplyId: { type: 'string' },
+      quickReplyId: {
+        type: 'string',
+        description: 'Id da mensagem rápida (de zap_quick_replies_list).',
+      },
       shortcut: { type: 'string' },
       title: { type: 'string' },
       body: { type: 'string' },
@@ -264,10 +269,17 @@ export const zapQuickReplyDeleteTool: SteelAiTool<DeleteArgs> = {
   label: 'Excluindo mensagem rápida',
   module: MODULE,
   kind: 'DELETE',
-  description: 'Exclui uma mensagem rápida do WhatsApp.',
+  annotations: { idempotentHint: true, destructiveHint: true },
+  description:
+    'Exclui definitivamente uma mensagem rápida do WhatsApp (o atalho deixa de existir para toda a equipe).',
   parameters: {
     type: 'object',
-    properties: { quickReplyId: { type: 'string' } },
+    properties: {
+      quickReplyId: {
+        type: 'string',
+        description: 'Id da mensagem rápida (de zap_quick_replies_list).',
+      },
+    },
     required: ['quickReplyId'],
     additionalProperties: false,
   },

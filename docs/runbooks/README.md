@@ -12,6 +12,7 @@ confirmar que deu certo.
 | Cliente encerrou / pediu exclusão dos dados | [Excluir um workspace](./delete-workspace.md) |
 | CI vermelho, deploy não saiu ou saiu quebrado | [CI vermelho / deploy falhou](./ci-deploy-failure.md) |
 | Wiki não sincroniza / instalar o realtime no nginx | [Servidor realtime da Wiki](./realtime-wiki.md) |
+| Claude/ChatGPT/Cursor não conectam ao Steel / instalar o MCP no proxy | [Proxy de borda do servidor MCP](./mcp-edge-proxy.md) |
 
 ## Referência rápida do servidor
 

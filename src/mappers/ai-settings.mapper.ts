@@ -33,6 +33,8 @@ export interface EffectiveAiSettings {
   autopilotEnabled: boolean
   /** Weekly usage summary e-mailed to the owners; on by default. */
   usageWeeklyEmailEnabled: boolean
+  /** MCP clients with `mcp:write` may write; off by default. */
+  mcpWriteEnabled: boolean
 }
 
 function modelOrDefault(key: string): AiModelKey {
@@ -55,6 +57,7 @@ export function toEffectiveAiSettings(
       memoryEnabled: true,
       autopilotEnabled: false,
       usageWeeklyEmailEnabled: true,
+      mcpWriteEnabled: false,
     }
   }
   return {
@@ -70,6 +73,7 @@ export function toEffectiveAiSettings(
     memoryEnabled: row.memoryEnabled,
     autopilotEnabled: row.autopilotEnabled,
     usageWeeklyEmailEnabled: row.usageWeeklyEmailEnabled,
+    mcpWriteEnabled: row.mcpWriteEnabled,
   }
 }
 
@@ -118,6 +122,7 @@ export function toWorkspaceAiSettingsDTO(input: {
     memoryEnabled: settings.memoryEnabled,
     autopilotEnabled: settings.autopilotEnabled,
     usageWeeklyEmailEnabled: settings.usageWeeklyEmailEnabled,
+    mcpWriteEnabled: settings.mcpWriteEnabled,
     usage: {
       periodStart: input.periodStart.toISOString(),
       inputTokens: usage.inputTokens,

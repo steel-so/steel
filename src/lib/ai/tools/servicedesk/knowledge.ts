@@ -198,6 +198,7 @@ export const sdCreateKbDraftFromTicketTool: SteelAiTool<DraftArgs> = {
   label: 'Criando rascunho de artigo',
   module: SD_MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Fluxo KCS: cria um RASCUNHO de artigo da base a partir de um chamado (problema, causa, solução) e já o vincula ao chamado. `useAi` (padrão true) escreve o rascunho com a IA do ServiceDesk, sem dados pessoais; false entrega o esqueleto KCS vazio. Nada é publicado.',
   parameters: {
@@ -300,7 +301,7 @@ async function planDeleteDraft(
   if (article.value.status !== 'DRAFT' || article.value.archivedAt) {
     return err(
       validationError(
-        'Só rascunhos ativos podem ser descartados pelo Steel AI; artigos publicados ou em revisão ficam com a equipe.',
+        'Só rascunhos ativos podem ser descartados por ferramenta; artigos publicados ou em revisão ficam com a equipe.',
       ),
     )
   }
@@ -315,6 +316,7 @@ export const sdDeleteKbDraftTool: SteelAiTool<DeleteDraftArgs> = {
   label: 'Descartando rascunho',
   module: SD_MODULE,
   kind: 'DELETE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Descarta um artigo em RASCUNHO da base (vai para a lixeira da base, com os subartigos; um admin pode restaurar). Recusa artigos publicados ou em revisão.',
   parameters: {

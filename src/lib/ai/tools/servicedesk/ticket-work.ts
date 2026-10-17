@@ -92,8 +92,9 @@ export const sdCreateTicketTaskTool: SteelAiTool<CreateTaskArgs> = {
   label: 'Criando tarefa do chamado',
   module: SD_MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
-    'Cria uma tarefa no chamado (aba Tarefas): título, descrição, responsável (agente: "me", nome, e-mail ou id) e prazo (ISO 8601). O responsável é avisado.',
+    'Cria uma tarefa no chamado: título, descrição, responsável (agente: "me", nome, e-mail ou id) e prazo (ISO 8601). O responsável é avisado.',
   parameters: {
     type: 'object',
     properties: {
@@ -192,6 +193,7 @@ export const sdCompleteTicketTaskTool: SteelAiTool<TaskRefArgs> = {
   label: 'Concluindo tarefa',
   module: SD_MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description: 'Marca uma tarefa do chamado como concluída (id ou título).',
   parameters: taskRefParameters,
   permission: { resource: 'sd-tickets', action: 'EDIT' },
@@ -237,6 +239,7 @@ export const sdDeleteTicketTaskTool: SteelAiTool<TaskRefArgs> = {
   label: 'Excluindo tarefa',
   module: SD_MODULE,
   kind: 'DELETE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Exclui definitivamente uma tarefa do chamado (id ou título). Prefira concluir quando a tarefa foi feita.',
   parameters: taskRefParameters,
@@ -250,7 +253,7 @@ export const sdDeleteTicketTaskTool: SteelAiTool<TaskRefArgs> = {
       preview(
         plan.value.loaded,
         `Excluir a tarefa “${task.title}”`,
-        'A tarefa some da aba Tarefas; a exclusão fica na rastreabilidade e não pode ser desfeita.',
+        'A tarefa some do chamado; a exclusão fica na rastreabilidade e não pode ser desfeita.',
         [
           { label: 'Tarefa', before: task.title, after: null },
           { label: 'Situação', before: TASK_STATUS_LABELS[task.status] },
@@ -346,6 +349,8 @@ export const sdRequestApprovalTool: SteelAiTool<ApprovalArgs> = {
   label: 'Pedindo aprovação',
   module: SD_MODULE,
   kind: 'ACTION',
+  annotations: { destructiveHint: false, openWorldHint: true },
+  customerFacing: true,
   description:
     'Pede aprovação do chamado por e-mail: cada aprovador (membro do workspace por nome/e-mail/id, ou e-mail externo) recebe um link próprio para aprovar ou reprovar; a primeira resposta decide. `expiresInDays` padrão 7 (1–60).',
   parameters: {
@@ -447,8 +452,9 @@ export const sdLinkKbArticleTool: SteelAiTool<LinkArticleArgs> = {
   label: 'Vinculando artigo da base',
   module: SD_MODULE,
   kind: 'CREATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
-    'Vincula um artigo da base de conhecimento ao chamado (aba Conhecimento). `article`: id ou título (busca na base).',
+    'Vincula um artigo da base de conhecimento ao chamado (aparece nos artigos vinculados; o solicitante não é avisado). `article`: id ou título (busca na base).',
   parameters: {
     type: 'object',
     properties: {
@@ -526,6 +532,7 @@ export const sdLinkConfigItemTool: SteelAiTool<LinkCiArgs> = {
   label: 'Vinculando item de configuração',
   module: SD_MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Define o item de configuração (CMDB) do chamado: nome, código, IP ou id; "none" remove o vínculo.',
   parameters: {

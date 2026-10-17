@@ -152,7 +152,12 @@ type ContactArgs = z.infer<typeof ContactArgs>
 
 const contactParameters = {
   type: 'object',
-  properties: { contactId: { type: 'string' } },
+  properties: {
+    contactId: {
+      type: 'string',
+      description: 'Id do contato (de zap_contacts_search).',
+    },
+  },
   required: ['contactId'],
   additionalProperties: false,
 }
@@ -215,6 +220,7 @@ export const zapContactCreateTool: SteelAiTool<CreateArgs> = {
   label: 'Criando contato do WhatsApp',
   module: MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria um contato do WhatsApp. `waId` = número com DDI e DDD, só dígitos (ex.: 5511999998888). `name` e `description` são opcionais. Não envia nada ao contato.',
   parameters: {
@@ -297,12 +303,16 @@ export const zapContactUpdateTool: SteelAiTool<UpdateArgs> = {
   label: 'Atualizando contato do WhatsApp',
   module: MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera nome e/ou descrição de um contato do WhatsApp. Omitir um campo = sem alteração; `null` ou "" = apagar. O número não pode ser alterado.',
   parameters: {
     type: 'object',
     properties: {
-      contactId: { type: 'string' },
+      contactId: {
+        type: 'string',
+        description: 'Id do contato (de zap_contacts_search).',
+      },
       name: { type: ['string', 'null'] },
       description: { type: ['string', 'null'] },
     },
@@ -362,6 +372,7 @@ export const zapContactDeleteTool: SteelAiTool<ContactArgs> = {
   label: 'Excluindo contato do WhatsApp',
   module: MODULE,
   kind: 'DELETE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Exclui um contato do WhatsApp. ATENÇÃO: as conversas e mensagens dele também são apagadas. Não envia nada ao contato.',
   parameters: contactParameters,

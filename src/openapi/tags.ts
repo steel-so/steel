@@ -451,6 +451,11 @@ export const TAG_GROUPS = [
         description:
           'Agentes autônomos: rodam por agenda, evento ou botão, com as permissões do responsável. Cada ferramenta é automática ou requer aprovação (exclusão sempre requer), e as aprovações acontecem pela caixa de entrada.',
       },
+      {
+        name: 'Steel MCP',
+        description:
+          'Servidor MCP remoto para clientes de IA (Claude, ChatGPT, Cursor…): as ferramentas de leitura do Steel AI, artigos da base de conhecimento e páginas da Wiki como resources e prompts prontos. Autenticado por OAuth do Steel (token por usuário e workspace).',
+      },
     ],
   },
   {

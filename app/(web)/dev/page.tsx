@@ -51,6 +51,12 @@ const INTEGRATIONS = [
     href: '/dev/guias/eventos-github-gitlab',
   },
   {
+    title: 'Conectar Claude, ChatGPT e Cursor',
+    access: 'OAuth do Steel (servidor MCP)',
+    route: 'POST /api/mcp',
+    href: '/dev/mcp',
+  },
+  {
     title: 'Receber mensagens do WhatsApp',
     access: 'Assinatura da Meta ou segredo da Z-API',
     route: 'POST /api/whatsapp/webhook/meta',

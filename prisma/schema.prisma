@@ -4187,6 +4187,9 @@ model WorkspaceAiSettings {
   autopilotEnabled        Boolean  @default(false) @map("autopilot_enabled")
   /// Weekly Steel AI usage summary e-mailed to the OWNERs (Mondays).
   usageWeeklyEmailEnabled Boolean  @default(true) @map("usage_weekly_email_enabled")
+  /// External AI clients connected over MCP with `mcp:write` may create,
+  /// update and run actions (DELETE is never exposed). Off by default.
+  mcpWriteEnabled         Boolean  @default(false) @map("mcp_write_enabled")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 

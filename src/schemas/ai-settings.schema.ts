@@ -39,6 +39,8 @@ export const UpdateWorkspaceAiSettingsSchema = z.object({
   autopilotEnabled: z.boolean().optional(),
   /** Weekly Steel AI usage summary e-mailed to the owners. */
   usageWeeklyEmailEnabled: z.boolean().optional(),
+  /** External AI clients (MCP) with `mcp:write` may write. */
+  mcpWriteEnabled: z.boolean().optional(),
 })
 
 export type UpdateWorkspaceAiSettingsDTO = z.infer<

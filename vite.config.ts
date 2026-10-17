@@ -157,6 +157,8 @@ export default defineConfig({
         'src/lib/sites/**',
         'src/lib/canvas-collab/**',
         'src/lib/site-ai/**',
+        // MCP adapter (ADR 0032); `grant.ts` is owned by the mcp-auth slice.
+        'src/lib/mcp/{tools,resources,prompts,server,http}.ts',
       ],
       exclude: [
         'node_modules/**',

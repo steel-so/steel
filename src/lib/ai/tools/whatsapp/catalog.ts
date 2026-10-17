@@ -127,7 +127,10 @@ export const zapTemplatesListTool: SteelAiTool<TemplatesArgs> = {
     type: 'object',
     properties: {
       status: { type: 'string', enum: [...TEMPLATE_STATUSES] },
-      connectionId: { type: 'string' },
+      connectionId: {
+        type: 'string',
+        description: 'Id da conexão (de zap_connections_status).',
+      },
       query: { type: 'string' },
       limit: limitParameter,
       offset: offsetParameter,

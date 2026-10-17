@@ -86,6 +86,22 @@ e `monthlyMessageLimit`; vazio = ilimitado, o padrão):
 - Se a consulta ao banco falhar, o envio é liberado (não para o atendimento);
   envios simultâneos bem no limite podem ultrapassá-lo em poucas unidades.
 
+## Servidor MCP (todos os planos)
+
+Decisão do dono do produto em 17/10/2026 (ADR 0032): o **servidor MCP**
+(`/api/mcp`, que conecta Claude, ChatGPT, Cursor e outros clientes de IA ao
+workspace) está **disponível em todos os planos**, sem limite por plano.
+
+| Item | Valor | Onde |
+| ---- | ----- | ---- |
+| Plano mínimo | nenhum (FREE em diante) | não há checagem de plano na rota nem no consentimento |
+| Cota de IA (ADR 0019) | **não se aplica**: o modelo é do cliente | o servidor não chama `AiUsageService` |
+| Limite de uso | rate limit por usuário (`mcp:<userId>`) e por cliente OAuth (`mcp-client:<clientId>`) | `app/api/mcp/route.ts`, `src/lib/rate-limit.ts` |
+| Escrita | só com `mcp:write` **e** "Permitir escrita via MCP" ligado pelo admin; `DELETE` nunca | `WorkspaceAiSettings.mcpWriteEnabled`, contrato em `docs/mcp/README.md` |
+
+A página de preços não lista o MCP como diferencial de plano. Revisitar quando
+houver uso medido (consequência registrada na ADR 0032).
+
 ## Features e capabilities (`FEATURE_MIN_TIER`, `CAPABILITIES`)
 
 - **Features** (booleanas, monotônicas por tier): `projects`, `workItems`,

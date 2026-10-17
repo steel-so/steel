@@ -369,6 +369,10 @@ export const WorkspaceAiSettingsDTO = dto(
       description:
         'Resumo semanal do consumo de IA por e-mail para os donos do workspace (segundas, 08:00 de Brasília). Ligado por padrão.',
     }),
+    mcpWriteEnabled: z.boolean().meta({
+      description:
+        'Clientes de IA conectados por MCP com o escopo `mcp:write` podem criar, editar e executar ações (exclusões nunca são expostas). Desligado por padrão.',
+    }),
     usage: z.object({
       periodStart: dateTime().meta({ description: '1º dia do mês (UTC).' }),
       inputTokens: z.number().int(),

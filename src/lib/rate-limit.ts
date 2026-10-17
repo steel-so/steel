@@ -60,6 +60,14 @@ const OAUTH_DURATION_SECONDS = 60
 const OAUTH_REGISTER_POINTS = 10
 const OAUTH_REGISTER_DURATION_SECONDS = 60 * 60
 
+// Public MCP server (ADR 0032): one budget per user and a wider one per OAuth
+// client, so a single runaway client can't exhaust every user it serves.
+const MCP_USER_POINTS = 120
+const MCP_USER_DURATION_SECONDS = 60
+
+const MCP_CLIENT_POINTS = 600
+const MCP_CLIENT_DURATION_SECONDS = 60
+
 const authInsurance = new RateLimiterMemory({
   points: AUTH_POINTS,
   duration: AUTH_DURATION_SECONDS,
@@ -193,6 +201,24 @@ export const oauthRegisterLimiter = new RateLimiterRedis({
   duration: OAUTH_REGISTER_DURATION_SECONDS,
 })
 
+export const mcpUserLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:mcp:user',
+  points: MCP_USER_POINTS,
+  duration: MCP_USER_DURATION_SECONDS,
+})
+
+export const mcpClientLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:mcp:client',
+  points: MCP_CLIENT_POINTS,
+  duration: MCP_CLIENT_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -209,6 +235,9 @@ const limiterNames = new WeakMap<Limiter, string>([
   [aiMessageLimiter, 'ai_message'],
   [oauthLimiter, 'oauth'],
   [oauthRegisterLimiter, 'oauth_register'],
+
+  [mcpUserLimiter, 'mcp_user'],
+  [mcpClientLimiter, 'mcp_client'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

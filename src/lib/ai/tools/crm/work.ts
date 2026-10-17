@@ -143,9 +143,18 @@ export const crmListTasksTool: SteelAiTool<z.output<typeof ListTasksArgs>> = {
         type: 'string',
         enum: ['overdue', 'today', 'next_7_days', 'no_date'],
       },
-      companyId: { type: 'string' },
-      personId: { type: 'string' },
-      opportunityId: { type: 'string' },
+      companyId: {
+        type: 'string',
+        description: 'Só as vinculadas à empresa (id).',
+      },
+      personId: {
+        type: 'string',
+        description: 'Só as vinculadas à pessoa (id).',
+      },
+      opportunityId: {
+        type: 'string',
+        description: 'Só as vinculadas à oportunidade (id).',
+      },
       ...pageParameters,
     },
     additionalProperties: false,
@@ -238,6 +247,7 @@ export const crmCreateTaskTool: SteelAiTool<z.output<typeof CreateTaskArgs>> = {
   label: 'Criando tarefa',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria uma tarefa no CRM, com prazo, responsável ("me", nome ou e-mail) e vínculo opcional a empresa, pessoa ou oportunidade (ids).',
   parameters: {
@@ -312,19 +322,32 @@ export const crmUpdateTaskTool: SteelAiTool<z.output<typeof UpdateTaskArgs>> = {
   label: 'Atualizando tarefa',
   module: 'CRM',
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera uma tarefa: título, descrição, status (DONE conclui), prazo e vínculos. Envie só o que muda; null limpa. Para o responsável use crm_assign_owner.',
   parameters: {
     type: 'object',
     properties: {
-      taskId: { type: 'string' },
+      taskId: {
+        type: 'string',
+        description: 'Id da tarefa (de crm_list_tasks).',
+      },
       title: { type: 'string' },
       body: { type: ['string', 'null'] },
       status: { type: 'string', enum: TaskStatus.options },
       dueDate: { type: ['string', 'null'], description: 'AAAA-MM-DD.' },
-      companyId: { type: ['string', 'null'] },
-      personId: { type: ['string', 'null'] },
-      opportunityId: { type: ['string', 'null'] },
+      companyId: {
+        type: ['string', 'null'],
+        description: 'Empresa vinculada (id); null desvincula.',
+      },
+      personId: {
+        type: ['string', 'null'],
+        description: 'Pessoa vinculada (id); null desvincula.',
+      },
+      opportunityId: {
+        type: ['string', 'null'],
+        description: 'Oportunidade vinculada (id); null desvincula.',
+      },
     },
     required: ['taskId'],
     additionalProperties: false,
@@ -389,10 +412,17 @@ export const crmDeleteTaskTool: SteelAiTool<z.output<typeof TaskIdArgs>> = {
   label: 'Excluindo tarefa',
   module: 'CRM',
   kind: 'DELETE',
-  description: 'Exclui uma tarefa do CRM.',
+  annotations: { idempotentHint: true, destructiveHint: true },
+  description:
+    'Exclui uma tarefa do CRM. Não há ferramenta para desfazer; se a tarefa foi feita, prefira crm_update_task com status DONE.',
   parameters: {
     type: 'object',
-    properties: { taskId: { type: 'string' } },
+    properties: {
+      taskId: {
+        type: 'string',
+        description: 'Id da tarefa (de crm_list_tasks).',
+      },
+    },
     required: ['taskId'],
     additionalProperties: false,
   },
@@ -475,6 +505,7 @@ export const crmCreateNoteTool: SteelAiTool<z.output<typeof CreateNoteArgs>> = {
   label: 'Criando nota',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria uma nota no CRM, normalmente vinculada a uma empresa, pessoa ou oportunidade (ids).',
   parameters: {
@@ -532,17 +563,31 @@ export const crmUpdateNoteTool: SteelAiTool<z.output<typeof UpdateNoteArgs>> = {
   label: 'Atualizando nota',
   module: 'CRM',
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera uma nota (título, texto, vínculos). O texto enviado substitui o atual inteiro; null limpa.',
   parameters: {
     type: 'object',
     properties: {
-      noteId: { type: 'string' },
+      noteId: {
+        type: 'string',
+        description:
+          'Id da nota (de crm_get_record ou crm_get_record_timeline).',
+      },
       title: { type: ['string', 'null'] },
       body: { type: ['string', 'null'] },
-      companyId: { type: ['string', 'null'] },
-      personId: { type: ['string', 'null'] },
-      opportunityId: { type: ['string', 'null'] },
+      companyId: {
+        type: ['string', 'null'],
+        description: 'Empresa vinculada (id); null desvincula.',
+      },
+      personId: {
+        type: ['string', 'null'],
+        description: 'Pessoa vinculada (id); null desvincula.',
+      },
+      opportunityId: {
+        type: ['string', 'null'],
+        description: 'Oportunidade vinculada (id); null desvincula.',
+      },
     },
     required: ['noteId'],
     additionalProperties: false,
@@ -598,10 +643,17 @@ export const crmDeleteNoteTool: SteelAiTool<z.output<typeof NoteIdArgs>> = {
   label: 'Excluindo nota',
   module: 'CRM',
   kind: 'DELETE',
-  description: 'Exclui uma nota do CRM.',
+  annotations: { idempotentHint: true, destructiveHint: true },
+  description: 'Exclui uma nota do CRM. Não há ferramenta para desfazer.',
   parameters: {
     type: 'object',
-    properties: { noteId: { type: 'string' } },
+    properties: {
+      noteId: {
+        type: 'string',
+        description:
+          'Id da nota (de crm_get_record ou crm_get_record_timeline).',
+      },
+    },
     required: ['noteId'],
     additionalProperties: false,
   },
