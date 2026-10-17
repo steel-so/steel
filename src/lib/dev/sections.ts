@@ -32,6 +32,12 @@ export const DEV_SECTIONS: readonly DevSection[] = [
       'Exemplos completos: lead do seu site, chamado do seu sistema, workflow do CRM e eventos do GitHub/GitLab.',
   },
   {
+    slug: 'mcp',
+    label: 'Clientes de IA (MCP)',
+    description:
+      'Conecte Claude, ChatGPT, Cursor e outros clientes de IA ao workspace pelo servidor MCP do Steel.',
+  },
+  {
     slug: 'recursos',
     label: 'Recursos',
     description: 'Changelog da API e canais de suporte.',

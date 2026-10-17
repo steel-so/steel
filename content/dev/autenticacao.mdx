@@ -18,6 +18,7 @@ delas usa usuário e senha.
 | Token da origem de monitoramento | Na URL | `POST /api/servicedesk/monitoring/<token>` | Abrir e encerrar chamados de **uma** origem |
 | Assinatura HMAC (GitHub) | `X-Hub-Signature-256` | `POST /api/integrations/github/webhook` | Eventos de **um** repositório conectado |
 | Secret token (GitLab) | `X-Gitlab-Token` | `POST /api/integrations/gitlab/webhook` | Eventos de **um** projeto conectado |
+| Token OAuth do Steel | `Authorization: Bearer` | `POST /api/mcp` ([servidor MCP](/dev/mcp)) | O workspace, os módulos e o escopo que o usuário concedeu ao cliente de IA |
 | Sessão de usuário | Cookie `better-auth.session_token` | `/api/workspaces/<id>/...` e o resto da API | O que o usuário pode fazer no aplicativo |
 
 Toda chave e todo token valem para um único workspace e um único ambiente: o que

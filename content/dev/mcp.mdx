@@ -1,0 +1,222 @@
+---
+title: Servidor MCP
+description: Conecte Claude, ChatGPT, Cursor e outros clientes de IA ao workspace pelo servidor MCP do Steel, com OAuth, escopos por módulo e as ferramentas do Steel AI.
+section: mcp
+order: 1
+---
+
+O Steel tem um servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io)
+próprio. Com ele, um cliente de IA (Claude, ChatGPT, Cursor ou qualquer outro
+que fale MCP) consulta chamados, leads, oportunidades e conversas do seu
+workspace com as permissões de quem conectou, sem chave de API e sem código.
+
+O servidor é um adaptador sobre as ferramentas do Steel AI: as mesmas
+ferramentas que o assistente usa dentro do Steel, filtradas pelos módulos, pelo
+papel do usuário e pelo escopo que ele concedeu. Uma ferramenta nova no Steel AI
+aparece no MCP no mesmo deploy.
+
+## Endereço do servidor
+
+Neste ambiente, o servidor MCP fica em <McpServerUrl />. Em outro ambiente, é o
+endereço do seu Steel seguido de `/api/mcp`.
+
+| Item | Valor |
+| --- | --- |
+| Transporte | Streamable HTTP, sem estado (sem sessão MCP no servidor) |
+| Método | `POST`; `GET` e `DELETE` respondem `405` |
+| Autenticação | OAuth 2.1 do Steel, com PKCE e registro dinâmico de cliente |
+| Descoberta | `/.well-known/oauth-protected-resource` e `/.well-known/oauth-authorization-server` |
+| Planos | Todos os planos; não consome a cota mensal do Steel AI, porque o modelo é do cliente |
+
+Não há chave para copiar: o cliente de IA se registra sozinho no Steel e abre a
+tela de login quando você conecta.
+
+## Como a conexão funciona
+
+1. O cliente chama o servidor sem token e recebe `401` com o header
+   `WWW-Authenticate`, que aponta para os metadados do recurso.
+2. Com os metadados, o cliente descobre o servidor de autorização do Steel e se
+   registra (registro dinâmico de cliente OAuth).
+3. O navegador abre o login do Steel. Quem já está logado vai direto para a tela
+   de consentimento.
+4. No consentimento, você escolhe o **workspace**, os **módulos** e o
+   **escopo** (só leitura, ou leitura e escrita).
+5. O cliente recebe um token de acesso e um refresh token, e passa a chamar o
+   servidor com `Authorization: Bearer`.
+
+Cada conexão vale para **um** workspace. Para usar outro workspace no mesmo
+cliente, conecte de novo e escolha o outro na tela de consentimento.
+
+<Callout type='nota'>
+  O workspace e o usuário de cada chamada vêm do token, nunca dos argumentos
+  da ferramenta. Um modelo não consegue ler outro workspace pedindo pelo ID.
+</Callout>
+
+## Conectar o Claude
+
+No Claude (web e app de desktop):
+
+1. Abra **Configurações › Conectores** e clique em **Adicionar conector
+   personalizado** (*Add custom connector*).
+2. Dê o nome **Steel** e cole o endereço do servidor (<McpServerUrl />).
+3. Clique em **Conectar**, faça login no Steel e confirme o consentimento.
+4. Numa conversa, ligue o conector **Steel** no menu de ferramentas.
+
+Nos planos Team e Enterprise do Claude, quem adiciona conectores personalizados
+é o dono da organização no Claude; depois cada pessoa conecta a própria conta do
+Steel.
+
+No **Claude Code**, adicione o servidor e autentique com `/mcp`:
+
+```bash
+claude mcp add --transport http steel https://homologacao.stratustelecom.com.br/api/mcp
+```
+
+## Conectar o ChatGPT
+
+O ChatGPT aceita servidores MCP como conectores no **modo desenvolvedor**:
+
+1. Abra **Configurações › Apps e conectores › Configurações avançadas** e ligue
+   o **Modo desenvolvedor** (*Developer mode*).
+2. Em **Apps e conectores**, clique em **Criar** (*Create*).
+3. Dê o nome **Steel**, cole o endereço do servidor (<McpServerUrl />) e
+   escolha a autenticação **OAuth**.
+4. Confirme que confia no aplicativo e clique em **Criar**. O ChatGPT abre o
+   login do Steel e o consentimento.
+5. Numa conversa, escolha o conector **Steel** no menu de ferramentas.
+
+A disponibilidade do modo desenvolvedor depende do plano do ChatGPT, e os nomes
+dos menus mudam com as versões do aplicativo.
+
+## Conectar o Cursor
+
+No Cursor, o servidor entra pelo `mcp.json`: `~/.cursor/mcp.json` vale para
+todos os projetos; `.cursor/mcp.json` na raiz do repositório vale só para ele.
+
+```json
+{
+  "mcpServers": {
+    "steel": {
+      "url": "https://homologacao.stratustelecom.com.br/api/mcp"
+    }
+  }
+}
+```
+
+Troque o endereço pelo do seu Steel. Em **Cursor Settings › MCP**, o servidor
+aparece pedindo login: clique para autenticar, faça login no Steel e confirme o
+consentimento.
+
+## Outros clientes
+
+Qualquer cliente que fale MCP por Streamable HTTP com OAuth (e registro dinâmico
+de cliente) conecta do mesmo jeito: basta o endereço do servidor. Um cliente que
+só fala `stdio` pode usar uma ponte como o `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "steel": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://homologacao.stratustelecom.com.br/api/mcp"]
+    }
+  }
+}
+```
+
+## Escopos
+
+| Escopo | Dá acesso a |
+| --- | --- |
+| `mcp:read` | Ferramentas de leitura, *resources* e *prompts* |
+| `mcp:write` | Também as ferramentas de criação, edição e ação, se o administrador do workspace ligou **Permitir escrita via MCP** em **Ajustes › Steel IA** |
+
+Ferramentas de exclusão **nunca** são expostas pelo MCP, com qualquer escopo.
+
+Com `mcp:write`, o consentimento explícito faz o papel da confirmação que o
+assistente pede dentro do Steel. Ações que enviam algo a um cliente final (uma
+mensagem de WhatsApp, um e-mail, um link de aprovação) não executam direto:
+o servidor devolve um link para alguém confirmar a ação no Steel.
+
+<Callout type='aviso' title='Escrita em liberação'>
+  A escrita via MCP está sendo liberada aos poucos. Enquanto ela não chega ao
+  seu ambiente, o servidor oferece só as ferramentas de leitura, mesmo para
+  conexões com `mcp:write`.
+</Callout>
+
+## Módulos e permissões
+
+O cliente só vê as ferramentas que passam por todos estes filtros:
+
+- **Módulo concedido:** você escolhe no consentimento quais módulos (ServiceDesk,
+  CRM, Comunicação) a conexão alcança. Só aparecem os módulos habilitados no
+  workspace e a que você tem acesso.
+- **Papel no workspace:** a matriz de permissões do workspace vale igual ao
+  aplicativo. Quem é leitor não ganha ferramentas que o papel não permite.
+- **Escopo:** sem `mcp:write`, só leitura.
+
+Mesmo com a ferramenta na lista, quem decide é o serviço do Steel: a chamada roda
+com o usuário que conectou, e o que ele não pode fazer no aplicativo também é
+recusado pelo MCP.
+
+## Ferramentas
+
+A lista abaixo sai do registro de ferramentas do Steel AI a cada deploy. O que
+um cliente recebe em `tools/list` é o recorte dela pelos filtros acima. Cada
+ferramenta leva o rótulo como `title` e a anotação `readOnlyHint` quando é de
+leitura.
+
+<McpToolTable />
+
+Uma chamada que o Steel recusa (sem permissão, registro inexistente, argumento
+inválido) volta como resultado com `isError: true` e a mensagem em português,
+para o modelo explicar ao usuário. A resposta traz os dados em
+`structuredContent` e um resumo em texto, com tamanho máximo por chamada.
+
+## Resources e prompts
+
+- **Resources:** os artigos **publicados** da base de conhecimento do ServiceDesk
+  e as páginas da Wiki que você pode ler, com listagem paginada. Cada um respeita
+  o módulo concedido.
+- **Prompts:** pontos de partida prontos, em português, por módulo:
+  **Resumo do dia do ServiceDesk**, **Pipeline da semana** (CRM) e **Conversas
+  sem resposta** (Comunicação).
+
+## Segurança
+
+- **Revogar:** cada pessoa vê e revoga as próprias conexões em **Configurações ›
+  Segurança › Apps conectados**. O administrador do workspace vê e revoga as de
+  todos os membros. A revogação vale na chamada seguinte do cliente.
+- **Membro removido:** quem sai do workspace perde o acesso pelo MCP na chamada
+  seguinte, sem precisar revogar nada.
+- **Sem exclusão:** nenhuma ferramenta de exclusão é exposta.
+- **Auditoria:** consentimento, revogação e cada escrita ficam na trilha de
+  auditoria do Steel, com a origem MCP.
+- **Dados com terceiros:** o conteúdo que as ferramentas devolvem (descrição de
+  chamado, mensagem de WhatsApp, e-mail) vai para o provedor do cliente de IA
+  que você conectou. Avalie o provedor e conceda só os módulos de que precisa.
+- **Texto de terceiros:** mensagens e e-mails de clientes chegam ao modelo como
+  dados. Por isso exclusão fica fora e ações com cliente final pedem
+  confirmação no Steel.
+
+## Limites
+
+O servidor tem limite de requisições por usuário e por cliente OAuth. Passou do
+limite, a resposta é `429` com `Retry-After`, como no resto da API (veja
+[Limites de requisição](/dev/limites#o-que-acontece-no-limite)). Os clientes de
+IA costumam esperar e repetir sozinhos.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| O cliente pede login de novo a cada uso, ou responde `401` | A conexão foi revogada, você saiu do workspace ou o refresh token expirou. Remova o conector e conecte de novo |
+| A tela de consentimento não mostra um módulo | O módulo está desligado no workspace ou o seu papel não tem acesso a ele. Peça a um administrador |
+| Uma ferramenta não aparece | O módulo não foi concedido na conexão, o seu papel não permite a ação ou ela é de escrita e a conexão é só leitura. Conecte de novo com os módulos e o escopo certos |
+| Nenhuma ferramenta de escrita aparece com `mcp:write` | O administrador não ligou **Permitir escrita via MCP** em **Ajustes › Steel IA**, ou a escrita ainda não chegou ao seu ambiente |
+| O cliente lê dados do workspace errado | Cada conexão vale para um workspace. Revogue em **Apps conectados** e conecte escolhendo o outro |
+| `405` no endereço do servidor | O cliente tentou `GET` (fluxo SSE antigo). Use um cliente com Streamable HTTP, ou a ponte `mcp-remote` |
+| A resposta demora a chegar inteira, ou chega toda de uma vez no fim | Algum proxy entre o cliente e o Steel está segurando a resposta. Na sua rede, libere `/api/mcp` sem buffering |
+| `429` | Limite de requisições. Espere o `Retry-After` |
+
+Dúvidas sobre a integração: [Suporte](/dev/suporte).
