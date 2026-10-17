@@ -138,11 +138,86 @@ assistente pede dentro do Steel. Ações que enviam algo a um cliente final (uma
 mensagem de WhatsApp, um e-mail, um link de aprovação) não executam direto:
 o servidor devolve um link para alguém confirmar a ação no Steel.
 
-<Callout type='aviso' title='Escrita em liberação'>
-  A escrita via MCP está sendo liberada aos poucos. Enquanto ela não chega ao
-  seu ambiente, o servidor oferece só as ferramentas de leitura, mesmo para
-  conexões com `mcp:write`.
-</Callout>
+## Escrita
+
+As ferramentas de escrita (`readOnlyHint: false`) aparecem em `tools/list` só
+quando as duas condições valem: o token tem `mcp:write` **e** o administrador
+ligou **Permitir escrita via MCP**. O interruptor independe do modo agente e do
+Autopilot do assistente do Steel. Desligado, a conexão continua só leitura, e
+uma ferramenta de escrita chamada mesmo assim responde como desconhecida
+(`-32602`).
+
+### Execução direta
+
+Criar, alterar e as ações internas (atribuir, mover etapa, registrar nota)
+executam na hora, com o usuário que conectou. O resultado traz:
+
+```json
+{
+  "status": "executed",
+  "summary": "Tarefa “Ligar para a Acme” criada",
+  "actionId": "cm9…",
+  "target": {
+    "type": "crm_task",
+    "id": "cm8…",
+    "href": "https://homologacao.stratustelecom.com.br/demo/crm/tasks?record=cm8…"
+  },
+  "data": { "...": "..." }
+}
+```
+
+Cada escrita fica no histórico de ações da IA do workspace com a origem **MCP** e
+o cliente OAuth, e na trilha de auditoria.
+
+### Ações com cliente final: confirmação no Steel
+
+As ferramentas marcadas com `openWorldHint: true` que entregam algo a alguém de
+fora da equipe (`zap_message_send_text`, `sd_reply_to_requester`,
+`sd_request_approval`, `sd_move_ticket_phase` e `sd_cancel_ticket`) **não**
+executam pela chamada. O servidor cria uma pendência e devolve:
+
+```json
+{
+  "status": "pending_confirmation",
+  "summary": "Aguardando confirmação no Steel: Enviar mensagem para Ana. Nada foi feito ainda. …",
+  "actionId": "cm9…",
+  "confirmUrl": "https://homologacao.stratustelecom.com.br/demo/inbox?view=ai&action=cm9…",
+  "expiresAt": "2026-10-17T12:30:00.000Z",
+  "preview": { "title": "Enviar mensagem para Ana", "summary": "…" }
+}
+```
+
+Mostre o `confirmUrl` ao usuário. Ele abre a **Caixa de entrada › Pendências da
+IA** do Steel, confere a prévia e confirma ou cancela. A pendência vale 30
+minutos, só a pessoa que conectou pode confirmar e ela é cancelada se a conexão
+for revogada. O cliente não recebe aviso da decisão: para saber o resultado,
+consulte o registro depois (o chamado, a conversa).
+
+O servidor não usa *elicitation* do MCP para essa confirmação: ela exige uma
+pergunta do servidor no meio da chamada, e o servidor do Steel não guarda sessão
+entre requisições. O link funciona em qualquer cliente.
+
+### Repetir com segurança: `idempotencyKey`
+
+Toda ferramenta de escrita aceita o argumento opcional `idempotencyKey` (texto
+de 1 a 200 caracteres, por exemplo um UUID). Repetir a chamada com a mesma chave
+e os mesmos argumentos em até 24 horas não executa de novo: volta o primeiro
+resultado. A chave vale por conexão e por ferramenta.
+
+| Situação | Resposta |
+| --- | --- |
+| Mesma chave, mesmos argumentos, já concluída | O resultado da primeira chamada |
+| Mesma chave ainda em execução | `isError` com `MCP_IDEMPOTENCY_IN_PROGRESS`. Espere alguns segundos e repita |
+| Mesma chave, argumentos diferentes | `isError` com `MCP_IDEMPOTENCY_KEY_REUSED`. Gere uma chave nova |
+| A primeira chamada falhou | A chave é liberada e a próxima chamada executa |
+
+Use uma chave nova para cada ação diferente e repita a mesma só quando a
+chamada anterior ficou sem resposta.
+
+### Links absolutos
+
+Todo `href` nos resultados (chamado, lead, conversa) já vem com o endereço do
+Steel, pronto para o usuário abrir.
 
 ## Módulos e permissões
 
@@ -153,7 +228,8 @@ O cliente só vê as ferramentas que passam por todos estes filtros:
   workspace e a que você tem acesso.
 - **Papel no workspace:** a matriz de permissões do workspace vale igual ao
   aplicativo. Quem é leitor não ganha ferramentas que o papel não permite.
-- **Escopo:** sem `mcp:write`, só leitura.
+- **Escopo e interruptor:** sem `mcp:write`, ou com **Permitir escrita via
+  MCP** desligado, só leitura.
 
 Mesmo com a ferramenta na lista, quem decide é o serviço do Steel: a chamada roda
 com o usuário que conectou, e o que ele não pode fazer no aplicativo também é
@@ -213,7 +289,9 @@ IA costumam esperar e repetir sozinhos.
 | O cliente pede login de novo a cada uso, ou responde `401` | A conexão foi revogada, você saiu do workspace ou o refresh token expirou. Remova o conector e conecte de novo |
 | A tela de consentimento não mostra um módulo | O módulo está desligado no workspace ou o seu papel não tem acesso a ele. Peça a um administrador |
 | Uma ferramenta não aparece | O módulo não foi concedido na conexão, o seu papel não permite a ação ou ela é de escrita e a conexão é só leitura. Conecte de novo com os módulos e o escopo certos |
-| Nenhuma ferramenta de escrita aparece com `mcp:write` | O administrador não ligou **Permitir escrita via MCP** em **Ajustes › Steel IA**, ou a escrita ainda não chegou ao seu ambiente |
+| Nenhuma ferramenta de escrita aparece com `mcp:write` | O administrador não ligou **Permitir escrita via MCP** em **Ajustes › Steel IA** |
+| A ação voltou com `pending_confirmation` | É uma ação com cliente final. Abra o `confirmUrl` e confirme em até 30 minutos |
+| Confirmar responde que a escrita via MCP está desligada | O administrador desligou o interruptor depois do pedido. Peça para ligar e repita a chamada |
 | O cliente lê dados do workspace errado | Cada conexão vale para um workspace. Revogue em **Apps conectados** e conecte escolhendo o outro |
 | `405` no endereço do servidor | O cliente tentou `GET` (fluxo SSE antigo). Use um cliente com Streamable HTTP, ou a ponte `mcp-remote` |
 | A resposta demora a chegar inteira, ou chega toda de uma vez no fim | Algum proxy entre o cliente e o Steel está segurando a resposta. Na sua rede, libere `/api/mcp` sem buffering |

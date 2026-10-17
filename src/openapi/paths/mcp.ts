@@ -37,7 +37,8 @@ const routes: RouteConfig[] = [
     description: [
       'Servidor MCP remoto do Steel para clientes de IA (Claude, ChatGPT, Cursor…). Exige `Authorization: Bearer <access token>` emitido pelo OAuth do Steel; o token define usuário, workspace, módulos e escopos — nada disso vem dos argumentos.',
       '',
-      '- **Ferramentas:** as de leitura do Steel AI que o usuário pode usar nos módulos concedidos (filtro por módulo e perfil de acesso). Resultado com `structuredContent` e resumo em texto, até ~20 KB; erros de domínio voltam com `isError: true`.',
+      '- **Ferramentas:** as de leitura do Steel AI que o usuário pode usar nos módulos concedidos (filtro por módulo e perfil de acesso). Resultado com `structuredContent` e resumo em texto, até ~20 KB; erros de domínio voltam com `isError: true`. Todo `href` vem absoluto.',
+      '- **Escrita:** com `mcp:write` **e** "Permitir escrita via MCP" ligado pelo admin, também as de criar, alterar e ação (exclusão nunca). Executam na hora (`status: executed`, registradas em `AiActionLog` com origem `MCP`), exceto as que chegam a um cliente final, que só criam uma pendência e devolvem `status: pending_confirmation` com `confirmUrl` para o usuário confirmar no Steel em 30 min. Argumento opcional `idempotencyKey` (1–200 caracteres): a mesma chave com os mesmos argumentos em 24 h devolve o primeiro resultado (`MCP_IDEMPOTENCY_IN_PROGRESS` enquanto roda, `MCP_IDEMPOTENCY_KEY_REUSED` com outros argumentos).',
       '- **Resources:** artigos publicados da base de conhecimento (`steel://servicedesk/kb/{id}`) e páginas da Wiki (`steel://wiki/pages/{id}`), em Markdown, paginados por cursor.',
       '- **Prompts:** prontos por módulo, em português.',
       '',
