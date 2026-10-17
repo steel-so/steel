@@ -5818,74 +5818,6 @@
         ]
       }
     },
-<<<<<<< HEAD
-    "/oauth/consent": {
-      "post": {
-        "tags": ["Apps conectados (OAuth)"],
-        "summary": "Responder ao consentimento",
-        "operationId": "postOauthConsent",
-        "description": "Chamado pela tela `/oauth/consent`. `oauthQuery` é a query assinada com que o provedor redirecionou para a tela (a assinatura e a validade de 10 minutos são conferidas pelo provedor). No aceite, o usuário precisa ser membro do workspace, os módulos precisam estar habilitados nele e os escopos precisam ter sido pedidos pelo app; a concessão é criada (ou atualizada, se já existia para o mesmo app e workspace) e o código de autorização sai preso a ela.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "accept": {
-                        "type": "boolean",
-                        "const": true
-                      },
-                      "oauthQuery": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 8000
-                      },
-                      "workspaceId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 64
-                      },
-                      "modules": {
-                        "minItems": 1,
-                        "maxItems": 10,
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": ["SERVICE_DESK", "CRM", "COMMUNICATION"]
-                        }
-                      },
-                      "scopes": {
-                        "minItems": 1,
-                        "maxItems": 10,
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": ["mcp:read", "mcp:write"]
-                        }
-                      }
-                    },
-                    "required": ["accept", "oauthQuery", "workspaceId", "modules", "scopes"]
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "accept": {
-                        "type": "boolean",
-                        "const": false
-                      },
-                      "oauthQuery": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 8000
-                      }
-                    },
-                    "required": ["accept", "oauthQuery"]
-                  }
-                ]
-=======
     "/mcp": {
       "get": {
         "tags": ["Steel MCP"],
@@ -5952,14 +5884,110 @@
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "tools/list"
->>>>>>> main
               }
             }
           }
         },
         "responses": {
           "200": {
-<<<<<<< HEAD
+            "description": "Resposta JSON-RPC 2.0 (`result` ou `error`)."
+          },
+          "202": {
+            "description": "Notificação ou resposta recebida (sem corpo)."
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED_5"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED_4"
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "tags": ["Steel MCP"],
+        "summary": "Encerrar sessão (não suportado)",
+        "operationId": "deleteMcp",
+        "responses": {
+          "405": {
+            "description": "Servidor sem estado: não abre stream SSE (GET) nem encerra sessão (DELETE). Responde com `Allow: POST`."
+          }
+        },
+        "security": []
+      }
+    },
+    "/oauth/consent": {
+      "post": {
+        "tags": ["Apps conectados (OAuth)"],
+        "summary": "Responder ao consentimento",
+        "operationId": "postOauthConsent",
+        "description": "Chamado pela tela `/oauth/consent`. `oauthQuery` é a query assinada com que o provedor redirecionou para a tela (a assinatura e a validade de 10 minutos são conferidas pelo provedor). No aceite, o usuário precisa ser membro do workspace, os módulos precisam estar habilitados nele e os escopos precisam ter sido pedidos pelo app; a concessão é criada (ou atualizada, se já existia para o mesmo app e workspace) e o código de autorização sai preso a ela.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "accept": {
+                        "type": "boolean",
+                        "const": true
+                      },
+                      "oauthQuery": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 8000
+                      },
+                      "workspaceId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "modules": {
+                        "minItems": 1,
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": ["SERVICE_DESK", "CRM", "COMMUNICATION"]
+                        }
+                      },
+                      "scopes": {
+                        "minItems": 1,
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": ["mcp:read", "mcp:write"]
+                        }
+                      }
+                    },
+                    "required": ["accept", "oauthQuery", "workspaceId", "modules", "scopes"]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "accept": {
+                        "type": "boolean",
+                        "const": false
+                      },
+                      "oauthQuery": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 8000
+                      }
+                    },
+                    "required": ["accept", "oauthQuery"]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "Para onde o navegador segue.",
             "content": {
               "application/json": {
@@ -6009,32 +6037,6 @@
             "cookieAuth": []
           }
         ]
-=======
-            "description": "Resposta JSON-RPC 2.0 (`result` ou `error`)."
-          },
-          "202": {
-            "description": "Notificação ou resposta recebida (sem corpo)."
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED_5"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED_4"
-          }
-        },
-        "security": []
-      },
-      "delete": {
-        "tags": ["Steel MCP"],
-        "summary": "Encerrar sessão (não suportado)",
-        "operationId": "deleteMcp",
-        "responses": {
-          "405": {
-            "description": "Servidor sem estado: não abre stream SSE (GET) nem encerra sessão (DELETE). Responde com `Allow: POST`."
-          }
-        },
-        "security": []
->>>>>>> main
       }
     },
     "/pabx/calls/webhook": {
