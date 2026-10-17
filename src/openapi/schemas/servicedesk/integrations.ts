@@ -64,7 +64,7 @@ export const SdIntegrationDTO = dto(
     externalId: z.string().meta({
       description:
         'Workspace do Slack (`T…`), `owner/repo` no GitHub ou `grupo/projeto` no GitLab.',
-      example: 'stratus-so2/steel',
+      example: 'steel-so/steel',
     }),
     externalName: z.string().nullable(),
     baseUrl: z.string().nullable().meta({
@@ -103,7 +103,7 @@ export const SdRepoProviderOptionDTO = dto(
   'SdRepoProviderOption',
   z.object({
     provider: z.enum(['GITHUB', 'GITLAB']),
-    project: z.string().meta({ example: 'stratus-so2/steel' }),
+    project: z.string().meta({ example: 'steel-so/steel' }),
     allowIssueFromTicket: z.boolean(),
   }),
 )
@@ -118,7 +118,7 @@ export const SdIntegrationLinkDTO = dto(
     externalKey: z.string().meta({
       description:
         '`canal:ts` (thread do Slack), `owner/repo#n` (GitHub) ou `grupo/projeto#n` / `grupo/projeto!n` (issue / merge request do GitLab).',
-      example: 'stratus-so2/steel#42',
+      example: 'steel-so/steel#42',
     }),
     externalUrl: z.string().nullable(),
     externalState: z.string().nullable().meta({

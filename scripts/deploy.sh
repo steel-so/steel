@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deploy (ou rollback) da imagem do Steel no host, por tag versionada.
 #
-#   scripts/deploy.sh <tag>              # sobe ghcr.io/stratus-so2/steel:<tag>
+#   scripts/deploy.sh <tag>              # sobe ghcr.io/steel-so/steel:<tag>
 #   scripts/deploy.sh --rollback         # volta para o tag anterior ao atual
 #   scripts/deploy.sh --rollback <tag>   # volta para um tag específico
 #

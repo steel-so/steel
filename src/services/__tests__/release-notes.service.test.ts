@@ -35,7 +35,7 @@ const release = (body: string) => ({
   tag: '2026.08.31',
   name: '2026.08.31',
   body,
-  url: 'https://github.com/stratus-so2/steel/releases/tag/2026.08.31',
+  url: 'https://github.com/steel-so/steel/releases/tag/2026.08.31',
   publishedAt: '2026-08-31T21:03:37Z',
 })
 
@@ -88,7 +88,7 @@ describe('ReleaseNotesService.draft()', () => {
   it('should fall back to the commits of the compare range for empty generated notes', async () => {
     mockedLatest.mockResolvedValue(
       release(
-        '**Full Changelog**: https://github.com/stratus-so2/steel/compare/2026.08.28.4...2026.08.31',
+        '**Full Changelog**: https://github.com/steel-so/steel/compare/2026.08.28.4...2026.08.31',
       ),
     )
     mockedCompare.mockResolvedValue([

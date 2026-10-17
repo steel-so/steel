@@ -37,7 +37,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: stratus-so2/steel
+  IMAGE_NAME: steel-so/steel
   DEPLOY_ENVIRONMENT: homologacao
   DEPLOY_URL: https://homologacao.stratustelecom.com.br
   DEPLOY_DIR: /var/www/steel

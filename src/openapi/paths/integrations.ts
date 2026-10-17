@@ -113,7 +113,7 @@ const WorkspaceIntegrationTestDTO = dto(
   z.object({
     ok: z.boolean(),
     message: z.string().meta({
-      example: 'Acesso confirmado a stratus-so2/steel',
+      example: 'Acesso confirmado a steel-so/steel',
     }),
     integration: WorkspaceIntegrationDTO,
   }),

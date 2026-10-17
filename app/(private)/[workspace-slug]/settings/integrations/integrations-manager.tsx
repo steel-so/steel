@@ -453,7 +453,7 @@ function RepoCard({
               <Input
                 id={`${prefix}-project`}
                 placeholder={
-                  kind === 'GITHUB' ? 'stratus-so2/steel' : 'stratus/steel'
+                  kind === 'GITHUB' ? 'steel-so/steel' : 'stratus/steel'
                 }
                 value={form.project}
                 onChange={(event) => set('project')(event.target.value)}

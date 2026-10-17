@@ -211,7 +211,7 @@ describe('GitHub and GitLab', () => {
     const res = await postJson(
       `${api(workspace.id)}/github`,
       {
-        repo: 'stratus-so2/repositorio-que-nao-existe-aqui',
+        repo: 'steel-so/repositorio-que-nao-existe-aqui',
         token: GH_TOKEN,
         webhookSecret: 'segredo-de-teste-123',
       },

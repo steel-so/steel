@@ -47,7 +47,7 @@ describe('repoTarget', () => {
   it('reads the connected repository/project', () => {
     expect(repoTarget(createFakeSdGithubIntegration())).toEqual({
       provider: 'GITHUB',
-      project: 'stratus-so2/steel',
+      project: 'steel-so/steel',
       baseUrl: 'https://github.com',
     })
     expect(repoTarget(createFakeGitlabIntegration())).toEqual({

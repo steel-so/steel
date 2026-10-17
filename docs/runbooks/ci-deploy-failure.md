@@ -97,8 +97,8 @@ Sintoma: CD verde, mas o [health check](./health-check.md) falha ou
    ```bash
    # descubra o SHA do último deploy bom: GitHub → Releases (tag CalVer anterior) → commit
    cd /var/www/steel
-   docker pull ghcr.io/stratus-so2/steel:<sha-curto-anterior>
-   docker tag ghcr.io/stratus-so2/steel:<sha-curto-anterior> ghcr.io/stratus-so2/steel:latest
+   docker pull ghcr.io/steel-so/steel:<sha-curto-anterior>
+   docker tag ghcr.io/steel-so/steel:<sha-curto-anterior> ghcr.io/steel-so/steel:latest
    docker compose up -d
    ```
    Atenção: se o deploy ruim aplicou uma migration que a versão anterior não

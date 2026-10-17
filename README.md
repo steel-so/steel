@@ -29,12 +29,12 @@
     <img src="https://codecov.io/gh/StratusTI/steel/graph/badge.svg?token=3c586d5c-e149-4988-b7ec-480ee0a75864" alt="Codecov" /> <!-- gitleaks:allow — Codecov's badge graph token is meant to be public in READMEs, it's not an API credential -->
   </a>
 
-  <a href="https://github.com/stratus-so2/steel/actions/workflows/ci.yml">
-    <img src="https://github.com/stratus-so2/steel/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <a href="https://github.com/steel-so/steel/actions/workflows/ci.yml">
+    <img src="https://github.com/steel-so/steel/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
 
-  <a href="https://github.com/stratus-so2/steel/actions/workflows/cd.yml">
-    <img src="https://github.com/stratus-so2/steel/actions/workflows/cd.yml/badge.svg" alt="CD" />
+  <a href="https://github.com/steel-so/steel/actions/workflows/cd.yml">
+    <img src="https://github.com/steel-so/steel/actions/workflows/cd.yml/badge.svg" alt="CD" />
   </a>
 </p>
 

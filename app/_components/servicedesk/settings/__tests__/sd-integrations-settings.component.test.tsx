@@ -59,8 +59,8 @@ const github = (overrides: Partial<SdIntegrationDTO> = {}) =>
   connection({
     id: 'int-gh',
     kind: 'GITHUB',
-    externalId: 'stratus-so2/steel',
-    externalName: 'stratus-so2/steel',
+    externalId: 'steel-so/steel',
+    externalName: 'steel-so/steel',
     hasWebhookSecret: true,
     slack: null,
     repo: { suggestPhaseOnClose: true, allowIssueFromTicket: true },
@@ -246,7 +246,7 @@ describe('<SdIntegrationsTab /> — GitHub and GitLab', () => {
       },
     ])
     renderTab()
-    expect(await screen.findByText('stratus-so2/steel')).toBeTruthy()
+    expect(await screen.findByText('steel-so/steel')).toBeTruthy()
     expect(screen.getByText('stratus/steel')).toBeTruthy()
     expect(screen.getByText('Webhook assinado')).toBeTruthy()
     expect(screen.getByText('Sem segredo de webhook')).toBeTruthy()

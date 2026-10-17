@@ -104,7 +104,7 @@ const item = {
   title: 'Fila travando',
   kind: 'GITHUB_ISSUE' as const,
   state: 'open' as const,
-  htmlUrl: 'https://github.com/stratus-so2/steel/issues/42',
+  htmlUrl: 'https://github.com/steel-so/steel/issues/42',
 }
 
 beforeEach(() => {
@@ -152,7 +152,7 @@ beforeEach(() => {
 describe('SdIntegrationLinkService.list', () => {
   it('lista os vínculos do chamado para agentes', async () => {
     const links = expectOk(await SdIntegrationLinkService.list('u1', WS, 't1'))
-    expect(links[0].externalKey).toBe('stratus-so2/steel#42')
+    expect(links[0].externalKey).toBe('steel-so/steel#42')
     expect(load).toHaveBeenCalledWith('u1', WS, 't1', 'VIEW', {
       agentOnly: true,
     })
@@ -181,16 +181,16 @@ describe('SdIntegrationLinkService.linkGithubItem', () => {
         ref: '#42',
       }),
     )
-    expect(link.externalKey).toBe('stratus-so2/steel#42')
+    expect(link.externalKey).toBe('steel-so/steel#42')
     expect(github.getItem).toHaveBeenCalledWith(
       'github_pat',
-      { owner: 'stratus-so2', repo: 'steel' },
+      { owner: 'steel-so', repo: 'steel' },
       42,
     )
     expect(repo.createLink).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'GITHUB_ISSUE',
-        externalKey: 'stratus-so2/steel#42',
+        externalKey: 'steel-so/steel#42',
         externalState: 'open',
         meta: { title: 'Fila travando' },
       }),
@@ -211,13 +211,13 @@ describe('SdIntegrationLinkService.linkGithubItem', () => {
     expectOk(
       await SdIntegrationLinkService.linkGithubItem('u1', WS, {
         ticketId: 't1',
-        ref: 'https://github.com/Stratus-SO2/Steel/pull/42',
+        ref: 'https://github.com/Steel-SO/Steel/pull/42',
       }),
     )
     expectOk(
       await SdIntegrationLinkService.linkGithubItem('u1', WS, {
         ticketId: 't1',
-        ref: 'stratus-so2/steel#42',
+        ref: 'steel-so/steel#42',
       }),
     )
     expect(github.getItem).toHaveBeenCalledTimes(2)
@@ -238,7 +238,7 @@ describe('SdIntegrationLinkService.linkGithubItem', () => {
       }),
       'VALIDATION_ERROR',
     )
-    expect(error.message).toContain('stratus-so2/steel')
+    expect(error.message).toContain('steel-so/steel')
   })
 
   it('recusa item já vinculado a este e a outro chamado', async () => {
@@ -480,7 +480,7 @@ describe('SdIntegrationLinkService.providers', () => {
     ).toEqual([
       {
         provider: 'GITHUB',
-        project: 'stratus-so2/steel',
+        project: 'steel-so/steel',
         allowIssueFromTicket: true,
       },
       {
@@ -599,7 +599,7 @@ describe('SdIntegrationLinkService.createGithubIssue', () => {
     expect(draft.body).toContain('Acontece ao reiniciar')
     expect(repo.createLink).toHaveBeenCalledWith(
       expect.objectContaining({
-        externalKey: 'stratus-so2/steel#43',
+        externalKey: 'steel-so/steel#43',
         meta: expect.objectContaining({ createdFromTicket: true }),
       }),
     )

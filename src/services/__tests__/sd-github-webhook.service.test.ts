@@ -84,12 +84,12 @@ function call(body: unknown, event = 'issues', secret = SECRET) {
 
 const issueClosed = {
   action: 'closed',
-  repository: { full_name: 'stratus-so2/steel' },
+  repository: { full_name: 'steel-so/steel' },
   issue: {
     number: 42,
     title: 'Fila travando',
     state: 'closed',
-    html_url: 'https://github.com/stratus-so2/steel/issues/42',
+    html_url: 'https://github.com/steel-so/steel/issues/42',
   },
 }
 
@@ -252,7 +252,7 @@ describe('SdGithubWebhookService.handle — assinatura', () => {
     expect(repo.findRepoLinkByKey).toHaveBeenCalledWith(
       'int-gh-1',
       'GITHUB',
-      'stratus-so2/steel#42',
+      'steel-so/steel#42',
     )
     expect(wsRepo.markEvent).toHaveBeenCalledWith(
       'int-gh-1',
@@ -263,7 +263,7 @@ describe('SdGithubWebhookService.handle — assinatura', () => {
   it('stamps the event even without an action', async () => {
     expectOk(
       await SdGithubWebhookService.handle(
-        call({ repository: { full_name: 'stratus-so2/steel' } }),
+        call({ repository: { full_name: 'steel-so/steel' } }),
       ),
     )
     expect(wsRepo.markEvent).toHaveBeenCalledWith('int-gh-1', 'github:issues')
@@ -288,7 +288,7 @@ describe('SdGithubWebhookService.handle — espelhamento', () => {
       'link-1',
       expect.objectContaining({
         externalState: 'closed',
-        externalUrl: 'https://github.com/stratus-so2/steel/issues/42',
+        externalUrl: 'https://github.com/steel-so/steel/issues/42',
         meta: { title: 'Fila travando' },
       }),
     )
@@ -309,7 +309,7 @@ describe('SdGithubWebhookService.handle — espelhamento', () => {
       await SdGithubWebhookService.handle(
         call({
           action: 'closed',
-          repository: { full_name: 'stratus-so2/steel' },
+          repository: { full_name: 'steel-so/steel' },
           issue: { number: 42 },
         }),
       ),
@@ -325,13 +325,13 @@ describe('SdGithubWebhookService.handle — espelhamento', () => {
         call(
           {
             action: 'closed',
-            repository: { full_name: 'stratus-so2/steel' },
+            repository: { full_name: 'steel-so/steel' },
             pull_request: {
               number: 9,
               title: 'Corrige a fila',
               state: 'closed',
               merged: true,
-              html_url: 'https://github.com/stratus-so2/steel/pull/9',
+              html_url: 'https://github.com/steel-so/steel/pull/9',
             },
           },
           'pull_request',
@@ -407,7 +407,7 @@ describe('SdGithubWebhookService.handle — espelhamento', () => {
     expectOk(await SdGithubWebhookService.handle({ ...good, deliveryId: null }))
     expect(cache.claim).toHaveBeenCalledWith(
       'github',
-      'stratus-so2/steel:42:closed',
+      'steel-so/steel:42:closed',
     )
   })
 
@@ -451,7 +451,7 @@ describe('SdGithubSyncService.runTick', () => {
         title: 'Fila travando',
         kind: 'GITHUB_ISSUE',
         state: 'closed',
-        htmlUrl: 'https://github.com/stratus-so2/steel/issues/42',
+        htmlUrl: 'https://github.com/steel-so/steel/issues/42',
       }),
     )
   })
@@ -511,7 +511,7 @@ describe('SdGithubSyncService.runTick', () => {
         {
           ...createFakeSdIntegrationLink({
             id: 'link-3',
-            externalKey: 'stratus-so2/steel#abc',
+            externalKey: 'steel-so/steel#abc',
           }),
           integration: createFakeSdGithubIntegration({ id: 'int-gh-3' }),
         },
@@ -640,7 +640,7 @@ describe('SdGithubWebhookService.handle — team notification', () => {
         call(
           {
             action: 'closed',
-            repository: { full_name: 'stratus-so2/steel' },
+            repository: { full_name: 'steel-so/steel' },
             pull_request: { number: 9, state: 'closed', merged: true },
           },
           'pull_request',

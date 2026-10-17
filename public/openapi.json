@@ -161642,7 +161642,7 @@
           "externalId": {
             "type": "string",
             "description": "Workspace do Slack (`T…`), `owner/repo` no GitHub ou `grupo/projeto` no GitLab.",
-            "example": "stratus-so2/steel"
+            "example": "steel-so/steel"
           },
           "externalName": {
             "anyOf": [
@@ -161827,7 +161827,7 @@
           "externalKey": {
             "type": "string",
             "description": "`canal:ts` (thread do Slack), `owner/repo#n` (GitHub) ou `grupo/projeto#n` / `grupo/projeto!n` (issue / merge request do GitLab).",
-            "example": "stratus-so2/steel#42"
+            "example": "steel-so/steel#42"
           },
           "externalUrl": {
             "anyOf": [
@@ -166742,7 +166742,7 @@
           },
           "project": {
             "type": "string",
-            "example": "stratus-so2/steel"
+            "example": "steel-so/steel"
           },
           "allowIssueFromTicket": {
             "type": "boolean"
@@ -181487,7 +181487,7 @@
           },
           "message": {
             "type": "string",
-            "example": "Acesso confirmado a stratus-so2/steel"
+            "example": "Acesso confirmado a steel-so/steel"
           },
           "integration": {
             "$ref": "#/components/schemas/WorkspaceIntegration"

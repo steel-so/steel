@@ -10,7 +10,7 @@ describe('releaseNotesToDraft()', () => {
     const draft = releaseNotesToDraft(
       [
         "## What's Changed",
-        '* feat(crm): add lead triggers to the workflow editor by @castro in https://github.com/stratus-so2/steel/pull/12',
+        '* feat(crm): add lead triggers to the workflow editor by @castro in https://github.com/steel-so/steel/pull/12',
         '* fix(whatsapp): keep media when a message is retried (#13)',
         '* chore(deps): bump next from 16.0.1 to 16.0.2',
         '* ci: cache pnpm store',
@@ -18,7 +18,7 @@ describe('releaseNotesToDraft()', () => {
         '* perf: speed up the conversations list',
         '* build: bump node image',
         '',
-        '**Full Changelog**: https://github.com/stratus-so2/steel/compare/2026.08.28.4...2026.08.31',
+        '**Full Changelog**: https://github.com/steel-so/steel/compare/2026.08.28.4...2026.08.31',
       ].join('\n'),
       { tag: '2026.08.31' },
     )
@@ -142,7 +142,7 @@ describe('parseCompareRange()', () => {
   it('extracts CalVer tags with dots from the Full Changelog link', () => {
     expect(
       parseCompareRange(
-        '**Full Changelog**: https://github.com/stratus-so2/steel/compare/2026.08.28.4...2026.08.31',
+        '**Full Changelog**: https://github.com/steel-so/steel/compare/2026.08.28.4...2026.08.31',
       ),
     ).toEqual({ base: '2026.08.28.4', head: '2026.08.31' })
   })

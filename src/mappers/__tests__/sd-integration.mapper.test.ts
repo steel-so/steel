@@ -68,7 +68,7 @@ describe('toSdIntegrationDTO', () => {
     })
     expect(dto.status).toBe('ERROR')
     expect(dto.statusError).toBe('token sem acesso')
-    expect(dto.externalId).toBe('stratus-so2/steel')
+    expect(dto.externalId).toBe('steel-so/steel')
     expect(dto.lastEventAt).toBe('2026-10-08T09:00:00.000Z')
 
     const gitlab = toSdIntegrationDTO(createFakeGitlabIntegration())

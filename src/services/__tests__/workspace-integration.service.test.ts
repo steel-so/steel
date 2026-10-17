@@ -412,7 +412,7 @@ describe('WorkspaceIntegrationService — Slack channels and rules', () => {
 describe('WorkspaceIntegrationService.connectGithub', () => {
   it('checks the repository, stores the canonical name and encrypts everything', async () => {
     github.checkRepo.mockResolvedValue(
-      ok({ fullName: 'Stratus-SO2/Steel', private: true }),
+      ok({ fullName: 'Steel-SO/Steel', private: true }),
     )
     repo.findByKind.mockResolvedValue(
       ok(
@@ -423,14 +423,14 @@ describe('WorkspaceIntegrationService.connectGithub', () => {
     )
     const dto = expectOk(
       await WorkspaceIntegrationService.connectGithub('u1', WS, {
-        repo: 'https://github.com/stratus-so2/steel',
+        repo: 'https://github.com/steel-so/steel',
         token: TOKEN,
         webhookSecret: 'segredo-de-webhook-1',
       }),
     )
     const [, kind, externalId, data] = repo.connect.mock.calls[0]
     expect(kind).toBe('GITHUB')
-    expect(externalId).toBe('Stratus-SO2/Steel')
+    expect(externalId).toBe('Steel-SO/Steel')
     expect(data.encryptedToken).toBe(`enc:${TOKEN}`)
     expect(data.encryptedSigningSecret).toBe('enc:segredo-de-webhook-1')
     // Reconnecting keeps the ServiceDesk switches.

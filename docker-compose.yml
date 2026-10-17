@@ -1,7 +1,7 @@
 # Imagem versionada: STEEL_IMAGE_TAG (CalVer da release, ex. 2026.09.18.1) é
 # gravado no .env deste diretório por scripts/deploy.sh — nunca edite à mão
 # nem volte para :latest (sem tag não há rollback determinístico).
-x-steel-image: &steel-image ghcr.io/stratus-so2/steel:${STEEL_IMAGE_TAG:?STEEL_IMAGE_TAG não definido; use scripts/deploy.sh <tag>}
+x-steel-image: &steel-image ghcr.io/steel-so/steel:${STEEL_IMAGE_TAG:?STEEL_IMAGE_TAG não definido; use scripts/deploy.sh <tag>}
 
 services:
   steel-app:

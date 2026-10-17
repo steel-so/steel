@@ -284,13 +284,13 @@ describe('sdSlackChannelFor', () => {
 
 describe('parseSdGithubRepo', () => {
   it.each([
-    ['stratus-so2/steel'],
-    ['https://github.com/stratus-so2/steel'],
-    ['https://www.github.com/stratus-so2/steel/'],
-    ['git@github.com:stratus-so2/steel.git'],
+    ['steel-so/steel'],
+    ['https://github.com/steel-so/steel'],
+    ['https://www.github.com/steel-so/steel/'],
+    ['git@github.com:steel-so/steel.git'],
   ])('reconhece %s', (input) => {
     expect(parseSdGithubRepo(input)).toEqual({
-      owner: 'stratus-so2',
+      owner: 'steel-so',
       repo: 'steel',
     })
   })

@@ -1,7 +1,7 @@
 import { GITHUB_RELEASES_REPO, GITHUB_RELEASES_TOKEN } from '@/lib/env/server'
 
 /** Repositório padrão das releases do Steel (CD cria uma por deploy). */
-export const DEFAULT_RELEASES_REPO = 'stratus-so2/steel'
+export const DEFAULT_RELEASES_REPO = 'steel-so/steel'
 const API = 'https://api.github.com'
 const TIMEOUT_MS = 10_000
 

@@ -50,8 +50,8 @@ export function createFakeSdGithubIntegration(
   return createFakeWorkspaceIntegration({
     id: 'int-gh-1',
     kind: 'GITHUB',
-    externalId: 'stratus-so2/steel',
-    externalName: 'stratus-so2/steel',
+    externalId: 'steel-so/steel',
+    externalName: 'steel-so/steel',
     encryptedToken: 'enc:github_pat',
     encryptedSigningSecret: 'enc:hook-secret',
     config: {
@@ -88,8 +88,8 @@ export function createFakeSdIntegrationLink(
     integrationId: 'int-gh-1',
     ticketId: 't1',
     kind: 'GITHUB_ISSUE',
-    externalKey: 'stratus-so2/steel#42',
-    externalUrl: 'https://github.com/stratus-so2/steel/issues/42',
+    externalKey: 'steel-so/steel#42',
+    externalUrl: 'https://github.com/steel-so/steel/issues/42',
     externalState: 'open',
     meta: { title: 'Fila de e-mail travando' },
     createdById: 'u1',

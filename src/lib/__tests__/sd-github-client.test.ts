@@ -9,7 +9,7 @@ import { logger } from '@/lib/axiom/logger'
 import { GithubClient } from '@/src/lib/servicedesk/github-client'
 
 const fetchMock = vi.fn()
-const REF = { owner: 'stratus-so2', repo: 'steel' }
+const REF = { owner: 'steel-so', repo: 'steel' }
 const TOKEN = 'github_pat_segredo'
 
 function reply(body: unknown, status = 200) {
@@ -32,14 +32,14 @@ afterEach(() => {
 describe('GithubClient.checkRepo', () => {
   it('confere o acesso e devolve o nome canônico', async () => {
     fetchMock.mockResolvedValue(
-      reply({ full_name: 'stratus-so2/steel', private: true }),
+      reply({ full_name: 'steel-so/steel', private: true }),
     )
     expect(expectOk(await GithubClient.checkRepo(TOKEN, REF))).toEqual({
-      fullName: 'stratus-so2/steel',
+      fullName: 'steel-so/steel',
       private: true,
     })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('https://api.github.com/repos/stratus-so2/steel')
+    expect(url).toBe('https://api.github.com/repos/steel-so/steel')
     expect(init.headers.Authorization).toBe(`Bearer ${TOKEN}`)
     expect(init.headers['X-GitHub-Api-Version']).toBe('2022-11-28')
   })
@@ -47,7 +47,7 @@ describe('GithubClient.checkRepo', () => {
   it('completa o nome e o `private` quando faltam', async () => {
     fetchMock.mockResolvedValue(reply({}))
     expect(expectOk(await GithubClient.checkRepo(TOKEN, REF))).toEqual({
-      fullName: 'stratus-so2/steel',
+      fullName: 'steel-so/steel',
       private: false,
     })
   })
@@ -90,7 +90,7 @@ describe('GithubClient.getItem', () => {
         number: 42,
         title: 'Fila travando',
         state: 'open',
-        html_url: 'https://github.com/stratus-so2/steel/issues/42',
+        html_url: 'https://github.com/steel-so/steel/issues/42',
       }),
     )
     expect(expectOk(await GithubClient.getItem(TOKEN, REF, 42))).toEqual({
@@ -98,7 +98,7 @@ describe('GithubClient.getItem', () => {
       title: 'Fila travando',
       kind: 'GITHUB_ISSUE',
       state: 'open',
-      htmlUrl: 'https://github.com/stratus-so2/steel/issues/42',
+      htmlUrl: 'https://github.com/steel-so/steel/issues/42',
     })
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
@@ -110,7 +110,7 @@ describe('GithubClient.getItem', () => {
       title: '#7',
       kind: 'GITHUB_ISSUE',
       state: 'open',
-      htmlUrl: 'https://github.com/stratus-so2/steel/issues/7',
+      htmlUrl: 'https://github.com/steel-so/steel/issues/7',
     })
   })
 
@@ -121,7 +121,7 @@ describe('GithubClient.getItem', () => {
           number: 9,
           title: 'Corrige a fila',
           state: 'closed',
-          html_url: 'https://github.com/stratus-so2/steel/pull/9',
+          html_url: 'https://github.com/steel-so/steel/pull/9',
           pull_request: { merged_at: null },
         }),
       )
@@ -132,7 +132,7 @@ describe('GithubClient.getItem', () => {
     expect(item.kind).toBe('GITHUB_PULL_REQUEST')
     expect(item.state).toBe('merged')
     expect(fetchMock.mock.calls[1][0]).toBe(
-      'https://api.github.com/repos/stratus-so2/steel/pulls/9',
+      'https://api.github.com/repos/steel-so/steel/pulls/9',
     )
   })
 
@@ -167,7 +167,7 @@ describe('GithubClient.createIssue', () => {
         number: 43,
         title: '[PRB-7] Fila travando',
         state: 'open',
-        html_url: 'https://github.com/stratus-so2/steel/issues/43',
+        html_url: 'https://github.com/steel-so/steel/issues/43',
       }),
     )
     const item = expectOk(
@@ -179,7 +179,7 @@ describe('GithubClient.createIssue', () => {
     expect(item.number).toBe(43)
     expect(item.kind).toBe('GITHUB_ISSUE')
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('https://api.github.com/repos/stratus-so2/steel/issues')
+    expect(url).toBe('https://api.github.com/repos/steel-so/steel/issues')
     expect(init.method).toBe('POST')
     expect(JSON.parse(String(init.body))).toEqual({
       title: '[PRB-7] Fila travando',
