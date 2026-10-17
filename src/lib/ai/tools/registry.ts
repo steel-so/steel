@@ -1,4 +1,9 @@
-import type { AiPendingAction, ModuleKind, Prisma } from '@prisma/client'
+import type {
+  AiActionSource,
+  AiPendingAction,
+  ModuleKind,
+  Prisma,
+} from '@prisma/client'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
 import {
@@ -158,6 +163,15 @@ export function assertValidToolRegistry(
 // preview would otherwise only show up when the model calls it.
 assertValidToolRegistry(STEEL_AI_TOOLS)
 
+/** AiActionLog source of a tool context (who drove the write). */
+export function aiActionSource(
+  ctx: Pick<AiToolContext, 'source'>,
+): AiActionSource {
+  if (ctx.source === 'agent') return 'AGENT'
+  if (ctx.source === 'mcp') return 'MCP'
+  return 'ASSISTANT'
+}
+
 /** Whether the model may be offered `tool` in `mode` for this caller. */
 export function isToolAllowed(
   tool: AnySteelAiTool,
@@ -170,6 +184,18 @@ export function isToolAllowed(
     if (mode !== 'TEST' && !access.agentModeEnabled) return false
     if (mode === 'AUTOPILOT' && !access.autopilotEnabled) return false
   }
+  return hasToolAccess(tool, access)
+}
+
+/**
+ * Module and RBAC gate of a tool, without the mode switches — for callers
+ * with their own write gate (the MCP server: `mcp:write` + the admin
+ * switch, independent of agent mode).
+ */
+export function hasToolAccess(
+  tool: AnySteelAiTool,
+  access: AiToolAccess,
+): boolean {
   if (tool.module && !access.modules.includes(tool.module)) return false
   if (tool.permission && !access.isPrivileged) {
     if (
@@ -350,6 +376,8 @@ export async function proposeWriteTool(
      * offered for confirmation.
      */
     claimedBy?: string
+    /** MCP: grant of the external client that proposed it. */
+    integrationGrantId?: string
   } = {},
   now: Date = new Date(),
 ): Promise<Result<AiPendingAction>> {
@@ -368,7 +396,8 @@ export async function proposeWriteTool(
 
   return AiPendingActionRepository.create({
     workspaceId: ctx.workspaceId,
-    requestedById: ctx.source === 'assistant' ? ctx.actorId : null,
+    // Assistant and MCP: the user who asked is the only one who confirms.
+    requestedById: ctx.source === 'agent' ? null : ctx.actorId,
     conversationId: origin.conversationId ?? null,
     agentRunId: origin.agentRunId ?? null,
     toolName: tool.name,
@@ -381,6 +410,9 @@ export async function proposeWriteTool(
     expiresAt: new Date(
       now.getTime() + (origin.ttlMs ?? PENDING_ACTION_TTL_MS),
     ),
+    ...(origin.integrationGrantId && {
+      integrationGrantId: origin.integrationGrantId,
+    }),
     ...(origin.claimedBy && {
       status: 'EXECUTED' as const,
       decidedById: origin.claimedBy,
@@ -432,7 +464,7 @@ export async function simulateWriteTool(
   }
   const logged = await AiActionLogRepository.create({
     workspaceId: ctx.workspaceId,
-    source: ctx.source === 'agent' ? 'AGENT' : 'ASSISTANT',
+    source: aiActionSource(ctx),
     actorId: log.actorId,
     agentId: ctx.agentId ?? null,
     toolName: tool.name,

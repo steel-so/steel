@@ -13,6 +13,13 @@ vi.mock('@/src/services/wiki-page.service', () => ({
   WikiPageService: { list: vi.fn(), getById: vi.fn() },
 }))
 
+vi.mock('@/src/services/ai-pending-action.service', () => ({
+  executeMcpWrite: vi.fn(),
+  proposeMcpWrite: vi.fn(),
+}))
+
+import { createFakeAiPendingAction } from '@/src/__tests__/factories/steel-ai.factory'
+import { executeMcpWrite } from '@/src/services/ai-pending-action.service'
 import { SdKbArticleService } from '@/src/services/sd-kb-article.service'
 import { WikiPageService } from '@/src/services/wiki-page.service'
 
@@ -110,5 +117,57 @@ describe('handleMcpRequest()', () => {
       name: 'servicedesk_daily_summary',
     })
     expect(prompt.body.result.messages[0].role).toBe('user')
+  })
+})
+
+describe('handleMcpRequest() — writes', () => {
+  const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+  const access = mcpAccess({ mcpWriteEnabled: true })
+
+  async function call(method: string, params?: Record<string, unknown>) {
+    const request = new Request('http://localhost/api/mcp', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+        'mcp-protocol-version': '2025-06-18',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
+    })
+    const response = await handleMcpRequest(request, writer, access, {
+      tools,
+      origin: 'https://steel.example.com',
+    })
+    return response.json()
+  }
+
+  it('should list writes with the idempotency key when allowed', async () => {
+    const body = await call('tools/list')
+    const create = body.result.tools.find(
+      (t: { name: string }) => t.name === 'sd_create',
+    )
+    expect(create.annotations.readOnlyHint).toBe(false)
+    expect(create.inputSchema.properties).toHaveProperty('idempotencyKey')
+  })
+
+  it('should route a write call through the MCP write flow', async () => {
+    vi.mocked(executeMcpWrite).mockResolvedValue(
+      ok({
+        action: createFakeAiPendingAction({ id: 'act1' }),
+        run: {
+          ok: true as const,
+          output: { data: { id: 't1' }, summary: 'Criado' },
+          content: JSON.stringify({ status: 'done', data: { id: 't1' } }),
+        },
+      }),
+    )
+    const body = await call('tools/call', {
+      name: 'sd_create',
+      arguments: { title: 'x' },
+    })
+    expect(body.result.structuredContent).toMatchObject({
+      status: 'executed',
+      actionId: 'act1',
+    })
   })
 })
