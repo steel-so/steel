@@ -16,6 +16,16 @@ import { fakeTool, mcpAccess, mcpGrant } from './mcp.fixtures'
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
+vi.mock('@/src/lib/mcp/tool-usage', () => ({
+  recordMcpToolUsage: vi.fn(async () => undefined),
+}))
+vi.mock('@/src/lib/mcp/telemetry', () => ({
+  logMcpToolCall: vi.fn(),
+  reportMcpError: vi.fn(async () => undefined),
+}))
+
+import { logMcpToolCall, reportMcpError } from '@/src/lib/mcp/telemetry'
+import { recordMcpToolUsage } from '@/src/lib/mcp/tool-usage'
 
 const sdRead = fakeTool({ name: 'sd_list', module: 'SERVICE_DESK' })
 const crmRead = fakeTool({
@@ -224,6 +234,60 @@ describe('callMcpTool()', () => {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Falha inesperada ao executar a ferramenta',
       },
+    })
+  })
+
+  it('should log each call by outcome and count it, without arguments', async () => {
+    vi.mocked(logMcpToolCall).mockClear()
+    vi.mocked(reportMcpError).mockClear()
+    const grant = mcpGrant()
+    const okTool = fakeTool({ name: 'sd_list', module: 'SERVICE_DESK' })
+    await callMcpTool(
+      okTool,
+      grant,
+      { secret: 'cpf' },
+      { via: 'steel_call_tool' },
+    )
+    expect(logMcpToolCall).toHaveBeenLastCalledWith(grant, {
+      tool: okTool,
+      outcome: 'ok',
+      errorCode: undefined,
+      durationMs: expect.any(Number),
+      via: 'steel_call_tool',
+    })
+    expect(JSON.stringify(vi.mocked(logMcpToolCall).mock.calls)).not.toContain(
+      'cpf',
+    )
+    expect(recordMcpToolUsage).toHaveBeenCalledWith('ws1', 'sd_list')
+
+    const failing = fakeTool({
+      execute: vi.fn(async () => err(validationError('Sem acesso'))),
+    })
+    await callMcpTool(failing, grant, {})
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'error',
+      errorCode: 'VALIDATION_ERROR',
+    })
+    expect(reportMcpError).not.toHaveBeenCalled()
+  })
+
+  it('should report a thrown error to Sentry with tags and log it as failed', async () => {
+    const boom = new Error('boom')
+    const throwing = fakeTool({
+      name: 'sd_boom',
+      execute: vi.fn(async () => {
+        throw boom
+      }),
+    })
+    await callMcpTool(throwing, mcpGrant({ clientId: 'c7' }), {})
+    expect(reportMcpError).toHaveBeenCalledWith(boom, {
+      method: 'tools/call',
+      tool: 'sd_boom',
+      client: 'c7',
+    })
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'failed',
+      errorCode: 'INTERNAL_SERVER_ERROR',
     })
   })
 
