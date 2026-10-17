@@ -150,6 +150,9 @@ export const AiSettingsService = {
       ...(dto.usageWeeklyEmailEnabled !== undefined && {
         usageWeeklyEmailEnabled: dto.usageWeeklyEmailEnabled,
       }),
+      ...(dto.mcpWriteEnabled !== undefined && {
+        mcpWriteEnabled: dto.mcpWriteEnabled,
+      }),
     }
 
     // Só barra provedor sem chave no que está sendo alterado agora: um
@@ -198,6 +201,7 @@ export const AiSettingsService = {
       memoryEnabled: next.memoryEnabled,
       autopilotEnabled: next.autopilotEnabled,
       usageWeeklyEmailEnabled: next.usageWeeklyEmailEnabled,
+      mcpWriteEnabled: next.mcpWriteEnabled,
     })
     if (!saved.ok) return saved
 
@@ -215,6 +219,7 @@ export const AiSettingsService = {
         memoryEnabled: next.memoryEnabled,
         autopilotEnabled: next.autopilotEnabled,
         usageWeeklyEmailEnabled: next.usageWeeklyEmailEnabled,
+        mcpWriteEnabled: next.mcpWriteEnabled,
         // Toggles flipped by this request (who turned what on or off).
         changedSwitches: (
           [
@@ -224,6 +229,7 @@ export const AiSettingsService = {
             'memoryEnabled',
             'autopilotEnabled',
             'usageWeeklyEmailEnabled',
+            'mcpWriteEnabled',
           ] as const
         ).filter((key) => current.value[key] !== next[key]),
       },

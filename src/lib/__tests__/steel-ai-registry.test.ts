@@ -423,6 +423,7 @@ describe('Steel AI 2 — AUTOPILOT and workspace switches', () => {
         aiEnabled: true,
         agentsEnabled: true,
         autopilotEnabled: false,
+        mcpWriteEnabled: false,
       }),
     )
     settings.findByWorkspace.mockResolvedValue(
@@ -431,6 +432,7 @@ describe('Steel AI 2 — AUTOPILOT and workspace switches', () => {
           aiEnabled: false,
           agentsEnabled: false,
           autopilotEnabled: true,
+          mcpWriteEnabled: true,
         }),
       ),
     )
@@ -439,6 +441,7 @@ describe('Steel AI 2 — AUTOPILOT and workspace switches', () => {
         aiEnabled: false,
         agentsEnabled: false,
         autopilotEnabled: true,
+        mcpWriteEnabled: true,
       }),
     )
   })

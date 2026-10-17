@@ -21,7 +21,26 @@ describe('toEffectiveAiSettings()', () => {
       memoryEnabled: true,
       autopilotEnabled: false,
       usageWeeklyEmailEnabled: true,
+      mcpWriteEnabled: false,
     })
+  })
+
+  it('should carry the MCP write switch from the row and into the DTO', () => {
+    const settings = toEffectiveAiSettings(
+      createFakeWorkspaceAiSettings({ mcpWriteEnabled: true }),
+    )
+    expect(settings.mcpWriteEnabled).toBe(true)
+    expect(
+      toWorkspaceAiSettingsDTO({
+        workspaceId: 'ws1',
+        settings,
+        usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+        periodStart: new Date('2026-10-01T00:00:00Z'),
+        userPreference: null,
+        canManage: true,
+        isProviderAvailable: () => true,
+      }).mcpWriteEnabled,
+    ).toBe(true)
   })
 
   it('should carry the agent mode switch from the row', () => {
