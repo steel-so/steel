@@ -28,7 +28,7 @@ Cliente de IA ──(1) OAuth: login + consentimento──▶ Better Auth (oauth
 | `/oauth/consent` | mcp-auth | tela de consentimento em pt-BR: workspace, módulos, escopo |
 | `/api/oauth/consent` (POST) | mcp-auth | resposta da tela: grava a `IntegrationGrant` e pede o código ao provedor |
 | `/api/users/me/integration-grants` (GET, DELETE `/{id}`) | mcp-auth | Apps conectados do usuário |
-| `/api/workspaces/{id}/integration-grants` (GET, DELETE `/{id}`) | mcp-governance | Apps conectados de todos os membros (OWNER/ADMIN) |
+| `/api/workspaces/{id}/integration-grants` (GET; DELETE `/{grantId}`, `/members/{userId}`, `/clients/{clientId}`) | mcp-workspace-apps | Apps conectados de todos os membros (OWNER/ADMIN): listar, revogar uma, todas de um membro, todas de um app |
 | `/api/mcp` (POST; GET/DELETE respondem 405) | mcp-server | servidor MCP, Streamable HTTP sem estado |
 
 `proxy.ts`: `/api/mcp`, `/.well-known/oauth-*` e `/api/auth/oauth2/*` são
@@ -178,6 +178,36 @@ torná-los absolutos (`<origem>/<caminho>`).
   `whatsapp_unanswered_conversations` ("Conversas sem resposta"), um por
   módulo concedido e habilitado.
 
+### Apps conectados do workspace (fatia mcp-workspace-apps)
+
+- **Quem:** só OWNER/ADMIN (`assertPrivileged`); membro comum e VIEWER levam
+  `403`. Concessão de outro workspace, já revogada ou inexistente é
+  `INTEGRATION_GRANT_NOT_FOUND`.
+- **Lista:** `{ grants, clients }`. `grants` = concessões ativas com o
+  usuário (`id`, `name`, `email`, `image`), app, escopos, módulos,
+  `lastUsedAt`, `createdAt` e `usage`; `clients` = um resumo por app com
+  concessão ativa (`members`, `canWrite`, último uso e `usage`).
+- **Revogação em lote** (`/members/{userId}`, `/clients/{clientId}`): uma
+  transação, só as ativas; responde `{ revoked }` (0 quando não havia
+  nenhuma, sem erro). Mesmo efeito do `revoke` do usuário: apaga access
+  tokens, revoga refresh tokens e remove o consentimento.
+- **Auditoria:** `auditMutation` com `entity: 'integration_grant'`,
+  `action: 'revoke'`, `meta.target` = `grant` | `member` | `client`
+  (`grantIds` e `revoked` no lote; `clientId` e `holderId` na unitária).
+- **Uso por app** (`usage = { last7Days, last30Days }`): conta cada
+  `tools/call` de ferramenta visível ao grant (não conta `initialize`,
+  `tools/list`, resources nem prompts). Contador no Redis, sem tabela: um
+  hash por workspace por dia, `mcp:usage:<workspaceId>:<YYYY-MM-DD>` (dia de
+  São Paulo), campos `c:<clientId>` e `g:<grantId>`, TTL de 32 dias
+  (`src/cache/mcp-usage.cache.ts`). A rota `/api/mcp` grava pelo gancho
+  `McpServerDeps.onToolCall` do adaptador, sem esperar a resposta; falha do
+  Redis perde a contagem, nunca a chamada. O total por app inclui
+  concessões já revogadas; o por concessão some com ela. Perda do Redis zera
+  a janela — aceitável para um indicador de uso, não serve para cobrança.
+- **Tela:** Ajustes do workspace › **Apps conectados**
+  (`/<slug>/settings/connected-apps`), com as seções "Por app" e "Por
+  membro".
+
 ## Fatias
 
 | Fatia | Onda | Entrega |
@@ -185,4 +215,5 @@ torná-los absolutos (`<origem>/<caminho>`).
 | mcp-auth | 1 | provedor OAuth, consentimento, `IntegrationGrant`, `resolveMcpGrant`, Apps conectados do usuário |
 | mcp-server | 1 | `/api/mcp`, adaptador do registry (leitura), resources, prompts |
 | mcp-docs | 1b | `/dev/mcp` (guia com a lista de ferramentas gerada do registry no build), manual "Conectar o Steel ao Claude, ChatGPT ou Cursor", runbook `docs/runbooks/mcp-edge-proxy.md`, MCP em todos os planos (`docs/plans-review.md`) |
-| mcp-governance | 2 | escrita via `mcp:write`, interruptor do admin, Apps conectados do workspace, changelog; tira o aviso "Escrita em liberação" de `content/dev/mcp.mdx` |
+| mcp-governance | 2 | escrita via `mcp:write`, interruptor do admin, changelog; tira o aviso "Escrita em liberação" de `content/dev/mcp.mdx` |
+| mcp-workspace-apps | 2 | Apps conectados do workspace (OWNER/ADMIN): lista, revogação unitária, por membro e por app, contagem de chamadas por app em 7/30 dias |
