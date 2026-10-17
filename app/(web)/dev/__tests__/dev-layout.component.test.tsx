@@ -5,7 +5,12 @@ import { ERROR_CODES } from '@/src/errors/codes'
 import { getDevNav, getDevSearchIndex } from '@/src/lib/dev/pages'
 import { DocsSearch } from '../../docs/_components/docs-search'
 import { DocsSidebar } from '../../docs/_components/docs-sidebar'
-import { BaseUrl, ErrorCodeTable } from '../_components/dev-mdx-components'
+import {
+  BaseUrl,
+  ErrorCodeTable,
+  McpServerUrl,
+} from '../_components/dev-mdx-components'
+import { McpToolTable } from '../_components/mcp-tool-table'
 import { DEV_HOME } from '../dev-nav'
 import DevLayout from '../layout'
 
@@ -63,6 +68,7 @@ describe('developer site layout', () => {
       'Fundamentos',
       'Webhooks',
       'Guias por caso de uso',
+      'Clientes de IA (MCP)',
       'Recursos',
       'Referência',
     ]) {
@@ -76,6 +82,10 @@ describe('developer site layout', () => {
         name: 'Receber eventos do GitHub e do GitLab',
       }),
     ).toHaveAttribute('href', '/dev/guias/eventos-github-gitlab')
+    expect(screen.getByRole('link', { name: 'Servidor MCP' })).toHaveAttribute(
+      'href',
+      '/dev/mcp',
+    )
   })
 
   it('searches the guides by heading', async () => {
@@ -132,5 +142,78 @@ describe('<BaseUrl />', () => {
   it('prints the API base url of this environment', () => {
     render(<BaseUrl />)
     expect(screen.getByText(/\/api$/).tagName).toBe('CODE')
+  })
+})
+
+describe('<McpServerUrl />', () => {
+  it('prints the MCP server url of this environment', () => {
+    render(<McpServerUrl />)
+    expect(screen.getByText(/\/api\/mcp$/).tagName).toBe('CODE')
+  })
+})
+
+describe('<McpToolTable />', () => {
+  it('shows the counts and each group with its tools, kind and scope', () => {
+    const { container } = render(
+      <McpToolTable
+        catalog={{
+          readCount: 2,
+          writeCount: 1,
+          deleteCount: 3,
+          groups: [
+            {
+              module: null,
+              label: 'Plataforma',
+              tools: [
+                {
+                  name: 'get_skill',
+                  label: 'Abrindo skill',
+                  kind: 'READ',
+                  access: 'read',
+                },
+              ],
+            },
+            {
+              module: 'CRM',
+              label: 'CRM',
+              tools: [
+                {
+                  name: 'crm_list_leads',
+                  label: 'Consultando leads',
+                  kind: 'READ',
+                  access: 'read',
+                },
+                {
+                  name: 'crm_create_lead',
+                  label: 'Criando lead',
+                  kind: 'CREATE',
+                  access: 'write',
+                },
+              ],
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        '2 ferramentas de leitura e 1 de escrita. As 3 ferramentas de exclusão do Steel AI ficam fora do MCP.',
+      ),
+    ).toBeTruthy()
+    expect(
+      container.querySelector('details[data-module="PLATFORM"] summary')
+        ?.textContent,
+    ).toBe('Plataforma (1)')
+    const crm = container.querySelector('details[data-module="CRM"]')
+    expect(crm?.querySelector('summary')?.textContent).toBe('CRM (2)')
+    const write = crm?.querySelector('tr[data-access="write"]')
+    expect(write?.textContent).toContain('crm_create_lead')
+    expect(write?.textContent).toContain('Criando lead')
+    expect(write?.textContent).toContain('Criação')
+    expect(write?.textContent).toContain('mcp:write')
+    expect(crm?.querySelector('tr[data-access="read"]')?.textContent).toContain(
+      'mcp:read',
+    )
   })
 })

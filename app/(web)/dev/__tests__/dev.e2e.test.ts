@@ -28,6 +28,7 @@ describe('developer site (/dev)', () => {
     ['/dev/limites', 'Limites de requisição'],
     ['/dev/guias/criar-lead', 'Criar lead a partir do seu site'],
     ['/dev/guias/abrir-chamado', 'Abrir chamado a partir do seu sistema'],
+    ['/dev/mcp', 'Servidor MCP'],
   ])('serves %s as a TechArticle', async (path, title) => {
     const { res, html } = await page(path)
     expect(res.status).toBe(200)
@@ -42,6 +43,14 @@ describe('developer site (/dev)', () => {
     const { html } = await page('/dev/respostas-e-erros')
     expect(html).toContain('data-error-catalog')
     expect(html).toContain('CRM_INTEGRATION_KEY_INVALID')
+  })
+
+  it('renders the MCP guide with the server url and the tool table from the registry', async () => {
+    const { html } = await page('/dev/mcp')
+    expect(html).toMatch(/<code[^>]*>https?:\/\/[^<]+\/api\/mcp<\/code>/)
+    expect(html).toContain('data-mcp-tools')
+    expect(html).toContain('sd_')
+    expect(html).toContain('mcp:read')
   })
 
   it('renders the not-found page, out of the index, for an unknown guide', async () => {
@@ -69,5 +78,7 @@ describe('developer site (/dev)', () => {
     const full = await (await fetch(`${BASE_URL}/llms-full.txt`)).text()
     expect(full).toContain('# Desenvolvedores')
     expect(full).toContain('| `RATE_LIMITED` |')
+    expect(full).toContain('| Ferramenta | O que faz | Tipo | Escopo |')
+    expect(full).not.toContain('<McpToolTable')
   })
 })
