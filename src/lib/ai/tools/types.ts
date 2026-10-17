@@ -25,8 +25,10 @@ export interface AiToolContext {
   workspaceId: string
   /** User whose permissions apply (the chat user, or the agent's owner). */
   actorId: string
-  source: 'assistant' | 'agent'
+  source: 'assistant' | 'agent' | 'mcp'
   agentId?: string
+  /** OAuth client of an MCP call (Claude, ChatGPT, Cursor…), ADR 0032. */
+  oauthClientId?: string
   /** Assistant chat the call belongs to (memory source links). */
   conversationId?: string
 }
