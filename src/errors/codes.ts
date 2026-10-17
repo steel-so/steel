@@ -920,6 +920,15 @@ export const ERROR_CODES = {
     code: 'CRM_SALES_WIDGET_UNSUPPORTED',
     status: 422,
   },
+  // MCP / integrations (ADR 0033): unknown or already revoked grant of the
+  // signed-in user ("Apps conectados").
+  INTEGRATION_GRANT_NOT_FOUND: {
+    code: 'INTEGRATION_GRANT_NOT_FOUND',
+    status: 404,
+  },
+  // The signed OAuth authorization request is missing, tampered with or
+  // expired (10 min), or asks for something the consent cannot give.
+  OAUTH_REQUEST_INVALID: { code: 'OAUTH_REQUEST_INVALID', status: 400 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
