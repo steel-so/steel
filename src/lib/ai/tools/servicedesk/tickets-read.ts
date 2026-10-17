@@ -291,7 +291,7 @@ export const sdMyQueueTool: SteelAiTool<z.infer<typeof QueueArgs>> = {
   module: SD_MODULE,
   kind: 'READ',
   description:
-    'Fila do agente logado: chamados abertos atribuídos a ele (scope "mine", padrão) ou sem responsável nos departamentos dele ("unassigned_in_my_departments"), ordenados pelo prazo de resolução mais próximo.',
+    'Fila do usuário autenticado (agente do ServiceDesk): chamados abertos atribuídos a ele (scope "mine", padrão) ou sem responsável nos departamentos dele ("unassigned_in_my_departments"), ordenados pelo prazo de resolução mais próximo.',
   parameters: {
     type: 'object',
     properties: {

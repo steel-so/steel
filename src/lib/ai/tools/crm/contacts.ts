@@ -136,6 +136,7 @@ export const crmCreatePersonTool: SteelAiTool<
   label: 'Criando pessoa',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Cria uma pessoa (contato) no CRM, opcionalmente vinculada a uma empresa (nome, domínio, CNPJ ou id).',
   parameters: {
@@ -207,12 +208,16 @@ export const crmUpdatePersonTool: SteelAiTool<
   label: 'Atualizando pessoa',
   module: 'CRM',
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera dados de uma pessoa. Envie só o que muda; null limpa o campo; listas (emails/phones) substituem as atuais; `company` null desvincula da empresa.',
   parameters: {
     type: 'object',
     properties: {
-      personId: { type: 'string' },
+      personId: {
+        type: 'string',
+        description: 'Id da pessoa (de crm_list_people ou ws_search).',
+      },
       ...personProperties,
       jobTitle: { type: ['string', 'null'] },
       city: { type: ['string', 'null'] },
@@ -292,10 +297,17 @@ export const crmDeletePersonTool: SteelAiTool<z.output<typeof PersonIdArgs>> = {
   label: 'Excluindo pessoa',
   module: 'CRM',
   kind: 'DELETE',
-  description: 'Exclui uma pessoa (contato) do CRM.',
+  annotations: { idempotentHint: true, destructiveHint: true },
+  description:
+    'Exclui uma pessoa (contato) do CRM: ela some das listas e buscas. Não há ferramenta para desfazer.',
   parameters: {
     type: 'object',
-    properties: { personId: { type: 'string' } },
+    properties: {
+      personId: {
+        type: 'string',
+        description: 'Id da pessoa (de crm_list_people ou ws_search).',
+      },
+    },
     required: ['personId'],
     additionalProperties: false,
   },
@@ -461,6 +473,7 @@ export const crmCreateCompanyTool: SteelAiTool<
   label: 'Criando empresa',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description: 'Cria uma empresa (conta) no CRM.',
   parameters: {
     type: 'object',
@@ -524,12 +537,16 @@ export const crmUpdateCompanyTool: SteelAiTool<
   label: 'Atualizando empresa',
   module: 'CRM',
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera dados de uma empresa. Envie só o que muda; null limpa o campo. Para o responsável pela conta use crm_assign_owner.',
   parameters: {
     type: 'object',
     properties: {
-      companyId: { type: 'string' },
+      companyId: {
+        type: 'string',
+        description: 'Id da empresa (de crm_list_companies ou ws_search).',
+      },
       ...companyProperties,
       cnpj: { type: ['string', 'null'] },
       domain: { type: ['string', 'null'] },
@@ -598,10 +615,17 @@ export const crmDeleteCompanyTool: SteelAiTool<z.output<typeof CompanyIdArgs>> =
     label: 'Excluindo empresa',
     module: 'CRM',
     kind: 'DELETE',
-    description: 'Exclui uma empresa (conta) do CRM.',
+    annotations: { idempotentHint: true, destructiveHint: true },
+    description:
+      'Exclui uma empresa (conta) do CRM: ela some das listas e buscas, e o CNPJ e o domínio ficam livres para outro cadastro. Não há ferramenta para desfazer.',
     parameters: {
       type: 'object',
-      properties: { companyId: { type: 'string' } },
+      properties: {
+        companyId: {
+          type: 'string',
+          description: 'Id da empresa (de crm_list_companies ou ws_search).',
+        },
+      },
       required: ['companyId'],
       additionalProperties: false,
     },

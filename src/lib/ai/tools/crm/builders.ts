@@ -25,8 +25,9 @@ export const crmCreateDashboardTool: SteelAiTool<
   label: 'Criando dashboard',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
-    'Cria um dashboard vazio (sem widgets) no CRM; os widgets são montados depois na tela do dashboard.',
+    'Cria um dashboard vazio (sem widgets) no CRM; os widgets são montados depois no app do Steel, na tela do dashboard (o `href` devolvido).',
   parameters: {
     type: 'object',
     properties: { title: { type: 'string', description: 'Título.' } },
@@ -78,6 +79,7 @@ export const crmCreateFormTool: SteelAiTool<
   label: 'Criando formulário',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description: `Cria um formulário público no CRM, com campos. \`action\` define o que cada envio gera (COMPANY empresa, PERSON pessoa, LEAD lead) e cada campo mapeia para um atributo dessa entidade via \`mapping\` — atributos válidos: lead ${TARGET_ATTRIBUTES.lead.join(', ')}; person ${TARGET_ATTRIBUTES.person.join(', ')}; company ${TARGET_ATTRIBUTES.company.join(', ')}. O formulário nasce como rascunho.`,
   parameters: {
     type: 'object',
@@ -194,8 +196,9 @@ export const crmCreateProposalTemplateTool: SteelAiTool<
   label: 'Criando modelo de proposta',
   module: 'CRM',
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
-    'Cria um modelo (template) de proposta comercial com o esqueleto de seções, na ordem desejada; o conteúdo de cada seção é editado depois na tela do modelo.',
+    'Cria um modelo (template) de proposta comercial com o esqueleto de seções, na ordem desejada; o conteúdo de cada seção é editado depois no app do Steel, na tela do modelo.',
   parameters: {
     type: 'object',
     properties: {

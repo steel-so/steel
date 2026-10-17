@@ -66,6 +66,43 @@ consome (nos testes, faz mock do módulo).
 - Anotações: `readOnlyHint` nas de leitura, `destructiveHint` onde couber,
   `title` = `label` da ferramenta.
 - Rate limit `mcp:<userId>` e `mcp-client:<clientId>`; `withAxiom` na rota.
+
+## Metadados das ferramentas (fatia mcp-tool-quality)
+
+`SteelAiTool` (`src/lib/ai/tools/types.ts`) tem dois campos opcionais para
+clientes externos:
+
+- `annotations?: { idempotentHint?, destructiveHint?, openWorldHint? }` — as
+  dicas do MCP (`ToolAnnotations`). O adaptador monta as anotações assim:
+  `title` = `label`; `readOnlyHint` = `kind === 'READ'`; `destructiveHint` =
+  o declarado (leitura: `false`); `idempotentHint` e `openWorldHint` = o
+  declarado ou `false`. **Os padrões do Steel são `false`, não os do MCP**
+  (que assume `destructiveHint` e `openWorldHint` verdadeiros quando faltam),
+  por isso o adaptador sempre envia os quatro valores.
+- `customerFacing?: boolean` — a ferramenta entrega algo a um cliente final
+  ou a alguém de fora da equipe (mensagem de WhatsApp, e-mail, resposta
+  pública no chamado, link de aprovação, aviso com texto escrito por quem
+  chamou). Na onda 2, escrita externa com `customerFacing` sempre passa por
+  confirmação humana. Hoje: `zap_message_send_text`, `sd_reply_to_requester`,
+  `sd_request_approval`, `sd_move_ticket_phase` (o solicitante é avisado da
+  fase e, ao resolver, recebe a solução) e `sd_cancel_ticket`.
+
+Critério de `destructiveHint`: verdadeiro quando apaga, sobrescreve texto ou
+campo (o valor anterior se perde) ou faz algo sem volta (`DELETE`, cancelar
+chamado, fechar lead como ganho); falso para o que só acrescenta (criar,
+vincular, nota) e para mudança de estado que outra ferramenta desfaz
+(atribuir, mover etapa, encerrar ou reabrir conversa).
+
+`validateToolRegistry` recusa (e o app não sobe): leitura destrutiva ou
+`customerFacing`; escrita sem `destructiveHint` declarado; `DELETE` não
+destrutiva; `CREATE` destrutiva; `customerFacing` sem `openWorldHint: true`;
+`label` vazio ou com mais de 40 caracteres.
+
+As descrições são lidas por clientes externos: neutras (sem "o chat", "o
+assistente", aba ou atalho da interface), em pt-BR, precisas sobre campos e
+efeitos colaterais (quem é avisado, o que não tem volta). Os `href`
+devolvidos pelas ferramentas são caminhos relativos do app; o adaptador deve
+torná-los absolutos (`<origem>/<caminho>`).
 - O grant atualiza `lastUsedAt` no máximo uma vez por minuto.
 
 ### Detalhes do `mcp-server` (onda 1)

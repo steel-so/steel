@@ -242,6 +242,7 @@ export const sdCreateTicketTool: SteelAiTool<CreateArgs> = {
   label: 'Abrindo chamado',
   module: SD_MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Abre um chamado no ServiceDesk. Obrigatórios: `practice` e `title`. Opcional: descrição (texto), serviço do catálogo (categoria/subcategoria são deduzidas), impacto e urgência (a prioridade sai da matriz; informe `priority` só para fixar), solicitante (usuário), contato, cliente/empresa, departamento (senão roteamento automático), responsável, item de configuração, tags e campos customizados (`customFields` pela chave do campo). Nomes são resolvidos para ids; nomes ambíguos voltam erro com os candidatos.',
   parameters: {
@@ -443,6 +444,7 @@ export const sdUpdateTicketTool: SteelAiTool<UpdateArgs> = {
   label: 'Atualizando chamado',
   module: SD_MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: true },
   description:
     'Altera campos de um chamado: título, descrição, impacto/urgência (a prioridade é recalculada pela matriz), prioridade, severidade, catálogo (categoria/subcategoria/serviço), tags (substitui a lista) e campos customizados (mescla pela chave). Para responsável/departamento use `sd_assign_ticket`; para fase, `sd_move_ticket_phase`.',
   parameters: {
@@ -577,6 +579,7 @@ export const sdAssignTicketTool: SteelAiTool<AssignArgs> = {
   label: 'Atribuindo chamado',
   module: SD_MODULE,
   kind: 'UPDATE',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Atribui ou reatribui um chamado: `assignee` (agente: "me", nome, e-mail ou id; "none" remove) e/ou `department` (nome ou id; "none" remove). O responsável é notificado pelo ServiceDesk.',
   parameters: {
@@ -790,8 +793,14 @@ export const sdMoveTicketPhaseTool: SteelAiTool<MoveArgs> = {
   label: 'Mudando a fase do chamado',
   module: SD_MODULE,
   kind: 'UPDATE',
+  annotations: {
+    idempotentHint: true,
+    destructiveHint: false,
+    openWorldHint: true,
+  },
+  customerFacing: true,
   description:
-    'Move o chamado para outra fase do fluxo da prática (nome ou id da fase). Respeita as transições configuradas — se não for permitido, o erro lista as fases possíveis. Para resolver, informe `solution` (e `solutionClassification` se o workspace exigir). `comment` vai para a rastreabilidade.',
+    'Move o chamado para outra fase do fluxo da prática (nome ou id da fase). Respeita as transições configuradas — se não for permitido, o erro lista as fases possíveis. Para resolver, informe `solution` (e `solutionClassification` se o workspace exigir). `comment` vai para a rastreabilidade. O solicitante e o contato são avisados da nova fase (portal, e-mail e/ou WhatsApp, conforme as preferências deles); ao resolver, recebem o texto de `solution`.',
   parameters: {
     type: 'object',
     properties: {
@@ -860,8 +869,14 @@ export const sdCancelTicketTool: SteelAiTool<CancelArgs> = {
   label: 'Cancelando chamado',
   module: SD_MODULE,
   kind: 'ACTION',
+  annotations: {
+    idempotentHint: true,
+    destructiveHint: true,
+    openWorldHint: true,
+  },
+  customerFacing: true,
   description:
-    'Cancela um chamado (move para a fase de cancelamento do fluxo, encerrando-o). Chamados não são excluídos pelo Steel AI. `reason` é obrigatório e fica na rastreabilidade.',
+    'Cancela um chamado (move para a fase de cancelamento do fluxo, encerrando-o). O solicitante e o contato são avisados da mudança de fase (conforme as preferências deles). Não há ferramenta para excluir chamados. `reason` é obrigatório e fica na rastreabilidade.',
   parameters: {
     type: 'object',
     properties: {
@@ -945,6 +960,7 @@ export const sdAddInternalNoteTool: SteelAiTool<MessageArgs> = {
   label: 'Registrando nota interna',
   module: SD_MODULE,
   kind: 'CREATE',
+  annotations: { destructiveHint: false },
   description:
     'Adiciona uma nota interna ao histórico do chamado — só agentes veem; o solicitante não é avisado.',
   parameters: messageParameters,
@@ -970,6 +986,8 @@ export const sdReplyToRequesterTool: SteelAiTool<MessageArgs> = {
   label: 'Respondendo ao solicitante',
   module: SD_MODULE,
   kind: 'ACTION',
+  annotations: { destructiveHint: false, openWorldHint: true },
+  customerFacing: true,
   description:
     'Envia uma resposta PÚBLICA ao solicitante no histórico do chamado. O cliente é notificado (portal, e-mail e/ou WhatsApp, conforme as preferências; chamados abertos por e-mail recebem a resposta pela caixa do ServiceDesk). Escreva em pt-BR, tom profissional, sem dados internos.',
   parameters: messageParameters,

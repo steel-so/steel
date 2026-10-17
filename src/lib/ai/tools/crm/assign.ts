@@ -135,13 +135,17 @@ export const crmAssignOwnerTool: SteelAiTool<z.output<typeof AssignArgs>> = {
   label: 'Atribuindo responsável',
   module: 'CRM',
   kind: 'ACTION',
+  annotations: { idempotentHint: true, destructiveHint: false },
   description:
     'Define (ou remove, com owner null) o responsável de um lead, oportunidade, empresa (responsável pela conta) ou tarefa. `owner` aceita "me", nome, e-mail ou id de um membro; nome ambíguo devolve as opções.',
   parameters: {
     type: 'object',
     properties: {
       recordType: { type: 'string', enum: [...RECORD_TYPES] },
-      recordId: { type: 'string' },
+      recordId: {
+        type: 'string',
+        description: 'Id do registro (de uma listagem do CRM ou de ws_search).',
+      },
       owner: {
         type: ['string', 'null'],
         description:
