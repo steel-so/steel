@@ -42,6 +42,12 @@ const INSTRUCTIONS = [
 
 export interface McpServerDeps {
   tools?: readonly AnySteelAiTool[]
+  /**
+   * Runs once per `tools/call` of a tool the grant can see, before it
+   * executes (usage counters of the workspace "Apps conectados"). Must not
+   * throw nor be awaited for the call to proceed.
+   */
+  onToolCall?: (tool: AnySteelAiTool) => void
 }
 
 export function createSteelMcpServer(
@@ -73,6 +79,7 @@ export function createSteelMcpServer(
         `Ferramenta desconhecida: ${request.params.name}`,
       )
     }
+    deps.onToolCall?.(tool)
     return callMcpTool(tool, grant, request.params.arguments)
   })
 

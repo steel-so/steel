@@ -202,6 +202,8 @@ export type AuditEntity =
   | 'crm_email_template_version'
   // Sales TV: read-only TV links of CRM dashboards
   | 'crm_dashboard_tv_link'
+  // MCP wave: OAuth grants revoked by a workspace admin
+  | 'integration_grant'
 
 export type AuditAction =
   | 'create'

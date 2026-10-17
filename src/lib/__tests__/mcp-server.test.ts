@@ -31,7 +31,11 @@ const sdCreate = fakeTool({
 const tools = [sdRead, sdCreate]
 
 let nextId = 1
-async function rpc(method: string, params?: Record<string, unknown>) {
+async function rpc(
+  method: string,
+  params?: Record<string, unknown>,
+  onToolCall?: (tool: { name: string }) => void,
+) {
   const request = new Request('http://localhost/api/mcp', {
     method: 'POST',
     headers: {
@@ -43,6 +47,7 @@ async function rpc(method: string, params?: Record<string, unknown>) {
   })
   const response = await handleMcpRequest(request, mcpGrant(), mcpAccess(), {
     tools,
+    onToolCall,
   })
   return { status: response.status, body: await response.json() }
 }
@@ -79,6 +84,15 @@ describe('handleMcpRequest()', () => {
       data: { total: 3 },
     })
     expect(body.result.content[0]).toEqual({ type: 'text', text: '3 chamados' })
+  })
+
+  it('should report each call of a visible tool, never of a hidden one', async () => {
+    const onToolCall = vi.fn()
+    await rpc('tools/call', { name: 'sd_list', arguments: {} }, onToolCall)
+    await rpc('tools/call', { name: 'sd_create', arguments: {} }, onToolCall)
+    await rpc('tools/list', undefined, onToolCall)
+    expect(onToolCall).toHaveBeenCalledTimes(1)
+    expect(onToolCall.mock.calls[0][0].name).toBe('sd_list')
   })
 
   it('should treat hidden tools like unknown ones', async () => {

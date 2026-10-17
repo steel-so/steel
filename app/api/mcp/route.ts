@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { withAxiom } from '@/lib/axiom/server'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
+import { McpUsageCache } from '@/src/cache/mcp-usage.cache'
 import { resolveToolAccess } from '@/src/lib/ai/tools/registry'
 import { resolveMcpGrant } from '@/src/lib/mcp/grant'
 import {
@@ -41,7 +42,13 @@ export const POST = withAxiom(async (request: NextRequest) => {
     return handleError(access.error)
   }
 
-  return handleMcpRequest(request, grant.value, access.value)
+  const { workspaceId, clientId, grantId } = grant.value
+  return handleMcpRequest(request, grant.value, access.value, {
+    // Fire and forget: the counter never fails nor delays the call.
+    onToolCall: () => {
+      void McpUsageCache.recordCall({ workspaceId, clientId, grantId })
+    },
+  })
 })
 
 export const GET = withAxiom(async () => mcpMethodNotAllowed())

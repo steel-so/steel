@@ -5,7 +5,7 @@ import {
   OAuthConsentSchema,
 } from '@/src/schemas/integration-grant.schema'
 import type { JsonSchema } from '../json-schema'
-import type { OpenApiRegistry, RouteConfig } from '../registry'
+import type { ErrorEntry, OpenApiRegistry, RouteConfig } from '../registry'
 
 /**
  * Integration identity (ADR 0033): the OAuth 2.1 provider that MCP clients
@@ -34,6 +34,60 @@ const IntegrationGrantDTO = z.object({
     .meta({ description: 'Atualizado no máximo uma vez por minuto.' }),
   createdAt: z.string(),
 })
+
+const McpUsageDTO = z
+  .object({ last7Days: z.number().int(), last30Days: z.number().int() })
+  .meta({
+    description:
+      'Chamadas de ferramentas (`tools/call`) pelo MCP nos últimos 7 e 30 dias, hoje incluído (dias no fuso de São Paulo). Contadores leves: podem ficar um pouco abaixo do real se o cache falhar.',
+  })
+
+const WorkspaceIntegrationGrantsDTO = z.object({
+  grants: z.array(
+    IntegrationGrantDTO.omit({ workspace: true }).extend({
+      user: z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string(),
+        image: z.string().nullable(),
+      }),
+      usage: McpUsageDTO,
+    }),
+  ),
+  clients: z.array(
+    z.object({
+      client: IntegrationGrantDTO.shape.client,
+      members: z
+        .number()
+        .int()
+        .meta({ description: 'Membros com concessão ativa para o app.' }),
+      canWrite: z
+        .boolean()
+        .meta({ description: 'Alguma concessão ativa tem `mcp:write`.' }),
+      lastUsedAt: z.string().nullable(),
+      usage: McpUsageDTO.meta({
+        description:
+          'Chamadas de todas as concessões do app no workspace, inclusive as já revogadas.',
+      }),
+    }),
+  ),
+})
+
+const RevokeManyDTO = z.object({
+  revoked: z
+    .number()
+    .int()
+    .meta({
+      description: 'Concessões revogadas (0 se não havia nenhuma ativa).',
+    }),
+})
+
+const WORKSPACE_ADMIN_ERRORS: ErrorEntry[] = [
+  {
+    code: 'FORBIDDEN',
+    when: 'Quem chama não é dono nem administrador do workspace',
+  },
+]
 
 const OAuthConsentResultDTO = z.object({
   redirectUrl: z.string().meta({
@@ -264,6 +318,70 @@ const routes: RouteConfig[] = [
         when: 'Concessão inexistente, já revogada ou de outro usuário',
       },
     ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/integration-grants',
+    tags: [TAG],
+    summary: 'Listar apps conectados do workspace',
+    description:
+      'Só dono e administradores. Todas as concessões ativas dos membros do workspace (quem autorizou, o app, escopos, módulos, último uso e chamadas recentes) e um resumo por app.',
+    params: { id: 'ID do workspace.' },
+    responses: {
+      200: {
+        description: 'Concessões ativas (mais recentes primeiro) e apps.',
+        schema: WorkspaceIntegrationGrantsDTO,
+      },
+    },
+    errors: WORKSPACE_ADMIN_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/integration-grants/{grantId}',
+    tags: [TAG],
+    summary: 'Revogar a concessão de um membro',
+    description:
+      'Só dono e administradores. Revoga a concessão, apaga os access tokens, revoga os refresh tokens e remove o consentimento; a próxima chamada do app ao MCP responde 401.',
+    params: { id: 'ID do workspace.', grantId: 'ID da concessão.' },
+    responses: {
+      200: {
+        description: 'Concessão revogada.',
+        schema: z.object({ id: z.string() }),
+      },
+    },
+    errors: [
+      ...WORKSPACE_ADMIN_ERRORS,
+      {
+        code: 'INTEGRATION_GRANT_NOT_FOUND',
+        when: 'Concessão inexistente, já revogada ou de outro workspace',
+      },
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/integration-grants/members/{userId}',
+    tags: [TAG],
+    summary: 'Revogar todos os apps de um membro',
+    description:
+      'Só dono e administradores. Revoga, numa transação, todas as concessões ativas do membro no workspace, de qualquer app.',
+    params: { id: 'ID do workspace.', userId: 'ID do usuário.' },
+    responses: {
+      200: { description: 'Quantas foram revogadas.', schema: RevokeManyDTO },
+    },
+    errors: WORKSPACE_ADMIN_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/integration-grants/clients/{clientId}',
+    tags: [TAG],
+    summary: 'Revogar um app de todos os membros',
+    description:
+      'Só dono e administradores. Revoga, numa transação, as concessões ativas de todos os membros para o app (cliente OAuth) no workspace. O app ainda pode pedir um novo consentimento.',
+    params: { id: 'ID do workspace.', clientId: '`client_id` do app.' },
+    responses: {
+      200: { description: 'Quantas foram revogadas.', schema: RevokeManyDTO },
+    },
+    errors: WORKSPACE_ADMIN_ERRORS,
   },
 ]
 

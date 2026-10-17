@@ -7677,7 +7677,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -7759,7 +7759,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_5"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_15"
@@ -7825,7 +7825,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_5"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_15"
@@ -8517,7 +8517,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -8597,7 +8597,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_6"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_15"
@@ -8663,7 +8663,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_6"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_15"
@@ -10430,7 +10430,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_4"
           },
           "409": {
             "$ref": "#/components/responses/409_CONFLICT"
@@ -53838,6 +53838,497 @@
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/integration-grants": {
+      "get": {
+        "tags": ["Apps conectados (OAuth)"],
+        "summary": "Listar apps conectados do workspace",
+        "operationId": "getWorkspacesByIdIntegrationGrants",
+        "description": "Só dono e administradores. Todas as concessões ativas dos membros do workspace (quem autorizou, o app, escopos, módulos, último uso e chamadas recentes) e um resumo por app.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Concessões ativas (mais recentes primeiro) e apps.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "grants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "client": {
+                                    "type": "object",
+                                    "properties": {
+                                      "clientId": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "icon": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "uri": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": ["clientId", "name", "icon", "uri"]
+                                  },
+                                  "scopes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": ["mcp:read", "mcp:write"]
+                                    }
+                                  },
+                                  "modules": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": ["SERVICE_DESK", "CRM", "COMMUNICATION"]
+                                    }
+                                  },
+                                  "lastUsedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Atualizado no máximo uma vez por minuto."
+                                  },
+                                  "createdAt": {
+                                    "type": "string"
+                                  },
+                                  "user": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "email": {
+                                        "type": "string"
+                                      },
+                                      "image": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": ["id", "name", "email", "image"]
+                                  },
+                                  "usage": {
+                                    "type": "object",
+                                    "properties": {
+                                      "last7Days": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "last30Days": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": ["last7Days", "last30Days"],
+                                    "description": "Chamadas de ferramentas (`tools/call`) pelo MCP nos últimos 7 e 30 dias, hoje incluído (dias no fuso de São Paulo). Contadores leves: podem ficar um pouco abaixo do real se o cache falhar."
+                                  }
+                                },
+                                "required": ["id", "client", "scopes", "modules", "lastUsedAt", "createdAt", "user", "usage"]
+                              }
+                            },
+                            "clients": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "client": {
+                                    "type": "object",
+                                    "properties": {
+                                      "clientId": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "icon": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "uri": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": ["clientId", "name", "icon", "uri"]
+                                  },
+                                  "members": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Membros com concessão ativa para o app."
+                                  },
+                                  "canWrite": {
+                                    "type": "boolean",
+                                    "description": "Alguma concessão ativa tem `mcp:write`."
+                                  },
+                                  "lastUsedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "usage": {
+                                    "type": "object",
+                                    "properties": {
+                                      "last7Days": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "last30Days": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": ["last7Days", "last30Days"],
+                                    "description": "Chamadas de todas as concessões do app no workspace, inclusive as já revogadas."
+                                  }
+                                },
+                                "required": ["client", "members", "canWrite", "lastUsedAt", "usage"]
+                              }
+                            }
+                          },
+                          "required": ["grants", "clients"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/integration-grants/clients/{clientId}": {
+      "delete": {
+        "tags": ["Apps conectados (OAuth)"],
+        "summary": "Revogar um app de todos os membros",
+        "operationId": "deleteWorkspacesByIdIntegrationGrantsClientsByClientId",
+        "description": "Só dono e administradores. Revoga, numa transação, as concessões ativas de todos os membros para o app (cliente OAuth) no workspace. O app ainda pode pedir um novo consentimento.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "description": "`client_id` do app.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quantas foram revogadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "revoked": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Concessões revogadas (0 se não havia nenhuma ativa)."
+                            }
+                          },
+                          "required": ["revoked"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/integration-grants/members/{userId}": {
+      "delete": {
+        "tags": ["Apps conectados (OAuth)"],
+        "summary": "Revogar todos os apps de um membro",
+        "operationId": "deleteWorkspacesByIdIntegrationGrantsMembersByUserId",
+        "description": "Só dono e administradores. Revoga, numa transação, todas as concessões ativas do membro no workspace, de qualquer app.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quantas foram revogadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "revoked": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Concessões revogadas (0 se não havia nenhuma ativa)."
+                            }
+                          },
+                          "required": ["revoked"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/integration-grants/{grantId}": {
+      "delete": {
+        "tags": ["Apps conectados (OAuth)"],
+        "summary": "Revogar a concessão de um membro",
+        "operationId": "deleteWorkspacesByIdIntegrationGrantsByGrantId",
+        "description": "Só dono e administradores. Revoga a concessão, apaga os access tokens, revoga os refresh tokens e remove o consentimento; a próxima chamada do app ao MCP responde 401.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "grantId",
+            "in": "path",
+            "required": true,
+            "description": "ID da concessão.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Concessão revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_3"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_INTEGRATION_GRANT_NOT_FOUND_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -110152,6 +110643,29 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Quem chama não é dono nem administrador do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_4": {
+        "description": "Acesso negado: `FORBIDDEN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Consentimento LGPD pendente",
                 "value": {
                   "success": false,
@@ -110166,7 +110680,7 @@
           }
         }
       },
-      "403_FORBIDDEN_4": {
+      "403_FORBIDDEN_5": {
         "description": "Acesso negado: `FORBIDDEN`",
         "content": {
           "application/json": {
@@ -110200,7 +110714,7 @@
           }
         }
       },
-      "403_FORBIDDEN_5": {
+      "403_FORBIDDEN_6": {
         "description": "Acesso negado: `FORBIDDEN`",
         "content": {
           "application/json": {
@@ -119584,6 +120098,29 @@
             "examples": {
               "INTEGRATION_GRANT_NOT_FOUND": {
                 "summary": "INTEGRATION_GRANT_NOT_FOUND — Concessão inexistente, já revogada ou de outro usuário",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "App conectado não encontrado ou já revogado.",
+                  "error": {
+                    "code": "INTEGRATION_GRANT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_INTEGRATION_GRANT_NOT_FOUND_2": {
+        "description": "Não encontrado: `INTEGRATION_GRANT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "INTEGRATION_GRANT_NOT_FOUND": {
+                "summary": "INTEGRATION_GRANT_NOT_FOUND — Concessão inexistente, já revogada ou de outro workspace",
                 "value": {
                   "success": false,
                   "statusCode": 404,
