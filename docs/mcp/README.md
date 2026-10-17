@@ -43,6 +43,21 @@ exige sessão: sem sessão, vai para `/sign-in` e volta.
 
 `DELETE` nunca é exposto.
 
+### Interruptor "Permitir escrita via MCP" (fatia mcp-ai-settings)
+
+- Coluna `WorkspaceAiSettings.mcpWriteEnabled` (`mcp_write_enabled`,
+  padrão `false`), alterada só por OWNER/ADMIN em
+  `PATCH /api/workspaces/{id}/ai-settings` (`{ mcpWriteEnabled }`) e na tela
+  Ajustes › Steel IA › Recursos do Steel AI. A troca entra na auditoria
+  (`workspace_ai_settings` / `update`, `meta.changedSwitches`).
+- `resolveToolAccess` devolve `AiToolAccess.mcpWriteEnabled` (campo opcional,
+  sempre preenchido por ele; ausente = `false`). `isToolAllowed` **não** o lê:
+  o assistente do app não muda. Quem decide é o servidor MCP — escrita só com
+  `mcp:write` no grant **e** `mcpWriteEnabled` (onda 2, mcp-governance).
+- Independe do modo agente (`agentModeEnabled`) e do Autopilot, que valem para
+  o chat do app; com `aiEnabled` desligado a tela trava o interruptor e o
+  servidor MCP não deve oferecer ferramenta nenhuma.
+
 ## Tipo compartilhado
 
 `src/lib/mcp/grant.ts`: `McpGrant`, `McpScope`, `MCP_SCOPES` e
