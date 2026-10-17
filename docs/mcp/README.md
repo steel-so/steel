@@ -26,6 +26,7 @@ Cliente de IA ──(1) OAuth: login + consentimento──▶ Better Auth (oauth
 | `/.well-known/oauth-authorization-server` | mcp-auth | metadados do servidor de autorização |
 | `/.well-known/oauth-protected-resource` | mcp-auth | metadados do recurso (`resource` = `<app>/api/mcp`) |
 | `/oauth/consent` | mcp-auth | tela de consentimento em pt-BR: workspace, módulos, escopo |
+| `/api/oauth/consent` (POST) | mcp-auth | resposta da tela: grava a `IntegrationGrant` e pede o código ao provedor |
 | `/api/users/me/integration-grants` (GET, DELETE `/{id}`) | mcp-auth | Apps conectados do usuário |
 | `/api/workspaces/{id}/integration-grants` (GET, DELETE `/{id}`) | mcp-governance | Apps conectados de todos os membros (OWNER/ADMIN) |
 | `/api/mcp` (POST; GET/DELETE respondem 405) | mcp-server | servidor MCP, Streamable HTTP sem estado |
@@ -53,6 +54,32 @@ consome (nos testes, faz mock do módulo).
 `clientId`, `scopes String[]`, `modules ModuleKind[]`, `lastUsedAt`,
 `revokedAt`, `createdAt`, `updatedAt`. Única por (`userId`, `clientId`,
 `workspaceId`) enquanto não revogada.
+
+Como a concessão chega ao token (decidido na fatia mcp-auth):
+
+- O `referenceId` do consentimento, do código e dos tokens do plugin é o
+  `IntegrationGrant.id`. A tela chama `POST /api/oauth/consent`, que grava a
+  concessão e repassa o aceite ao plugin dentro de um `AsyncLocalStorage`
+  com o id (`src/lib/mcp/consent-reference.ts`).
+- Fora desse caminho o `referenceId` é um valor que nenhum consentimento
+  tem, então **toda** autorização passa pela tela (não há aprovação
+  automática) e nenhum token nasce sem concessão.
+- Tokens opacos (`disableJwtPlugin`), com prefixo `stl_at_` / `stl_rt_`,
+  guardados como SHA-256. Access token vale 1 h; refresh 30 dias, só com
+  `offline_access`.
+- `resolveMcpGrant`: token → linha `oauth_access_tokens` (hash) → concessão
+  ativa do mesmo usuário e cliente → `assertMember` → módulos ainda
+  habilitados no workspace (a interseção com `grant.modules`) → escopos
+  que o token **e** a concessão têm. Qualquer falha é `UNAUTHORIZED`; erro de
+  banco propaga.
+- "Módulos a que o usuário tem acesso" = os habilitados no workspace: o
+  Steel não tem gate de módulo por usuário; o RBAC de cada ferramenta vale
+  na chamada.
+- Revogar apaga os access tokens, marca os refresh tokens como revogados e
+  remove o consentimento, numa transação.
+- Aviso LGPD da tela com versão `mcp-consent-v1`
+  (`src/lib/mcp/consent-notice.ts`), registrada no `auditAuth`
+  `auth.oauth_consent.granted` junto com escopos e módulos.
 
 `AiToolContext.source` ganha `'mcp'` e o contexto ganha `oauthClientId?`
 (dono `mcp-server`).
