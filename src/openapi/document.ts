@@ -5,6 +5,7 @@ import { registerAuthPaths } from './paths/auth'
 import { registerCorePaths } from './paths/core'
 import { registerCrmPaths } from './paths/crm'
 import { registerIntegrationPaths } from './paths/integrations'
+import { registerMcpPaths } from './paths/mcp'
 import { registerPublicPaths } from './paths/public'
 import { registerSearchPaths } from './paths/search'
 import { registerServiceDeskPaths } from './paths/servicedesk'
@@ -42,6 +43,7 @@ export function createRegistry(): OpenApiRegistry {
   registerSearchPaths(registry)
   registerWikiPaths(registry)
   registerWhiteboardPaths(registry)
+  registerMcpPaths(registry)
   registerSettingsExportsWorklogsPaths(registry)
   registerIntegrationPaths(registry)
   return registry

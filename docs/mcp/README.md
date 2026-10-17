@@ -68,6 +68,37 @@ consome (nos testes, faz mock do módulo).
 - Rate limit `mcp:<userId>` e `mcp-client:<clientId>`; `withAxiom` na rota.
 - O grant atualiza `lastUsedAt` no máximo uma vez por minuto.
 
+### Detalhes do `mcp-server` (onda 1)
+
+- **Transporte:** `WebStandardStreamableHTTPServerTransport` do
+  `@modelcontextprotocol/sdk` (versão fixa), sem sessão e com respostas JSON;
+  servidor e transporte novos a cada POST.
+- **Ordem na rota:** `resolveMcpGrant` → rate limit `mcp:<userId>` (120/min)
+  e `mcp-client:<clientId>` (600/min) → `resolveToolAccess` → handler. Falha
+  no grant, ou acesso que responde 401/403/404 (membro removido), devolve
+  `401` com `WWW-Authenticate: Bearer resource_metadata="<BETTER_AUTH_URL>/.well-known/oauth-protected-resource"`
+  (mais `error="invalid_token"` quando veio token).
+- **Escrita:** `mcpAllowedKinds(grant)` em `src/lib/mcp/tools.ts` devolve só
+  `READ` na onda 1, mesmo com `mcp:write`. A onda 2 alarga **só essa função**.
+- **Steel IA desligada** (`aiEnabled = false` em Ajustes › Steel IA): nenhuma
+  ferramenta aparece. Resources e prompts continuam.
+- **Ferramenta fora do grant** responde igual a uma inexistente
+  (`-32602 Ferramenta desconhecida`).
+- **Resultado:** `content` = resumo + JSON; `structuredContent` =
+  `{ summary, data, truncated?, note? }`, com o teto de `TOOL_OUTPUT_MAX_BYTES`.
+- **Anotações:** `readOnlyHint` pelo `kind`; `destructiveHint`,
+  `idempotentHint` e `openWorldHint` vêm de `tool.annotations` quando a
+  ferramenta declara, senão do padrão (`DELETE`, `READ`, `false`).
+- **Resources** (Markdown, 50 por página, cursor opaco):
+  `steel://servicedesk/kb/{id}` (artigo `PUBLISHED` e não arquivado; só com
+  `SERVICE_DESK` no grant e habilitado) e `steel://wiki/pages/{id}` (página
+  não arquivada; Wiki ligada). Lidos pelos services, com as mesmas regras do
+  app. Não encontrado → `-32002`.
+- **Prompts:** `servicedesk_daily_summary` ("Resumo do dia do ServiceDesk"),
+  `crm_weekly_pipeline` ("Pipeline da semana") e
+  `whatsapp_unanswered_conversations` ("Conversas sem resposta"), um por
+  módulo concedido e habilitado.
+
 ## Fatias
 
 | Fatia | Onda | Entrega |

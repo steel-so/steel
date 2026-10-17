@@ -353,6 +353,10 @@
       "description": "Agentes autônomos: rodam por agenda, evento ou botão, com as permissões do responsável. Cada ferramenta é automática ou requer aprovação (exclusão sempre requer), e as aprovações acontecem pela caixa de entrada."
     },
     {
+      "name": "Steel MCP",
+      "description": "Servidor MCP remoto para clientes de IA (Claude, ChatGPT, Cursor…): as ferramentas de leitura do Steel AI, artigos da base de conhecimento e páginas da Wiki como resources e prompts prontos. Autenticado por OAuth do Steel (token por usuário e workspace)."
+    },
+    {
       "name": "Sticky Notes",
       "description": "Notas rápidas pessoais. **Legado da base Nexo** — mantido por compatibilidade, sem evolução planejada."
     },
@@ -480,7 +484,7 @@
     },
     {
       "name": "Steel AI",
-      "tags": ["Steel AI", "Steel Agents"]
+      "tags": ["Steel AI", "Steel Agents", "Steel MCP"]
     },
     {
       "name": "Legado (Nexo)",
@@ -5547,6 +5551,104 @@
         ]
       }
     },
+    "/mcp": {
+      "get": {
+        "tags": ["Steel MCP"],
+        "summary": "Stream SSE (não suportado)",
+        "operationId": "getMcp",
+        "responses": {
+          "405": {
+            "description": "Servidor sem estado: não abre stream SSE (GET) nem encerra sessão (DELETE). Responde com `Allow: POST`."
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "tags": ["Steel MCP"],
+        "summary": "Chamada MCP (JSON-RPC)",
+        "operationId": "postMcp",
+        "description": "Servidor MCP remoto do Steel para clientes de IA (Claude, ChatGPT, Cursor…). Exige `Authorization: Bearer <access token>` emitido pelo OAuth do Steel; o token define usuário, workspace, módulos e escopos — nada disso vem dos argumentos.\n\n- **Ferramentas:** as de leitura do Steel AI que o usuário pode usar nos módulos concedidos (filtro por módulo e perfil de acesso). Resultado com `structuredContent` e resumo em texto, até ~20 KB; erros de domínio voltam com `isError: true`.\n- **Resources:** artigos publicados da base de conhecimento (`steel://servicedesk/kb/{id}`) e páginas da Wiki (`steel://wiki/pages/{id}`), em Markdown, paginados por cursor.\n- **Prompts:** prontos por módulo, em português.\n\nSem token, ou com token inválido, revogado ou de quem saiu do workspace: `401` com `WWW-Authenticate: Bearer resource_metadata=\"<app>/.well-known/oauth-protected-resource\"`. Rate limit por usuário (`mcp:<userId>`, 120/min) e por cliente OAuth (`mcp-client:<clientId>`, 600/min).",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "description": "`Bearer <access token>` do OAuth do Steel.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": true,
+            "description": "Deve aceitar `application/json` e `text/event-stream`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Mensagem (ou lote) JSON-RPC 2.0.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["jsonrpc", "method"],
+                "properties": {
+                  "jsonrpc": {
+                    "type": "string",
+                    "enum": ["2.0"]
+                  },
+                  "id": {
+                    "type": ["string", "integer"]
+                  },
+                  "method": {
+                    "type": "string",
+                    "description": "`initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list`, `resources/read`, `prompts/list`, `prompts/get`, `ping`."
+                  },
+                  "params": {
+                    "type": "object"
+                  }
+                }
+              },
+              "example": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/list"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta JSON-RPC 2.0 (`result` ou `error`)."
+          },
+          "202": {
+            "description": "Notificação ou resposta recebida (sem corpo)."
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED_5"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED_4"
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "tags": ["Steel MCP"],
+        "summary": "Encerrar sessão (não suportado)",
+        "operationId": "deleteMcp",
+        "responses": {
+          "405": {
+            "description": "Servidor sem estado: não abre stream SSE (GET) nem encerra sessão (DELETE). Responde com `Allow: POST`."
+          }
+        },
+        "security": []
+      }
+    },
     "/pabx/calls/webhook": {
       "post": {
         "tags": ["Comunicação · Tempo real e webhooks"],
@@ -5628,7 +5730,7 @@
             "$ref": "#/components/responses/422_VALIDATION_ERROR_3"
           },
           "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED_5"
+            "$ref": "#/components/responses/429_RATE_LIMITED_4"
           }
         },
         "security": []
@@ -8750,7 +8852,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED_4"
+            "$ref": "#/components/responses/429_RATE_LIMITED_5"
           }
         },
         "security": [
@@ -109091,6 +109193,29 @@
           }
         }
       },
+      "401_UNAUTHORIZED_5": {
+        "description": "Não autenticado: `UNAUTHORIZED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "UNAUTHORIZED": {
+                "summary": "UNAUTHORIZED — Token ausente, inválido, expirado ou revogado; concessão revogada; usuário fora do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 401,
+                  "message": "Token de integração inválido ou ausente",
+                  "error": {
+                    "code": "UNAUTHORIZED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "401_UNAUTHORIZED_CRM_INTEGRATION_KEY_INVALID": {
         "description": "Não autenticado: `UNAUTHORIZED`, `CRM_INTEGRATION_KEY_INVALID`",
         "content": {
@@ -132580,7 +132705,7 @@
             },
             "examples": {
               "RATE_LIMITED": {
-                "summary": "RATE_LIMITED — Já houve um pedido nas últimas 24 h",
+                "summary": "RATE_LIMITED",
                 "value": {
                   "success": false,
                   "statusCode": 429,
@@ -132614,7 +132739,7 @@
             },
             "examples": {
               "RATE_LIMITED": {
-                "summary": "RATE_LIMITED",
+                "summary": "RATE_LIMITED — Já houve um pedido nas últimas 24 h",
                 "value": {
                   "success": false,
                   "statusCode": 429,
