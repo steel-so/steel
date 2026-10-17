@@ -48,3 +48,5 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0027 | [Coedição em tempo real do Steel Canvas sobre o servidor realtime da Wiki](./0027-canvas-real-time-co-editing.md) | Aceita | 2026-10-15 |
 | 0029 | [Campanhas apontam para páginas de site; a atribuição acontece no site](./0029-crm-campaigns-target-site-pages.md) | Aceita | 2026-10-15 |
 | 0031 | [Kit de Vendas calculado no servidor e modo TV por link com token](./0031-crm-sales-tv-kit.md) | Aceita | 2026-10-15 |
+| 0032 | [Servidor MCP público sobre as ferramentas do Steel AI](./0032-public-mcp-server-over-steel-ai-tools.md) | Aceita | 2026-10-17 |
+| 0033 | [Identidade de integrações: OAuth por usuário e workspace](./0033-integration-identity-oauth-per-user-and-workspace.md) | Aceita | 2026-10-17 |
