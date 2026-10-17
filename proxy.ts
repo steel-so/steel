@@ -84,6 +84,9 @@ const PUBLIC_ROUTES = [
   // CRM dashboard on a TV (sales room): read-only link, no session (the
   // random token in the URL is the credential; revoking it cuts the screen).
   '/tv', '/api/crm/tv',
+  // Public MCP server (ADR 0032): authenticated by an OAuth bearer token in
+  // the route, never by the session cookie.
+  '/api/mcp',
   // Proxy reverso do PostHog (o next.config.ts reescreve direto para o
   // PostHog). Analytics é coletado nas páginas públicas também, onde ninguém
   // tem sessão, então o gate de autenticação responderia cada beacon com um
