@@ -1,0 +1,80 @@
+---
+title: O Steel no Claude, no ChatGPT e no Cursor
+slug: steel-no-claude-chatgpt-e-cursor
+date: 2026-10-17
+summary: Conecte o seu workspace ao assistente de IA que a equipe já usa. Pelo servidor MCP do Steel, o Claude, o ChatGPT e o Cursor consultam chamados, o CRM e as conversas do WhatsApp com as suas permissões, e só alteram dados quando o administrador libera.
+tags: [IA, PLATAFORMA, SERVICEDESK, CRM, COMUNICACAO]
+cover: /changelog/2026-10-17/capa-mcp.jpg
+---
+
+## Pergunte ao seu assistente, com os dados do Steel
+
+O Steel agora tem um **servidor MCP** próprio, o padrão que os assistentes de
+IA usam para conversar com outros sistemas. Adicione o Steel como conector no
+**Claude**, no **ChatGPT** ou no **Cursor** e pergunte direto de lá: "quais
+chamados estouram o SLA hoje?", "resuma o pipeline da semana", "quais conversas
+do WhatsApp estão sem resposta?".
+
+![Conversa no Claude com o conector Steel ligado: a pergunta sobre chamados com SLA em risco e a resposta com a lista do workspace](/changelog/2026-10-17/mcp-claude-conversa.webp)
+
+O assistente usa as mesmas ferramentas da Steel AI: chamados, filas, SLA,
+catálogo e CMDB do ServiceDesk; leads, oportunidades, tarefas e previsão do CRM;
+conversas, contatos e transmissões da Comunicação. Ele também lê os artigos
+publicados da base de conhecimento e as páginas da Wiki, e traz três atalhos
+prontos: **Resumo do dia do ServiceDesk**, **Pipeline da semana** e **Conversas
+sem resposta**.
+
+## Você escolhe o que o assistente alcança
+
+Não há chave para copiar. Você cola o endereço do Steel no assistente, faz login
+como de costume e, na tela de autorização, escolhe:
+
+- o **workspace** que o assistente vai usar;
+- os **módulos** que ele pode ver (ServiceDesk, CRM, Comunicação);
+- se ele pode **só consultar** ou **consultar e alterar**.
+
+![Tela de autorização do Steel com o workspace, os módulos marcados e a opção de só consultar ou consultar e alterar](/changelog/2026-10-17/mcp-consentimento.webp)
+
+O assistente age com o **seu usuário** e as **suas permissões**: o que você não
+pode fazer no Steel, ele também não pode. Cada conexão vale para um workspace.
+
+## Alterar dados, com o administrador no controle
+
+Criar um lead, atualizar um chamado ou registrar uma nota pelo assistente só
+funciona quando duas coisas acontecem: você escolheu **consultar e alterar** na
+autorização e um administrador ligou **Permitir escrita via MCP** em **Ajustes ›
+Steel IA**. O interruptor vem desligado.
+
+![Ajustes do Steel IA com o interruptor Permitir escrita via MCP e o texto de ajuda](/changelog/2026-10-17/mcp-escrita-admin.webp)
+
+- **Nada é excluído** pelo conector, com qualquer permissão.
+- **O que chega ao cliente passa por você:** uma mensagem de WhatsApp, uma
+  resposta ao solicitante ou um pedido de aprovação não saem direto. O
+  assistente devolve um link, e alguém da equipe confere e confirma no Steel.
+- **Tudo fica registrado:** cada alteração entra no histórico da Steel AI e na
+  trilha de auditoria, marcada como vinda de um assistente externo.
+
+![Confirmação no Steel de uma mensagem ao cliente pedida pelo assistente, com os botões para aprovar ou recusar](/changelog/2026-10-17/mcp-confirmacao.webp)
+
+## Ver e desconectar
+
+Em **Configurações › Segurança › Apps conectados** ficam os assistentes que você
+conectou, com o workspace, os módulos e o que cada um pode fazer. Revogou, o
+assistente perde o acesso na pergunta seguinte. Quem sai do workspace perde o
+acesso sozinho.
+
+![Apps conectados nas configurações do usuário, com o Claude conectado ao workspace e o botão Revogar](/changelog/2026-10-17/mcp-apps-conectados.webp)
+
+Donos e administradores veem as conexões de **todos os membros** nos ajustes do
+workspace, com o último uso de cada uma, e podem revogar uma conexão, todas as
+de um membro ou todas de um mesmo assistente.
+
+![Apps conectados do workspace, com as conexões de cada membro, o assistente, os módulos e o último uso](/changelog/2026-10-17/mcp-apps-workspace.webp)
+
+<Callout>
+  **Disponível em todos os planos.** As perguntas feitas no Claude, no ChatGPT
+  ou no Cursor **não** contam na cota mensal da Steel AI, porque o modelo é do
+  assistente. O passo a passo de cada um está no manual, em [Conectar o Steel ao
+  Claude, ChatGPT ou Cursor](/docs/steel-ai/conectar-claude-chatgpt-cursor), e
+  os detalhes técnicos em [Servidor MCP](/dev/mcp).
+</Callout>
