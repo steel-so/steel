@@ -64,12 +64,22 @@ function devIndex(pages: DevPageMeta[]): string {
 
 /**
  * A developer guide as plain markdown: its MDX-only blocks become text
- * (`<ErrorCodeTable />` → the generated table, `<BaseUrl />` → the url).
+ * (`<ErrorCodeTable />` and `<McpToolTable />` → the generated tables,
+ * `<BaseUrl />` and `<McpServerUrl />` → the urls).
+ *
+ * The MCP tool table comes from the Steel AI registry, which pulls in every
+ * domain service; the caller passes it in (`mcpToolCatalogMarkdown()`) so
+ * this module stays light. Without it, the table becomes a link to the page.
  */
-export function devPageMarkdown(source: string): string {
+export function devPageMarkdown(
+  source: string,
+  mcpToolsMarkdown = `Lista de ferramentas: ${url('/dev/mcp')}`,
+): string {
   return source
     .replace(/^<ErrorCodeTable\s*\/>$/m, () => errorCatalogMarkdown())
+    .replace(/^<McpToolTable\s*\/>$/m, () => mcpToolsMarkdown)
     .replace(/<BaseUrl\s*\/>/g, `\`${url('/api')}\``)
+    .replace(/<McpServerUrl\s*\/>/g, `\`${url('/api/mcp')}\``)
 }
 
 /** `/llms.txt` (llmstxt.org): a short markdown map for answer engines. */
@@ -139,6 +149,8 @@ export function buildLlmsFullTxt(
   entries: ChangelogEntryDTO[],
   docs: DocsPage[] = [],
   dev: DevPage[] = [],
+  /** `mcpToolCatalogMarkdown()`, for the MCP guide's tool table. */
+  mcpToolsMarkdown?: string,
 ): string {
   const manual = docs
     .map((page) => {
@@ -157,7 +169,10 @@ ${body}`
 
   const guides = dev
     .map((page) => {
-      const body = devPageMarkdown(page.source).replace(/^(#{2,5}) /gm, '#$1 ')
+      const body = devPageMarkdown(page.source, mcpToolsMarkdown).replace(
+        /^(#{2,5}) /gm,
+        '#$1 ',
+      )
       return `## ${devSectionLabel(page.section)}: ${page.title}
 
 ${url(page.href)}
