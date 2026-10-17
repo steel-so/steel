@@ -39,63 +39,94 @@ Produção: o nginx do servidor termina o TLS e fala direto com o
 `nextjs-app`. Se houver outro proxy de borda na frente (balanceador, WAF), ele
 precisa das mesmas regras.
 
-## 1. nginx (homologação .145 e produção)
+## 1. Configuração atual da homologação (aplicada em 17/10/2026)
 
-O nginx não está nos composes do repositório (ver `restart-service.md`). No
-`server` do domínio do Steel, acrescente **antes** do `location /` (use no
-`proxy_pass` o mesmo destino do `location /` existente):
+As regras abaixo **já estão no ar** em homologação. Use esta seção como
+referência para conferir, refazer depois de uma reinstalação ou copiar para
+produção. Nos dois hosts o usuário `stratus` não tem `sudo`: o acesso de root é
+por `su -`.
+
+### 1.1 Apache de borda (10.10.100.31)
+
+Vhost `/etc/apache2/sites-available/homologacao.stratustelecom.com.br.conf`,
+**antes** do `ProxyPass /`:
+
+```apache
+    <Location /api/mcp>
+        SetEnv no-gzip 1
+        SetEnv dont-vary 1
+    </Location>
+    ProxyPass /api/mcp http://10.10.100.145:80/api/mcp flushpackets=on
+    ProxyPassReverse /api/mcp http://10.10.100.145:80/api/mcp
+```
+
+- `no-gzip` (e `dont-vary`) desligam o `mod_deflate` nessa rota: comprimir SSE
+  segura os eventos até encher o bloco.
+- `flushpackets=on` manda cada pedaço da resposta adiante assim que chega.
+- O `mod_proxy_http` repassa o `Authorization` por padrão; não acrescente regra
+  que remova ou reescreva esse header. Confira que o vhost mantém
+  `ProxyPreserveHost On` (já é o caso do `/realtime`).
+
+Para mudar: faça um backup ao lado do arquivo
+(`cp homologacao.stratustelecom.com.br.conf homologacao.stratustelecom.com.br.conf.bak-$(date +%F)`),
+edite e rode `apache2ctl configtest && systemctl reload apache2` (como root).
+
+### 1.2 nginx (10.10.100.145)
+
+Arquivo `/etc/nginx/sites-enabled/homologacao.stratustelecom.com.br`,
+**antes** do `location /`:
 
 ```nginx
-# MCP server (Streamable HTTP): stream SSE responses without buffering.
-location = /api/mcp {
+location /api/mcp {
     proxy_pass http://127.0.0.1:3000;
     proxy_http_version 1.1;
-    proxy_set_header Connection "";
+    # Same forwarding headers as `location /`.
     proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection "";
     proxy_buffering off;
     proxy_cache off;
-    proxy_request_buffering off;
     gzip off;
-    proxy_read_timeout 300s;
-    proxy_send_timeout 300s;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
 }
 ```
 
-Em homologação o TLS termina no Apache, então o `$scheme` do nginx é `http`.
-Ali, troque a linha por `proxy_set_header X-Forwarded-Proto https;` (ou repasse
-o header que o Apache já envia, se o `location /` faz isso).
+Os `proxy_set_header` de encaminhamento são **os mesmos do `location /`**
+desse arquivo; se o `location /` mudar (por exemplo, o `X-Forwarded-Proto`
+fixo em `https`, já que o TLS termina no Apache), mude aqui também.
+
+Para mudar: backup em `/root` (`cp /etc/nginx/sites-enabled/homologacao.stratustelecom.com.br /root/nginx-homologacao.bak-$(date +%F)`),
+edite e rode `nginx -t && systemctl reload nginx` (como root).
 
 Confira também que nenhum `location /.well-known/` genérico serve arquivos do
 disco; só o `location /.well-known/acme-challenge/` pode existir.
 
-Depois: `sudo nginx -t && sudo systemctl reload nginx`.
+### 1.3 Runner do GitHub Actions no .145
 
-## 2. Apache de borda (homologação, 10.10.100.31)
+O mesmo host roda o runner self-hosted do CD (ADR 0005). Ele está registrado
+no repositório `steel-so/steel` como **`steel-homologacao`** (labels
+`self-hosted`, `homologacao`), mas a unidade do systemd manteve o nome antigo,
+de antes da mudança de organização:
 
-Vhost: `/etc/apache2/sites-available/homologacao.stratustelecom.com.br.conf`.
-Acrescente **antes** do `ProxyPass /`:
-
-```apache
-    # MCP server (Streamable HTTP): no compression, long timeout.
-    <Location /api/mcp>
-        SetEnv no-gzip 1
-        SetEnv proxy-sendchunked 1
-        RequestHeader set X-Forwarded-Proto "https"
-    </Location>
-    ProxyPass /api/mcp http://10.10.100.145:80/api/mcp timeout=300
-    ProxyPassReverse /api/mcp http://10.10.100.145:80/api/mcp
+```bash
+systemctl status actions.runner.stratus-so-steel.steel-homologacao.service
 ```
 
-- `no-gzip` desliga o `mod_deflate` nessa rota: comprimir SSE segura os
-  eventos até encher o bloco.
-- O `mod_proxy_http` repassa o `Authorization` por padrão; não acrescente
-  regra que remova ou reescreva esse header.
-- Confirme que o vhost tem `ProxyPreserveHost On` (já é o caso do `/realtime`).
-- `RequestHeader` exige o `mod_headers` (`sudo a2enmod headers`, se faltar).
+Não estranhe o `stratus-so` no nome; não é preciso recriar a unidade. Recarregar
+o nginx não afeta o runner.
 
-Depois: `sudo apache2ctl configtest && sudo systemctl reload apache2`.
+## 2. Produção (nginx)
+
+Em produção o nginx do servidor termina o TLS e fala direto com o
+`nextjs-app`. Use o mesmo bloco `location /api/mcp` da seção 1.2 **antes** do
+`location /` do domínio, com os headers de encaminhamento do `location /` de
+lá (o `$scheme` já é `https`). Faça o backup em `/root`, depois
+`nginx -t && systemctl reload nginx`. Se houver outro proxy de borda na frente
+(balanceador, WAF), ele precisa das mesmas regras: sem compressão, sem buffering
+e com `Authorization`, `Host` e `X-Forwarded-Proto` repassados.
 
 ## 3. Verificar
 
@@ -135,7 +166,7 @@ conexão de teste, por exemplo com a conta de smoke), a resposta tem que começa
 a chegar antes do fim:
 
 ```bash
-curl -N -s -X POST https://homologacao.stratustelecom.com.br/api/mcp \
+curl -sN -X POST https://homologacao.stratustelecom.com.br/api/mcp \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
