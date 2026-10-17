@@ -151,6 +151,87 @@ torná-los absolutos (`<origem>/<caminho>`).
   `whatsapp_unanswered_conversations` ("Conversas sem resposta"), um por
   módulo concedido e habilitado.
 
+## Observabilidade e descoberta (fatia mcp-observability)
+
+### Log (Axiom)
+
+Uma linha por evento, montada em `src/lib/mcp/telemetry.ts`. **Nunca** vão
+argumentos, resultado de ferramenta nem texto do usuário (LGPD).
+
+| `message` | Nível | Campos (`fields.*`) |
+| --- | --- | --- |
+| `mcp.tool_call` | `info` (`error` se `failed`) | `toolName`, `kind`, `module` (`PLATFORM` sem módulo), `workspaceId`, `userId`, `clientId`, `outcome` (`ok` · `error` = `AppError` devolvido como `isError` · `failed` = a ferramenta lançou), `errorCode`, `durationMs`, `source = mcp`; `detail` = `{ grantId, clientName, via? }` (`via = steel_call_tool`) |
+| `mcp.tools_list` | `info` | `count` (listadas), `clientId`, `workspaceId`, `userId`; `detail` = `{ hidden }` |
+| `mcp.rejected` | `warn` | `reason` (`invalid_token`, `stale_grant`, `rate_limited_user`, `rate_limited_client`, `access_failed`), `errorCode`, `clientId`/`userId`/`workspaceId` quando há grant |
+| `mcp.handler_failed` | `error` | `toolName` (só em `tools/call`), `clientId`, `workspaceId`, `message`; `detail` = `{ method }` |
+
+`toolName` e `clientId` entraram em `ALLOWED_LOG_FIELD_KEYS`
+(`lib/axiom/log-fields.ts`): viram colunas próprias para o painel agrupar
+sem `parse_json`. Painel: `docs/mcp/axiom-dashboard.json` (chamadas por
+desfecho, erros por ferramenta/código, p50/p95 por ferramenta, clientes com
+mais chamadas, recusas, falhas, tamanho do `tools/list`).
+
+### Erros inesperados (Sentry)
+
+- Exceção dentro do `execute` de uma ferramenta: o registry a transforma em
+  `INTERNAL_SERVER_ERROR` (o cliente vê `isError`); antes disso o adaptador
+  manda a causa ao Sentry e o log sai com `outcome = failed`.
+- Exceção em qualquer handler MCP (`tools/list`, resources, prompts…) que
+  não seja `McpError`: vai ao Sentry, sai `mcp.handler_failed` no Axiom e o
+  cliente recebe `-32603` com mensagem genérica em pt-BR (nada interno
+  vaza). `McpError` (protocolo, ex. `-32602`, `-32002`) passa direto.
+- Tags: `component = mcp`, `mcp.method`, `mcp.client`, `mcp.tool` (só em
+  `tools/call`). Sem argumentos, sem request, sem resultado. Sem DSN, nada
+  é importado (mesmo contrato do `instrumentation.ts`).
+
+### Descoberta de ferramentas (`src/lib/mcp/discovery.ts`)
+
+Clientes MCP põem todas as ferramentas listadas no contexto do modelo; com
+o registry inteiro (admin com os três módulos: ~44 de leitura hoje, mais as
+escritas na onda 2) a lista fica cara e o modelo escolhe pior.
+
+- **Até 40 ferramentas expostas** (`MCP_TOOLS_LIST_THRESHOLD`): lista tudo,
+  sem meta-ferramentas.
+- **Acima disso** o `tools/list` leva:
+  1. as de plataforma (`module: null`) e **todas as de escrita** — o
+     cliente decide o que confirmar pelas anotações de cada escrita, então
+     escrita nunca fica atrás de uma ferramenta genérica;
+  2. até 20 de leitura de módulo (`MCP_COMPACT_READ_TOOLS`), das
+     categorias mais usadas. Categoria = `módulo:recurso RBAC`
+     (`permission.resource`; sem recurso = `geral`). Ordem: chamadas MCP do
+     workspace no mês atual + anterior, depois uma ordem padrão (chamados,
+     oportunidades, leads, conversas, base de conhecimento…), depois a do
+     registry. Cada módulo exposto recebe primeiro uma cota justa
+     (`20 / nº de módulos`) da sua categoria do topo; o resto segue o
+     ranking, e uma categoria pode entrar em parte (as ferramentas mais
+     chamadas dela primeiro);
+  3. `steel_find_tools` — `{ module?, query? }`, mesma busca do assistente
+     (`findTools` de `selection.ts`) sobre **todas** as expostas; devolve
+     até 10 com `name`, `title`, `kind`, `module`, `description`,
+     `inputSchema` (compactado) e `listed`;
+  4. `steel_call_tool` — `{ name, arguments? }`, executa uma ferramenta de
+     **leitura** exposta (clientes só deixam o modelo chamar o que foi
+     listado). Escrita é recusada com `isError` (`AI_TOOL_NOT_ALLOWED`):
+     ela já está na lista, com as próprias anotações. Nome fora do grant:
+     `-32602`, como no `tools/call`.
+- Esconder é decisão de **listagem**, não de acesso: `tools/call` com o
+  nome real de uma ferramenta escondida funciona. As duas meta-ferramentas
+  são `readOnlyHint: true`, não destrutivas, idempotentes e fechadas
+  (`openWorldHint: false`), e só respondem enquanto algo está escondido.
+- Uso: hash Redis `mcp:tool-usage:<workspaceId>:<YYYY-MM>` (fuso de São
+  Paulo), campo = nome da ferramenta, `HINCRBY` a cada `tools/call`, TTL de
+  62 dias (`src/lib/mcp/tool-usage.ts`). É dica de produto por workspace,
+  nunca entrada de autorização; sem Redis o ranking cai na ordem padrão.
+  O Redis só é lido quando a lista passa do limite.
+- Sem sessão (Streamable HTTP sem estado) não há
+  `notifications/tools/list_changed`: a lista é recalculada a cada
+  `tools/list`.
+- **Onda 2 (mcp-governance):** as escritas liberadas por
+  `mcpAllowedKinds` entram sempre no grupo 1; `steel_call_tool` continua só
+  de leitura.
+
+Incidente com um cliente: `docs/runbooks/mcp-incident.md`.
+
 ## Fatias
 
 | Fatia | Onda | Entrega |
@@ -158,4 +239,5 @@ torná-los absolutos (`<origem>/<caminho>`).
 | mcp-auth | 1 | provedor OAuth, consentimento, `IntegrationGrant`, `resolveMcpGrant`, Apps conectados do usuário |
 | mcp-server | 1 | `/api/mcp`, adaptador do registry (leitura), resources, prompts |
 | mcp-docs | 1b | `/dev/mcp` (guia com a lista de ferramentas gerada do registry no build), manual "Conectar o Steel ao Claude, ChatGPT ou Cursor", runbook `docs/runbooks/mcp-edge-proxy.md`, MCP em todos os planos (`docs/plans-review.md`) |
+| mcp-observability | 2 | log por chamada no Axiom + painel, Sentry no adaptador, descoberta (`steel_find_tools`/`steel_call_tool`) acima de 40 ferramentas, runbook de incidente |
 | mcp-governance | 2 | escrita via `mcp:write`, interruptor do admin, Apps conectados do workspace, changelog; tira o aviso "Escrita em liberação" de `content/dev/mcp.mdx` |
