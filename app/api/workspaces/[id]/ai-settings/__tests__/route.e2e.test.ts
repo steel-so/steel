@@ -90,6 +90,45 @@ describe('Workspace AI settings', () => {
     )
   })
 
+  it('should keep MCP writes off by default and let only the owner allow them', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const member = await addMember(workspace.id, 'MEMBER')
+
+    const before = await getJson(
+      `/api/workspaces/${workspace.id}/ai-settings`,
+      member.cookie,
+    )
+    expect((await before.json()).data.mcpWriteEnabled).toBe(false)
+
+    const forbidden = await patchJson(
+      `/api/workspaces/${workspace.id}/ai-settings`,
+      { mcpWriteEnabled: true },
+      member.cookie,
+    )
+    expect(forbidden.status).toBe(403)
+
+    const invalid = await patchJson(
+      `/api/workspaces/${workspace.id}/ai-settings`,
+      { mcpWriteEnabled: 'yes' },
+      user.cookie,
+    )
+    expect(invalid.status).toBe(422)
+
+    const updated = await patchJson(
+      `/api/workspaces/${workspace.id}/ai-settings`,
+      { mcpWriteEnabled: true },
+      user.cookie,
+    )
+    expect(updated.status).toBe(200)
+    expect((await updated.json()).data.mcpWriteEnabled).toBe(true)
+
+    const after = await getJson(
+      `/api/workspaces/${workspace.id}/ai-settings`,
+      member.cookie,
+    )
+    expect((await after.json()).data.mcpWriteEnabled).toBe(true)
+  })
+
   it('should reject an invalid payload', async () => {
     const { user, workspace } = await authenticatedOwner()
 

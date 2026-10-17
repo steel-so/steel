@@ -48,6 +48,11 @@ export interface WorkspaceAiSettingsDTO {
   autopilotEnabled: boolean
   /** Weekly usage summary e-mailed to the owners (admin, on by default). */
   usageWeeklyEmailEnabled: boolean
+  /**
+   * External AI clients connected over MCP with `mcp:write` may create,
+   * update and run actions; DELETE is never exposed (admin, off by default).
+   */
+  mcpWriteEnabled: boolean
   usage: AiUsageSummaryDTO
   /** Modelo escolhido pelo usuário atual (`null` = segue o padrão). */
   userPreference: string | null

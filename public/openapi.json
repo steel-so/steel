@@ -11270,6 +11270,9 @@
                   },
                   "usageWeeklyEmailEnabled": {
                     "type": "boolean"
+                  },
+                  "mcpWriteEnabled": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -181279,6 +181282,10 @@
             "type": "boolean",
             "description": "Resumo semanal do consumo de IA por e-mail para os donos do workspace (segundas, 08:00 de Brasília). Ligado por padrão."
           },
+          "mcpWriteEnabled": {
+            "type": "boolean",
+            "description": "Clientes de IA conectados por MCP com o escopo `mcp:write` podem criar, editar e executar ações (exclusões nunca são expostas). Desligado por padrão."
+          },
           "usage": {
             "type": "object",
             "properties": {
@@ -181340,6 +181347,7 @@
           "memoryEnabled",
           "autopilotEnabled",
           "usageWeeklyEmailEnabled",
+          "mcpWriteEnabled",
           "usage",
           "userPreference",
           "canManage"

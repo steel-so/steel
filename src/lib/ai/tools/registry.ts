@@ -68,6 +68,12 @@ export interface AiToolAccess {
   autopilotEnabled: boolean
   /** Steel AI memory tools offered (`resolveToolAccess` sets it; default on). */
   memoryEnabled?: boolean
+  /**
+   * MCP clients with `mcp:write` may be offered write tools
+   * (`resolveToolAccess` sets it; default off). Read by the MCP server only —
+   * `isToolAllowed` ignores it, so the in-app assistant is unaffected.
+   */
+  mcpWriteEnabled?: boolean
 }
 
 const TOOL_NAME = /^[a-z][a-z0-9_]{1,63}$/
@@ -221,7 +227,7 @@ export function toToolSpecs(tools: readonly AnySteelAiTool[]): AiToolSpec[] {
 /**
  * Resolves the caller's access in one go: membership (403 for strangers and
  * suspended workspaces), enabled modules, RBAC matrix and the workspace
- * switches (AI, agent mode, Steel Agents, Autopilot).
+ * switches (AI, agent mode, Steel Agents, Autopilot, MCP writes).
  */
 export async function resolveToolAccess(
   actorId: string,
@@ -246,6 +252,7 @@ export async function resolveToolAccess(
     agentsEnabled: settings.value?.agentsEnabled ?? true,
     autopilotEnabled: settings.value?.autopilotEnabled ?? false,
     memoryEnabled: settings.value?.memoryEnabled ?? true,
+    mcpWriteEnabled: settings.value?.mcpWriteEnabled ?? false,
   })
 }
 
