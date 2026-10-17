@@ -46,6 +46,7 @@ function action(overrides: Partial<AiPendingAction> = {}): AiPendingAction {
     status: 'PENDING',
     requiresDoubleConfirm: false,
     autoExecuted: false,
+    integrationGrantId: null,
     result: null,
     error: null,
     expiresAt: new Date('2026-10-07T12:20:00Z'),
@@ -64,6 +65,7 @@ function assistantRow(
   return {
     ...action(),
     conversation: { id: 'c1', title: 'Priorizar VPN' },
+    integrationGrant: null,
     ...overrides,
   }
 }
@@ -125,7 +127,32 @@ describe('InboxAiPendingService.list', () => {
       conversation: { id: 'c1', title: 'Priorizar VPN' },
       agent: null,
       runId: null,
+      client: null,
     })
+  })
+
+  it('should tag MCP actions with the client and decide them in the inbox', async () => {
+    asRole('MEMBER')
+    mockedRepo.listAssistant.mockResolvedValue(
+      ok([
+        assistantRow({
+          conversation: null,
+          integrationGrantId: 'grant1',
+          integrationGrant: { client: { clientId: 'cl1', name: 'Claude' } },
+        }),
+      ]),
+    )
+
+    const result = expectOk(await InboxAiPendingService.list('u1', 'ws1', NOW))
+
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        source: 'ASSISTANT',
+        path: '/inbox?view=ai',
+        conversation: null,
+        client: { id: 'cl1', name: 'Claude' },
+      }),
+    )
   })
 
   it('should fall back to /ai when the action has no conversation', async () => {

@@ -122,6 +122,7 @@ const AI_PENDING = () => ({
       conversation: { id: 'conv1', title: 'Priorizar a VPN' },
       agent: null,
       runId: null,
+      client: null,
     },
     {
       source: 'AGENT',
@@ -143,6 +144,7 @@ const AI_PENDING = () => ({
       conversation: null,
       agent: { id: 'ag1', name: 'Triagem' },
       runId: 'run1',
+      client: null,
     },
   ],
 })
@@ -484,6 +486,37 @@ describe('<NotificationInbox /> — pendências da IA', () => {
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Ação rejeitada'),
     )
+  })
+
+  it('o link de confirmação do MCP destaca a ação (?action=)', async () => {
+    search.value = 'view=ai&action=pa1'
+    Element.prototype.scrollIntoView = vi.fn()
+    mockFetch(routes())
+    render()
+
+    const card = await screen.findByRole('article', {
+      name: 'Pendência da IA: Alterar prioridade do chamado INC-000040',
+    })
+    expect(card.getAttribute('aria-current')).toBe('true')
+    expect(
+      screen.queryByText(/A ação deste link não está mais pendente/),
+    ).toBeNull()
+  })
+
+  it('avisa quando a ação do link não está mais pendente', async () => {
+    search.value = 'view=ai&action=gone'
+    mockFetch(routes())
+    render()
+    expect(
+      await screen.findByText(/A ação deste link não está mais pendente/),
+    ).toBeTruthy()
+
+    search.value = 'view=ai&action=gone'
+    mockFetch(
+      routes([{ match: `${BASE}/ai-pending`, data: { items: [], count: 0 } }]),
+    )
+    render()
+    expect(await screen.findByText(/Nenhuma pendência da IA/)).toBeTruthy()
   })
 
   it('mostra o estado vazio quando não há pendências', async () => {
