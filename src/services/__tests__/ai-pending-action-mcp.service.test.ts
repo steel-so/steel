@@ -73,7 +73,7 @@ const ACCESS: AiToolAccess = {
   isPrivileged: false,
   permissions: {
     tasks: ['VIEW', 'CREATE'],
-    conversations: ['VIEW', 'UPDATE'],
+    conversations: ['VIEW', 'EDIT'],
   },
   // MCP writes do not depend on the in-app agent mode.
   agentModeEnabled: false,
@@ -103,7 +103,7 @@ const sendMessage: AnySteelAiTool = {
   module: 'COMMUNICATION',
   kind: 'ACTION',
   customerFacing: true,
-  permission: { resource: 'conversations', action: 'UPDATE' },
+  permission: { resource: 'conversations', action: 'EDIT' },
 }
 const deleteTask: AnySteelAiTool = {
   ...createTask,
