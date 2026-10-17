@@ -61,7 +61,11 @@ async function authorize(clientId: string, cookie: string, challenge: string) {
     headers: { Cookie: cookie, 'x-forwarded-for': clientIp() },
     redirect: 'manual',
   })
-  const location = res.headers.get('location')
+  // A browser navigation gets a 302; Node's fetch sends `sec-fetch-mode:
+  // cors`, so the provider answers `{ redirect: true, url }` instead.
+  const location =
+    res.headers.get('location') ??
+    ((await res.json().catch(() => null)) as { url?: string } | null)?.url
   expect(location, `status ${res.status}`).toBeTruthy()
   return new URL(location as string, BASE_URL)
 }
