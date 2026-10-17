@@ -99,8 +99,17 @@ describe('toAiActionLogDTO()', () => {
       outcome: 'success',
       summary: 'Tarefa criada',
       error: null,
+      oauthClientId: null,
       createdAt: '2026-10-06T12:00:00.000Z',
     })
+  })
+
+  it('should carry the MCP source and client', () => {
+    expect(
+      toAiActionLogDTO(
+        createFakeAiActionLog({ source: 'MCP', oauthClientId: 'client1' }),
+      ),
+    ).toMatchObject({ source: 'MCP', oauthClientId: 'client1' })
   })
 
   it('should classify a legacy free-text outcome by the error column', () => {

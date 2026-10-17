@@ -4,6 +4,7 @@ import {
   seedOauthAccessToken,
   seedOauthClient,
 } from '@/src/__tests__/factories/integration-grant.factory'
+import { seedAiPendingAction } from '@/src/__tests__/factories/steel-ai.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
@@ -169,6 +170,42 @@ describe('IntegrationGrantRepository', () => {
         (g) => g.id,
       ),
     ).toEqual([other.id])
+  })
+
+  it('cancels the pending writes the revoked client proposed', async () => {
+    const { user, workspace, client } = await scenario()
+    const grant = await seedIntegrationGrant({
+      userId: user.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+      scopes: ['mcp:read', 'mcp:write'],
+    })
+    const waiting = await seedAiPendingAction(workspace.id, {
+      requestedById: user.id,
+      integrationGrantId: grant.id,
+    })
+    const done = await seedAiPendingAction(workspace.id, {
+      requestedById: user.id,
+      integrationGrantId: grant.id,
+      status: 'EXECUTED',
+    })
+    const chat = await seedAiPendingAction(workspace.id, {
+      requestedById: user.id,
+    })
+
+    const at = new Date('2026-10-17T12:00:00Z')
+    expectOk(await IntegrationGrantRepository.revoke(grant.id, at))
+
+    const rows = await prisma.aiPendingAction.findMany({
+      where: { id: { in: [waiting.id, done.id, chat.id] } },
+    })
+    const byId = new Map(rows.map((row) => [row.id, row]))
+    expect(byId.get(waiting.id)).toMatchObject({
+      status: 'CANCELED',
+      decidedAt: at,
+    })
+    expect(byId.get(done.id)?.status).toBe('EXECUTED')
+    expect(byId.get(chat.id)?.status).toBe('PENDING')
   })
 
   it('touches lastUsedAt at most once per throttle window', async () => {

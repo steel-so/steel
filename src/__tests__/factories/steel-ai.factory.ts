@@ -65,6 +65,7 @@ export function createFakeAiPendingAction(
     status: 'PENDING',
     requiresDoubleConfirm: false,
     autoExecuted: false,
+    integrationGrantId: null,
     result: null,
     error: null,
     expiresAt: new Date(now.getTime() + 30 * 60_000),
@@ -96,6 +97,7 @@ export function createFakeAiActionLog(
     outcome: 'success',
     summary: 'Tarefa criada',
     error: null,
+    oauthClientId: null,
     createdAt: new Date('2026-10-06T12:00:00.000Z'),
     ...overrides,
   }

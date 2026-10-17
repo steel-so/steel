@@ -25,6 +25,7 @@ export function toAiActionLogDTO(row: AiActionLog): AiActionLogDTO {
           : 'success',
     summary: row.summary,
     error: row.error,
+    oauthClientId: row.oauthClientId,
     createdAt: row.createdAt.toISOString(),
   }
 }

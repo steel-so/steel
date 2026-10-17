@@ -31,6 +31,8 @@ export interface CreateAiActionLogInput {
   /** pt-BR summary of what was done (success only). */
   summary?: string | null
   error?: string | null
+  /** MCP writes: the OAuth client that called the tool. */
+  oauthClientId?: string | null
 }
 
 /** Durable trail of every write executed by AI (assistant or agent). */

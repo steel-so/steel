@@ -179,7 +179,8 @@ export interface AiCapabilitiesDTO {
 /** One write executed by AI (assistant confirm or agent run). */
 export interface AiActionLogDTO {
   id: string
-  source: 'ASSISTANT' | 'AGENT'
+  /** `MCP`: an external AI client through the MCP server (ADR 0032). */
+  source: 'ASSISTANT' | 'AGENT' | 'MCP'
   actorId: string | null
   agentId: string | null
   pendingActionId: string | null
@@ -193,5 +194,7 @@ export interface AiActionLogDTO {
   /** pt-BR summary of what the tool did (null on failure). */
   summary: string | null
   error: string | null
+  /** OAuth client of an MCP write. */
+  oauthClientId: string | null
   createdAt: string
 }
