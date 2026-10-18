@@ -108,6 +108,12 @@ jobs:
           ref: refs/tags/${{ needs.prepare.outputs.version }}
           persist-credentials: false
 
+      # Deployment id for the version skew protection (ADR 0037): the commit
+      # of the release tag (CalVer has dots, which Next rejects).
+      - name: Resolve deployment id
+        id: dpl
+        run: echo "id=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
@@ -130,8 +136,10 @@ jobs:
             NEXT_PUBLIC_URL=${{ vars.PRODUCTION_URL }}
             NEXT_PUBLIC_AXIOM_TOKEN=${{ secrets.PRODUCTION_NEXT_PUBLIC_AXIOM_TOKEN || secrets.NEXT_PUBLIC_AXIOM_TOKEN }}
             NEXT_PUBLIC_AXIOM_DATASET=${{ secrets.PRODUCTION_NEXT_PUBLIC_AXIOM_DATASET || secrets.NEXT_PUBLIC_AXIOM_DATASET }}
+            NEXT_DEPLOYMENT_ID=${{ steps.dpl.outputs.id }}
           secrets: |
             hugeicons_token=${{ secrets.HUGEICONS_TOKEN }}
+            server_actions_encryption_key=${{ secrets.PRODUCTION_NEXT_SERVER_ACTIONS_ENCRYPTION_KEY || secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
