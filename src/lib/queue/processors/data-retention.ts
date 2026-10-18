@@ -45,6 +45,21 @@ async function cleanupWebhookDeliveries(): Promise<CleanupResult> {
   return { deleted: count, cutoff: cutoff.toISOString() }
 }
 
+/**
+ * Personal API tokens (ADR 0035) revoked or expired more than 90 days ago.
+ * Live tokens are never touched. The CLI device-flow codes need no cleanup:
+ * they live only in Redis, with a TTL (`device-authorization.cache.ts`).
+ */
+async function cleanupApiTokens(): Promise<CleanupResult> {
+  const cutoff = new Date(Date.now() - RetentionWindowMs.apiTokensAfterEnd)
+  const { count } = await prisma.apiToken.deleteMany({
+    where: {
+      OR: [{ revokedAt: { lt: cutoff } }, { expiresAt: { lt: cutoff } }],
+    },
+  })
+  return { deleted: count, cutoff: cutoff.toISOString() }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -80,6 +95,16 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
     case DataRetentionJob.CleanupWebhookDeliveries: {
       const result = await cleanupWebhookDeliveries()
       logger.info('queue.data_retention.webhook_deliveries_cleaned', {
+        component: 'Worker',
+        jobId: job.id,
+        deleted: result.deleted,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.CleanupApiTokens: {
+      const result = await cleanupApiTokens()
+      logger.info('queue.data_retention.api_tokens_cleaned', {
         component: 'Worker',
         jobId: job.id,
         deleted: result.deleted,

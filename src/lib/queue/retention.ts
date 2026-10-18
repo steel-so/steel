@@ -5,6 +5,11 @@ export const RetentionWindowMs = {
   verificationAfterExpiry: 1 * DAY_MS,
   /** Outbound webhook delivery log (ADR 0036). */
   webhookDeliveries: 30 * DAY_MS,
+  /**
+   * Personal API tokens (ADR 0035) kept after they were revoked or expired,
+   * so the settings list and audit lookups still resolve the token name.
+   */
+  apiTokensAfterEnd: 90 * DAY_MS,
 } as const
 
 export const RetentionCron = {
