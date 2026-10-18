@@ -120,6 +120,31 @@ describe('AiPendingActionRepository', () => {
     expect(completed.error).toBe('boom')
   })
 
+  it('should refresh the preview of a PENDING action only', async () => {
+    const { workspace } = await context()
+    const action = await seedAiPendingAction(workspace.id)
+    const decided = await seedAiPendingAction(workspace.id, {
+      status: 'CANCELED',
+    })
+    const fresh = { title: 'Atualizar chamado', summary: 'Novo título' }
+
+    const refreshed = expectOk(
+      await AiPendingActionRepository.refreshPreview(action.id, fresh),
+    )
+    expect(refreshed?.preview).toEqual(fresh)
+    expect(refreshed?.status).toBe('PENDING')
+
+    expect(
+      expectOk(
+        await AiPendingActionRepository.refreshPreview(decided.id, fresh),
+      ),
+    ).toBeNull()
+    const untouched = expectOk(
+      await AiPendingActionRepository.findById(decided.id, workspace.id),
+    )
+    expect(untouched.preview).toEqual(decided.preview)
+  })
+
   it('should expire only overdue PENDING actions of the workspace', async () => {
     const { workspace } = await context()
     const other = await seedWorkspace()
@@ -177,6 +202,7 @@ describe('AiPendingActionRepository', () => {
     vi.spyOn(prisma.aiPendingAction, 'updateMany')
       .mockRejectedValueOnce(new Error('down'))
       .mockRejectedValueOnce(new Error('down'))
+      .mockRejectedValueOnce(new Error('down'))
     expectErr(
       await AiPendingActionRepository.findById('a', 'w'),
       'DATABASE_ERROR',
@@ -200,6 +226,10 @@ describe('AiPendingActionRepository', () => {
     )
     expectErr(
       await AiPendingActionRepository.expireOverdue('w'),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await AiPendingActionRepository.refreshPreview('a', { title: 'x' }),
       'DATABASE_ERROR',
     )
   })

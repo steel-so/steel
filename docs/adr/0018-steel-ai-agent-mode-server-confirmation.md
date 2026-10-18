@@ -62,3 +62,18 @@ Detalhes para aplicar:
   "automática" ou "requer aprovação", mas exclusão sempre requer aprovação.
 - Revisitar se surgir demanda de lote (confirmar várias ações de uma vez)
   ou de ações de baixo risco sem confirmação no assistente.
+
+## Atualização (18/10/2026) — prévia vencida
+
+A confirmação revalidava permissão e status, mas não o conteúdo: `execute`
+recalcula o plano a partir dos registros atuais, então uma alteração feita
+por outra pessoa entre a prévia e o clique era aplicada (ou misturada) sem
+que ninguém a visse. Agora, antes de reivindicar a ação, o servidor monta a
+prévia de novo com os mesmos `args` e compara com a gravada
+(`assertPreviewUnchanged` + `previewFingerprint`). Se mudou, nada executa: a
+ação continua `PENDING` com a prévia nova e a resposta é
+`409 AI_PENDING_ACTION_CHANGED` ("O registro mudou desde a prévia. Revise e
+confirme de novo."). Vale para o assistente, para as pendências do MCP e
+para a aprovação dos Steel Agents. A comparação é sobre o que a pessoa viu,
+não sobre `updatedAt`, para que mudanças fora da prévia não bloqueiem; e não
+é uma trava — sobra a janela de milissegundos entre a checagem e a execução.

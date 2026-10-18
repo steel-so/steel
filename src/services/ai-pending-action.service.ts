@@ -10,12 +10,14 @@ import {
   aiAgentModeDisabled,
   aiDisabled,
   aiDoubleConfirmationRequired,
+  aiPendingActionChanged,
   aiPendingActionExpired,
   aiPendingActionNotFound,
   aiPendingActionNotPending,
   aiToolNotAllowed,
   mcpWriteDisabled,
 } from '@/src/errors/app-error'
+import { samePreview } from '@/src/lib/ai/tools/preview-fingerprint'
 import {
   type AiToolAccess,
   type AiToolRunResult,
@@ -180,6 +182,82 @@ async function runClaimed(
   })
 
   return ok({ action: completed.value, run })
+}
+
+/**
+ * Stale-preview guard, run on confirm/approve before the claim. `execute`
+ * re-plans from the current records, so a change made after the preview
+ * (someone else edited the ticket, moved the opportunity, closed the
+ * conversation…) would be applied — or mixed in — without anyone seeing it.
+ * The preview is built again with the same `args` and compared with the one
+ * stored on the row (`previewFingerprint`):
+ * - same → `'unchanged'`, the caller claims and executes;
+ * - different → the row keeps PENDING with the fresh preview and the call
+ *   answers `AI_PENDING_ACTION_CHANGED` (`details.action` = the refreshed
+ *   action) so the human reviews and confirms again;
+ * - the row was decided meanwhile (double click) → `'decided'`, the caller
+ *   answers with that outcome.
+ * A preview that cannot be built now (bad args, record gone, window
+ * closed) does not block: `execute` fails the same way and records FAILED,
+ * as before. The guard narrows the window to the time between this check
+ * and the execution; it is not a lock.
+ */
+export async function assertPreviewUnchanged(
+  action: AiPendingAction,
+  tool: AnySteelAiTool,
+  ctx: AiToolContext,
+  actorId: string,
+): Promise<Result<'unchanged' | 'decided'>> {
+  if (!tool.preview) return ok('unchanged')
+  const parsed = tool.parse(action.args as Record<string, unknown>)
+  if (!parsed.ok) return ok('unchanged')
+
+  let fresh: Awaited<ReturnType<NonNullable<AnySteelAiTool['preview']>>>
+  try {
+    fresh = await tool.preview(ctx, parsed.value)
+  } catch {
+    return ok('unchanged')
+  }
+  if (!fresh?.ok || samePreview(action.preview, fresh.value)) {
+    return ok('unchanged')
+  }
+
+  const refreshed = await AiPendingActionRepository.refreshPreview(
+    action.id,
+    fresh.value as unknown as Prisma.InputJsonValue,
+  )
+  if (!refreshed.ok) return refreshed
+  if (!refreshed.value) return ok('decided')
+
+  logger.info(
+    'steel_ai.action_preview_changed',
+    logFields(
+      {
+        component: 'AiPendingActionService',
+        workspaceId: action.workspaceId,
+        actionId: action.id,
+      },
+      { toolName: action.toolName, source: ctx.source },
+    ),
+  )
+  auditMutation({
+    entity: 'ai_pending_action',
+    action: 'confirm',
+    actorId,
+    targetId: action.id,
+    outcome: 'failure',
+    reason: 'AI_PENDING_ACTION_CHANGED',
+    meta: {
+      workspaceId: action.workspaceId,
+      toolName: action.toolName,
+      kind: action.kind,
+      module: action.module,
+      source: ctx.source,
+    },
+  })
+  return err(
+    aiPendingActionChanged({ action: toAiPendingActionDTO(refreshed.value) }),
+  )
 }
 
 /**
@@ -484,6 +562,19 @@ function alreadyDecided(action: AiPendingAction): Result<AiPendingActionDTO> {
   return err(aiPendingActionNotPending())
 }
 
+/** The outcome of an action another request decided first. */
+async function reloadDecided(
+  actionId: string,
+  workspaceId: string,
+): Promise<Result<AiPendingActionDTO>> {
+  const current = await AiPendingActionRepository.findById(
+    actionId,
+    workspaceId,
+  )
+  if (!current.ok) return current
+  return alreadyDecided(current.value)
+}
+
 /** Own action (assistant) — someone else's id answers 404. */
 async function loadOwnAction(
   actorId: string,
@@ -569,19 +660,24 @@ export const AiPendingActionService = {
     if (!gate.ok) return gate
     const { tool, ctx } = gate.value
 
+    // What the human saw must still be what runs (assistant and MCP alike).
+    const unchanged = await assertPreviewUnchanged(
+      action.value,
+      tool,
+      ctx,
+      actorId,
+    )
+    if (!unchanged.ok) return unchanged
+    if (unchanged.value === 'decided') {
+      return reloadDecided(actionId, workspaceId)
+    }
+
     const claimed = await AiPendingActionRepository.transitionFromPending(
       actionId,
       { status: 'EXECUTED', decidedById: actorId, decidedAt: now },
     )
     if (!claimed.ok) return claimed
-    if (!claimed.value) {
-      const current = await AiPendingActionRepository.findById(
-        actionId,
-        workspaceId,
-      )
-      if (!current.ok) return current
-      return alreadyDecided(current.value)
-    }
+    if (!claimed.value) return reloadDecided(actionId, workspaceId)
 
     const executed = await executeClaimedAction(claimed.value, tool, {
       ctx,

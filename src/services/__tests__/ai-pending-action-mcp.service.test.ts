@@ -138,6 +138,8 @@ function mcpPending(overrides = {}) {
     kind: 'ACTION',
     module: 'COMMUNICATION',
     args: { text: 'Olá' },
+    // What the user saw; the beforeEach preview mock rebuilds the same one.
+    preview: { title: 'Criar tarefa “Ligar”', summary: 'x' },
     integrationGrantId: 'g1',
     expiresAt: new Date('2026-10-17T12:30:00.000Z'),
     ...overrides,
@@ -402,6 +404,35 @@ describe('AiPendingActionService.confirm() — MCP actions', () => {
     expectErr(
       await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
       'AI_TOOL_NOT_ALLOWED',
+    )
+  })
+
+  it('should refuse with a fresh preview when the record changed after the proposal', async () => {
+    setup()
+    const fresh = { title: 'Enviar para Ana (contato renomeado)', summary: 'x' }
+    vi.mocked(
+      sendMessage.preview as ReturnType<typeof vi.fn>,
+    ).mockResolvedValue(ok(fresh))
+    repo.refreshPreview.mockImplementation(async (id, preview) =>
+      ok(mcpPending({ id, preview: preview as never })),
+    )
+
+    const error = expectErr(
+      await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+      'AI_PENDING_ACTION_CHANGED',
+    )
+
+    expect(sendMessage.preview).toHaveBeenCalledWith(CTX, { text: 'Olá' })
+    expect(
+      (error.details as { action: { preview: unknown } }).action.preview,
+    ).toEqual(fresh)
+    expect(repo.transitionFromPending).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: 'AI_PENDING_ACTION_CHANGED',
+        meta: expect.objectContaining({ source: 'mcp' }),
+      }),
     )
   })
 

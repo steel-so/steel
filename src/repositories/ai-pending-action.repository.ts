@@ -129,6 +129,28 @@ export const AiPendingActionRepository = {
     }
   },
 
+  /**
+   * Replaces the preview of a still PENDING action (the records changed
+   * since it was proposed). Returns the updated row, or `null` when the
+   * action was decided in the meantime.
+   */
+  async refreshPreview(
+    id: string,
+    preview: Prisma.InputJsonValue,
+  ): Promise<Result<AiPendingAction | null>> {
+    try {
+      const { count } = await prisma.aiPendingAction.updateMany({
+        where: { id, status: 'PENDING' },
+        data: { preview },
+      })
+      if (count === 0) return ok(null)
+      const action = await prisma.aiPendingAction.findUnique({ where: { id } })
+      return ok(action)
+    } catch (error) {
+      return err(dbError('Failed to refresh AI pending action preview', error))
+    }
+  },
+
   /** Outcome of an already claimed action. */
   async complete(
     id: string,

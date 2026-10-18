@@ -63,7 +63,20 @@ async function seedPendingRun(workspaceId: string, ownerId: string) {
           data.kind === 'CREATE'
             ? { title: 'Ligar para o cliente' }
             : { taskId: 'missing-task' },
-        preview: { title: 'Ação do agente', summary: '' },
+        // What crm_create_task shows for these args: approval rebuilds the
+        // preview and refuses (409) when it no longer matches.
+        preview:
+          data.kind === 'CREATE'
+            ? {
+                title: 'Criar a tarefa “Ligar para o cliente”',
+                summary: 'Uma nova tarefa entra no CRM.',
+                fields: [
+                  { label: 'Título', after: 'Ligar para o cliente' },
+                  { label: 'Status', after: 'A fazer' },
+                ],
+                target: { type: 'crm_task', label: 'Ligar para o cliente' },
+              }
+            : { title: 'Ação do agente', summary: '' },
         requiresDoubleConfirm: data.kind === 'DELETE',
         expiresAt: new Date(Date.now() + 60 * 60_000),
       },

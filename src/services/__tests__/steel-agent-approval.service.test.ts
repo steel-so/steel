@@ -6,6 +6,7 @@ import {
 import { createFakeAiPendingAction } from '@/src/__tests__/factories/steel-ai.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'
+import { aiPendingActionChanged } from '@/src/errors/app-error'
 import type { AnySteelAiTool } from '@/src/lib/ai/tools/types'
 import { SYSTEM_PROFILE_PERMISSIONS } from '@/src/lib/permissions'
 import { err, ok } from '@/src/lib/result'
@@ -37,6 +38,7 @@ vi.mock('@/src/repositories/steel-agent.repository')
 vi.mock('@/src/repositories/ai-pending-action.repository')
 vi.mock('@/src/lib/steel-agents/enqueue')
 vi.mock('@/src/services/ai-pending-action.service', () => ({
+  assertPreviewUnchanged: vi.fn(),
   executeClaimedAction: vi.fn(),
 }))
 
@@ -48,7 +50,10 @@ import {
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
-import { executeClaimedAction } from '@/src/services/ai-pending-action.service'
+import {
+  assertPreviewUnchanged,
+  executeClaimedAction,
+} from '@/src/services/ai-pending-action.service'
 import { assertMember } from '@/src/services/authz'
 import { SteelAgentApprovalService } from '../steel-agent-approval.service'
 
@@ -58,6 +63,7 @@ const runs = vi.mocked(SteelAgentRunRepository)
 const steps = vi.mocked(SteelAgentRunStepRepository)
 const pending = vi.mocked(AiPendingActionRepository)
 const execute = vi.mocked(executeClaimedAction)
+const unchanged = vi.mocked(assertPreviewUnchanged)
 const enqueue = vi.mocked(enqueueSteelAgentRun)
 
 const NOW = new Date('2026-10-06T12:00:00.000Z')
@@ -132,6 +138,7 @@ function setup(
       result: { summary: 'Tarefa criada' },
     }),
   )
+  unchanged.mockResolvedValue(ok('unchanged' as const))
   steps.updateByPendingAction.mockResolvedValue(ok(1))
   enqueue.mockResolvedValue(ok(true))
   return { run, action }
@@ -504,6 +511,59 @@ describe('SteelAgentApprovalService.approve', () => {
       ),
       'AI_TOOL_NOT_ALLOWED',
     )
+  })
+
+  it('should check the preview as the owner and refuse when the record changed', async () => {
+    const { action } = setup()
+    unchanged.mockResolvedValue(err(aiPendingActionChanged({ action: {} })))
+
+    expectErr(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+      'AI_PENDING_ACTION_CHANGED',
+    )
+
+    expect(unchanged).toHaveBeenCalledWith(
+      action,
+      createTool,
+      {
+        workspaceId: 'ws1',
+        actorId: 'owner1',
+        source: 'agent',
+        agentId: 'agent1',
+      },
+      'admin1',
+    )
+    expect(pending.transitionFromPending).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+    expect(enqueue).not.toHaveBeenCalled()
+  })
+
+  it('should answer with the outcome of a decision made during the preview check', async () => {
+    const { action } = setup()
+    unchanged.mockResolvedValue(ok('decided' as const))
+    pending.findById
+      .mockResolvedValueOnce(ok(action))
+      .mockResolvedValueOnce(ok({ ...action, status: 'EXECUTED' }))
+
+    const dto = expectOk(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+    )
+    expect(dto.status).toBe('EXECUTED')
+    expect(execute).not.toHaveBeenCalled()
   })
 
   it('should return the winner outcome when the claim is lost', async () => {

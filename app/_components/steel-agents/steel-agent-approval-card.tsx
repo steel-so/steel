@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { isApiErrorCode } from '@/src/hooks/_fetch'
 import { useDecideSteelAgentAction } from '@/src/hooks/use-steel-agents'
 import type {
   AiActionKindDTO,
@@ -105,6 +106,13 @@ export function SteelAgentApprovalCard({
       notify.success('Ação aprovada.')
     } catch (error) {
       setAskTwice(false)
+      if (isApiErrorCode(error, 'AI_PENDING_ACTION_CHANGED')) {
+        // Still pending: the run refetch brings the fresh preview.
+        notify.warning(
+          'O registro mudou desde a prévia. Revise e aprove de novo.',
+        )
+        return
+      }
       notify.error(error)
     }
   }

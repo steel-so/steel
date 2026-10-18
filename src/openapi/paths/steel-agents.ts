@@ -223,7 +223,7 @@ const routes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Aprovar ação do agente',
     description:
-      'Executa a escrita proposta **com as permissões do responsável** pelo agente (o servidor revalida acesso dele, modo agente, módulo, permissão e se a ferramenta continua permitida). Exclusões exigem `doubleConfirmed: true`. Idempotente: outra aprovação devolve o resultado da primeira. Depois da decisão a execução retoma sozinha.',
+      'Executa a escrita proposta **com as permissões do responsável** pelo agente (o servidor revalida acesso dele, modo agente, módulo, permissão e se a ferramenta continua permitida). Exclusões exigem `doubleConfirmed: true`. Se a prévia montada de novo a partir dos registros atuais difere da que foi aprovada, responde `409 AI_PENDING_ACTION_CHANGED` sem executar (prévia nova em `error.details.action`; a ação segue pendente). Idempotente: outra aprovação devolve o resultado da primeira. Depois da decisão a execução retoma sozinha.',
     consent: true,
     params: { runId: RUN_PARAM, actionId: ACTION_PARAM },
     body: { schema: ApproveSteelAgentActionSchema, required: false },
@@ -233,6 +233,7 @@ const routes: RouteConfig[] = [
     errors: [
       ...DECISION_ERRORS,
       'AI_PENDING_ACTION_EXPIRED',
+      'AI_PENDING_ACTION_CHANGED',
       'AI_DOUBLE_CONFIRMATION_REQUIRED',
       'AI_AGENT_MODE_DISABLED',
       'AI_TOOL_NOT_ALLOWED',

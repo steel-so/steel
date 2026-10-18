@@ -287,3 +287,73 @@ describe('Steel AI pending actions', () => {
     expect(invalid.status).toBe(422)
   })
 })
+
+describe('POST /ai/actions/[actionId]/confirm — stale preview', () => {
+  it('should refuse when the record changed after the preview, then run the fresh one', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const created = await postJson(
+      `/api/workspaces/${workspace.id}/crm/tasks`,
+      { title: 'Ligar' },
+      user.cookie,
+    )
+    expect(created.status).toBe(201)
+    const task = (await created.json()).data
+
+    // What the user was shown when the AI proposed to finish the task.
+    const action = await prisma.aiPendingAction.create({
+      data: {
+        workspaceId: workspace.id,
+        requestedById: user.id,
+        toolName: 'crm_update_task',
+        kind: 'UPDATE',
+        module: 'CRM',
+        args: { taskId: task.id, status: 'DONE' },
+        preview: {
+          title: 'Concluir a tarefa “Ligar”',
+          summary: '1 campo(s) alterado(s).',
+          fields: [{ label: 'Status', before: 'A fazer', after: 'Concluída' }],
+        },
+        expiresAt: new Date(Date.now() + 30 * 60_000),
+      },
+    })
+
+    // Someone else edits the task before the click.
+    const edited = await patchJson(
+      `/api/workspaces/${workspace.id}/crm/tasks/${task.id}`,
+      { title: 'Ligar para a Acme' },
+      user.cookie,
+    )
+    expect(edited.status).toBe(200)
+
+    const refused = await postJson(
+      `${base(workspace.id)}/actions/${action.id}/confirm`,
+      {},
+      user.cookie,
+    )
+    expect(refused.status).toBe(409)
+    const refusedBody = await refused.json()
+    expect(refusedBody.error.code).toBe('AI_PENDING_ACTION_CHANGED')
+    expect(refusedBody.message).toBe(
+      'O registro mudou desde a prévia. Revise e confirme de novo.',
+    )
+    expect(refusedBody.error.details.action.status).toBe('PENDING')
+    expect(refusedBody.error.details.action.preview.title).toContain(
+      'Ligar para a Acme',
+    )
+    const untouched = await prisma.crmTask.findUnique({
+      where: { id: task.id },
+    })
+    expect(untouched?.status).toBe('TODO')
+
+    // The second click confirms the preview the user now sees.
+    const confirmed = await postJson(
+      `${base(workspace.id)}/actions/${action.id}/confirm`,
+      {},
+      user.cookie,
+    )
+    expect(confirmed.status).toBe(200)
+    expect((await confirmed.json()).data.status).toBe('EXECUTED')
+    const done = await prisma.crmTask.findUnique({ where: { id: task.id } })
+    expect(done?.status).toBe('DONE')
+  })
+})

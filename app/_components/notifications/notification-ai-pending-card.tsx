@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { isApiErrorCode } from '@/src/hooks/_fetch'
 import { useDecideInboxAiPending } from '@/src/hooks/use-notifications'
 import type { InboxAiPendingItemDTO } from '@/types/notification'
 import type { AiActionKindDTO } from '@/types/steel-ai'
@@ -131,6 +132,13 @@ export function NotificationAiPendingCard({
       }
     } catch (error) {
       setAskTwice(false)
+      if (isApiErrorCode(error, 'AI_PENDING_ACTION_CHANGED')) {
+        // Still pending: the list refetch brings the fresh preview.
+        notify.warning(
+          'O registro mudou desde a prévia. Revise e confirme de novo.',
+        )
+        return
+      }
       notify.error(error, 'Não foi possível decidir a ação')
     } finally {
       setPendingDecision(null)

@@ -230,7 +230,9 @@ export function useDecideSteelAgentAction(workspaceId: string, runId: string) {
         { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) },
         'Erro ao aprovar a ação',
       ),
-    onSuccess: refresh,
+    // Also on error: a refused approval (AI_PENDING_ACTION_CHANGED) leaves
+    // the action pending with a fresh preview that the screen must show.
+    onSettled: refresh,
   })
   const reject = useMutation({
     mutationFn: (actionId: string) =>
