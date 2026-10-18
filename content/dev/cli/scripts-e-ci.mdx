@@ -1,0 +1,205 @@
+---
+title: CLI em scripts e no CI
+description: Use o Steel CLI sem navegador. Token em STEEL_TOKEN, steel api para qualquer rota da API v1, saída em JSON, códigos de saída e um exemplo de GitHub Actions.
+section: ferramentas
+order: 2
+---
+
+Este guia é para quem roda o [Steel CLI](/dev/cli) onde não há ninguém para
+responder: scripts, cron e pipelines de CI. Fora de um terminal, o CLI não
+pergunta nada, não abre navegador e escreve JSON.
+
+## Crie o token do job
+
+No CI não há navegador para o `steel login`. Use um token pessoal criado à mão:
+
+1. No Steel, abra **Ajustes › Segurança › Tokens de API** e clique em **Criar
+   token**.
+2. Dê um **Nome** que diga onde ele roda (por exemplo, "Deploy no GitHub
+   Actions"), escolha o **Workspace**, só os **Módulos** de que o job precisa,
+   o **Nível de acesso** (**Ler e alterar**, se o job cria ou altera algo) e a
+   **Validade**.
+3. Clique em **Criar token** e copie o valor (`stl_pat_…`) na hora. Ele não
+   aparece de novo.
+4. Guarde o valor como segredo do CI (no GitHub, em **Settings › Secrets and
+   variables › Actions**) com o nome `STEEL_TOKEN`.
+
+O token age em seu nome, com as suas permissões no workspace. Cada usuário
+pode ter até 50 tokens ativos. Os detalhes de escopos, módulos e validade estão
+em [API pública v1](/dev/api-v1#token-pessoal).
+
+## Rode no GitHub Actions
+
+O job abaixo abre um incidente no ServiceDesk quando o deploy falha:
+
+```yaml
+# .github/workflows/deploy.yml (trecho)
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # ... os passos do deploy ...
+      - name: Abrir chamado se o deploy falhar
+        if: failure()
+        run: |
+          npm install -g @steel-so/cli
+          steel sd ticket create --type incidente \
+            --title "Deploy falhou em ${{ github.ref_name }}" \
+            --description "Execução: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          STEEL_TOKEN: ${{ secrets.STEEL_TOKEN }}
+          STEEL_URL: https://homologacao.stratustelecom.com.br
+```
+
+Fora de um terminal, as alterações não pedem confirmação, então `--yes` não é
+necessário. A exceção é `steel webhooks endpoints delete`, que num script só
+roda com `--yes`.
+
+O ambiente do GitHub Actions define `CI`, então o CLI também não consulta
+versão nova. Para fixar a versão no job, use
+`npm install -g @steel-so/cli@0.1.0`.
+
+## Variáveis de ambiente
+
+| Variável | Para quê |
+| --- | --- |
+| `STEEL_TOKEN` | Token pessoal. Tem precedência sobre o login salvo |
+| `STEEL_URL` | URL do Steel. Tem precedência sobre a do perfil |
+| `STEEL_PROFILE` | Perfil a usar, como `--profile` |
+| `STEEL_CONFIG_DIR` | Pasta de configuração (padrão `~/.config/steel`; no Windows, `%APPDATA%\steel`) |
+| `STEEL_NO_KEYCHAIN` | Não usa o chaveiro; guarda o token no arquivo |
+| `STEEL_NO_UPDATE_NOTIFIER` | Não avisa sobre versão nova |
+| `STEEL_MCP_TOKEN` | Token de acesso do MCP para o [`steel mcp`](/dev/cli#steel-mcp-ponte-para-clientes-de-ia) |
+| `NO_COLOR` | Saída sem cores (o mesmo que `--no-color`) |
+
+Com `STEEL_TOKEN` e `STEEL_URL` definidas, o CLI não precisa de perfil salvo
+nem de chaveiro.
+
+## Saída em JSON
+
+Com `--json`, ou sempre que o stdout não é um terminal, os comandos escrevem
+JSON estável no stdout, sem cores:
+
+- **Um registro** sai como o objeto da API. `steel sd ticket create --json`
+  devolve o chamado criado, com `id`, `number`, `code`, `title`, `phase` e o
+  resto dos campos de `SdTicket` na [referência da API v1](/dev/api/v1).
+- **Listas** saem como `{ "items": [...], "nextCursor": "..." }`, com
+  `nextCursor: null` na última página. Com `--all`, todas as páginas vêm num
+  único objeto.
+- **Erros** saem no stderr, numa linha:
+
+```json
+{"error":{"code":"UNAUTHORIZED","message":"Token inválido, expirado ou revogado.","hint":"Rode `steel login` para entrar de novo."}}
+```
+
+`code` é o código do Steel (o mesmo `error.code` da API) ou um código do
+próprio CLI: `USAGE`, `NOT_LOGGED_IN`, `NETWORK_ERROR`, `TIMEOUT`,
+`PROFILE_URL_UNDEFINED`, `INTERNAL`. Trate pelo `code`; a mensagem e a dica são
+para pessoas e podem mudar.
+
+```bash
+steel sd ticket list --assignee me --all --json \
+  | jq -r '.items[] | "\(.code)\t\(.phase.name)\t\(.title)"'
+```
+
+## Códigos de saída
+
+| Código | Significado |
+| --- | --- |
+| `0` | Sucesso |
+| `1` | Erro: rede, servidor ou resposta HTTP de erro |
+| `2` | Uso incorreto: comando, opção ou argumento (inclusive uma opção obrigatória que faltou) |
+| `3` | Autenticação: sem login, token inválido, expirado ou revogado, ou `403 FORBIDDEN`. No `steel api`, qualquer `401` ou `403` |
+| `130` | Cancelado (`Ctrl+C`) |
+
+Um `403` com código próprio, como `API_TOKEN_SCOPE_REQUIRED` ou
+`API_TOKEN_MODULE_NOT_ALLOWED`, sai com `1` nos comandos de módulo: confira o
+`error.code` no stderr.
+
+`steel crm lead import` sai com `1` quando alguma linha do CSV volta com erro,
+mesmo que as outras tenham entrado. A resposta diz quais:
+
+```bash
+if ! steel crm lead import leads.csv --source Feira --json > resultado.json; then
+  jq -r '.errors[] | "linha \(.row): \(.message)"' resultado.json
+fi
+```
+
+```json
+{
+  "total": 3,
+  "created": 1,
+  "skipped": 1,
+  "errors": [
+    { "row": 4, "code": "VALIDATION_ERROR", "message": "Informe ao menos um e-mail ou telefone" }
+  ]
+}
+```
+
+## `steel api`: qualquer rota da API v1
+
+Para uma rota que ainda não tem comando próprio, use `steel api`. Ele usa o
+token e a URL do perfil (ou de `STEEL_TOKEN` e `STEEL_URL`):
+
+```bash
+steel api GET /me
+steel api GET /servicedesk/tickets -q limit=5 -q status=WAITING
+steel api POST /crm/leads -d '{"name":"Ana Souza","emails":["ana@exemplo.com"],"source":"CLI"}'
+steel api POST /crm/leads -d @lead.json
+cat lead.json | steel api POST /crm/leads -d @-
+```
+
+- O caminho é relativo a `/api/v1`: `/me`, `me` e `/api/v1/me` são a mesma
+  rota. Não passe a URL completa; ela vem do perfil.
+- `-q chave=valor` acrescenta um parâmetro de query; repita para mais de um
+  (`-q status=NEW -q status=WAITING`). Também vale escrever a query no
+  caminho: `/crm/leads?limit=5`.
+- `-d` aceita o JSON, um `@arquivo.json` ou `@-` (stdin). `GET` e `DELETE` não
+  aceitam corpo.
+- A resposta sai **inteira** no stdout, com o envelope do Steel, inclusive nos
+  erros. O código de saída é `0` para `2xx`, `3` para `401` e `403` e `1` para
+  os outros erros.
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "id": "ckw1lead0000ab7d3k1e5xyz",
+    "name": "Ana Souza",
+    "emails": ["ana@exemplo.com"],
+    "phones": [],
+    "source": "CLI",
+    "channel": "API",
+    "stage": "RECEIVED",
+    "score": 20,
+    "ownerId": null
+  }
+}
+```
+
+O corpo de `POST /crm/leads` exige `name` e `source`, e ao menos um e-mail ou
+telefone. Cada rota, com o corpo e as respostas, está na
+[referência da API v1](/dev/api/v1).
+
+## Limites
+
+As chamadas do CLI são chamadas da API v1 e contam nos mesmos limites: 300 a
+cada 60 segundos por token, e os 100 por minuto do usuário dono do token,
+somando aplicativo e API. Passou, a resposta é `429 RATE_LIMITED`, e o CLI diz
+em quantos segundos tentar de novo (o `Retry-After` da resposta). Em scripts que
+fazem muitas chamadas, prefira `--all`, que busca 100 itens por chamada. Veja
+[Limites de requisição](/dev/limites).
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| Saída `2` com `Falta --title.` (ou outra opção) | Fora de um terminal, o CLI não pergunta. Passe a opção na linha de comando |
+| Saída `3` com `Você não está conectado no perfil “homologacao”.` | `STEEL_TOKEN` não chegou ao processo. No GitHub Actions, confira o `env:` do passo e o nome do segredo |
+| `403 API_TOKEN_SCOPE_REQUIRED` | O token é **Somente ler**. Crie outro com **Ler e alterar** |
+| `403 API_TOKEN_MODULE_NOT_ALLOWED` | O token não tem o módulo da rota, ou o módulo foi desabilitado no workspace |
+| `401` de repente, num job que funcionava | O token venceu ou foi revogado, ou o dono saiu do workspace. Crie outro e troque o segredo |
+| `429 RATE_LIMITED` | Espere o tempo da dica, ou espalhe as chamadas. Veja [Limites de requisição](/dev/limites) |
+| `A URL de produção do Steel ainda não foi definida.` | Defina `STEEL_URL` com o endereço do seu Steel |
+| `Informe só o caminho, não a URL completa.` | Em `steel api`, passe `/me`, não `https://…/api/v1/me` |

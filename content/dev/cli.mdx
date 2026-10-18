@@ -1,0 +1,398 @@
+---
+title: Steel CLI
+description: O Steel no terminal. Instale o steel, entre pelo navegador, use chamados, leads e templates, chame a API v1, receba webhooks na sua máquina e automatize no CI.
+section: ferramentas
+order: 1
+---
+
+O `steel` é o Steel no terminal. Com ele você entra pelo navegador, consulta e
+altera chamados, leads, oportunidades e templates, chama qualquer rota da
+[API pública v1](/dev/api-v1), recebe na sua máquina os webhooks que o Steel
+envia e roda tudo isso em scripts e no CI.
+
+O código, as releases e as issues ficam no repositório público
+[steel-so/steel-cli](https://github.com/steel-so/steel-cli). A versão atual é a
+**0.1.0**, de 18/10/2026.
+
+## Instale
+
+Escolha um canal. Todos instalam o mesmo comando, `steel`.
+
+### Homebrew (macOS e Linux)
+
+```bash
+brew install steel-so/tap/steel
+```
+
+### Script (macOS e Linux)
+
+O script descobre o sistema e a CPU, baixa o binário da release, confere o
+SHA-256 e instala em `~/.local/bin`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/steel-so/steel-cli/main/install.sh | sh
+```
+
+Para fixar a versão ou a pasta, use `STEEL_VERSION` e `STEEL_INSTALL_DIR`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/steel-so/steel-cli/main/install.sh \
+  | STEEL_VERSION=0.1.0 STEEL_INSTALL_DIR=/usr/local/bin sh
+```
+
+Se `~/.local/bin` não estiver no `PATH`, acrescente-o no `~/.bashrc` ou no
+`~/.zshrc`.
+
+### npm (qualquer sistema com Node.js 22.12 ou mais novo)
+
+```bash
+npm install -g @steel-so/cli
+```
+
+### Binário avulso (inclusive Windows)
+
+Cada [release](https://github.com/steel-so/steel-cli/releases) traz um binário
+que não precisa de Node.js:
+
+| Sistema | Arquivo |
+| --- | --- |
+| Linux x64 | `steel-linux-x64.tar.gz` |
+| Linux arm64 | `steel-linux-arm64.tar.gz` |
+| macOS Intel | `steel-darwin-x64.tar.gz` |
+| macOS Apple Silicon | `steel-darwin-arm64.tar.gz` |
+| Windows x64 | `steel-windows-x64.zip` |
+
+No Windows, descompacte o `.zip` e coloque o `steel.exe` numa pasta que esteja
+no `PATH`.
+
+### Confira o download
+
+Toda release publica `SHA256SUMS` e uma atestação de proveniência assinada pelo
+GitHub Actions para cada arquivo. O pacote npm sai com proveniência.
+
+```bash
+sha256sum --ignore-missing -c SHA256SUMS      # no macOS: shasum -a 256 -c SHA256SUMS
+gh attestation verify steel-linux-x64.tar.gz --repo steel-so/steel-cli
+npm audit signatures                          # para a instalação pelo npm
+```
+
+### Confira a versão
+
+```bash
+steel --version
+# steel 0.1.0 (abc1234, 2026-10-18)
+
+steel version --json
+# { "version": "0.1.0", "commit": "abc1234", "date": "2026-10-18",
+#   "distribution": "binary", "platform": "linux", "arch": "x64", "runtime": "..." }
+```
+
+`distribution` diz como o CLI foi instalado (`npm`, `binary` ou `source`), e é
+isso que decide o comando do [aviso de versão nova](#aviso-de-versão-nova).
+
+## Entre no Steel
+
+```bash
+steel login
+```
+
+O `steel login` usa o fluxo de dispositivo. Passo a passo:
+
+1. O terminal mostra um código de 8 caracteres, como `BCDF-GH23`, e abre o
+   navegador em `/device` com o código já preenchido. Sem navegador (num
+   servidor por SSH, por exemplo), use `steel login --no-browser`: o CLI só
+   mostra o link, e você abre em qualquer máquina.
+2. Se você não estiver logado no Steel, entre. Depois, a página **Entrar no
+   Steel CLI** mostra o código e o nome da sua máquina. Confira se o código é o
+   mesmo do terminal. Se você não rodou `steel login` agora, clique em
+   **Recusar**.
+3. Escolha o **Workspace**, os **Módulos** (ServiceDesk, CRM, Comunicação), o
+   **Nível de acesso** (**Somente ler** ou **Ler e alterar**) e a **Validade**
+   (7, 30, 90 ou 180 dias, ou 1 ano; o padrão é 90 dias).
+4. Clique em **Permitir acesso**. A página mostra **Pronto! Volte ao terminal**.
+5. O terminal confirma o workspace, os escopos, os módulos e a validade, e diz
+   onde guardou o token.
+
+O código vale **10 minutos**. Depois disso, rode `steel login` de novo. O token
+criado é um token pessoal (`stl_pat_…`) chamado `Steel CLI — <sua máquina>`, e
+aparece em **Ajustes › Segurança › Tokens de API**, onde dá para revogá-lo. As
+regras do token (escopos, módulos, validade) estão em
+[API pública v1](/dev/api-v1#token-pessoal).
+
+Confira quem está conectado:
+
+```bash
+steel whoami
+```
+
+O `steel whoami` mostra o usuário, o workspace, o perfil e a URL, os escopos,
+os módulos, a validade do token e de onde ele veio (`STEEL_TOKEN`, chaveiro ou
+arquivo). Faltando menos de 7 dias para o token vencer, ele avisa. Com
+`--json`, a saída é a resposta de `GET /api/v1/me` mais `profile`, `url` e
+`tokenSource`:
+
+```json
+{
+  "user": { "id": "ckv9x2p0h0000us7d3k1e5abc", "name": "Ana Souza", "email": "ana@empresa.com.br" },
+  "workspace": { "id": "ckv9x2p0h0000ws7d3k1e5abc", "slug": "empresa", "name": "Empresa" },
+  "role": "ADMIN",
+  "scopes": ["api:read", "api:write"],
+  "modules": ["SERVICE_DESK", "CRM"],
+  "token": { "id": "cm2tok...", "expiresAt": "2027-01-16T12:00:00.000Z" },
+  "profile": "homologacao",
+  "url": "https://homologacao.stratustelecom.com.br",
+  "tokenSource": "keychain"
+}
+```
+
+### Onde o token fica
+
+O token vai para o **chaveiro do sistema**: Keychain no macOS, Gerenciador de
+Credenciais no Windows e Secret Service no Linux. Sem chaveiro disponível
+(Linux sem sessão gráfica, contêineres), ele vai para
+`~/.config/steel/credentials`, com permissão `600`. No Windows, a pasta de
+configuração é `%APPDATA%\steel`.
+
+### Saia
+
+```bash
+steel logout
+```
+
+O `steel logout` revoga o token no Steel (`DELETE /api/v1/auth/token`) e apaga a
+cópia local. Se o Steel não responder, ele apaga a cópia mesmo assim e avisa:
+nesse caso, revogue o token em **Ajustes › Segurança › Tokens de API**. Um token
+em `STEEL_TOKEN` não é revogado; ele pertence ao ambiente, não ao perfil.
+
+## Perfis
+
+Cada perfil tem uma URL e o seu próprio login. Dá para ficar conectado em
+homologação e num Steel local ao mesmo tempo.
+
+```bash
+steel profile list                                  # * marca o perfil atual
+steel profile use homologacao                       # troca o perfil atual
+steel profile add local --url http://localhost:3001 --use
+steel whoami --profile local                        # um comando em outro perfil
+```
+
+- **Perfis prontos:** `homologacao` (`https://homologacao.stratustelecom.com.br`,
+  o padrão) e `producao`. A URL de produção ainda não foi definida: até lá,
+  `--profile producao` responde que a URL não existe. Se a sua equipe já tem
+  um endereço, rode `steel profile add producao --url <url> --force`.
+- **URLs aceitas:** `https://` em qualquer endereço e `http://` só em
+  `localhost`, `127.0.0.1` e `[::1]`.
+- **Nomes:** letras minúsculas, números, `-` e `_`, até 32 caracteres.
+
+## Painel interativo
+
+`steel` sem nenhum comando, num terminal, abre um painel em tela cheia. O topo
+mostra o perfil, o workspace e o usuário; abaixo ficam quatro abas:
+
+| Aba | O que mostra | Ações no detalhe |
+| --- | --- | --- |
+| **ServiceDesk** | A sua fila (chamados abertos com você), estourados e em risco primeiro | `c` comenta (Tab alterna público e interno), `m` move de fase |
+| **CRM** | Oportunidades por etapa do funil, com quantidade e valor de cada etapa; `p` troca o funil | `m` move de etapa |
+| **Comunicação** | Templates aprovados | O comando para enviar o template |
+| **Webhooks** | Os eventos do workspace ao vivo, como no `steel listen` (dono e administradores) | Corpo do evento e assinatura |
+
+| Tecla | Faz |
+| --- | --- |
+| `←` `→`, `Tab` ou `1` a `4` | Troca de aba |
+| `↑` `↓` ou `j` `k` | Move na lista (`PgUp`, `PgDn`, `Home`, `End`) |
+| `Enter` | Abre o detalhe |
+| `/` | Filtra a lista (Enter aplica, Esc limpa) |
+| `r` | Atualiza a aba (no Webhooks, reconecta) |
+| `?` | Ajuda com todos os atalhos |
+| `Esc` | Volta; na lista, sai |
+| `q` ou `Ctrl+C` | Sai |
+
+Toda alteração pede confirmação (`s/N`) antes de ir para o Steel. Cada aba
+carrega na primeira vez que é aberta. Um módulo fora do token, ou um erro (sem
+rede, `403`), aparece só naquela aba, com a dica do que fazer; token vencido ou
+revogado pede `steel login`.
+
+A aba **Comunicação** mostra só os templates: as conversas aguardando resposta
+ainda não estão na API v1. Fora de um terminal (num pipe ou no CI), `steel` sem
+comando só mostra a ajuda. Para abrir o painel de outro perfil, use
+`steel --profile <nome>`.
+
+## ServiceDesk, CRM e Comunicação
+
+Os comandos de módulo usam as rotas da API v1 e respeitam as suas permissões no
+workspace, como no aplicativo. Para alterar algo, o token precisa de
+`api:write` (**Ler e alterar** no login).
+
+### ServiceDesk: `steel sd`
+
+```bash
+steel sd ticket list --assignee me                         # abertos comigo
+steel sd ticket list --status aguardando --type incidente --all
+steel sd ticket list -s "VPN"                              # busca no título, descrição e código
+steel sd ticket view 42                                    # pelo número ou pelo id
+steel sd ticket create --type incidente --title "VPN fora do ar" \
+  --description @descricao.md --yes
+steel sd ticket comment 42 -m "Já estamos olhando" --internal
+steel sd ticket move 42 --phase <id-da-fase> --solution @solucao.md
+steel sd catalog --type requisicao                         # categorias, subcategorias e serviços
+```
+
+- `ticket list` sem `--status` traz só os chamados abertos. `--status` aceita
+  `novo`, `andamento`, `aguardando`, `resolvido`, `fechado` e `cancelado`;
+  `--type` aceita `incidente`, `requisicao`, `mudanca` e `problema`. Os dois
+  também aceitam o valor da API (`WAITING`, `INCIDENT`) e podem ser repetidos
+  ou separados por vírgula.
+- `--assignee` aceita um id, `me` ou `unassigned`. `--phase` e `--priority`
+  recebem ids.
+- `ticket create` aceita também `--service`, `--category`, `--subcategory`
+  (ids de `steel sd catalog`), `--priority`, `--assignee` e `--tag`.
+- `ticket move` respeita as transições, os requisitos da fase, aprovações e
+  assinatura, como no aplicativo. Só agentes movem chamados.
+
+### CRM: `steel crm`
+
+```bash
+steel crm lead list --stage qualificado
+steel crm lead create --name "Ana Souza" --email ana@exemplo.com --company "Exemplo Ltda"
+steel crm lead import leads.csv --source Feira
+steel crm opportunity list --pipeline <id-do-funil>
+steel crm opportunity move <id> --stage Proposta --pipeline Vendas
+steel crm pipelines                                        # funis e etapas, com os ids
+```
+
+- `--stage` em `lead list` aceita `recebido`, `em-contato`, `qualificado`,
+  `oportunidade`, `proposta` e `fechado`.
+- `lead create` grava a origem `CLI` quando você não passa `--source`. Um lead
+  em aberto com o mesmo e-mail ou telefone responde `409 CRM_LEAD_DUPLICATE`.
+- `lead import` lê um CSV de até 5.000 linhas (ou `-` para o stdin) e sai com
+  código `1` se alguma linha voltar com erro. A resposta lista cada linha
+  recusada, com o número dela. O formato do CSV está em
+  [API pública v1](/dev/api-v1#importar-leads-de-um-csv).
+- `opportunity move` aceita o id ou o nome da etapa e do funil.
+
+### Comunicação: `steel zap`
+
+```bash
+steel zap templates                                        # só os aprovados
+steel zap templates --status todos
+steel zap send --template boas_vindas --to 5511999990000 --var 1=Ana --yes
+steel zap send --template lembrete --conversation <id> --var header.1=Outubro --var 1=Ana
+steel zap broadcast status <id>
+```
+
+- O número vai com DDI e DDD, só dígitos (`5511999990000`). Em vez de `--to`,
+  use `--contact <id>` ou `--conversation <id>`.
+- Variáveis do corpo vão como `--var 1=Ana` (ou `--var nome=Ana`); as do
+  cabeçalho, como `--var header.1=valor`.
+- Com mais de uma conexão, informe `--connection <id>`. Só conexões da Meta
+  enviam template, e o envio consome o limite mensal de mensagens do módulo.
+
+### O que vale para todos
+
+- **Listas** vêm em páginas: `--limit` (1 a 100, padrão 25), `--cursor` (o
+  próximo é sugerido no fim da tabela) e `--all` (todas as páginas, 100 por
+  chamada). `--all` e `--cursor` não vão juntos.
+- **No terminal**, o que faltar (tipo e título do chamado, etapa, template,
+  número, variáveis) é perguntado, e toda alteração pede confirmação. `--yes`
+  pula a confirmação.
+- **Em scripts e no CI**, nada é perguntado: faltar uma opção obrigatória é
+  erro de uso, com código de saída `2`.
+- **Textos longos** (`--description`, `-m`, `--solution`) aceitam `@arquivo`
+  ou `@-` para ler do stdin.
+
+## Scripts, CI e `steel api`
+
+O `steel api` chama qualquer rota da API v1 com o token do perfil, e todo comando
+tem saída em JSON e códigos de saída estáveis para scripts. Como usar o CLI no
+CI, as variáveis de ambiente, o formato do JSON e os códigos de saída estão em
+[CLI em scripts e no CI](/dev/cli/scripts-e-ci).
+
+```bash
+steel api GET /servicedesk/tickets -q limit=5 --json | jq -r '.data.items[].code'
+```
+
+## Webhooks na sua máquina
+
+O `steel listen` recebe em tempo real os eventos de webhook do workspace e os
+repassa para o seu app local com os mesmos cabeçalhos e a mesma assinatura de
+uma entrega de verdade; o `steel trigger` gera eventos de teste, e
+`steel webhooks` cuida dos endpoints e do log de entregas. O passo a passo está
+em [Webhooks na sua máquina com o CLI](/dev/cli/webhooks).
+
+```bash
+steel listen --forward localhost:3001/api/webhooks/steel   # num terminal
+steel trigger crm.lead.created                             # em outro
+```
+
+## `steel mcp`: ponte para clientes de IA
+
+O `steel mcp` é uma ponte `stdio` para o [servidor MCP](/dev/mcp) do Steel
+(`<URL do perfil>/api/mcp`). Serve para clientes de IA que só falam MCP por
+`stdio`, ou que não fazem o OAuth do Steel. A ponte repassa cada mensagem sem
+alterar e envia o token como `Authorization: Bearer`.
+
+```json
+{
+  "mcpServers": {
+    "steel": {
+      "command": "steel",
+      "args": ["mcp", "--profile", "homologacao"],
+      "env": { "STEEL_MCP_TOKEN": "<token de acesso do MCP>" }
+    }
+  }
+}
+```
+
+- O token é um **token de acesso OAuth do MCP do Steel** (`stl_at_…`), o mesmo
+  que um cliente compatível recebe depois do
+  [consentimento](/dev/mcp#como-a-conexão-funciona). O `stl_pat_` do
+  `steel login` não vale no MCP.
+- O token de acesso vale 1 hora, e a ponte não o renova. Para uso contínuo,
+  prefira um cliente que faça o OAuth sozinho, ou a ponte `mcp-remote` descrita
+  em [Outros clientes](/dev/mcp#outros-clientes).
+- Passe o token por `STEEL_MCP_TOKEN` (de preferência) ou `--token`. Revogue
+  em **Ajustes › Apps conectados**.
+- O stdout é do protocolo: avisos e erros saem no stderr, em JSON. Se o Steel
+  recusar uma requisição (token inválido, sem permissão, fora do ar), o
+  cliente recebe um erro JSON-RPC na hora.
+
+## Autocomplete
+
+```bash
+steel completion bash > ~/.local/share/bash-completion/completions/steel
+steel completion zsh > "${fpath[1]}/_steel"
+steel completion fish > ~/.config/fish/completions/steel.fish
+```
+
+Abra um terminal novo para carregar. O autocomplete sugere comandos, opções e
+os nomes dos seus perfis.
+
+## Aviso de versão nova
+
+Uma vez por dia, no máximo, o CLI consulta o npm para saber se há versão nova.
+Se houver, mostra no stderr, depois do comando, o comando certo para a sua
+instalação: `brew upgrade steel`, o script de instalação ou
+`npm install -g @steel-so/cli`. A consulta tem 1,5 segundo de limite, nunca
+atrasa o comando em mais de 150 ms e não acontece com `--json`, no CI
+(variável `CI`) ou com `STEEL_NO_UPDATE_NOTIFIER`.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| `Você não está conectado no perfil “…”` (saída `3`) | Rode `steel login` nesse perfil, ou defina `STEEL_TOKEN` |
+| `Token inválido, expirado ou revogado.` | O token venceu, foi revogado (por você ou por um administrador) ou você saiu do workspace. Rode `steel login` |
+| `O código expirou antes da confirmação.` | Passaram os 10 minutos. Rode `steel login` de novo |
+| `O acesso foi negado no navegador.` | Alguém clicou em **Recusar** em `/device`. Rode `steel login` de novo se foi engano |
+| A página `/device` diz que nenhum workspace tem módulos habilitados | Peça a um administrador para habilitar o ServiceDesk, o CRM ou a Comunicação |
+| `403 API_TOKEN_SCOPE_REQUIRED` ao alterar algo | O token é **Somente ler**. Rode `steel login` e escolha **Ler e alterar** |
+| `403 API_TOKEN_MODULE_NOT_ALLOWED` | O módulo não foi escolhido no login, ou foi desabilitado no workspace. Confira com `steel whoami` e entre de novo com o módulo |
+| `403 FORBIDDEN` numa alteração | Falta aceitar os Termos de Uso e a Política de Privacidade no Steel, ou o seu papel não permite a ação |
+| `STEEL_TOKEN está definida e continua valendo no lugar deste login.` | A variável tem precedência. Rode `unset STEEL_TOKEN` para usar o login salvo |
+| `A URL de produção do Steel ainda não foi definida.` | Use `--profile homologacao`, defina `STEEL_URL` ou crie o perfil com a URL da sua equipe |
+| No Linux, o login demora uns segundos e grava em arquivo | Não há Secret Service disponível. É esperado; para não tentar o chaveiro, defina `STEEL_NO_KEYCHAIN=1` |
+| `Não foi possível conectar a …` | Confira a rede e a URL do perfil com `steel profile list` |
+| Um erro inesperado | Rode de novo com `--json` e envie a saída para o [suporte](/dev/suporte), ou abra uma [issue](https://github.com/steel-so/steel-cli/issues) |
+
+Para usar a API v1 dentro do seu código TypeScript, veja o
+[SDK `@steel-so/sdk`](/dev/sdk).

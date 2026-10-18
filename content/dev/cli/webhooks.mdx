@@ -1,0 +1,180 @@
+---
+title: Webhooks na sua máquina com o CLI
+description: Receba os webhooks do Steel no seu app local com steel listen, gere eventos de teste com steel trigger e gerencie endpoints e entregas pelo terminal.
+section: ferramentas
+order: 3
+---
+
+Antes de cadastrar um endpoint de produção, dá para receber os webhooks do
+Steel no app que roda na sua máquina, sem expor nada na internet. O
+`steel listen` recebe os eventos do workspace em tempo real e, com
+`--forward`, repassa cada um para o seu app com o **mesmo corpo e os mesmos
+cabeçalhos** de uma entrega de verdade (`Steel-Webhook-Id`,
+`Steel-Webhook-Timestamp` e `Steel-Signature`). A conferência de assinatura do
+seu app roda igual à de produção.
+
+O que o Steel envia (eventos, corpo, assinatura, novas tentativas) está em
+[Webhooks que o Steel envia](/dev/webhooks#webhooks-que-o-steel-envia). Esta
+página cobre o lado do CLI.
+
+<Callout type='admin'>
+  `steel listen`, `steel trigger` e `steel webhooks endpoints` são para o
+  **dono** e os **administradores** do workspace. `steel trigger` e as
+  alterações de endpoint também pedem o escopo `api:write` (**Ler e alterar**
+  no `steel login`).
+</Callout>
+
+## Teste a integração ponta a ponta
+
+1. Tenha uma rota no seu app que recebe o webhook e confere a assinatura. Com
+   o [SDK](/dev/sdk#confira-a-assinatura-de-um-webhook), num route handler do
+   Next.js:
+
+   ```ts
+   // app/api/webhooks/steel/route.ts
+   import { verifySignature } from '@steel-so/sdk'
+
+   export async function POST(request: Request) {
+     const rawBody = await request.text() // o corpo exato, antes de JSON.parse
+     const valid = verifySignature(
+       process.env.STEEL_WEBHOOK_SECRET ?? '',
+       request.headers.get('steel-signature'),
+       request.headers.get('steel-webhook-timestamp'),
+       rawBody,
+     )
+     if (!valid) return new Response('assinatura inválida', { status: 401 })
+
+     const event = JSON.parse(rawBody) as { id: string; type: string; data: unknown }
+     console.log(event.type, event.id)
+     return new Response(null, { status: 204 })
+   }
+   ```
+
+2. Num terminal, comece a escutar e repasse para essa rota:
+
+   ```bash
+   steel listen --forward localhost:3001/api/webhooks/steel
+   ```
+
+3. O CLI mostra o **segredo de assinatura** da escuta (`whsec_…`). Coloque-o
+   em `STEEL_WEBHOOK_SECRET` no app local e reinicie o app. O segredo é fixo
+   para você naquele workspace: só precisa fazer isso uma vez.
+4. Em outro terminal, gere um evento de teste com os dados de exemplo do
+   catálogo:
+
+   ```bash
+   steel trigger crm.lead.created
+   ```
+
+5. No terminal do `steel listen` aparece uma linha com a hora, o tipo, o id do
+   evento, o código HTTP que o seu app respondeu e quanto tempo ele levou.
+
+<Callout type='aviso'>
+  O segredo da escuta não é o segredo de um endpoint. Quando você cadastrar o
+  endpoint de produção, o Steel gera outro segredo (`whsec_…`) só para ele:
+  configure esse no servidor de produção.
+</Callout>
+
+`--forward` aceita só a porta (`3001`), `localhost:3001/caminho` ou qualquer
+URL `http://` e `https://`. O app tem 10 segundos para responder, como numa
+entrega de verdade. Eventos de verdade do workspace também chegam: se alguém
+cria um lead enquanto você escuta, o seu app recebe esse evento.
+
+## Escolha o que receber
+
+```bash
+steel listen                                           # todos os eventos, só mostra
+steel listen --events crm.lead.created,crm.deal.won    # só estes tipos
+steel listen --print                                   # mostra o corpo de cada evento
+steel webhooks events                                  # o catálogo, com o módulo de cada tipo
+```
+
+Os eventos de módulos que o token não tem não chegam, mesmo sem `--events`.
+Um tipo que não está no catálogo encerra o comando com erro de uso (código
+`2`).
+
+## Use a escuta em scripts
+
+Fora de um terminal, ou com `--json`, cada mensagem sai como uma linha JSON
+(NDJSON) no stdout. A primeira tem `"type": "ready"`, com `profile`, `url`,
+`events`, `forward` e o segredo em `secret`. Cada evento vem numa linha com
+`"type": "webhook"`:
+
+```json
+{"type":"webhook","id":"evt_cm2x7…","eventType":"crm.lead.created","at":"2026-10-18T12:00:00.000Z","verified":true,"body":{"id":"evt_cm2x7…","type":"crm.lead.created","createdAt":"2026-10-18T12:00:00.000Z","workspaceId":"cm2ws…","data":{"lead":{"id":"cm2lead…","name":"Maria Souza"}}},"forward":null}
+```
+
+`verified` diz se a assinatura conferiu com o segredo da escuta. Com
+`--forward`, `forward` traz o resultado do repasse.
+
+```bash
+steel listen --json | jq -r 'select(.type == "webhook") | .eventType'
+```
+
+Se a conexão cair, o CLI reconecta sozinho, esperando 1, 2, 4, 8, 16 e depois
+30 segundos entre as tentativas (no JSON, cada tentativa sai no stderr). A
+escuta não tem replay: o que acontece enquanto ela está desconectada não chega
+por ela. `Ctrl+C` encerra.
+
+## Gere eventos de teste
+
+```bash
+steel trigger crm.lead.created                    # chega a quem está com steel listen
+steel trigger crm.deal.won --endpoint <id>        # e também a este endpoint
+```
+
+O `steel trigger` cria um evento com os dados de exemplo do catálogo e
+responde com o id do evento e quantas entregas foram para a fila. Ele **nunca**
+entrega aos outros endpoints cadastrados, para um teste não cair numa
+integração de produção. Para testar um endpoint de verdade com um
+`steel.ping`, use `steel webhooks endpoints test <id>`.
+
+## Endpoints e entregas pelo terminal
+
+Tudo o que a tela **Ajustes › Integrações › Webhooks** faz também dá para fazer
+pelo CLI:
+
+```bash
+steel webhooks endpoints list
+steel webhooks endpoints create --url https://erp.exemplo.com/steel --events "*" \
+  --description "ERP"
+steel webhooks endpoints create --url https://bi.exemplo.com/hook \
+  --events servicedesk.ticket.created,servicedesk.ticket.resolved --inactive
+steel webhooks endpoints test <id>                # envia um steel.ping e mostra a resposta
+steel webhooks endpoints delete <id>              # pede confirmação; num script, --yes
+```
+
+- O segredo de um endpoint novo **só aparece na criação**: guarde-o na hora.
+  Depois, a listagem mostra só os 4 últimos caracteres.
+- `--events "*"` assina todos os tipos, inclusive os que vierem depois.
+  `--inactive` cadastra o endpoint desligado.
+- Só `https://` em endereço público. Uma URL de rede privada responde
+  `422 WEBHOOK_URL_NOT_ALLOWED`; o vigésimo primeiro endpoint do workspace,
+  `WEBHOOK_ENDPOINT_LIMIT_REACHED`.
+
+O log de entregas guarda 30 dias:
+
+```bash
+steel webhooks deliveries list --endpoint <id> --status FAILED
+steel webhooks deliveries list --all --json | jq '.items[] | {eventType, status, responseStatus, error}'
+steel webhooks deliveries retry <id>              # reenvia com o mesmo corpo e o mesmo id
+```
+
+`--status` aceita `PENDING`, `SUCCEEDED`, `RETRYING`, `FAILED` e `SKIPPED`.
+Cada entrega traz o código HTTP da resposta, o tempo, o motivo da falha (por
+exemplo `http_500` ou `timeout`), o corpo enviado e o primeiro 1 KB da
+resposta. O reenvio chega até a um endpoint desativado.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| `403 FORBIDDEN` ao abrir o `steel listen` (código `3`) | O `steel listen` é para dono e administradores do workspace. Confira o papel com `steel whoami` |
+| `403 FORBIDDEN` no `steel trigger` | O token não tem o módulo do evento. Entre de novo incluindo o módulo |
+| `Algum tipo em --events não existe no catálogo.` | Confira os tipos com `steel webhooks events` |
+| `403 API_TOKEN_SCOPE_REQUIRED` no `trigger` ou ao criar endpoint | O token é **Somente ler**. Rode `steel login` e escolha **Ler e alterar** |
+| O repasse mostra `401` do seu app | O app não está usando o segredo da escuta, ou faz `JSON.parse` antes de conferir. Confira o corpo **bruto** |
+| O repasse mostra erro de rede | O app não está no ar naquela porta ou caminho. Teste o `--forward` com `curl` |
+| O repasse mostra `timeout` | O app levou mais de 10 segundos. Responda `2xx` logo e processe depois |
+| Nenhum evento chega | O módulo do evento não está no token, ou o `--events` filtra o tipo. Rode `steel trigger` para testar |
+| `Conexão perdida (…). Reconectando em … s` | Rede instável ou proxy cortando conexões longas. O CLI reconecta sozinho |
