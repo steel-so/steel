@@ -56,6 +56,8 @@ export const GET = withAxiom(async (_request: NextRequest, ctx: Params) => {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
+      // nginx streams it whatever the location says (ADR 0037).
+      'X-Accel-Buffering': 'no',
     },
   })
 })
