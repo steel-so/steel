@@ -149,7 +149,7 @@ steel api POST /crm/leads -d @lead.json
 cat lead.json | steel api POST /crm/leads -d @-
 ```
 
-- O caminho é relativo a `/api/v1`: `/me`, `me` e `/api/v1/me` são a mesma
+- O prefixo da API v1 é opcional: `/me`, `me` e `/api/v1/me` são a mesma
   rota. Não passe a URL completa; ela vem do perfil.
 - `-q chave=valor` acrescenta um parâmetro de query; repita para mais de um
   (`-q status=NEW -q status=WAITING`). Também vale escrever a query no

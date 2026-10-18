@@ -31,7 +31,7 @@ página cobre o lado do CLI.
    Next.js:
 
    ```ts
-   // app/api/webhooks/steel/route.ts
+   // app/webhooks/steel/route.ts
    import { verifySignature } from '@steel-so/sdk'
 
    export async function POST(request: Request) {
@@ -53,7 +53,7 @@ página cobre o lado do CLI.
 2. Num terminal, comece a escutar e repasse para essa rota:
 
    ```bash
-   steel listen --forward localhost:3001/api/webhooks/steel
+   steel listen --forward localhost:3001/webhooks/steel
    ```
 
 3. O CLI mostra o **segredo de assinatura** da escuta (`whsec_…`). Coloque-o

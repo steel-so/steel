@@ -300,7 +300,7 @@ segredo do endpoint (`whsec_…`), os cabeçalhos `Steel-Signature` e
 qualquer `JSON.parse`:
 
 ```ts
-// Next.js: app/api/webhooks/steel/route.ts
+// Next.js: app/webhooks/steel/route.ts
 import { verifySignature } from '@steel-so/sdk'
 
 export async function POST(request: Request) {
@@ -358,7 +358,7 @@ import { signPayload, WEBHOOK_HEADERS } from '@steel-so/sdk'
 
 const body = JSON.stringify({ id: 'evt_teste', type: 'crm.lead.created', createdAt: new Date().toISOString(), workspaceId: 'ws', data: {} })
 const timestamp = Math.floor(Date.now() / 1000)
-await fetch('http://localhost:3001/api/webhooks/steel', {
+await fetch('http://localhost:3001/webhooks/steel', {
   method: 'POST',
   headers: {
     'content-type': 'application/json',

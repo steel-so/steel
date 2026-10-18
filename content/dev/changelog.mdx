@@ -18,7 +18,7 @@ order: 1
 
 ## 18/10/2026: API v1, tokens pessoais, webhooks enviados e Steel CLI
 
-- Nova [API pública v1](/dev/api-v1) em `/api/v1`, com a política de
+- Nova [API pública v1](/dev/api-v1) em `/api/v1/...`, com a política de
   estabilidade própria: nada é removido nem muda de tipo, e uma rota só sai
   depois de 6 meses com `Deprecation` e `Sunset`. Cobre `GET /api/v1/me`,
   chamados do ServiceDesk (listar, ver por id ou número, abrir, comentar e mudar
@@ -58,7 +58,8 @@ order: 1
   `Steel-Webhook-Timestamp`; até 6 tentativas, desativação depois de 3 dias
   falhando, log de 30 dias com reenvio e até 20 endpoints por workspace. Na
   tela, em **Ajustes › Integrações › Webhooks**; pela API, em
-  `/api/v1/webhooks/{events,endpoints,deliveries}`. Veja
+  `/api/v1/webhooks/events`, `/api/v1/webhooks/endpoints` e
+  `/api/v1/webhooks/deliveries`. Veja
   [Webhooks que o Steel envia](/dev/webhooks#webhooks-que-o-steel-envia).
 - `GET /api/v1/webhooks/listen` (Server-Sent Events) entrega os eventos em
   tempo real, com o corpo e os cabeçalhos exatos, e

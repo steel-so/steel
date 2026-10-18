@@ -27,7 +27,7 @@ const INTEGRATIONS = [
   {
     title: 'Automatizar pelo terminal e no CI',
     access: 'Token pessoal (Steel CLI)',
-    route: 'steel login · /api/v1',
+    route: 'steel login · /api/v1/...',
     href: '/dev/cli',
   },
   {
