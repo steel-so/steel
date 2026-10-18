@@ -110,3 +110,32 @@ export function restoreEntry(source: unknown, path: string): [string, unknown] {
   }
   return [path, current]
 }
+
+/**
+ * Structural equality of JSON-like values: same primitives (`Object.is`),
+ * arrays of equal items in order, objects with equal own keys. A key holding
+ * `undefined` counts as absent, like JSON. Values rebuilt from elsewhere
+ * (a co-editor's change projected back) compare equal to the local ones.
+ */
+export function jsonEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (!isContainer(a) || !isContainer(b)) return false
+  if (Array.isArray(a) !== Array.isArray(b)) return false
+  if (Array.isArray(a)) {
+    const other = b as unknown[]
+    return (
+      a.length === other.length &&
+      a.every((item, i) => jsonEqual(item, other[i]))
+    )
+  }
+  const left = a as Record<string, unknown>
+  const right = b as Record<string, unknown>
+  const keys = Object.keys(left).filter((key) => left[key] !== undefined)
+  const count = Object.keys(right).filter((key) => right[key] !== undefined)
+  return (
+    keys.length === count.length &&
+    keys.every(
+      (key) => Object.hasOwn(right, key) && jsonEqual(left[key], right[key]),
+    )
+  )
+}

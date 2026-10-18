@@ -1,4 +1,10 @@
 import {
+  type CanvasHistoryField,
+  expectationsFor,
+  guardOp,
+  type HistoryExpectations,
+} from './history-guard'
+import {
   applyOp,
   type CanvasOp,
   type CanvasOpError,
@@ -19,6 +25,19 @@ import type {
 } from './types'
 
 /**
+ * Undo/redo that left part of a step alone because someone else changed the
+ * same field since (co-editing), for the shell's toast. `whole`: nothing of
+ * the step was left, so it was dropped.
+ */
+export interface CanvasHistorySkip {
+  direction: 'undo' | 'redo'
+  fields: CanvasHistoryField[]
+  whole: boolean
+}
+
+export type { CanvasHistoryField }
+
+/**
  * Editor state container (framework-free; React binds through
  * `useSyncExternalStore` in app/_components/canvas/use-canvas.ts). One store
  * per open editor.
@@ -37,6 +56,9 @@ export interface CanvasEditorState {
   dirty: boolean
   /** Last refused op, for the shell's toast. Cleared on the next success. */
   lastError: CanvasOpError | null
+  /** Last undo/redo that skipped fields changed by someone else. Cleared on
+   * the next document change made here. */
+  lastSkipped: CanvasHistorySkip | null
 }
 
 /**
@@ -66,6 +88,10 @@ export interface CanvasStore {
     op: CanvasOp,
     options?: { label?: string; coalesce?: boolean },
   ): boolean
+  /** Undo/redo write a prop path or meta key back only when it still holds
+   * what this user's step left there (compare-and-set): a field someone else
+   * changed since is skipped, the rest of the step applies, and
+   * `lastSkipped` says what was left alone. */
   undo(): void
   redo(): void
 
@@ -103,7 +129,8 @@ export interface CanvasStore {
    * Replaces the document with one changed by someone else (co-editing):
    * no history step, selection repaired. The local history keeps its own
    * ops, so undo still only reverts this user's changes; a step that no
-   * longer applies (its node was removed remotely) is dropped.
+   * longer applies (its node was removed remotely) is dropped, and a field
+   * changed remotely after this user's step is not written back.
    */
   applyRemote(doc: CanvasDocument): void
   /** Refuses inline text editing on nodes the guard rejects (someone else
@@ -126,6 +153,9 @@ interface HistoryEntry {
   at: number
   selectionBefore: CanvasNodeId[]
   selectionAfter: CanvasNodeId[]
+  /** What the document holds, per field the next trip of this entry writes,
+   * right after its last trip (see history-guard.ts). */
+  expect: HistoryExpectations
 }
 
 function coalesceKeyOf(
@@ -155,6 +185,7 @@ export function createCanvasStore(
     canRedo: false,
     dirty: false,
     lastError: null,
+    lastSkipped: null,
   }
   let past: HistoryEntry[] = []
   let future: HistoryEntry[] = []
@@ -243,6 +274,7 @@ export function createCanvasStore(
       top.forward = op
       top.at = now
       top.token = nextToken++
+      top.expect = expectationsFor(doc, top.inverse)
     } else {
       const entry: HistoryEntry = {
         token: nextToken++,
@@ -253,6 +285,7 @@ export function createCanvasStore(
         at: now,
         selectionBefore: state.selection,
         selectionAfter: state.selection,
+        expect: expectationsFor(doc, inverse),
       }
       past.push(entry)
       if (past.length > HISTORY_LIMIT) {
@@ -263,33 +296,66 @@ export function createCanvasStore(
     future = []
     docTokens.set(doc, currentToken())
     const prev = state.doc
-    commit({ ...withDoc(doc), lastError: null })
+    commit({ ...withDoc(doc), lastError: null, lastSkipped: null })
     emitChange({ prev, next: doc, op, source: 'local' })
     return true
   }
 
-  /** Applies a history entry's op in replay mode; on success the entry's
-   * ops are swapped so it can travel back the other way. */
-  function travel(
-    entry: HistoryEntry,
-    direction: 'undo' | 'redo',
-  ): { doc: CanvasDocument; op: CanvasOp } | null {
-    const op = direction === 'undo' ? entry.inverse : entry.forward
+  type Travel =
+    | {
+        kind: 'applied'
+        doc: CanvasDocument
+        op: CanvasOp
+        skipped: CanvasHistorySkip | null
+      }
+    /** Every field the step writes was changed by someone else. */
+    | { kind: 'conflict'; skipped: CanvasHistorySkip }
+    /** Refused by the replay validation (`lastError` is set). */
+    | { kind: 'failed' }
+
+  /** Applies a history entry's op in replay mode, without the writes whose
+   * field someone else changed since; on success the entry's ops are swapped
+   * so it can travel back the other way, and its expectations move to the
+   * new document. */
+  function travel(entry: HistoryEntry, direction: 'undo' | 'redo'): Travel {
+    const planned = direction === 'undo' ? entry.inverse : entry.forward
+    const guarded = guardOp(state.doc, planned, entry.expect)
+    const skipped: CanvasHistorySkip | null =
+      guarded.skipped.length > 0
+        ? { direction, fields: guarded.skipped, whole: guarded.op === null }
+        : null
+    if (guarded.op === null) {
+      return { kind: 'conflict', skipped: skipped as CanvasHistorySkip }
+    }
+    const op = guarded.op
     const result = applyOp(state.doc, op, catalog, { replay: true })
     if (!result.ok) {
-      commit({ lastError: result.error })
-      return null
+      commit({ lastError: result.error, lastSkipped: null })
+      return { kind: 'failed' }
     }
-    if (direction === 'undo') entry.forward = result.value.inverse
-    else entry.inverse = result.value.inverse
-    return { doc: result.value.doc, op }
+    const { doc, inverse } = result.value
+    if (direction === 'undo') {
+      entry.forward = inverse
+      entry.expect = expectationsFor(doc, entry.forward)
+    } else {
+      entry.inverse = inverse
+      entry.expect = expectationsFor(doc, entry.inverse)
+    }
+    return { kind: 'applied', doc, op, skipped }
   }
 
   function undo(): void {
     const entry = past.at(-1)
     if (!entry) return
     const travelled = travel(entry, 'undo')
-    if (!travelled) {
+    if (travelled.kind === 'conflict') {
+      // Nothing of this step is left to undo: drop it.
+      past.pop()
+      coalesceTarget = null
+      commit({ lastError: null, lastSkipped: travelled.skipped })
+      return
+    }
+    if (travelled.kind === 'failed') {
       // Co-editing: someone else removed what this step touched — drop it
       // so the steps below stay reachable.
       if (remoteSeen) {
@@ -299,14 +365,18 @@ export function createCanvasStore(
       }
       return
     }
-    const { doc, op } = travelled
+    const { doc, op, skipped } = travelled
     past.pop()
     future.push(entry)
     coalesceTarget = null
     entry.selectionAfter = state.selection
     docTokens.set(doc, currentToken())
     const prev = state.doc
-    commit({ ...withDoc(doc, entry.selectionBefore), lastError: null })
+    commit({
+      ...withDoc(doc, entry.selectionBefore),
+      lastError: null,
+      lastSkipped: skipped,
+    })
     emitChange({ prev, next: doc, op, source: 'undo' })
   }
 
@@ -314,20 +384,29 @@ export function createCanvasStore(
     const entry = future.at(-1)
     if (!entry) return
     const travelled = travel(entry, 'redo')
-    if (!travelled) {
+    if (travelled.kind === 'conflict') {
+      future.pop()
+      commit({ lastError: null, lastSkipped: travelled.skipped })
+      return
+    }
+    if (travelled.kind === 'failed') {
       if (remoteSeen) {
         future.pop()
         commit({})
       }
       return
     }
-    const { doc, op } = travelled
+    const { doc, op, skipped } = travelled
     future.pop()
     past.push(entry)
     coalesceTarget = null
     docTokens.set(doc, currentToken())
     const prev = state.doc
-    commit({ ...withDoc(doc, entry.selectionAfter), lastError: null })
+    commit({
+      ...withDoc(doc, entry.selectionAfter),
+      lastError: null,
+      lastSkipped: skipped,
+    })
     emitChange({ prev, next: doc, op, source: 'redo' })
   }
 
@@ -483,6 +562,7 @@ export function createCanvasStore(
       hovered: null,
       editingText: null,
       lastError: null,
+      lastSkipped: null,
     })
     if (prev !== doc) emitChange({ prev, next: doc, source: 'reset' })
   }

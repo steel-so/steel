@@ -539,3 +539,108 @@ describe('reset', () => {
     expect(store.getState().dirty).toBe(false)
   })
 })
+
+describe('undo/redo compare-and-set against remote changes', () => {
+  /** The current document with t1's props replaced, as a co-editor would. */
+  function remoteProps(
+    store: ReturnType<typeof setup>['store'],
+    id: string,
+    props: Record<string, unknown>,
+  ) {
+    const { doc } = store.getState()
+    store.applyRemote({
+      ...doc,
+      nodes: { ...doc.nodes, [id]: { ...doc.nodes[id], props } },
+    })
+  }
+  const props = (store: ReturnType<typeof setup>['store'], id: string) =>
+    store.getState().doc.nodes[id].props
+
+  it('undoes as usual when the remote change touched other fields', () => {
+    const { store } = setup()
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'A' } })
+    remoteProps(store, 't1', { text: 'A', style: { color: '#f00' } })
+    store.undo()
+    expect(props(store, 't1')).toEqual({
+      text: 'Olá',
+      style: { color: '#f00' },
+    })
+    expect(store.getState().lastSkipped).toBeNull()
+  })
+
+  it('checks the value left by a coalesced burst, not by its first op', () => {
+    const { store } = setup()
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'A' } })
+    vi.advanceTimersByTime(100)
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'AB' } })
+    remoteProps(store, 't1', { text: 'AB', style: { color: '#000' } })
+    store.undo()
+    expect(props(store, 't1')).toMatchObject({ text: 'Olá' })
+
+    store.redo()
+    vi.advanceTimersByTime(1000)
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'C' } })
+    vi.advanceTimersByTime(100)
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'CD' } })
+    remoteProps(store, 't1', { text: 'remoto', style: { color: '#000' } })
+    store.undo()
+    expect(props(store, 't1')).toMatchObject({ text: 'remoto' })
+    expect(store.getState().lastSkipped).toMatchObject({
+      direction: 'undo',
+      whole: true,
+    })
+  })
+
+  it('clears lastSkipped on the next local change and on reset', () => {
+    const { store } = setup()
+    store.dispatch({
+      kind: 'update',
+      id: 't1',
+      set: { text: 'A', 'style.color': '#f00' },
+    })
+    remoteProps(store, 't1', { text: 'remoto', style: { color: '#f00' } })
+    store.undo()
+    expect(store.getState().lastSkipped).toMatchObject({ whole: false })
+    expect(props(store, 't1')).toEqual({
+      text: 'remoto',
+      style: { color: '#000' },
+    })
+    store.dispatch({ kind: 'update', id: 't2', set: { text: 'x' } })
+    expect(store.getState().lastSkipped).toBeNull()
+
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'B' } })
+    remoteProps(store, 't1', { text: 'remoto 2' })
+    store.undo()
+    expect(store.getState().lastSkipped).not.toBeNull()
+    store.reset(sampleDoc())
+    expect(store.getState().lastSkipped).toBeNull()
+  })
+
+  it('drops a redo step whose fields all changed remotely', () => {
+    const { store } = setup()
+    store.dispatch({ kind: 'update', id: 't1', set: { text: 'A' } })
+    store.undo()
+    remoteProps(store, 't1', { text: 'remoto', style: { color: '#000' } })
+    store.redo()
+    expect(store.getState()).toMatchObject({
+      canRedo: false,
+      lastSkipped: { direction: 'redo', whole: true },
+    })
+    expect(props(store, 't1')).toMatchObject({ text: 'remoto' })
+  })
+
+  it('a refused replay after a partial guard reports the error, not a skip', () => {
+    const { store } = setup()
+    store.dispatch({
+      kind: 'update',
+      id: 't1',
+      set: { text: 'okA', 'style.color': '#f00' },
+    })
+    remoteProps(store, 't1', { text: 'remoto', style: { color: '#f00' } })
+    schemaSwitch.strictText = true
+    // Restoring the color keeps a text the strict schema refuses.
+    store.undo()
+    expect(store.getState().lastError).toMatchObject({ code: 'INVALID_PROPS' })
+    expect(store.getState().lastSkipped).toBeNull()
+  })
+})

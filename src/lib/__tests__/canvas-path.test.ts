@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getIn,
   hasIn,
+  jsonEqual,
   parsePath,
   restoreEntry,
   setIn,
@@ -181,5 +182,43 @@ describe('responsive values', () => {
     expect(clearResponsive(value, 'mobile')).toEqual({ base: 16 })
     expect(clearResponsive(value, 'tablet')).toBe(value)
     expect(clearResponsive(16, 'mobile')).toBe(16)
+  })
+})
+
+describe('jsonEqual', () => {
+  it.each([
+    [1, 1],
+    [Number.NaN, Number.NaN],
+    ['a', 'a'],
+    [null, null],
+    [
+      [1, { a: 2 }],
+      [1, { a: 2 }],
+    ],
+    [
+      { a: 1, b: { c: [1] } },
+      { b: { c: [1] }, a: 1 },
+    ],
+    [{ a: 1, u: undefined }, { a: 1 }],
+  ])('%j equals %j', (a, b) => {
+    expect(jsonEqual(a, b)).toBe(true)
+  })
+
+  it.each([
+    [1, 2],
+    [1, '1'],
+    [null, {}],
+    [{}, null],
+    [[1], { 0: 1 }],
+    [[1, 2], [1]],
+    [
+      [1, 2],
+      [1, 3],
+    ],
+    [{ a: 1 }, { a: 1, b: 2 }],
+    [{ a: 1, b: undefined }, { b: 1 }],
+    [{ a: { b: 1 } }, { a: { b: 2 } }],
+  ])('%j differs from %j', (a, b) => {
+    expect(jsonEqual(a, b)).toBe(false)
   })
 })
