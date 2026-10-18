@@ -41,6 +41,7 @@ o app não responde.
 | -------- | ------- | -------- |
 | App (via nginx) | `curl -sI https://<domínio>/api/status` | `HTTP/2 200` |
 | App (direto, no servidor) | `curl -sI http://localhost:3000/api/status` | `HTTP/1.1 200` |
+| Cada réplica (no servidor) | `for p in 3000 3001 3002; do curl -s -o /dev/null -w "$p %{http_code}\n" http://127.0.0.1:$p/api/status/live; done` | `200` nas três |
 | MinIO (no servidor) | `curl -sI http://127.0.0.1:9002/minio/health/live` | `200 OK` |
 | Postgres (no servidor) | `docker exec steel-db pg_isready` | `accepting connections` |
 | Redis (no servidor) | `docker exec steel-redis sh -c 'redis-cli --tls --cacert /opt/bitnami/redis/certs/ca.crt -a "$REDIS_PASSWORD" ping'` | `PONG` |
@@ -62,8 +63,10 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' \
   | grep -E 'NAMES|nextjs-app|steel-'
 ```
 
-Esperado: `nextjs-app`, `steel-worker`, `steel-db`, `steel-redis`,
-`steel-minio` todos `Up`. Os de infra mostram `(healthy)`.
+Esperado: `nextjs-app`, `steel-app-2`, `steel-app-3`, `steel-worker`,
+`steel-realtime`, `steel-db`, `steel-redis`, `steel-minio` todos `Up`. As
+réplicas do app e os de infra mostram `(healthy)`; uma réplica
+`(unhealthy)` já saiu do upstream do nginx — ver [réplicas](./app-replicas.md).
 
 - `Restarting` ou `Exited` → veja os logs (passo 4) e depois
   [reinicie o serviço](./restart-service.md).

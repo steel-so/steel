@@ -17,9 +17,9 @@ BullMQ · MinIO (S3) · Better Auth · Axiom (logs) · pnpm.
                   ┌────▼─────┐
                   │  nginx   │  TLS, proxy; /media/ → MinIO (buckets públicos)
                   └────┬─────┘
-                       │ :3000
+                       │ upstream steel_app (least_conn): :3000, :3001, :3002
    ┌───────────────────▼──────────────────┐      ┌──────────────────────────┐
-   │ nextjs-app (imagem ghcr steel)        │      │ steel-worker (mesma imagem│
+   │ nextjs-app + steel-app-2/3 (réplicas) │      │ steel-worker (mesma imagem│
    │  proxy.ts → app/ (UI + app/api/**)    │      │  `node dist/worker.cjs`)  │
    │  rota → service → repository → Prisma │      │  BullMQ Workers + crons   │
    └──┬──────────────┬──────────────┬──────┘      └──┬──────────┬───────────┬─┘
@@ -429,7 +429,8 @@ Avisos de CI/CD vão para outro canal (secret `SLACK_WEBHOOK_URL`). Queda do ser
 
 | Serviço | Container | Porta (host) | Observação |
 | ------- | --------- | ------------ | ---------- |
-| App Next | `nextjs-app` | 3000 | `docker-compose.yml`, atrás do nginx |
+| App Next | `nextjs-app`, `steel-app-2`, `steel-app-3` | 3000, 127.0.0.1:3001, 127.0.0.1:3002 | réplicas no `docker-compose.yml` atrás do upstream `steel_app` (`least_conn`) do nginx, deploy em rolagem; config do nginx em `infra/nginx/` — ADR 0037, `docs/runbooks/app-replicas.md` |
+| PgBouncer (opcional) | `steel-pgbouncer` | — | perfil `pooler` do compose, modo transaction; o app usa quando há `DATABASE_URL_POOLED` |
 | Worker | `steel-worker` | — | mesma imagem, `node dist/worker.cjs` |
 | Realtime (Wiki) | `steel-realtime` | 127.0.0.1:1235 | mesma imagem, `node dist/realtime.cjs` (Hocuspocus); nginx `/realtime` — ver `docs/runbooks/realtime-wiki.md` |
 | PostgreSQL 17 | `steel-db` | 5433 → 5432 | `docker-compose.infra.yml`, volume `pgdata` |

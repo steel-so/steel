@@ -185,7 +185,7 @@ Daily FULL `pg_dump` (03:15), app-encrypted with `CONNECTION_SECRETS`, stored in
 | PostgreSQL 17 | `steel-db` | 5433 | `docker-compose.infra.yml`, volume `pgdata` |
 | Redis 8 (TLS) | `steel-redis` | 6380 | bitnami pinned by digest (do not switch to `:latest`); certs in `redis-tls/`; URL is `rediss://` |
 | MinIO | `steel-minio` | 127.0.0.1:9002 (API), 127.0.0.1:9003 (console) | image `docker.io/pgsty/silo` (maintained AGPL fork of MinIO — the upstream image was withdrawn); API never public (nginx proxies `/media/`) |
-| App | `nextjs-app` | 3000 | `docker-compose.yml` on the server (`/var/www/steel`), behind nginx |
+| App | `nextjs-app`, `steel-app-2`, `steel-app-3` | 3000, 127.0.0.1:3001-3002 | replicas in `docker-compose.yml` on the server (`/var/www/steel`), behind nginx's `steel_app` upstream (`infra/nginx/`), rolled one at a time by `scripts/deploy.sh`; `'use cache'` tags shared through Redis (`lib/next-cache/`) — ADR 0037 |
 | Worker | `steel-worker` | — | same image, `node dist/worker.cjs` |
 
 All on the Docker network `steel_default`. Secrets are SOPS-encrypted (age recipient in `.sops.yaml`, private key only in the `SOPS_AGE_KEY` GitHub secret) and decrypted into `/var/www/steel/.env` at deploy time: `secrets/homologacao.enc.env` by `cd.yml` (homologação) and `secrets/production.enc.env` by `promote-production.yml`. **The production file does not exist yet**, so a promotion to production fails its own pre-check — create it before the first promotion.
