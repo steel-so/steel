@@ -42,6 +42,7 @@ export const QueueName = {
   SitePosts: 'site-posts',
   WebhooksDelivery: 'webhooks-delivery',
   AiIndex: 'ai-index',
+  AiEval: 'ai-eval',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -838,4 +839,18 @@ export type AiIndexJobPayload = {
     sourceTypes?: string[]
   }
   [AiIndexJob.ReindexAll]: Record<string, never>
+}
+
+/**
+ * Steel AI eval sets (ADR 0039): `run` answers and grades every case of one
+ * `AiEvalRun`. Single attempt — a retry would pay for the calls again.
+ */
+export const AiEvalJob = {
+  Run: 'run',
+} as const
+
+export type AiEvalJob = (typeof AiEvalJob)[keyof typeof AiEvalJob]
+
+export type AiEvalJobPayload = {
+  [AiEvalJob.Run]: { runId: string }
 }

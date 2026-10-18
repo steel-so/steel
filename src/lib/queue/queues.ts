@@ -3,6 +3,8 @@ import { getQueueConnection } from './connection'
 import {
   type AccountLifecycleJob,
   type AccountLifecycleJobPayload,
+  type AiEvalJob,
+  type AiEvalJobPayload,
   type AiIndexJob,
   type AiIndexJobPayload,
   type AiUsageWeeklyEmailJob,
@@ -138,6 +140,7 @@ let workspaceExportQueue: Queue | null = null
 let workspaceIntegrationsQueue: Queue | null = null
 let webhooksDeliveryQueue: Queue | null = null
 let aiIndexQueue: Queue | null = null
+let aiEvalQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 
@@ -807,6 +810,7 @@ export async function closeQueues(): Promise<void> {
     workspaceIntegrationsQueue?.close(),
     webhooksDeliveryQueue?.close(),
     aiIndexQueue?.close(),
+    aiEvalQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -846,6 +850,7 @@ export async function closeQueues(): Promise<void> {
   workspaceIntegrationsQueue = null
   webhooksDeliveryQueue = null
   aiIndexQueue = null
+  aiEvalQueue = null
 }
 
 export function getCrmTaskRemindersQueue(): Queue<
@@ -1064,6 +1069,21 @@ export function getWebhooksDeliveryQueue(): Queue<
   >
 }
 
+/** Steel AI eval runs: single attempt (a retry would pay the calls again). */
+export function getAiEvalQueue(): Queue<
+  AiEvalJobPayload[AiEvalJob],
+  unknown,
+  AiEvalJob
+> {
+  if (!aiEvalQueue) {
+    aiEvalQueue = new Queue(QueueName.AiEval, {
+      connection: getQueueConnection(),
+      defaultJobOptions: { ...defaultJobOptions, attempts: 1 },
+    })
+  }
+  return aiEvalQueue as Queue<AiEvalJobPayload[AiEvalJob], unknown, AiEvalJob>
+}
+
 // Typed as a full record so a new queue without an entry fails the build.
 const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DataRetention]: getDataRetentionQueue,
@@ -1110,6 +1130,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.SitePosts]: getSitePostsQueue,
   [QueueName.WebhooksDelivery]: getWebhooksDeliveryQueue,
   [QueueName.AiIndex]: getAiIndexQueue,
+  [QueueName.AiEval]: getAiEvalQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
