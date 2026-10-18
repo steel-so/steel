@@ -1,0 +1,123 @@
+---
+title: Steel CLI, API pública v1 e webhooks
+slug: steel-cli-api-e-webhooks
+date: 2026-10-18
+summary: O Steel chega ao terminal. O Steel CLI traz a fila de chamados, o funil do CRM e os templates do WhatsApp num painel interativo, a API pública v1 abre o Steel para scripts e CI com tokens pessoais, e os webhooks avisam os seus sistemas a cada evento.
+tags: [PLATAFORMA, SERVICEDESK, CRM, COMUNICACAO]
+cover: /changelog/2026-10-18/capa-cli.jpg
+---
+
+## O Steel no terminal
+
+O **Steel CLI** (`steel`) é a forma mais rápida de usar o Steel sem sair do
+terminal. Instale com um comando:
+
+```bash
+brew install steel-so/tap/steel
+# ou
+curl -fsSL https://raw.githubusercontent.com/steel-so/steel-cli/main/install.sh | sh
+# ou
+npm install -g @steel-so/cli
+```
+
+Também há binários prontos para Linux, macOS e Windows na página de releases,
+sem precisar de Node.js.
+
+Para entrar, rode `steel login`. O terminal mostra um código, o navegador abre
+no Steel e você confirma. Não há senha nem chave para copiar.
+
+![Terminal com o steel login mostrando o código de confirmação e, em seguida, o steel whoami com o usuário, o workspace, os escopos e a validade do token](/changelog/2026-10-18/cli-login.webp)
+
+Na página de confirmação você escolhe o **workspace**, os **módulos**
+(ServiceDesk, CRM, Comunicação), se o terminal pode **só ler** ou **ler e
+alterar**, e por quanto tempo o acesso vale. Se o código não for o mesmo do
+terminal, é só recusar.
+
+![Página Entrar no Steel CLI com o código, o workspace, os módulos, o nível de acesso e a validade](/changelog/2026-10-18/device-confirmar.webp)
+
+## Um painel em tela cheia
+
+`steel` sem comando abre um painel com quatro abas:
+
+- **ServiceDesk**: a sua fila, com os chamados estourados e em risco primeiro.
+  Comente (público ou interno) e mude a fase sem abrir o navegador.
+- **CRM**: as oportunidades por etapa do funil, com quantidade e valor de cada
+  etapa. Mova um negócio de etapa com uma tecla.
+- **Comunicação**: os templates aprovados do WhatsApp, com o comando pronto
+  para enviar.
+- **Webhooks**: os eventos do workspace chegando ao vivo, para donos e
+  administradores.
+
+![Painel do Steel CLI em tela cheia na aba ServiceDesk, com a fila de chamados, o SLA de cada um e os atalhos de teclado](/changelog/2026-10-18/cli-tui.webp)
+
+Navegue com as setas, abra o detalhe com `Enter`, filtre com `/` e veja todos
+os atalhos com `?`. Toda alteração pede confirmação antes de ir para o Steel.
+
+## Comandos para cada módulo
+
+Para o dia a dia e para scripts, cada módulo tem os seus comandos:
+
+```bash
+steel sd ticket list --assignee me
+steel sd ticket create --type incidente --title "VPN fora do ar"
+steel crm lead import leads.csv --source Feira
+steel crm opportunity move <id> --stage Proposta --pipeline Vendas
+steel zap send --template boas_vindas --to 5511999990000 --var 1=Ana
+```
+
+No terminal, o que faltar é perguntado. Em scripts e no CI, a saída sai em JSON
+e o código de saída diz se deu certo.
+
+## API pública v1 e tokens pessoais
+
+Por trás do CLI está a nova **API pública v1** do Steel: chamados, catálogo,
+leads, oportunidades, funis e envio de templates do WhatsApp, numa API estável,
+documentada e com aviso antes de qualquer mudança que quebre integrações. Ela
+vem com um **SDK TypeScript** (`@steel-so/sdk`) para quem programa.
+
+Para usar a API num script ou no CI, crie um **token de API** em
+**Configurações › Segurança › Tokens de API**. Você escolhe o workspace, os
+módulos, o nível de acesso e a validade (de 7 dias a 1 ano). O token aparece uma
+única vez, age com as **suas** permissões e pode ser revogado a qualquer
+momento.
+
+![Tokens de API nas configurações do usuário, com o nome, o nível de acesso, o workspace, os módulos e o último uso de cada token](/changelog/2026-10-18/tokens-de-api.webp)
+
+Donos e administradores veem os tokens de **todos os membros** em **Ajustes ›
+Apps conectados**, com o último uso de cada um, e revogam qualquer um. Quem sai
+do workspace perde o acesso pelos tokens na hora.
+
+## Webhooks que o Steel envia
+
+Agora o Steel também **avisa os seus sistemas**. Em **Ajustes › Webhooks**,
+cadastre a URL do seu ERP, BI ou automação e escolha os eventos: chamado
+aberto, SLA em risco ou violado, aprovação pedida, lead novo, negócio ganho ou
+perdido, mensagem de WhatsApp recebida e outros. A cada evento, o Steel envia
+os dados em JSON, assinados com um segredo que só o seu sistema conhece.
+
+![Ajustes › Webhooks com a lista de endpoints, os eventos assinados, a situação de cada um e os botões Enviar teste, Revelar segredo e Trocar segredo](/changelog/2026-10-18/webhooks-endpoints.webp)
+
+- **Enviar teste** confere na hora se o seu sistema está recebendo.
+- **Entregas** mostra os envios dos últimos 30 dias, com o corpo enviado e a
+  resposta, e reenvia qualquer um com um clique.
+- Uma entrega que falha é repetida até 6 vezes. Um endpoint que falha por 3
+  dias seguidos é desativado, e os administradores recebem uma notificação.
+
+![Quadro Entregas com os envios de um endpoint, a situação, o código HTTP, o tempo de resposta e o botão Reenviar](/changelog/2026-10-18/webhooks-entregas.webp)
+
+Para testar a integração na própria máquina, antes de ter uma URL pública, quem
+desenvolve usa o `steel listen`: ele recebe os eventos do workspace ao vivo e
+repassa cada um para o app local com a mesma assinatura que o Steel envia. Em
+outro terminal, `steel trigger crm.lead.created` gera um evento de exemplo.
+
+![Terminal com o steel listen recebendo eventos de webhook ao vivo e repassando para o app local, com o código HTTP e o tempo de resposta de cada um](/changelog/2026-10-18/cli-listen.webp)
+
+<Callout>
+  **Disponível em todos os planos.** Cada pessoa cria os próprios tokens e
+  entra pelo `steel login`; os webhooks e o `steel listen` são do dono e dos
+  administradores do workspace. O passo a passo está no manual, em [Tokens de
+  API](/docs/seguranca/tokens-de-api) e [Webhooks](/docs/workspace/integracoes#webhooks),
+  e os detalhes técnicos no site de desenvolvedores, em [Steel CLI](/dev/cli),
+  [API pública v1](/dev/api-v1) e [Webhooks que o Steel
+  envia](/dev/webhooks#webhooks-que-o-steel-envia).
+</Callout>

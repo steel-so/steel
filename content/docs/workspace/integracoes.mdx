@@ -1,6 +1,6 @@
 ---
-title: Integrações (Slack, GitHub e GitLab)
-description: Conecte o Slack, o GitHub e o GitLab uma vez e use em todos os módulos do workspace.
+title: Integrações (Slack, GitHub, GitLab e webhooks)
+description: Conecte o Slack, o GitHub e o GitLab uma vez e use em todos os módulos do workspace, e envie os eventos do Steel para os seus sistemas por webhook.
 section: workspace
 order: 9
 ---
@@ -46,3 +46,148 @@ Cada integração tem **Testar conexão**, troca do token e do segredo do webhoo
 No ServiceDesk, abrir issue a partir do chamado fica disponível nos chamados de
 **problema** e de **mudança**, e fechar a issue pode sugerir o avanço de fase do
 chamado.
+
+## Webhooks
+
+Com os webhooks, o Steel **avisa os seus sistemas** (ERP, BI, uma automação no
+n8n ou no Zapier) quando algo acontece no workspace: um chamado aberto, um SLA
+violado, um lead novo, um negócio ganho, uma mensagem de WhatsApp recebida. A
+cada evento, o Steel envia um `POST` com os dados em JSON para a URL que você
+cadastrar, assinado com um segredo que só o seu sistema conhece.
+
+<Callout type='admin'>
+  Só o dono e os administradores do workspace cadastram e gerenciam webhooks,
+  em **Ajustes › Webhooks** (ou pelo cartão **Webhooks** no fim de **Ajustes ›
+  Integrações**). Os demais membros veem só um aviso na página.
+</Callout>
+
+### Cadastrar um endpoint
+
+1. Abra **Ajustes › Webhooks** e clique em **Novo webhook**. No topo aparece
+   quantos endpoints o workspace já tem, de no máximo **20**.
+2. Em **URL do endpoint**, cole o endereço do seu sistema, por exemplo
+   `https://erp.suaempresa.com.br/steel`. Só vale **HTTPS** num endereço
+   público: endereços internos (como `10.x`, `192.168.x`, `localhost`) são
+   recusados, e o Steel não segue redirecionamentos.
+3. Em **Descrição (opcional)**, dê um nome que a equipe reconheça, como "ERP
+   financeiro". É ele que aparece no cartão e nos filtros.
+4. Em **Eventos**, deixe **Todos os eventos** (inclui os tipos que o Steel
+   passar a enviar no futuro) ou desmarque e escolha um a um. Os eventos vêm
+   agrupados por módulo:
+   - **ServiceDesk**: chamado aberto, alterado, atribuído, nova mensagem
+     pública, resolvido, reaberto, escalonado, avaliação do atendimento (CSAT),
+     SLA em risco, SLA violado, aprovação solicitada e respondida;
+   - **CRM**: novo lead, oportunidade mudou de etapa, negócio ganho, negócio
+     perdido;
+   - **Comunicação**: mensagem de WhatsApp recebida;
+   - **Steel Agents**: ações de um agente aguardando aprovação.
+5. Clique em **Cadastrar**. Abre a janela **Webhook cadastrado** com o
+   **Segredo de assinatura** (começa com `whsec_`). Copie e configure no seu
+   sistema, para ele conferir que cada entrega veio mesmo do Steel.
+6. Clique em **Pronto**. O endpoint aparece na lista com a etiqueta **Ativo**.
+
+Para mudar a URL, a descrição ou os eventos depois, use **Editar** no cartão e
+**Salvar**.
+
+### Testar
+
+Clique em **Enviar teste** no cartão. O Steel envia na hora um evento
+`steel.ping`, assinado como os demais, e mostra o resultado:
+
+- **Teste entregue (HTTP 200)**: o seu sistema respondeu com um código 2xx.
+- **O teste falhou: …**: com o motivo, como `http_500` (o sistema respondeu
+  com erro), `timeout` (sem resposta em 10 segundos) ou `network_error`
+  (endereço inacessível ou certificado inválido).
+
+O teste também funciona com o endpoint desativado e não conta como falha para
+a desativação automática.
+
+Para testar com o sistema rodando na sua máquina, antes de ter uma URL
+pública, quem desenvolve usa o `steel listen` do [Steel CLI](/dev/cli), que
+recebe os eventos ao vivo e repassa para o endereço local.
+
+### O segredo de assinatura
+
+- **Revelar segredo** mostra o segredo atual de novo, para configurar outro
+  servidor. Não compartilhe o valor.
+- **Trocar segredo** gera um novo. Confirme em **Trocar o segredo?**: o segredo
+  antigo deixa de valer **imediatamente** e as próximas entregas já saem
+  assinadas com o novo. Atualize o seu sistema logo em seguida, ou ele vai
+  recusar as entregas.
+
+No cartão, ao lado do número de eventos, aparece o final do segredo
+(`whsec_…` e os últimos caracteres), para conferir qual está em uso.
+
+### Acompanhar as entregas
+
+Abaixo dos endpoints fica o quadro **Entregas**, com os envios dos **últimos 30
+dias**, do mais recente para o mais antigo.
+
+1. Filtre por **Endpoint** e por **Situação**: **Na fila**, **Entregue**,
+   **Tentando de novo**, **Falhou** ou **Não enviado** (o endpoint estava
+   desativado ou foi removido). **Limpar filtros** volta a mostrar tudo.
+2. Cada linha mostra a situação, o tipo do evento, a hora, o endereço, o código
+   HTTP da resposta (ou **Sem resposta**), o tempo de resposta, o número de
+   tentativas e o erro, quando houve.
+3. **Ver detalhes** abre o **Corpo enviado**, com o id do evento, e a
+   **Resposta** do seu sistema (até 1 KB).
+4. **Reenviar** coloca a entrega de novo na fila, com o mesmo corpo e o mesmo id
+   de evento. Aparece "Reenvio na fila". O botão não aparece enquanto a entrega
+   está **Na fila** ou **Tentando de novo**.
+5. **Carregar mais** traz as entregas mais antigas.
+
+### Falhas e desativação automática
+
+- Uma entrega conta como entregue quando o seu sistema responde com um código
+  **2xx** em até **10 segundos**. Qualquer outra resposta, ou nenhuma, é falha.
+- Uma entrega com falha é repetida **até 6 vezes** no total, com espera
+  crescente entre as tentativas: 1, 2, 4, 8 e 16 minutos. Depois disso fica
+  como **Falhou** e só sai de novo por **Reenviar**.
+- Quando um endpoint começa a falhar, o cartão ganha a etiqueta **Falhando** e
+  o aviso "Falhando desde …". Uma entrega bem-sucedida zera essa contagem.
+- Se o endpoint falhar em todas as entregas por **3 dias seguidos**, o Steel o
+  **desativa** (etiqueta **Desativado por falhas**) e envia aos administradores
+  a notificação **Webhook desativado: <endereço>**, que leva direto para a
+  página de webhooks.
+- Para voltar, corrija o seu sistema, use **Enviar teste** para conferir e
+  ligue o interruptor **Ativo** no cartão. Os eventos que aconteceram com o
+  endpoint desativado não são enviados nem entram no quadro; as entregas que
+  falharam antes da desativação podem ser reenviadas por **Reenviar**.
+
+Desligar o interruptor **Ativo** à mão pausa o endpoint (etiqueta
+**Desativado**). **Remover** apaga o endpoint: o Steel para de enviar na hora e
+as entregas pendentes são descartadas.
+
+### Algo não funciona?
+
+| O que acontece | O que fazer |
+| --- | --- |
+| "Use uma URL HTTPS pública" ao cadastrar | A URL é `http://`, aponta para um endereço interno ou para `localhost`. Use um endereço HTTPS acessível pela internet; para testar na sua máquina, use o `steel listen` |
+| **Novo webhook** está desabilitado | O workspace já tem 20 endpoints. Remova um que não usa mais |
+| O teste falha com `http_401` ou `http_403` | O seu sistema recusou a assinatura. Confira se ele usa o segredo atual (**Revelar segredo**) e o corpo exato recebido, sem reformatar o JSON |
+| O teste falha sem resposta | O sistema demorou mais de 10 segundos ou não está acessível pela internet. Responda rápido (2xx) e processe o evento depois |
+| As entregas pararam depois de trocar o segredo | O seu sistema ainda usa o segredo antigo. Atualize com o novo |
+| O mesmo evento chegou duas vezes | Uma tentativa anterior não recebeu 2xx a tempo e o Steel repetiu. Use o cabeçalho `Steel-Webhook-Id` para ignorar repetidos |
+| Endpoint com **Desativado por falhas** | Veja o erro em **Entregas**, corrija o sistema e ligue **Ativo** de novo |
+
+Quem desenvolve a integração encontra o formato do corpo, os cabeçalhos, a
+conferência da assinatura com exemplos e o catálogo completo de eventos em
+[Webhooks que o Steel envia](/dev/webhooks#webhooks-que-o-steel-envia).
+
+## Steel CLI
+
+O **Steel CLI** (`steel`) é o Steel no terminal, para a equipe técnica: ele
+consulta e cria chamados, leads e negócios, envia templates do WhatsApp, roda
+em scripts e no CI e recebe os webhooks na máquina de quem desenvolve.
+
+Como administrador, o que você precisa saber:
+
+- Cada pessoa entra com o **próprio usuário** pelo `steel login`, confirmando no
+  navegador. O CLI nunca tem mais acesso do que a pessoa tem no Steel.
+- Cada login vira um **token de API** da pessoa, com o nome **Steel CLI —
+  <máquina>**. Você vê e revoga esses tokens em **Ajustes › Apps conectados ›
+  Tokens de API** (veja [Tokens de API](/docs/seguranca/tokens-de-api#para-administradores-tokens-dos-membros)).
+- Receber webhooks com o `steel listen` exige ser dono ou administrador.
+
+Instalação, comandos e exemplos estão no site de desenvolvedores, em [Steel
+CLI](/dev/cli).
