@@ -46,13 +46,13 @@ export function UserModalCustomProfile({
 
   return (
     <Dialog open={tab !== null} onOpenChange={onOpenChange}>
-      <DialogContent className='flex p-0 m-0 h-183 w-6xl min-w-6xl'>
+      <DialogContent className='flex p-0 m-0 h-183 w-6xl min-w-6xl overflow-hidden'>
         {tab && (
           <Tabs
             key={tab}
             defaultValue={tab}
             orientation='vertical'
-            className='w-full'
+            className='w-full min-h-0'
           >
             <div className='flex flex-col gap-4 w-62 py-4 px-3 border-r border-border bg-card'>
               <div className='flex items-center gap-2'>
@@ -104,7 +104,7 @@ export function UserModalCustomProfile({
                 </TabsList>
               </div>
             </div>
-            <div className='flex-1 px-8 py-9 w-full'>
+            <div className='flex-1 min-h-0 overflow-y-auto px-8 py-9 w-full'>
               <UserModalProfileTab tab='profile' />
               <UserModalPreferencesTab tab='preferences' />
               <UserModalNotificationsTab tab='notifications' />
