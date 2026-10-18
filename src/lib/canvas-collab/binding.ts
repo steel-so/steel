@@ -44,7 +44,7 @@ export interface CanvasBinding {
 
 /**
  * Two-way binding between a canvas store and a Y document (real-time
- * co-editing, ADR 0026 / docs/canvas/README.md):
+ * co-editing, ADR 0027 / docs/canvas/README.md):
  *
  * - every document change of the store (ops, undo/redo, reset) becomes one
  *   Yjs transaction touching only the nodes — and inside them, only the
