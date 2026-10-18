@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { MEMBER_ROLE_LABEL } from '@/app/_components/workspace/settings/members/member-roles'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import type { DataTableFeatures } from '@/components/ui/data-table/data-table'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 import type { MemberDTO, MemberRole } from '@/types/member'
 import { MemberRowActions } from './member-row-actions'
@@ -60,7 +61,7 @@ export function canManageMember(
 
 export function buildMemberColumns(
   ctx: MemberColumnsContext,
-): ColumnDef<MemberDTO>[] {
+): ColumnDef<DataTableFeatures, MemberDTO>[] {
   return [
     {
       accessorKey: 'name',
