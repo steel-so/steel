@@ -1,11 +1,11 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { budget, thresholds } from './profiles.js';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3001';
-// Same budgets as smoke-test.js: TTFB asserts the server, the end-to-end
-// duration budget is relaxed for remote targets via DURATION_P95_MS.
-const DURATION_P95_MS = Number(__ENV.DURATION_P95_MS || 500);
-const TTFB_BUDGET_MS = Number(__ENV.TTFB_BUDGET_MS || 500);
+// Same scheme as smoke-test.js: TTFB asserts the server, the end-to-end
+// budget follows the environment profile (k6/profiles.js).
+const TTFB_BUDGET_MS = budget('api', BASE_URL).ttfbP95;
 
 // Accept 2xx-4xx as expected — this test intentionally hits unauthenticated endpoints.
 // Only 5xx and connection errors should count as failures.
@@ -14,11 +14,7 @@ http.setResponseCallback(http.expectedStatuses({ min: 200, max: 499 }));
 export const options = {
   vus: 1,
   duration: '15s',
-  thresholds: {
-    http_req_waiting: [`p(95)<${TTFB_BUDGET_MS}`],
-    http_req_duration: [`p(95)<${DURATION_P95_MS}`],
-    http_req_failed: ['rate<0.05'],
-  },
+  thresholds: thresholds('api', BASE_URL),
 };
 
 export default function () {
