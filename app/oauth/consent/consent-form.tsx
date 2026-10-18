@@ -165,6 +165,7 @@ export function OAuthConsentForm({
             width={72}
             height={32}
             style={{ height: 'auto' }}
+            className='invert dark:invert-0'
             priority
           />
           <SteelIcon
