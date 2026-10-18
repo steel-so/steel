@@ -47,7 +47,7 @@ export async function authorizeWebhookV1(
   const session = await resolveApiSession(request)
   if (!session.ok) return session
   if (options.write && !session.value.scopes.includes('api:write')) {
-    return err(apiTokenScopeRequired())
+    return err(apiTokenScopeRequired('api:write'))
   }
   const limit = await consume(apiLimiter, `api-token:${session.value.tokenId}`)
   if (!limit.ok) return limit

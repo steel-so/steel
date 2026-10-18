@@ -1548,9 +1548,7 @@ export const deviceCodeInvalid = (): AppError =>
     'Código não encontrado ou expirado. Confira o código no terminal ou rode “steel login” de novo.',
   )
 /** `details.requiredScope` names the missing scope, for clients to act on. */
-export const apiTokenScopeRequired = (
-  requiredScope: 'api:write' = 'api:write',
-): AppError =>
+export const apiTokenScopeRequired = (requiredScope: 'api:write'): AppError =>
   appError(
     'API_TOKEN_SCOPE_REQUIRED',
     'Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.',

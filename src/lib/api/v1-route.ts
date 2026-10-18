@@ -89,7 +89,7 @@ export function apiV1Route<B = undefined, Q = undefined>(
       if (!byUser.ok) return handleError(byUser.error)
 
       if (options.access === 'write' && !session.scopes.includes('api:write')) {
-        return handleError(apiTokenScopeRequired())
+        return handleError(apiTokenScopeRequired('api:write'))
       }
       if (options.module && !session.modules.includes(options.module)) {
         return handleError(apiTokenModuleNotAllowed())
