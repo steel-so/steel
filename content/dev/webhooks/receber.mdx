@@ -88,7 +88,8 @@ A regra, em qualquer linguagem:
 ### Node.js com o SDK
 
 `verifySignature` do `@steel-so/sdk` faz os cinco passos e nunca lança
-exceção. Num _route handler_ do Next.js:
+exceção (veja [Confira a assinatura de um webhook](/dev/sdk#confira-a-assinatura-de-um-webhook)
+no guia do SDK). Num _route handler_ do Next.js:
 
 ```ts
 import { verifySignature } from '@steel-so/sdk'
@@ -110,8 +111,7 @@ export async function POST(request: Request) {
 ```
 
 A tolerância de 5 minutos muda com `{ toleranceSeconds }` no quinto argumento;
-`0` desliga a checagem do horário (só em testes). Mais sobre o SDK em
-[SDK](/dev/sdk).
+`0` desliga a checagem do horário (só em testes).
 
 ### Node.js sem dependências
 
@@ -412,6 +412,7 @@ steel trigger crm.deal.won --endpoint <id>            # também entrega a este e
 - O `steel trigger` vai para quem está escutando e, com `--endpoint`, para
   aquele endpoint. **Nunca** para os outros endpoints cadastrados, para um
   teste não cair numa integração de produção.
+- Mais exemplos em [Webhooks na sua máquina](/dev/cli/webhooks).
 - Se a conexão cair, o CLI reconecta sozinho (1, 2, 4... até 30 segundos).
   O repasse local também espera até 10 segundos pela resposta, como o Steel.
 

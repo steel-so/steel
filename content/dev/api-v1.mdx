@@ -204,6 +204,14 @@ const all = await collectAll((cursor) =>
 if (all.ok) console.log(all.data.items.length)
 ```
 
+## Importar leads de um CSV
+
+`POST /api/v1/crm/leads/import` recebe o próprio CSV como corpo
+(`Content-Type: text/csv`), até 5.000 linhas e 5 MB, e responde quantos leads
+foram criados, quantos já existiam (`skipped`) e quais linhas foram recusadas.
+As colunas aceitas, os exemplos em curl, CLI e SDK e os erros estão em
+[CRM na API v1](/dev/api-v1/crm#importar-leads-de-um-csv).
+
 ## Limites
 
 Cada token tem 300 requisições a cada 60 segundos, e o usuário dono do token
