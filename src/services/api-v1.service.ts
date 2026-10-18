@@ -22,6 +22,8 @@ import {
   CrmPipelineStageService,
 } from './crm-pipeline.service'
 import { UserService } from './user.service'
+import { WhatsAppConnectionService } from './whatsapp-connection.service'
+import { WhatsAppContactService } from './whatsapp-contact.service'
 import { WhatsAppConversationService } from './whatsapp-conversation.service'
 import { WhatsAppMessageService } from './whatsapp-message.service'
 
@@ -84,6 +86,30 @@ function rowMessage(error: { message: string; details?: unknown }): string {
     }
   }
   return error.message
+}
+
+/**
+ * Connection for a send by phone number without `connectionId`: the only
+ * connected one, or the only one at all. Anything else is ambiguous.
+ */
+async function defaultConnectionId(
+  actorId: string,
+  workspaceId: string,
+): Promise<Result<string>> {
+  const connections = await WhatsAppConnectionService.list(actorId, workspaceId)
+  if (!connections.ok) return connections
+  const connected = connections.value.filter(
+    (connection) => connection.status === 'CONNECTED',
+  )
+  const candidates = connected.length > 0 ? connected : connections.value
+  if (candidates.length === 1) return ok(candidates[0].id)
+  return err(
+    validationError(
+      candidates.length === 0
+        ? 'O workspace não tem conexão do WhatsApp. Conecte uma em Comunicação › Conexões.'
+        : 'O workspace tem mais de uma conexão do WhatsApp: informe connectionId.',
+    ),
+  )
 }
 
 export const ApiV1Service = {
@@ -211,9 +237,9 @@ export const ApiV1Service = {
   },
 
   /**
-   * Template message to a conversation, or to a contact on a connection
-   * (the contact's open conversation, or a new one — the same as starting
-   * a conversation in the inbox).
+   * Template message to a conversation, to a contact on a connection, or to
+   * a phone number (`to`, E.164: the contact is found or created). The last
+   * two use the contact's open conversation or start one, as in the inbox.
    */
   async sendWhatsAppTemplate(
     actorId: string,
@@ -222,12 +248,28 @@ export const ApiV1Service = {
   ): Promise<Result<WhatsAppMessageDTO>> {
     let conversationId = input.conversationId
     if (!conversationId) {
+      let contactId = input.contactId
+      let connectionId = input.connectionId
+      if (input.to) {
+        if (!connectionId) {
+          const fallback = await defaultConnectionId(actorId, workspaceId)
+          if (!fallback.ok) return fallback
+          connectionId = fallback.value
+        }
+        const contact = await WhatsAppContactService.findOrCreate(
+          actorId,
+          workspaceId,
+          { waId: input.to.replace(/^\+/, '') },
+        )
+        if (!contact.ok) return contact
+        contactId = contact.value.id
+      }
       const started = await WhatsAppConversationService.start(
         actorId,
         workspaceId,
         {
-          contactId: input.contactId as string,
-          connectionId: input.connectionId as string,
+          contactId: contactId as string,
+          connectionId: connectionId as string,
         },
       )
       if (!started.ok) return started

@@ -23,6 +23,12 @@ vi.mock('@/src/services/crm-pipeline.service', () => ({
 vi.mock('@/src/services/crm-lead.service', () => ({
   CrmLeadService: { intake: vi.fn() },
 }))
+vi.mock('@/src/services/whatsapp-connection.service', () => ({
+  WhatsAppConnectionService: { list: vi.fn() },
+}))
+vi.mock('@/src/services/whatsapp-contact.service', () => ({
+  WhatsAppContactService: { findOrCreate: vi.fn() },
+}))
 vi.mock('@/src/services/whatsapp-conversation.service', () => ({
   WhatsAppConversationService: { start: vi.fn() },
 }))
@@ -39,6 +45,8 @@ import {
   CrmPipelineStageService,
 } from '@/src/services/crm-pipeline.service'
 import { UserService } from '@/src/services/user.service'
+import { WhatsAppConnectionService } from '@/src/services/whatsapp-connection.service'
+import { WhatsAppContactService } from '@/src/services/whatsapp-contact.service'
 import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import { WhatsAppMessageService } from '@/src/services/whatsapp-message.service'
 import type { UserDTO } from '@/types/user'
@@ -365,6 +373,117 @@ describe('ApiV1Service.sendWhatsAppTemplate', () => {
       'conv_2',
       { ...template, components: undefined },
     )
+  })
+
+  describe('to a phone number', () => {
+    const connection = (id: string, status: string) => ({ id, status }) as never
+    const sendTo = (extra: Record<string, string> = {}) =>
+      ApiV1Service.sendWhatsAppTemplate('u1', 'ws1', {
+        to: '+5511999990000',
+        ...template,
+        ...extra,
+      })
+
+    beforeEach(() => {
+      vi.mocked(WhatsAppContactService.findOrCreate).mockResolvedValue(
+        ok({ id: 'ct_9' } as never),
+      )
+      vi.mocked(WhatsAppConversationService.start).mockResolvedValue(
+        ok({ id: 'conv_9' } as never),
+      )
+      vi.mocked(WhatsAppMessageService.sendTemplate).mockResolvedValue(
+        ok(message),
+      )
+    })
+
+    it('finds or creates the contact and uses the only connected connection', async () => {
+      vi.mocked(WhatsAppConnectionService.list).mockResolvedValue(
+        ok([
+          connection('cn_off', 'DISCONNECTED'),
+          connection('cn_on', 'CONNECTED'),
+        ]),
+      )
+
+      expectOk(await sendTo())
+
+      expect(WhatsAppContactService.findOrCreate).toHaveBeenCalledWith(
+        'u1',
+        'ws1',
+        {
+          waId: '5511999990000',
+        },
+      )
+      expect(WhatsAppConversationService.start).toHaveBeenCalledWith(
+        'u1',
+        'ws1',
+        {
+          contactId: 'ct_9',
+          connectionId: 'cn_on',
+        },
+      )
+      expect(WhatsAppMessageService.sendTemplate).toHaveBeenCalledWith(
+        'u1',
+        'ws1',
+        'conv_9',
+        expect.objectContaining({ templateName: 'boas_vindas' }),
+      )
+    })
+
+    it('uses the only connection even when none reports CONNECTED', async () => {
+      vi.mocked(WhatsAppConnectionService.list).mockResolvedValue(
+        ok([connection('cn_meta', 'CONNECTING')]),
+      )
+      expectOk(await sendTo())
+      expect(
+        vi.mocked(WhatsAppConversationService.start).mock.calls[0][2],
+      ).toEqual({
+        contactId: 'ct_9',
+        connectionId: 'cn_meta',
+      })
+    })
+
+    it('takes the connection of the call without listing them', async () => {
+      expectOk(await sendTo({ connectionId: 'cn_x' }))
+      expect(WhatsAppConnectionService.list).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(WhatsAppConversationService.start).mock.calls[0][2],
+      ).toEqual({
+        contactId: 'ct_9',
+        connectionId: 'cn_x',
+      })
+    })
+
+    it.each([
+      [
+        'several connected connections',
+        [connection('a', 'CONNECTED'), connection('b', 'CONNECTED')],
+        'mais de uma conexão',
+      ],
+      [
+        'several connections, none connected',
+        [connection('a', 'ERROR'), connection('b', 'DISCONNECTED')],
+        'mais de uma conexão',
+      ],
+      ['no connection', [], 'não tem conexão'],
+    ])('answers 422 with %s', async (_label, list, message) => {
+      vi.mocked(WhatsAppConnectionService.list).mockResolvedValue(ok(list))
+      const error = expectErr(await sendTo(), 'VALIDATION_ERROR')
+      expect(error.message).toContain(message)
+      expect(WhatsAppContactService.findOrCreate).not.toHaveBeenCalled()
+    })
+
+    it('propagates connection and contact errors', async () => {
+      vi.mocked(WhatsAppConnectionService.list).mockResolvedValue(
+        err(moduleDisabled()),
+      )
+      expectErr(await sendTo(), 'MODULE_DISABLED')
+
+      vi.mocked(WhatsAppContactService.findOrCreate).mockResolvedValue(
+        err(forbidden()),
+      )
+      expectErr(await sendTo({ connectionId: 'cn_x' }), 'FORBIDDEN')
+      expect(WhatsAppConversationService.start).not.toHaveBeenCalled()
+    })
   })
 
   it('stops when the conversation cannot be opened', async () => {

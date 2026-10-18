@@ -77,9 +77,13 @@ Detalhes de cada rota (fatia `api-v1`):
 - `GET /api/v1/crm/pipelines`: cada funil com `stages` em ordem.
 - `GET /api/v1/whatsapp/templates?status=&connectionId=`: `status` padrão
   `APPROVED`; `ALL` lista todos.
-- `POST /api/v1/whatsapp/messages/template`: `{ conversationId }` **ou**
-  `{ contactId, connectionId }` (usa a conversa aberta do contato ou abre uma),
-  mais `{ templateName, language, components? }`.
+- `POST /api/v1/whatsapp/messages/template`: um destino — `{ conversationId }`,
+  `{ contactId, connectionId }` ou `{ to, connectionId? }` (`to` em E.164,
+  `+5511999990000`; acha ou cria o contato) — mais `{ templateName, language,
+  components? }`. Contato e número usam a conversa aberta do contato ou abrem
+  uma. Sem `connectionId`, `to` usa a única conexão do workspace (a única
+  `CONNECTED`, se houver várias); nenhuma ou mais de uma possível:
+  `422 VALIDATION_ERROR` com mensagem em pt-BR.
 - Erros próprios da v1: `403 API_TOKEN_SCOPE_REQUIRED` (escrita sem
   `api:write`) e `403 API_TOKEN_MODULE_NOT_ALLOWED` (módulo fora do token).
   Escritas passam pelo gate de consentimento LGPD, como no app.

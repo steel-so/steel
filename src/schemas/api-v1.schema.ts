@@ -169,16 +169,31 @@ export type ListV1WhatsAppTemplatesDTO = z.infer<
   typeof ListV1WhatsAppTemplatesSchema
 >
 
+/** E.164: optional `+`, country code and number, 8–15 digits. */
+const E164 = /^\+?[1-9]\d{7,14}$/
+
 export const SendV1WhatsAppTemplateSchema = z
   .object({
     conversationId: id.optional().meta({
       description:
-        'Conversa existente. Ou informe `contactId` + `connectionId`.',
+        'Conversa existente. Ou informe `contactId` + `connectionId`, ou `to`.',
     }),
     contactId: id.optional().meta({
       description:
         'Contato. Com `connectionId`, usa a conversa aberta do contato ou abre uma.',
     }),
+    to: z
+      .string()
+      .regex(
+        E164,
+        'Informe o número no formato E.164, com DDI (+5511999990000)',
+      )
+      .optional()
+      .meta({
+        description:
+          'Número em E.164 (`+5511999990000`). Acha ou cria o contato e a conversa. `connectionId` é opcional: sem ele, usa a única conexão do workspace.',
+        example: '+5511999990000',
+      }),
     connectionId: id.optional().meta({ description: 'Conexão que envia.' }),
     templateName: z.string().min(1),
     language: z.string().min(1).max(20).meta({ example: 'pt_BR' }),
@@ -187,12 +202,16 @@ export const SendV1WhatsAppTemplateSchema = z
     }),
   })
   .refine(
-    (data) =>
-      data.conversationId
-        ? !data.contactId && !data.connectionId
-        : !!data.contactId && !!data.connectionId,
+    (data) => {
+      if (data.conversationId) {
+        return !data.contactId && !data.to && !data.connectionId
+      }
+      if (data.to) return !data.contactId
+      return !!data.contactId && !!data.connectionId
+    },
     {
-      message: 'Informe conversationId, ou contactId e connectionId',
+      message:
+        'Informe um destino: conversationId, contactId e connectionId, ou to',
       path: ['conversationId'],
     },
   )

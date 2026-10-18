@@ -137,6 +137,11 @@ describe('SendV1WhatsAppTemplateSchema', () => {
   it.each([
     ['a conversation', { conversationId: 'cv1' }],
     ['a contact on a connection', { contactId: 'ct1', connectionId: 'cn1' }],
+    ['a phone number', { to: '+5511999990000' }],
+    [
+      'a number without +, on a connection',
+      { to: '5511999990000', connectionId: 'cn1' },
+    ],
   ])('accepts %s', (_label, target) => {
     expect(
       SendV1WhatsAppTemplateSchema.safeParse({ ...template, ...target })
@@ -155,6 +160,11 @@ describe('SendV1WhatsAppTemplateSchema', () => {
       'a conversation and a connection',
       { conversationId: 'cv1', connectionId: 'cn1' },
     ],
+    [
+      'a conversation and a number',
+      { conversationId: 'cv1', to: '+5511999990000' },
+    ],
+    ['a contact and a number', { contactId: 'ct1', to: '+5511999990000' }],
   ])('rejects %s', (_label, target) => {
     const parsed = SendV1WhatsAppTemplateSchema.safeParse({
       ...template,
@@ -163,8 +173,17 @@ describe('SendV1WhatsAppTemplateSchema', () => {
     expect(parsed.success).toBe(false)
     if (!parsed.success) {
       expect(parsed.error.issues[0].message).toBe(
-        'Informe conversationId, ou contactId e connectionId',
+        'Informe um destino: conversationId, contactId e connectionId, ou to',
       )
     }
   })
+
+  it.each([['11999990000x'], ['+0551199999'], ['123']])(
+    'rejects %s as a number',
+    (to) => {
+      expect(
+        SendV1WhatsAppTemplateSchema.safeParse({ ...template, to }).success,
+      ).toBe(false)
+    },
+  )
 })

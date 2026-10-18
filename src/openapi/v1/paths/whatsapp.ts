@@ -50,7 +50,7 @@ export function registerV1WhatsAppPaths(registry: OpenApiRegistry): void {
     tags: [TAG],
     summary: 'Enviar template',
     operationId: 'sendTemplate',
-    description: `Envia um template aprovado numa conversa (\`conversationId\`) ou para um contato por uma conexão (\`contactId\` + \`connectionId\`: usa a conversa aberta do contato ou abre uma, como na caixa de entrada). Só conexões Meta enviam template; consome o limite mensal de mensagens e o de envio por conexão (20/min). ${V1_WRITE}`,
+    description: `Envia um template aprovado numa conversa (\`conversationId\`), para um contato por uma conexão (\`contactId\` + \`connectionId\`) ou para um número (\`to\`, E.164: acha ou cria o contato; sem \`connectionId\`, usa a única conexão do workspace — a única conectada, se houver várias). Contato e número usam a conversa aberta do contato ou abrem uma, como na caixa de entrada. Só conexões Meta enviam template; consome o limite mensal de mensagens e o de envio por conexão (20/min). ${V1_WRITE}`,
     auth: 'apiToken',
     consent: true,
     body: SendV1WhatsAppTemplateSchema,
@@ -60,6 +60,12 @@ export function registerV1WhatsAppPaths(registry: OpenApiRegistry): void {
     errors: [
       ...WRITE_ERRORS,
       ...ACCESS,
+      {
+        code: 'VALIDATION_ERROR',
+        message:
+          'O workspace tem mais de uma conexão do WhatsApp: informe connectionId.',
+        when: 'Envio para `to` sem `connectionId` e nenhuma ou mais de uma conexão possível',
+      },
       'WHATSAPP_CONVERSATION_NOT_FOUND',
       'WHATSAPP_CONTACT_NOT_FOUND',
       'WHATSAPP_CONNECTION_NOT_FOUND',

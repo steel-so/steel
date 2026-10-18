@@ -87,7 +87,7 @@
             }
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -139,7 +139,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -242,7 +242,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_MODULE_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -351,7 +351,7 @@
             "$ref": "#/components/responses/409_CRM_LEAD_DUPLICATE"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -434,7 +434,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED_API_TOKEN_MODULE_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_3"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -528,7 +528,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_MODULE_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -616,7 +616,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -690,7 +690,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_MODULE_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -817,7 +817,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_MODULE_NOT_ALLOWED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -972,7 +972,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_MODULE_NOT_ALLOWED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -1523,7 +1523,7 @@
             "$ref": "#/components/responses/409_SD_TICKET_CLOSED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -1696,7 +1696,7 @@
         "tags": ["Comunicação"],
         "summary": "Enviar template",
         "operationId": "sendTemplate",
-        "description": "Envia um template aprovado numa conversa (`conversationId`) ou para um contato por uma conexão (`contactId` + `connectionId`: usa a conversa aberta do contato ou abre uma, como na caixa de entrada). Só conexões Meta enviam template; consome o limite mensal de mensagens e o de envio por conexão (20/min). Escopo **`api:write`**. Roda com as permissões do dono do token. Auditado com `source: api`.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia um template aprovado numa conversa (`conversationId`), para um contato por uma conexão (`contactId` + `connectionId`) ou para um número (`to`, E.164: acha ou cria o contato; sem `connectionId`, usa a única conexão do workspace — a única conectada, se houver várias). Contato e número usam a conversa aberta do contato ou abrem uma, como na caixa de entrada. Só conexões Meta enviam template; consome o limite mensal de mensagens e o de envio por conexão (20/min). Escopo **`api:write`**. Roda com as permissões do dono do token. Auditado com `source: api`.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1705,7 +1705,7 @@
                 "type": "object",
                 "properties": {
                   "conversationId": {
-                    "description": "Conversa existente. Ou informe `contactId` + `connectionId`.",
+                    "description": "Conversa existente. Ou informe `contactId` + `connectionId`, ou `to`.",
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 64
@@ -1715,6 +1715,12 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 64
+                  },
+                  "to": {
+                    "description": "Número em E.164 (`+5511999990000`). Acha ou cria o contato e a conversa. `connectionId` é opcional: sem ele, usa a única conexão do workspace.",
+                    "example": "+5511999990000",
+                    "type": "string",
+                    "pattern": "^\\+?[1-9]\\d{7,14}$"
                   },
                   "connectionId": {
                     "description": "Conexão que envia.",
@@ -1782,7 +1788,7 @@
             "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED_2"
@@ -1880,7 +1886,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_MODULE_NOT_ALLOWED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -2977,36 +2983,6 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "422_VALIDATION_ERROR_2": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — Query inválida",
                 "value": {
                   "success": false,
@@ -3032,7 +3008,78 @@
           }
         }
       },
+      "422_VALIDATION_ERROR_2": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_VALIDATION_ERROR_3": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — Envio para `to` sem `connectionId` e nenhuma ou mais de uma conexão possível",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "O workspace tem mais de uma conexão do WhatsApp: informe connectionId.",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_4": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
