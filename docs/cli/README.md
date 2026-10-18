@@ -13,7 +13,7 @@ Contrato entre as fatias do Steel CLI: API pública v1 e tokens pessoais
 | `DELETE /api/v1/auth/token` | `steel logout`: revoga o token pessoal da própria chamada (`Authorization: Bearer stl_pat_...`); `204` sem corpo, `401` se o token já não vale |
 | `POST /api/v1/auth/device/token` | o CLI consulta com `{ deviceCode }`: `428 AUTHORIZATION_PENDING`, `429 SLOW_DOWN`, `410 EXPIRED_TOKEN`, `403 ACCESS_DENIED` ou `200 { token, tokenId, expiresAt, workspace: { id, slug, name }, scopes, modules }` |
 | `/device` (página) | o usuário digita ou confirma o código, escolhe workspace, módulos e escopo (pt-BR, os dois temas, mobile) |
-| `GET/POST /api/users/me/api-tokens`, `DELETE /api/users/me/api-tokens/{id}` | Tokens de API do usuário (Ajustes › Segurança); o valor só volta na criação |
+| `GET/POST /api/users/me/api-tokens`, `DELETE /api/users/me/api-tokens/{id}` | Tokens de API do usuário (Configurações › Segurança); o valor só volta na criação |
 | `GET /api/workspaces/{id}/api-tokens`, `DELETE .../{tokenId}` | OWNER/ADMIN veem e revogam os tokens de todos os membros |
 
 Rotas internas da fatia, além do contrato acima: `POST /api/device/authorize`

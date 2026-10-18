@@ -2,7 +2,7 @@ import { sdConfigRoute } from '@/src/lib/servicedesk/config-route'
 import { CreateWebhookEndpointSchema } from '@/src/schemas/webhook.schema'
 import { WebhookService } from '@/src/services/webhook.service'
 
-/** Ajustes › Integrações › Webhooks (OWNER/ADMIN, ADR 0036). */
+/** Ajustes › Webhooks (OWNER/ADMIN, ADR 0036). */
 
 export const GET = sdConfigRoute({
   handler: ({ userId, params }) =>

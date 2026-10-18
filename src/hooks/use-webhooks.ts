@@ -19,7 +19,7 @@ import type {
 import { apiFetch, apiFetchJson } from './_fetch'
 
 /**
- * Ajustes › Integrações › Webhooks (OWNER/ADMIN, ADR 0036). Everything under
+ * Ajustes › Webhooks (OWNER/ADMIN, ADR 0036). Everything under
  * `['webhooks', workspaceId]`. The secret only comes back from create,
  * rotate and the explicit reveal — never from the list.
  */

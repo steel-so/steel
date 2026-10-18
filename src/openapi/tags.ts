@@ -93,7 +93,7 @@ export const TAG_GROUPS = [
       {
         name: 'Webhooks de saída',
         description:
-          'Endpoints HTTPS do workspace que recebem os eventos do Steel assinados com HMAC-SHA256 (Ajustes › Integrações › Webhooks, OWNER/ADMIN): cadastro com escolha de eventos, segredo (revelar e trocar), envio de teste e log de entregas com reenvio (ADR 0036).',
+          'Endpoints HTTPS do workspace que recebem os eventos do Steel assinados com HMAC-SHA256 (Ajustes › Webhooks, OWNER/ADMIN): cadastro com escolha de eventos, segredo (revelar e trocar), envio de teste e log de entregas com reenvio (ADR 0036).',
       },
       {
         name: 'API v1 · Webhooks',

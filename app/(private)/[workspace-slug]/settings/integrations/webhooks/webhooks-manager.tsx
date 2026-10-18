@@ -47,7 +47,7 @@ import { webhookEventsSummary, webhookHost } from './webhook-format'
 import { WebhookSecretDialog } from './webhook-secret-dialog'
 
 /**
- * Ajustes › Integrações › Webhooks (ADR 0036): endpoints (URL, events,
+ * Ajustes › Webhooks (ADR 0036): endpoints (URL, events,
  * active), the signing secret (shown on create, rotate and reveal), the test
  * ping and the delivery log with re-delivery.
  */

@@ -108,7 +108,7 @@ async function autoDisable(endpoint: WebhookEndpoint, at: Date): Promise<void> {
     recipients: await workspaceAdminIds(endpoint.workspaceId),
     kind: 'WEBHOOK_ENDPOINT_DISABLED',
     title: `Webhook desativado: ${host}`,
-    body: 'O endpoint falhou em todas as entregas dos últimos 3 dias e foi desativado. Corrija o serviço e reative em Ajustes › Integrações › Webhooks.',
+    body: 'O endpoint falhou em todas as entregas dos últimos 3 dias e foi desativado. Corrija o serviço e reative em Ajustes › Webhooks.',
     path: WEBHOOKS_SETTINGS_PATH,
     dedupeKey: `webhook-disabled:${endpoint.id}:${at.toISOString().slice(0, 10)}`,
   })
