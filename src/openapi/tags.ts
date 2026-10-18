@@ -518,6 +518,11 @@ export const TAG_GROUPS = [
         description:
           'WhatsApp: templates aprovados, envio de template e situação de uma transmissão.',
       },
+      {
+        name: 'v1 · Webhooks',
+        description:
+          'Webhooks de saída: catálogo de eventos, endpoints, entregas, escuta em tempo real (`steel listen`) e eventos de teste.',
+      },
     ],
   },
 ] as const satisfies readonly TagGroupDefinition[]

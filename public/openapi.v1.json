@@ -39,6 +39,10 @@
     {
       "name": "Comunicação",
       "description": "WhatsApp: templates aprovados, envio de template e situação de uma transmissão."
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhooks de saída: catálogo de eventos, endpoints, entregas, escuta em tempo real (`steel listen`) e eventos de teste."
     }
   ],
   "security": [
@@ -440,7 +444,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED_API_TOKEN_MODULE_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -1637,6 +1641,792 @@
         ]
       }
     },
+    "/api/v1/webhooks/deliveries": {
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "Log de entregas",
+        "operationId": "getWebhooksDeliveries",
+        "description": "Mais novas primeiro. Paginação por cursor: `limit` (padrão 25, máximo 100) e `cursor` (o `nextCursor` da página anterior). Retenção de 30 dias. Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "endpointId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "SUCCEEDED", "RETRYING", "FAILED", "SKIPPED"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de entregas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/WebhookDelivery"
+                              }
+                            },
+                            "nextCursor": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["items", "nextCursor"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/deliveries/{id}/retry": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Reenviar entrega",
+        "operationId": "postWebhooksDeliveriesByIdRetry",
+        "description": "Mais uma tentativa da mesma entrega. Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token. Exige o escopo `api:write`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da entrega.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Reenvio na fila.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WebhookDelivery"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND_WEBHOOK_DELIVERY_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/endpoints": {
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "Listar endpoints",
+        "operationId": "getWebhooksEndpoints",
+        "description": "Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/WebhookEndpoint"
+                              }
+                            },
+                            "nextCursor": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["items", "nextCursor"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Cadastrar endpoint",
+        "operationId": "postWebhooksEndpoints",
+        "description": "Cada entrega é um `POST` JSON com o corpo `{ id, type, createdAt, workspaceId, data }` e os cabeçalhos `Steel-Webhook-Id` (id do evento, o mesmo nas novas tentativas), `Steel-Webhook-Timestamp` (Unix, segundos) e `Steel-Signature` (`v1=<hex do HMAC-SHA256 de \"<timestamp>.<corpo>\">` com o segredo do endpoint). Até 6 tentativas com espera crescente (1, 2, 4, 8 e 16 min); só `2xx` confirma; um endpoint que falha por 3 dias seguidos é desativado e os administradores são avisados. Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token. Exige o escopo `api:write`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "events": {
+                    "minItems": 1,
+                    "maxItems": 19,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "*",
+                        "servicedesk.ticket.created",
+                        "servicedesk.ticket.updated",
+                        "servicedesk.ticket.assigned",
+                        "servicedesk.ticket.message",
+                        "servicedesk.ticket.resolved",
+                        "servicedesk.ticket.reopened",
+                        "servicedesk.ticket.escalated",
+                        "servicedesk.ticket.csat",
+                        "servicedesk.sla.at_risk",
+                        "servicedesk.sla.breached",
+                        "servicedesk.approval.requested",
+                        "servicedesk.approval.responded",
+                        "crm.lead.created",
+                        "crm.opportunity.stage_changed",
+                        "crm.deal.won",
+                        "crm.deal.lost",
+                        "communication.message.received",
+                        "agents.approval.pending"
+                      ]
+                    }
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["url", "events"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Endpoint e segredo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "endpoint": {
+                              "$ref": "#/components/schemas/WebhookEndpoint"
+                            },
+                            "secret": {
+                              "type": "string",
+                              "description": "Segredo de assinatura. Guarde: só volta aqui.",
+                              "example": "whsec_3q2-7wE…"
+                            }
+                          },
+                          "required": ["endpoint", "secret"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WEBHOOK_ENDPOINT_LIMIT_REACHED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_WEBHOOK_URL_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/endpoints/{id}": {
+      "patch": {
+        "tags": ["Webhooks"],
+        "summary": "Alterar endpoint",
+        "operationId": "patchWebhooksEndpointsById",
+        "description": "Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token. Exige o escopo `api:write`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do endpoint.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "events": {
+                    "minItems": 1,
+                    "maxItems": 19,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "*",
+                        "servicedesk.ticket.created",
+                        "servicedesk.ticket.updated",
+                        "servicedesk.ticket.assigned",
+                        "servicedesk.ticket.message",
+                        "servicedesk.ticket.resolved",
+                        "servicedesk.ticket.reopened",
+                        "servicedesk.ticket.escalated",
+                        "servicedesk.ticket.csat",
+                        "servicedesk.sla.at_risk",
+                        "servicedesk.sla.breached",
+                        "servicedesk.approval.requested",
+                        "servicedesk.approval.responded",
+                        "crm.lead.created",
+                        "crm.opportunity.stage_changed",
+                        "crm.deal.won",
+                        "crm.deal.lost",
+                        "communication.message.received",
+                        "agents.approval.pending"
+                      ]
+                    }
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WebhookEndpoint"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_WEBHOOK_URL_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Webhooks"],
+        "summary": "Remover endpoint",
+        "operationId": "deleteWebhooksEndpointsById",
+        "description": "Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token. Exige o escopo `api:write`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do endpoint.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/endpoints/{id}/test": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Enviar teste",
+        "operationId": "postWebhooksEndpointsByIdTest",
+        "description": "Um `steel.ping` só para este endpoint, na hora; devolve a entrega. Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token. Exige o escopo `api:write`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do endpoint.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entrega do teste.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WebhookDelivery"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/events": {
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "Catálogo de eventos",
+        "operationId": "getWebhooksEvents",
+        "description": "Tipos de evento que o Steel envia, com módulo e descrição. Eventos de módulos fora do token não aparecem. O formato do `data` de cada tipo segue a regra de estabilidade da API v1.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Catálogo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WebhookEventType"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/listen": {
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "Escutar eventos (SSE)",
+        "operationId": "getWebhooksListen",
+        "description": "Para o `steel listen`: Server-Sent Events com os eventos do workspace em tempo real (Redis pub/sub), sem replay. Primeiro `event: ready` com `{ workspaceId, events, secret }` — o segredo de assinatura desta escuta, fixo por membro e workspace. Depois, a cada evento, `event: webhook` com `{ id, timestamp, signature, body }`: o corpo exato e os valores dos três cabeçalhos `Steel-Webhook-*`, para o CLI repassar idêntico. Heartbeat `: ping` a cada 25 s. `?events=a,b` filtra; os módulos do token sempre valem. Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "events",
+            "in": "query",
+            "required": false,
+            "description": "Tipos separados por vírgula; vazio = todos.",
+            "schema": {
+              "example": "servicedesk.ticket.created,crm.deal.won",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stream SSE aberto.",
+            "content": {
+              "text/event-stream": {
+                "example": "event: ready\ndata: {\"workspaceId\":\"cm2…\",\"events\":[],\"secret\":\"whsec_…\"}\n\nevent: webhook\nid: evt_cm2…\ndata: {\"id\":\"evt_cm2…\",\"timestamp\":1760788800,\"signature\":\"v1=5257a8…\",\"body\":\"{\\\"id\\\":\\\"evt_cm2…\\\",\\\"type\\\":\\\"crm.lead.created\\\",…}\"}\n\n: ping\n\n"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/trigger": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Disparar evento de teste",
+        "operationId": "postWebhooksTrigger",
+        "description": "Para o `steel trigger`: cria um evento do tipo pedido com os dados de exemplo do catálogo. Chega a quem está escutando (`steel listen`) e, com `endpointId`, a esse endpoint — nunca aos outros endpoints inscritos, para um teste não cair numa integração de produção. Token pessoal (`stl_pat_`) de **OWNER/ADMIN**; o workspace é o do token. Exige o escopo `api:write`.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "endpointId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Evento criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "event": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["id", "type"]
+                            },
+                            "deliveries": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Entregas na fila (0 quando só os ouvintes recebem)."
+                            }
+                          },
+                          "required": ["event", "deliveries"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "personalToken": []
+          }
+        ]
+      }
+    },
     "/api/v1/whatsapp/broadcasts/{broadcastId}": {
       "get": {
         "tags": ["Comunicação"],
@@ -1794,7 +2584,7 @@
             "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_3"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED_2"
@@ -2696,6 +3486,119 @@
           }
         }
       },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Token sem `api:write`, ou o dono não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_2": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — O dono do token não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_3": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Token sem `api:write`, ou o dono não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — O evento é de um módulo fora do token",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este token não tem acesso ao módulo deste evento.",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_RESOURCE_NOT_FOUND": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
@@ -2854,6 +3757,63 @@
           }
         }
       },
+      "404_WEBHOOK_ENDPOINT_NOT_FOUND": {
+        "description": "Não encontrado: `WEBHOOK_ENDPOINT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "WEBHOOK_ENDPOINT_NOT_FOUND": {
+                "summary": "WEBHOOK_ENDPOINT_NOT_FOUND — Endpoint inexistente, removido ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Endpoint de webhook não encontrado.",
+                  "error": {
+                    "code": "WEBHOOK_ENDPOINT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_WEBHOOK_ENDPOINT_NOT_FOUND_WEBHOOK_DELIVERY_NOT_FOUND": {
+        "description": "Não encontrado: `WEBHOOK_ENDPOINT_NOT_FOUND`, `WEBHOOK_DELIVERY_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "WEBHOOK_DELIVERY_NOT_FOUND": {
+                "summary": "WEBHOOK_DELIVERY_NOT_FOUND — Entrega inexistente (ou já fora dos 30 dias de retenção)",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Entrega de webhook não encontrada.",
+                  "error": {
+                    "code": "WEBHOOK_DELIVERY_NOT_FOUND"
+                  }
+                }
+              },
+              "WEBHOOK_ENDPOINT_NOT_FOUND": {
+                "summary": "WEBHOOK_ENDPOINT_NOT_FOUND — Endpoint inexistente, removido ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Endpoint de webhook não encontrado.",
+                  "error": {
+                    "code": "WEBHOOK_ENDPOINT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_WHATSAPP_BROADCAST_NOT_FOUND": {
         "description": "Não encontrado: `WHATSAPP_BROADCAST_NOT_FOUND`",
         "content": {
@@ -2961,6 +3921,29 @@
                   "message": "O chamado está encerrado",
                   "error": {
                     "code": "SD_TICKET_CLOSED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WEBHOOK_ENDPOINT_LIMIT_REACHED": {
+        "description": "Conflito com o estado atual: `WEBHOOK_ENDPOINT_LIMIT_REACHED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "WEBHOOK_ENDPOINT_LIMIT_REACHED": {
+                "summary": "WEBHOOK_ENDPOINT_LIMIT_REACHED — O workspace já tem 20 endpoints",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este workspace já tem o máximo de endpoints de webhook. Remova um antes de cadastrar outro.",
+                  "error": {
+                    "code": "WEBHOOK_ENDPOINT_LIMIT_REACHED"
                   }
                 }
               }
@@ -3087,6 +4070,29 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_4": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
                 "value": {
                   "success": false,
@@ -3119,7 +4125,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_4": {
+      "422_VALIDATION_ERROR_5": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -3301,6 +4307,47 @@
                   "message": "É preciso colher a assinatura antes de encerrar o chamado",
                   "error": {
                     "code": "SD_SIGNATURE_REQUIRED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_WEBHOOK_URL_NOT_ALLOWED": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `WEBHOOK_URL_NOT_ALLOWED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "WEBHOOK_URL_NOT_ALLOWED": {
+                "summary": "WEBHOOK_URL_NOT_ALLOWED — URL sem HTTPS, com usuário e senha, ou que resolve para IP privado, loopback ou link-local",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Use uma URL HTTPS pública. Endereços privados, locais ou de loopback não são aceitos.",
+                  "error": {
+                    "code": "WEBHOOK_URL_NOT_ALLOWED"
                   }
                 }
               }
@@ -4210,10 +5257,14 @@
           "ACCESS_DENIED",
           "API_TOKEN_SCOPE_REQUIRED",
           "API_TOKEN_MODULE_NOT_ALLOWED",
+          "WEBHOOK_ENDPOINT_NOT_FOUND",
+          "WEBHOOK_DELIVERY_NOT_FOUND",
+          "WEBHOOK_ENDPOINT_LIMIT_REACHED",
+          "WEBHOOK_URL_NOT_ALLOWED",
           "INTERNAL_SERVER_ERROR",
           "DATABASE_ERROR"
         ],
-        "description": "Código estável do erro. Use o código — não a mensagem — para tratar erros no cliente. Códigos novos podem aparecer.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `RATE_LIMITED` | 429 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |"
+        "description": "Código estável do erro. Use o código — não a mensagem — para tratar erros no cliente. Códigos novos podem aparecer.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `RATE_LIMITED` | 429 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |"
       },
       "ErrorEnvelope": {
         "type": "object",
@@ -5942,6 +6993,293 @@
           }
         },
         "required": ["items", "nextCursor"]
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "endpointId": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string",
+            "example": "evt_cm2…"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "SUCCEEDED", "RETRYING", "FAILED", "SKIPPED"]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "responseStatus": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "responseBody": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Primeiro 1 KB da resposta."
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "http_500",
+            "description": "`http_<status>`, `timeout`, `network_error: …`, `url_not_allowed: …`, `endpoint_disabled`…"
+          },
+          "requestBody": {
+            "type": "string",
+            "description": "Corpo JSON exato enviado."
+          },
+          "lastAttemptAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deliveredAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "endpointId",
+          "eventId",
+          "eventType",
+          "status",
+          "attempts",
+          "responseStatus",
+          "responseBody",
+          "durationMs",
+          "error",
+          "requestBody",
+          "lastAttemptAt",
+          "deliveredAt",
+          "createdAt"
+        ]
+      },
+      "WebhookEndpoint": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://erp.example.com/steel"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tipos do catálogo, ou `[\"*\"]` para todos.",
+            "example": ["servicedesk.ticket.created", "crm.deal.won"]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "secretHint": {
+            "type": "string",
+            "description": "Só os 4 últimos caracteres do segredo.",
+            "example": "whsec_…a1b2"
+          },
+          "disabledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disabledReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`manual` (desligado por alguém) ou `auto` (3 dias falhando)."
+          },
+          "failingSince": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Primeira falha desde o último sucesso."
+          },
+          "lastSuccessAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastFailureAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdById": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "url",
+          "description",
+          "events",
+          "active",
+          "secretHint",
+          "disabledAt",
+          "disabledReason",
+          "failingSince",
+          "lastSuccessAt",
+          "lastFailureAt",
+          "createdById",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WebhookEventType": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "steel.ping",
+              "servicedesk.ticket.created",
+              "servicedesk.ticket.updated",
+              "servicedesk.ticket.assigned",
+              "servicedesk.ticket.message",
+              "servicedesk.ticket.resolved",
+              "servicedesk.ticket.reopened",
+              "servicedesk.ticket.escalated",
+              "servicedesk.ticket.csat",
+              "servicedesk.sla.at_risk",
+              "servicedesk.sla.breached",
+              "servicedesk.approval.requested",
+              "servicedesk.approval.responded",
+              "crm.lead.created",
+              "crm.opportunity.stage_changed",
+              "crm.deal.won",
+              "crm.deal.lost",
+              "communication.message.received",
+              "agents.approval.pending"
+            ]
+          },
+          "module": {
+            "type": "string",
+            "enum": ["SERVICE_DESK", "CRM", "COMMUNICATION", "AGENTS", "PLATFORM"]
+          },
+          "description": {
+            "type": "string",
+            "description": "pt-BR."
+          },
+          "subscribable": {
+            "type": "boolean",
+            "description": "`false` só para `steel.ping` (enviado sob demanda)."
+          }
+        },
+        "required": ["type", "module", "description", "subscribable"]
       },
       "WhatsAppBroadcastDetail": {
         "type": "object",

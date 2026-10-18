@@ -420,3 +420,18 @@ const routes: RouteConfig[] = [
 export function registerWebhookPaths(registry: OpenApiRegistry): void {
   for (const route of routes) registry.registerRoute(route)
 }
+
+/**
+ * The `/v1/webhooks/**` routes for `openapi.v1.json`, registered relative to
+ * `/api/v1` like the other v1 paths (`src/openapi/v1/document.ts`).
+ */
+export function registerV1WebhookPaths(registry: OpenApiRegistry): void {
+  for (const route of routes) {
+    if (route.path.startsWith(`${V1}/`))
+      registry.registerRoute({
+        ...route,
+        path: route.path.slice('/v1'.length),
+        tags: ['v1 · Webhooks'],
+      })
+  }
+}

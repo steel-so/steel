@@ -33,27 +33,39 @@ describe('public/openapi.v1.json', () => {
   })
 
   it('has the contract routes, written with the /api/v1 prefix', () => {
-    expect(createV1Registry().listOperations()).toEqual([
-      'DELETE /auth/token',
-      'GET /crm/leads',
-      'GET /crm/opportunities',
-      'GET /crm/pipelines',
-      'GET /me',
-      'GET /servicedesk/catalog',
-      'GET /servicedesk/tickets',
-      'GET /servicedesk/tickets/{ticketId}',
-      'GET /whatsapp/broadcasts/{broadcastId}',
-      'GET /whatsapp/templates',
-      'POST /auth/device',
-      'POST /auth/device/token',
-      'POST /crm/leads',
-      'POST /crm/leads/import',
-      'POST /crm/opportunities/{opportunityId}/stage',
-      'POST /servicedesk/tickets',
-      'POST /servicedesk/tickets/{ticketId}/comments',
-      'POST /servicedesk/tickets/{ticketId}/phase',
-      'POST /whatsapp/messages/template',
-    ])
+    expect(createV1Registry().listOperations()).toEqual(
+      [
+        'DELETE /auth/token',
+        'GET /crm/leads',
+        'GET /crm/opportunities',
+        'GET /crm/pipelines',
+        'GET /me',
+        'GET /servicedesk/catalog',
+        'GET /servicedesk/tickets',
+        'GET /servicedesk/tickets/{ticketId}',
+        'GET /whatsapp/broadcasts/{broadcastId}',
+        'GET /whatsapp/templates',
+        'POST /auth/device',
+        'POST /auth/device/token',
+        'POST /crm/leads',
+        'POST /crm/leads/import',
+        'POST /crm/opportunities/{opportunityId}/stage',
+        'POST /servicedesk/tickets',
+        'POST /servicedesk/tickets/{ticketId}/comments',
+        'POST /servicedesk/tickets/{ticketId}/phase',
+        'POST /whatsapp/messages/template',
+        'GET /webhooks/events',
+        'GET /webhooks/endpoints',
+        'POST /webhooks/endpoints',
+        'PATCH /webhooks/endpoints/{id}',
+        'DELETE /webhooks/endpoints/{id}',
+        'POST /webhooks/endpoints/{id}/test',
+        'GET /webhooks/deliveries',
+        'POST /webhooks/deliveries/{id}/retry',
+        'GET /webhooks/listen',
+        'POST /webhooks/trigger',
+      ].sort(),
+    )
     expect(
       Object.keys(spec.paths).every((path) => path.startsWith('/api/v1/')),
     ).toBe(true)
@@ -95,6 +107,7 @@ describe('public/openapi.v1.json', () => {
       'ServiceDesk',
       'CRM',
       'Comunicação',
+      'Webhooks',
     ])
     for (const operation of operations) {
       for (const tag of operation.tags) expect(declared.has(tag)).toBe(true)

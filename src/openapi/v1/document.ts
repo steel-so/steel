@@ -1,6 +1,7 @@
 import type { ErrorCode } from '@/src/errors/codes'
 import { ERROR_CODE_LIST, statusOf } from '../errors'
 import type { JsonSchema } from '../json-schema'
+import { registerV1WebhookPaths } from '../paths/webhooks'
 import { compareStrings, OpenApiRegistry } from '../registry'
 import { TAG_GROUPS } from '../tags'
 import { registerV1AccountPaths } from './paths/account'
@@ -28,6 +29,7 @@ export function createV1Registry(): OpenApiRegistry {
   registerV1ServiceDeskPaths(registry)
   registerV1CrmPaths(registry)
   registerV1WhatsAppPaths(registry)
+  registerV1WebhookPaths(registry)
   return registry
 }
 
