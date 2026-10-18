@@ -19,6 +19,7 @@ import {
 } from '@/src/lib/queue/queues'
 import { ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
+import { communicationMessageReceivedData } from '@/src/lib/webhooks/payloads'
 import {
   isWhatsAppOptOutKeyword,
   WHATSAPP_OPT_OUT_CONFIRMATION,
@@ -39,6 +40,7 @@ import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.r
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
+import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { WhatsAppTeamService } from './whatsapp-team.service'
@@ -331,6 +333,16 @@ export const WhatsAppWebhookService = {
       message: toWhatsAppMessageDTO(message.value),
     })
     await publishConversationSnapshot(workspaceId, conversationId)
+    // Outbound webhooks (ADR 0036), fire-and-forget.
+    void emitWebhookEvent(
+      workspaceId,
+      'communication.message.received',
+      communicationMessageReceivedData({
+        message: message.value,
+        contact: contact.value,
+        connectionId: connection.id,
+      }),
+    )
     // Unassigned conversation of a team: the team queue hears about it.
     await WhatsAppTeamService.notifyQueueOnInbound(workspaceId, conversationId)
 

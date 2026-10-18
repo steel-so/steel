@@ -33,6 +33,7 @@ import {
   withCustomFieldsList,
 } from './crm-custom-field-sync'
 import { notifyCrmOpportunityAssigned } from './crm-notifications'
+import { emitCrmOpportunityStageWebhooks } from './crm-opportunity-webhooks'
 import { CrmPipelineService } from './crm-pipeline.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
 
@@ -330,6 +331,12 @@ export const CrmOpportunityService = {
       actorId,
       targetId: opportunityId,
       meta: { fields: Object.keys(dto) },
+    })
+    void emitCrmOpportunityStageWebhooks({
+      workspaceId,
+      before: existing.value,
+      after: result.value,
+      actorId,
     })
 
     if (dto.customFields) {

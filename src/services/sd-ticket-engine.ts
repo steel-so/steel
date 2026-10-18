@@ -47,6 +47,10 @@ import {
   resolveSdTicketPrefixes,
   type SdTicketPrefixes,
 } from '@/src/lib/servicedesk/ticket-code'
+import {
+  sdTicketSnapshot,
+  sdTicketWebhookChange,
+} from '@/src/lib/webhooks/payloads'
 import { SdAutomationRepository } from '@/src/repositories/sd-automation.repository'
 import {
   type SdTicketCreateData,
@@ -84,6 +88,7 @@ import {
   validateSdTicketCustomFields,
 } from './sd-ticket-rules'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import { emitWebhookEvent } from './webhook-emitter'
 
 /**
  * Núcleo do motor de chamados do ServiceDesk, **sem autorização**: quem
@@ -155,7 +160,21 @@ async function publish(
   t: SdTicketWithRelations,
   type: SdTicketRealtimeEventType,
   actor: SdActor,
+  config: SdEngineConfig,
 ): Promise<void> {
+  // Outbound webhooks (ADR 0036): created/updated, fire-and-forget.
+  const webhook = sdTicketWebhookChange(type)
+  if (webhook) {
+    const ticket = sdTicketSnapshot(t, sdTicketCode(t, config.prefixes))
+    const actorId = sdActorUserId(actor)
+    void (webhook.type === 'servicedesk.ticket.created'
+      ? emitWebhookEvent(t.workspaceId, webhook.type, { ticket, actorId })
+      : emitWebhookEvent(t.workspaceId, webhook.type, {
+          ticket,
+          actorId,
+          change: webhook.change,
+        }))
+  }
   await publishSdTicketEvent(
     t.workspaceId,
     {
@@ -859,7 +878,7 @@ export const SdTicketEngine = {
       title: `Novo na fila: ${sdTicketCode(ticket, config.prefixes)}`,
       body: ticket.title,
     })
-    await publish(ticket, 'ticket.created', actor)
+    await publish(ticket, 'ticket.created', actor, config)
     void dispatchSteelAgentEvent(workspaceId, 'sd.ticket.created', {
       ticketId: ticket.id,
       code: sdTicketCode(ticket, config.prefixes),
@@ -1175,6 +1194,7 @@ export const SdTicketEngine = {
         after,
         assigneeChanged ? 'ticket.assigned' : 'ticket.updated',
         actor,
+        config,
       )
     }
     void indexSearchDocument('sd-ticket', after.workspaceId, after.id)
@@ -1387,7 +1407,7 @@ export const SdTicketEngine = {
     }
     await recordSdTicketEvent(events)
     await notifyPhaseChange(ticket, after, target, config, actor, reopened)
-    await publish(after, 'ticket.phase_changed', actor)
+    await publish(after, 'ticket.phase_changed', actor, config)
     void indexSearchDocument('sd-ticket', after.workspaceId, after.id)
     return ok(after)
   },
