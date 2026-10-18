@@ -85,6 +85,16 @@ export const TAG_GROUPS = [
         description:
           'Slack, GitHub e GitLab conectados uma vez por workspace (Ajustes › Integrações, OWNER/ADMIN) e usados por todos os módulos: regras de notificação no Slack, vínculo de chamados com issues/PRs/MRs e os webhooks públicos dos repositórios (ADR 0024).',
       },
+      {
+        name: 'Webhooks de saída',
+        description:
+          'Endpoints HTTPS do workspace que recebem os eventos do Steel assinados com HMAC-SHA256 (Ajustes › Integrações › Webhooks, OWNER/ADMIN): cadastro com escolha de eventos, segredo (revelar e trocar), envio de teste e log de entregas com reenvio (ADR 0036).',
+      },
+      {
+        name: 'API v1 · Webhooks',
+        description:
+          'Os mesmos webhooks de saída pela API pública v1, com token pessoal (`stl_pat_`): catálogo de eventos, endpoints, log de entregas, reenvio, `steel listen` (SSE) e `steel trigger` (evento de teste). Escrita exige `api:write`; só dono e administradores (ADR 0035 e 0036).',
+      },
     ],
   },
   {
