@@ -13,6 +13,7 @@ confirmar que deu certo.
 | CI vermelho, deploy não saiu ou saiu quebrado | [CI vermelho / deploy falhou](./ci-deploy-failure.md) |
 | Wiki não sincroniza / instalar o realtime no nginx | [Servidor realtime da Wiki](./realtime-wiki.md) |
 | Claude/ChatGPT/Cursor não conectam ao Steel / instalar o MCP no proxy | [Proxy de borda do servidor MCP](./mcp-edge-proxy.md) |
+| Um cliente de IA (MCP) abusando, errando em série ou com token vazado | [Cliente MCP com mau comportamento](./mcp-incident.md) |
 
 ## Referência rápida do servidor
 

@@ -159,6 +159,8 @@ export default defineConfig({
         'src/lib/site-ai/**',
         // MCP adapter (ADR 0032); `grant.ts` is owned by the mcp-auth slice.
         'src/lib/mcp/{tools,resources,prompts,server,http}.ts',
+        // Pure helpers of the `pnpm mcp:smoke` client (mcp-launch).
+        'src/lib/mcp/smoke.ts',
       ],
       exclude: [
         'node_modules/**',

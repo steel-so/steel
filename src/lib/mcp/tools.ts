@@ -1,6 +1,4 @@
 import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js'
-import { logFields } from '@/lib/axiom/log-fields'
-import { logger } from '@/lib/axiom/logger'
 import type { AppError } from '@/src/errors/app-error'
 import {
   type AiToolAccess,
@@ -14,6 +12,8 @@ import type {
   AnySteelAiTool,
 } from '@/src/lib/ai/tools/types'
 import type { McpGrant } from './grant'
+import { logMcpToolCall, reportMcpError } from './telemetry'
+import { recordMcpToolUsage } from './tool-usage'
 
 /**
  * Tools side of the MCP adapter (ADR 0032): which Steel AI tools a grant
@@ -106,39 +106,72 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+export interface McpToolCallOptions {
+  /** Meta-tool the call came through (`steel_call_tool`), for the log. */
+  via?: string
+}
+
+/**
+ * The tool with `execute` watched for exceptions: the registry turns a
+ * throw into a generic `INTERNAL_SERVER_ERROR`, which would hide the bug,
+ * so the cause goes to Sentry (tags only) before the registry sees it.
+ */
+function watchedTool(
+  tool: AnySteelAiTool,
+  grant: McpGrant,
+  onThrow: () => void,
+): AnySteelAiTool {
+  return {
+    ...tool,
+    execute: async (ctx, args) => {
+      try {
+        return await tool.execute(ctx, args)
+      } catch (cause) {
+        onThrow()
+        await reportMcpError(cause, {
+          method: 'tools/call',
+          tool: tool.name,
+          client: grant.clientId,
+        })
+        throw cause
+      }
+    },
+  }
+}
+
 /**
  * `parse` → `execute` with the grant's identity (workspace and user never
  * come from the arguments). The result carries the summary as text and the
  * data — capped at `TOOL_OUTPUT_MAX_BYTES` — as `structuredContent` and as
  * serialized JSON for clients that only read text. Domain errors come back
- * as `isError` results (the model can read and react to them).
+ * as `isError` results (the model can read and react to them). Every call
+ * is logged (`mcp.tool_call`, no arguments) and counted for the tool
+ * ranking of `tools/list`.
  */
 export async function callMcpTool(
   tool: AnySteelAiTool,
   grant: McpGrant,
   args: unknown,
+  options: McpToolCallOptions = {},
 ): Promise<CallToolResult> {
   const startedAt = Date.now()
+  let threw = false
   const run = await runReadTool(
-    tool,
+    watchedTool(tool, grant, () => {
+      threw = true
+    }),
     mcpToolContext(grant),
     isRecord(args) ? args : {},
   )
 
-  logger.info(
-    'mcp.tool_call',
-    logFields(
-      { component: 'McpServer', workspaceId: grant.workspaceId },
-      {
-        toolName: tool.name,
-        userId: grant.userId,
-        clientId: grant.clientId,
-        outcome: run.ok ? 'done' : 'error',
-        errorCode: run.ok ? undefined : run.error.code,
-        durationMs: Date.now() - startedAt,
-      },
-    ),
-  )
+  logMcpToolCall(grant, {
+    tool,
+    outcome: run.ok ? 'ok' : threw ? 'failed' : 'error',
+    errorCode: run.ok ? undefined : run.error.code,
+    durationMs: Date.now() - startedAt,
+    via: options.via,
+  })
+  await recordMcpToolUsage(grant.workspaceId, tool.name)
 
   if (!run.ok) return mcpToolError(run.error)
 

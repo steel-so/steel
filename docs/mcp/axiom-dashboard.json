@@ -1,0 +1,147 @@
+{
+  "name": "Steel MCP",
+  "description": "Servidor MCP do Steel (/api/mcp): chamadas, erros, latência por ferramenta e clientes OAuth. Troque ['steel'] pelo dataset de NEXT_PUBLIC_AXIOM_DATASET antes de importar.",
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-24h",
+  "timeWindowEnd": "qr-now",
+  "refreshTime": 60,
+  "charts": [
+    {
+      "id": "calls",
+      "name": "Chamadas MCP por desfecho",
+      "type": "TimeSeries",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.tool_call\"\n| summarize count() by bin_auto(_time), outcome = tostring(['fields.outcome'])"
+      }
+    },
+    {
+      "id": "errors",
+      "name": "Erros por ferramenta e código",
+      "type": "Table",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.tool_call\"\n| where ['fields.outcome'] != \"ok\"\n| summarize errors = count() by tool = tostring(['fields.toolName']), code = tostring(['fields.errorCode']), outcome = tostring(['fields.outcome'])\n| order by errors desc\n| take 50"
+      }
+    },
+    {
+      "id": "latency",
+      "name": "Latência p95 por ferramenta (ms)",
+      "type": "Table",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.tool_call\"\n| summarize calls = count(), p50 = percentile(toreal(['fields.durationMs']), 50), p95 = percentile(toreal(['fields.durationMs']), 95), errors = countif(['fields.outcome'] != \"ok\") by tool = tostring(['fields.toolName']), kind = tostring(['fields.kind']), module = tostring(['fields.module'])\n| where calls >= 3\n| order by p95 desc\n| take 50"
+      }
+    },
+    {
+      "id": "latency_series",
+      "name": "Latência p95 (ms)",
+      "type": "TimeSeries",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.tool_call\"\n| summarize p95 = percentile(toreal(['fields.durationMs']), 95) by bin_auto(_time)"
+      }
+    },
+    {
+      "id": "clients",
+      "name": "Clientes com mais chamadas",
+      "type": "Table",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.tool_call\"\n| summarize calls = count(), errors = countif(['fields.outcome'] != \"ok\"), users = dcount(tostring(['fields.userId'])), workspaces = dcount(tostring(['fields.workspaceId'])) by client = tostring(['fields.clientId'])\n| order by calls desc\n| take 20"
+      }
+    },
+    {
+      "id": "rejected",
+      "name": "Pedidos recusados (token, rate limit, acesso)",
+      "type": "TimeSeries",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.rejected\"\n| summarize count() by bin_auto(_time), reason = tostring(['fields.reason'])"
+      }
+    },
+    {
+      "id": "rejected_clients",
+      "name": "Clientes mais recusados",
+      "type": "Table",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.rejected\" and isnotempty(['fields.clientId'])\n| summarize rejected = count() by client = tostring(['fields.clientId']), reason = tostring(['fields.reason'])\n| order by rejected desc\n| take 20"
+      }
+    },
+    {
+      "id": "failures",
+      "name": "Falhas inesperadas (também no Sentry)",
+      "type": "Table",
+      "query": {
+        "apl": "['steel']\n| where message in (\"mcp.tool_call\", \"mcp.handler_failed\") and (['fields.outcome'] == \"failed\" or message == \"mcp.handler_failed\")\n| project _time, message, tool = ['fields.toolName'], client = ['fields.clientId'], workspace = ['fields.workspaceId'], error = ['fields.message']\n| order by _time desc\n| take 50"
+      }
+    },
+    {
+      "id": "tools_list",
+      "name": "tools/list: ferramentas listadas",
+      "type": "TimeSeries",
+      "query": {
+        "apl": "['steel']\n| where message == \"mcp.tools_list\"\n| summarize listed = avg(toreal(['fields.count'])) by bin_auto(_time)"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "calls",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 4
+    },
+    {
+      "i": "errors",
+      "x": 0,
+      "y": 4,
+      "w": 6,
+      "h": 5
+    },
+    {
+      "i": "latency",
+      "x": 6,
+      "y": 4,
+      "w": 6,
+      "h": 5
+    },
+    {
+      "i": "latency_series",
+      "x": 0,
+      "y": 9,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "clients",
+      "x": 6,
+      "y": 9,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "rejected",
+      "x": 0,
+      "y": 13,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "rejected_clients",
+      "x": 6,
+      "y": 13,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "failures",
+      "x": 0,
+      "y": 17,
+      "w": 8,
+      "h": 5
+    },
+    {
+      "i": "tools_list",
+      "x": 8,
+      "y": 17,
+      "w": 4,
+      "h": 5
+    }
+  ]
+}

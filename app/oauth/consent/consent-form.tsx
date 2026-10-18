@@ -183,12 +183,12 @@ export function OAuthConsentForm({
           <h1 className='text-lg font-semibold text-balance'>
             {clientName} quer acessar o seu Steel
           </h1>
-          <Muted>
+          <Muted>O app vai agir em seu nome, com as suas permissões.</Muted>
+          <Muted className='text-xs'>
             Conectado como{' '}
-            <span className='font-medium text-foreground break-all'>
+            <span className='font-medium text-foreground [overflow-wrap:anywhere]'>
               {userEmail}
             </span>
-            . O app vai agir em seu nome, com as suas permissões.
           </Muted>
         </div>
 
@@ -264,7 +264,7 @@ export function OAuthConsentForm({
                 className='flex flex-col gap-2'
               >
                 <FieldLabel htmlFor='oauth-access-read'>
-                  <Field orientation='horizontal'>
+                  <Field orientation='horizontal' className='px-4 py-3'>
                     <FieldContent>
                       <FieldTitle>Somente ler</FieldTitle>
                       <FieldDescription>
@@ -277,6 +277,7 @@ export function OAuthConsentForm({
                 <FieldLabel htmlFor='oauth-access-write'>
                   <Field
                     orientation='horizontal'
+                    className='px-4 py-3'
                     data-disabled={!writeRequested || undefined}
                   >
                     <FieldContent>
