@@ -51,3 +51,31 @@ Detalhes para aplicar:
 - Mais uma superfície de autenticação pública para manter e testar (e2e do
   fluxo completo e da revogação).
 - Revisitar quando o pacote `@better-auth/oauth-provider` mudar de major.
+
+## Atualização (18/10/2026)
+
+A tela de consentimento mostrava no título o `client_name` que o próprio app
+registrou. Com registro dinâmico aberto, qualquer um registra um cliente
+chamado "Claude" com um `redirect_uri` seu e manda o link para a vítima
+(*consent phishing*). A partir desta data:
+
+- A identidade do app na tela é o **host do `redirect_uri`** da autorização,
+  lido no servidor da query assinada pelo provedor (que já conferiu o
+  `redirect_uri` com os registrados). A página confere a assinatura antes de
+  renderizar: query adulterada mostra erro, não a tela.
+- Uma lista curta em `src/lib/mcp/client-trust.ts` marca como **Verificado**
+  os clientes conhecidos, casados pelo host e nunca pelo nome: Claude
+  (`claude.ai`, `claude.com`), ChatGPT (`chatgpt.com`, `openai.com`) e Cursor
+  (`cursor.com`, `cursor.sh` e o esquema `cursor://`), só em HTTPS para
+  hosts web. O nome mostrado vem da lista.
+- Redirect de loopback (`localhost`, `127.0.0.0/8`, `[::1]`) mostra o
+  `client_name` e "um app no seu computador": o código não sai da máquina
+  da pessoa.
+- Todo o resto aparece como **App não verificado**, identificado pelo host,
+  com o nome declarado entre aspas ("diz chamar-se …"). O aviso LGPD usa
+  "app em `host`" no lugar do nome; o texto-base não mudou, então
+  `MCP_CONSENT_NOTICE_VERSION` continua `mcp-consent-v1`.
+- O host mostrado fica em `IntegrationGrant.redirectHost` e no evento
+  `auth.oauth_consent.granted` (`redirectHost`, `clientTrust`), e **Apps
+  conectados** o mostra ao lado do nome. Concessões anteriores ficam com o
+  host nulo até a próxima autorização.

@@ -120,8 +120,26 @@ cuida da configuração técnica encontra o exemplo em
 
 ## O que escolher na autorização
 
-A tela tem o nome do assistente no título (por exemplo, **Claude quer acessar
-o seu Steel**) e mostra com qual e-mail você está conectado. Você escolhe:
+O título diz quem está pedindo, e logo abaixo vem para onde você volta depois
+de permitir (**Depois de permitir, você volta para claude.ai**). Esse endereço
+é o que identifica o assistente: o Steel o lê do próprio pedido de autorização,
+e não do nome que o app escolheu para si. A tela também mostra com qual e-mail
+você está conectado.
+
+Como o título aparece depende de quem pede:
+
+| Caso | O que você vê |
+| --- | --- |
+| **Assistente conhecido** (Claude em claude.ai ou claude.com, ChatGPT em chatgpt.com ou openai.com, Cursor em cursor.com, cursor.sh ou no próprio app) | **Claude quer acessar o seu Steel**, com o selo **Verificado** |
+| **App no seu computador** (Claude Code, Codex, MCP Inspector e outras ferramentas de terminal, que voltam para `localhost` ou `127.0.0.1`) | O nome do app e **Depois de permitir, você volta para um app no seu computador** |
+| **Qualquer outro app** | **Um app em exemplo.com quer acessar o seu Steel** e o aviso **App não verificado**, com o nome que ele diz ter entre aspas |
+
+Se aparecer **App não verificado** com um nome conhecido (por exemplo, "Ele diz
+chamar-se “Claude”") e um endereço que você não reconhece, clique em
+**Recusar**: qualquer um pode registrar um app com o nome que quiser, mas não
+pode trocar o endereço para onde a autorização vai.
+
+Você escolhe:
 
 | Campo | O que significa |
 | --- | --- |
@@ -132,6 +150,9 @@ o seu Steel**) e mostra com qual e-mail você está conectado. Você escolhe:
 Embaixo, um aviso resume o que você está autorizando e lembra que o que o
 assistente consultar é enviado à empresa dele. **Permitir acesso** conclui;
 **Recusar** volta ao assistente sem conectar.
+
+Em **Apps conectados**, cada app aparece com o endereço que você viu nesta
+tela ao lado do nome.
 
 Se o assistente pediu só leitura, **Ler e alterar** aparece desabilitado com a
 frase "Este app pediu só leitura".

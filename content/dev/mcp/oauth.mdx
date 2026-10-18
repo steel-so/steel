@@ -120,9 +120,30 @@ curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/register 
 ```
 
 A resposta é `201`. Registrar não dá acesso a nada: quem decide é a pessoa, na
-tela de consentimento. O `client_name` é o nome que ela vê ali ("Meu cliente
-MCP quer acessar o seu Steel") e em **Apps conectados**. Guarde o `client_id`
-e reutilize; não registre de novo a cada login.
+tela de consentimento. Guarde o `client_id` e reutilize; não registre de novo a
+cada login.
+
+Como o registro é aberto, o `client_name` é só o que o app diz de si. A tela de
+consentimento identifica o app pelo **host do `redirect_uri`** desta
+autorização (lido da query assinada pelo provedor, que já conferiu o
+`redirect_uri` com os registrados):
+
+| `redirect_uri` | Título da tela | Destino mostrado |
+| --- | --- | --- |
+| HTTPS em `claude.ai`, `claude.com`, `chatgpt.com`, `openai.com`, `cursor.com`, `cursor.sh` (ou subdomínio), ou o esquema `cursor://` | O nome da lista do Steel (**Claude**, **ChatGPT**, **Cursor**) e o selo **Verificado** | O host |
+| Loopback: `localhost`, `127.0.0.0/8`, `[::1]` | O `client_name` ("Meu cliente MCP quer acessar o seu Steel") | **um app no seu computador** e o `host:porta` |
+| Qualquer outro | **Um app em `host` quer acessar o seu Steel** e o aviso **App não verificado**, com o `client_name` entre aspas ("Ele diz chamar-se “…”") | O host |
+
+O host vai em ASCII: domínio internacional aparece em punycode (`xn--…`),
+`userinfo` não conta (`https://claude.ai@exemplo.com` é `exemplo.com`) e porta
+fora do padrão aparece. Uma query com assinatura inválida nem chega a ser
+mostrada. O host também fica gravado na concessão (`redirectHost` em
+`GET /api/users/me/integration-grants`) e aparece em **Apps conectados** ao
+lado do nome.
+
+Cliente de terminal: use um `redirect_uri` de loopback. Cliente web fora da
+lista é identificado pelo host, não pelo `client_name`, então use um domínio
+que a pessoa reconheça.
 
 Sem `redirect_uris`, o registro responde `400 invalid_redirect_uri`.
 
@@ -147,8 +168,9 @@ Host: homologacao.stratustelecom.com.br
 O que a pessoa vê:
 
 1. Sem sessão no Steel, a tela de login; depois, volta sozinha.
-2. A tela **Meu cliente MCP quer acessar o seu Steel**, onde escolhe o
-   **Workspace**, os **Módulos** e o **Nível de acesso** (**Somente ler** ou
+2. A tela **Meu cliente MCP quer acessar o seu Steel**, com **Depois de
+   permitir, você volta para um app no seu computador (127.0.0.1:8976)**,
+   onde escolhe o **Workspace**, os **Módulos** e o **Nível de acesso** (**Somente ler** ou
    **Ler e alterar**), e clica em **Permitir acesso** ou **Recusar**. Se o
    `scope` pedido não tiver `mcp:write`, só **Somente ler** fica disponível.
 3. O navegador vai para o `redirect_uri` com `code`, `state` e `iss`:
