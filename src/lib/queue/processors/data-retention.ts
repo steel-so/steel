@@ -1,6 +1,7 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { prisma } from '@/src/lib/prisma'
+import { IntegrationGrantLifecycleService } from '@/src/services/integration-grant-lifecycle.service'
 import { DataRetentionJob } from '../jobs'
 import { RetentionWindowMs } from '../retention'
 
@@ -60,6 +61,19 @@ async function cleanupApiTokens(): Promise<CleanupResult> {
   return { deleted: count, cutoff: cutoff.toISOString() }
 }
 
+/**
+ * "Apps conectados" entries no token can use any more (ADR 0033): grants
+ * idle for a day whose tokens were all revoked or expired are retired.
+ */
+async function pruneDeadIntegrationGrants(): Promise<CleanupResult> {
+  const now = new Date()
+  const retired =
+    await IntegrationGrantLifecycleService.pruneWithoutLiveTokens(now)
+  // Throw so BullMQ retries; the other cleanups never fail this way.
+  if (!retired.ok) throw new Error(retired.error.message)
+  return { deleted: retired.value, cutoff: now.toISOString() }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -108,6 +122,16 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
         component: 'Worker',
         jobId: job.id,
         deleted: result.deleted,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.PruneDeadIntegrationGrants: {
+      const result = await pruneDeadIntegrationGrants()
+      logger.info('queue.data_retention.integration_grants_pruned', {
+        component: 'Worker',
+        jobId: job.id,
+        retired: result.deleted,
         cutoff: result.cutoff,
       })
       return result

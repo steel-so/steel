@@ -51,6 +51,7 @@ export const DataRetentionJob = {
   ExpireStaleInvitations: 'expire-stale-invitations',
   CleanupWebhookDeliveries: 'cleanup-webhook-deliveries',
   CleanupApiTokens: 'cleanup-api-tokens',
+  PruneDeadIntegrationGrants: 'prune-dead-integration-grants',
 } as const
 
 export type DataRetentionJob =
@@ -62,6 +63,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.ExpireStaleInvitations]: Record<string, never>
   [DataRetentionJob.CleanupWebhookDeliveries]: Record<string, never>
   [DataRetentionJob.CleanupApiTokens]: Record<string, never>
+  [DataRetentionJob.PruneDeadIntegrationGrants]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {

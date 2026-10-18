@@ -1,4 +1,4 @@
-import type { IntegrationGrant, ModuleKind } from '@prisma/client'
+import type { IntegrationGrant, ModuleKind, Prisma } from '@prisma/client'
 import { notFound } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -34,6 +34,17 @@ const WITH_CLIENT_AND_USER = {
 
 /** Which active grants of a workspace a bulk revocation targets. */
 export type WorkspaceGrantFilter = { userId: string } | { clientId: string }
+
+/**
+ * Which active grants to check for live tokens: the given ones, or the ones
+ * untouched since `updatedBefore` — of one client and user, or all of them.
+ */
+export type GrantLivenessFilter =
+  | { ids: string[] }
+  | { updatedBefore: Date; clientId?: string; userId?: string }
+
+/** How many grants one liveness check looks at. */
+export const LIVENESS_BATCH = 500
 
 export const IntegrationGrantRepository = {
   async findById(id: string): Promise<Result<IntegrationGrant>> {
@@ -234,6 +245,72 @@ export const IntegrationGrantRepository = {
       return ok(count > 0)
     } catch (error) {
       return err(dbError('Failed to touch integration grant', error))
+    }
+  },
+  /**
+   * Active grants matching `filter` with no live token left: no refresh
+   * token that is neither revoked nor expired, and no unexpired access token
+   * other than those tied to an already revoked refresh token. Such a grant can no longer be used by its client, which has
+   * to authorize again. Looks at `LIVENESS_BATCH` candidates by id after
+   * `afterId`; `nextCursor` is the last one looked at when there may be
+   * more, `null` otherwise.
+   */
+  async listWithoutLiveTokens(
+    filter: GrantLivenessFilter,
+    now: Date,
+    afterId?: string,
+  ): Promise<Result<{ dead: IntegrationGrant[]; nextCursor: string | null }>> {
+    const where: Prisma.IntegrationGrantWhereInput =
+      'ids' in filter
+        ? { revokedAt: null, id: { in: filter.ids } }
+        : {
+            revokedAt: null,
+            updatedAt: { lt: filter.updatedBefore },
+            clientId: filter.clientId,
+            userId: filter.userId,
+          }
+    try {
+      const candidates = await prisma.integrationGrant.findMany({
+        where: afterId ? { AND: [where, { id: { gt: afterId } }] } : where,
+        orderBy: { id: 'asc' },
+        take: LIVENESS_BATCH,
+      })
+      if (candidates.length === 0) return ok({ dead: [], nextCursor: null })
+      const referenceId = { in: candidates.map((grant) => grant.id) }
+      const [access, refresh] = await Promise.all([
+        prisma.oauthAccessToken.findMany({
+          where: {
+            referenceId,
+            expiresAt: { gt: now },
+            // One left behind by a refresh rotation (or a revoked refresh
+            // token) does not keep the grant alive.
+            OR: [{ refreshId: null }, { refreshToken: { revoked: null } }],
+          },
+          select: { referenceId: true },
+          distinct: ['referenceId'],
+        }),
+        prisma.oauthRefreshToken.findMany({
+          where: {
+            referenceId,
+            revoked: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+          },
+          select: { referenceId: true },
+          distinct: ['referenceId'],
+        }),
+      ])
+      const live = new Set(
+        [...access, ...refresh].map((token) => token.referenceId),
+      )
+      return ok({
+        dead: candidates.filter((grant) => !live.has(grant.id)),
+        nextCursor:
+          candidates.length === LIVENESS_BATCH
+            ? (candidates.at(-1)?.id ?? null)
+            : null,
+      })
+    } catch (error) {
+      return err(dbError('Failed to check integration grant tokens', error))
     }
   },
 }

@@ -18,6 +18,16 @@ export type OauthAccessTokenWithClient = OauthAccessToken & {
   client: OauthClientSummary
 }
 
+/** Who an OAuth token was issued to, read before the provider drops it. */
+export type OauthTokenHolder = {
+  clientId: string
+  userId: string
+  /** `IntegrationGrant.id` the token was issued for. */
+  referenceId: string | null
+}
+
+export type OauthTokenKind = 'access_token' | 'refresh_token'
+
 const CLIENT_SUMMARY = {
   clientId: true,
   name: true,
@@ -53,6 +63,36 @@ export const OauthClientRepository = {
       return ok(token)
     } catch (error) {
       return err(dbError('Failed to find OAuth access token', error))
+    }
+  },
+  /**
+   * The holder of an access or refresh token, by its stored hash. Access
+   * tokens without a user (client credentials) have no holder.
+   */
+  async findTokenHolderByHash(
+    kind: OauthTokenKind,
+    tokenHash: string,
+  ): Promise<Result<OauthTokenHolder | null>> {
+    const select = { clientId: true, userId: true, referenceId: true } as const
+    try {
+      const row =
+        kind === 'access_token'
+          ? await prisma.oauthAccessToken.findUnique({
+              where: { token: tokenHash },
+              select,
+            })
+          : await prisma.oauthRefreshToken.findUnique({
+              where: { token: tokenHash },
+              select,
+            })
+      if (!row?.userId) return ok(null)
+      return ok({
+        clientId: row.clientId,
+        userId: row.userId,
+        referenceId: row.referenceId,
+      })
+    } catch (error) {
+      return err(dbError('Failed to find OAuth token holder', error))
     }
   },
 }

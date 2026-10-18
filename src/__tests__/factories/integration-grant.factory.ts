@@ -128,6 +128,7 @@ export async function seedOauthAccessToken(data: {
   referenceId: string
   scopes?: string[]
   expiresAt?: Date
+  refreshId?: string | null
 }) {
   const raw = createId()
   const row = await prisma.oauthAccessToken.create({
@@ -136,11 +137,38 @@ export async function seedOauthAccessToken(data: {
       clientId: data.clientId,
       userId: data.userId,
       referenceId: data.referenceId,
+      refreshId: data.refreshId ?? null,
       scopes: data.scopes ?? ['mcp:read', 'offline_access'],
       expiresAt: data.expiresAt ?? new Date(Date.now() + 60 * 60 * 1000),
     },
   })
   return { row, raw: `stl_at_${raw}` }
+}
+
+/** `seedOauthAccessToken` for a refresh token (`stl_rt_…`). */
+export async function seedOauthRefreshToken(data: {
+  clientId: string
+  userId: string
+  referenceId: string | null
+  expiresAt?: Date | null
+  revoked?: Date | null
+}) {
+  const raw = createId()
+  const row = await prisma.oauthRefreshToken.create({
+    data: {
+      token: hashOpaqueToken(raw),
+      clientId: data.clientId,
+      userId: data.userId,
+      referenceId: data.referenceId,
+      scopes: ['mcp:read', 'offline_access'],
+      expiresAt:
+        data.expiresAt === undefined
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          : data.expiresAt,
+      revoked: data.revoked ?? null,
+    },
+  })
+  return { row, raw: `stl_rt_${raw}` }
 }
 
 export function createFakeWorkspaceIntegrationGrantRow(

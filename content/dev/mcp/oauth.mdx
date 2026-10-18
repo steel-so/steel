@@ -83,6 +83,7 @@ curl https://homologacao.stratustelecom.com.br/.well-known/oauth-authorization-s
   "response_modes_supported": ["query"],
   "grant_types_supported": ["authorization_code", "refresh_token"],
   "token_endpoint_auth_methods_supported": ["none", "client_secret_basic", "client_secret_post"],
+  "revocation_endpoint_auth_methods_supported": ["none", "client_secret_basic", "client_secret_post"],
   "code_challenge_methods_supported": ["S256"],
   "authorization_response_iss_parameter_supported": true
 }
@@ -245,10 +246,21 @@ curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/revoke \
   --data-urlencode "client_id=kXq2…"
 ```
 
-Revoga o token enviado. Para encerrar a conexão inteira (todos os tokens do app
-naquele workspace), a pessoa usa **Configurações › Segurança › Apps
-conectados**; um administrador, **Ajustes › Apps conectados**. Nos dois casos,
-a próxima chamada do cliente responde `401`.
+Revoga o token enviado. Cliente público (registro dinâmico) revoga só com o
+`client_id`, sem segredo — o documento de descoberta anuncia `none` em
+`revocation_endpoint_auth_methods_supported`.
+
+Revogar o refresh token encerra a conexão: ele leva junto os access tokens
+emitidos com ele e, quando não sobra nenhum token vivo daquela concessão, ela
+sai de **Apps conectados** na hora. É o que um `logout` do cliente deve fazer.
+Revogar só um access token, com o refresh token ainda válido, mantém a
+conexão. Um refresh token reutilizado (já trocado por outro) também derruba a
+família inteira e a conexão some da lista. Conexões em que todos os tokens
+venceram saem da lista na limpeza da madrugada.
+
+Para encerrar a conexão pelo Steel, a pessoa usa **Configurações › Segurança ›
+Apps conectados**; um administrador, **Ajustes › Apps conectados**. Nos dois
+casos, a próxima chamada do cliente responde `401`.
 
 ## 7. Falar MCP
 

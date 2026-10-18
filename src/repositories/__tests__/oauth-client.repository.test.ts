@@ -3,6 +3,7 @@ import {
   seedIntegrationGrant,
   seedOauthAccessToken,
   seedOauthClient,
+  seedOauthRefreshToken,
 } from '@/src/__tests__/factories/integration-grant.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
@@ -57,6 +58,72 @@ describe('OauthClientRepository', () => {
     ).toBeNull()
   })
 
+  it('finds the holder of an access or refresh token by its hash', async () => {
+    const [user, workspace, client] = await Promise.all([
+      seedUser(),
+      seedWorkspace(),
+      seedOauthClient(),
+    ])
+    const grant = await seedIntegrationGrant({
+      userId: user.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+    })
+    const access = await seedOauthAccessToken({
+      clientId: client.clientId,
+      userId: user.id,
+      referenceId: grant.id,
+    })
+    const refresh = await seedOauthRefreshToken({
+      clientId: client.clientId,
+      userId: user.id,
+      referenceId: grant.id,
+    })
+    const holder = {
+      clientId: client.clientId,
+      userId: user.id,
+      referenceId: grant.id,
+    }
+
+    expect(
+      expectOk(
+        await OauthClientRepository.findTokenHolderByHash(
+          'access_token',
+          access.row.token as string,
+        ),
+      ),
+    ).toEqual(holder)
+    expect(
+      expectOk(
+        await OauthClientRepository.findTokenHolderByHash(
+          'refresh_token',
+          refresh.row.token,
+        ),
+      ),
+    ).toEqual(holder)
+    expect(
+      expectOk(
+        await OauthClientRepository.findTokenHolderByHash(
+          'refresh_token',
+          'missing',
+        ),
+      ),
+    ).toBeNull()
+
+    // A client-credentials token has no user, hence no holder.
+    const machine = await prisma.oauthAccessToken.create({
+      data: { token: 'machine-hash', clientId: client.clientId, scopes: [] },
+    })
+    expect(
+      expectOk(
+        await OauthClientRepository.findTokenHolderByHash(
+          'access_token',
+          machine.token as string,
+        ),
+      ),
+    ).toBeNull()
+  })
+
   it('returns DATABASE_ERROR when prisma throws', async () => {
     vi.spyOn(prisma.oauthClient, 'findUnique').mockRejectedValueOnce(
       new Error('boom'),
@@ -67,6 +134,13 @@ describe('OauthClientRepository', () => {
     expectErr(await OauthClientRepository.findByClientId('x'), 'DATABASE_ERROR')
     expectErr(
       await OauthClientRepository.findAccessTokenByHash('x'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.oauthRefreshToken, 'findUnique').mockRejectedValueOnce(
+      new Error('boom'),
+    )
+    expectErr(
+      await OauthClientRepository.findTokenHolderByHash('refresh_token', 'x'),
       'DATABASE_ERROR',
     )
   })

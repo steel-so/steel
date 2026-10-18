@@ -378,7 +378,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 
 | Fila | Processor | Disparo |
 | ---- | --------- | ------- |
-| `data-retention` | limpa sessões e tokens de verificação expirados, expira convites, apaga o log de webhooks com mais de 30 dias e os tokens pessoais da API revogados ou vencidos há mais de 90 dias (os códigos do `steel login` vivem só no Redis, com TTL) | cron 03:00 |
+| `data-retention` | limpa sessões e tokens de verificação expirados, expira convites, apaga o log de webhooks com mais de 30 dias e os tokens pessoais da API revogados ou vencidos há mais de 90 dias (os códigos do `steel login` vivem só no Redis, com TTL); revoga as concessões de "Apps conectados" paradas há 1 dia sem nenhum token vivo ([ADR 0033](../adr/0033-integration-identity-oauth-per-user-and-workspace.md)) | cron 03:00 |
 | `account-lifecycle` | exclusão agendada de conta (30 dias) | sob demanda |
 | `data-export` | export LGPD dos dados do usuário | sob demanda |
 | `trial-lifecycle` | reverte trials vencidos | cron de hora em hora |

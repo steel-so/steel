@@ -3,13 +3,17 @@ import {
   seedIntegrationGrant,
   seedOauthAccessToken,
   seedOauthClient,
+  seedOauthRefreshToken,
 } from '@/src/__tests__/factories/integration-grant.factory'
 import { seedAiPendingAction } from '@/src/__tests__/factories/steel-ai.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { prisma } from '@/src/lib/prisma'
-import { IntegrationGrantRepository } from '../integration-grant.repository'
+import {
+  IntegrationGrantRepository,
+  LIVENESS_BATCH,
+} from '../integration-grant.repository'
 
 async function scenario() {
   const [user, workspace, client] = await Promise.all([
@@ -373,6 +377,176 @@ describe('IntegrationGrantRepository', () => {
     ).toEqual([c.id])
   })
 
+  it('lists the active grants left without a live token', async () => {
+    const { user, client } = await scenario()
+    // One active grant per (user, client, workspace): a workspace each.
+    const seed = async (revokedAt: Date | null = null) =>
+      seedIntegrationGrant({
+        userId: user.id,
+        workspaceId: (await seedWorkspace()).id,
+        clientId: client.clientId,
+        revokedAt,
+      })
+    const now = new Date()
+    const past = new Date(now.getTime() - 60_000)
+    const owner = { clientId: client.clientId, userId: user.id }
+
+    const [
+      withAccess,
+      withRefresh,
+      noExpiryRefresh,
+      expired,
+      revokedRefresh,
+      rotated,
+      empty,
+      alreadyRevoked,
+    ] = await Promise.all([
+      seed(),
+      seed(),
+      seed(),
+      seed(),
+      seed(),
+      seed(),
+      seed(),
+      seed(now),
+    ])
+    await seedOauthAccessToken({ ...owner, referenceId: withAccess.id })
+    await seedOauthRefreshToken({ ...owner, referenceId: withRefresh.id })
+    await seedOauthRefreshToken({
+      ...owner,
+      referenceId: noExpiryRefresh.id,
+      expiresAt: null,
+    })
+    await seedOauthAccessToken({
+      ...owner,
+      referenceId: expired.id,
+      expiresAt: past,
+    })
+    await seedOauthRefreshToken({
+      ...owner,
+      referenceId: expired.id,
+      expiresAt: past,
+    })
+    await seedOauthRefreshToken({
+      ...owner,
+      referenceId: revokedRefresh.id,
+      revoked: past,
+    })
+    // An unexpired access token left behind by a rotation: its refresh token
+    // is revoked, so it does not keep the grant alive.
+    const old = await seedOauthRefreshToken({
+      ...owner,
+      referenceId: rotated.id,
+      revoked: past,
+    })
+    await seedOauthAccessToken({
+      ...owner,
+      referenceId: rotated.id,
+      refreshId: old.row.id,
+    })
+
+    const all = [
+      withAccess,
+      withRefresh,
+      noExpiryRefresh,
+      expired,
+      revokedRefresh,
+      rotated,
+      empty,
+      alreadyRevoked,
+    ].map((g) => g.id)
+    const byIds = expectOk(
+      await IntegrationGrantRepository.listWithoutLiveTokens({ ids: all }, now),
+    )
+    expect(byIds.nextCursor).toBeNull()
+    expect(byIds.dead.map((g) => g.id).sort()).toEqual(
+      [expired.id, revokedRefresh.id, rotated.id, empty.id].sort(),
+    )
+
+    // By idle time, client and user.
+    const later = new Date(now.getTime() + 60_000)
+    expect(
+      expectOk(
+        await IntegrationGrantRepository.listWithoutLiveTokens(
+          { updatedBefore: later, ...owner },
+          now,
+        ),
+      ).dead,
+    ).toHaveLength(4)
+    expect(
+      expectOk(
+        await IntegrationGrantRepository.listWithoutLiveTokens(
+          { updatedBefore: past },
+          now,
+        ),
+      ).dead,
+    ).toEqual([])
+    expect(
+      expectOk(
+        await IntegrationGrantRepository.listWithoutLiveTokens(
+          { updatedBefore: later, clientId: 'other' },
+          now,
+        ),
+      ).dead,
+    ).toEqual([])
+
+    // The cursor skips what was already looked at.
+    const sorted = [...all.slice(0, 7)].sort()
+    expect(
+      expectOk(
+        await IntegrationGrantRepository.listWithoutLiveTokens(
+          { updatedBefore: later },
+          now,
+          sorted[5],
+        ),
+      ).dead.map((g) => g.id),
+    ).toEqual(
+      sorted
+        .slice(6)
+        .filter((id) =>
+          [expired.id, revokedRefresh.id, rotated.id, empty.id].includes(id),
+        ),
+    )
+  })
+
+  it('returns a cursor when a liveness batch is full', async () => {
+    const { user, workspace } = await scenario()
+    const clientIds = Array.from(
+      { length: LIVENESS_BATCH + 1 },
+      (_, i) => `bulk-client-${i}`,
+    )
+    await prisma.oauthClient.createMany({
+      data: clientIds.map((clientId) => ({ clientId, scopes: [] })),
+    })
+    await prisma.integrationGrant.createMany({
+      data: clientIds.map((clientId) => ({
+        userId: user.id,
+        workspaceId: workspace.id,
+        clientId,
+        scopes: ['mcp:read'],
+        modules: ['CRM' as const],
+      })),
+    })
+    const later = new Date(Date.now() + 60_000)
+    const first = expectOk(
+      await IntegrationGrantRepository.listWithoutLiveTokens(
+        { updatedBefore: later },
+        new Date(),
+      ),
+    )
+    expect(first.dead).toHaveLength(LIVENESS_BATCH)
+    expect(first.nextCursor).toBe(first.dead.at(-1)?.id)
+    const second = expectOk(
+      await IntegrationGrantRepository.listWithoutLiveTokens(
+        { updatedBefore: later },
+        new Date(),
+        first.nextCursor as string,
+      ),
+    )
+    expect(second.dead).toHaveLength(1)
+    expect(second.nextCursor).toBeNull()
+  })
+
   it('returns DATABASE_ERROR when prisma throws', async () => {
     const boom = new Error('boom')
     vi.spyOn(prisma.integrationGrant, 'findUnique').mockRejectedValueOnce(boom)
@@ -408,6 +582,14 @@ describe('IntegrationGrantRepository', () => {
       'DATABASE_ERROR',
     )
 
+    vi.spyOn(prisma.integrationGrant, 'findMany').mockRejectedValueOnce(boom)
+    expectErr(
+      await IntegrationGrantRepository.listWithoutLiveTokens(
+        { ids: ['x'] },
+        new Date(),
+      ),
+      'DATABASE_ERROR',
+    )
     vi.spyOn(prisma.integrationGrant, 'findMany').mockRejectedValueOnce(boom)
     expectErr(
       await IntegrationGrantRepository.listActiveByWorkspace('w'),

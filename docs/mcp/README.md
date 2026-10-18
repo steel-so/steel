@@ -92,6 +92,24 @@ Como a concessão chega ao token (decidido na fatia mcp-auth):
   na chamada.
 - Revogar apaga os access tokens, marca os refresh tokens como revogados e
   remove o consentimento, numa transação.
+- **Concessão sem token vivo é aposentada** (`IntegrationGrantLifecycleService`).
+  Token vivo = refresh token não revogado e não vencido, ou access token não
+  vencido que não esteja preso a um refresh token já revogado (a rotação deixa
+  esses para trás). A rota `app/api/auth/[...all]` passa `/oauth2/revoke` e o
+  refresh de `/oauth2/token` por `withGrantLifecycle`
+  (`src/lib/mcp/token-lifecycle.ts`): lê o dono do token antes do provider
+  (depois a linha do access token some) e, com a resposta, aposenta a
+  concessão dele se nada vivo sobrou. Num refresh recusado (reuso derruba a
+  família do cliente + usuário), olha também as outras concessões do mesmo
+  cliente e usuário paradas há 15 min. Mesma revogação do `revokeMany`;
+  `auditAuth` `auth.integration_grant.expired` com `source` =
+  `token_revoked` | `refresh_rejected` | `retention`. O `data-retention`
+  (`prune-dead-integration-grants`, 03:00) aposenta as paradas há 1 dia sem
+  token vivo, em lotes de 500 por id.
+- Os metadados do servidor de autorização anunciam `none` em
+  `revocation_endpoint_auth_methods_supported` (o plugin fixa só os métodos
+  com segredo, mas aceita cliente público só com `client_id`):
+  `src/lib/mcp/auth-server-metadata.ts`, nas duas rotas de descoberta.
 - Aviso LGPD da tela com versão `mcp-consent-v1`
   (`src/lib/mcp/consent-notice.ts`), registrada no `auditAuth`
   `auth.oauth_consent.granted` junto com escopos e módulos.

@@ -86,6 +86,7 @@ describe('OAuth discovery', () => {
     for (const path of [
       '/.well-known/oauth-authorization-server',
       '/.well-known/oauth-authorization-server/api/auth',
+      '/api/auth/.well-known/oauth-authorization-server',
     ]) {
       const res = await fetch(`${BASE_URL}${path}`)
       expect(res.status).toBe(200)
@@ -98,6 +99,12 @@ describe('OAuth discovery', () => {
         expect.arrayContaining(['mcp:read', 'mcp:write']),
       )
       expect(body.token_endpoint_auth_methods_supported).toContain('none')
+      // Public clients revoke with only `client_id`.
+      expect(body.revocation_endpoint_auth_methods_supported).toEqual([
+        'none',
+        'client_secret_basic',
+        'client_secret_post',
+      ])
     }
   })
 
@@ -234,6 +241,65 @@ describe('OAuth authorization with consent', () => {
       { method: 'DELETE', headers: { ...defaultHeaders, Cookie: user.cookie } },
     )
     expect(again.status).toBe(404)
+  })
+
+  it('drops the app from "Apps conectados" when the client revokes its tokens', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const clientId = await register('E2E logout client')
+    const { verifier, challenge } = pkce()
+    const consentUrl = await authorize(clientId, user.cookie, challenge)
+    const consent = await postJson(
+      '/api/oauth/consent',
+      {
+        accept: true,
+        oauthQuery: consentUrl.search.slice(1),
+        workspaceId: workspace.id,
+        modules: ['CRM'],
+        scopes: ['mcp:read'],
+      },
+      user.cookie,
+    )
+    const { data } = await consent.json()
+    const code = new URL(data.redirectUrl).searchParams.get('code') as string
+    const tokens = await (
+      await token({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: clientId,
+        code_verifier: verifier,
+        resource: `${BASE_URL}/api/mcp`,
+      })
+    ).json()
+
+    const listGrants = async () =>
+      (
+        await (
+          await fetch(`${BASE_URL}/api/users/me/integration-grants`, {
+            headers: { ...defaultHeaders, Cookie: user.cookie },
+          })
+        ).json()
+      ).data as { client: { clientId: string } }[]
+    expect((await listGrants()).map((g) => g.client.clientId)).toEqual([
+      clientId,
+    ])
+
+    // `steel mcp logout`: a public client revokes with only its client_id.
+    const revoked = await fetch(`${BASE_URL}/api/auth/oauth2/revoke`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'x-forwarded-for': clientIp(),
+      },
+      body: new URLSearchParams({
+        token: tokens.refresh_token,
+        token_type_hint: 'refresh_token',
+        client_id: clientId,
+      }).toString(),
+    })
+    expect(revoked.status).toBe(200)
+
+    expect(await listGrants()).toEqual([])
   })
 
   it('refuses a workspace the user is not a member of', async () => {

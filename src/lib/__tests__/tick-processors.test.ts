@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   sendCampaign: vi.fn(),
   notifyCampaignFinished: vi.fn(),
   notifyTrialEnded: vi.fn(),
+  pruneWithoutLiveTokens: vi.fn(),
   prisma: {
     session: { deleteMany: vi.fn() },
     verification: { deleteMany: vi.fn() },
@@ -44,6 +45,11 @@ vi.mock('@/src/services/crm-email-campaign.service', () => ({
   CrmEmailCampaignService: { send: mocks.sendCampaign },
 }))
 vi.mock('@/src/lib/prisma', () => ({ prisma: mocks.prisma }))
+vi.mock('@/src/services/integration-grant-lifecycle.service', () => ({
+  IntegrationGrantLifecycleService: {
+    pruneWithoutLiveTokens: mocks.pruneWithoutLiveTokens,
+  },
+}))
 vi.mock('@/src/services/crm-notifications', () => ({
   notifyCrmCampaignFinished: mocks.notifyCampaignFinished,
 }))
@@ -287,6 +293,36 @@ describe('processDataRetention', () => {
       'queue.data_retention.api_tokens_cleaned',
       expect.objectContaining({ deleted: 3 }),
     )
+  })
+
+  it('retires connected apps left without live tokens', async () => {
+    mocks.pruneWithoutLiveTokens.mockResolvedValue({ ok: true, value: 3 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.PruneDeadIntegrationGrants),
+    )
+
+    expect(result.deleted).toBe(3)
+    expect(mocks.pruneWithoutLiveTokens).toHaveBeenCalledWith(
+      new Date(result.cutoff),
+    )
+    expect(mocks.loggerMock.info).toHaveBeenCalledWith(
+      'queue.data_retention.integration_grants_pruned',
+      expect.objectContaining({ retired: 3 }),
+    )
+  })
+
+  it('throws so BullMQ retries when pruning connected apps fails', async () => {
+    mocks.pruneWithoutLiveTokens.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'db down' },
+    })
+
+    await expect(
+      processDataRetention(
+        fakeJob(DataRetentionJob.PruneDeadIntegrationGrants),
+      ),
+    ).rejects.toThrow('db down')
   })
 
   it('throws on an unknown job name', async () => {

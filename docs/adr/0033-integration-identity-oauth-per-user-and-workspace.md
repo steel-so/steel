@@ -79,3 +79,20 @@ chamado "Claude" com um `redirect_uri` seu e manda o link para a vítima
   `auth.oauth_consent.granted` (`redirectHost`, `clientTrust`), e **Apps
   conectados** o mostra ao lado do nome. Concessões anteriores ficam com o
   host nulo até a próxima autorização.
+
+## Atualização (18/10/2026) — concessão sem token vivo e revogação pública
+
+- Cada ciclo `steel mcp logout`/`login` deixava uma entrada morta em **Apps
+  conectados**: o cliente revogava os tokens, mas a concessão continuava
+  ativa. Agora uma concessão **sem nenhum token vivo** é revogada sozinha
+  (`IntegrationGrantLifecycleService`): logo depois de `/oauth2/revoke` e de
+  um refresh recusado (reuso de refresh token derruba a família), e toda
+  madrugada no `data-retention` para as paradas há 1 dia. Token vivo é
+  refresh token não revogado e não vencido, ou access token não vencido que
+  não esteja preso a um refresh token já revogado. A regra torna qualquer
+  gatilho seguro: concessão com token utilizável nunca é tocada. Evento de
+  auditoria próprio, `auth.integration_grant.expired`, separado da revogação
+  feita por pessoa.
+- Os metadados do servidor de autorização passam a anunciar `none` em
+  `revocation_endpoint_auth_methods_supported`: o plugin aceitava cliente
+  público revogando só com `client_id`, mas não anunciava.

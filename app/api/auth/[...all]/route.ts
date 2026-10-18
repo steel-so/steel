@@ -2,6 +2,11 @@ import { toNextJsHandler } from 'better-auth/next-js'
 import { withAxiom } from '@/lib/axiom/server'
 import { auth } from '@/src/lib/auth'
 import {
+  ISSUER_METADATA_PATH,
+  patchAuthServerMetadataResponse,
+} from '@/src/lib/mcp/auth-server-metadata'
+import { withGrantLifecycle } from '@/src/lib/mcp/token-lifecycle'
+import {
   authLimiter,
   consume,
   oauthLimiter,
@@ -70,10 +75,14 @@ async function limitOAuth(request: Request, pathname: string) {
 const handler = toNextJsHandler(auth)
 
 export const GET = withAxiom(async (request: Request) => {
-  const limited = await limitOAuth(request, new URL(request.url).pathname)
+  const pathname = new URL(request.url).pathname
+  const limited = await limitOAuth(request, pathname)
   if (limited) return limited
 
-  return handler.GET(request)
+  const response = await handler.GET(request)
+  return pathname === ISSUER_METADATA_PATH
+    ? patchAuthServerMetadataResponse(response)
+    : response
 })
 
 export const POST = withAxiom(async (request: Request) => {
@@ -94,5 +103,6 @@ export const POST = withAxiom(async (request: Request) => {
     if (!otpResult.ok) return handleError(otpResult.error)
   }
 
-  return handler.POST(request)
+  // Revoke and refresh: retire a grant left without live tokens.
+  return withGrantLifecycle(request, pathname, handler.POST)
 })
