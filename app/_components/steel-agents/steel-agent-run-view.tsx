@@ -14,6 +14,7 @@ import {
   simulatedActionsLabel,
 } from '@/app/_components/steel-ai/steel-ai-simulated-action-card'
 import { SteelAiTopBar } from '@/app/_components/steel-ai/steel-ai-top-bar'
+import { AiFeedbackControl } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -178,6 +179,14 @@ export function SteelAgentRunView({
               <p className='whitespace-pre-wrap break-words text-sm leading-relaxed'>
                 {data.summary}
               </p>
+            ) : null}
+            {data.status === 'SUCCEEDED' || data.status === 'FAILED' ? (
+              <AiFeedbackControl
+                workspaceId={workspaceId}
+                surface='STEEL_AGENT_RUN'
+                targetId={runId}
+                label='O agente fez um bom trabalho?'
+              />
             ) : null}
             {data.error ? (
               <p className='break-words text-destructive text-sm'>

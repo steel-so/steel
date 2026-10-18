@@ -14,6 +14,7 @@ import { ptBR } from 'date-fns/locale'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
+import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -35,6 +36,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { notify } from '@/lib/notify'
+import { feedbackKey, useMyAiFeedback } from '@/src/hooks/use-ai-feedback'
 import { useUser } from '@/src/hooks/use-user'
 import { useFindOrCreateWhatsAppContact } from '@/src/hooks/use-whatsapp-contacts'
 import {
@@ -274,6 +276,19 @@ export function WhatsappConversationView({
     for (const message of messages.data ?? []) map.set(message.id, message)
     return map
   }, [messages.data])
+
+  const aiReplyIds = useMemo(
+    () =>
+      (messages.data ?? [])
+        .filter((m) => m.sentByAi && m.direction === 'OUT')
+        .map((m) => m.id),
+    [messages.data],
+  )
+  const aiFeedback = useMyAiFeedback(
+    workspaceId,
+    'WHATSAPP_AUTO_REPLY',
+    aiReplyIds,
+  )
 
   useEffect(() => {
     if (conversation.unreadCount > 0) {
@@ -599,7 +614,7 @@ export function WhatsappConversationView({
   )
 
   function renderMessage(message: WhatsAppMessageDTO) {
-    return (
+    const bubble = (
       <MessageBubble
         key={message.id}
         message={message}
@@ -615,6 +630,24 @@ export function WhatsappConversationView({
         onDelete={(messageId) => deleteMessage.mutate(messageId)}
         onStartConversationWithContact={handleStartConversationWithContact}
       />
+    )
+    if (!message.sentByAi || message.direction !== 'OUT') return bubble
+    return (
+      <div className='flex flex-col items-end gap-0.5'>
+        {bubble}
+        <AiFeedbackButtons
+          workspaceId={workspaceId}
+          surface='WHATSAPP_AUTO_REPLY'
+          targetId={message.id}
+          feedback={
+            aiFeedback.data
+              ? (aiFeedback.data.get(feedbackKey(message.id)) ?? null)
+              : aiFeedback.isError
+                ? null
+                : undefined
+          }
+        />
+      </div>
     )
   }
 }

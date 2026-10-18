@@ -11,6 +11,7 @@ import {
   Tick02Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { type ReactNode, useState } from 'react'
+import { AiFeedbackControl } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,10 +71,14 @@ async function copy(text: string) {
 }
 
 function TextResult({
+  workspaceId,
+  ticketId,
   kind,
   text,
   onClose,
 }: {
+  workspaceId: string
+  ticketId: string
   kind: ResultKind
   text: string
   onClose: () => void
@@ -97,6 +102,13 @@ function TextResult({
         </div>
       </div>
       <p className='whitespace-pre-wrap text-sm'>{text}</p>
+      <AiFeedbackControl
+        workspaceId={workspaceId}
+        surface='SD_COPILOT'
+        targetId={ticketId}
+        variant={kind}
+        label='Ajudou?'
+      />
     </div>
   )
 }
@@ -302,6 +314,14 @@ function Classification({
         <p className='text-muted-foreground text-xs'>{suggestions.reasoning}</p>
       ) : null}
 
+      <AiFeedbackControl
+        workspaceId={workspaceId}
+        surface='SD_COPILOT'
+        targetId={ticket.id}
+        variant='classification'
+        label='A classificação sugerida ajudou?'
+      />
+
       {Object.keys(everything).length > 0 ? (
         <Button
           size='sm'
@@ -313,6 +333,57 @@ function Classification({
           Aplicar tudo
         </Button>
       ) : null}
+    </div>
+  )
+}
+
+/** Applied fields of the automatic triage (`SdTicket.aiTriage`), if any. */
+function triageApplied(aiTriage: unknown): string[] | null {
+  if (!aiTriage || typeof aiTriage !== 'object') return null
+  const applied = (aiTriage as { applied?: unknown }).applied
+  return Array.isArray(applied)
+    ? applied.filter((field): field is string => typeof field === 'string')
+    : []
+}
+
+const TRIAGE_FIELD_LABEL: Record<string, string> = {
+  categoryId: 'categoria',
+  subcategoryId: 'subcategoria',
+  serviceId: 'serviço',
+  impactId: 'impacto',
+  urgencyId: 'urgência',
+  priorityId: 'prioridade',
+  departmentId: 'departamento',
+  tags: 'tags',
+}
+
+/** The automatic triage of the ticket, with 👍/👎 (ADR 0039). */
+function SdAiTriageFeedback({
+  workspaceId,
+  ticket,
+}: {
+  workspaceId: string
+  ticket: SdTicketDTO
+}) {
+  const applied = triageApplied(ticket.aiTriage)
+  if (applied === null) return null
+  const fields = applied.map((field) => TRIAGE_FIELD_LABEL[field] ?? field)
+  return (
+    <div className='flex flex-col gap-1.5 rounded-lg border border-border bg-card px-2.5 py-2'>
+      <span className='font-medium text-muted-foreground text-xs'>
+        Triagem automática
+      </span>
+      <p className='text-sm'>
+        {fields.length > 0
+          ? `A IA preencheu ${fields.join(', ')} quando o chamado foi aberto.`
+          : 'A IA analisou o chamado na abertura, sem campos a preencher.'}
+      </p>
+      <AiFeedbackControl
+        workspaceId={workspaceId}
+        surface='SD_TRIAGE'
+        targetId={ticket.id}
+        label='A triagem acertou?'
+      />
     </div>
   )
 }
@@ -397,19 +468,32 @@ function Chat({
       {messages.length > 0 ? (
         <>
           <ul className='flex max-h-64 flex-col gap-2 overflow-y-auto'>
-            {messages.map((item) => (
+            {messages.map((item, index) => (
               <li
                 key={`${item.role}-${item.at}`}
                 className={cn(
-                  'max-w-[92%] rounded-lg px-2.5 py-1.5 text-sm',
-                  item.role === 'user'
-                    ? 'self-end bg-primary text-primary-foreground'
-                    : 'self-start bg-muted text-foreground',
+                  'flex max-w-[92%] flex-col gap-1',
+                  item.role === 'user' ? 'self-end' : 'self-start',
                 )}
               >
-                <p className='whitespace-pre-wrap break-words'>
+                <p
+                  className={cn(
+                    'whitespace-pre-wrap break-words rounded-lg px-2.5 py-1.5 text-sm',
+                    item.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground',
+                  )}
+                >
                   {item.content}
                 </p>
+                {item.role === 'assistant' ? (
+                  <AiFeedbackControl
+                    workspaceId={workspaceId}
+                    surface='SD_COPILOT'
+                    targetId={ticketRef}
+                    variant={`chat:${index}`}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>
@@ -601,6 +685,8 @@ export function SdAiCopilotPanel({
 
       {result ? (
         <TextResult
+          workspaceId={workspaceId}
+          ticketId={ticketRef}
           kind={result.kind}
           text={result.text}
           onClose={() => setResult(null)}
@@ -615,6 +701,8 @@ export function SdAiCopilotPanel({
           onClose={() => setShowClassification(false)}
         />
       ) : null}
+
+      <SdAiTriageFeedback workspaceId={workspaceId} ticket={ticket} />
 
       {ticket.aiSummary && !result ? (
         <div className='flex flex-col gap-1 rounded-lg bg-muted px-2.5 py-2'>

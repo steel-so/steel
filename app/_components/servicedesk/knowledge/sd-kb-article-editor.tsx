@@ -20,6 +20,7 @@ import {
 import { useRouter } from 'next/navigation'
 import type { Value } from 'platejs'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { AiFeedbackControl } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
 import { KB_EDITOR_COLUMN, KbRichEditor } from '@/components/editor/kb-editor'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -333,6 +334,19 @@ export function SdKbArticleEditor({
                         workspaceId={workspaceId}
                         article={article}
                       />
+                      {article.sourceTicketId ? (
+                        <section className='space-y-2 rounded-lg border p-3 text-sm'>
+                          <p className='font-medium text-muted-foreground text-xs uppercase tracking-wide'>
+                            Rascunho da IA
+                          </p>
+                          <AiFeedbackControl
+                            workspaceId={workspaceId}
+                            surface='SD_KCS_DRAFT'
+                            targetId={article.id}
+                            label='O rascunho gerado a partir do chamado ajudou?'
+                          />
+                        </section>
+                      ) : null}
                       <section className='space-y-1 rounded-lg border p-3 text-sm'>
                         <p className='font-medium text-muted-foreground text-xs uppercase tracking-wide'>
                           Utilidade

@@ -11,8 +11,7 @@ type Params = { params: Promise<{ id: string }> }
 /**
  * CSV of the AI quality panel, streamed: feedback rows page by page, or
  * totals per surface or model. Errors before the first byte use the JSON
- * envelope;
- * a database failure mid-stream aborts the download.
+ * envelope; a database failure mid-stream aborts the download.
  */
 export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()
