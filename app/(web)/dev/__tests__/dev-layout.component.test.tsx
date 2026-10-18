@@ -176,6 +176,7 @@ describe('<McpToolTable />', () => {
                 {
                   name: 'get_skill',
                   label: 'Abrindo skill',
+                  summary: 'Abre uma skill do workspace.',
                   kind: 'READ',
                   access: 'read',
                 },
@@ -188,12 +189,14 @@ describe('<McpToolTable />', () => {
                 {
                   name: 'crm_list_leads',
                   label: 'Consultando leads',
+                  summary: 'Lista os leads do workspace.',
                   kind: 'READ',
                   access: 'read',
                 },
                 {
                   name: 'crm_create_lead',
                   label: 'Criando lead',
+                  summary: 'Cria um lead no CRM.',
                   kind: 'CREATE',
                   access: 'write',
                 },
@@ -217,7 +220,7 @@ describe('<McpToolTable />', () => {
     expect(crm?.querySelector('summary')?.textContent).toBe('CRM (2)')
     const write = crm?.querySelector('tr[data-access="write"]')
     expect(write?.textContent).toContain('crm_create_lead')
-    expect(write?.textContent).toContain('Criando lead')
+    expect(write?.textContent).toContain('Cria um lead no CRM.')
     expect(write?.textContent).toContain('Criação')
     expect(write?.textContent).toContain('mcp:write')
     expect(crm?.querySelector('tr[data-access="read"]')?.textContent).toContain(

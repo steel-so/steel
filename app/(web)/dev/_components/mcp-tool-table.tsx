@@ -61,7 +61,7 @@ export function McpToolTable({ catalog }: { catalog: McpToolCatalog }) {
                       </code>
                     </td>
                     <td className='px-4 py-2 align-top text-muted-foreground'>
-                      {tool.label}
+                      {tool.summary}
                     </td>
                     <td className='px-4 py-2 align-top whitespace-nowrap'>
                       {MCP_TOOL_KIND_LABELS[tool.kind]}

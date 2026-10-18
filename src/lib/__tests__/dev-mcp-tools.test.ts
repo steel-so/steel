@@ -5,6 +5,7 @@ import {
   buildMcpToolCatalog,
   MCP_TOOL_KIND_LABELS,
   mcpToolCatalogMarkdown,
+  toolSummary,
 } from '@/src/lib/dev/mcp-tools'
 import { ok } from '@/src/lib/result'
 
@@ -57,6 +58,7 @@ describe('buildMcpToolCatalog', () => {
       label: 'Editando',
       kind: 'UPDATE',
       access: 'write',
+      summary: 'Lista chamados.',
     })
     expect(catalog.groups[2].tools[0].access).toBe('write')
     expect(catalog.groups[0].tools[0].access).toBe('read')
@@ -105,11 +107,34 @@ describe('buildMcpToolCatalog', () => {
   })
 })
 
+describe('toolSummary', () => {
+  it('keeps the first sentence, collapsing whitespace', () => {
+    expect(
+      toolSummary('Lista chamados   abertos.\n Use filtros para refinar.'),
+    ).toBe('Lista chamados abertos.')
+  })
+
+  it('does not split inside parentheses or lower-case abbreviations', () => {
+    expect(toolSummary('Envia texto (até 4096 caracteres). Recusa.')).toBe(
+      'Envia texto (até 4096 caracteres).',
+    )
+    expect(toolSummary('Busca por nome, e.g. acme. Depois detalha.')).toBe(
+      'Busca por nome, e.g. acme.',
+    )
+  })
+
+  it('caps long sentences with an ellipsis', () => {
+    const summary = toolSummary(`${'a'.repeat(400)}.`)
+    expect(summary).toHaveLength(220)
+    expect(summary.endsWith('…')).toBe(true)
+  })
+})
+
 describe('mcpToolCatalogMarkdown', () => {
   it('renders the counts and one table per group, escaping pipes', () => {
     const md = mcpToolCatalogMarkdown(
       buildMcpToolCatalog([
-        tool({ name: 'sd_list_tickets', label: 'Chamados | filas' }),
+        tool({ name: 'sd_list_tickets', description: 'Chamados | filas.' }),
         tool({ name: 'crm_create_lead', module: 'CRM', kind: 'CREATE' }),
         tool({ name: 'crm_delete_lead', module: 'CRM', kind: 'DELETE' }),
       ]),
@@ -117,8 +142,8 @@ describe('mcpToolCatalogMarkdown', () => {
     expect(md).toBe(
       [
         '1 ferramentas de leitura e 1 de escrita; 1 de exclusão ficam fora do MCP.',
-        '#### ServiceDesk\n\n| Ferramenta | O que faz | Tipo | Escopo |\n| ---------- | --------- | ---- | ------ |\n| `sd_list_tickets` | Chamados \\| filas | Leitura | `mcp:read` |',
-        `#### CRM\n\n| Ferramenta | O que faz | Tipo | Escopo |\n| ---------- | --------- | ---- | ------ |\n| \`crm_create_lead\` | Consultando chamados | ${MCP_TOOL_KIND_LABELS.CREATE} | \`mcp:write\` |`,
+        '#### ServiceDesk\n\n| Ferramenta | O que faz | Tipo | Escopo |\n| ---------- | --------- | ---- | ------ |\n| `sd_list_tickets` | Chamados \\| filas. | Leitura | `mcp:read` |',
+        `#### CRM\n\n| Ferramenta | O que faz | Tipo | Escopo |\n| ---------- | --------- | ---- | ------ |\n| \`crm_create_lead\` | Lista chamados. | ${MCP_TOOL_KIND_LABELS.CREATE} | \`mcp:write\` |`,
       ].join('\n\n'),
     )
   })

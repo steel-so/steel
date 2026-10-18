@@ -1,0 +1,249 @@
+---
+title: Escrita, confirmação e idempotência
+description: Uma conversa de exemplo do começo ao fim, as escritas que executam na hora, as que voltam com confirmUrl para alguém confirmar no Steel e como repetir uma chamada com idempotencyKey.
+section: mcp
+order: 2
+---
+
+Esta página mostra, com as mensagens reais do protocolo, o que acontece quando
+um cliente de IA lê e altera dados pelo [servidor MCP](/dev/mcp). As
+mensagens são JSON-RPC sobre `POST /api/mcp`; os detalhes do transporte e do
+token estão em [OAuth e protocolo](/dev/mcp/oauth#7-falar-mcp).
+
+## Quando a escrita está disponível
+
+As ferramentas de escrita (`readOnlyHint: false` na lista) só aparecem em
+`tools/list` quando as **duas** condições valem:
+
+1. a pessoa escolheu **Ler e alterar** no consentimento (o token tem
+   `mcp:write`);
+2. o dono ou um administrador ligou **Permitir escrita via MCP** em
+   **Ajustes › Steel IA** (vem desligado).
+
+Faltando uma, a conexão é só leitura, e uma escrita chamada pelo nome responde
+o erro JSON-RPC `-32602`, como uma ferramenta desconhecida. Se o administrador
+desliga o interruptor depois, a próxima chamada já não vê as escritas.
+Ferramentas de exclusão **nunca** aparecem.
+
+Há dois tipos de escrita:
+
+| Tipo | Exemplos | O que acontece |
+| --- | --- | --- |
+| **Interna** | `crm_create_task`, `sd_add_internal_note`, mover etapa, atribuir | Executa na hora, com o usuário que conectou. Volta `status: "executed"` |
+| **Com cliente final** (`openWorldHint: true`) | `zap_message_send_text`, `sd_reply_to_requester`, `sd_request_approval`, `sd_move_ticket_phase`, `sd_cancel_ticket` | Não executa. Cria uma pendência e volta `status: "pending_confirmation"` com um `confirmUrl` |
+
+## Uma conversa de exemplo
+
+A pessoa conectou o Claude ao workspace **Acme**, com ServiceDesk e **Ler e
+alterar**, e o administrador liberou a escrita. Ela escreve:
+
+> Quais chamados estão para estourar o SLA hoje? No mais urgente, deixe uma nota
+> interna dizendo que o link da operadora caiu e avise o solicitante que a
+> previsão de volta é às 14h.
+
+**1. O modelo consulta o SLA.** O cliente chama:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "tools/call",
+  "params": { "name": "sd_sla_at_risk", "arguments": { "limit": 5 } }
+}
+```
+
+e recebe, em `structuredContent`:
+
+```json
+{
+  "summary": "1 em risco, 0 violado(s)",
+  "data": {
+    "counts": { "atRisk": 1, "breached": 0, "myOpen": 3, "unassigned": 4, "createdToday": 2 },
+    "atRisk": [
+      {
+        "id": "cm2tkt0001",
+        "code": "INC-000123",
+        "title": "VPN fora do ar na filial",
+        "sla": { "firstResponse": "met", "resolution": "at_risk", "resolutionDueAt": "2026-10-18T17:00:00.000Z" },
+        "href": "https://homologacao.stratustelecom.com.br/acme/servicedesk/tickets/123"
+      }
+    ],
+    "breached": []
+  }
+}
+```
+
+**2. A nota interna executa na hora.** Nota interna não chega ao cliente:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 12,
+  "method": "tools/call",
+  "params": {
+    "name": "sd_add_internal_note",
+    "arguments": {
+      "ticket": "INC-000123",
+      "body": "Link da operadora caiu às 9h. Chamado aberto com a operadora, previsão 14h.",
+      "idempotencyKey": "nota-inc-123-link-operadora"
+    }
+  }
+}
+```
+
+```json
+{
+  "status": "executed",
+  "summary": "Nota interna registrada em INC-000123",
+  "actionId": "cm9act0001",
+  "target": {
+    "type": "sd_ticket",
+    "id": "cm2tkt0001",
+    "href": "https://homologacao.stratustelecom.com.br/acme/servicedesk/tickets/123"
+  },
+  "data": {
+    "messageId": "cm2msg0002",
+    "ticket": "INC-000123",
+    "visibility": "INTERNAL",
+    "href": "https://homologacao.stratustelecom.com.br/acme/servicedesk/tickets/123"
+  }
+}
+```
+
+**3. A resposta ao solicitante pede confirmação.** Ela notifica o cliente final
+por portal, e-mail ou WhatsApp, então não sai pela chamada:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 13,
+  "method": "tools/call",
+  "params": {
+    "name": "sd_reply_to_requester",
+    "arguments": {
+      "ticket": "INC-000123",
+      "body": "Olá, Bruno. Identificamos uma queda no link da operadora. A previsão de normalização é 14h; avisaremos aqui assim que voltar.",
+      "idempotencyKey": "resposta-inc-123-previsao-14h"
+    }
+  }
+}
+```
+
+```json
+{
+  "status": "pending_confirmation",
+  "summary": "Aguardando confirmação no Steel: Responder ao solicitante. Nada foi feito ainda. A pessoa que autorizou o app precisa confirmar em https://homologacao.stratustelecom.com.br/acme/inbox?view=ai&action=cm9act0002 até 2026-10-18T13:30:00.000Z; depois disso a pendência expira.",
+  "actionId": "cm9act0002",
+  "confirmUrl": "https://homologacao.stratustelecom.com.br/acme/inbox?view=ai&action=cm9act0002",
+  "expiresAt": "2026-10-18T13:30:00.000Z",
+  "preview": {
+    "title": "Responder ao solicitante",
+    "summary": "Mensagem pública: Bruno Lima — bruno@empresa.com.br será notificado (portal, e-mail e/ou WhatsApp). Não dá para desfazer o envio."
+  }
+}
+```
+
+**4. O modelo responde à pessoa**, algo como: "O INC-000123 vence às 17h.
+Registrei a nota interna. A mensagem ao solicitante está pronta, mas precisa da
+sua confirmação no Steel: [abrir e confirmar](…)".
+
+**5. A pessoa confirma no Steel** (próxima seção). A resposta é enviada ao
+solicitante com ela como autora, e entra no histórico do chamado.
+
+## O fluxo do confirmUrl
+
+1. O cliente recebe `pending_confirmation` e **mostra o `confirmUrl`** à
+   pessoa. Não chame a ferramenta de novo: uma segunda chamada cria uma segunda
+   pendência (a não ser que você repita a mesma `idempotencyKey`).
+2. A pessoa abre o link. Ele leva à **Caixa de entrada › Pendências da IA** do
+   workspace, com o pedido em destaque, a etiqueta **App conectado** com o
+   nome do cliente e o tempo que falta ("Expira em 27 min").
+3. Ela confere a prévia (para quem vai, o texto) e clica em **Confirmar** ou
+   **Cancelar**. Confirmado, o Steel executa a ação com o usuário dela, como se
+   ela tivesse feito no aplicativo.
+4. O cliente **não é avisado** da decisão. Para saber o resultado, consulte o
+   registro depois (por exemplo, `sd_get_ticket` mostra a mensagem no
+   histórico).
+
+Regras da pendência:
+
+- Vale **30 minutos** (`expiresAt`). Depois, expira sem executar.
+- Só a pessoa que conectou o cliente pode confirmar. Para outra pessoa, o link
+  mostra "A ação deste link não está mais pendente: já foi decidida, expirou ou
+  foi pedida por outra pessoa."
+- Revogar a conexão cancela as pendências dela.
+- Se o administrador desligar **Permitir escrita via MCP** antes da
+  confirmação, confirmar responde `MCP_WRITE_DISABLED`.
+- Ao confirmar, as regras valem de novo: se o chamado foi fechado no meio
+  tempo, a ação falha com a mensagem do Steel.
+
+O servidor não usa _elicitation_ do MCP para essa confirmação: ela exige uma
+pergunta no meio da chamada, e o servidor do Steel não guarda sessão entre
+requisições. O link funciona em qualquer cliente, inclusive nos que não mostram
+_elicitation_.
+
+## Repetir com segurança: idempotencyKey
+
+Toda ferramenta de escrita aceita o argumento opcional `idempotencyKey`: um
+texto de 1 a 200 caracteres: um UUID, ou um texto que descreva a ação, como `nota-inc-123-link-operadora`. Repetir a chamada com a
+**mesma chave e os mesmos argumentos** em até **24 horas** não executa de
+novo: volta o primeiro resultado. A chave vale por conexão e por ferramenta.
+
+O caso típico: a chamada da nota interna acima caiu por tempo esgotado e o
+cliente não sabe se ela foi registrada. Ele repete **exatamente** a mesma
+mensagem (`id` JSON-RPC pode mudar):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 14,
+  "method": "tools/call",
+  "params": {
+    "name": "sd_add_internal_note",
+    "arguments": {
+      "ticket": "INC-000123",
+      "body": "Link da operadora caiu às 9h. Chamado aberto com a operadora, previsão 14h.",
+      "idempotencyKey": "nota-inc-123-link-operadora"
+    }
+  }
+}
+```
+
+e recebe o mesmo `status: "executed"` com o mesmo `actionId`: a nota existe uma
+vez só.
+
+| Situação | Resposta |
+| --- | --- |
+| Mesma chave, mesmos argumentos, já concluída | O resultado da primeira chamada |
+| Mesma chave ainda em execução | `isError` com `MCP_IDEMPOTENCY_IN_PROGRESS`: "Uma chamada com esta chave de idempotência ainda está em andamento. Aguarde alguns segundos e tente de novo." |
+| Mesma chave, argumentos diferentes | `isError` com `MCP_IDEMPOTENCY_KEY_REUSED`: "Esta chave de idempotência já foi usada com outros argumentos. Gere uma chave nova para cada ação diferente." |
+| A primeira chamada falhou | A chave é liberada e a próxima chamada executa |
+| A primeira voltou `pending_confirmation` | A repetição devolve a mesma pendência, com o mesmo `confirmUrl` |
+| Chave vazia ou com mais de 200 caracteres | `isError` com `VALIDATION_ERROR` |
+
+Gere uma chave nova para cada ação diferente e repita a mesma só quando a
+chamada anterior ficou sem resposta. Uma marca de "em execução" dura até 2
+minutos: se o servidor caiu no meio, depois disso a chave pode ser usada de
+novo.
+
+## Onde as escritas ficam registradas
+
+- No **histórico de ações da IA** do workspace, com a origem **MCP** e o nome
+  do cliente OAuth.
+- Na **trilha de auditoria** do Steel, junto com o consentimento e a
+  revogação.
+- No próprio registro: a nota, a mensagem ou a tarefa aparecem com a pessoa que
+  conectou como autora.
+
+Para o administrador, **Ajustes › Apps conectados** mostra quantas chamadas
+cada app fez nos últimos 7 e 30 dias.
+
+## Erros das escritas
+
+| Resposta | Significa | O que fazer |
+| --- | --- | --- |
+| Erro JSON-RPC `-32602` ao chamar uma escrita | A conexão é só leitura ou a escrita via MCP está desligada | Conecte com **Ler e alterar**; peça ao administrador para ligar o interruptor |
+| `isError` com `FORBIDDEN` | O papel da pessoa não permite a ação no aplicativo | Peça a permissão no workspace |
+| `isError` com `MCP_WRITE_DISABLED` | O interruptor foi desligado | Peça ao administrador para ligar em **Ajustes › Steel IA** |
+| `isError` com `VALIDATION_ERROR` | Argumento fora do esquema | Releia o `inputSchema` da ferramenta |
+| `isError` com um código de domínio (`SD_TICKET_CLOSED`, `CRM_LEAD_DUPLICATE`...) | A regra do Steel recusou, como recusaria no aplicativo | A mensagem em português diz o motivo; o modelo deve explicar à pessoa |

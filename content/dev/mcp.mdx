@@ -15,6 +15,13 @@ ferramentas que o assistente usa dentro do Steel, filtradas pelos módulos, pelo
 papel do usuário e pelo escopo que ele concedeu. Uma ferramenta nova no Steel AI
 aparece no MCP no mesmo deploy.
 
+| Para | Veja |
+| --- | --- |
+| Conectar Claude, ChatGPT, Cursor ou outro cliente | Esta página, a seguir |
+| Uma conversa de exemplo, o `confirmUrl` e o `idempotencyKey` | [Escrita, confirmação e idempotência](/dev/mcp/escrita) |
+| Escrever um cliente próprio: OAuth, PKCE, tokens e JSON-RPC | [OAuth e protocolo](/dev/mcp/oauth) |
+| O passo a passo para quem usa, sem termos técnicos | [Conectar o Steel ao Claude, ChatGPT ou Cursor](/docs/steel-ai/conectar-claude-chatgpt-cursor) |
+
 ## Endereço do servidor
 
 Neste ambiente, o servidor MCP fica em <McpServerUrl />. Em outro ambiente, é o
@@ -110,8 +117,13 @@ consentimento.
 ## Outros clientes
 
 Qualquer cliente que fale MCP por Streamable HTTP com OAuth (e registro dinâmico
-de cliente) conecta do mesmo jeito: basta o endereço do servidor. Um cliente que
-só fala `stdio` pode usar uma ponte como o `mcp-remote`:
+de cliente) conecta do mesmo jeito: basta o endereço do servidor. Se você está
+escrevendo o cliente, o fluxo completo está em [OAuth e protocolo](/dev/mcp/oauth).
+
+Um cliente que só fala `stdio` tem duas pontes:
+
+**`mcp-remote`**, que faz o OAuth e renova o token sozinho. É a opção para o
+dia a dia:
 
 ```json
 {
@@ -123,6 +135,33 @@ só fala `stdio` pode usar uma ponte como o `mcp-remote`:
   }
 }
 ```
+
+**`steel mcp`**, do [Steel CLI](/dev/cli), que repassa cada mensagem sem
+alterar para o `/api/mcp` do perfil do CLI, com o token em
+`Authorization: Bearer`:
+
+```json
+{
+  "mcpServers": {
+    "steel": {
+      "command": "steel",
+      "args": ["mcp", "--profile", "homologacao"],
+      "env": { "STEEL_MCP_TOKEN": "stl_at_…" }
+    }
+  }
+}
+```
+
+- O token é um **access token OAuth do MCP** (`stl_at_`), não o `stl_pat_` do
+  `steel login`: a API v1 e o MCP têm credenciais separadas. Ele sai do fluxo
+  de [OAuth e protocolo](/dev/mcp/oauth) e vale **1 hora**; o `steel mcp` não o
+  renova. Use para testes, automações curtas e clientes que você mesmo
+  controla; para uso contínuo, prefira um cliente com OAuth ou o `mcp-remote`.
+- Passe o token por `STEEL_MCP_TOKEN` (de preferência) ou `--token`.
+- O stdout é do protocolo: avisos e erros saem no stderr, em JSON. Se o Steel
+  recusar (token vencido ou revogado, sem permissão, fora do ar), o cliente
+  recebe um erro JSON-RPC na hora, sem ficar esperando.
+- Revogue em **Apps conectados**, como qualquer conexão.
 
 ## Escopos
 
@@ -147,77 +186,25 @@ Autopilot do assistente do Steel. Desligado, a conexão continua só leitura, e
 uma ferramenta de escrita chamada mesmo assim responde como desconhecida
 (`-32602`).
 
-### Execução direta
+- **Ações internas** (criar tarefa, registrar nota, mover etapa, atribuir)
+  executam na hora, com o usuário que conectou, e voltam
+  `status: "executed"` com `actionId`, `target` e o `href` do registro.
+- **Ações com cliente final** (`zap_message_send_text`,
+  `sd_reply_to_requester`, `sd_request_approval`, `sd_move_ticket_phase` e
+  `sd_cancel_ticket`) não executam pela chamada: voltam
+  `status: "pending_confirmation"` com um `confirmUrl`. A pessoa que conectou
+  confirma no Steel, em até 30 minutos.
+- **`idempotencyKey`** (opcional, 1 a 200 caracteres) em qualquer escrita:
+  repetir com a mesma chave e os mesmos argumentos em até 24 horas devolve o
+  primeiro resultado em vez de executar de novo.
+- Todo `href` nos resultados já vem com o endereço do Steel.
 
-Criar, alterar e as ações internas (atribuir, mover etapa, registrar nota)
-executam na hora, com o usuário que conectou. O resultado traz:
-
-```json
-{
-  "status": "executed",
-  "summary": "Tarefa “Ligar para a Acme” criada",
-  "actionId": "cm9…",
-  "target": {
-    "type": "crm_task",
-    "id": "cm8…",
-    "href": "https://homologacao.stratustelecom.com.br/demo/crm/tasks?record=cm8…"
-  },
-  "data": { "...": "..." }
-}
-```
+A conversa de exemplo, o fluxo do `confirmUrl` passo a passo, a tabela de
+respostas do `idempotencyKey` e os erros estão em
+[Escrita, confirmação e idempotência](/dev/mcp/escrita).
 
 Cada escrita fica no histórico de ações da IA do workspace com a origem **MCP** e
 o cliente OAuth, e na trilha de auditoria.
-
-### Ações com cliente final: confirmação no Steel
-
-As ferramentas marcadas com `openWorldHint: true` que entregam algo a alguém de
-fora da equipe (`zap_message_send_text`, `sd_reply_to_requester`,
-`sd_request_approval`, `sd_move_ticket_phase` e `sd_cancel_ticket`) **não**
-executam pela chamada. O servidor cria uma pendência e devolve:
-
-```json
-{
-  "status": "pending_confirmation",
-  "summary": "Aguardando confirmação no Steel: Enviar mensagem para Ana. Nada foi feito ainda. …",
-  "actionId": "cm9…",
-  "confirmUrl": "https://homologacao.stratustelecom.com.br/demo/inbox?view=ai&action=cm9…",
-  "expiresAt": "2026-10-17T12:30:00.000Z",
-  "preview": { "title": "Enviar mensagem para Ana", "summary": "…" }
-}
-```
-
-Mostre o `confirmUrl` ao usuário. Ele abre a **Caixa de entrada › Pendências da
-IA** do Steel, confere a prévia e confirma ou cancela. A pendência vale 30
-minutos, só a pessoa que conectou pode confirmar e ela é cancelada se a conexão
-for revogada. O cliente não recebe aviso da decisão: para saber o resultado,
-consulte o registro depois (o chamado, a conversa).
-
-O servidor não usa *elicitation* do MCP para essa confirmação: ela exige uma
-pergunta do servidor no meio da chamada, e o servidor do Steel não guarda sessão
-entre requisições. O link funciona em qualquer cliente.
-
-### Repetir com segurança: `idempotencyKey`
-
-Toda ferramenta de escrita aceita o argumento opcional `idempotencyKey` (texto
-de 1 a 200 caracteres, por exemplo um UUID). Repetir a chamada com a mesma chave
-e os mesmos argumentos em até 24 horas não executa de novo: volta o primeiro
-resultado. A chave vale por conexão e por ferramenta.
-
-| Situação | Resposta |
-| --- | --- |
-| Mesma chave, mesmos argumentos, já concluída | O resultado da primeira chamada |
-| Mesma chave ainda em execução | `isError` com `MCP_IDEMPOTENCY_IN_PROGRESS`. Espere alguns segundos e repita |
-| Mesma chave, argumentos diferentes | `isError` com `MCP_IDEMPOTENCY_KEY_REUSED`. Gere uma chave nova |
-| A primeira chamada falhou | A chave é liberada e a próxima chamada executa |
-
-Use uma chave nova para cada ação diferente e repita a mesma só quando a
-chamada anterior ficou sem resposta.
-
-### Links absolutos
-
-Todo `href` nos resultados (chamado, lead, conversa) já vem com o endereço do
-Steel, pronto para o usuário abrir.
 
 ## Módulos e permissões
 
@@ -295,10 +282,20 @@ Uma ferramenta fora da lista também pode ser chamada direto pelo nome em
 
 ## Limites
 
-O servidor tem limite de requisições por usuário e por cliente OAuth. Passou do
-limite, a resposta é `429` com `Retry-After`, como no resto da API (veja
-[Limites de requisição](/dev/limites#o-que-acontece-no-limite)). Os clientes de
-IA costumam esperar e repetir sozinhos.
+| O quê | Limite |
+| --- | --- |
+| Chamadas por pessoa | 120 a cada 60 segundos |
+| Chamadas por cliente OAuth (somando todas as pessoas) | 600 a cada 60 segundos |
+| Access token | 1 hora; o cliente renova com o refresh token |
+| Refresh token | 30 dias |
+| Pendência de confirmação | 30 minutos |
+| `idempotencyKey` | 24 horas |
+| `tools/list` completo | Até 40 ferramentas; acima disso, a lista enxuta descrita em [Quando há muitas ferramentas](#quando-há-muitas-ferramentas) |
+
+Passou do limite de chamadas, a resposta é `429` com `Retry-After`, como no
+resto da API (veja [Limites de requisição](/dev/limites#o-que-acontece-no-limite)).
+Os clientes de IA costumam esperar e repetir sozinhos. As perguntas pelo MCP
+não consomem a cota mensal do Steel AI: o modelo é do cliente.
 
 ## Solução de problemas
 
@@ -314,5 +311,9 @@ IA costumam esperar e repetir sozinhos.
 | `405` no endereço do servidor | O cliente tentou `GET` (fluxo SSE antigo). Use um cliente com Streamable HTTP, ou a ponte `mcp-remote` |
 | A resposta demora a chegar inteira, ou chega toda de uma vez no fim | Algum proxy entre o cliente e o Steel está segurando a resposta. Na sua rede, libere `/api/mcp` sem buffering |
 | `429` | Limite de requisições. Espere o `Retry-After` |
+| `steel mcp` sai com "Falta o token do MCP do Steel" | Defina `STEEL_MCP_TOKEN` com um access token `stl_at_` (não o `stl_pat_` do `steel login`) |
+| `steel mcp` funcionava e passou a dar `401` | O access token passou de 1 hora. Gere outro, ou troque para o `mcp-remote` |
+| O modelo diz que não há ferramenta para o pedido | Com muitas ferramentas, a lista é enxuta: peça para ele usar `steel_find_tools` |
+| A IA chamou a ação duas vezes | Use `idempotencyKey` nas escritas; para ações com cliente final, só a confirmação no Steel executa |
 
 Dúvidas sobre a integração: [Suporte](/dev/suporte).
