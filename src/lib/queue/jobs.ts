@@ -40,6 +40,7 @@ export const QueueName = {
   CrmWorkflowDelay: 'crm-workflow-delay',
   WhatsappButtonActions: 'whatsapp-button-actions',
   SitePosts: 'site-posts',
+  WebhooksDelivery: 'webhooks-delivery',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -48,6 +49,7 @@ export const DataRetentionJob = {
   CleanupExpiredSessions: 'cleanup-expired-sessions',
   CleanupExpiredVerificationTokens: 'cleanup-expired-verification-tokens',
   ExpireStaleInvitations: 'expire-stale-invitations',
+  CleanupWebhookDeliveries: 'cleanup-webhook-deliveries',
 } as const
 
 export type DataRetentionJob =
@@ -57,6 +59,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.CleanupExpiredSessions]: Record<string, never>
   [DataRetentionJob.CleanupExpiredVerificationTokens]: Record<string, never>
   [DataRetentionJob.ExpireStaleInvitations]: Record<string, never>
+  [DataRetentionJob.CleanupWebhookDeliveries]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {
@@ -780,4 +783,24 @@ export type SitePostsJob = (typeof SitePostsJob)[keyof typeof SitePostsJob]
 
 export type SitePostsJobPayload = {
   [SitePostsJob.PublishDue]: Record<string, never>
+}
+
+/**
+ * Outbound webhooks (ADR 0036): `deliver` POSTs one signed event to one
+ * endpoint (`WebhookDelivery` row). Up to 6 attempts with exponential
+ * backoff; a manual re-delivery is a single-attempt job.
+ */
+export const WebhooksDeliveryJob = {
+  Deliver: 'deliver',
+} as const
+
+export type WebhooksDeliveryJob =
+  (typeof WebhooksDeliveryJob)[keyof typeof WebhooksDeliveryJob]
+
+export type WebhooksDeliveryJobPayload = {
+  [WebhooksDeliveryJob.Deliver]: {
+    deliveryId: string
+    /** Manual re-delivery: also sent to a disabled endpoint. */
+    manual?: boolean
+  }
 }

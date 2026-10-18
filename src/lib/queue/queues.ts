@@ -66,6 +66,8 @@ import {
   type TrialLifecycleJobPayload,
   type UsageRollupJob,
   type UsageRollupJobPayload,
+  type WebhooksDeliveryJob,
+  type WebhooksDeliveryJobPayload,
   type WhatsappAiReplyJob,
   type WhatsappAiReplyJobPayload,
   type WhatsappBroadcastJob,
@@ -132,6 +134,7 @@ let searchReindexQueue: Queue | null = null
 let aiUsageWeeklyEmailQueue: Queue | null = null
 let workspaceExportQueue: Queue | null = null
 let workspaceIntegrationsQueue: Queue | null = null
+let webhooksDeliveryQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 
@@ -799,6 +802,7 @@ export async function closeQueues(): Promise<void> {
     aiUsageWeeklyEmailQueue?.close(),
     workspaceExportQueue?.close(),
     workspaceIntegrationsQueue?.close(),
+    webhooksDeliveryQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -836,6 +840,7 @@ export async function closeQueues(): Promise<void> {
   aiUsageWeeklyEmailQueue = null
   workspaceExportQueue = null
   workspaceIntegrationsQueue = null
+  webhooksDeliveryQueue = null
 }
 
 export function getCrmTaskRemindersQueue(): Queue<
@@ -1024,6 +1029,36 @@ export function getSitePostsQueue(): Queue<
   >
 }
 
+/**
+ * Outbound webhooks (ADR 0036): 6 attempts, exponential backoff from 1 min
+ * (1, 2, 4, 8 and 16 min between them). Deliveries keep their own log row,
+ * so finished jobs are not kept around.
+ */
+export const WEBHOOK_DELIVERY_ATTEMPTS = 6
+export const WEBHOOK_DELIVERY_BACKOFF_MS = 60_000
+
+export function getWebhooksDeliveryQueue(): Queue<
+  WebhooksDeliveryJobPayload[WebhooksDeliveryJob],
+  unknown,
+  WebhooksDeliveryJob
+> {
+  if (!webhooksDeliveryQueue) {
+    webhooksDeliveryQueue = new Queue(QueueName.WebhooksDelivery, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        ...defaultJobOptions,
+        attempts: WEBHOOK_DELIVERY_ATTEMPTS,
+        backoff: { type: 'exponential', delay: WEBHOOK_DELIVERY_BACKOFF_MS },
+      },
+    })
+  }
+  return webhooksDeliveryQueue as Queue<
+    WebhooksDeliveryJobPayload[WebhooksDeliveryJob],
+    unknown,
+    WebhooksDeliveryJob
+  >
+}
+
 // Typed as a full record so a new queue without an entry fails the build.
 const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DataRetention]: getDataRetentionQueue,
@@ -1068,6 +1103,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmWorkflowDelay]: getCrmWorkflowDelayQueue,
   [QueueName.WhatsappButtonActions]: getWhatsappButtonActionsQueue,
   [QueueName.SitePosts]: getSitePostsQueue,
+  [QueueName.WebhooksDelivery]: getWebhooksDeliveryQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */

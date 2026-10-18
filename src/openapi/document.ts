@@ -19,6 +19,7 @@ import { registerSteelAiPaths } from './paths/steel-ai'
 import { registerSteelAiSkillsPaths } from './paths/steel-ai-skills'
 import { registerSteelAiTemplatesPaths } from './paths/steel-ai-templates'
 import { registerSteelAiUsagePaths } from './paths/steel-ai-usage'
+import { registerWebhookPaths } from './paths/webhooks'
 import { registerWhatsAppPaths } from './paths/whatsapp'
 import { registerWhiteboardPaths } from './paths/whiteboard'
 import { registerWikiPaths } from './paths/wiki'
@@ -50,6 +51,7 @@ export function createRegistry(): OpenApiRegistry {
   registerIntegrationPaths(registry)
   registerIntegrationGrantPaths(registry)
   registerApiTokenPaths(registry)
+  registerWebhookPaths(registry)
   return registry
 }
 
@@ -80,6 +82,13 @@ Rotas \`/workspaces/{id}/...\` exigem que o usuário seja membro do workspace (\
 CalVer (\`YYYY.MM.DD[.N]\`, ADR 0003): \`info.version\` é a última release sincronizada. Este arquivo é **gerado** por \`pnpm openapi:generate\` a partir de \`src/openapi/\` — não edite \`public/openapi.json\` à mão (ver \`docs/api.md\`).`
 
 const SECURITY_SCHEMES: Record<string, JsonSchema> = {
+  personalToken: {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'stl_pat_<token>',
+    description:
+      'Token pessoal da API v1 (`Authorization: Bearer stl_pat_...`, ADR 0035), criado em Ajustes › Segurança › Tokens de API ou pelo `steel login`. Vale só em `/api/v1`; o cookie de sessão não vale lá. Escrita exige o escopo `api:write`.',
+  },
   cookieAuth: {
     type: 'apiKey',
     in: 'cookie',

@@ -60,6 +60,7 @@ export type NotificationKindDTO =
   | 'AGENT_APPROVAL_REQUESTED'
   | 'AGENT_RUN_FAILED'
   | 'AI_ACTION_EXPIRING'
+  | 'WEBHOOK_ENDPOINT_DISABLED'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'

@@ -16,6 +16,10 @@ import {
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import {
+  crmLeadCreatedData,
+  crmLeadDealData,
+} from '@/src/lib/webhooks/payloads'
+import {
   toCrmLeadContactAttemptDTO,
   toCrmLeadDTO,
   toCrmLeadMeetingDTO,
@@ -66,6 +70,7 @@ import { resolveProposalValidUntil } from './crm-proposal.service'
 import { CrmSettingsService } from './crm-settings.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import { emitWebhookEvent } from './webhook-emitter'
 
 /**
  * Quem está criando o lead. Canais públicos (API de integração, formulário)
@@ -355,6 +360,9 @@ export const CrmLeadService = {
       name: lead.name,
     })
     void notifyCrmLeadCreated({ workspaceId, lead })
+    void emitWebhookEvent(workspaceId, 'crm.lead.created', () =>
+      crmLeadCreatedData(lead),
+    )
     if (ownerId) {
       void notifyCrmLeadAssigned({
         workspaceId,
@@ -1148,6 +1156,9 @@ export const CrmLeadService = {
       result: 'WON',
       actorId,
     })
+    void emitWebhookEvent(workspaceId, 'crm.deal.won', () =>
+      crmLeadDealData({ lead: updated.value, actorId }),
+    )
 
     void indexSearchDocument('crm-lead', workspaceId, leadId)
     void indexSearchDocument('crm-person', workspaceId, person.id)
@@ -1213,6 +1224,9 @@ export const CrmLeadService = {
       result: 'LOST',
       actorId,
     })
+    void emitWebhookEvent(workspaceId, 'crm.deal.lost', () =>
+      crmLeadDealData({ lead: updated.value, actorId }),
+    )
 
     void indexSearchDocument('crm-lead', workspaceId, leadId)
     return ok(toCrmLeadDTO(updated.value))

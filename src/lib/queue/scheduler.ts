@@ -123,6 +123,12 @@ export async function scheduleDataRetentionJobs(): Promise<void> {
     { name: DataRetentionJob.ExpireStaleInvitations, data: {} },
   )
 
+  await queue.upsertJobScheduler(
+    DataRetentionJob.CleanupWebhookDeliveries,
+    repeat,
+    { name: DataRetentionJob.CleanupWebhookDeliveries, data: {} },
+  )
+
   logger.info('queue.scheduler.data_retention_registered', {
     component: 'Worker',
     pattern: RetentionCron.dataRetention,
@@ -131,6 +137,7 @@ export async function scheduleDataRetentionJobs(): Promise<void> {
       DataRetentionJob.CleanupExpiredSessions,
       DataRetentionJob.CleanupExpiredVerificationTokens,
       DataRetentionJob.ExpireStaleInvitations,
+      DataRetentionJob.CleanupWebhookDeliveries,
     ],
   })
 }

@@ -1,4 +1,5 @@
 import { emitNotification, workspaceAdminIds } from './notification-emitter'
+import { emitWebhookEvent } from './webhook-emitter'
 import { notifyWorkspaceSlack } from './workspace-slack-notifier'
 
 /**
@@ -31,6 +32,12 @@ export async function notifyAgentApprovalRequested(input: {
         ? 'O agente propôs uma ação que precisa de aprovação.'
         : `O agente propôs ${input.count} ações que precisam de aprovação.`,
     path: steelAgentRunPath(input.agentId, input.runId),
+  })
+  // Outbound webhooks (ADR 0036), fire-and-forget.
+  void emitWebhookEvent(input.workspaceId, 'agents.approval.pending', {
+    agent: { id: input.agentId, name: input.agentName },
+    runId: input.runId,
+    count: input.count,
   })
   return emitNotification({
     workspaceId: input.workspaceId,

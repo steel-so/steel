@@ -1544,3 +1544,20 @@ export const apiTokenScopeRequired = (): AppError =>
 export const apiTokenModuleNotAllowed = (
   message = 'Este token não dá acesso a este módulo. Crie um token que inclua o módulo.',
 ): AppError => appError('API_TOKEN_MODULE_NOT_ALLOWED', message)
+export const webhookEndpointNotFound = (): AppError =>
+  appError('WEBHOOK_ENDPOINT_NOT_FOUND', 'Endpoint de webhook não encontrado.')
+
+export const webhookDeliveryNotFound = (): AppError =>
+  appError('WEBHOOK_DELIVERY_NOT_FOUND', 'Entrega de webhook não encontrada.')
+
+export const webhookEndpointLimitReached = (
+  message = 'Este workspace já tem o máximo de endpoints de webhook. Remova um antes de cadastrar outro.',
+): AppError => appError('WEBHOOK_ENDPOINT_LIMIT_REACHED', message)
+
+export const webhookUrlNotAllowed = (
+  message = 'Use uma URL HTTPS pública. Endereços privados, locais ou de loopback não são aceitos.',
+): AppError => appError('WEBHOOK_URL_NOT_ALLOWED', message)
+
+export const webhookEventUnknown = (
+  message = 'Tipo de evento fora do catálogo de webhooks.',
+): AppError => appError('WEBHOOK_EVENT_UNKNOWN', message)

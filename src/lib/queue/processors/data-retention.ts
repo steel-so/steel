@@ -36,6 +36,15 @@ async function expireStaleInvitations(): Promise<CleanupResult> {
   return { deleted: count, cutoff: cutoff.toISOString() }
 }
 
+/** Outbound webhook delivery log: 30 days (ADR 0036). */
+async function cleanupWebhookDeliveries(): Promise<CleanupResult> {
+  const cutoff = new Date(Date.now() - RetentionWindowMs.webhookDeliveries)
+  const { count } = await prisma.webhookDelivery.deleteMany({
+    where: { createdAt: { lt: cutoff } },
+  })
+  return { deleted: count, cutoff: cutoff.toISOString() }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -64,6 +73,16 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
         component: 'Worker',
         jobId: job.id,
         expired: result.deleted,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.CleanupWebhookDeliveries: {
+      const result = await cleanupWebhookDeliveries()
+      logger.info('queue.data_retention.webhook_deliveries_cleaned', {
+        component: 'Worker',
+        jobId: job.id,
+        deleted: result.deleted,
         cutoff: result.cutoff,
       })
       return result

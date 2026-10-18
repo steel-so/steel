@@ -18,6 +18,10 @@ import {
   sdTicketNotificationHref,
 } from '@/src/lib/servicedesk/notify'
 import { normalizeSdWhatsappNumber } from '@/src/lib/servicedesk/whatsapp'
+import {
+  sdNotificationWebhookData,
+  sdNotificationWebhookType,
+} from '@/src/lib/webhooks/payloads'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import {
   sdChannelEnabled,
@@ -31,6 +35,7 @@ import type { SdNotificationPreferencesDTO } from '@/types/sd-notification'
 import { NotificationService } from './notification.service'
 import { SdAccess } from './sd-access'
 import { SdIntegrationDispatcher } from './sd-integration-dispatcher'
+import { emitWebhookEvent } from './webhook-emitter'
 
 /**
  * Motor de notificações do ServiceDesk. Um único ponto de entrada
@@ -306,6 +311,20 @@ export async function notifySdEvent(
     },
     payload: { title: input.payload.title, body: input.payload.body },
   })
+
+  // Outbound webhooks (ADR 0036): the same ticket events, to the workspace
+  // endpoints. Only enqueues; the worker does the HTTP.
+  const webhookType = sdNotificationWebhookType(input.event)
+  if (webhookType) {
+    void emitWebhookEvent(input.workspaceId, webhookType, () =>
+      sdNotificationWebhookData({
+        ticket: input.ticket,
+        actorId: input.actorId,
+        title: input.payload.title,
+        body: input.payload.body,
+      }),
+    )
+  }
 
   const excluded = new Set(
     clean([...(input.payload.excludeUserIds ?? []), input.actorId]),

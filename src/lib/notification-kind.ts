@@ -455,6 +455,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'sparkles',
     color: 'amber',
   },
+  WEBHOOK_ENDPOINT_DISABLED: {
+    module: 'OTHER',
+    label: 'Webhook desativado por falhas',
+    icon: 'disconnected',
+    color: 'rose',
+  },
 }
 
 const MODULE_BY_PREFIX: [string, NotificationModule][] = [

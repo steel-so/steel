@@ -124,16 +124,135 @@ Do seu lado, ao chamar o Steel:
 
 ## Webhooks que o Steel envia
 
-Hoje o Steel **não** envia webhooks para URLs suas. O que sai do Steel para
-outros sistemas é:
+O Steel avisa os seus sistemas (ERP, BI, automações) quando algo acontece no
+workspace. O dono ou um administrador cadastra a URL em **Ajustes ›
+Integrações › Webhooks**, escolhe os eventos e recebe um segredo de assinatura.
+Também dá para fazer tudo pela API v1, com um token pessoal (as rotas
+`GET /api/v1/webhooks/endpoints` e vizinhas, na [referência da API](/dev/api)).
+
+### Eventos
+
+| Tipo | Módulo | Quando |
+| --- | --- | --- |
+| `servicedesk.ticket.created` | ServiceDesk | Chamado aberto, por qualquer canal |
+| `servicedesk.ticket.updated` | ServiceDesk | Chamado alterado; `data.change` é `fields`, `assigned` ou `phase` |
+| `servicedesk.ticket.assigned` | ServiceDesk | Chamado atribuído a um atendente |
+| `servicedesk.ticket.message` | ServiceDesk | Nova mensagem pública no chamado |
+| `servicedesk.ticket.resolved` / `.reopened` / `.escalated` / `.csat` | ServiceDesk | Resolvido, reaberto, escalonado, avaliado |
+| `servicedesk.sla.at_risk` / `servicedesk.sla.breached` | ServiceDesk | SLA em risco ou violado |
+| `servicedesk.approval.requested` / `.responded` | ServiceDesk | Aprovação pedida ou respondida |
+| `crm.lead.created` | CRM | Novo lead, por qualquer canal |
+| `crm.opportunity.stage_changed` | CRM | Oportunidade mudou de etapa (`fromStage`, `toStage`) |
+| `crm.deal.won` / `crm.deal.lost` | CRM | Lead fechado, ou oportunidade numa etapa de ganho ou perda (`data.source`) |
+| `communication.message.received` | Comunicação | Mensagem de WhatsApp recebida de um contato |
+| `agents.approval.pending` | Steel Agents | Um agente propôs ações que aguardam aprovação |
+| `steel.ping` | — | Só o botão **Enviar teste**; não dá para assinar |
+
+A lista sempre atualizada, com o módulo de cada tipo, está em
+`GET /api/v1/webhooks/events`. Assinar `*` recebe todos, inclusive os tipos
+que vierem depois. O formato do `data` de cada tipo segue a mesma regra de
+estabilidade da API v1: campos novos e opcionais podem aparecer; nada some nem
+muda de tipo sem um tipo novo e aviso prévio.
+
+### O que chega
+
+Um `POST` com `Content-Type: application/json` e o corpo:
+
+```json
+{
+  "id": "evt_cm2x7…",
+  "type": "crm.lead.created",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws…",
+  "data": {
+    "lead": {
+      "id": "cm2lead…",
+      "name": "Maria Souza",
+      "emails": ["maria@example.com"],
+      "phones": ["+5511999990000"],
+      "company": "Acme Ltda",
+      "source": "site",
+      "channel": "FORM",
+      "score": 40,
+      "ownerId": null,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    }
+  }
+}
+```
+
+Cabeçalhos:
+
+- `Steel-Webhook-Id`: o `id` do evento. É o mesmo em todas as tentativas:
+  use para não processar duas vezes.
+- `Steel-Webhook-Timestamp`: o momento da tentativa, em segundos Unix.
+- `Steel-Signature`: `v1=<hex>`, o HMAC-SHA256 de
+  `"<Steel-Webhook-Timestamp>.<corpo bruto>"` com o segredo do endpoint
+  (`whsec_…`, usado como texto).
+
+### Conferir a assinatura
+
+Calcule o HMAC sobre o **corpo bruto**, antes de qualquer `JSON.parse`, e
+compare em tempo constante. Recuse timestamps com mais de 5 minutos de
+diferença, para que uma entrega capturada não sirva de novo.
+
+```ts
+import { createHmac, timingSafeEqual } from 'node:crypto'
+
+export function steelSignatureOk(
+  secret: string,
+  rawBody: string,
+  timestamp: string,
+  header: string,
+): boolean {
+  const age = Math.abs(Date.now() / 1000 - Number(timestamp))
+  if (!Number.isFinite(age) || age > 300) return false
+  const expected = Buffer.from(
+    `v1=${createHmac('sha256', secret).update(`${timestamp}.${rawBody}`).digest('hex')}`,
+  )
+  return header.split(',').some((part) => {
+    const candidate = Buffer.from(part.trim())
+    return candidate.length === expected.length && timingSafeEqual(candidate, expected)
+  })
+}
+```
+
+### Entrega, falhas e desativação
+
+- Responda `2xx` em até 10 segundos. Qualquer outra coisa (inclusive um
+  redirecionamento, que nunca é seguido) conta como falha.
+- Uma entrega que falha é repetida até **6 vezes**, com espera crescente
+  (1, 2, 4, 8 e 16 minutos).
+- Um endpoint que falha em todas as entregas por **3 dias seguidos** é
+  desativado, e os administradores recebem uma notificação. Corrija o serviço,
+  use **Enviar teste** e reative.
+- O log de entregas guarda **30 dias**: situação, código HTTP, tempo, o corpo
+  enviado e o primeiro 1 KB da resposta. Qualquer entrega pode ser reenviada
+  pela tela ou por `POST /api/v1/webhooks/deliveries/{id}/retry`; o reenvio
+  manual chega mesmo a um endpoint desativado.
+- A ordem de chegada não é garantida: use `createdAt` para ordenar.
+
+### URLs aceitas
+
+Só `https://`, sem usuário e senha na URL, num endereço público. URLs que
+apontam (ou cujo domínio resolve) para IP privado, loopback, link-local ou
+CGNAT são recusadas com `422 WEBHOOK_URL_NOT_ALLOWED`. A conferência acontece ao
+salvar e de novo antes de cada tentativa. Cada workspace tem até 20 endpoints.
+
+### Testar na sua máquina
+
+O `steel listen` do Steel CLI abre `GET /api/v1/webhooks/listen` (Server-Sent
+Events) e repassa cada evento do workspace para uma URL local, com os mesmos
+três cabeçalhos. A escuta tem um segredo próprio, fixo para você naquele
+workspace, que chega na primeira mensagem (`event: ready`). O `steel trigger
+<tipo>` (`POST /api/v1/webhooks/trigger`) cria um evento de teste com dados de
+exemplo: ele vai para quem está escutando e, se você passar `endpointId`, para
+aquele endpoint. Nunca para os outros endpoints cadastrados.
+
+### Além dos webhooks
 
 - **Avisos no Slack:** regras "quando acontecer tal evento, publicar em tal
-  canal", em **Ajustes › Integrações** (chamado urgente aberto, novo lead,
-  negócio ganho ou perdido, conversa esperando resposta, aprovação pendente de
-  um Steel Agent, entre outros).
+  canal", em **Ajustes › Integrações**.
 - **Issues no GitHub e no GitLab:** abertas a partir de um chamado de problema ou
   de mudança.
 - **E-mails** transacionais, de campanhas e do ServiceDesk.
-
-Precisa receber eventos do Steel no seu sistema? Escreva para o
-[suporte](/dev/suporte) contando o caso: isso ajuda a decidir o que vem a seguir.
