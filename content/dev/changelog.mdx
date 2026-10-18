@@ -16,6 +16,67 @@ order: 1
 - **Produto:** as novidades de tela ficam no [changelog do produto](/changelog),
   que também tem [RSS](/changelog/rss.xml).
 
+## 18/10/2026: API v1, tokens pessoais, webhooks enviados e Steel CLI
+
+- Nova [API pública v1](/dev/api-v1) em `/api/v1`, com a política de
+  estabilidade própria: nada é removido nem muda de tipo, e uma rota só sai
+  depois de 6 meses com `Deprecation` e `Sunset`. Cobre `GET /api/v1/me`,
+  chamados do ServiceDesk (listar, ver por id ou número, abrir, comentar e mudar
+  de fase), catálogo, leads (listar, criar e importar CSV de até 5.000 linhas),
+  oportunidades (listar e mudar de etapa), funis, templates do WhatsApp, envio
+  de template e andamento de disparo. A referência fica em
+  [`/dev/api/v1`](/dev/api/v1), e o documento em `/dev/api/v1/openapi.json`. O
+  CI do Steel compara o documento a cada mudança e falha se um campo some ou
+  muda de tipo.
+- Listas da v1 paginam por cursor: `limit` (padrão 25, máximo 100), `cursor` e
+  `data.nextCursor`. Escritas são auditadas com `source: api` e exigem o
+  consentimento LGPD do usuário (`403 FORBIDDEN` sem ele).
+- Novo **token pessoal** (`Authorization: Bearer stl_pat_…`), a única forma de
+  acesso da v1; o cookie de sessão e a chave `crm_live_` não valem lá. Cada
+  token tem um workspace, módulos, escopo `api:read` ou `api:read` +
+  `api:write` e validade de 1 a 365 dias (padrão 90). Até 50 tokens ativos por
+  pessoa (`422 API_TOKEN_LIMIT_REACHED`). Novos códigos
+  `403 API_TOKEN_SCOPE_REQUIRED` e `403 API_TOKEN_MODULE_NOT_ALLOWED`. Limite
+  de 300 requisições a cada 60 segundos por token, além do limite do usuário.
+  Veja [Autenticação e chaves](/dev/autenticacao#token-pessoal).
+- Rotas do aplicativo para os tokens: `GET` e `POST /api/users/me/api-tokens`
+  e `DELETE /api/users/me/api-tokens/{id}` (o próprio usuário, em **Ajustes ›
+  Segurança › Tokens de API**), e `GET /api/workspaces/{id}/api-tokens` e
+  `DELETE /api/workspaces/{id}/api-tokens/{tokenId}` (dono e administradores,
+  em **Ajustes › Apps conectados**).
+- Fluxo de dispositivo para o login do CLI: `POST /api/v1/auth/device` (sem
+  token) devolve `deviceCode`, `userCode`, `verificationUriComplete`,
+  `interval` (5 s) e `expiresIn` (600 s); `POST /api/v1/auth/device/token`
+  responde `428 AUTHORIZATION_PENDING`, `429 SLOW_DOWN`, `410 EXPIRED_TOKEN`,
+  `403 ACCESS_DENIED` ou `200` com o token, uma vez só.
+  `DELETE /api/v1/auth/token` revoga o token da chamada (`204`). A confirmação é na
+  página `/device`.
+- **Webhooks enviados:** o Steel passa a avisar os seus sistemas quando algo
+  acontece no workspace, com eventos do ServiceDesk, do CRM, da Comunicação e
+  dos Steel Agents. Cada entrega é um `POST` assinado com
+  `Steel-Signature: v1=<HMAC-SHA256>`, com `Steel-Webhook-Id` e
+  `Steel-Webhook-Timestamp`; até 6 tentativas, desativação depois de 3 dias
+  falhando, log de 30 dias com reenvio e até 20 endpoints por workspace. Na
+  tela, em **Ajustes › Integrações › Webhooks**; pela API, em
+  `/api/v1/webhooks/{events,endpoints,deliveries}`. Veja
+  [Webhooks que o Steel envia](/dev/webhooks#webhooks-que-o-steel-envia).
+- `GET /api/v1/webhooks/listen` (Server-Sent Events) entrega os eventos em
+  tempo real, com o corpo e os cabeçalhos exatos, e
+  `POST /api/v1/webhooks/trigger` cria um evento de teste que nunca chega aos
+  endpoints cadastrados. Os dois são para dono e administradores.
+- **[Steel CLI](/dev/cli) 0.1.0**, no repositório público
+  [steel-so/steel-cli](https://github.com/steel-so/steel-cli): Homebrew
+  (`brew install steel-so/tap/steel`), script de instalação, npm
+  (`@steel-so/cli`) e binários para Linux, macOS e Windows. Login pelo
+  navegador, perfis, comandos de ServiceDesk, CRM e Comunicação, `steel api`,
+  `steel listen` e `steel trigger`, painel interativo, `steel mcp`, saída em
+  JSON e códigos de saída estáveis. Veja também
+  [CLI em scripts e no CI](/dev/cli/scripts-e-ci) e
+  [Webhooks na sua máquina com o CLI](/dev/cli/webhooks).
+- **[SDK TypeScript `@steel-so/sdk`](/dev/sdk) 0.1.0**, gerado do documento da
+  v1: cliente tipado, atalhos por módulo, `collectAll`, resultados sem exceção,
+  `waitForDeviceToken` e `verifySignature` para conferir webhooks.
+
 ## 17/10/2026: servidor MCP
 
 - Novo servidor [MCP](/dev/mcp) em `POST /api/mcp` (Streamable HTTP, sem
