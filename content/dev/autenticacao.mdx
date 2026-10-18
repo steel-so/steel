@@ -60,7 +60,7 @@ erros `403` que eles geram, estão em [API pública v1](/dev/api-v1#token-pessoa
 
 Para o CI, um servidor ou qualquer lugar sem navegador:
 
-1. No Steel, abra **Ajustes › Segurança › Tokens de API** e clique em **Criar
+1. No Steel, abra **Configurações › Segurança › Tokens de API** e clique em **Criar
    token**.
 2. Preencha o **Nome** (por exemplo, "Deploy no GitHub Actions"), o
    **Workspace**, os **Módulos**, o **Nível de acesso** e a **Validade**.
@@ -90,7 +90,7 @@ programa, use o [`waitForDeviceToken` do SDK](/dev/sdk#login-por-dispositivo).
 
 ### Revogação e validade
 
-- **Você:** em **Ajustes › Segurança › Tokens de API**, clique em **Revogar**
+- **Você:** em **Configurações › Segurança › Tokens de API**, clique em **Revogar**
   no token. O `steel logout` revoga o token do CLI
   (`DELETE /api/v1/auth/token`).
 - **Os administradores:** o dono e os administradores do workspace veem os

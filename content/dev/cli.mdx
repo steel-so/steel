@@ -115,7 +115,7 @@ O `steel login` usa o fluxo de dispositivo. Passo a passo:
 
 O código vale **10 minutos**. Depois disso, rode `steel login` de novo. O token
 criado é um token pessoal (`stl_pat_…`) chamado `Steel CLI — <sua máquina>`, e
-aparece em **Ajustes › Segurança › Tokens de API**, onde dá para revogá-lo. As
+aparece em **Configurações › Segurança › Tokens de API**, onde dá para revogá-lo. As
 regras do token (escopos, módulos, validade) estão em
 [API pública v1](/dev/api-v1#token-pessoal).
 
@@ -161,7 +161,7 @@ steel logout
 
 O `steel logout` revoga o token no Steel (`DELETE /api/v1/auth/token`) e apaga a
 cópia local. Se o Steel não responder, ele apaga a cópia mesmo assim e avisa:
-nesse caso, revogue o token em **Ajustes › Segurança › Tokens de API**. Um token
+nesse caso, revogue o token em **Configurações › Segurança › Tokens de API**. Um token
 em `STEEL_TOKEN` não é revogado; ele pertence ao ambiente, não ao perfil.
 
 ## Perfis
