@@ -260,7 +260,7 @@ function CreateApiTokenDialog({
 }
 
 /**
- * Ajustes › Segurança › Tokens de API (ADR 0035): the user's personal
+ * Configurações › Segurança › Tokens de API (ADR 0035): the user's personal
  * tokens, creation (value shown once) and revocation.
  */
 export function UserModalApiTokens() {

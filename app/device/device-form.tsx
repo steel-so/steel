@@ -171,7 +171,7 @@ function DeviceDone({ approved }: { approved: boolean }) {
           </h1>
           <Muted>
             {approved
-              ? 'O Steel CLI já pode usar o seu acesso. Você pode fechar esta aba. O token aparece em Ajustes › Segurança › Tokens de API, onde dá para revogá-lo.'
+              ? 'O Steel CLI já pode usar o seu acesso. Você pode fechar esta aba. O token aparece em Configurações › Segurança › Tokens de API, onde dá para revogá-lo.'
               : 'O terminal não recebeu acesso. Se foi engano, rode “steel login” de novo.'}
           </Muted>
         </div>
@@ -277,8 +277,8 @@ export function DeviceAuthorizeForm({
               Ao permitir, o terminal recebe um token pessoal que age em seu
               nome no workspace {workspace.name} ({moduleList(value.modules)}),
               sempre com as suas permissões no Steel. Cada chamada fica
-              registrada e você pode revogar o token quando quiser em Ajustes ›
-              Segurança › Tokens de API.
+              registrada e você pode revogar o token quando quiser em
+              Configurações › Segurança › Tokens de API.
             </Muted>
           </div>
         )}

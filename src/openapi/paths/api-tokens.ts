@@ -27,7 +27,7 @@ const ApiTokenFields = {
   modules: z.array(ApiModuleSchema),
   createdVia: z.enum(['SETTINGS', 'DEVICE']).meta({
     description:
-      '`SETTINGS` (Ajustes › Segurança) ou `DEVICE` (`steel login`).',
+      '`SETTINGS` (Configurações › Segurança) ou `DEVICE` (`steel login`).',
   }),
   deviceName: z.string().nullable(),
   expiresAt: z.string(),

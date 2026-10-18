@@ -126,7 +126,7 @@ describe('consent notice', () => {
         modules: ['SERVICE_DESK', 'CRM'],
       }),
     ).toBe(
-      'Ao permitir, o Claude poderá consultar os dados do workspace Acme nos módulos ServiceDesk e CRM, sempre com as suas permissões no Steel. As informações consultadas serão enviadas ao provedor desse aplicativo de IA e tratadas conforme a política de privacidade dele. Cada acesso fica registrado e você pode desconectar quando quiser em Ajustes › Segurança › Apps conectados.',
+      'Ao permitir, o Claude poderá consultar os dados do workspace Acme nos módulos ServiceDesk e CRM, sempre com as suas permissões no Steel. As informações consultadas serão enviadas ao provedor desse aplicativo de IA e tratadas conforme a política de privacidade dele. Cada acesso fica registrado e você pode desconectar quando quiser em Configurações › Segurança › Apps conectados.',
     )
     expect(MCP_CONSENT_NOTICE_VERSION).toBe('mcp-consent-v1')
   })

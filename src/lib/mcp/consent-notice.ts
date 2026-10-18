@@ -27,7 +27,7 @@ export function mcpConsentNotice(input: {
   workspaceName: string
   modules: readonly McpModuleKey[]
 }): string {
-  return `Ao permitir, o ${input.clientName} poderá consultar os dados do workspace ${input.workspaceName} nos módulos ${formatModuleList(input.modules)}, sempre com as suas permissões no Steel. As informações consultadas serão enviadas ao provedor desse aplicativo de IA e tratadas conforme a política de privacidade dele. Cada acesso fica registrado e você pode desconectar quando quiser em Ajustes › Segurança › Apps conectados.`
+  return `Ao permitir, o ${input.clientName} poderá consultar os dados do workspace ${input.workspaceName} nos módulos ${formatModuleList(input.modules)}, sempre com as suas permissões no Steel. As informações consultadas serão enviadas ao provedor desse aplicativo de IA e tratadas conforme a política de privacidade dele. Cada acesso fica registrado e você pode desconectar quando quiser em Configurações › Segurança › Apps conectados.`
 }
 
 export const MCP_CONSENT_WRITE_NOTICE =

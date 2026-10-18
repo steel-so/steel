@@ -11,7 +11,7 @@ import type {
 } from '@/types/api-token'
 import { apiFetch, apiFetchJson } from './_fetch'
 
-/** Ajustes › Segurança › Tokens de API (ADR 0035). */
+/** Configurações › Segurança › Tokens de API (ADR 0035). */
 
 export const API_TOKENS_KEY = ['api-tokens'] as const
 const MY_TOKENS_KEY = [...API_TOKENS_KEY, 'me'] as const

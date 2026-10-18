@@ -9,7 +9,7 @@ import {
 import { hashApiToken } from '@/src/lib/api/token'
 import { prisma } from '@/src/lib/prisma'
 
-/** Ajustes › Segurança › Tokens de API (ADR 0035). */
+/** Configurações › Segurança › Tokens de API (ADR 0035). */
 
 const BASE = '/api/users/me/api-tokens'
 

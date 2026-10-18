@@ -38,7 +38,7 @@ export const TAG_GROUPS = [
       {
         name: 'Tokens de API',
         description:
-          'Tokens pessoais (`stl_pat_...`) da API pública v1: criação em Ajustes › Segurança, login do CLI pelo fluxo de dispositivo (`steel login` + `/device`), lista e revogação pelo dono do token e pelos administradores do workspace (ADR 0035).',
+          'Tokens pessoais (`stl_pat_...`) da API pública v1: criação em Configurações › Segurança, login do CLI pelo fluxo de dispositivo (`steel login` + `/device`), lista e revogação pelo dono do token e pelos administradores do workspace (ADR 0035).',
       },
     ],
   },

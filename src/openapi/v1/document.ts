@@ -57,7 +57,7 @@ const INFO_DESCRIPTION = `API pública e estável do **Steel** para integraçõe
 
 ## Autenticação
 
-Toda rota exige um **token pessoal** no cabeçalho \`Authorization: Bearer stl_pat_...\`. O cookie de sessão do app não vale aqui. Crie o token em **Ajustes › Segurança › Tokens de API** (ou com \`steel login\`), escolhendo o workspace, os módulos e o escopo:
+Toda rota exige um **token pessoal** no cabeçalho \`Authorization: Bearer stl_pat_...\`. O cookie de sessão do app não vale aqui. Crie o token em **Configurações › Segurança › Tokens de API** (ou com \`steel login\`), escolhendo o workspace, os módulos e o escopo:
 
 - \`api:read\` — leitura;
 - \`api:write\` — leitura e escrita (sem ele, escritas respondem \`403 API_TOKEN_SCOPE_REQUIRED\`).
@@ -225,7 +225,7 @@ export function buildOpenApiV1Document({
           scheme: 'bearer',
           bearerFormat: 'stl_pat_<token>',
           description:
-            'Token pessoal do Steel (`Authorization: Bearer stl_pat_...`), criado em Ajustes › Segurança › Tokens de API ou com `steel login`. O valor só aparece na criação.',
+            'Token pessoal do Steel (`Authorization: Bearer stl_pat_...`), criado em Configurações › Segurança › Tokens de API ou com `steel login`. O valor só aparece na criação.',
         },
       },
       responses,

@@ -163,7 +163,7 @@ export const ApiTokenService = {
     return ok(workspaces)
   },
 
-  /** "Tokens de API" › Criar token (Ajustes › Segurança). */
+  /** "Tokens de API" › Criar token (Configurações › Segurança). */
   createForUser(
     userId: string,
     input: CreateApiTokenInput,

@@ -28,7 +28,7 @@ import type {
 
 /**
  * What a personal API token may do (ADR 0035): workspace, modules, access
- * level and validity. Shared by "Criar token" (Ajustes › Segurança) and the
+ * level and validity. Shared by "Criar token" (Configurações › Segurança) and the
  * CLI confirmation page `/device`.
  */
 

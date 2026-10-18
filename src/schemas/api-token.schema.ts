@@ -32,7 +32,7 @@ const ExpiresInDaysSchema = z
   .max(API_TOKEN_MAX_DAYS, `A validade máxima é de ${API_TOKEN_MAX_DAYS} dias`)
   .default(API_TOKEN_DEFAULT_DAYS)
 
-/** Body of `POST /api/users/me/api-tokens` (Ajustes › Segurança). */
+/** Body of `POST /api/users/me/api-tokens` (Configurações › Segurança). */
 export const CreateApiTokenSchema = z.object({
   name: z
     .string()

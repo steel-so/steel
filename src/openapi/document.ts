@@ -87,7 +87,7 @@ const SECURITY_SCHEMES: Record<string, JsonSchema> = {
     scheme: 'bearer',
     bearerFormat: 'stl_pat_<token>',
     description:
-      'Token pessoal da API v1 (`Authorization: Bearer stl_pat_...`, ADR 0035), criado em Ajustes › Segurança › Tokens de API ou pelo `steel login`. Vale só em `/api/v1`; o cookie de sessão não vale lá. Escrita exige o escopo `api:write`.',
+      'Token pessoal da API v1 (`Authorization: Bearer stl_pat_...`, ADR 0035), criado em Configurações › Segurança › Tokens de API ou pelo `steel login`. Vale só em `/api/v1`; o cookie de sessão não vale lá. Escrita exige o escopo `api:write`.',
   },
   cookieAuth: {
     type: 'apiKey',

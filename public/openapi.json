@@ -38,7 +38,7 @@
     },
     {
       "name": "Tokens de API",
-      "description": "Tokens pessoais (`stl_pat_...`) da API pública v1: criação em Ajustes › Segurança, login do CLI pelo fluxo de dispositivo (`steel login` + `/device`), lista e revogação pelo dono do token e pelos administradores do workspace (ADR 0035)."
+      "description": "Tokens pessoais (`stl_pat_...`) da API pública v1: criação em Configurações › Segurança, login do CLI pelo fluxo de dispositivo (`steel login` + `/device`), lista e revogação pelo dono do token e pelos administradores do workspace (ADR 0035)."
     },
     {
       "name": "Workspaces",
@@ -9156,7 +9156,7 @@
                               "createdVia": {
                                 "type": "string",
                                 "enum": ["SETTINGS", "DEVICE"],
-                                "description": "`SETTINGS` (Ajustes › Segurança) ou `DEVICE` (`steel login`)."
+                                "description": "`SETTINGS` (Configurações › Segurança) ou `DEVICE` (`steel login`)."
                               },
                               "deviceName": {
                                 "anyOf": [
@@ -9337,7 +9337,7 @@
                             "createdVia": {
                               "type": "string",
                               "enum": ["SETTINGS", "DEVICE"],
-                              "description": "`SETTINGS` (Ajustes › Segurança) ou `DEVICE` (`steel login`)."
+                              "description": "`SETTINGS` (Configurações › Segurança) ou `DEVICE` (`steel login`)."
                             },
                             "deviceName": {
                               "anyOf": [
@@ -15724,7 +15724,7 @@
                               "createdVia": {
                                 "type": "string",
                                 "enum": ["SETTINGS", "DEVICE"],
-                                "description": "`SETTINGS` (Ajustes › Segurança) ou `DEVICE` (`steel login`)."
+                                "description": "`SETTINGS` (Configurações › Segurança) ou `DEVICE` (`steel login`)."
                               },
                               "deviceName": {
                                 "anyOf": [
@@ -111973,7 +111973,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "stl_pat_<token>",
-        "description": "Token pessoal da API v1 (`Authorization: Bearer stl_pat_...`, ADR 0035), criado em Ajustes › Segurança › Tokens de API ou pelo `steel login`. Vale só em `/api/v1`; o cookie de sessão não vale lá. Escrita exige o escopo `api:write`."
+        "description": "Token pessoal da API v1 (`Authorization: Bearer stl_pat_...`, ADR 0035), criado em Configurações › Segurança › Tokens de API ou pelo `steel login`. Vale só em `/api/v1`; o cookie de sessão não vale lá. Escrita exige o escopo `api:write`."
       },
       "cookieAuth": {
         "type": "apiKey",
