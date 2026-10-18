@@ -1500,3 +1500,21 @@ export const mcpIdempotencyKeyReused = (): AppError =>
     'MCP_IDEMPOTENCY_KEY_REUSED',
     'Esta chave de idempotência já foi usada com outros argumentos. Gere uma chave nova para cada ação diferente.',
   )
+
+export const webhookEndpointNotFound = (): AppError =>
+  appError('WEBHOOK_ENDPOINT_NOT_FOUND', 'Endpoint de webhook não encontrado.')
+
+export const webhookDeliveryNotFound = (): AppError =>
+  appError('WEBHOOK_DELIVERY_NOT_FOUND', 'Entrega de webhook não encontrada.')
+
+export const webhookEndpointLimitReached = (
+  message = 'Este workspace já tem o máximo de endpoints de webhook. Remova um antes de cadastrar outro.',
+): AppError => appError('WEBHOOK_ENDPOINT_LIMIT_REACHED', message)
+
+export const webhookUrlNotAllowed = (
+  message = 'Use uma URL HTTPS pública. Endereços privados, locais ou de loopback não são aceitos.',
+): AppError => appError('WEBHOOK_URL_NOT_ALLOWED', message)
+
+export const webhookEventUnknown = (
+  message = 'Tipo de evento fora do catálogo de webhooks.',
+): AppError => appError('WEBHOOK_EVENT_UNKNOWN', message)

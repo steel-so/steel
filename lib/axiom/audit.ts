@@ -204,6 +204,9 @@ export type AuditEntity =
   | 'crm_dashboard_tv_link'
   // MCP wave: OAuth grants revoked by a workspace admin
   | 'integration_grant'
+  // Outbound webhooks (ADR 0036): endpoints and manual re-deliveries
+  | 'webhook_endpoint'
+  | 'webhook_delivery'
 
 export type AuditAction =
   | 'create'
@@ -271,6 +274,11 @@ export type AuditAction =
   | 'stop'
   | 'restart'
   | 'apply_winner'
+  // Outbound webhooks: secret rotation/reveal, manual re-delivery, auto-disable
+  | 'rotate'
+  | 'reveal'
+  | 'retry'
+  | 'disable'
 
 type AuditOutcome = 'success' | 'failure'
 

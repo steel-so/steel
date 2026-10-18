@@ -942,6 +942,24 @@ export const ERROR_CODES = {
     code: 'MCP_IDEMPOTENCY_KEY_REUSED',
     status: 422,
   },
+  // Outbound webhooks (ADR 0036): unknown endpoint or delivery of the
+  // workspace, the per-workspace endpoint cap, a URL refused by the SSRF
+  // guard (not HTTPS, private/loopback/link-local address) and an event type
+  // outside the catalog.
+  WEBHOOK_ENDPOINT_NOT_FOUND: {
+    code: 'WEBHOOK_ENDPOINT_NOT_FOUND',
+    status: 404,
+  },
+  WEBHOOK_DELIVERY_NOT_FOUND: {
+    code: 'WEBHOOK_DELIVERY_NOT_FOUND',
+    status: 404,
+  },
+  WEBHOOK_ENDPOINT_LIMIT_REACHED: {
+    code: 'WEBHOOK_ENDPOINT_LIMIT_REACHED',
+    status: 409,
+  },
+  WEBHOOK_URL_NOT_ALLOWED: { code: 'WEBHOOK_URL_NOT_ALLOWED', status: 422 },
+  WEBHOOK_EVENT_UNKNOWN: { code: 'WEBHOOK_EVENT_UNKNOWN', status: 422 },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },

@@ -219,6 +219,7 @@ model User {
   oauthAccessTokens         OauthAccessToken[]
   oauthConsents             OauthConsent[]
   integrationGrants         IntegrationGrant[]
+  webhookEndpointsCreated   WebhookEndpoint[]          @relation("WebhookEndpointCreatedBy")
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -570,6 +571,8 @@ model Workspace {
   sites                     Site[]
   canvasCollabStates        CanvasCollabState[]
   integrationGrants         IntegrationGrant[]
+  webhookEndpoints          WebhookEndpoint[]
+  webhookDeliveries         WebhookDelivery[]
 
   @@index([status])
   @@map("workspaces")
@@ -4643,6 +4646,8 @@ enum NotificationKind {
   AGENT_RUN_FAILED
   /// Steel AI: a pending assistant action expires in ~5 minutes.
   AI_ACTION_EXPIRING
+  /// Outbound webhooks (ADR 0036): an endpoint failing for 3 days was disabled.
+  WEBHOOK_ENDPOINT_DISABLED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -8209,4 +8214,85 @@ model IntegrationGrant {
   @@index([workspaceId, revokedAt])
   @@index([clientId])
   @@map("integration_grants")
+}
+
+// ─── Outbound webhooks (ADR 0036) ───────────────────────────────────────────
+
+/// A workspace HTTPS URL that receives signed Steel events (Ajustes ›
+/// Integrações › Webhooks). OWNER/ADMIN manage it, in the app or by the API v1.
+model WebhookEndpoint {
+  id              String    @id @default(cuid())
+  workspaceId     String    @map("workspace_id")
+  url             String
+  description     String?
+  /// Catalog types (`src/lib/webhooks/events.ts`) or `*` for every event.
+  events          String[]
+  /// HMAC-SHA256 key (`whsec_...`), encrypted with `CONNECTION_SECRETS`.
+  encryptedSecret String    @map("encrypted_secret")
+  /// Last 4 characters of the secret, to tell secrets apart on screen.
+  secretHint      String    @map("secret_hint")
+  active          Boolean   @default(true)
+  /// Set when the endpoint was switched off; `auto` after 3 days failing.
+  disabledAt      DateTime? @map("disabled_at")
+  disabledReason  String?   @map("disabled_reason")
+  /// First failed attempt since the last success (auto-disable clock).
+  failingSince    DateTime? @map("failing_since")
+  lastSuccessAt   DateTime? @map("last_success_at")
+  lastFailureAt   DateTime? @map("last_failure_at")
+  createdById     String    @map("created_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  workspace  Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy  User              @relation("WebhookEndpointCreatedBy", fields: [createdById], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@index([workspaceId, active, deletedAt])
+  @@map("webhook_endpoints")
+}
+
+enum WebhookDeliveryStatus {
+  /// Queued, first attempt not made yet.
+  PENDING
+  /// Answered 2xx.
+  SUCCEEDED
+  /// Failed; the queue tries again.
+  RETRYING
+  /// Failed on the last attempt (or the URL was refused).
+  FAILED
+  /// Not sent: the endpoint was disabled or removed meanwhile.
+  SKIPPED
+}
+
+/// One event sent to one endpoint (delivery log, kept 30 days).
+model WebhookDelivery {
+  id             String                @id @default(cuid())
+  workspaceId    String                @map("workspace_id")
+  endpointId     String                @map("endpoint_id")
+  /// `evt_...` — `Steel-Webhook-Id`, the same across retries.
+  eventId        String                @map("event_id")
+  eventType      String                @map("event_type")
+  /// Exact JSON body sent (the signature is computed over it).
+  body           String
+  status         WebhookDeliveryStatus @default(PENDING)
+  /// Attempts made so far (automatic and manual).
+  attempts       Int                   @default(0)
+  responseStatus Int?                  @map("response_status")
+  /// First 1 KB of the answer, for the log screen.
+  responseBody   String?               @map("response_body")
+  durationMs     Int?                  @map("duration_ms")
+  error          String?
+  lastAttemptAt  DateTime?             @map("last_attempt_at")
+  deliveredAt    DateTime?             @map("delivered_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  endpoint  WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([endpointId, createdAt])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
 }
