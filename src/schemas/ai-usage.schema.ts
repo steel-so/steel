@@ -25,7 +25,7 @@ const UtcDay = z
   })
   .meta({ description: 'Dia em UTC (`AAAA-MM-DD`).', example: '2026-10-01' })
 
-const periodFields = {
+export const periodFields = {
   scope: z.enum(AI_USAGE_SCOPES).default('personal').meta({
     description:
       '`personal` = só o consumo do usuário; `workspace` = todo o espaço de trabalho (OWNER/ADMIN).',
@@ -44,7 +44,10 @@ type PeriodInput = {
   to?: string
 }
 
-function checkCustomRange(value: PeriodInput, ctx: z.RefinementCtx): void {
+export function checkCustomRange(
+  value: PeriodInput,
+  ctx: z.RefinementCtx,
+): void {
   if (value.period !== 'custom') return
   const from = value.from ? parseUtcDay(value.from) : null
   const to = value.to ? parseUtcDay(value.to) : null

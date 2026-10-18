@@ -16,6 +16,7 @@ export const AI_USAGE_FEATURE_KEYS = [
   'SERVICEDESK_TRIAGE',
   'WIKI_ASSISTANT',
   'KNOWLEDGE_SEARCH',
+  'AI_EVAL',
 ] as const
 export type AiUsageFeatureKey = (typeof AI_USAGE_FEATURE_KEYS)[number]
 
@@ -30,6 +31,7 @@ export const AI_USAGE_FEATURE_LABELS: Record<AiUsageFeatureKey, string> = {
   SERVICEDESK_TRIAGE: 'Triagem do ServiceDesk',
   WIKI_ASSISTANT: 'IA da Wiki',
   KNOWLEDGE_SEARCH: 'Busca de conhecimento',
+  AI_EVAL: 'Avaliações do Steel AI',
 }
 
 /** `PLATFORM` = no module (platform tools, or a call that used no tool). */
@@ -67,6 +69,7 @@ const FEATURE_MODULE: Record<
   SERVICEDESK_TRIAGE: 'SERVICE_DESK',
   WIKI_ASSISTANT: null,
   KNOWLEDGE_SEARCH: null,
+  AI_EVAL: null,
 }
 
 /** Scope of a ledger row: its module, else the feature's, else platform. */

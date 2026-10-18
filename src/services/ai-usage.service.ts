@@ -55,6 +55,8 @@ const MODEL_FIELD_BY_FEATURE: Record<
   // Never resolved here: the knowledge search embeddings use their own
   // platform model (ADR 0037) and are recorded by AiKnowledgeEmbeddingService.
   KNOWLEDGE_SEARCH: 'whatsappSentimentModel',
+  // Eval runs (ADR 0039) default to the assistant model; a run may pin one.
+  AI_EVAL: 'crmAssistantModel',
 }
 
 /** Features where the user's own model preference applies. */

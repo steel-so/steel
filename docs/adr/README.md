@@ -55,3 +55,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0036 | [Webhooks de saída](./0036-outbound-webhooks.md) | Aceita | 2026-10-18 |
 | 0037 | [Busca unificada do Steel AI: índice híbrido (texto + pgvector)](./0037-unified-knowledge-search-hybrid-pgvector.md) | Aceita | 2026-10-18 |
 | 0038 | [Réplicas do app atrás de um upstream do nginx](./0038-app-replicas-behind-nginx-upstream.md) | Aceita | 2026-10-18 |
+| 0039 | [Avaliação e feedback das respostas de IA](./0039-steel-ai-feedback-and-evals.md) | Aceita | 2026-10-18 |
