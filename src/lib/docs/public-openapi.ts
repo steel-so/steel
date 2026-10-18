@@ -25,6 +25,8 @@ const isInternal = (route: string) =>
 export function toPublicOpenApi(
   spec: OpenApiDocument,
   siteUrl: string,
+  /** Base path of the document's paths (`/api/v1` for the public API v1). */
+  basePath = '/api',
 ): OpenApiDocument {
   const paths = Object.fromEntries(
     Object.entries(spec.paths ?? {}).filter(([route]) => !isInternal(route)),
@@ -47,7 +49,7 @@ export function toPublicOpenApi(
 
   return {
     ...spec,
-    servers: [{ url: `${siteUrl}/api`, description: 'Steel' }],
+    servers: [{ url: `${siteUrl}${basePath}`, description: 'Steel' }],
     tags,
     'x-tagGroups': tagGroups,
     paths,

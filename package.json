@@ -43,6 +43,7 @@
     "version:sync": "tsx scripts/sync-version.ts",
     "mcp:smoke": "tsx scripts/mcp-smoke.ts",
     "openapi:generate": "SKIP_ENV_VALIDATION=true tsx --tsconfig tsconfig.worker.json scripts/generate-openapi.ts",
+    "openapi:v1:compat": "SKIP_ENV_VALIDATION=true tsx --tsconfig tsconfig.worker.json scripts/check-openapi-v1-compat.ts",
     "seed:whatsapp-dashboards": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-whatsapp-dashboards.ts",
     "seed:crm-pipeline": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-crm-default-pipeline.ts",
     "seed:dev": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/seed-dev.ts",

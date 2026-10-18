@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { calVerToSemver, isCalVerTag } from '../lib/version'
 
 /**
- * Alinha `package.json` (`version`) e `public/openapi.json` (`info.version`)
+ * Alinha `package.json` (`version`) e `public/openapi.json` + `public/openapi.v1.json` (`info.version`)
  * à tag CalVer informada — ou, sem argumento, à última tag do repositório.
  *
  *   pnpm version:sync              # usa `git describe --tags --abbrev=0`
@@ -46,6 +46,11 @@ function main(): void {
   // Primeiro "version" do arquivo é o de `info` (logo após "openapi").
   replaceVersionField(
     join(root, 'public/openapi.json'),
+    /("info":\s*\{[^}]*?"version":\s*)"[^"]*"/,
+    tag,
+  )
+  replaceVersionField(
+    join(root, 'public/openapi.v1.json'),
     /("info":\s*\{[^}]*?"version":\s*)"[^"]*"/,
     tag,
   )

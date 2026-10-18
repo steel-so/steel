@@ -55,6 +55,21 @@ jobs:
       - name: Lint
         run: pnpm biome lint --error-on-warnings
 
+      - name: Public API v1 compatibility
+        # ADR 0035: `public/openapi.v1.json` only grows. Compares the v1
+        # document generated from this commit with the one committed at the
+        # PR base (or at the previous push to main) and fails on a removed
+        # route or field, a type change or a newly required input.
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base revision to compare with."
+            exit 0
+          fi
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          pnpm openapi:v1:compat --base "$BASE_SHA"
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

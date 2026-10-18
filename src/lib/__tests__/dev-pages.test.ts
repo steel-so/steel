@@ -73,11 +73,18 @@ describe('dev pages loader', () => {
       {
         slug: 'referencia',
         label: 'Referência',
-        pages: [{ href: '/dev/api', title: 'Referência da API' }],
+        pages: [
+          { href: '/dev/api', title: 'Referência da API' },
+          { href: '/dev/api/v1', title: 'Referência da API v1' },
+        ],
       },
     ])
     const index = await getDevSearchIndex()
-    expect(index.map((entry) => entry.href)).toEqual(['/dev', '/dev/api'])
+    expect(index.map((entry) => entry.href)).toEqual([
+      '/dev',
+      '/dev/api',
+      '/dev/api/v1',
+    ])
   })
 
   it('finds a page by its url segments, with source and headings', async () => {
@@ -115,7 +122,10 @@ describe('dev pages loader', () => {
       {
         slug: 'referencia',
         label: 'Referência',
-        pages: [{ href: '/dev/api', title: 'Referência da API' }],
+        pages: [
+          { href: '/dev/api', title: 'Referência da API' },
+          { href: '/dev/api/v1', title: 'Referência da API v1' },
+        ],
       },
     ])
   })
@@ -160,6 +170,7 @@ describe('dev pages loader', () => {
     expect(index.map((entry) => entry.section)).toEqual([
       'Introdução',
       'Fundamentos',
+      'Referência',
       'Referência',
     ])
   })

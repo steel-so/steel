@@ -72,6 +72,7 @@ export type SchemaSource = z.ZodType | ComponentRef | JsonSchema
  * - `integrationKey`: `Authorization: Bearer crm_live_...` (API de leads).
  * - `abacatePayWebhook` / `statusCollector`: segredo compartilhado em header.
  * - `metaWebhook` / `zapiWebhook`: assinatura/segredo dos webhooks do WhatsApp.
+ * - `apiToken`: token pessoal `Authorization: Bearer stl_pat_...` (API v1, ADR 0035).
  */
 export type AuthKind =
   | 'session'
@@ -81,6 +82,7 @@ export type AuthKind =
   | 'statusCollector'
   | 'metaWebhook'
   | 'zapiWebhook'
+  | 'apiToken'
 
 const SECURITY: Record<AuthKind, Record<string, string[]>[]> = {
   session: [{ cookieAuth: [] }],
@@ -90,10 +92,17 @@ const SECURITY: Record<AuthKind, Record<string, string[]>[]> = {
   statusCollector: [{ statusCollectorSecret: [] }],
   metaWebhook: [{ metaWebhookSignature: [] }],
   zapiWebhook: [{ zapiWebhookSecret: [] }],
+  apiToken: [{ personalToken: [] }],
 }
 
 /** Chave usada pelo rate limit da rota (todas no Redis, `src/lib/rate-limit.ts`). */
-export type RateLimitKind = 'user' | 'ip' | 'upload' | 'integrationKey' | 'auth'
+export type RateLimitKind =
+  | 'user'
+  | 'ip'
+  | 'upload'
+  | 'integrationKey'
+  | 'auth'
+  | 'apiToken'
 
 const RATE_LIMIT_TEXT: Record<RateLimitKind, string> = {
   user: 'por usuário',
@@ -101,6 +110,7 @@ const RATE_LIMIT_TEXT: Record<RateLimitKind, string> = {
   upload: 'por usuário (limite de upload)',
   integrationKey: 'por chave de API',
   auth: 'por IP e rota',
+  apiToken: 'por token e por usuário',
 }
 
 export interface ErrorSpec {
@@ -259,7 +269,9 @@ export class OpenApiRegistry {
       config.rateLimit === undefined
         ? auth === 'session'
           ? 'user'
-          : false
+          : auth === 'apiToken'
+            ? 'apiToken'
+            : false
         : config.rateLimit
 
     const operation: Operation = {
@@ -574,6 +586,12 @@ export class OpenApiRegistry {
     const auto = config.autoErrors ?? true
     if (auto && auth === 'session')
       errors.push({ code: 'UNAUTHORIZED', when: 'Sem sessão válida' })
+    if (auto && auth === 'apiToken')
+      errors.push({
+        code: 'UNAUTHORIZED',
+        message: 'Token de API inválido',
+        when: 'Token ausente, inválido, vencido ou revogado',
+      })
     if (auto && config.consent) {
       errors.push({
         code: 'FORBIDDEN',

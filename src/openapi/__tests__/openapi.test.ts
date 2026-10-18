@@ -12,11 +12,17 @@ import {
 } from '../route-inventory'
 import { UNDOCUMENTED_CRM } from '../undocumented/crm'
 import { UNDOCUMENTED_WHATSAPP } from '../undocumented/whatsapp'
+import { createV1Registry } from '../v1/document'
 
 const root = join(__dirname, '..', '..', '..')
 
 const routes = listRouteOperations(root)
-const documented = createRegistry().listOperations()
+// `/api/v1/**` is documented in the v1 document, with paths relative to
+// `/api/v1` (`GET /me` covers `app/api/v1/me/route.ts`).
+const documentedV1 = createV1Registry()
+  .listOperations()
+  .map((op) => op.replace(' ', ' /v1'))
+const documented = [...createRegistry().listOperations(), ...documentedV1]
 const generated = generateOpenApiJson(root)
 const spec = JSON.parse(generated) as Record<string, any>
 
@@ -112,6 +118,14 @@ describe('route coverage', () => {
     expect(
       missing,
       'rotas sem documentação: registre-as em src/openapi/paths/*',
+    ).toEqual([])
+  })
+
+  it('documents in the v1 document only routes under app/api/v1', () => {
+    expect(
+      routes
+        .filter((route) => documentedV1.some((op) => isCoveredBy(route, op)))
+        .filter((route) => !route.path.startsWith('/v1/')),
     ).toEqual([])
   })
 

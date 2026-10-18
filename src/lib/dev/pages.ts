@@ -25,6 +25,8 @@ import {
  */
 export const DEV_ROOT = '/dev'
 export const DEV_API_HREF = '/dev/api'
+/** Reference of the public API v1 (`public/openapi.v1.json`). */
+export const DEV_API_V1_HREF = '/dev/api/v1'
 
 export interface DevPageMeta {
   section: DevSectionSlug
@@ -147,7 +149,10 @@ export const getDevNav = cache(async (): Promise<DevNavSection[]> => {
     {
       slug: 'referencia',
       label: 'Referência',
-      pages: [{ href: DEV_API_HREF, title: 'Referência da API' }],
+      pages: [
+        { href: DEV_API_HREF, title: 'Referência da API' },
+        { href: DEV_API_V1_HREF, title: 'Referência da API v1' },
+      ],
     },
   ]
 })
@@ -190,6 +195,14 @@ export const getDevSearchIndex = cache(async (): Promise<DocsSearchable[]> => {
       title: 'Referência da API',
       description:
         'Todas as rotas, parâmetros, respostas e códigos de erro, geradas do código.',
+      section: 'Referência',
+      headings: [],
+    },
+    {
+      href: DEV_API_V1_HREF,
+      title: 'Referência da API v1',
+      description:
+        'A API pública e estável, com token pessoal: chamados, leads, oportunidades e WhatsApp.',
       section: 'Referência',
       headings: [],
     },

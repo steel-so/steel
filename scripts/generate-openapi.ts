@@ -6,54 +6,73 @@ import {
   isCoveredBy,
   listRouteOperations,
 } from '../src/openapi/route-inventory'
+import { createV1Registry } from '../src/openapi/v1/document'
+import {
+  generateOpenApiV1Json,
+  OPENAPI_V1_OUTPUT,
+} from '../src/openapi/v1/generate'
 
 /**
- * Gera `public/openapi.json` a partir das registrações em `src/openapi/`.
+ * Gera `public/openapi.json` (API do app) e `public/openapi.v1.json` (API
+ * pública v1, ADR 0035) a partir das registrações em `src/openapi/`.
  *
- *   pnpm openapi:generate           # reescreve o arquivo
- *   pnpm openapi:generate --check   # só compara (exit 1 se estiver desatualizado)
+ *   pnpm openapi:generate           # reescreve os arquivos
+ *   pnpm openapi:generate --check   # só compara (exit 1 se algum estiver desatualizado)
  *
  * Ver docs/api.md.
  */
 const root = join(__dirname, '..')
-const target = join(root, OPENAPI_OUTPUT)
 
 function coverage(): string {
   const routes = listRouteOperations(root)
-  const documented = createRegistry().listOperations()
+  const documented = [
+    ...createRegistry().listOperations(),
+    ...createV1Registry()
+      .listOperations()
+      .map((op) => op.replace(' ', ' /v1')),
+  ]
   const covered = routes.filter((route) =>
     documented.some((op) => isCoveredBy(route, op)),
   ).length
-  return `${covered}/${routes.length} operações de rota documentadas (${documented.length} operações no spec)`
+  return `${covered}/${routes.length} operações de rota documentadas (${documented.length} operações nos specs)`
+}
+
+function read(target: string): string {
+  try {
+    return readFileSync(target, 'utf-8')
+  } catch {
+    return ''
+  }
 }
 
 function main(): void {
-  const next = generateOpenApiJson(root)
-  const current = (() => {
-    try {
-      return readFileSync(target, 'utf-8')
-    } catch {
-      return ''
-    }
-  })()
+  const outputs = [
+    { file: OPENAPI_OUTPUT, next: generateOpenApiJson(root) },
+    { file: OPENAPI_V1_OUTPUT, next: generateOpenApiV1Json(root) },
+  ]
+  const check = process.argv.includes('--check')
+  let stale = false
 
-  if (process.argv.includes('--check')) {
-    if (current !== next) {
+  for (const { file, next } of outputs) {
+    const target = join(root, file)
+    const current = read(target)
+    if (current === next) {
+      console.log(`${file} em dia`)
+      continue
+    }
+    if (check) {
       console.error(
-        `${OPENAPI_OUTPUT} está desatualizado — rode \`pnpm openapi:generate\`.`,
+        `${file} está desatualizado — rode \`pnpm openapi:generate\`.`,
       )
-      process.exit(1)
+      stale = true
+      continue
     }
-    console.log(`${OPENAPI_OUTPUT} em dia · ${coverage()}`)
-    return
+    writeFileSync(target, next)
+    console.log(`${file} gerado`)
   }
 
-  if (current === next) {
-    console.log(`${OPENAPI_OUTPUT} já estava em dia · ${coverage()}`)
-    return
-  }
-  writeFileSync(target, next)
-  console.log(`${OPENAPI_OUTPUT} gerado · ${coverage()}`)
+  console.log(coverage())
+  if (stale) process.exit(1)
 }
 
 main()

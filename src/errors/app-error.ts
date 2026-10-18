@@ -1535,3 +1535,12 @@ export const deviceCodeInvalid = (): AppError =>
     'DEVICE_CODE_INVALID',
     'Código não encontrado ou expirado. Confira o código no terminal ou rode “steel login” de novo.',
   )
+export const apiTokenScopeRequired = (): AppError =>
+  appError(
+    'API_TOKEN_SCOPE_REQUIRED',
+    'Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.',
+  )
+
+export const apiTokenModuleNotAllowed = (
+  message = 'Este token não dá acesso a este módulo. Crie um token que inclua o módulo.',
+): AppError => appError('API_TOKEN_MODULE_NOT_ALLOWED', message)

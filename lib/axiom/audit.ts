@@ -1,3 +1,4 @@
+import { currentAuditContext } from '@/lib/axiom/audit-context'
 import { logger } from '@/lib/axiom/logger'
 
 export type AuditEntity =
@@ -345,6 +346,8 @@ export function auditMutation(input: AuditMutationInput): void {
     reason: input.reason,
     timestamp: new Date().toISOString(),
     ...(input.meta ?? {}),
+    // Public API v1: `source: 'api'` + the token, set by the v1 route.
+    ...(currentAuditContext() ?? {}),
   }
   if (outcome === 'failure') {
     logger.warn(`audit.mutation.${input.entity}.${input.action}`, fields)

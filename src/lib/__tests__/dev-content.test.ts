@@ -35,9 +35,19 @@ import {
 type DevPage = Awaited<ReturnType<typeof getAllDevPages>>[number]
 
 const ROOT = process.cwd()
-const spec = JSON.parse(
-  fs.readFileSync(path.join(ROOT, 'public', 'openapi.json'), 'utf-8'),
-) as { paths: Record<string, Record<string, unknown>> }
+type Spec = { paths: Record<string, Record<string, unknown>> }
+const readSpec = (file: string) =>
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'public', file), 'utf-8')) as Spec
+// Calls are relative to `/api`; the v1 document writes `/api/v1/...` paths.
+const v1Paths = Object.fromEntries(
+  Object.entries(readSpec('openapi.v1.json').paths).map(([route, item]) => [
+    route.replace(/^\/api/, ''),
+    item,
+  ]),
+)
+const spec: Spec = {
+  paths: { ...readSpec('openapi.json').paths, ...v1Paths },
+}
 
 const LANDING = path.join(ROOT, 'app', '(web)', 'dev', 'page.tsx')
 const KNOWN_COMPONENTS = new Set([
@@ -101,6 +111,7 @@ describe('developer guides (content/dev)', () => {
       '/dev/respostas-e-erros',
       '/dev/limites',
       '/dev/paginacao',
+      '/dev/api-v1',
       '/dev/webhooks',
       '/dev/guias/criar-lead',
       '/dev/guias/abrir-chamado',
@@ -138,8 +149,9 @@ describe('developer guides (content/dev)', () => {
     for (const page of pages) {
       for (const match of page.source.matchAll(/\]\((\/[^)\s]*)\)/g)) {
         const [target, anchor] = match[1].split('#')
+        // `/dev/api` and `/dev/api/v1` are the references (routes).
         const isContent =
-          (target.startsWith('/dev/') && target !== '/dev/api') ||
+          (target.startsWith('/dev/') && !/^\/dev\/api(\/|$)/.test(target)) ||
           target.startsWith('/docs/')
         if (!isContent) {
           // Any other page of the site: a route under app/.
@@ -181,7 +193,7 @@ describe('developer guides (content/dev)', () => {
   })
 })
 
-describe('API calls in the guides exist in public/openapi.json', () => {
+describe('API calls in the guides exist in public/openapi.json (or openapi.v1.json)', () => {
   const sources = (): { where: string; calls: ApiCall[] }[] => [
     ...pages.map((page) => ({
       where: page.href,

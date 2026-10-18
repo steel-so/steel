@@ -955,6 +955,13 @@ export const ERROR_CODES = {
   ACCESS_DENIED: { code: 'ACCESS_DENIED', status: 403 },
   // The code typed on /device is unknown, expired or already answered.
   DEVICE_CODE_INVALID: { code: 'DEVICE_CODE_INVALID', status: 404 },
+  // Public API v1 (ADR 0035): a write with a read-only personal token, and a
+  // module route the token was not created for.
+  API_TOKEN_SCOPE_REQUIRED: { code: 'API_TOKEN_SCOPE_REQUIRED', status: 403 },
+  API_TOKEN_MODULE_NOT_ALLOWED: {
+    code: 'API_TOKEN_MODULE_NOT_ALLOWED',
+    status: 403,
+  },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
