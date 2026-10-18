@@ -496,7 +496,13 @@ Decisão em [ADR 0027](../adr/0027-canvas-real-time-co-editing.md).
   `canvas_collab_states`.
 - **Store:** ganhou `onChange` (toda mudança de documento, com a op),
   `applyRemote` (sem passo de histórico) e `setTextGuard` (recusa editar
-  texto travado por outra pessoa). Desfazer continua por usuário.
+  texto travado por outra pessoa). Desfazer continua por usuário e é
+  **comparar-e-gravar** por nó e campo (`src/lib/canvas/history-guard.ts`):
+  desfazer/refazer só regrava um caminho de prop ou chave de meta que ainda
+  tem o valor que o passo desta pessoa deixou. Campo que outra pessoa mudou
+  depois fica como está, o resto do passo se aplica, e o editor avisa
+  ("Parte do desfazer foi ignorada porque outra pessoa alterou o mesmo
+  campo."). Passo sem nada a aplicar sai do histórico.
 - **Salvar:** com a sala ao vivo, o servidor realtime grava (debounce do
   Hocuspocus); "Salvar"/Ctrl+S, publicar e enviar teste pedem gravação
   imediata (`canvas.flush`) e caem no REST se o servidor não confirmar. Sem

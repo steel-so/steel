@@ -72,3 +72,33 @@ caminho `/realtime`**, com salas `canvas.<tipo>.<id>` (`site-page`,
   reverte as mudanças da janela de debounce (~2 s).
 - O hash usa JSON com chaves ordenadas: qualquer gravação fora da sala
   (mesmo de conteúdo igual) conta como mudança externa e é mesclada.
+
+## Atualização (2026-10-18)
+
+Duas correções encontradas ao revisar a ADR contra o código; a decisão acima
+continua valendo.
+
+- **Desfazer com comparar-e-gravar.** O texto acima diz que o histórico "só
+  contém as ops do próprio usuário", mas não bastava: desfazer reaplicava o
+  valor anterior de uma prop mesmo quando outra pessoa tinha mudado o mesmo
+  campo depois, e apagava a mudança dela. Agora cada passo guarda, por nó e
+  por campo (caminho de prop ou chave de meta), o valor que ele deixou no
+  documento (`src/lib/canvas/history-guard.ts`). Ao desfazer ou refazer, só
+  são regravados os campos que ainda têm esse valor (comparação
+  estrutural); os outros ficam como estão, o resto do passo se aplica e o
+  editor avisa ("Parte do desfazer foi ignorada porque outra pessoa alterou
+  o mesmo campo."). Um passo sem nada a aplicar sai do histórico. Ops
+  estruturais (inserir, remover, mover) seguem a regra anterior: valem as
+  regras do catálogo no replay e o passo que não se aplica é descartado.
+- **Hash.** A última consequência acima está errada. O hash
+  (`documentHash` em `src/services/canvas-collab.service.ts`) é SHA-256 do
+  JSON com **chaves ordenadas** (e chaves `undefined` omitidas) justamente
+  para que uma gravação fora da sala com o **mesmo conteúdo** dê o mesmo
+  hash e **não** conte como mudança externa — o `jsonb` do Postgres
+  reordena as chaves, e sem a ordenação toda leitura pareceria diferente.
+  Só conteúdo diferente dispara a mesclagem em três vias. O código está
+  certo e foi mantido. Exceção: um template de e-mail ainda em v1,
+  convertido ao abrir a sala, fica com hash vazio, para que a primeira
+  gravação sempre o salve como v2 (a conversão é determinística — ids
+  derivados das seções da v1 —, então converter de novo daria os mesmos
+  ids).
