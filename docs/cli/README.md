@@ -9,17 +9,54 @@ Contrato entre as fatias do Steel CLI: API pública v1 e tokens pessoais
 
 | Rota | O que faz |
 | --- | --- |
-| `POST /api/v1/auth/device` | inicia o login do CLI: `{ deviceCode, userCode, verificationUri, verificationUriComplete, interval, expiresIn }` |
+| `POST /api/v1/auth/device` | corpo opcional `{ clientName?, deviceName? }`; inicia o login do CLI: `{ deviceCode, userCode, verificationUri, verificationUriComplete, interval, expiresIn }` |
+| `DELETE /api/v1/auth/token` | `steel logout`: revoga o token pessoal da própria chamada (`Authorization: Bearer stl_pat_...`); `204` sem corpo, `401` se o token já não vale |
 | `POST /api/v1/auth/device/token` | o CLI consulta com `{ deviceCode }`: `428 AUTHORIZATION_PENDING`, `429 SLOW_DOWN`, `410 EXPIRED_TOKEN`, `403 ACCESS_DENIED` ou `200 { token, tokenId, expiresAt, workspace: { id, slug, name }, scopes, modules }` |
 | `/device` (página) | o usuário digita ou confirma o código, escolhe workspace, módulos e escopo (pt-BR, os dois temas, mobile) |
 | `GET/POST /api/users/me/api-tokens`, `DELETE /api/users/me/api-tokens/{id}` | Tokens de API do usuário (Ajustes › Segurança); o valor só volta na criação |
 | `GET /api/workspaces/{id}/api-tokens`, `DELETE .../{tokenId}` | OWNER/ADMIN veem e revogam os tokens de todos os membros |
 
-Token: `stl_pat_<32+ caracteres aleatórios>`, guardado como hash. Escopos
-`api:read` e `api:write`. Validade padrão 90 dias, máximo 365.
+Rotas internas da fatia, além do contrato acima: `POST /api/device/authorize`
+(resposta da página `/device`, com sessão) e `GET /api/users/me/api-tokens/workspaces`
+(workspaces e módulos que o formulário de criação oferece).
+
+Token: `stl_pat_<43 caracteres aleatórios>` (32 bytes em base64url), guardado
+como SHA-256. Escopos `api:read` (obrigatório) e `api:write`. Validade padrão
+90 dias, máximo 365. O `prefix` exibido é `stl_pat_` + os 8 primeiros
+caracteres aleatórios. Até 50 tokens ativos por usuário
+(`API_TOKEN_LIMIT_REACHED`).
+
+Fluxo de dispositivo:
+
+- `POST /api/v1/auth/device` aceita `{ clientName?, deviceName? }`, ambos
+  opcionais (corpo vazio também vale). `deviceName` é o nome da máquina: o
+  token se chama "Steel CLI — <deviceName>". `clientName` (ex.:
+  `steel-cli/1.2.0`) só vai para a auditoria. `verificationUri` e
+  `verificationUriComplete` são URLs absolutas montadas de `BETTER_AUTH_URL`
+  (https fora do ambiente local). Código do usuário com 8
+  caracteres sem vogais nem `0/1`, exibido como `BCDF-GH23`; vale 10 minutos;
+  `interval` 5 s.
+- `POST /api/v1/auth/device/token` responde nos códigos do contrato, em
+  `error.code`: `AUTHORIZATION_PENDING` (428), `SLOW_DOWN` (429),
+  `EXPIRED_TOKEN` (410), `ACCESS_DENIED` (403).
+  `SLOW_DOWN` soma 5 s ao intervalo e traz o novo valor em
+  `error.details.interval`. Código desconhecido ou já usado também é
+  `410 EXPIRED_TOKEN` (o CLI recomeça o login). O token é emitido na
+  consulta que encontra o login aprovado, uma vez só; se o usuário perdeu o
+  acesso entre a aprovação e a consulta, a consulta devolve o erro do
+  emissor (`FORBIDDEN`, `MODULE_DISABLED`, `API_TOKEN_LIMIT_REACHED`).
+- Estado em Redis, não no plugin `device-authorization` do Better Auth: o
+  plugin devolve um token de sessão e não guarda workspace, módulos nem
+  escopo. Detalhes em `src/cache/device-authorization.cache.ts`.
+- Rate limit por IP: 10 inícios a cada 10 minutos, 120 consultas por minuto;
+  `/device` e `/api/device/authorize`: 20 por usuário a cada 10 minutos.
 
 `src/lib/api/session.ts`: `ApiSession` e `resolveApiSession(request)`. A
 fatia `api-tokens` implementa; as outras só consomem (nos testes, mock).
+`resolveApiSession` já consome o limite **por token** (`apiTokenLimiter`, 300
+chamadas por minuto, `429 RATE_LIMITED`); as rotas v1 só acrescentam o
+`apiLimiter` por usuário. Os módulos da sessão já vêm filtrados pelos que
+continuam habilitados no workspace.
 
 ## API v1 (fatia `api-v1`)
 
