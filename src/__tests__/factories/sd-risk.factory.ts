@@ -46,7 +46,7 @@ export function createFakeSdRiskTicket(
     companyId: null,
     serviceId: null,
     reopenCount: 0,
-    lastActivityAt: now,
+    lastTeamActivityAt: now,
     priority: null,
     severity: null,
     phase: { name: 'Em andamento', category: 'IN_PROGRESS', pausesSla: false },

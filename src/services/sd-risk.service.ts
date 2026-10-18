@@ -102,7 +102,16 @@ export interface SdClusterScanResult {
 /* Recorte do chamado para a heurística                                 */
 /* ------------------------------------------------------------------ */
 
-export function sdRiskTicketInput(t: SdTicketWithRelations): SdRiskTicketInput {
+/**
+ * `lastTeamActivityAt` vem dos eventos de agente
+ * (`SdRiskRepository.lastTeamActivityByTicketIds`), não de
+ * `t.lastActivityAt`: este também anda com mensagem do cliente, e o fator
+ * "sem interação da equipe" zeraria justo quando o cliente cobra.
+ */
+export function sdRiskTicketInput(
+  t: SdTicketWithRelations,
+  lastTeamActivityAt: Date | null,
+): SdRiskTicketInput {
   return {
     createdAt: t.createdAt,
     firstResponseDueAt: t.firstResponseDueAt,
@@ -119,7 +128,7 @@ export function sdRiskTicketInput(t: SdTicketWithRelations): SdRiskTicketInput {
     companyId: t.companyId,
     serviceId: t.serviceId,
     reopenCount: t.reopenCount,
-    lastActivityAt: t.lastActivityAt,
+    lastTeamActivityAt,
     priority: t.priority
       ? { name: t.priority.name, level: t.priority.level }
       : null,
@@ -285,17 +294,23 @@ async function recomputeWorkspace(
       result.errors++
       break
     }
-    const previous = await SdRiskRepository.levelsByTicketIds(
-      workspaceId,
-      batch.value.map((t) => t.id),
-    )
+    const ids = batch.value.map((t) => t.id)
+    const [previous, activity] = await Promise.all([
+      SdRiskRepository.levelsByTicketIds(workspaceId, ids),
+      SdRiskRepository.lastTeamActivityByTicketIds(workspaceId, ids),
+    ])
     if (!previous.ok) result.errors++
+    if (!activity.ok) result.errors++
     const before = previous.ok ? previous.value : new Map()
+    // Sem os eventos, a melhor aproximação é a última atividade do chamado
+    // (o comportamento antigo) — melhor que tratar todos como silenciosos.
+    const teamActivityOf = (t: SdTicketWithRelations): Date | null =>
+      activity.ok ? (activity.value.get(t.id) ?? null) : t.lastActivityAt
 
     for (const ticket of batch.value) {
       result.tickets++
       const prediction = computeSdRiskPrediction(
-        sdRiskTicketInput(ticket),
+        sdRiskTicketInput(ticket, teamActivityOf(ticket)),
         stats,
         now,
         {

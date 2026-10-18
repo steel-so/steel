@@ -257,6 +257,65 @@ describe('SdRiskRepository — estatísticas do workspace', () => {
     expect(byAssignee).toEqual({ [user.id]: 2 })
   })
 
+  it('lê o último evento de agente de cada chamado, sem contar o cliente', async () => {
+    const { workspace, user, flow } = await setup()
+    const other = await seedWorkspace()
+    const [answered, onlyCustomer, silent] = await Promise.all([
+      seedSdTicket(workspace.id, flow.initial.id),
+      seedSdTicket(workspace.id, flow.initial.id),
+      seedSdTicket(workspace.id, flow.initial.id),
+    ])
+    const event = (
+      ticketId: string,
+      actorKind: 'AGENT' | 'CONTACT' | 'REQUESTER' | 'SYSTEM',
+      hoursAgo: number,
+      workspaceId = workspace.id,
+    ) => ({
+      workspaceId,
+      ticketId,
+      actorKind,
+      actorUserId: actorKind === 'AGENT' ? user.id : null,
+      action: 'message.posted',
+      createdAt: new Date(NOW.getTime() - hoursAgo * 3600_000),
+    })
+    await prisma.sdTicketEvent.createMany({
+      data: [
+        event(answered.id, 'AGENT', 30),
+        event(answered.id, 'AGENT', 10),
+        // Mais recente que o agente, mas é o cliente: não conta.
+        event(answered.id, 'CONTACT', 1),
+        event(onlyCustomer.id, 'REQUESTER', 2),
+        event(onlyCustomer.id, 'SYSTEM', 3),
+      ],
+    })
+
+    const activity = expectOk(
+      await SdRiskRepository.lastTeamActivityByTicketIds(workspace.id, [
+        answered.id,
+        onlyCustomer.id,
+        silent.id,
+      ]),
+    )
+    expect(activity.get(answered.id)?.toISOString()).toBe(
+      new Date(NOW.getTime() - 10 * 3600_000).toISOString(),
+    )
+    expect(activity.has(onlyCustomer.id)).toBe(false)
+    expect(activity.has(silent.id)).toBe(false)
+
+    // Outro workspace não enxerga os eventos, e lista vazia não consulta.
+    expect(
+      expectOk(
+        await SdRiskRepository.lastTeamActivityByTicketIds(other.id, [
+          answered.id,
+        ]),
+      ).size,
+    ).toBe(0)
+    expect(
+      expectOk(await SdRiskRepository.lastTeamActivityByTicketIds(other.id, []))
+        .size,
+    ).toBe(0)
+  })
+
   it('lê o topo das escalas (zero quando não há escala)', async () => {
     const { workspace } = await setup()
     expect(
@@ -517,6 +576,7 @@ describe('SdRiskRepository — falhas de banco', () => {
       boom,
     )
     vi.spyOn(prisma.sdTicket, 'groupBy').mockRejectedValue(boom)
+    vi.spyOn(prisma.sdTicketEvent, 'groupBy').mockRejectedValue(boom)
     vi.spyOn(prisma.sdTicket, 'findMany').mockRejectedValue(boom)
     vi.spyOn(prisma.sdPriority, 'aggregate').mockRejectedValue(boom)
     vi.spyOn(prisma.sdIncidentCluster, 'findUnique').mockRejectedValue(boom)
@@ -553,6 +613,10 @@ describe('SdRiskRepository — falhas de banco', () => {
       'DATABASE_ERROR',
     )
     expectErr(await SdRiskRepository.maxScaleLevels('ws'), 'DATABASE_ERROR')
+    expectErr(
+      await SdRiskRepository.lastTeamActivityByTicketIds('ws', ['t']),
+      'DATABASE_ERROR',
+    )
     expectErr(await SdRiskRepository.breachHistory('ws'), 'DATABASE_ERROR')
     expectErr(
       await SdRiskRepository.listRecentIncidents('ws', NOW),

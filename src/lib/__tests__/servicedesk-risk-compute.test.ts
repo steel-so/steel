@@ -140,6 +140,81 @@ describe('fator sla_consumed', () => {
     )
   })
 
+  it('should weigh the first response while nobody has answered, even with a resolution deadline', () => {
+    // 1ª resposta: prazo de 2 h, aberto há 1 h 48 → 90%. Resolução: 10 h → 18%.
+    const result = predict({
+      createdAt: new Date(NOW.getTime() - 108 * 60 * 1000),
+      firstResponseDueAt: new Date(NOW.getTime() + 12 * 60 * 1000),
+      resolutionDueAt: new Date(NOW.getTime() + (10 * 60 - 108) * 60 * 1000),
+    })
+
+    expect(factorOf(result, 'sla_consumed')).toMatchObject({
+      weight: 24,
+      detail: '90% do prazo de 1ª resposta consumido (em horário útil)',
+    })
+    // A previsão é o primeiro prazo a estourar: o da 1ª resposta.
+    expect(result.breachEtaAt?.toISOString()).toBe(
+      new Date(NOW.getTime() + 12 * 60 * 1000).toISOString(),
+    )
+  })
+
+  it('should call a missed first response violated while the resolution still runs', () => {
+    const result = predict({
+      createdAt: at(3),
+      firstResponseDueAt: at(1),
+      resolutionDueAt: new Date(NOW.getTime() + 20 * HOUR),
+    })
+
+    expect(factorOf(result, 'sla_consumed')).toMatchObject({
+      weight: 30,
+      detail: 'Prazo de 1ª resposta já violado',
+    })
+    expect(result.breachEtaAt?.toISOString()).toBe(at(1).toISOString())
+  })
+
+  it('should keep the resolution when it is the more urgent clock', () => {
+    // Resolução: 8 h de 10 h (80%). 1ª resposta: 8 h de 40 h (20%).
+    const result = predict({
+      createdAt: at(8),
+      firstResponseDueAt: new Date(NOW.getTime() + 32 * HOUR),
+      resolutionDueAt: new Date(NOW.getTime() + 2 * HOUR),
+    })
+
+    expect(factorOf(result, 'sla_consumed')?.detail).toBe(
+      '80% do prazo de resolução consumido (em horário útil)',
+    )
+    expect(result.breachEtaAt?.toISOString()).toBe(
+      new Date(NOW.getTime() + 2 * HOUR).toISOString(),
+    )
+  })
+
+  it('should drop the first response once it was answered', () => {
+    // Respondido a tempo: só a resolução (30%) conta — e não pontua.
+    const result = predict({
+      createdAt: at(3),
+      firstResponseDueAt: at(1),
+      firstRespondedAt: at(2),
+      resolutionDueAt: new Date(NOW.getTime() + 7 * HOUR),
+    })
+
+    expect(factorOf(result, 'sla_consumed')).toBeUndefined()
+    expect(result.breachEtaAt?.toISOString()).toBe(
+      new Date(NOW.getTime() + 7 * HOUR).toISOString(),
+    )
+  })
+
+  it('should keep the resolution label on a tie', () => {
+    const result = predict({
+      createdAt: at(8),
+      firstResponseDueAt: new Date(NOW.getTime() + 2 * HOUR),
+      resolutionDueAt: new Date(NOW.getTime() + 2 * HOUR),
+    })
+
+    expect(factorOf(result, 'sla_consumed')?.detail).toContain(
+      'prazo de resolução',
+    )
+  })
+
   it('should ignore a paused clock', () => {
     const result = predict({
       createdAt: at(10),
@@ -257,13 +332,13 @@ describe('fator priority', () => {
 
 describe('fator stale', () => {
   it('should not apply inside the quiet window', () => {
-    const result = predict({ lastActivityAt: at(4) })
+    const result = predict({ lastTeamActivityAt: at(4) })
 
     expect(factorOf(result, 'stale')).toBeUndefined()
   })
 
   it('should grade the silence of the team', () => {
-    const result = predict({ lastActivityAt: at(28) })
+    const result = predict({ lastTeamActivityAt: at(28) })
 
     // 28 h na rampa 8→48 → 50% de 12 pontos.
     expect(factorOf(result, 'stale')).toMatchObject({
@@ -272,8 +347,17 @@ describe('fator stale', () => {
     })
   })
 
+  it('should count the silence from the opening when the team never acted', () => {
+    const result = predict({ createdAt: at(28), lastTeamActivityAt: null })
+
+    expect(factorOf(result, 'stale')).toMatchObject({
+      weight: 6,
+      detail: 'Sem interação da equipe há 1 d',
+    })
+  })
+
   it('should survive a broken date instead of scoring NaN', () => {
-    const result = predict({ lastActivityAt: new Date(Number.NaN) })
+    const result = predict({ lastTeamActivityAt: new Date(Number.NaN) })
 
     expect(factorOf(result, 'stale')).toBeUndefined()
     expect(result.score).toBe(0)
@@ -508,7 +592,7 @@ describe('faixas', () => {
         resolutionDueAt: at(2),
         assigneeId: null,
         priority: { name: 'P1', level: 4 },
-        lastActivityAt: at(60),
+        lastTeamActivityAt: at(60),
         reopenCount: 1,
       },
       createFakeSdRiskStats({ maxPriorityLevel: 4 }),
@@ -528,7 +612,7 @@ describe('faixas', () => {
         customerId: 'c1',
         serviceId: 's1',
         reopenCount: 5,
-        lastActivityAt: at(90),
+        lastTeamActivityAt: at(90),
         priority: { name: 'P1', level: 4 },
         severity: { name: 'Crítica', level: 3 },
         phase: { name: 'Aguardando', category: 'WAITING', pausesSla: false },
