@@ -144,10 +144,12 @@ export async function dispatchWebhookEvent<T extends WebhookEventType>(
 export async function emitWebhookEvent<T extends WebhookEventType>(
   workspaceId: string,
   type: T,
-  data: WebhookEventData<T>,
+  /** The data, or a builder run inside the guard (a throw is only logged). */
+  data: WebhookEventData<T> | (() => WebhookEventData<T>),
 ): Promise<void> {
   try {
-    const result = await dispatchWebhookEvent(workspaceId, type, data)
+    const value = typeof data === 'function' ? data() : data
+    const result = await dispatchWebhookEvent(workspaceId, type, value)
     if (!result.ok) {
       logger.warn(
         'webhooks.emit_failed',

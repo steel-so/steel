@@ -165,15 +165,18 @@ async function publish(
   // Outbound webhooks (ADR 0036): created/updated, fire-and-forget.
   const webhook = sdTicketWebhookChange(type)
   if (webhook) {
-    const ticket = sdTicketSnapshot(t, sdTicketCode(t, config.prefixes))
+    const ticket = () => sdTicketSnapshot(t, sdTicketCode(t, config.prefixes))
     const actorId = sdActorUserId(actor)
     void (webhook.type === 'servicedesk.ticket.created'
-      ? emitWebhookEvent(t.workspaceId, webhook.type, { ticket, actorId })
-      : emitWebhookEvent(t.workspaceId, webhook.type, {
-          ticket,
+      ? emitWebhookEvent(t.workspaceId, webhook.type, () => ({
+          ticket: ticket(),
+          actorId,
+        }))
+      : emitWebhookEvent(t.workspaceId, webhook.type, () => ({
+          ticket: ticket(),
           actorId,
           change: webhook.change,
-        }))
+        })))
   }
   await publishSdTicketEvent(
     t.workspaceId,

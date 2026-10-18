@@ -804,3 +804,44 @@ describe('SdNotificationService', () => {
     )
   })
 })
+
+describe('notifySdEvent — outbound webhooks (ADR 0036)', () => {
+  it('emits the curated ticket events as webhooks, with the ticket and summary', async () => {
+    const { emitWebhookEvent } = await import('../webhook-emitter')
+    const emit = vi.mocked(emitWebhookEvent)
+    await notifySdEvent({
+      workspaceId: WS,
+      event: 'sla.breached',
+      ticket: ticket(),
+      actorId: 'agent',
+      payload,
+    })
+    expect(emit).toHaveBeenCalledWith(
+      WS,
+      'servicedesk.sla.breached',
+      expect.any(Function),
+    )
+    const build = emit.mock.calls[0][2] as () => unknown
+    expect(build()).toEqual({
+      ticket: {
+        id: 't1',
+        number: 7,
+        code: 'INC-000007',
+        title: 'Servidor de e-mail fora do ar',
+      },
+      actorId: 'agent',
+      summary: { title: 'Atribuído', body: 'corpo' },
+    })
+  })
+
+  it('keeps internal events (internal notes) out of the webhooks', async () => {
+    const { emitWebhookEvent } = await import('../webhook-emitter')
+    await notifySdEvent({
+      workspaceId: WS,
+      event: 'ticket.internal_note',
+      ticket: ticket(),
+      payload,
+    })
+    expect(vi.mocked(emitWebhookEvent)).not.toHaveBeenCalled()
+  })
+})

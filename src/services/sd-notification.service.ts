@@ -312,13 +312,11 @@ export async function notifySdEvent(
     payload: { title: input.payload.title, body: input.payload.body },
   })
 
-  // Webhooks de saída (ADR 0036): os mesmos eventos de chamado, para os
-  // endpoints do workspace. Só enfileira; quem faz o HTTP é o worker.
+  // Outbound webhooks (ADR 0036): the same ticket events, to the workspace
+  // endpoints. Only enqueues; the worker does the HTTP.
   const webhookType = sdNotificationWebhookType(input.event)
   if (webhookType) {
-    void emitWebhookEvent(
-      input.workspaceId,
-      webhookType,
+    void emitWebhookEvent(input.workspaceId, webhookType, () =>
       sdNotificationWebhookData({
         ticket: input.ticket,
         actorId: input.actorId,

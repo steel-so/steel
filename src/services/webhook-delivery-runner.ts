@@ -92,7 +92,7 @@ async function autoDisable(endpoint: WebhookEndpoint, at: Date): Promise<void> {
       { component: 'WebhookDelivery', workspaceId: endpoint.workspaceId },
       {
         endpointId: endpoint.id,
-        failingSince: endpoint.failingSince?.toISOString() ?? null,
+        failingSince: String(endpoint.failingSince),
       },
     ),
   )

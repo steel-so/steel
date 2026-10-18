@@ -360,9 +360,7 @@ export const CrmLeadService = {
       name: lead.name,
     })
     void notifyCrmLeadCreated({ workspaceId, lead })
-    void emitWebhookEvent(
-      workspaceId,
-      'crm.lead.created',
+    void emitWebhookEvent(workspaceId, 'crm.lead.created', () =>
       crmLeadCreatedData(lead),
     )
     if (ownerId) {
@@ -1158,9 +1156,7 @@ export const CrmLeadService = {
       result: 'WON',
       actorId,
     })
-    void emitWebhookEvent(
-      workspaceId,
-      'crm.deal.won',
+    void emitWebhookEvent(workspaceId, 'crm.deal.won', () =>
       crmLeadDealData({ lead: updated.value, actorId }),
     )
 
@@ -1228,9 +1224,7 @@ export const CrmLeadService = {
       result: 'LOST',
       actorId,
     })
-    void emitWebhookEvent(
-      workspaceId,
-      'crm.deal.lost',
+    void emitWebhookEvent(workspaceId, 'crm.deal.lost', () =>
       crmLeadDealData({ lead: updated.value, actorId }),
     )
 

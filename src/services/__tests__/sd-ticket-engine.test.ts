@@ -54,6 +54,7 @@ import {
   selectSdSlaPolicy,
 } from '../sd-ticket-engine'
 import { recordSdTicketEvent } from '../sd-ticket-event-recorder'
+import { emitWebhookEvent } from '../webhook-emitter'
 
 const ctxRepo = vi.mocked(SdTicketContextRepository)
 const ticketRepo = vi.mocked(SdTicketRepository)
@@ -325,6 +326,13 @@ describe('create', () => {
       expect.objectContaining({ type: 'ticket.created', actorId: 'u1' }),
       expect.objectContaining({ participantIds: [], contactUserId: null }),
     )
+    // Outbound webhook (ADR 0036): the ticket snapshot with its code.
+    const webhook = vi.mocked(emitWebhookEvent).mock.calls[0]
+    expect(webhook.slice(0, 2)).toEqual(['ws1', 'servicedesk.ticket.created'])
+    expect((webhook[2] as () => unknown)()).toMatchObject({
+      ticket: { id: 'new', code: 'INC-000042', number: 42 },
+      actorId: 'u1',
+    })
   })
 
   it('keeps an empty description as null and propagates create errors', async () => {
@@ -1621,6 +1629,9 @@ describe('changePhase', () => {
       expect.objectContaining({ type: 'ticket.phase_changed' }),
       expect.anything(),
     )
+    const webhook = vi.mocked(emitWebhookEvent).mock.calls[0]
+    expect(webhook[1]).toBe('servicedesk.ticket.updated')
+    expect((webhook[2] as () => unknown)()).toMatchObject({ change: 'phase' })
   })
 
   it.each([

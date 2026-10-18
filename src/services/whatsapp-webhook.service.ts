@@ -334,9 +334,7 @@ export const WhatsAppWebhookService = {
     })
     await publishConversationSnapshot(workspaceId, conversationId)
     // Outbound webhooks (ADR 0036), fire-and-forget.
-    void emitWebhookEvent(
-      workspaceId,
-      'communication.message.received',
+    void emitWebhookEvent(workspaceId, 'communication.message.received', () =>
       communicationMessageReceivedData({
         message: message.value,
         contact: contact.value,
