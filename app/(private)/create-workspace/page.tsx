@@ -107,11 +107,11 @@ export default function CreateWorkspacePage() {
       <div className='relative min-w-100 h-full flex items-start justify-center'>
         <div className='absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-secondary' />
         <Image
-          src='brand/logo.svg'
+          src='/brand/logo.svg'
           alt='steel-logo'
           width={142}
           height={40}
-          className='relative z-10 py-10'
+          className='relative z-10 py-10 invert dark:invert-0'
           priority
         />
       </div>

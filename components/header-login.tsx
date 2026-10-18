@@ -14,7 +14,7 @@ export function HeaderLogin({ path, pathname, prompt = 'Não tem conta?' }: Path
   return (
     <div className='w-full flex items-center justify-between'>
       <Link href='/'>
-        <Image src='/brand/logo.svg' alt='steel-logo' width={71} height={20} style={{ height: 'auto' }} priority />
+        <Image src='/brand/logo.svg' alt='steel-logo' width={71} height={20} style={{ height: 'auto' }} className='invert dark:invert-0' priority />
       </Link>
       <div className='text-center text-sm'>
         <Muted>
