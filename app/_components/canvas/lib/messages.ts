@@ -1,5 +1,6 @@
 import type { CanvasOpError } from '@/src/lib/canvas/ops'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
+import type { CanvasHistorySkip } from '@/src/lib/canvas/store'
 import type { CanvasBreakpoint } from '@/src/lib/canvas/types'
 
 export const BREAKPOINT_LABELS: Record<CanvasBreakpoint, string> = {
@@ -45,4 +46,12 @@ export function opErrorMessage(
     case 'INVALID_DOCUMENT':
       return 'Não foi possível aplicar a alteração.'
   }
+}
+
+/** Toast copy for an undo/redo that left fields someone else changed. */
+export function historySkipMessage(skip: CanvasHistorySkip): string {
+  const action = skip.direction === 'undo' ? 'desfazer' : 'refazer'
+  return skip.whole
+    ? `Nada a ${action} neste passo: outra pessoa alterou os mesmos campos.`
+    : `Parte do ${action} foi ignorada porque outra pessoa alterou o mesmo campo.`
 }

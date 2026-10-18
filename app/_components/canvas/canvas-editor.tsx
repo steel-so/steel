@@ -22,7 +22,7 @@ import { CanvasStage } from './frame/canvas-stage'
 import { CanvasInspector } from './inspector/inspector'
 import { createDragStore } from './lib/drag-store'
 import { createFrameHandle } from './lib/frame-handle'
-import { opErrorMessage } from './lib/messages'
+import { historySkipMessage, opErrorMessage } from './lib/messages'
 import { CanvasSidebar } from './sidebar/sidebar'
 import { CanvasTopBar } from './top-bar'
 import type { CanvasEditorProps } from './types'
@@ -121,12 +121,17 @@ function useOpErrors() {
   const { store, catalog } = useCanvasEditor()
   useEffect(() => {
     let last = store.getState().lastError
+    let lastSkip = store.getState().lastSkipped
     return store.subscribe(() => {
-      const { lastError } = store.getState()
+      const { lastError, lastSkipped } = store.getState()
       if (lastError && lastError !== last) {
         notify.error(opErrorMessage(lastError, catalog))
       }
+      if (lastSkipped && lastSkipped !== lastSkip) {
+        notify.warning(historySkipMessage(lastSkipped))
+      }
       last = lastError
+      lastSkip = lastSkipped
     })
   }, [store, catalog])
 }

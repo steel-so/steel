@@ -30,7 +30,7 @@ import {
   writeField,
 } from '../lib/fields'
 import { layerDrop } from '../lib/layer-drop'
-import { opErrorMessage } from '../lib/messages'
+import { historySkipMessage, opErrorMessage } from '../lib/messages'
 import { matchesSearch, normalizeSearch, paletteGroups } from '../lib/palette'
 
 const RECTS: Record<string, Rect> = {
@@ -532,6 +532,18 @@ describe('palette, colors, messages and drag store', () => {
     expect(
       opErrorMessage({ code: 'UNIQUE', type: 'x.y' }, demoCatalog),
     ).toContain('x.y')
+  })
+
+  it('words history skips for undo and redo', () => {
+    const fields = [{ id: 'a', field: 'props' as const, path: 'text' }]
+    expect(
+      historySkipMessage({ direction: 'undo', whole: false, fields }),
+    ).toBe(
+      'Parte do desfazer foi ignorada porque outra pessoa alterou o mesmo campo.',
+    )
+    expect(historySkipMessage({ direction: 'redo', whole: true, fields })).toBe(
+      'Nada a refazer neste passo: outra pessoa alterou os mesmos campos.',
+    )
   })
 
   it('notifies drag listeners only on real changes', () => {

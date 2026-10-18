@@ -267,6 +267,29 @@ describe('CanvasEditor', () => {
     )
   })
 
+  it('warns when an undo skips a field someone else changed', () => {
+    setup()
+    act(() => {
+      store.dispatch({ kind: 'update', id: 'hero-title', set: { text: 'A' } })
+    })
+    act(() => {
+      const current = doc()
+      const title = current.nodes['hero-title']
+      store.applyRemote({
+        ...current,
+        nodes: {
+          ...current.nodes,
+          'hero-title': { ...title, props: { ...title.props, text: 'B' } },
+        },
+      })
+    })
+    act(() => store.undo())
+    expect(notify.warning).toHaveBeenCalledWith(
+      'Nada a desfazer neste passo: outra pessoa alterou os mesmos campos.',
+    )
+    expect(node('hero-title')?.props).toMatchObject({ text: 'B' })
+  })
+
   it('autosaves after changes and saves on Ctrl+S', async () => {
     vi.useFakeTimers()
     const { onSave } = setup()
