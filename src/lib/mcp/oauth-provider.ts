@@ -1,4 +1,5 @@
 import 'server-only'
+import { constantTimeEqual, makeSignature } from 'better-auth/crypto'
 import { logger } from '@/lib/axiom/logger'
 import { oauthRequestInvalid } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
@@ -30,7 +31,39 @@ const FORWARDED_HEADERS = [
   'x-real-ip',
 ] as const
 
+/** Sorted by key, then value — how the plugin canonicalizes before signing. */
+function canonicalQuery(params: URLSearchParams): string {
+  const sorted = [...params.entries()].sort(([ka, va], [kb, vb]) =>
+    ka === kb ? (va < vb ? -1 : va > vb ? 1 : 0) : ka < kb ? -1 : 1,
+  )
+  return new URLSearchParams(sorted).toString()
+}
+
 export const OAuthProviderGateway = {
+  /**
+   * Whether the signed query the provider appended to `/oauth/consent` is
+   * authentic (HMAC with the Better Auth secret, exactly as the plugin
+   * signs it). The consent page reads `redirect_uri` from it to show the
+   * user where the code goes, so a forged query must not render at all —
+   * not only fail on submit. Expiry is checked by the caller.
+   */
+  async verifyQuery(oauthQuery: string): Promise<boolean> {
+    try {
+      const params = new URLSearchParams(oauthQuery)
+      const signatures = params.getAll('sig')
+      if (signatures.length !== 1 || !signatures[0]) return false
+      params.delete('sig')
+      const { secret } = await auth.$context
+      const expected = await makeSignature(canonicalQuery(params), secret)
+      return constantTimeEqual(signatures[0], expected)
+    } catch (error) {
+      logger.warn('oauth.consent.verify_failed', {
+        message: error instanceof Error ? error.message : String(error),
+      })
+      return false
+    }
+  },
+
   /**
    * Answers the consent prompt. With `accept: true` the plugin runs inside
    * the grant's reference, so the code and the tokens point to it.

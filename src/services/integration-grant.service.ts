@@ -9,6 +9,10 @@ import {
   validationError,
 } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
+import {
+  classifyRedirectUri,
+  type OAuthDestination,
+} from '@/src/lib/mcp/client-trust'
 import { MCP_CONSENT_NOTICE_VERSION } from '@/src/lib/mcp/consent-notice'
 import type { McpGrant } from '@/src/lib/mcp/grant'
 import { OAUTH_TOKEN_PREFIX } from '@/src/lib/mcp/oauth-config'
@@ -76,20 +80,31 @@ async function enabledModules(
   )
 }
 
-/** Parses the signed query and loads its client; both must be usable. */
+interface ConsentRequest {
+  query: ParsedOAuthQuery
+  client: OauthClientSummary
+  /** From the request's `redirect_uri` — never from client display data. */
+  destination: OAuthDestination
+}
+
+/**
+ * Parses the signed query and loads its client; both must be usable. The
+ * destination comes from the `redirect_uri` the provider validated before
+ * signing; a query without a usable one is not a request we can show.
+ */
 async function loadRequest(
   oauthQuery: string,
-): Promise<
-  Result<{ query: ParsedOAuthQuery; client: OauthClientSummary }, AppError>
-> {
+): Promise<Result<ConsentRequest, AppError>> {
   const query = parseOAuthQuery(oauthQuery)
   if (!query || isOAuthQueryExpired(query, new Date())) {
     return err(oauthRequestInvalid())
   }
+  const destination = classifyRedirectUri(query.redirectUri)
+  if (!destination) return err(oauthRequestInvalid())
   const client = await OauthClientRepository.findByClientId(query.clientId)
   if (!client.ok) return client
   if (!client.value || client.value.disabled) return err(oauthRequestInvalid())
-  return ok({ query, client: client.value })
+  return ok({ query, client: client.value, destination })
 }
 
 function clientDTO(client: OauthClientSummary) {
@@ -108,7 +123,7 @@ async function acceptConsent(
 ): Promise<Result<OAuthConsentResultDTO>> {
   const request = await loadRequest(input.oauthQuery)
   if (!request.ok) return request
-  const { query, client } = request.value
+  const { query, client, destination } = request.value
 
   // The user can narrow what the client asked for, never widen it.
   if (!input.scopes.every((scope) => query.scopes.includes(scope))) {
@@ -137,6 +152,7 @@ async function acceptConsent(
     ? await IntegrationGrantRepository.updateConsent(existing.value.id, {
         scopes,
         modules,
+        redirectHost: destination.host,
       })
     : await IntegrationGrantRepository.create({
         userId,
@@ -144,6 +160,7 @@ async function acceptConsent(
         clientId: client.clientId,
         scopes,
         modules,
+        redirectHost: destination.host,
       })
   if (!saved.ok) return saved
   const grant = saved.value
@@ -167,6 +184,7 @@ async function acceptConsent(
       ? await IntegrationGrantRepository.updateConsent(grant.id, {
           scopes: existing.value.scopes,
           modules: existing.value.modules,
+          redirectHost: existing.value.redirectHost,
         })
       : await IntegrationGrantRepository.delete(grant.id)
     if (!undo.ok) {
@@ -183,7 +201,11 @@ async function acceptConsent(
     meta: {
       grantId: grant.id,
       clientId: client.clientId,
+      // Self-declared by the client; `redirectHost` is what the user saw
+      // as its identity, and `clientTrust` how the screen labeled it.
       clientName: client.name,
+      redirectHost: destination.host,
+      clientTrust: destination.trust,
       workspaceId: input.workspaceId,
       scopes,
       modules,
@@ -202,7 +224,16 @@ export const IntegrationGrantService = {
   ): Promise<Result<OAuthConsentContextDTO>> {
     const request = await loadRequest(oauthQuery)
     if (!request.ok) return request
-    const { query, client } = request.value
+    const { query, client, destination } = request.value
+
+    // The page shows `redirect_uri` as the app's identity, so a forged
+    // query must not render — the plugin would only catch it on submit.
+    if (!(await OAuthProviderGateway.verifyQuery(oauthQuery))) {
+      logger.warn('oauth.consent.invalid_signature', {
+        clientId: query.clientId,
+      })
+      return err(oauthRequestInvalid())
+    }
 
     const requestedScopes = toMcpScopes(query.scopes)
     if (!requestedScopes.includes('mcp:read')) {
@@ -228,7 +259,12 @@ export const IntegrationGrantService = {
       })
     }
 
-    return ok({ client: clientDTO(client), requestedScopes, workspaces })
+    return ok({
+      client: clientDTO(client),
+      destination,
+      requestedScopes,
+      workspaces,
+    })
   },
 
   /**

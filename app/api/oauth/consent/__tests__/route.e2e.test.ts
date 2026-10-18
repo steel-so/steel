@@ -117,6 +117,25 @@ describe('OAuth discovery', () => {
 })
 
 describe('OAuth authorization with consent', () => {
+  it('does not render a consent page whose signed query was tampered with', async () => {
+    const { user } = await authenticatedOwner()
+    const clientId = await register('Claude')
+    const consentUrl = await authorize(clientId, user.cookie, pkce().challenge)
+    const forged = new URL(consentUrl)
+    forged.searchParams.set(
+      'redirect_uri',
+      'https://claude.ai/api/mcp/auth_callback',
+    )
+
+    const page = await fetch(forged, {
+      headers: { Cookie: user.cookie },
+      redirect: 'manual',
+    })
+    const html = await page.text()
+    expect(html).toContain('Não foi possível autorizar')
+    expect(html).not.toContain('Verificado')
+  })
+
   it('goes from registration to a token bound to the grant, then revokes it', async () => {
     const { user, workspace } = await authenticatedOwner()
     const clientId = await register()
@@ -131,7 +150,11 @@ describe('OAuth authorization with consent', () => {
       redirect: 'manual',
     })
     expect(page.status).toBe(200)
-    expect(await page.text()).toContain('E2E MCP client')
+    const html = await page.text()
+    expect(html).toContain('E2E MCP client')
+    // The destination comes from the signed redirect_uri (loopback here).
+    expect(html).toContain('um app no seu computador')
+    expect(html).toContain('127.0.0.1:33418')
 
     const consent = await postJson(
       '/api/oauth/consent',
@@ -183,6 +206,7 @@ describe('OAuth authorization with consent', () => {
     expect(grants[0]).toMatchObject({
       client: { clientId, name: 'E2E MCP client' },
       workspace: { id: workspace.id },
+      redirectHost: '127.0.0.1:33418',
       scopes: ['mcp:read'],
       modules: ['CRM'],
     })
