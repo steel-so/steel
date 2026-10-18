@@ -17,6 +17,9 @@ interface ApiReferenceHtmlOptions {
   nonce: string
   specUrl: string
   canonicalUrl: string
+  /** Defaults to the app's reference (`/dev/api`). */
+  title?: string
+  description?: string
 }
 
 const escapeAttr = (value: string) =>
@@ -30,6 +33,8 @@ export function buildApiReferenceHtml({
   nonce,
   specUrl,
   canonicalUrl,
+  title = API_REFERENCE_TITLE,
+  description = API_REFERENCE_DESCRIPTION,
 }: ApiReferenceHtmlOptions): string {
   const attrNonce = escapeAttr(nonce)
   // JSON.stringify + `<` escaping keeps the config inert inside <script>.
@@ -38,7 +43,7 @@ export function buildApiReferenceHtml({
     theme: 'saturn',
     withDefaultFonts: false,
     hideClientButton: true,
-    metaData: { title: API_REFERENCE_TITLE },
+    metaData: { title },
   }).replace(/</g, '\\u003c')
 
   return `<!doctype html>
@@ -46,8 +51,8 @@ export function buildApiReferenceHtml({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${API_REFERENCE_TITLE}</title>
-    <meta name="description" content="${escapeAttr(API_REFERENCE_DESCRIPTION)}" />
+    <title>${escapeAttr(title)}</title>
+    <meta name="description" content="${escapeAttr(description)}" />
     <link rel="canonical" href="${escapeAttr(canonicalUrl)}" />
   </head>
   <body>
@@ -58,3 +63,7 @@ export function buildApiReferenceHtml({
 </html>
 `
 }
+
+export const API_V1_REFERENCE_TITLE = 'API pública v1 | Steel'
+export const API_V1_REFERENCE_DESCRIPTION =
+  'Referência da API pública v1 do Steel: contrato estável com token pessoal, para integrações, scripts e o Steel CLI.'

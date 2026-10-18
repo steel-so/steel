@@ -1,0 +1,141 @@
+---
+title: API pública v1
+description: A API estável do Steel para scripts, CI e o Steel CLI. Token pessoal, escopos, módulos, paginação por cursor, limites e a política de estabilidade e depreciação.
+section: fundamentos
+order: 5
+---
+
+A API pública v1 é um recorte estável do Steel, em `/api/v1/...`, feito para quem
+automatiza: scripts, pipelines de CI, integrações internas e o `steel` CLI.
+Ela cobre chamados do ServiceDesk, leads, oportunidades e funis do CRM e envio
+de templates do WhatsApp. O resto da API (`/api/workspaces/<id>/...`) é a que o
+aplicativo usa e pode mudar a cada versão; a v1 não.
+
+A referência completa, com cada rota, parâmetro e código de erro, está em
+[Referência da API v1](/dev/api/v1). O documento OpenAPI fica em
+`/dev/api/v1/openapi.json`, e é dele que o SDK TypeScript do Steel é gerado.
+
+## Token pessoal
+
+Toda chamada leva um **token pessoal** no cabeçalho:
+
+```bash
+curl https://homologacao.stratustelecom.com.br/api/v1/me \
+  -H "Authorization: Bearer stl_pat_..."
+```
+
+O cookie de sessão do aplicativo não vale na v1, nem a chave `crm_live_` do CRM.
+
+Há duas formas de obter um token:
+
+- **Ajustes › Segurança › Tokens de API**: dê um nome, escolha o workspace, os
+  módulos, o escopo e a validade (90 dias por padrão, até 1 ano). O valor
+  aparece uma vez só; guarde-o num cofre de segredos.
+- **`steel login`**: o CLI mostra um código, abre `/device` no navegador e você
+  confirma o workspace, os módulos e o escopo. O token se chama
+  `Steel CLI — <nome da máquina>`.
+
+Cada token pertence a você e a um workspace. A chamada roda com as suas
+permissões nesse workspace: o papel e o perfil de acesso valem como no
+aplicativo. Se você sair do workspace, se o token vencer ou for revogado (por
+você ou por um administrador do workspace), a próxima chamada responde
+`401 UNAUTHORIZED`.
+
+### Escopos
+
+| Escopo | Permite |
+| --- | --- |
+| `api:read` | Ler (todo token tem) |
+| `api:write` | Criar e alterar. Sem ele, escritas respondem `403 API_TOKEN_SCOPE_REQUIRED` |
+
+### Módulos
+
+O token só alcança os módulos escolhidos na criação (ServiceDesk, CRM,
+Comunicação) que continuam habilitados no workspace. Uma rota de outro módulo
+responde `403 API_TOKEN_MODULE_NOT_ALLOWED`. `GET /api/v1/me` mostra os escopos,
+os módulos e a validade do token em uso.
+
+## Respostas e erros
+
+O envelope é o mesmo do resto do Steel (veja
+[Formato de resposta e erros](/dev/respostas-e-erros)):
+
+```json
+{ "success": true, "statusCode": 200, "data": { "...": "..." } }
+```
+
+```json
+{
+  "success": false,
+  "statusCode": 403,
+  "message": "Este token só permite leitura...",
+  "error": { "code": "API_TOKEN_SCOPE_REQUIRED" }
+}
+```
+
+Trate os erros pelo `error.code`; a mensagem é para pessoas e pode mudar.
+
+## Paginação
+
+Toda lista da v1 pagina por cursor:
+
+| Parâmetro | Padrão | Máximo |
+| --- | --- | --- |
+| `limit` | 25 | 100 |
+| `cursor` | primeira página | o `nextCursor` da página anterior |
+
+A resposta traz `data.items` e `data.nextCursor`. `nextCursor: null` é a última
+página. O cursor é opaco: não monte nem altere; um cursor inválido responde
+`422 VALIDATION_ERROR`.
+
+```bash
+cursor=""
+while :; do
+  page=$(curl -s "$STEEL_URL/api/v1/crm/leads?limit=100&cursor=$cursor" \
+    -H "Authorization: Bearer $STEEL_TOKEN")
+  echo "$page" | jq -c '.data.items[]'
+  cursor=$(echo "$page" | jq -r '.data.nextCursor // empty')
+  [ -z "$cursor" ] && break
+done
+```
+
+## Importar leads de um CSV
+
+`POST /api/v1/crm/leads/import` recebe o próprio CSV como corpo, até 5.000
+linhas:
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/crm/leads/import?source=Feira" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: text/csv" \
+  --data-binary @leads.csv
+```
+
+A primeira linha é o cabeçalho, com `,` ou `;`. A coluna `name` (ou `nome`) é
+obrigatória; as outras são `email`, `telefone`, `empresa`, `cargo`, `cidade`,
+`linkedin`, `origem` e `canal`. Cada linha passa pelas mesmas regras de um lead
+criado no Steel. A resposta diz quantos foram criados, quantos já existiam
+(`skipped`) e quais linhas foram recusadas, com o número da linha.
+
+## Limites
+
+Cada token tem 300 requisições a cada 60 segundos, e o usuário dono do token mantém o
+limite de sempre (100 por minuto, somando aplicativo e API). Ao passar, a
+resposta é `429 RATE_LIMITED` com o cabeçalho `Retry-After` em segundos. Veja
+[Limites de requisição](/dev/limites).
+
+## Estabilidade e depreciação
+
+Na v1:
+
+- nada é removido nem muda de tipo, e nenhum campo de entrada passa a ser
+  obrigatório;
+- campos, parâmetros opcionais, rotas e códigos de erro novos podem aparecer a
+  qualquer momento. Ignore o que o seu código não conhece;
+- uma rota só sai depois de **6 meses** respondendo com os cabeçalhos
+  `Deprecation` e `Sunset` e com aviso no [changelog](/dev/changelog).
+
+O build do Steel verifica isso a cada mudança: se o documento da v1 perde um
+campo ou muda um tipo, o build falha. Uma mudança incompatível, quando
+necessária, vira uma nova versão da API (a v2), e a v1 continua no ar durante a
+transição.

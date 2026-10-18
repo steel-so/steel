@@ -29,6 +29,7 @@ describe('developer site (/dev)', () => {
     ['/dev/guias/criar-lead', 'Criar lead a partir do seu site'],
     ['/dev/guias/abrir-chamado', 'Abrir chamado a partir do seu sistema'],
     ['/dev/mcp', 'Servidor MCP'],
+    ['/dev/api-v1', 'API pública v1'],
   ])('serves %s as a TechArticle', async (path, title) => {
     const { res, html } = await page(path)
     expect(res.status).toBe(200)
@@ -64,6 +65,20 @@ describe('developer site (/dev)', () => {
     expect(res.status).toBe(200)
     expect(html).toContain('<title>Referência da API | Steel</title>')
     expect(html).toMatch(/<link rel="canonical" href="[^"]+\/dev\/api"/)
+  })
+
+  it('serves the API v1 reference and its document, hosted on this site', async () => {
+    const { res, html } = await page('/dev/api/v1')
+    expect(res.status).toBe(200)
+    expect(html).toContain('<title>API pública v1 | Steel</title>')
+    expect(html).toContain('"url":"/dev/api/v1/openapi.json"')
+
+    const doc = await fetch(`${BASE_URL}/dev/api/v1/openapi.json`)
+    expect(doc.status).toBe(200)
+    const spec = await doc.json()
+    expect(spec.info.title).toBe('Steel API v1')
+    expect(spec.servers).toHaveLength(1)
+    expect(Object.keys(spec.paths)).toContain('/api/v1/me')
   })
 
   it('lists the guides in sitemap.xml, llms.txt and llms-full.txt', async () => {

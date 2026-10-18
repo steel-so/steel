@@ -46,9 +46,62 @@ cookie não vale). Envelope igual ao resto da API
 | `POST /api/v1/whatsapp/messages/template` | `steel zap send --template` |
 | `GET /api/v1/whatsapp/broadcasts/{id}` | `steel zap broadcast status` |
 
-Documento: `public/openapi.v1.json`, servido em `/dev/api/v1/openapi.json` e
-renderizado em `/dev/api/v1`. O CI compara a v1 com a versão anterior
-commitada e falha em mudança incompatível (ADR 0035).
+Detalhes de cada rota (fatia `api-v1`):
+
+- `GET /api/v1/me` → `data` = `{ user: { id, name, email }, workspace: { id,
+  slug, name }, role, scopes, modules, token: { id, expiresAt } }` (componente
+  `Me`; `role` é o papel no workspace).
+- `GET /api/v1/servicedesk/tickets`: `status` (categorias de fase em CSV:
+  `NEW`, `IN_PROGRESS`, `WAITING`, `RESOLVED`, `CLOSED`, `CANCELED`; omitido =
+  só os abertos), `type` (CSV), `phaseId`, `priorityId`, `assigneeId` (CSV;
+  aceita `me` e `unassigned`), `q`. Cursor = o da lista do app (id).
+- `POST /api/v1/servicedesk/tickets`: o corpo da abertura no app; canal `API`
+  quando o corpo não informa outro.
+- `POST .../tickets/{id}/comments`: `{ body, visibility: PUBLIC | INTERNAL }`
+  (padrão `PUBLIC`), sem anexos. `POST .../tickets/{id}/phase`: o corpo da
+  mudança de fase do app (`{ phaseId, solution?, solutionClassificationId?,
+  comment? }`). `{id}` aceita id, número ou código.
+- `GET /api/v1/servicedesk/catalog?ticketType=`: lista plana (`level` +
+  `parentId`) de categorias, subcategorias e serviços ativos.
+- `POST /api/v1/crm/leads/import?source=`: o corpo é o próprio CSV
+  (`Content-Type: text/csv`, até 5 MB e 5.000 linhas, `,` ou `;`). Colunas:
+  `name`/`nome` (obrigatória), `email`, `phone`/`telefone`/`celular`,
+  `company`/`empresa`, `job_title`/`cargo`, `city`/`cidade`, `linkedin`,
+  `source`/`origem`, `channel`/`canal`; vários e-mails/telefones na célula
+  separados por `;`. Cada linha passa pela entrada única de leads, em ordem.
+  Resposta `{ total, created, skipped, errors: [{ row, code, message }] }`
+  (`skipped` = já existe lead em aberto com o contato; `row` = linha do CSV,
+  cabeçalho = 1). Origem padrão: `?source=`, senão `API`.
+- `GET /api/v1/crm/opportunities?pipelineId=&stageId=`;
+  `POST .../opportunities/{id}/stage` com `{ stageId, pipelineId? }`.
+- `GET /api/v1/crm/pipelines`: cada funil com `stages` em ordem.
+- `GET /api/v1/whatsapp/templates?status=&connectionId=`: `status` padrão
+  `APPROVED`; `ALL` lista todos.
+- `POST /api/v1/whatsapp/messages/template`: `{ conversationId }` **ou**
+  `{ contactId, connectionId }` (usa a conversa aberta do contato ou abre uma),
+  mais `{ templateName, language, components? }`.
+- Erros próprios da v1: `403 API_TOKEN_SCOPE_REQUIRED` (escrita sem
+  `api:write`) e `403 API_TOKEN_MODULE_NOT_ALLOWED` (módulo fora do token).
+  Escritas passam pelo gate de consentimento LGPD, como no app.
+- Listas que o service devolve inteiras (leads, oportunidades, funis,
+  catálogo, templates) paginam em memória: o cursor é opaco e codifica a
+  posição. Cursor inválido: `422 VALIDATION_ERROR`.
+- Limites: o por token (300/min) é consumido por `resolveApiSession`; as rotas
+  somam o por usuário (`apiLimiter`, o mesmo do app).
+
+Documento: `public/openapi.v1.json`, gerado por `pnpm openapi:generate` (de
+`src/openapi/v1/`), servido em `/dev/api/v1/openapi.json` e renderizado em
+`/dev/api/v1`. Os paths vêm completos (`/api/v1/...`) e os `servers` são os
+hosts, como o SDK espera; os nomes dos componentes `SuccessEnvelope`,
+`ErrorEnvelope`, `ApiScope`, `ModuleKind`, `WorkspaceRef`,
+`DeviceAuthorizationRequest`, `DeviceAuthorization`, `DeviceToken` e `Me`
+são tipos exportados pelo SDK e não mudam. O documento também descreve as
+rotas do fluxo de dispositivo (`/auth/device`, `/auth/device/token`,
+`DELETE /auth/token`). O CI (`pnpm openapi:v1:compat --base <sha>`, no job
+"Lint & Type Check") compara a v1 gerada com a commitada na base do PR (ou no
+push anterior) e falha em mudança incompatível: rota, operação, status de
+sucesso ou campo removido, tipo mudado, campo de resposta que deixa de vir,
+entrada que passa a ser obrigatória ou aceita menos valores (ADR 0035).
 
 ## Webhooks de saída (fatia `webhooks-out`)
 
