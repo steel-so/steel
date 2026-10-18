@@ -3,6 +3,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const RetentionWindowMs = {
   sessionAfterExpiry: 30 * DAY_MS,
   verificationAfterExpiry: 1 * DAY_MS,
+  /** Outbound webhook delivery log (ADR 0036). */
+  webhookDeliveries: 30 * DAY_MS,
 } as const
 
 export const RetentionCron = {

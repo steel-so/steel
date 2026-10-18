@@ -39,6 +39,7 @@ import { processSitePosts } from '../src/lib/queue/processors/site-posts'
 import { processStatusCollect } from '../src/lib/queue/processors/status-collect'
 import { processSteelAgents } from '../src/lib/queue/processors/steel-agents'
 import { processUsageRollup } from '../src/lib/queue/processors/usage-rollup'
+import { processWebhooksDelivery } from '../src/lib/queue/processors/webhooks-delivery'
 import { processWhatsappAiReply } from '../src/lib/queue/processors/whatsapp-ai-reply'
 import { processWhatsappBroadcast } from '../src/lib/queue/processors/whatsapp-broadcast'
 import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsapp-button-actions'
@@ -90,9 +91,14 @@ let failureListener: JobFailureListener | null = null
 
 type Processor = (job: Job) => Promise<unknown>
 
-function registerWorker(name: QueueName, processor: Processor): Worker {
+function registerWorker(
+  name: QueueName,
+  processor: Processor,
+  options: { concurrency?: number } = {},
+): Worker {
   const worker = new Worker(name, processor, {
     connection: getQueueConnection(),
+    ...(options.concurrency ? { concurrency: options.concurrency } : {}),
   })
 
   worker.on('completed', (job) => {
@@ -247,6 +253,12 @@ async function main(): Promise<void> {
       QueueName.WorkspaceIntegrations,
       processWorkspaceIntegrations,
     ),
+  )
+  workers.push(
+    // Customer endpoints answer slowly (10 s timeout): deliver in parallel.
+    registerWorker(QueueName.WebhooksDelivery, processWebhooksDelivery, {
+      concurrency: 10,
+    }),
   )
 
   failureListener = startJobFailureListener(

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     session: { deleteMany: vi.fn() },
     verification: { deleteMany: vi.fn() },
     workspaceInvitation: { updateMany: vi.fn() },
+    webhookDelivery: { deleteMany: vi.fn() },
   },
 }))
 
@@ -247,6 +248,23 @@ describe('processDataRetention', () => {
     expect(mocks.loggerMock.info).toHaveBeenCalledWith(
       'queue.data_retention.invitations_expired',
       expect.objectContaining({ expired: 1 }),
+    )
+  })
+
+  it('deletes webhook deliveries older than 30 days', async () => {
+    mocks.prisma.webhookDelivery.deleteMany.mockResolvedValue({ count: 7 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.CleanupWebhookDeliveries),
+    )
+
+    expect(result.deleted).toBe(7)
+    const where = mocks.prisma.webhookDelivery.deleteMany.mock.calls[0][0].where
+    const days = (Date.now() - where.createdAt.lt.getTime()) / 86_400_000
+    expect(Math.round(days)).toBe(30)
+    expect(mocks.loggerMock.info).toHaveBeenCalledWith(
+      'queue.data_retention.webhook_deliveries_cleaned',
+      expect.objectContaining({ deleted: 7 }),
     )
   })
 

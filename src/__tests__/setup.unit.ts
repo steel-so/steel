@@ -51,6 +51,16 @@ vi.mock('@/src/repositories/whatsapp-team.repository', () => ({
   },
 }))
 
+// Outbound webhooks (`emitWebhookEvent`, fire-and-forget after writes):
+// no-op in unit tests; `webhook-emitter.test.ts` un-mocks the module and the
+// webhook service tests drive `dispatchWebhookEvent`/`enqueueWebhookDelivery`.
+vi.mock('@/src/services/webhook-emitter', () => ({
+  emitWebhookEvent: vi.fn(async () => undefined),
+  dispatchWebhookEvent: vi.fn(),
+  enqueueWebhookDelivery: vi.fn(async () => true),
+  webhookEventId: vi.fn(() => 'evt_test'),
+}))
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.clearAllMocks()
