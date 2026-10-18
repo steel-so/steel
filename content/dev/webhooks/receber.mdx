@@ -1,0 +1,433 @@
+---
+title: Receber os webhooks do Steel
+description: Cadastrar um endpoint, conferir a assinatura em Node, Python e PHP, tratar repetições pelo Steel-Webhook-Id, as tentativas com espera, a desativação automática e o teste local com steel listen.
+section: webhooks
+order: 3
+---
+
+O Steel avisa os seus sistemas (ERP, BI, automações) quando algo acontece no
+workspace: um `POST` assinado para a URL que você cadastrou, a cada evento que
+ela assina. Esta página leva do cadastro até o receptor em produção. O formato
+de cada evento está no [Catálogo de eventos](/dev/webhooks/eventos).
+
+## Cadastrar um endpoint
+
+Só o **dono** ou um **administrador** do workspace cadastra endpoints.
+
+1. Abra **Ajustes** e, na barra lateral, **Webhooks** (logo abaixo de
+   **Integrações**). A tela mostra os endpoints
+   cadastrados e quantos ainda cabem (até 20 por workspace).
+2. Clique em **Novo webhook**.
+3. Preencha a **URL do endpoint** (só `https://`, num endereço público), uma
+   **Descrição (opcional)** como "ERP financeiro" e marque os **Eventos**,
+   agrupados por módulo. **Todos os eventos** assina `*`, inclusive os tipos
+   que vierem depois.
+4. Clique em **Cadastrar**. A janela **Segredo de assinatura** mostra o
+   segredo (`whsec_...`). Guarde no seu sistema, como variável de ambiente ou
+   num cofre. Dá para ver de novo depois em **Revelar segredo**.
+5. Clique em **Enviar teste**. O Steel manda um `steel.ping` na hora e mostra
+   o código HTTP da sua resposta.
+
+Cada endpoint da lista mostra a situação (**Ativo** ou **Desativado**), os
+eventos, os quatro últimos caracteres do segredo (para saber qual está em
+uso), a última entrega com sucesso e, se ele estiver falhando, desde quando.
+O interruptor **Ativo** pausa e retoma as entregas; **Editar** muda URL,
+descrição e eventos; **Trocar segredo** e **Remover** pedem confirmação.
+
+O mesmo pela API v1 e pelo CLI, com um token pessoal de dono ou administrador
+(detalhes em [Webhooks pela API](/dev/api-v1/webhooks)):
+
+```bash
+steel webhooks endpoints create --url https://erp.suaempresa.com.br/steel \
+  --events servicedesk.ticket.created,crm.deal.won --description "ERP financeiro"
+steel webhooks endpoints test <id>
+```
+
+## O que chega
+
+Um `POST` com `Content-Type: application/json`, `User-Agent: Steel-Webhooks/1.0`
+e três cabeçalhos do Steel:
+
+```http
+POST /steel HTTP/1.1
+Host: erp.suaempresa.com.br
+Content-Type: application/json
+User-Agent: Steel-Webhooks/1.0
+Steel-Webhook-Id: evt_cm2x7k3p0000abcd
+Steel-Webhook-Timestamp: 1760788800
+Steel-Signature: v1=a012aa3596406fca9bd0be1089a41801ab0f54540de88a645bc74e082a59973b
+
+{"id":"evt_cm2x7k3p0000abcd","type":"crm.lead.created","createdAt":"2026-10-18T12:00:00.000Z","workspaceId":"cm2ws0001","data":{"lead":{"id":"cm2lead0001","name":"Maria Souza","emails":["maria@example.com"],"phones":["+5511999990000"],"company":"Acme Ltda","source":"site","channel":"FORM","score":40,"ownerId":null,"createdAt":"2026-10-18T12:00:00.000Z"}}}
+```
+
+| Cabeçalho | O que é |
+| --- | --- |
+| `Steel-Webhook-Id` | O `id` do evento. **O mesmo em todas as tentativas** e nos reenvios manuais |
+| `Steel-Webhook-Timestamp` | O momento **desta tentativa**, em segundos Unix. Muda a cada tentativa |
+| `Steel-Signature` | `v1=<hex>`: HMAC-SHA256 de `"<timestamp>.<corpo bruto>"` com o segredo do endpoint, usado como texto. Muda a cada tentativa, junto com o timestamp |
+
+Para testar a sua implementação: com o segredo `whsec_exemplo`, o timestamp e o
+corpo acima (uma linha só, sem quebra no fim), a assinatura correta é a do
+exemplo. Lembre de desligar a checagem de horário nesse teste, porque o
+timestamp é antigo.
+
+## Conferir a assinatura
+
+A regra, em qualquer linguagem:
+
+1. Leia o **corpo bruto**, byte a byte, **antes** de qualquer `JSON.parse`. Um
+   corpo reformatado (espaços, ordem das chaves) gera outra assinatura.
+2. Recuse se o `Steel-Webhook-Timestamp` estiver a mais de **5 minutos** do
+   seu relógio: assim uma entrega capturada não serve de novo.
+3. Calcule `v1=` + hex do HMAC-SHA256 de `"<timestamp>.<corpo>"` com o segredo
+   (`whsec_...` inteiro, como texto UTF-8).
+4. Compare em **tempo constante** com cada valor do `Steel-Signature`
+   separado por vírgula. Basta um bater.
+5. Assinatura inválida: responda `401` e não processe.
+
+### Node.js com o SDK
+
+`verifySignature` do `@steel-so/sdk` faz os cinco passos e nunca lança
+exceção. Num _route handler_ do Next.js:
+
+```ts
+import { verifySignature } from '@steel-so/sdk'
+
+export async function POST(request: Request) {
+  const rawBody = await request.text()
+  const valid = verifySignature(
+    process.env.STEEL_WEBHOOK_SECRET!,
+    request.headers.get('steel-signature'),
+    request.headers.get('steel-webhook-timestamp'),
+    rawBody,
+  )
+  if (!valid) return new Response('assinatura inválida', { status: 401 })
+
+  const event = JSON.parse(rawBody)
+  // ... trate o event (veja "Repetições e idempotência")
+  return new Response(null, { status: 204 })
+}
+```
+
+A tolerância de 5 minutos muda com `{ toleranceSeconds }` no quinto argumento;
+`0` desliga a checagem do horário (só em testes). Mais sobre o SDK em
+[SDK](/dev/sdk).
+
+### Node.js sem dependências
+
+Com Express, peça o corpo cru só nessa rota (`express.raw`), senão o
+`express.json()` já terá trocado o corpo por um objeto:
+
+```ts
+import { createHmac, timingSafeEqual } from 'node:crypto'
+import express from 'express'
+
+const TOLERANCE_SECONDS = 5 * 60
+
+function steelSignatureOk(secret: string, rawBody: string, timestamp: string, header: string): boolean {
+  if (!/^\d+$/.test(timestamp)) return false
+  if (Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp)) > TOLERANCE_SECONDS) return false
+  const expected = Buffer.from(
+    `v1=${createHmac('sha256', secret).update(`${timestamp}.${rawBody}`, 'utf8').digest('hex')}`,
+  )
+  let ok = false
+  for (const part of header.split(',')) {
+    const candidate = Buffer.from(part.trim())
+    if (candidate.length === expected.length && timingSafeEqual(candidate, expected)) ok = true
+  }
+  return ok
+}
+
+const app = express()
+
+app.post('/steel', express.raw({ type: 'application/json' }), (req, res) => {
+  const rawBody = req.body.toString('utf8')
+  const ok = steelSignatureOk(
+    process.env.STEEL_WEBHOOK_SECRET!,
+    rawBody,
+    req.get('Steel-Webhook-Timestamp') ?? '',
+    req.get('Steel-Signature') ?? '',
+  )
+  if (!ok) return res.status(401).send('assinatura inválida')
+  const event = JSON.parse(rawBody)
+  res.status(204).end()
+  // processe o event depois de responder
+})
+```
+
+### Python
+
+Com Flask (`request.get_data()` devolve o corpo cru):
+
+```python
+import hashlib
+import hmac
+import json
+import os
+import time
+
+from flask import Flask, abort, request
+
+app = Flask(__name__)
+SECRET = os.environ["STEEL_WEBHOOK_SECRET"]
+TOLERANCE_SECONDS = 5 * 60
+
+
+def steel_signature_ok(raw_body: bytes, timestamp: str, header: str) -> bool:
+    if not timestamp.isdigit():
+        return False
+    if abs(int(time.time()) - int(timestamp)) > TOLERANCE_SECONDS:
+        return False
+    digest = hmac.new(
+        SECRET.encode("utf-8"),
+        timestamp.encode("utf-8") + b"." + raw_body,
+        hashlib.sha256,
+    ).hexdigest()
+    expected = f"v1={digest}"
+    return any(hmac.compare_digest(part.strip(), expected) for part in header.split(","))
+
+
+@app.post("/steel")
+def steel_webhook():
+    raw_body = request.get_data()
+    if not steel_signature_ok(
+        raw_body,
+        request.headers.get("Steel-Webhook-Timestamp", ""),
+        request.headers.get("Steel-Signature", ""),
+    ):
+        abort(401)
+    event = json.loads(raw_body)
+    # ... trate o event
+    return "", 204
+```
+
+No Django, o corpo cru é `request.body`; no FastAPI, `await request.body()`.
+
+### PHP
+
+```php
+<?php
+$secret    = getenv('STEEL_WEBHOOK_SECRET');
+$rawBody   = file_get_contents('php://input');
+$timestamp = $_SERVER['HTTP_STEEL_WEBHOOK_TIMESTAMP'] ?? '';
+$header    = $_SERVER['HTTP_STEEL_SIGNATURE'] ?? '';
+
+function steel_signature_ok(string $secret, string $rawBody, string $timestamp, string $header): bool {
+    if (!ctype_digit($timestamp) || abs(time() - (int) $timestamp) > 300) {
+        return false;
+    }
+    $expected = 'v1=' . hash_hmac('sha256', $timestamp . '.' . $rawBody, $secret);
+    foreach (explode(',', $header) as $part) {
+        if (hash_equals($expected, trim($part))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+if (!steel_signature_ok($secret, $rawBody, $timestamp, $header)) {
+    http_response_code(401);
+    exit('assinatura inválida');
+}
+
+$event = json_decode($rawBody, true);
+// ... trate o $event
+http_response_code(204);
+```
+
+No Laravel, use `$request->getContent()` para o corpo cru e
+`$request->header('Steel-Signature')` para os cabeçalhos.
+
+## Repetições e idempotência
+
+O Steel garante **pelo menos uma** entrega, não exatamente uma: uma resposta
+que se perdeu na rede, um tempo esgotado ou um reenvio manual fazem o mesmo
+evento chegar de novo. Por isso:
+
+- **Guarde o `Steel-Webhook-Id`** de cada evento processado (uma tabela com
+  chave única basta) e ignore, com `2xx`, um id que já viu. Ele é o mesmo em
+  todas as tentativas; o timestamp e a assinatura, não.
+- **Responda rápido e processe depois.** Confira a assinatura, grave o evento
+  numa fila ou tabela e responda `2xx`. O Steel espera no máximo **10
+  segundos**; um processamento longo vira falha e reenvio.
+- **Não dependa da ordem.** Dois eventos do mesmo chamado podem chegar
+  invertidos. Ordene por `createdAt` ou, para o estado atual, consulte o
+  registro na [API v1](/dev/api-v1).
+
+Exemplo com PostgreSQL:
+
+```sql
+create table steel_webhook_events (
+  id text primary key,          -- Steel-Webhook-Id
+  type text not null,
+  received_at timestamptz not null default now(),
+  body jsonb not null
+);
+
+-- Na rota, depois de conferir a assinatura:
+insert into steel_webhook_events (id, type, body)
+values ($1, $2, $3)
+on conflict (id) do nothing;   -- repetido: nada a fazer, responda 2xx
+```
+
+## Tentativas e espera
+
+Só um status `2xx` confirma a entrega. Conta como falha: qualquer outro status
+(inclusive `3xx`: redirecionamentos nunca são seguidos), nenhuma resposta em 10
+segundos, erro de conexão ou de TLS. Uma entrega que falha é repetida até
+**6 tentativas**, com espera que dobra:
+
+| Tentativa | Quando |
+| --- | --- |
+| 1ª | Logo depois do evento |
+| 2ª | 1 minuto depois da 1ª |
+| 3ª | 2 minutos depois da 2ª |
+| 4ª | 4 minutos depois da 3ª |
+| 5ª | 8 minutos depois da 4ª |
+| 6ª | 16 minutos depois da 5ª (cerca de 31 minutos depois do evento) |
+
+Depois da 6ª, a entrega fica como **Falhou** no log e não é mais tentada
+sozinha. Você ainda pode reenviá-la (veja [O log de entregas](#o-log-de-entregas)).
+
+Erros de quem recebe que valem repetir (`500`, `502`, `503`, `429`) e erros que
+não vão mudar (`400`, `404`) são tratados igual: o Steel não lê o status além de
+saber se é `2xx`. Responda `2xx` a um evento que você decidiu ignorar, para ele
+não voltar.
+
+## Desativação automática
+
+Um endpoint que **falha em todas as entregas por 3 dias seguidos** é
+desativado. Os donos e administradores recebem uma notificação com o título
+**Webhook desativado:** seguido do domínio, e a tela mostra o endpoint como
+**Desativado**.
+
+- O relógio começa na primeira falha e **zera com qualquer `2xx`**. Um endpoint
+  que falha de vez em quando nunca é desativado.
+- Enquanto ele falha, a tela mostra "Falhando desde ...".
+- O `steel.ping` do **Enviar teste** não conta, nem para falhar nem para zerar.
+- Enquanto o endpoint está desativado (por você ou automaticamente), os
+  eventos novos **não** são enviados a ele, nem depois de reativar. Entregas
+  que já estavam na fila quando ele foi desativado ficam como **Não enviado**.
+
+Para voltar: corrija o serviço, use **Enviar teste** até ver `2xx` e ligue o
+interruptor **Ativo**. Reativar zera o relógio de falhas. As entregas que
+falharam antes da desativação podem ser reenviadas uma a uma pelo log; para o
+que aconteceu no período desativado, consulte a [API v1](/dev/api-v1).
+
+## O log de entregas
+
+Em **Ajustes › Webhooks**, a seção **Entregas** lista as
+entregas dos últimos **30 dias**, mais novas primeiro, com filtro por endpoint
+e por situação:
+
+| Situação | Significa |
+| --- | --- |
+| **Na fila** | Esperando a primeira tentativa |
+| **Entregue** | A sua URL respondeu `2xx` |
+| **Tentando de novo** | Falhou e ainda há tentativas |
+| **Falhou** | Esgotou as tentativas, a URL foi recusada pela checagem de endereço ou o segredo não pôde ser lido |
+| **Não enviado** | O endpoint estava desativado ou foi removido |
+
+Cada linha mostra o código HTTP (ou **Sem resposta**), o tempo de resposta, o
+número de tentativas e o erro (`http_500`, `timeout`, `network_error: ...`).
+**Ver detalhes** abre o **Corpo enviado** e a **Resposta (até 1 KB)**.
+**Reenviar** faz mais uma tentativa da mesma entrega, com o mesmo corpo e o
+mesmo `Steel-Webhook-Id`, e chega mesmo a um endpoint desativado.
+
+Pelo CLI:
+
+```bash
+steel webhooks deliveries list --endpoint <id> --status FAILED --all
+steel webhooks deliveries retry <id-da-entrega>
+```
+
+## Trocar o segredo
+
+**Trocar segredo** gera um segredo novo, e ele vale **na hora**: as próximas
+entregas já saem assinadas só com ele. Para não perder eventos na troca:
+
+1. Faça o seu receptor aceitar **dois** segredos por um tempo: confira a
+   assinatura com o atual e, se não bater, com o novo.
+2. Clique em **Trocar segredo**, confirme e copie o novo.
+3. Configure o novo no receptor e retire o antigo.
+
+Eventos que falharem nesse meio-tempo voltam pelas tentativas automáticas, já
+com o segredo novo.
+
+## URLs aceitas
+
+Só `https://`, sem usuário e senha na URL, num endereço público. URLs que
+apontam (ou cujo domínio resolve) para IP privado, loopback, link-local ou
+CGNAT são recusadas com `422 WEBHOOK_URL_NOT_ALLOWED`, e a mensagem diz o
+motivo:
+
+| Mensagem | Motivo |
+| --- | --- |
+| A URL precisa começar com https://. | `http://` ou outro esquema |
+| Não coloque usuário e senha na URL. | `https://usuario:senha@...` |
+| A URL aponta para um endereço privado, local ou de loopback. Use um endereço público. | `localhost`, `10.x`, `192.168.x`, `127.0.0.1`... |
+| Não foi possível resolver o domínio da URL. | O domínio não existe (ainda) no DNS |
+
+A checagem acontece ao salvar e de novo antes de cada tentativa, porque o DNS
+pode mudar. Para receber na sua máquina, use o `steel listen`, a seguir.
+
+## Testar na sua máquina
+
+O `steel listen` do [Steel CLI](/dev/cli) recebe em tempo real os eventos do
+workspace e, com `--forward`, repassa cada um para o seu app local com **o
+mesmo corpo e os mesmos três cabeçalhos** que o Steel envia. A verificação de
+assinatura do seu app roda igual à de produção. É preciso ser dono ou
+administrador.
+
+1. Num terminal, comece a escuta apontando para a rota local:
+
+   ```bash
+   steel listen --forward localhost:3001/webhooks/steel
+   ```
+
+   Ao conectar, o CLI mostra o **segredo da escuta** (`whsec_...`). Ele é
+   diferente do segredo dos endpoints e fixo para você naquele workspace:
+   configure-o como `STEEL_WEBHOOK_SECRET` no app local uma vez só.
+2. Noutro terminal, gere um evento de teste com os dados de exemplo do
+   [catálogo](/dev/webhooks/eventos):
+
+   ```bash
+   steel trigger crm.lead.created
+   ```
+
+3. No primeiro terminal aparece uma linha por evento: a hora, o tipo, o id e,
+   com `--forward`, o código HTTP e o tempo de resposta do seu app.
+
+Outras formas:
+
+```bash
+steel listen --events crm.lead.created,crm.deal.won   # só estes tipos
+steel listen --print                                  # mostra o corpo de cada evento
+steel listen --json | jq -r 'select(.type == "webhook") | .eventType'
+steel trigger crm.deal.won --endpoint <id>            # também entrega a este endpoint
+```
+
+- A escuta recebe os eventos **reais** do workspace também, não só os de
+  teste. Não há replay: só chega o que acontece com ela aberta.
+- O `steel trigger` vai para quem está escutando e, com `--endpoint`, para
+  aquele endpoint. **Nunca** para os outros endpoints cadastrados, para um
+  teste não cair numa integração de produção.
+- Se a conexão cair, o CLI reconecta sozinho (1, 2, 4... até 30 segundos).
+  O repasse local também espera até 10 segundos pela resposta, como o Steel.
+
+## Solução de problemas
+
+| Sintoma | Causa provável e correção |
+| --- | --- |
+| A assinatura nunca bate | O corpo foi lido depois de um parser de JSON. Use o corpo cru (`express.raw`, `request.text()`, `request.get_data()`, `php://input`) |
+| Bate no `steel listen`, não em produção | Em produção o segredo é o do **endpoint**, não o da escuta. Confira os quatro últimos caracteres na tela |
+| Batia e parou de bater | Alguém usou **Trocar segredo**. Pegue o novo em **Revelar segredo** |
+| Recusa por horário mesmo com assinatura certa | O relógio do seu servidor está adiantado ou atrasado. Sincronize com NTP |
+| O log mostra `timeout` | A sua rota levou mais de 10 segundos. Responda antes e processe numa fila |
+| O log mostra `http_301` ou `http_302` | A URL redireciona (por exemplo, sem a barra final, ou de `www`). Cadastre a URL final |
+| O log mostra `network_error` com erro de certificado | O certificado TLS é inválido, vencido ou sem a cadeia intermediária |
+| O mesmo evento chegou duas vezes | É esperado: trate pelo `Steel-Webhook-Id` |
+| Os eventos pararam de chegar | O endpoint foi desativado (3 dias de falhas) ou o interruptor **Ativo** está desligado. Veja a lista de endpoints |
+| `422 WEBHOOK_URL_NOT_ALLOWED` ao cadastrar | Veja [URLs aceitas](#urls-aceitas) |
+| **Novo webhook** desabilitado | O workspace já tem 20 endpoints. Remova um, ou use um endpoint com mais eventos |
+| `steel listen` responde `403` | Só dono e administradores escutam |
