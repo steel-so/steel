@@ -55,6 +55,7 @@ export const STATUS_TITLES: Record<number, string> = {
   409: 'Conflito com o estado atual',
   410: 'Expirado',
   422: 'Dados inválidos',
+  428: 'Aguardando confirmação',
   429: 'Limite de requisições excedido',
   500: 'Erro interno',
   502: 'Falha em serviço externo',
