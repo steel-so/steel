@@ -1500,3 +1500,13 @@ export const mcpIdempotencyKeyReused = (): AppError =>
     'MCP_IDEMPOTENCY_KEY_REUSED',
     'Esta chave de idempotência já foi usada com outros argumentos. Gere uma chave nova para cada ação diferente.',
   )
+
+export const apiTokenScopeRequired = (): AppError =>
+  appError(
+    'API_TOKEN_SCOPE_REQUIRED',
+    'Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.',
+  )
+
+export const apiTokenModuleNotAllowed = (
+  message = 'Este token não dá acesso a este módulo. Crie um token que inclua o módulo.',
+): AppError => appError('API_TOKEN_MODULE_NOT_ALLOWED', message)

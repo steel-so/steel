@@ -161,6 +161,10 @@ export default defineConfig({
         'src/lib/mcp/{tools,resources,prompts,server,http}.ts',
         // Pure helpers of the `pnpm mcp:smoke` client (mcp-launch).
         'src/lib/mcp/smoke.ts',
+        // Public API v1 (ADR 0035): route helper, cursor pagination and the
+        // breaking-change check of `openapi.v1.json`.
+        'src/lib/api/v1-{route,pagination}.ts',
+        'src/openapi/v1/compat.ts',
       ],
       exclude: [
         'node_modules/**',

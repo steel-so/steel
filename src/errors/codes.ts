@@ -942,6 +942,13 @@ export const ERROR_CODES = {
     code: 'MCP_IDEMPOTENCY_KEY_REUSED',
     status: 422,
   },
+  // Public API v1 (ADR 0035): a write with a read-only personal token, and a
+  // module route the token was not created for.
+  API_TOKEN_SCOPE_REQUIRED: { code: 'API_TOKEN_SCOPE_REQUIRED', status: 403 },
+  API_TOKEN_MODULE_NOT_ALLOWED: {
+    code: 'API_TOKEN_MODULE_NOT_ALLOWED',
+    status: 403,
+  },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
