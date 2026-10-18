@@ -83,6 +83,11 @@ const serverEnv = {
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
   CANVAS_LAB: process.env.CANVAS_LAB,
   SITES_ROOT_DOMAIN: process.env.SITES_ROOT_DOMAIN,
+  DATABASE_URL_POOLED: process.env.DATABASE_URL_POOLED,
+  DB_POOL_MAX: process.env.DB_POOL_MAX,
+  NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:
+    process.env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
+  NEXT_CACHE_TAGS_TIMEOUT_MS: process.env.NEXT_CACHE_TAGS_TIMEOUT_MS,
 }
 
 /** String opcional que trata `""` como ausente (não só `undefined`). */
@@ -383,6 +388,56 @@ export const serverEnvSchema = z.object({
       )
       .optional(),
   ),
+  // App replicas (ADR 0037). Runtime connection through PgBouncer in
+  // transaction mode (`steel-pgbouncer`, compose profile `pooler`). Optional:
+  // without it the app talks to Postgres directly. Migrations, pg_dump and
+  // pg_restore always use DATABASE_URL — DDL and session state do not survive
+  // transaction pooling.
+  DATABASE_URL_POOLED: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.url().startsWith('postgresql://').optional(),
+  ),
+  // Connections each process (every app replica, the worker, the realtime)
+  // keeps in its pg pool. Kept as a string; `src/lib/db-pool.ts` parses it
+  // (default 10).
+  DB_POOL_MAX: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .regex(/^[1-9][0-9]{0,2}$/, 'DB_POOL_MAX must be an integer from 1 to 999')
+      .optional(),
+  ),
+  // **Build** time: Next embeds it in the server output so every replica and
+  // every deploy decrypt the same Server Action closures. Comes from the
+  // GitHub secret of the same name (BuildKit secret in the Dockerfile).
+  // Without it Next generates a key per build. Base64 of 16, 24 or 32 bytes
+  // (`openssl rand -base64 32`).
+  NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .refine(
+        (v) => {
+          if (!/^[A-Za-z0-9+/]+={0,2}$/.test(v)) return false
+          try {
+            return [16, 24, 32].includes(atob(v).length)
+          } catch {
+            return false
+          }
+        },
+        'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY must be base64 of 16, 24 or 32 bytes',
+      )
+      .optional(),
+  ),
+  // Budget (ms) of each Redis call of the shared-tag cache handler
+  // (lib/next-cache, read there straight from process.env). Default 150.
+  NEXT_CACHE_TAGS_TIMEOUT_MS: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .regex(/^[1-9][0-9]{0,4}$/, 'NEXT_CACHE_TAGS_TIMEOUT_MS must be a positive integer')
+      .optional(),
+  ),
 }).superRefine(requireBillingCredentials)
 
 const validatedServerEnv =
@@ -472,6 +527,10 @@ export const {
   SENTRY_AUTH_TOKEN,
   CANVAS_LAB,
   SITES_ROOT_DOMAIN,
+  DATABASE_URL_POOLED,
+  DB_POOL_MAX,
+  NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
+  NEXT_CACHE_TAGS_TIMEOUT_MS,
 } = validatedServerEnv
 
 /** The Steel Canvas playground opens in dev/test, and in production only
