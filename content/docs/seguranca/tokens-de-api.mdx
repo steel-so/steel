@@ -1,0 +1,244 @@
+---
+title: Tokens de API
+description: Crie um token pessoal para scripts, CI e o Steel CLI, escolha workspace, módulos, nível de acesso e validade, e revogue quando não precisar mais.
+section: seguranca
+order: 2
+---
+
+Um **token de API** é uma senha só para máquinas. Ele deixa um script, um
+pipeline de CI ou o [Steel CLI](/dev/cli) usar a API pública do Steel **em seu
+nome**: com o seu usuário, as suas permissões e apenas no workspace e nos
+módulos que você escolher.
+
+O token tem este formato: `stl_pat_` seguido de 43 letras, números, `-` e `_`.
+
+## Quando usar
+
+- **Um script ou uma automação interna** que abre chamados, importa leads ou
+  envia templates do WhatsApp.
+- **Um pipeline de CI** (GitHub Actions, GitLab CI) que registra um chamado de
+  mudança a cada deploy.
+- **O Steel CLI** num servidor ou no CI, onde não há navegador para o
+  `steel login`.
+
+No seu computador, prefira o `steel login`: ele cria o token sozinho e o guarda
+no chaveiro do sistema (veja [Entrar pelo terminal](#entrar-pelo-terminal-steel-login)).
+Para usar o Steel de dentro do Claude, do ChatGPT ou do Cursor, você não precisa
+de token: veja [Conectar o Steel ao Claude, ChatGPT ou
+Cursor](/docs/steel-ai/conectar-claude-chatgpt-cursor).
+
+<Callout type='aviso'>
+  Quem tem o token age como você. Não cole o token em chat, e-mail, issue ou
+  código versionado. Guarde num cofre de segredos (GitHub Secrets, 1Password,
+  Vault) e dê a ele só os módulos e o nível de acesso de que o script precisa.
+</Callout>
+
+## Criar um token
+
+1. Abra **Configurações › Segurança** (menu do seu avatar) e role até **Tokens
+   de API**.
+2. Clique em **Criar token**. Abre a janela **Criar token de API**.
+3. Preencha:
+   - **Nome**: para você reconhecer o token depois, por exemplo "Deploy no
+     GitHub Actions". Até 100 caracteres.
+   - **Workspace**: o token vale só para ele. Aparecem os workspaces de que você
+     é membro e que têm pelo menos um módulo habilitado.
+   - **Módulos**: marque ServiceDesk, CRM e/ou Comunicação. Pelo menos um. Vêm
+     marcados todos os módulos habilitados no workspace escolhido.
+   - **Nível de acesso**: **Somente ler** (consultar chamados, leads, negócios e
+     templates) ou **Ler e alterar** (também criar e atualizar registros). O
+     padrão é **Somente ler**.
+   - **Validade**: 7 dias, 30 dias, 90 dias, 180 dias ou 1 ano. O padrão é **90
+     dias**.
+4. Clique em **Criar token**. A janela muda para **Token criado**, com o valor
+   completo e o botão **Copiar token**.
+5. Copie e guarde o token **agora**. Por segurança, ele não aparece de novo: o
+   Steel guarda só uma impressão digital (hash) dele. Perdeu? Revogue e crie
+   outro.
+6. Clique em **Concluir**. O token entra na lista.
+
+<Callout type='nota'>
+  O token nunca tem mais poder do que você. Se o seu papel no workspace não
+  pode mudar a fase de um chamado, um token **Ler e alterar** também não pode.
+  O nível de acesso só restringe mais.
+</Callout>
+
+## Usar o token
+
+Envie o token no cabeçalho `Authorization` de cada chamada à API v1. Para
+conferir se ele funciona, peça os dados do próprio token:
+
+```bash
+curl https://homologacao.stratustelecom.com.br/api/v1/me \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "user": { "id": "ckv9x2p0h0000us7d3k1e5abc", "name": "Ana Souza", "email": "ana@empresa.com.br" },
+    "workspace": { "id": "ckv9x2p0h0000ws7d3k1e5abc", "slug": "empresa", "name": "Empresa" },
+    "role": "MEMBER",
+    "scopes": ["api:read"],
+    "modules": ["SERVICE_DESK", "CRM"],
+    "token": { "id": "cm2tok…", "expiresAt": "2027-01-16T12:00:00.000Z" }
+  }
+}
+```
+
+No Steel CLI, coloque o token na variável `STEEL_TOKEN`. Ela tem precedência
+sobre o login salvo:
+
+```bash
+export STEEL_TOKEN=stl_pat_...
+steel whoami
+```
+
+No SDK TypeScript (`@steel-so/sdk`):
+
+```ts
+import { createSteelClient } from '@steel-so/sdk'
+
+const steel = createSteelClient({
+  baseUrl: 'https://homologacao.stratustelecom.com.br',
+  token: process.env.STEEL_TOKEN,
+})
+
+const me = await steel.me()
+if (me.ok) console.log(me.data.workspace.name)
+else console.error(me.error.code)
+```
+
+Troque o endereço pelo do Steel da sua empresa. As rotas, os parâmetros e os
+exemplos de cada módulo estão em [API pública v1](/dev/api-v1).
+
+## O que a lista mostra
+
+Cada token da lista **Tokens de API** traz:
+
+- o **nome** e o nível de acesso (**Somente ler** ou **Ler e alterar**);
+- o começo do valor (`stl_pat_` não aparece; são os 8 primeiros caracteres
+  depois dele, seguidos de `…`), para você comparar com o que está no script;
+- o **workspace** e os **módulos**;
+- quando foi criado, quando expira (ou **Expirou**) e o **último uso** (ou
+  **Ainda não usado**). O último uso é atualizado no máximo uma vez por minuto.
+
+Tokens criados pelo `steel login` também aparecem aqui, com o nome **Steel CLI
+— <nome da máquina>**.
+
+## Revogar
+
+1. Em **Configurações › Segurança › Tokens de API**, clique em **Revogar** no
+   token.
+2. Confirme em **Revogar token?**. Scripts e terminais que usam o token perdem
+   o acesso **na próxima chamada**. Não dá para desfazer.
+3. O token some da lista. Se ainda precisar do acesso, crie outro e troque o
+   valor no script.
+
+O `steel logout` revoga o token do próprio CLI. Um token passado em
+`STEEL_TOKEN` não é revogado pelo `steel logout`: revogue pela lista.
+
+## Quando o token para de funcionar
+
+| Situação | O que acontece |
+| --- | --- |
+| A validade acabou | As chamadas voltam `401`. O token continua na lista com a etiqueta **Expirado** até você revogar. Não há renovação: crie outro |
+| Você revogou, ou um administrador revogou | `401` na próxima chamada |
+| Você saiu ou foi removido do workspace | `401` na próxima chamada, sem precisar revogar |
+| O workspace foi suspenso | `401` enquanto durar a suspensão |
+| Um administrador desligou um módulo no workspace | O token perde só aquele módulo: as rotas dele voltam `403`, o resto segue |
+| O seu papel no workspace mudou | O token passa a ter as permissões do papel novo na próxima chamada |
+
+Em todos os casos de `401`, a resposta é a mesma: "Token de API inválido,
+expirado ou revogado".
+
+## Entrar pelo terminal (`steel login`)
+
+O `steel login` cria um token sem você copiar nada. O terminal mostra um
+código, você confirma no navegador e o CLI recebe o token.
+
+1. No terminal, rode:
+
+   ```bash
+   steel login
+   ```
+
+   O CLI mostra o **Código de confirmação** (8 letras e números, como
+   `BCDF-GH23`), o link `/device?code=…` e "Aguardando a confirmação…". Quando
+   consegue, ele abre o link no navegador sozinho.
+2. No navegador, se você não estiver logado no Steel, entre com a sua conta: a
+   página volta para a confirmação depois.
+3. A página **Entrar no Steel CLI em <máquina>** mostra o mesmo código e a conta
+   em **Conectado como**. Confira se o código é **igual** ao do terminal. Se
+   você não rodou `steel login` agora, clique em **Recusar**.
+4. Escolha o **Workspace**, os **Módulos**, o **Nível de acesso** e a
+   **Validade**, como na criação pelo menu. O quadro de baixo resume o que o
+   terminal vai receber.
+5. Clique em **Permitir acesso**. A página mostra **Pronto! Volte ao terminal**.
+6. No terminal aparece "Conectado ao workspace <nome> (<slug>) no perfil
+   <perfil>", com escopos, módulos e validade. Confira com `steel whoami`.
+
+O token fica no chaveiro do sistema (Keychain no macOS, Gerenciador de
+Credenciais no Windows, Secret Service no Linux) ou, sem chaveiro, em
+`~/.config/steel/credentials` com permissão 600.
+
+**O link não abriu?** Abra `/device` no endereço do Steel da sua empresa (por
+exemplo, `https://homologacao.stratustelecom.com.br/device`), digite o código
+do terminal em **Código** e clique em **Continuar**. Maiúsculas e o hífen não
+importam: `bcdf gh23` vale o mesmo que `BCDF-GH23`.
+
+<Callout type='nota'>
+  O código vale **10 minutos**. Passou disso, o terminal mostra "O código
+  expirou antes da confirmação": rode `steel login` de novo. Se você clicou em
+  **Recusar**, o terminal mostra "O acesso foi negado no navegador".
+</Callout>
+
+A instalação do CLI, os perfis e todos os comandos estão em [Steel
+CLI](/dev/cli).
+
+## Para administradores: tokens dos membros
+
+<Callout type='admin'>
+  O dono e os administradores do workspace veem e revogam os tokens de todos os
+  membros. Os demais membros veem só os próprios, no perfil.
+</Callout>
+
+1. Abra **Ajustes › Apps conectados** e role até **Tokens de API**.
+2. A lista mostra, de cada token ativo do workspace: o membro (nome e e-mail),
+   o nome do token, o nível de acesso, a etiqueta **Steel CLI** quando ele veio
+   do `steel login`, **Expirado** quando venceu, o começo do valor, os módulos,
+   a criação, a validade e o último uso.
+3. Para cortar um token, clique em **Revogar** e confirme. O membro perde o
+   acesso por aquele token na próxima chamada; os outros tokens dele seguem
+   valendo.
+
+Remover alguém do workspace já corta todos os tokens da pessoa naquele
+workspace. Criar, revogar e usar tokens fica registrado na trilha de auditoria.
+
+## Limites
+
+- **50 tokens ativos** por pessoa, somando todos os workspaces. Tokens
+  revogados ou expirados não contam.
+- **Validade** de 1 a 365 dias (na tela: de 7 dias a 1 ano). Padrão: 90 dias.
+- **300 chamadas por minuto** por token, além do limite da sua conta (100 por
+  minuto, somando o aplicativo e a API). Ao passar, a resposta é `429` com o
+  cabeçalho `Retry-After`. Veja [Limites de requisição](/dev/limites).
+- Na página `/device`, até 20 códigos conferidos a cada 10 minutos por pessoa.
+
+## Algo não funciona?
+
+| O que acontece | Por quê e o que fazer |
+| --- | --- |
+| `401` "Token de API inválido, expirado ou revogado" | O token venceu, foi revogado, você saiu do workspace ou o valor foi colado errado (espaço, quebra de linha). Confira na lista; se preciso, crie outro |
+| `403` "Este token só permite leitura" | O token é **Somente ler**. Crie um **Ler e alterar** para criar ou atualizar registros |
+| `403` "Este token não dá acesso a este módulo" | O módulo não foi marcado na criação, ou foi desligado no workspace. Crie um token com o módulo |
+| `403` numa ação específica | O seu papel no workspace não permite aquela ação. Fale com um administrador |
+| `422` "Você já tem 50 tokens de API ativos" | Revogue os que não usa mais e tente de novo |
+| `429` | Muitas chamadas seguidas. Espere os segundos do `Retry-After` |
+| O workspace não aparece em **Workspace** | Ele não tem módulos habilitados ou está suspenso. Peça a um administrador para habilitar o ServiceDesk, o CRM ou a Comunicação |
+| "Nenhum workspace seu tem módulos habilitados" | Mesmo caso acima, para todos os seus workspaces |
+| `/device` diz "Código não encontrado ou expirado" | O código passou dos 10 minutos, já foi usado ou foi digitado errado. Rode `steel login` de novo |
+| `/device` diz "O código tem 8 letras e números" | Faltou ou sobrou caractere. Copie o código do terminal |
+| Perdi o valor do token | Não há como ver de novo. Revogue e crie outro |
