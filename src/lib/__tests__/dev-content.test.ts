@@ -63,7 +63,12 @@ const KNOWN_COMPONENTS = new Set([
  * `/api/mcp` speaks MCP (JSON-RPC over Streamable HTTP), not REST: it is
  * documented in the MCP guide (`/dev/mcp`), not in the REST reference.
  */
-const NON_REST_PATHS = new Set(['/mcp'])
+const NON_REST_PATHS = new Set([
+  '/mcp',
+  // The OAuth issuer (`<app>/api/auth`) quoted in the MCP OAuth guide: an
+  // identifier in the metadata documents, not a route.
+  '/auth',
+])
 
 /** Url patterns of every page and route handler under `app/`. */
 function appRoutes(): RegExp[] {
@@ -112,7 +117,14 @@ describe('developer guides (content/dev)', () => {
       '/dev/limites',
       '/dev/paginacao',
       '/dev/api-v1',
+      '/dev/api-v1/conta',
+      '/dev/api-v1/servicedesk',
+      '/dev/api-v1/crm',
+      '/dev/api-v1/comunicacao',
+      '/dev/api-v1/webhooks',
       '/dev/webhooks',
+      '/dev/webhooks/eventos',
+      '/dev/webhooks/receber',
       '/dev/guias/criar-lead',
       '/dev/guias/abrir-chamado',
       '/dev/guias/disparar-workflow',
@@ -122,6 +134,8 @@ describe('developer guides (content/dev)', () => {
       '/dev/cli/webhooks',
       '/dev/sdk',
       '/dev/mcp',
+      '/dev/mcp/escrita',
+      '/dev/mcp/oauth',
       '/dev/changelog',
       '/dev/suporte',
     ])
