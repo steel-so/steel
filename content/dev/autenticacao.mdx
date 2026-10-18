@@ -1,6 +1,6 @@
 ---
 title: Autenticação e chaves
-description: As formas de acesso da API, o escopo de cada uma, como rodar e revogar chaves e tokens e como guardar segredos.
+description: As formas de acesso da API, o escopo de cada uma, o token pessoal da API v1 e o login pelo terminal, como rodar e revogar chaves e tokens e como guardar segredos.
 section: fundamentos
 order: 1
 ---
@@ -12,6 +12,7 @@ delas usa usuário e senha.
 
 | Forma | Onde vai | Usada em | Escopo |
 | --- | --- | --- | --- |
+| Token pessoal | `Authorization: Bearer stl_pat_...` | `/api/v1/...` ([API pública v1](/dev/api-v1), [Steel CLI](/dev/cli), [SDK](/dev/sdk)) | O que **você** pode fazer em **um** workspace, nos módulos e com o escopo do token |
 | Chave de API do CRM | `Authorization: Bearer crm_live_...` | `POST /api/crm/integrations/leads` | Criar leads no CRM de **um** workspace |
 | Token do formulário | Na URL | `POST /api/crm/forms/<token>/submit` | Enviar **um** formulário publicado |
 | Token do workflow | Na URL | `POST /api/crm/workflows/<token>/trigger` | Disparar **um** workflow ativo |
@@ -23,6 +24,83 @@ delas usa usuário e senha.
 
 Toda chave e todo token valem para um único workspace e um único ambiente: o que
 foi criado em homologação não funciona em produção.
+
+Qual usar:
+
+- **Scripts, CI, integrações internas e o terminal:** token pessoal, na API v1.
+- **Um site ou sistema que só envia leads:** chave de API do CRM, que não lê
+  nada.
+- **Um sistema de monitoramento, um formulário ou um workflow:** a URL com
+  token daquela entrada.
+- **Um cliente de IA (Claude, ChatGPT, Cursor):** o OAuth do
+  [servidor MCP](/dev/mcp).
+
+## Token pessoal
+
+O token pessoal (`stl_pat_` seguido de 43 caracteres) é a forma de acesso da
+[API pública v1](/dev/api-v1), do [Steel CLI](/dev/cli) e do
+[SDK](/dev/sdk). Ele age em seu nome: cada chamada roda com o seu papel e o
+seu perfil de acesso no workspace, como no aplicativo, e cada alteração fica
+registrada na auditoria com origem `api`.
+
+Cada token tem:
+
+- **um workspace**;
+- **módulos** (ServiceDesk, CRM, Comunicação), entre os habilitados no
+  workspace;
+- **um nível de acesso:** **Somente ler** (`api:read`) ou **Ler e alterar**
+  (`api:read` e `api:write`);
+- **uma validade:** 7, 30, 90 ou 180 dias, ou 1 ano. O padrão é 90 dias.
+
+Cada pessoa pode ter até 50 tokens ativos; o próximo responde
+`422 API_TOKEN_LIMIT_REACHED`. O que cada escopo e cada módulo libera, e os
+erros `403` que eles geram, estão em [API pública v1](/dev/api-v1#token-pessoal).
+
+### Crie um token na tela
+
+Para o CI, um servidor ou qualquer lugar sem navegador:
+
+1. No Steel, abra **Ajustes › Segurança › Tokens de API** e clique em **Criar
+   token**.
+2. Preencha o **Nome** (por exemplo, "Deploy no GitHub Actions"), o
+   **Workspace**, os **Módulos**, o **Nível de acesso** e a **Validade**.
+3. Clique em **Criar token**. A janela **Token criado** mostra o valor uma
+   única vez: copie e clique em **Concluir**. O Steel guarda só um hash.
+
+A lista mostra, de cada token, o nome, o nível de acesso, o começo do valor
+(`stl_pat_` e mais 8 caracteres), o workspace e os módulos, a criação, a
+validade e o último uso.
+
+### Ou entre pelo terminal (fluxo de dispositivo)
+
+No seu computador, o `steel login` cria o token sem você copiar nada:
+
+1. O CLI pede um código ao Steel (`POST /api/v1/auth/device`) e mostra um
+   código de 8 caracteres, como `BCDF-GH23`.
+2. O navegador abre `/device`. Você confere o código, escolhe o workspace, os
+   módulos, o nível de acesso e a validade, e clica em **Permitir acesso**.
+3. Enquanto isso, o CLI consulta `POST /api/v1/auth/device/token` a cada 5
+   segundos. Aprovado, recebe o token, chamado `Steel CLI — <máquina>`, e o
+   guarda no chaveiro do sistema.
+
+O código vale 10 minutos. Quem clica em **Recusar** encerra o login. O passo a
+passo, com as mensagens do terminal, está em
+[Steel CLI](/dev/cli#entre-no-steel); para fazer o mesmo no seu próprio
+programa, use o [`waitForDeviceToken` do SDK](/dev/sdk#login-por-dispositivo).
+
+### Revogação e validade
+
+- **Você:** em **Ajustes › Segurança › Tokens de API**, clique em **Revogar**
+  no token. O `steel logout` revoga o token do CLI
+  (`DELETE /api/v1/auth/token`).
+- **Os administradores:** o dono e os administradores do workspace veem os
+  tokens de todos os membros em **Ajustes › Apps conectados › Tokens de API** e
+  podem revogar qualquer um.
+- Um token também deixa de valer quando vence ou quando você sai do workspace.
+
+O efeito é imediato: a próxima chamada responde `401 UNAUTHORIZED`. Um token
+revogado não volta; crie outro. Para trocar um token sem parar um job, crie o
+novo, troque o segredo do CI e só então revogue o antigo.
 
 ## Chave de API do CRM
 
@@ -105,8 +183,9 @@ sessão que o login define (`better-auth.session_token`; em HTTPS,
 Cada chamada vale pelo usuário da sessão: papel no workspace, módulos habilitados
 e perfis de acesso.
 
-Não há, hoje, chave de API para essas rotas. Para uma integração, prefira as
-entradas acima; se o seu caso precisar de outra rota, fale com o
+Essas rotas não aceitam token pessoal nem chave de API, e podem mudar a cada
+versão. Para uma integração, use a [API pública v1](/dev/api-v1) ou as entradas
+acima; se o seu caso precisar de uma rota que a v1 ainda não tem, fale com o
 [suporte](/dev/suporte) antes de automatizar um login.
 
 ## Guarde os segredos com cuidado

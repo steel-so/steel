@@ -12,6 +12,7 @@ export const DEV_SECTION_SLUGS = [
   'fundamentos',
   'webhooks',
   'guias',
+  'ferramentas',
   'mcp',
   'recursos',
 ] as const

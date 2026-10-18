@@ -19,6 +19,8 @@ describe('developer site (/dev)', () => {
     expect(html).toContain('"@type":"CollectionPage"')
     expect(html).toContain('href="/dev/comecando"')
     expect(html).toContain('href="/dev/api"')
+    expect(html).toContain('href="/dev/cli"')
+    expect(html).toContain('href="/dev/sdk"')
     expect(html).toContain('suporte@stratustelecom.com.br')
   })
 
@@ -30,6 +32,10 @@ describe('developer site (/dev)', () => {
     ['/dev/guias/abrir-chamado', 'Abrir chamado a partir do seu sistema'],
     ['/dev/mcp', 'Servidor MCP'],
     ['/dev/api-v1', 'API pública v1'],
+    ['/dev/cli', 'Steel CLI'],
+    ['/dev/cli/scripts-e-ci', 'CLI em scripts e no CI'],
+    ['/dev/cli/webhooks', 'Webhooks na sua máquina com o CLI'],
+    ['/dev/sdk', '@steel-so/sdk'],
   ])('serves %s as a TechArticle', async (path, title) => {
     const { res, html } = await page(path)
     expect(res.status).toBe(200)

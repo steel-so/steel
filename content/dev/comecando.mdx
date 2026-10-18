@@ -1,6 +1,6 @@
 ---
 title: Começando
-description: Escolha a porta de entrada certa, crie uma chave de API do CRM e faça a primeira requisição com cURL, JavaScript ou Python.
+description: Escolha a porta de entrada certa e faça a primeira chamada, pelo Steel CLI e a API v1 ou com uma chave de API do CRM, em cURL, JavaScript ou Python.
 section: introducao
 order: 1
 ---
@@ -12,6 +12,8 @@ Cada uma tem a sua forma de acesso, pensada para o caso de uso:
 
 | Você quer | Entrada | Acesso |
 | --- | --- | --- |
+| Automatizar chamados, leads, oportunidades e templates em scripts, no CI ou no terminal | [API pública v1](/dev/api-v1) (`/api/v1/...`), pelo [Steel CLI](/dev/cli) ou pelo [SDK](/dev/sdk) | Token pessoal (`stl_pat_...`) no header `Authorization` |
+| Receber no seu sistema o que acontece no Steel | [Webhooks que o Steel envia](/dev/webhooks#webhooks-que-o-steel-envia) | Assinatura `Steel-Signature` que você confere |
 | Criar leads no CRM a partir do site, do ERP ou de uma automação | `POST /api/crm/integrations/leads` | Chave de API no header `Authorization` |
 | Enviar um formulário do CRM pelo seu próprio front | `POST /api/crm/forms/<token>/submit` | Token público do formulário publicado |
 | Iniciar um workflow do CRM a partir de um evento seu | `POST /api/crm/workflows/<token>/trigger` | Token do gatilho, na URL |
@@ -19,11 +21,79 @@ Cada uma tem a sua forma de acesso, pensada para o caso de uso:
 | Refletir issues e pull/merge requests nos chamados | `POST /api/integrations/github/webhook` e `POST /api/integrations/gitlab/webhook` | Assinatura do GitHub ou secret token do GitLab |
 
 O restante da API (as rotas em `/api/workspaces/<id>/...`) é a que o próprio
-aplicativo usa e exige a sessão de um usuário. Veja
-[Autenticação e chaves](/dev/autenticacao) antes de usá-la numa integração.
+aplicativo usa, exige a sessão de um usuário e pode mudar a cada versão. Para
+automatizar, use a API v1. Veja [Autenticação e chaves](/dev/autenticacao).
 
-Este guia usa a primeira entrada, a de leads, porque é a única que trabalha com
-uma **chave de API**. As outras estão nos [guias por caso de uso](/dev/guias/criar-lead).
+Este guia mostra dois começos: [pelo terminal](#pelo-terminal-com-o-steel-cli),
+com o Steel CLI e a API v1, e [pela chave de API do CRM](#crie-uma-chave-de-api),
+para enviar leads de outro sistema. As outras entradas estão nos
+[guias por caso de uso](/dev/guias/criar-lead).
+
+## Pelo terminal, com o Steel CLI
+
+O jeito mais rápido de chamar a API v1 é o [Steel CLI](/dev/cli). Ele faz o
+login pelo navegador e guarda o token pessoal para você.
+
+1. Instale (outros canais, inclusive Windows, em
+   [Steel CLI](/dev/cli#instale)):
+
+   ```bash
+   brew install steel-so/tap/steel
+   # ou: npm install -g @steel-so/cli
+   ```
+
+2. Entre. O terminal mostra um código e abre `/device` no navegador; confira o
+   código, escolha o workspace, os módulos e o nível de acesso e clique em
+   **Permitir acesso**:
+
+   ```bash
+   steel login
+   ```
+
+3. Confira quem está conectado e faça a primeira chamada:
+
+   ```bash
+   steel whoami
+   steel api GET /me
+   steel sd ticket list --assignee me
+   ```
+
+O `steel api GET /me` devolve o envelope da API v1:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "user": { "id": "ckv9x2p0h0000us7d3k1e5abc", "name": "Ana Souza", "email": "ana@empresa.com.br" },
+    "workspace": { "id": "ckv9x2p0h0000ws7d3k1e5abc", "slug": "empresa", "name": "Empresa" },
+    "role": "MEMBER",
+    "scopes": ["api:read"],
+    "modules": ["SERVICE_DESK", "CRM"],
+    "token": { "id": "cm2tok...", "expiresAt": "2027-01-16T12:00:00.000Z" }
+  }
+}
+```
+
+A mesma chamada com `curl`, usando um token criado em **Ajustes › Segurança ›
+Tokens de API**:
+
+```bash
+curl "$STEEL_URL/api/v1/me" -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+E em TypeScript, com o [SDK](/dev/sdk):
+
+```ts
+import { createSteelClient } from '@steel-so/sdk'
+
+const steel = createSteelClient({ baseUrl: process.env.STEEL_URL!, token: process.env.STEEL_TOKEN })
+const me = await steel.me()
+console.log(me.ok ? me.data.workspace.name : me.error.code)
+```
+
+Para usar no CI, sem navegador, veja [CLI em scripts e no CI](/dev/cli/scripts-e-ci).
+Para os escopos, os módulos e a paginação, veja [API pública v1](/dev/api-v1).
 
 ## Crie uma chave de API
 
@@ -166,6 +236,8 @@ Se algo der errado, `success` vem `false` com um código estável em
 
 ## Próximos passos
 
+- [Steel CLI](/dev/cli) e [SDK `@steel-so/sdk`](/dev/sdk): a API v1 no
+  terminal, no CI e no seu código.
 - [Autenticação e chaves](/dev/autenticacao): rotação, revogação e as outras
   formas de acesso.
 - [Formato de resposta e erros](/dev/respostas-e-erros): o envelope e a tabela

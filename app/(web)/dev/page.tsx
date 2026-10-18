@@ -1,4 +1,8 @@
-import { ApiIcon, ArrowRight01Icon } from '@hugeicons-pro/core-stroke-rounded'
+import {
+  ApiIcon,
+  ArrowRight01Icon,
+  CommandLineIcon,
+} from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SteelIcon } from '@/components/icon/icon'
@@ -10,7 +14,7 @@ import { SITE_URL } from '@/src/lib/seo/site'
 
 const TITLE = 'Desenvolvedores | Steel'
 const DESCRIPTION =
-  'Guias e referência da API do Steel: chave de API, formato de resposta, erros, limites, webhooks e exemplos completos para integrar seus sistemas.'
+  'Guias e referência da API do Steel: API pública v1, token pessoal, Steel CLI, SDK TypeScript, formato de resposta, erros, limites, webhooks e exemplos completos para integrar seus sistemas.'
 
 export const metadata: Metadata = publicPageMetadata({
   title: TITLE,
@@ -20,6 +24,18 @@ export const metadata: Metadata = publicPageMetadata({
 
 /** What an outside system can do with Steel today, and how it gets in. */
 const INTEGRATIONS = [
+  {
+    title: 'Automatizar pelo terminal e no CI',
+    access: 'Token pessoal (Steel CLI)',
+    route: 'steel login · /api/v1/...',
+    href: '/dev/cli',
+  },
+  {
+    title: 'Usar a API v1 no seu código TypeScript',
+    access: 'Token pessoal (SDK @steel-so/sdk)',
+    route: 'npm install @steel-so/sdk',
+    href: '/dev/sdk',
+  },
   {
     title: 'Criar leads no CRM',
     access: 'Chave de API (Bearer)',
@@ -49,6 +65,12 @@ const INTEGRATIONS = [
     access: 'Assinatura HMAC ou secret token',
     route: 'POST /api/integrations/github/webhook',
     href: '/dev/guias/eventos-github-gitlab',
+  },
+  {
+    title: 'Receber os eventos do Steel no seu sistema',
+    access: 'Assinatura Steel-Signature (HMAC)',
+    route: 'POST <url do seu sistema>',
+    href: '/dev/webhooks#webhooks-que-o-steel-envia',
   },
   {
     title: 'Conectar Claude, ChatGPT e Cursor',
@@ -107,9 +129,10 @@ export default async function DevIndexPage() {
         </h1>
         <p className='text-lg text-muted-foreground'>
           Guias para quem conecta um site, um ERP, uma ferramenta de
-          monitoramento ou um repositório ao Steel: como autenticar, o formato
-          das respostas, os erros, os limites e exemplos completos que rodam
-          contra a API de verdade. A referência lista cada rota.
+          monitoramento ou um repositório ao Steel, ou automatiza pelo terminal
+          com o Steel CLI e o SDK: como autenticar, o formato das respostas, os
+          erros, os limites e exemplos completos que rodam contra a API de
+          verdade. A referência lista cada rota.
         </p>
         <div className='flex flex-wrap gap-3 pt-2'>
           <Link
@@ -125,6 +148,13 @@ export default async function DevIndexPage() {
           >
             <SteelIcon icon={ApiIcon} size={16} />
             Referência da API
+          </Link>
+          <Link
+            href='/dev/cli'
+            className='inline-flex h-9 items-center gap-2 rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-card'
+          >
+            <SteelIcon icon={CommandLineIcon} size={16} />
+            Steel CLI
           </Link>
         </div>
       </header>

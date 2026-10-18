@@ -68,6 +68,7 @@ describe('developer site layout', () => {
       'Fundamentos',
       'Webhooks',
       'Guias por caso de uso',
+      'CLI e SDK',
       'Clientes de IA (MCP)',
       'Recursos',
       'Referência',
@@ -86,6 +87,13 @@ describe('developer site layout', () => {
       'href',
       '/dev/mcp',
     )
+    expect(screen.getByRole('link', { name: 'Steel CLI' })).toHaveAttribute(
+      'href',
+      '/dev/cli',
+    )
+    expect(
+      screen.getByRole('link', { name: 'CLI em scripts e no CI' }),
+    ).toHaveAttribute('href', '/dev/cli/scripts-e-ci')
   })
 
   it('searches the guides by heading', async () => {
