@@ -532,3 +532,184 @@ describe('bindCanvasStore — lifecycle', () => {
     expectConverged(a, b)
   })
 })
+
+describe('bindCanvasStore — undo/redo compare-and-set', () => {
+  it('does not undo over a later change of the same prop by someone else', () => {
+    const { net, peers } = setup()
+    const [a, b] = peers
+    a.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de A' } })
+    net.flush()
+    b.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de B' } })
+    net.flush()
+    a.store.undo()
+    net.flush()
+    expect(text(a.store, 't1')).toMatchObject({ text: 'de B' })
+    expect(text(b.store, 't1')).toMatchObject({ text: 'de B' })
+    expect(a.store.getState().lastSkipped).toEqual({
+      direction: 'undo',
+      whole: true,
+      fields: [{ id: 't1', field: 'props', path: 'text' }],
+    })
+    // Nothing of the step was left: it is gone, not stuck on top.
+    expect(a.store.getState().canUndo).toBe(false)
+    expect(a.store.getState().canRedo).toBe(false)
+    expectConverged(a, b)
+  })
+
+  it('undoes the rest of the step and redoes only what it undid', () => {
+    const { net, peers } = setup()
+    const [a, b] = peers
+    a.store.dispatch({
+      kind: 'update',
+      id: 't1',
+      set: { text: 'de A', 'style.color': '#f00' },
+    })
+    net.flush()
+    b.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de B' } })
+    net.flush()
+    a.store.undo()
+    net.flush()
+    expect(text(b.store, 't1')).toEqual({
+      text: 'de B',
+      style: { color: '#000' },
+    })
+    expect(a.store.getState().lastSkipped).toEqual({
+      direction: 'undo',
+      whole: false,
+      fields: [{ id: 't1', field: 'props', path: 'text' }],
+    })
+    a.store.redo()
+    net.flush()
+    expect(text(b.store, 't1')).toEqual({
+      text: 'de B',
+      style: { color: '#f00' },
+    })
+    expect(a.store.getState().lastSkipped).toBeNull()
+    expectConverged(a, b)
+  })
+
+  it('does not redo over a change made after the undo', () => {
+    const { net, peers } = setup()
+    const [a, b] = peers
+    a.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de A' } })
+    a.store.undo()
+    net.flush()
+    b.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de B' } })
+    net.flush()
+    a.store.redo()
+    net.flush()
+    expect(text(b.store, 't1')).toMatchObject({ text: 'de B' })
+    expect(a.store.getState()).toMatchObject({
+      canRedo: false,
+      lastSkipped: { direction: 'redo', whole: true },
+    })
+    expectConverged(a, b)
+  })
+
+  it('guards meta keys too (rename by someone else survives an undo)', () => {
+    const { net, peers } = setup()
+    const [a, b] = peers
+    a.store.dispatch({ kind: 'meta', id: 't1', set: { name: 'Título A' } })
+    net.flush()
+    b.store.dispatch({ kind: 'meta', id: 't1', set: { name: 'Título B' } })
+    net.flush()
+    a.store.undo()
+    net.flush()
+    expect(getNode(b.store.getState().doc, 't1')?.meta).toEqual({
+      name: 'Título B',
+    })
+    expect(a.store.getState().lastSkipped).toMatchObject({
+      fields: [{ id: 't1', field: 'meta', path: 'name' }],
+    })
+    expectConverged(a, b)
+  })
+
+  it('undo after concurrent writes of the same prop keeps the winner unless it is this user’s', () => {
+    const { net, peers } = setup()
+    const [a, b] = peers
+    a.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de A' } })
+    b.store.dispatch({ kind: 'update', id: 't1', set: { text: 'de B' } })
+    net.flush()
+    const winner = (text(a.store, 't1') as { text: string }).text
+    a.store.undo()
+    net.flush()
+    expect(text(b.store, 't1')).toMatchObject({
+      text: winner === 'de A' ? 'Olá' : 'de B',
+    })
+    expectConverged(a, b)
+  })
+
+  it('never lets an undo or redo overwrite another peer’s later change (random interleaving)', () => {
+    let seed = 2026
+    const random = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648
+      return seed / 2147483648
+    }
+    const pick = <T>(items: T[]) => items[Math.floor(random() * items.length)]
+    const fields = ['t1:text', 't1:style.color', 't2:text', 't2:style.color']
+    const read = (peer: Peer) => {
+      const doc = peer.store.getState().doc
+      return Object.fromEntries(
+        fields.map((field) => {
+          const [id, path] = field.split(':')
+          const props = getNode(doc, id)?.props as Record<string, unknown>
+          const value = path
+            .split('.')
+            .reduce<unknown>(
+              (acc, key) =>
+                acc && typeof acc === 'object'
+                  ? (acc as Record<string, unknown>)[key]
+                  : undefined,
+              props,
+            )
+          return [field, value]
+        }),
+      )
+    }
+
+    for (let run = 0; run < 20; run++) {
+      const { net, peers } = setup()
+      /** Per peer and field: the value that peer's last action there left. */
+      const left = new Map<Peer, Map<string, unknown>>(
+        peers.map((peer) => [peer, new Map()]),
+      )
+      let checked = 0
+      for (let step = 0; step < 40; step++) {
+        const peer = pick(peers)
+        const before = read(peer)
+        const choice = random()
+        const travelling = choice >= 0.5
+        if (!travelling) {
+          const id = pick(['t1', 't2'])
+          const set: Record<string, unknown> = {}
+          if (random() < 0.7) set.text = `${run}-${step}`
+          if (random() < 0.5 || Object.keys(set).length === 0) {
+            set['style.color'] = `#${(step + 1).toString(16).padStart(3, 'a')}`
+          }
+          peer.store.dispatch({ kind: 'update', id, set }, { coalesce: false })
+        } else if (choice < 0.8) {
+          peer.store.undo()
+        } else {
+          peer.store.redo()
+        }
+        const after = read(peer)
+        const mine = left.get(peer) as Map<string, unknown>
+        for (const field of fields) {
+          if (Object.is(before[field], after[field])) continue
+          if (travelling) {
+            // The invariant: a history trip only changes a field that still
+            // holds what this peer's last action there left — nobody else
+            // changed it since.
+            expect(mine.has(field)).toBe(true)
+            expect(before[field]).toEqual(mine.get(field))
+            checked++
+          }
+          mine.set(field, after[field])
+        }
+        net.flush()
+      }
+      expectConverged(...peers)
+      expect(checked).toBeGreaterThan(0)
+    }
+  })
+})

@@ -91,7 +91,9 @@ async function resolve(documentName: string): Promise<
     target: CanvasCollabTarget
     scope: CanvasCollabScope
     document: CanvasDocument
-    /** A v1 e-mail document converted on the fly (fresh ids each time). */
+    /** A v1 e-mail document converted on the fly. The conversion is
+     * deterministic (ids derived from the v1 section ids), so converting
+     * the same v1 document again gives the same ids. */
     converted: boolean
   }>
 > {
@@ -244,8 +246,11 @@ export function createCanvasCollabRuntime() {
       const resolved = await resolve(documentName)
       if (!resolved.ok) return resolved
       const { scope, document, converted } = resolved.value
-      // A converted v1 template is saved as v2 on the first store, so the
-      // ids it got now stay (a later conversion would make new ones).
+      // A converted v1 template gets no hash, so the first store always
+      // writes it through the service and it is stored as v2 from then on.
+      // The ids would be the same on any later conversion anyway (the
+      // converter derives them from the v1 section ids); the empty hash only
+      // forces that first write.
       const hash = converted ? '' : documentHash(document)
       const row = await CanvasCollabRepository.findState(documentName)
       if (!row.ok) return row
