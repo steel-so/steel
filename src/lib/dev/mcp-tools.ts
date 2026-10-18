@@ -21,6 +21,8 @@ export interface McpToolEntry {
   kind: Exclude<AiToolKind, 'DELETE'>
   /** `read` needs `mcp:read`; `write` needs `mcp:write` and the admin switch. */
   access: McpToolAccess
+  /** First sentence of the tool description: what the tool does. */
+  summary: string
 }
 
 export interface McpToolGroup {
@@ -58,6 +60,20 @@ export const MCP_TOOL_ACCESS_LABELS: Record<McpToolAccess, string> = {
   write: 'mcp:write',
 }
 
+const SUMMARY_MAX = 220
+
+/**
+ * What the tool does, for the guide: the first sentence of its description
+ * (the text the model reads), whitespace collapsed and capped.
+ */
+export function toolSummary(description: string): string {
+  const text = description.replace(/\s+/g, ' ').trim()
+  const first = text.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú(])/)[0] ?? text
+  return first.length > SUMMARY_MAX
+    ? `${first.slice(0, SUMMARY_MAX - 1).trimEnd()}…`
+    : first
+}
+
 function compareEntries(a: McpToolEntry, b: McpToolEntry): number {
   if (a.access !== b.access) return a.access === 'read' ? -1 : 1
   return a.name.localeCompare(b.name, 'en')
@@ -84,6 +100,7 @@ export function buildMcpToolCatalog(
       label: tool.label,
       kind: tool.kind,
       access: tool.kind === 'READ' ? 'read' : 'write',
+      summary: toolSummary(tool.description),
     })
     byModule.set(tool.module, entries)
   }
@@ -121,7 +138,7 @@ export function mcpToolCatalogMarkdown(
       '| ---------- | --------- | ---- | ------ |',
       ...group.tools.map(
         (tool) =>
-          `| \`${tool.name}\` | ${cell(tool.label)} | ${MCP_TOOL_KIND_LABELS[tool.kind]} | \`${MCP_TOOL_ACCESS_LABELS[tool.access]}\` |`,
+          `| \`${tool.name}\` | ${cell(tool.summary)} | ${MCP_TOOL_KIND_LABELS[tool.kind]} | \`${MCP_TOOL_ACCESS_LABELS[tool.access]}\` |`,
       ),
     ].join('\n'),
   )

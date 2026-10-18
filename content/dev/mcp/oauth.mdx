@@ -1,0 +1,357 @@
+---
+title: OAuth e protocolo para clientes próprios
+description: Para quem escreve um cliente MCP. Descoberta, registro dinâmico, autorização com PKCE, troca e renovação de tokens, revogação e as chamadas JSON-RPC ao servidor, com exemplos de requisição e resposta.
+section: mcp
+order: 3
+---
+
+Claude, ChatGPT, Cursor e os SDKs oficiais de MCP fazem tudo isto sozinhos:
+basta o endereço do servidor. Esta página é para quem escreve um cliente
+próprio, depura uma integração ou quer entender o que acontece por baixo. Os
+exemplos usam o ambiente de homologação; troque pelo endereço do seu Steel.
+
+O servidor de autorização é o do Steel, OAuth 2.1:
+
+| Item | Valor |
+| --- | --- |
+| Recurso protegido | `https://homologacao.stratustelecom.com.br/api/mcp` |
+| Emissor (_issuer_) | o endereço do Steel seguido de `/api/auth` |
+| Fluxo | Authorization code com PKCE (`S256`, obrigatório) |
+| Registro de cliente | Dinâmico (RFC 7591), sem autenticação; clientes registrados assim são públicos (`token_endpoint_auth_method: none`) |
+| Escopos | `mcp:read`, `mcp:write` e `offline_access` (para receber refresh token) |
+| Access token | Opaco, prefixo `stl_at_`, vale **1 hora** |
+| Refresh token | Prefixo `stl_rt_`, vale **30 dias**, só com `offline_access` |
+| Código de autorização | Vale 10 minutos, uso único |
+
+## 1. Descoberta
+
+Uma chamada sem token ao servidor MCP responde `401` com o cabeçalho
+`WWW-Authenticate` apontando para os metadados do recurso:
+
+```bash
+curl -i -X POST https://homologacao.stratustelecom.com.br/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer resource_metadata="https://homologacao.stratustelecom.com.br/.well-known/oauth-protected-resource"
+Content-Type: application/json
+
+{"success":false,"statusCode":401,"error":{"code":"UNAUTHORIZED","message":"Token de integração inválido ou ausente"}}
+```
+
+Com um token vencido ou revogado, o cabeçalho também traz
+`error="invalid_token"`: é o sinal para renovar ou recomeçar o fluxo.
+
+Os metadados do recurso (RFC 9728) dizem qual servidor de autorização usar:
+
+```bash
+curl https://homologacao.stratustelecom.com.br/.well-known/oauth-protected-resource
+```
+
+```json
+{
+  "resource": "https://homologacao.stratustelecom.com.br/api/mcp",
+  "authorization_servers": ["https://homologacao.stratustelecom.com.br/api/auth"],
+  "scopes_supported": ["mcp:read", "mcp:write"],
+  "bearer_methods_supported": ["header"],
+  "resource_name": "Steel",
+  "resource_documentation": "https://homologacao.stratustelecom.com.br/dev"
+}
+```
+
+E os do servidor de autorização (RFC 8414). O Steel responde no caminho do
+RFC (`/.well-known/oauth-authorization-server/api/auth`) e no caminho curto,
+com o mesmo documento:
+
+```bash
+curl https://homologacao.stratustelecom.com.br/.well-known/oauth-authorization-server
+```
+
+```json
+{
+  "issuer": "https://homologacao.stratustelecom.com.br/api/auth",
+  "authorization_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/authorize",
+  "token_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/token",
+  "registration_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/register",
+  "revocation_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/revoke",
+  "scopes_supported": ["mcp:read", "mcp:write", "offline_access"],
+  "response_types_supported": ["code"],
+  "response_modes_supported": ["query"],
+  "grant_types_supported": ["authorization_code", "refresh_token"],
+  "token_endpoint_auth_methods_supported": ["none", "client_secret_basic", "client_secret_post"],
+  "code_challenge_methods_supported": ["S256"],
+  "authorization_response_iss_parameter_supported": true
+}
+```
+
+O documento também lista o endpoint de introspecção. Os dois documentos
+respondem a qualquer origem (CORS), para clientes que rodam no navegador.
+
+## 2. Registro do cliente
+
+```bash
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_name": "Meu cliente MCP",
+    "redirect_uris": ["http://127.0.0.1:8976/callback"],
+    "grant_types": ["authorization_code", "refresh_token"],
+    "token_endpoint_auth_method": "none",
+    "scope": "mcp:read mcp:write offline_access"
+  }'
+```
+
+```json
+{
+  "client_id": "kXq2…",
+  "client_id_issued_at": 1760788800,
+  "client_name": "Meu cliente MCP",
+  "redirect_uris": ["http://127.0.0.1:8976/callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none",
+  "scope": "mcp:read mcp:write offline_access",
+  "public": true
+}
+```
+
+A resposta é `201`. Registrar não dá acesso a nada: quem decide é a pessoa, na
+tela de consentimento. O `client_name` é o nome que ela vê ali ("Meu cliente
+MCP quer acessar o seu Steel") e em **Apps conectados**. Guarde o `client_id`
+e reutilize; não registre de novo a cada login.
+
+Sem `redirect_uris`, o registro responde `400 invalid_redirect_uri`.
+
+## 3. Autorização com PKCE
+
+Gere um `code_verifier` aleatório (43 a 128 caracteres) e o `code_challenge`
+(SHA-256 dele em base64url):
+
+```bash
+code_verifier=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')
+code_challenge=$(printf '%s' "$code_verifier" | openssl dgst -sha256 -binary | openssl base64 | tr '+/' '-_' | tr -d '=\n')
+state=$(openssl rand -hex 16)
+```
+
+Abra no navegador da pessoa:
+
+```http
+GET /api/auth/oauth2/authorize?response_type=code&client_id=kXq2…&redirect_uri=http%3A%2F%2F127.0.0.1%3A8976%2Fcallback&scope=mcp%3Aread%20mcp%3Awrite%20offline_access&state=<state>&code_challenge=<code_challenge>&code_challenge_method=S256&resource=https%3A%2F%2Fhomologacao.stratustelecom.com.br%2Fapi%2Fmcp
+Host: homologacao.stratustelecom.com.br
+```
+
+O que a pessoa vê:
+
+1. Sem sessão no Steel, a tela de login; depois, volta sozinha.
+2. A tela **Meu cliente MCP quer acessar o seu Steel**, onde escolhe o
+   **Workspace**, os **Módulos** e o **Nível de acesso** (**Somente ler** ou
+   **Ler e alterar**), e clica em **Permitir acesso** ou **Recusar**. Se o
+   `scope` pedido não tiver `mcp:write`, só **Somente ler** fica disponível.
+3. O navegador vai para o `redirect_uri` com `code`, `state` e `iss`:
+
+```text
+http://127.0.0.1:8976/callback?code=Yc7…&state=<state>&iss=https%3A%2F%2Fhomologacao.stratustelecom.com.br%2Fapi%2Fauth
+```
+
+Confira se o `state` é o que você gerou e se o `iss` é o emissor esperado.
+Recusado, o retorno traz `error=access_denied`.
+
+O parâmetro `resource` (RFC 8707) é o endereço do servidor MCP. O Steel aceita
+também o emissor ou o endereço do Steel, para clientes que mandam um desses.
+
+## 4. Troca do código pelos tokens
+
+```bash
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "grant_type=authorization_code" \
+  --data-urlencode "code=Yc7…" \
+  --data-urlencode "redirect_uri=http://127.0.0.1:8976/callback" \
+  --data-urlencode "client_id=kXq2…" \
+  --data-urlencode "code_verifier=$code_verifier" \
+  --data-urlencode "resource=https://homologacao.stratustelecom.com.br/api/mcp"
+```
+
+```json
+{
+  "access_token": "stl_at_…",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "stl_rt_…",
+  "scope": "mcp:read mcp:write offline_access"
+}
+```
+
+O `scope` devolvido é o que a pessoa **concedeu**, não o que você pediu: quem
+escolheu **Somente ler** gera um token sem `mcp:write`. O workspace e os
+módulos não aparecem no token; eles ficam na concessão, do lado do Steel.
+
+| Erro | Quando |
+| --- | --- |
+| `invalid_grant` | Código vencido (10 minutos), já usado, `redirect_uri` diferente ou `code_verifier` que não confere |
+| `invalid_client` | `client_id` desconhecido |
+| `invalid_request` | Faltou um parâmetro |
+
+## 5. Renovação
+
+Antes de a hora do access token acabar, ou depois de um `401` com
+`error="invalid_token"`:
+
+```bash
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "grant_type=refresh_token" \
+  --data-urlencode "refresh_token=stl_rt_…" \
+  --data-urlencode "client_id=kXq2…"
+```
+
+A resposta tem o mesmo formato da troca. Guarde o `refresh_token` novo quando
+ele vier. Um refresh que falha com `invalid_grant` quer dizer que a conexão foi
+revogada, a pessoa saiu do workspace ou passaram os 30 dias: recomece pela
+autorização.
+
+## 6. Revogação
+
+```bash
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/revoke \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "token=stl_rt_…" \
+  --data-urlencode "client_id=kXq2…"
+```
+
+Revoga o token enviado. Para encerrar a conexão inteira (todos os tokens do app
+naquele workspace), a pessoa usa **Configurações › Segurança › Apps
+conectados**; um administrador, **Ajustes › Apps conectados**. Nos dois casos,
+a próxima chamada do cliente responde `401`.
+
+## 7. Falar MCP
+
+O transporte é Streamable HTTP **sem estado**: cada mensagem JSON-RPC é um
+`POST` independente, com `Authorization: Bearer` e
+`Accept: application/json, text/event-stream`. Não há sessão MCP no servidor;
+`GET` e `DELETE` respondem `405`.
+
+```bash
+export MCP_URL=https://homologacao.stratustelecom.com.br/api/mcp
+export MCP_TOKEN=stl_at_…
+
+curl -X POST "$MCP_URL" \
+  -H "Authorization: Bearer $MCP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"meu-cliente","version":"1.0.0"}}}'
+```
+
+A resposta traz `serverInfo`, as capacidades (`tools`, `resources`,
+`prompts`) e as `instructions` do servidor, um texto em português que explica
+as regras (permissões do usuário, escrita, `confirmUrl`, `idempotencyKey`) e
+vale a pena repassar ao modelo.
+
+Listar as ferramentas:
+
+```bash
+curl -X POST "$MCP_URL" \
+  -H "Authorization: Bearer $MCP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "sd_sla_at_risk",
+        "title": "Consultando SLA em risco",
+        "description": "Resumo de SLA dos chamados abertos: contagens (minha fila, sem responsável, em risco, violados, criados hoje) e as listas dos chamados em risco e violados, do prazo mais próximo para o mais distante.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": { "type": "integer", "minimum": 1, "maximum": 50, "description": "Quantidade máxima de itens (padrão 20, máximo 50)." }
+          },
+          "additionalProperties": false
+        },
+        "annotations": { "title": "Consultando SLA em risco", "readOnlyHint": true }
+      }
+    ]
+  }
+}
+```
+
+Chamar uma ferramenta:
+
+```bash
+curl -X POST "$MCP_URL" \
+  -H "Authorization: Bearer $MCP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"sd_sla_at_risk","arguments":{"limit":2}}}'
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      { "type": "text", "text": "1 em risco, 1 violado(s)" },
+      { "type": "text", "text": "{\"summary\":\"1 em risco, 1 violado(s)\",\"data\":{…}}" }
+    ],
+    "structuredContent": {
+      "summary": "1 em risco, 1 violado(s)",
+      "data": {
+        "counts": { "atRisk": 1, "breached": 1, "myOpen": 3, "unassigned": 4, "createdToday": 2 },
+        "atRisk": [
+          {
+            "id": "cm2tkt0001",
+            "code": "INC-000123",
+            "title": "VPN fora do ar na filial",
+            "phase": "Em atendimento",
+            "priority": "P2 – Alta",
+            "assignee": "Ana Souza",
+            "sla": { "firstResponse": "met", "resolution": "at_risk", "resolutionDueAt": "2026-10-18T17:00:00.000Z" },
+            "risk": { "level": "HIGH", "score": 78 },
+            "href": "https://homologacao.stratustelecom.com.br/acme/servicedesk/tickets/123"
+          }
+        ],
+        "breached": [ { "code": "INC-000118", "…": "…" } ]
+      }
+    }
+  }
+}
+```
+
+O primeiro `content` é um resumo para o modelo ler; o segundo, os mesmos dados
+em JSON, para clientes que não leem `structuredContent`. Uma recusa do Steel
+volta como resultado com `isError: true`, a mensagem em português e o código
+em `structuredContent.error.code`, não como erro JSON-RPC. Um nome de
+ferramenta que a conexão não alcança responde o erro JSON-RPC `-32602`.
+
+`resources/list`, `resources/read`, `prompts/list` e `prompts/get` funcionam
+do mesmo jeito; veja [Resources e prompts](/dev/mcp#resources-e-prompts).
+
+## Limites
+
+Cada pessoa tem 120 chamadas a cada 60 segundos ao servidor MCP, e cada cliente
+OAuth, 600 a cada 60 segundos somando todas as pessoas. Passou, a resposta é
+`429` com `Retry-After` em segundos.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| `400 invalid_redirect_uri` no registro | Mande pelo menos um `redirect_uris` |
+| A autorização é recusada antes da tela de consentimento | Faltou o PKCE: envie `code_challenge` com `code_challenge_method=S256` (`plain` não é aceito), ou o `redirect_uri` não é um dos registrados |
+| `invalid_grant` na troca | O código passou de 10 minutos, já foi usado, ou o `code_verifier`/`redirect_uri` não é o mesmo da autorização |
+| Sem `refresh_token` na resposta | Peça `offline_access` no `scope` e inclua `refresh_token` em `grant_types` no registro |
+| `401` com `error="invalid_token"` | O access token passou de 1 hora (renove) ou a conexão foi revogada (recomece) |
+| As ferramentas de escrita não aparecem | O token não tem `mcp:write` (a pessoa escolheu **Somente ler**) ou o administrador não ligou **Permitir escrita via MCP** |
+| `405` no servidor | O cliente tentou `GET` (SSE do protocolo antigo). Use `POST` |
+| A resposta chega toda no fim | Algum proxy entre o cliente e o Steel faz buffering de `text/event-stream` |

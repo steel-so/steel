@@ -10,6 +10,7 @@ import { docsPageSlug } from './docs-page.schema'
 export const DEV_SECTION_SLUGS = [
   'introducao',
   'fundamentos',
+  'api-v1',
   'webhooks',
   'guias',
   'ferramentas',

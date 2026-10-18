@@ -37,6 +37,52 @@ Qualquer membro escolhe o seu **modelo preferido** para as conversas.
 | **Permitir escrita via MCP** | desligado | Apps de IA conectados ao Steel (Claude, ChatGPT, Cursor) passam a criar, editar e executar ações quando a pessoa autorizou leitura e escrita. Desligado, eles só consultam. Exclusões nunca ficam disponíveis |
 | **Resumo semanal de consumo por e-mail** | ligado | Envia o [resumo de toda segunda](/docs/steel-ai/uso-e-analises#resumo-semanal-por-e-mail) aos donos |
 
+### Assistentes externos (MCP)
+
+Assistentes de IA de fora do Steel (Claude, ChatGPT, Cursor) podem ser
+conectados ao workspace por cada membro, com a conta dele. Veja
+[Conectar o Steel ao Claude, ChatGPT ou Cursor](/docs/steel-ai/conectar-claude-chatgpt-cursor).
+Para o administrador há duas coisas a decidir:
+
+**1. Se os assistentes podem alterar dados.** Por padrão eles só consultam,
+mesmo para quem autorizou **Ler e alterar**. Para liberar:
+
+1. Abra **Ajustes › Steel IA**.
+2. Ligue **Permitir escrita via MCP**. Aparece o aviso **Como a escrita via
+   MCP é controlada**.
+3. Clique em **Salvar ajustes de IA**.
+
+A partir da próxima pergunta, as conexões com **Ler e alterar** passam a criar
+e atualizar registros (leads, tarefas, notas, campos de chamados), sempre com
+as permissões de quem conectou. Continua valendo:
+
+- nada é excluído por um assistente;
+- o que chega ao cliente (mensagem de WhatsApp, resposta ao solicitante, link
+  de aprovação, mudança de fase ou cancelamento de chamado) espera a pessoa
+  confirmar no Steel, em até 30 minutos;
+- conexões **Somente ler** continuam só consultando.
+
+Desligar volta todas as conexões para só consulta na próxima pergunta, e uma
+ação que ainda esperava confirmação não executa mais. O interruptor não depende
+do **Modo agente (Build)** nem do **Autopilot**: eles valem só para a Steel AI
+dentro do Steel.
+
+**2. Quem está conectado.** Em **Ajustes › Apps conectados** você vê as
+conexões de todos os membros, **Por app** e **Por membro**, com os módulos, o
+nível de acesso, o último uso e quantas chamadas cada app fez nos últimos 7 e
+30 dias. Dá para revogar uma conexão, **Revogar todos** os apps de um membro ou
+**Revogar de todos** um app inteiro. O assistente perde o acesso na próxima
+pergunta. Na mesma tela ficam os tokens de API dos membros, usados por scripts e
+pelo Steel CLI.
+
+| Pergunta | Resposta |
+| --- | --- |
+| Os assistentes gastam a cota da Steel AI? | Não. O modelo é do assistente |
+| Um membro pode conectar sem um administrador? | Sim, para consultar. Alterar exige o interruptor ligado |
+| Um assistente pode ver o que o membro não vê? | Não. Valem o papel, o perfil de acesso e os módulos do membro |
+| Como saber o que um assistente alterou? | No histórico de ações da IA, com a origem **MCP**, e na trilha de auditoria |
+| Removi um membro. Preciso revogar os apps dele? | Não. Quem sai do workspace perde o acesso na hora |
+
 ### Cota mensal
 
 A **cota mensal** em dólares limita o gasto de IA do workspace (US$ 50 por

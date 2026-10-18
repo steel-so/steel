@@ -1,0 +1,401 @@
+---
+title: Catálogo de eventos
+description: Cada evento de webhook que o Steel envia, com o momento em que dispara, o corpo completo de exemplo e o significado de cada campo do data.
+section: webhooks
+order: 2
+---
+
+Todo evento chega com o mesmo envelope; muda só o `data`. Esta página mostra o
+corpo **completo** de cada tipo, com os dados de exemplo que o `steel trigger`
+também usa. Para receber e conferir as entregas, veja
+[Receber os webhooks do Steel](/dev/webhooks/receber).
+
+## O envelope
+
+| Campo | Tipo | O que é |
+| --- | --- | --- |
+| `id` | texto | Id do evento (`evt_...`). O mesmo em todas as tentativas e no cabeçalho `Steel-Webhook-Id`: use para não processar duas vezes |
+| `type` | texto | O tipo, como nas seções abaixo |
+| `createdAt` | data ISO 8601 (UTC) | Quando o evento aconteceu no Steel. Use para ordenar: a ordem de chegada não é garantida |
+| `workspaceId` | texto | O workspace de origem |
+| `data` | objeto | O conteúdo do tipo |
+
+Regras do `data`, as mesmas da [API v1](/dev/api-v1#estabilidade-e-depreciação):
+campos novos e opcionais podem aparecer a qualquer momento (ignore o que não
+conhece); nada é removido, muda de tipo ou passa a ser obrigatório sem um tipo
+de evento novo e aviso prévio. Datas vêm sempre em UTC. Os campos `actorId`
+são o id do usuário que fez a ação, ou `null` quando foi o sistema (uma
+automação, o SLA, um canal externo).
+
+O catálogo vivo, com os tipos dos módulos do seu token, está em
+`GET /api/v1/webhooks/events` e em `steel webhooks events`.
+
+| Tipo | Módulo |
+| --- | --- |
+| [`servicedesk.ticket.created`](#servicedeskticketcreated) | ServiceDesk |
+| [`servicedesk.ticket.updated`](#servicedeskticketupdated) | ServiceDesk |
+| [`servicedesk.ticket.assigned` e os outros avisos do chamado](#avisos-do-chamado) | ServiceDesk |
+| [`crm.lead.created`](#crmleadcreated) | CRM |
+| [`crm.opportunity.stage_changed`](#oportunidade-mudou-de-etapa) | CRM |
+| [`crm.deal.won` e `crm.deal.lost`](#crmdealwon-e-crmdeallost) | CRM |
+| [`communication.message.received`](#communicationmessagereceived) | Comunicação |
+| [`agents.approval.pending`](#agentsapprovalpending) | Steel Agents |
+| [`steel.ping`](#steelping) | Plataforma |
+
+Assinar `*` recebe todos os tipos, inclusive os que vierem depois.
+
+## ServiceDesk
+
+### servicedesk.ticket.created
+
+Chamado aberto, por qualquer canal: aplicativo, portal, e-mail, WhatsApp,
+monitoramento, API ou IA.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "servicedesk.ticket.created",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "ticket": {
+      "id": "cm2tkt000000example",
+      "number": 123,
+      "code": "INC-000123",
+      "title": "Impressora do financeiro sem conexão",
+      "type": "INCIDENT",
+      "channel": "PORTAL",
+      "phase": {
+        "id": "cm2phs000000example",
+        "name": "Em atendimento",
+        "category": "IN_PROGRESS"
+      },
+      "priority": {
+        "id": "cm2pri000000example",
+        "name": "Alta"
+      },
+      "departmentId": null,
+      "assigneeId": "cm2usr000000example",
+      "requesterId": null,
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+| Campo de `data.ticket` | O que é |
+| --- | --- |
+| `id`, `number`, `code` | Id, número e código com o prefixo do workspace (`INC-000123`) |
+| `title` | Título |
+| `type` | `INCIDENT`, `SERVICE_REQUEST`, `CHANGE` ou `PROBLEM` |
+| `channel` | Por onde chegou: `AGENT`, `PORTAL`, `EMAIL`, `WHATSAPP`, `PHONE`, `AI` ou `API` |
+| `phase` | Fase atual (`id`, `name`, `category`: `NEW`, `IN_PROGRESS`, `WAITING`, `RESOLVED`, `CLOSED` ou `CANCELED`) |
+| `priority` | `{ id, name }` ou `null` |
+| `departmentId`, `assigneeId`, `requesterId` | Ids, ou `null` |
+| `createdAt`, `updatedAt` | Datas ISO 8601 |
+
+Para o chamado completo (SLA, campos personalizados, descrição), busque
+`GET /api/v1/servicedesk/tickets/{ticketId}` com o `data.ticket.id`.
+
+### servicedesk.ticket.updated
+
+Chamado alterado. Mesmo `ticket` do evento de abertura, já com os valores
+novos, e `change` diz o que mudou: `fields` (campos), `assigned` (responsável)
+ou `phase` (fase).
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "servicedesk.ticket.updated",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "ticket": {
+      "id": "cm2tkt000000example",
+      "number": 123,
+      "code": "INC-000123",
+      "title": "Impressora do financeiro sem conexão",
+      "type": "INCIDENT",
+      "channel": "PORTAL",
+      "phase": {
+        "id": "cm2phs000000example",
+        "name": "Em atendimento",
+        "category": "IN_PROGRESS"
+      },
+      "priority": {
+        "id": "cm2pri000000example",
+        "name": "Alta"
+      },
+      "departmentId": null,
+      "assigneeId": "cm2usr000000example",
+      "requesterId": null,
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example",
+    "change": "fields"
+  }
+}
+```
+
+Uma mudança de responsável também gera `servicedesk.ticket.assigned`; uma
+resolução, `servicedesk.ticket.resolved`. Assine só o que o seu sistema usa
+para não tratar o mesmo fato duas vezes.
+
+### Avisos do chamado
+
+Os tipos abaixo têm o mesmo formato: uma referência curta ao chamado
+(`id`, `number`, `code`, `title`), o `actorId` e um `summary` com o título e o
+texto da notificação, em português. O `summary` é feito para mostrar a uma
+pessoa (num canal do Teams, num SMS); não faça o seu código depender dele.
+
+| Tipo | Quando | `summary.title` de exemplo | `summary.body` de exemplo |
+| --- | --- | --- | --- |
+| `servicedesk.ticket.assigned` | Chamado atribuído a um atendente. | Chamado atribuído a você | INC-000123 — Impressora do financeiro sem conexão |
+| `servicedesk.ticket.message` | Nova mensagem pública no chamado. | Nova mensagem no chamado | A impressora voltou a funcionar, obrigado! |
+| `servicedesk.ticket.resolved` | Chamado resolvido. | Chamado resolvido | INC-000123 foi resolvido. |
+| `servicedesk.ticket.reopened` | Chamado reaberto. | Chamado reaberto | INC-000123 foi reaberto pelo solicitante. |
+| `servicedesk.ticket.escalated` | Chamado escalonado por regra ou manualmente. | Chamado escalonado | INC-000123 foi escalonado para o nível 2. |
+| `servicedesk.ticket.csat` | Solicitante avaliou o atendimento (CSAT). | Avaliação recebida | Nota 5 de 5. |
+| `servicedesk.sla.at_risk` | SLA do chamado em risco. | SLA em risco | Faltam 30 minutos para vencer a resolução. |
+| `servicedesk.sla.breached` | SLA do chamado violado. | SLA violado | O prazo de resolução venceu. |
+| `servicedesk.approval.requested` | Aprovação solicitada no chamado. | Aprovação solicitada | A mudança aguarda a sua aprovação. |
+| `servicedesk.approval.responded` | Aprovação respondida (aprovada ou recusada). | Aprovação respondida | A mudança foi aprovada. |
+
+Exemplo, `servicedesk.sla.at_risk`:
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "servicedesk.sla.at_risk",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "ticket": {
+      "id": "cm2tkt000000example",
+      "number": 123,
+      "code": "INC-000123",
+      "title": "Impressora do financeiro sem conexão"
+    },
+    "actorId": "cm2usr000000example",
+    "summary": {
+      "title": "SLA em risco",
+      "body": "Faltam 30 minutos para vencer a resolução."
+    }
+  }
+}
+```
+
+## CRM
+
+### crm.lead.created
+
+Novo lead, por qualquer canal: aplicativo, formulário, API de integração,
+API v1, importação ou IA.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.lead.created",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "lead": {
+      "id": "cm2lead00000example",
+      "name": "Maria Souza",
+      "emails": [
+        "maria@example.com"
+      ],
+      "phones": [
+        "+5511999990000"
+      ],
+      "company": "Acme Ltda",
+      "source": "site",
+      "channel": "FORM",
+      "score": 40,
+      "ownerId": null,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    }
+  }
+}
+```
+
+| Campo de `data.lead` | O que é |
+| --- | --- |
+| `emails`, `phones` | Listas; pelo menos uma delas tem item |
+| `source`, `channel` | Origem e canal informados, ou `null` |
+| `score` | Pontuação calculada na entrada |
+| `ownerId` | Dono escolhido pelas regras de roteamento, ou `null` |
+
+### Oportunidade mudou de etapa
+
+Tipo `crm.opportunity.stage_changed`. A oportunidade mudou de etapa (no quadro,
+pela API v1 ou pela IA). `category` da etapa é `OPEN`, `WON` ou `LOST`.
+`fromStage` vem `null` quando a etapa anterior não existe mais.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.opportunity.stage_changed",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "opportunity": {
+      "id": "cm2opp000000example",
+      "name": "Renovação do contrato de suporte",
+      "amount": 12000,
+      "pipelineId": "cm2pip000000example",
+      "ownerId": "cm2usr000000example"
+    },
+    "fromStage": {
+      "id": "cm2stg00000example1",
+      "name": "Proposta",
+      "category": "OPEN"
+    },
+    "toStage": {
+      "id": "cm2stg00000example2",
+      "name": "Negociação",
+      "category": "OPEN"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+### crm.deal.won e crm.deal.lost
+
+Negócio ganho ou perdido. `source` diz de onde veio: `lead` (um lead fechado
+como ganho ou perdido) ou `opportunity` (uma oportunidade que entrou numa etapa
+de categoria `WON` ou `LOST`). Uma oportunidade que vai para uma etapa de ganho
+gera os dois eventos: `crm.opportunity.stage_changed` e `crm.deal.won`. Andar
+entre duas etapas de ganho não gera um segundo `crm.deal.won`.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.deal.won",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "source": "opportunity",
+    "id": "cm2opp000000example",
+    "name": "Renovação do contrato de suporte",
+    "amount": 12000,
+    "ownerId": "cm2usr000000example",
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+`crm.deal.lost`, vindo de um lead:
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.deal.lost",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "source": "lead",
+    "id": "cm2lead00000example",
+    "name": "Renovação do contrato de suporte",
+    "amount": 12000,
+    "ownerId": "cm2usr000000example",
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+`amount` é o valor do negócio, ou `null` quando não foi informado.
+
+## Comunicação
+
+### communication.message.received
+
+Mensagem de WhatsApp recebida de um contato numa conexão da Comunicação.
+Mensagens que chegam por uma conexão ligada ao ServiceDesk viram mensagens do
+chamado e **não** geram este evento.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "communication.message.received",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "message": {
+      "id": "cm2msg000000example",
+      "conversationId": "cm2cnv000000example",
+      "type": "TEXT",
+      "text": "Olá, gostaria de um orçamento.",
+      "providerMessageId": "wamid.example",
+      "receivedAt": "2026-10-18T12:00:00.000Z"
+    },
+    "contact": {
+      "id": "cm2ctt000000example",
+      "waId": "5511999990000",
+      "name": "Maria"
+    },
+    "connectionId": "cm2con000000example"
+  }
+}
+```
+
+| Campo | O que é |
+| --- | --- |
+| `message.type` | `TEXT`, `IMAGE`, `AUDIO`, `VIDEO`, `DOCUMENT`, `STICKER`, `LOCATION`, `BUTTON`, `CONTACT`... |
+| `message.text` | O texto, ou a legenda da mídia; `null` quando não há |
+| `message.providerMessageId` | Id da mensagem no provedor (`wamid...` na Meta) |
+| `contact.waId` | Número do WhatsApp só com dígitos (DDI + DDD + número) |
+| `connectionId` | A conexão que recebeu |
+
+A mídia não vem no evento. Abra a conversa no Steel pelo `conversationId`.
+
+## Steel Agents
+
+### agents.approval.pending
+
+Um Steel Agent terminou uma execução e propôs ações que esperam a decisão de
+alguém. `count` é quantas ações estão esperando.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "agents.approval.pending",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "agent": {
+      "id": "cm2agt000000example",
+      "name": "Triagem de leads"
+    },
+    "runId": "cm2run000000example",
+    "count": 2
+  }
+}
+```
+
+## Plataforma
+
+### steel.ping
+
+O evento do botão **Enviar teste** (e de `POST /api/v1/webhooks/endpoints/{id}/test`).
+Vai só para aquele endpoint, nunca entra numa assinatura e não conta para a
+desativação automática.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "steel.ping",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "message": "Teste de webhook do Steel"
+  }
+}
+```
+
+Responda `2xx` ao `steel.ping` como a qualquer outro evento: é assim que o
+teste confirma que a URL e a assinatura estão certas.

@@ -17,69 +17,191 @@ usuário, as suas permissões e só nos módulos que você liberar.
 ## Antes de começar
 
 - Você precisa de uma conta no Steel e ser membro do workspace que quer
-  conectar.
+  conectar, com pelo menos um módulo (ServiceDesk, CRM ou Comunicação)
+  habilitado.
 - Está disponível em todos os planos, e as perguntas feitas no Claude, no
   ChatGPT ou no Cursor **não** contam na cota mensal da Steel AI.
 - Tenha em mãos o endereço do Steel da sua empresa seguido de `/api/mcp`
   (por exemplo, `https://homologacao.stratustelecom.com.br/api/mcp`). É esse
-  endereço que você cola no assistente.
+  endereço que você cola no assistente. Não há chave nem senha para copiar.
 
-## Conectar
+Os nomes dos menus abaixo são os de outubro de 2026. Os assistentes mudam
+as telas com frequência; se um nome não bater, procure por **Conectores**,
+**Apps** ou **MCP** nas configurações.
 
-O caminho muda um pouco em cada assistente, mas o fim é sempre o mesmo:
+## Conectar o Claude
 
-1. No assistente, adicione um **conector** (ou servidor MCP) chamado **Steel**
-   com o endereço acima.
-   - **Claude:** **Configurações › Conectores › Adicionar conector
-     personalizado**.
-   - **ChatGPT:** ligue o **Modo desenvolvedor** em **Configurações › Apps e
-     conectores › Configurações avançadas** e depois clique em **Criar**, com
-     autenticação **OAuth**.
-   - **Cursor:** em **Cursor Settings › MCP**, adicione um servidor com o
-     endereço.
-2. O assistente abre a tela de login do Steel. Entre com a sua conta, como de
-   costume.
-3. Na tela de autorização, escolha:
-   - o **workspace** que o assistente vai usar;
-   - os **módulos** (ServiceDesk, CRM, Comunicação) que ele pode ver;
-   - se ele pode **só consultar** ou **consultar e alterar**.
-4. Confirme a autorização. Pronto: volte ao assistente e faça a primeira
-   pergunta.
+Vale para o Claude na web (claude.ai) e no aplicativo de desktop.
 
-<Callout type='nota'>
-  Cada conexão vale para um workspace. Para usar outro workspace no mesmo
-  assistente, conecte de novo e escolha o outro.
-</Callout>
+1. Clique no seu nome, no canto inferior esquerdo, e abra **Configurações**.
+2. Vá em **Conectores** e clique em **Adicionar conector personalizado**.
+3. Em **Nome**, escreva **Steel**. Em **URL**, cole o endereço do Steel com
+   `/api/mcp`. Clique em **Adicionar**.
+4. O Steel aparece na lista de conectores. Clique em **Conectar**: abre uma
+   aba com o login do Steel.
+5. Entre com a sua conta (se já estiver logado, essa etapa é pulada) e
+   preencha a tela de autorização (veja [O que escolher na
+   autorização](#o-que-escolher-na-autorização)). Clique em **Permitir
+   acesso**.
+6. A aba volta ao Claude, e o conector aparece como conectado.
+7. Numa conversa, abra o menu de ferramentas (o botão ao lado do campo de
+   mensagem) e confira se o **Steel** está ligado.
+
+Nos planos Team e Enterprise do Claude, só o dono da organização no Claude
+adiciona conectores personalizados. Depois que ele adiciona, cada pessoa
+clica em **Conectar** e entra com a própria conta do Steel.
+
+### Claude Code
+
+No terminal, rode uma vez:
+
+```bash
+claude mcp add --transport http steel https://homologacao.stratustelecom.com.br/api/mcp
+```
+
+Troque pelo endereço do seu Steel. Depois, dentro do Claude Code, digite
+`/mcp`, escolha **steel** e **Authenticate**: o navegador abre o login e a
+autorização do Steel.
+
+## Conectar o ChatGPT
+
+O ChatGPT aceita conectores próprios no **modo desenvolvedor**, que depende
+do plano do ChatGPT.
+
+1. Clique no seu nome e abra **Configurações**.
+2. Vá em **Apps e conectores** e, em **Configurações avançadas**, ligue o
+   **Modo desenvolvedor**.
+3. Volte a **Apps e conectores** e clique em **Criar**.
+4. Preencha: **Nome** Steel, **URL do servidor MCP** com o endereço do Steel
+   e **Autenticação** OAuth. Marque que confia no aplicativo e clique em
+   **Criar**.
+5. O ChatGPT abre o login do Steel. Entre, preencha a autorização e clique em
+   **Permitir acesso**.
+6. Numa conversa, clique em **+**, escolha **Modo desenvolvedor** (ou o menu
+   de ferramentas) e ligue o **Steel**.
+
+No ChatGPT Business e Enterprise, um administrador do ChatGPT pode precisar
+liberar o modo desenvolvedor para a organização.
+
+## Conectar o Cursor
+
+1. Abra **Cursor Settings** (<Kbd>Ctrl</Kbd> <Kbd>Shift</Kbd> <Kbd>J</Kbd>, ou
+   <Kbd>Cmd</Kbd> <Kbd>Shift</Kbd> <Kbd>J</Kbd> no Mac) e vá em **MCP**.
+2. Clique em **Add new global MCP server**. O Cursor abre o arquivo
+   `~/.cursor/mcp.json`.
+3. Cole (trocando pelo endereço do seu Steel) e salve:
+
+   ```json
+   {
+     "mcpServers": {
+       "steel": {
+         "url": "https://homologacao.stratustelecom.com.br/api/mcp"
+       }
+     }
+   }
+   ```
+
+4. De volta em **Cursor Settings › MCP**, o **steel** aparece pedindo login.
+   Clique em **Login** (ou **Needs login**), entre no Steel e clique em
+   **Permitir acesso**.
+5. O servidor fica verde, com a lista de ferramentas. No chat do Cursor, no
+   modo **Agent**, peça normalmente.
+
+Para usar o Steel só num projeto, crie o `.cursor/mcp.json` na raiz do
+repositório em vez do global.
+
+## Outros assistentes
+
+Qualquer assistente que aceite um servidor MCP "remoto" (por URL, com OAuth)
+conecta do mesmo jeito: cole o endereço e faça o login. Um assistente que só
+aceita servidores locais (por comando) pode usar a ponte `mcp-remote`; quem
+cuida da configuração técnica encontra o exemplo em
+[Servidor MCP](/dev/mcp).
+
+## O que escolher na autorização
+
+A tela tem o nome do assistente no título (por exemplo, **Claude quer acessar
+o seu Steel**) e mostra com qual e-mail você está conectado. Você escolhe:
+
+| Campo | O que significa |
+| --- | --- |
+| **Workspace** | O único workspace que o assistente vai ver. Para usar dois, conecte duas vezes |
+| **Módulos** | O que ele pode consultar: **ServiceDesk** (chamados, base de conhecimento e catálogo), **CRM** (leads, negócios, empresas e pessoas), **Comunicação** (conversas e contatos do WhatsApp). Aparecem só os módulos habilitados no workspace a que você tem acesso |
+| **Nível de acesso** | **Somente ler**: consultar registros, relatórios e artigos. **Ler e alterar**: também criar e atualizar registros, se um administrador liberou a escrita. Nada é excluído em nenhum dos dois |
+
+Embaixo, um aviso resume o que você está autorizando e lembra que o que o
+assistente consultar é enviado à empresa dele. **Permitir acesso** conclui;
+**Recusar** volta ao assistente sem conectar.
+
+Se o assistente pediu só leitura, **Ler e alterar** aparece desabilitado com a
+frase "Este app pediu só leitura".
+
+Dica: comece com **Somente ler** e só os módulos que você usa. Dá para
+conectar de novo com mais acesso depois.
+
+## Perguntas para começar
+
+**ServiceDesk**
+
+- "Quais chamados estão para estourar o SLA hoje?"
+- "Mostre a minha fila, dos mais urgentes para os menos."
+- "Resuma o chamado INC-000123: o que o cliente pediu e o que já foi feito."
+- "Procure na base de conhecimento como configurar a VPN no celular."
+- "Quantos chamados abertos temos por prioridade?"
+
+**CRM**
+
+- "Como está o pipeline de vendas, etapa por etapa, com os valores?"
+- "Quais leads qualificados chegaram esta semana e quem é o dono de cada um?"
+- "Qual a previsão de fechamento deste mês?"
+- "Quais tarefas minhas vencem até sexta?"
+- Com **Ler e alterar**: "Crie uma tarefa para eu ligar para a Acme amanhã às
+  10h."
+
+**Comunicação**
+
+- "Quais conversas do WhatsApp estão sem resposta há mais de uma hora?"
+- "Resuma a conversa com a Maria Souza."
+- "Como foi o atendimento no WhatsApp esta semana?"
+
+**Para todo o workspace**
+
+- "Quem são os membros do workspace e qual o papel de cada um?"
+- "Procure 'Acme' em tudo."
+
+Os assistentes também mostram três atalhos prontos: **Resumo do dia do
+ServiceDesk**, **Pipeline da semana** e **Conversas sem resposta**.
 
 ## O que a IA consegue fazer
 
-- **Consultar:** chamados, filas e SLA do ServiceDesk; leads, oportunidades e
-  tarefas do CRM; conversas e contatos da Comunicação; artigos publicados da
-  base de conhecimento e páginas da Wiki.
-- **Começar por um atalho:** os assistentes mostram prontos como **Resumo do dia
-  do ServiceDesk**, **Pipeline da semana** e **Conversas sem resposta**.
-- **Alterar (quando liberado):** criar um lead, atualizar um chamado, registrar
-  uma nota. Isso só acontece se você escolheu **consultar e alterar** e se um
-  administrador do workspace ligou **Permitir escrita via MCP** em **Ajustes ›
-  Steel IA**.
+- **Consultar** chamados, filas e SLA; leads, oportunidades, funis, tarefas e
+  previsão de vendas; conversas e contatos; artigos **publicados** da base de
+  conhecimento e páginas da Wiki que você pode ler.
+- **Alterar, quando liberado**: criar um lead ou uma tarefa, atualizar um
+  chamado, registrar uma nota interna, mover uma oportunidade de etapa. Só
+  acontece se você escolheu **Ler e alterar** e um administrador ligou
+  **Permitir escrita via MCP** em **Ajustes › Steel IA**.
 
 A IA **nunca exclui** nada pelo conector. E o que fala com o seu cliente (uma
-mensagem de WhatsApp, um e-mail, um link de aprovação) não sai direto: o
-assistente devolve um link para você conferir e confirmar no Steel.
+mensagem de WhatsApp, uma resposta ao solicitante, um link de aprovação, a
+mudança de fase ou o cancelamento de um chamado) não sai direto: o assistente
+devolve um link para você conferir e confirmar no Steel.
 
 ## Confirmar uma ação pedida pelo assistente
 
-Quando o assistente quer enviar algo a um cliente, ele responde com um link do
-Steel em vez de enviar. Para concluir:
+Quando o assistente quer fazer algo que chega ao cliente, ele responde com um
+link do Steel em vez de executar. Para concluir:
 
-1. Abra o link. Ele leva à **Caixa de entrada › Pendências da IA**, com o pedido
-   em destaque e a etiqueta **App conectado** e o nome do assistente.
+1. Abra o link. Ele leva à **Caixa de entrada › Pendências da IA**, com o
+   pedido em destaque, a etiqueta **App conectado** com o nome do assistente e
+   o tempo que falta para expirar.
 2. Confira a prévia: para quem vai e o que vai ser enviado.
 3. Clique em **Confirmar** para executar ou em **Cancelar** para descartar.
 
 O pedido vale por **30 minutos** e só você, que conectou o assistente, pode
 confirmar. Se você desconectar o assistente, os pedidos dele que ainda estavam
-esperando são cancelados.
+esperando são cancelados. O assistente não fica sabendo da sua decisão: se
+quiser, peça a ele para conferir o chamado ou a conversa depois.
 
 As outras alterações (criar um lead, registrar uma nota, atualizar um chamado)
 acontecem na hora e ficam no histórico de ações da IA com a origem **MCP**.
@@ -87,23 +209,29 @@ acontecem na hora e ficam no histórico de ações da IA com a origem **MCP**.
 <Callout type='admin'>
   A permissão de alterar dados por assistentes externos vem desligada. O dono ou
   um administrador liga em **Ajustes › Steel IA › Permitir escrita via MCP**.
-  Desligada, todas as conexões do workspace só consultam.
+  Desligada, todas as conexões do workspace só consultam. Veja
+  [Ajustes da Steel IA](/docs/steel-ai/ajustes#assistentes-externos-mcp).
 </Callout>
 
 ## Ver e desconectar
 
-Em **Configurações › Segurança › Apps conectados** (menu do seu avatar) ficam os
-assistentes que você conectou, com o workspace, os módulos e o que cada um pode
-fazer. Revogue uma conexão para desconectar o assistente: ele perde o acesso na
-próxima pergunta.
+**As suas conexões:** no menu do seu avatar, abra **Configurações**, vá à aba
+**Segurança** e role até **Apps conectados**. Cada assistente aparece com o
+workspace, os módulos e o nível de acesso. Clique em **Revogar** e confirme em
+**Revogar acesso?**: o assistente perde o acesso na próxima pergunta. Para
+usar de novo, conecte outra vez pelo assistente.
 
-Quem sai do workspace perde o acesso pelos assistentes automaticamente.
+Quem sai do workspace perde o acesso pelos assistentes automaticamente, sem
+precisar revogar.
 
-O dono e os administradores do workspace veem as conexões de todos os membros
-em **Ajustes do workspace › Apps conectados**: cada assistente, quem o
-conectou, os módulos, o último uso e quantas vezes ele foi usado nos últimos 7
-e 30 dias. Ali dá para revogar uma conexão, todas as de um membro ou um
-assistente de uma vez para todo o workspace.
+<Callout type='admin'>
+  O dono e os administradores veem as conexões de todos os membros em
+  **Ajustes › Apps conectados**, **Por app** e **Por membro**: cada
+  assistente, quem o conectou, os módulos, o nível de acesso, o último uso e
+  quantas vezes foi usado nos últimos 7 e 30 dias. Dá para revogar uma
+  conexão, todas as de um membro ou um assistente inteiro para todo o
+  workspace.
+</Callout>
 
 ## Cuidados
 
@@ -115,16 +243,45 @@ assistente de uma vez para todo o workspace.
 - Tudo o que é autorizado, revogado ou alterado pelo conector fica registrado na
   trilha de auditoria do Steel.
 
+## Perguntas frequentes
+
+**Preciso pagar a Steel AI para usar?** Não. O modelo é o do seu assistente,
+então as perguntas não contam na cota mensal da Steel AI. Você precisa só de
+uma conta no assistente que aceite conectores.
+
+**A IA vê os chamados de todo mundo?** Ela vê o que você vê no Steel. Se você é
+solicitante no ServiceDesk, vê só os seus chamados; se o seu perfil não acessa
+o CRM, o CRM nem aparece na autorização.
+
+**Posso conectar dois workspaces?** Sim, mas cada conexão vale para um.
+Conecte de novo pelo assistente e escolha o outro workspace.
+
+**Posso usar o mesmo assistente em dois computadores?** Sim. A conexão é da sua
+conta no assistente, não do computador.
+
+**O que acontece se eu trocar de papel no workspace?** A conexão passa a valer
+com o papel novo, na próxima pergunta.
+
+**Por quanto tempo a conexão dura?** Até você ou um administrador revogar, ou
+você sair do workspace. Se o assistente ficar mais de 30 dias sem uso, ele pode
+pedir o login de novo.
+
+**A IA pode apagar algo?** Não. Nenhuma exclusão é oferecida pelo conector,
+com qualquer nível de acesso.
+
 ## Algo não funciona?
 
 | O que acontece | O que fazer |
 | --- | --- |
-| O assistente pede login de novo ou diz que não tem acesso | A conexão foi revogada ou você saiu do workspace. Remova o conector e conecte de novo |
+| O assistente pede login de novo ou diz que não tem acesso | A conexão foi revogada, você saiu do workspace ou passou muito tempo sem uso. Remova o conector e conecte de novo |
+| A autorização diz que nenhum workspace tem módulos habilitados | Peça a um administrador para habilitar o ServiceDesk, o CRM ou a Comunicação |
 | Um módulo não aparece na tela de autorização | Ele está desligado no workspace ou o seu papel não tem acesso. Fale com um administrador |
-| O assistente diz que não consegue fazer uma alteração | A conexão é só de consulta, ou a escrita via MCP está desligada no workspace |
+| O assistente diz que não consegue fazer uma alteração | A conexão é **Somente ler**, a escrita via MCP está desligada no workspace ou o seu papel não permite aquilo |
+| O assistente diz que não encontrou uma ferramenta | Peça de outro jeito ou diga o módulo ("no CRM, ..."). Com muitos módulos, ele procura as ferramentas menos usadas sob demanda |
 | O link do assistente diz que a ação não está mais pendente | O pedido passou dos 30 minutos, já foi decidido ou a conexão foi revogada. Peça ao assistente para tentar de novo |
 | Os dados são de outro workspace | Revogue em **Apps conectados** e conecte escolhendo o workspace certo |
+| O Claude diz que só o administrador pode adicionar conectores | No Claude Team ou Enterprise, peça ao dono da organização no Claude para adicionar o Steel |
 
-Quem desenvolve integrações encontra os detalhes técnicos (endereço, escopos e a
-lista completa de ferramentas) no site de desenvolvedores, em
+Quem desenvolve integrações encontra os detalhes técnicos (endereço, escopos,
+OAuth e a lista completa de ferramentas) no site de desenvolvedores, em
 [Servidor MCP](/dev/mcp).
