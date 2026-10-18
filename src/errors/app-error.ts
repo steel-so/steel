@@ -854,6 +854,18 @@ export const aiPendingActionExpired = (): AppError =>
     'Esta ação expirou. Peça ao Steel AI para propor de novo.',
   )
 
+/**
+ * The records behind a pending action changed after its preview. `details`
+ * carries the action with the fresh preview (`{ action }`) so the screen
+ * can show what would happen now and ask for a new confirmation.
+ */
+export const aiPendingActionChanged = (details?: unknown): AppError =>
+  appError(
+    'AI_PENDING_ACTION_CHANGED',
+    'O registro mudou desde a prévia. Revise e confirme de novo.',
+    details,
+  )
+
 export const aiDoubleConfirmationRequired = (): AppError =>
   appError(
     'AI_DOUBLE_CONFIRMATION_REQUIRED',

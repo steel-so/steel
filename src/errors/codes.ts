@@ -537,6 +537,9 @@ export const ERROR_CODES = {
     status: 409,
   },
   AI_PENDING_ACTION_EXPIRED: { code: 'AI_PENDING_ACTION_EXPIRED', status: 410 },
+  // The records behind a pending action changed after its preview: the
+  // confirm is refused and the action keeps PENDING with a fresh preview.
+  AI_PENDING_ACTION_CHANGED: { code: 'AI_PENDING_ACTION_CHANGED', status: 409 },
   AI_DOUBLE_CONFIRMATION_REQUIRED: {
     code: 'AI_DOUBLE_CONFIRMATION_REQUIRED',
     status: 422,
