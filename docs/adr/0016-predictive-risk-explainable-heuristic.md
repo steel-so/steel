@@ -51,3 +51,32 @@ comportamento de quem atende — agente não remaneja fila porque "a IA deu 0,82
   o contrato não mudam. Isso seria uma ADR nova, não uma revisão desta.
 - A IA generativa (ADR 0007) continua no que ela é boa: redigir o rascunho do
   artigo de KCS e a triagem textual. Nota de risco não passa por LLM.
+
+## Atualização (2026-10-18)
+
+A decisão continua a mesma (heurística explicável, sem modelo treinado). Uma
+revisão do código achou quatro lacunas, corrigidas sem mudar a tabela de
+pesos, as faixas nem o formato dos fatores:
+
+- **"Sem interação da equipe" só conta a equipe.** O fator lia
+  `SdTicket.lastActivityAt`, que também anda com mensagem do cliente (portal,
+  e-mail, WhatsApp, Slack) — o cliente cobrando zerava o silêncio. Agora
+  conta o último evento de agente (`SdTicketEvent.actorKind = AGENT`); sem
+  nenhum, conta desde a abertura.
+- **O prazo de 1ª resposta entra no risco.** Antes, havendo prazo de
+  resolução, a 1ª resposta era ignorada. Enquanto ninguém respondeu, os dois
+  timers concorrem: o fator `sla_consumed` usa o mais urgente e a previsão de
+  estouro é o primeiro prazo a vencer.
+- **Termos do agrupamento por relevância.** A assinatura cortava os termos
+  do título em ordem alfabética; agora ficam os que mais se repetem no
+  título e nos incidentes da janela (frequência de documento — não tf-idf,
+  que premiaria o termo raro, justamente o que não agrupa). Custo aceito: a
+  assinatura de um título com mais de 4 termos pode mudar quando a janela
+  muda.
+- **Backtest.** `pnpm risk:backtest [workspace]` reproduz a heurística sobre
+  chamados encerrados com desfecho conhecido e mede calibração por faixa,
+  precisão/revocação da faixa alta e antecedência
+  ([README do ServiceDesk](../servicedesk/README.md#backtest-do-risco)). É o
+  primeiro passo do caminho que as Consequências já apontavam: calibrar os
+  pesos com o histórico de cada workspace. Calibrar de fato continua sendo
+  uma ADR nova.
