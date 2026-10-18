@@ -1,6 +1,7 @@
 import type { ModuleKind } from '@prisma/client'
 import { unauthorized } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
+import { parseBearerToken } from '@/src/lib/mcp/oauth-utils'
 import { err, type Result } from '@/src/lib/result'
 
 /**
@@ -26,12 +27,30 @@ export interface ApiSession {
 /**
  * Resolves the `Authorization: Bearer stl_pat_...` header of a `/api/v1`
  * request. Missing, malformed, expired or revoked tokens, users who are no
- * longer members and suspended workspaces all return `unauthorized`.
+ * longer members and suspended workspaces all return `unauthorized`. The
+ * session cookie is never looked at.
  *
- * Placeholder until the `api-tokens` slice lands.
+ * It also consumes the per-token rate limit (`apiTokenLimiter`, 300 calls
+ * per minute): over it, `RATE_LIMITED` with `retryAfterSeconds`. Routes add
+ * only the per-user `apiLimiter` on top.
+ *
+ * The lookup lives in `ApiTokenService.resolveToken`; it and the limiter
+ * are imported lazily so this contract module stays light for its
+ * consumers (and easy to mock in their tests).
  */
 export async function resolveApiSession(
-  _request: Request,
+  request: Request,
 ): Promise<Result<ApiSession, AppError>> {
-  return err(unauthorized('Token de API inválido'))
+  const token = parseBearerToken(request.headers.get('authorization'))
+  if (!token) return err(unauthorized('Token de API ausente'))
+
+  const { ApiTokenService } = await import('@/src/services/api-token.service')
+  const session = await ApiTokenService.resolveToken(token)
+  if (!session.ok) return session
+
+  const { apiTokenLimiter, consume } = await import('@/src/lib/rate-limit')
+  const limit = await consume(apiTokenLimiter, `token:${session.value.tokenId}`)
+  if (!limit.ok) return limit
+
+  return session
 }
