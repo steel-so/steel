@@ -71,7 +71,7 @@ app/api/**/route.ts  →  Service        →  Repository   →  Prisma
   afetado.
 - **Lista fixa de campos**: depois do `flattenNestedFields`, o formatter
   `capFieldKeys` (`lib/axiom/log-fields.ts`) só deixa no topo de `fields` as
-  chaves de `ALLOWED_LOG_FIELD_KEYS` (escopo, auditoria, erro, worker, IA);
+  chaves de `ALLOWED_LOG_FIELD_KEYS` (escopo, auditoria, erro, worker, IA, MCP);
   o resto vai para dentro do `detail`. O dataset fica com um número fixo de
   colunas, seja qual for o log novo. Chave nova que precise virar coluna
   (para filtrar no Axiom) entra nessa lista de propósito.
