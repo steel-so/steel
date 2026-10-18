@@ -49,9 +49,10 @@ export const PromoAnnouncementEmail = ({
               <Row>
                 <Column className='w-1/2 py-[7px] align-middle'>
                   <Img
-                    src={`${baseEmailUrl}/brand/logo-email.png`}
+                    src={`${baseEmailUrl}/brand/logo-email-mark.png`}
                     alt={brand.displayName}
                     width={23}
+                    height={24}
                     className='block'
                   />
                 </Column>
