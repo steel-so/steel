@@ -19,6 +19,9 @@ vi.mock('@/src/repositories/crm-company.repository')
 vi.mock('@/src/repositories/crm-person.repository')
 vi.mock('@/src/services/crm-workflow-dispatcher')
 vi.mock('@/src/services/crm-campaign-tracking.service')
+// CrmLeadService.intake fires crm.lead.created without awaiting it; a real
+// emitter outlives the test and logs during worker teardown.
+vi.mock('@/src/services/webhook-emitter')
 
 import { CrmCompanyRepository } from '@/src/repositories/crm-company.repository'
 import {
