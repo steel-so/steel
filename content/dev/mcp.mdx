@@ -249,6 +249,22 @@ inválido) volta como resultado com `isError: true` e a mensagem em português,
 para o modelo explicar ao usuário. A resposta traz os dados em
 `structuredContent` e um resumo em texto, com tamanho máximo por chamada.
 
+### Quando há muitas ferramentas
+
+Se o acesso concedido expõe mais de 40 ferramentas, o `tools/list` vem enxuto:
+as ferramentas de plataforma, todas as de escrita e até 20 de leitura das
+categorias mais usadas no workspace. As demais continuam disponíveis por duas
+ferramentas extras:
+
+- `steel_find_tools` (`module` e/ou `query`) procura entre todas as
+  ferramentas do acesso e devolve nome, descrição e o esquema de parâmetros
+  de cada uma;
+- `steel_call_tool` (`name`, `arguments`) executa uma ferramenta de leitura
+  encontrada assim.
+
+Uma ferramenta fora da lista também pode ser chamada direto pelo nome em
+`tools/call`. Ocultar muda só a lista, nunca o que o acesso permite.
+
 ## Resources e prompts
 
 - **Resources:** os artigos **publicados** da base de conhecimento do ServiceDesk

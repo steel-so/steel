@@ -53,6 +53,16 @@ beforeEach(() => {
   vi.clearAllMocks()
   idem.claim.mockResolvedValue({ status: 'claimed' })
 })
+vi.mock('@/src/lib/mcp/tool-usage', () => ({
+  recordMcpToolUsage: vi.fn(async () => undefined),
+}))
+vi.mock('@/src/lib/mcp/telemetry', () => ({
+  logMcpToolCall: vi.fn(),
+  reportMcpError: vi.fn(async () => undefined),
+}))
+
+import { logMcpToolCall, reportMcpError } from '@/src/lib/mcp/telemetry'
+import { recordMcpToolUsage } from '@/src/lib/mcp/tool-usage'
 
 const sdRead = fakeTool({ name: 'sd_list', module: 'SERVICE_DESK' })
 const crmRead = fakeTool({
@@ -392,7 +402,7 @@ describe('callMcpTool() — writes', () => {
     const result = await callMcpTool(sdCreate, writer, { title: 'x' }, OPTS)
 
     expect(mockedExecute).toHaveBeenCalledWith(
-      sdCreate,
+      expect.objectContaining({ name: 'sd_create', kind: 'CREATE' }),
       mcpToolContext(writer),
       { title: 'x' },
       { integrationGrantId: 'g1' },
@@ -641,6 +651,102 @@ describe('absolutizeHrefs()', () => {
     for (let i = 0; i < 20; i++) deep = { child: deep }
     const out = JSON.stringify(absolutizeHrefs(deep, ORIGIN))
     expect(out).toContain('"href":"/fundo"')
+  })
+})
+
+describe('callMcpTool() — telemetry', () => {
+  it('should log each call by outcome and count it, without arguments', async () => {
+    vi.mocked(logMcpToolCall).mockClear()
+    vi.mocked(reportMcpError).mockClear()
+    const grant = mcpGrant()
+    const okTool = fakeTool({ name: 'sd_list', module: 'SERVICE_DESK' })
+    await callMcpTool(
+      okTool,
+      grant,
+      { secret: 'cpf' },
+      { via: 'steel_call_tool' },
+    )
+    expect(logMcpToolCall).toHaveBeenLastCalledWith(grant, {
+      tool: okTool,
+      outcome: 'ok',
+      errorCode: undefined,
+      durationMs: expect.any(Number),
+      via: 'steel_call_tool',
+    })
+    expect(JSON.stringify(vi.mocked(logMcpToolCall).mock.calls)).not.toContain(
+      'cpf',
+    )
+    expect(recordMcpToolUsage).toHaveBeenCalledWith('ws1', 'sd_list')
+
+    const failing = fakeTool({
+      execute: vi.fn(async () => err(validationError('Sem acesso'))),
+    })
+    await callMcpTool(failing, grant, {})
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'error',
+      errorCode: 'VALIDATION_ERROR',
+    })
+    expect(reportMcpError).not.toHaveBeenCalled()
+  })
+
+  it('should report a thrown error to Sentry with tags and log it as failed', async () => {
+    const boom = new Error('boom')
+    const throwing = fakeTool({
+      name: 'sd_boom',
+      execute: vi.fn(async () => {
+        throw boom
+      }),
+    })
+    await callMcpTool(throwing, mcpGrant({ clientId: 'c7' }), {})
+    expect(reportMcpError).toHaveBeenCalledWith(boom, {
+      method: 'tools/call',
+      tool: 'sd_boom',
+      client: 'c7',
+    })
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'failed',
+      errorCode: 'INTERNAL_SERVER_ERROR',
+    })
+  })
+
+  it('should log writes with their status and count them', async () => {
+    const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+    mockedExecute.mockResolvedValue(executedRun())
+    await callMcpTool(sdCreate, writer, {}, OPTS)
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'ok',
+      writeStatus: 'executed',
+    })
+    expect(recordMcpToolUsage).toHaveBeenLastCalledWith('ws1', 'sd_create')
+
+    idem.claim.mockResolvedValue({ status: 'replay', result: {} })
+    await callMcpTool(sdCreate, writer, { idempotencyKey: 'k' }, OPTS)
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'ok',
+      writeStatus: 'replayed',
+    })
+  })
+
+  it('should report a write that threw and log it as failed', async () => {
+    const boom = new Error('boom')
+    mockedExecute.mockImplementation(async (tool, ctx) => {
+      await tool.execute(ctx, {}).catch(() => undefined)
+      return err(databaseError())
+    })
+    const throwing = fakeTool({
+      ...sdCreate,
+      execute: vi.fn(async () => {
+        throw boom
+      }),
+    })
+    await callMcpTool(throwing, mcpGrant(), {}, OPTS)
+    expect(reportMcpError).toHaveBeenCalledWith(
+      boom,
+      expect.objectContaining({ tool: 'sd_create' }),
+    )
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'failed',
+    })
   })
 })
 

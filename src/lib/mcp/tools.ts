@@ -1,6 +1,5 @@
 import type { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js'
-import { logFields } from '@/lib/axiom/log-fields'
-import { logger } from '@/lib/axiom/logger'
+import { BETTER_AUTH_URL } from '@/lib/env/server'
 import {
   hashMcpArgs,
   McpIdempotencyCache,
@@ -28,6 +27,12 @@ import {
   proposeMcpWrite,
 } from '@/src/services/ai-pending-action.service'
 import type { McpGrant } from './grant'
+import {
+  logMcpToolCall,
+  type McpToolCallLog,
+  reportMcpError,
+} from './telemetry'
+import { recordMcpToolUsage } from './tool-usage'
 
 /**
  * Tools side of the MCP adapter (ADR 0032): which Steel AI tools a grant
@@ -208,35 +213,54 @@ function cappedData(content: string): Record<string, unknown> {
   }
 }
 
-export interface McpCallOptions {
-  /** Public origin of the app (`BETTER_AUTH_URL`), for absolute links. */
-  origin: string
+export interface McpToolCallOptions {
+  /** Public origin for absolute links (default `BETTER_AUTH_URL`). */
+  origin?: string
+  /** Meta-tool the call came through (`steel_call_tool`), for the log. */
+  via?: string
 }
 
-type CallOutcome = 'done' | 'pending_confirmation' | 'replayed' | 'error'
-
-function logCall(
+/**
+ * The tool with `execute` watched for exceptions: the registry turns a
+ * throw into a generic `INTERNAL_SERVER_ERROR`, which would hide the bug,
+ * so the cause goes to Sentry (tags only) before the registry sees it.
+ */
+function watchedTool(
   tool: AnySteelAiTool,
   grant: McpGrant,
-  startedAt: number,
-  outcome: CallOutcome,
-  errorCode?: string,
+  onThrow: () => void,
+): AnySteelAiTool {
+  return {
+    ...tool,
+    execute: async (ctx, args) => {
+      try {
+        return await tool.execute(ctx, args)
+      } catch (cause) {
+        onThrow()
+        await reportMcpError(cause, {
+          method: 'tools/call',
+          tool: tool.name,
+          client: grant.clientId,
+        })
+        throw cause
+      }
+    },
+  }
+}
+
+/** Telemetry of one call: log line (no arguments) + usage counter. */
+async function recordCall(
+  tool: AnySteelAiTool,
+  grant: McpGrant,
+  entry: Omit<McpToolCallLog, 'tool' | 'durationMs'> & { startedAt: number },
 ) {
-  logger.info(
-    'mcp.tool_call',
-    logFields(
-      { component: 'McpServer', workspaceId: grant.workspaceId },
-      {
-        toolName: tool.name,
-        kind: tool.kind,
-        userId: grant.userId,
-        clientId: grant.clientId,
-        outcome,
-        errorCode,
-        durationMs: Date.now() - startedAt,
-      },
-    ),
-  )
+  const { startedAt, ...rest } = entry
+  logMcpToolCall(grant, {
+    tool,
+    ...rest,
+    durationMs: Date.now() - startedAt,
+  })
+  await recordMcpToolUsage(grant.workspaceId, tool.name)
 }
 
 /**
@@ -244,29 +268,38 @@ function logCall(
  * come from the arguments). The result carries the summary as text and the
  * data — capped at `TOOL_OUTPUT_MAX_BYTES` — as `structuredContent` and as
  * serialized JSON for clients that only read text. Domain errors come back
- * as `isError` results (the model can read and react to them). Writes go
- * through `callMcpWrite`; the caller already checked `isMcpToolExposed`.
+ * as `isError` results (the model can read and react to them). Every call
+ * is logged (`mcp.tool_call`, no arguments) and counted for the tool
+ * ranking of `tools/list`. Writes go through `callMcpWrite`; the caller
+ * already checked `isMcpToolExposed`.
  */
 export async function callMcpTool(
   tool: AnySteelAiTool,
   grant: McpGrant,
   args: unknown,
-  options: McpCallOptions,
+  options: McpToolCallOptions = {},
 ): Promise<CallToolResult> {
   const rawArgs = isRecord(args) ? args : {}
+  const origin = options.origin ?? BETTER_AUTH_URL
   if (tool.kind !== 'READ') {
-    return callMcpWrite(tool, grant, rawArgs, options)
+    return callMcpWrite(tool, grant, rawArgs, { origin, via: options.via })
   }
 
   const startedAt = Date.now()
-  const run = await runReadTool(tool, mcpToolContext(grant), rawArgs)
-  logCall(
-    tool,
-    grant,
-    startedAt,
-    run.ok ? 'done' : 'error',
-    run.ok ? undefined : run.error.code,
+  let threw = false
+  const run = await runReadTool(
+    watchedTool(tool, grant, () => {
+      threw = true
+    }),
+    mcpToolContext(grant),
+    rawArgs,
   )
+  await recordCall(tool, grant, {
+    startedAt,
+    outcome: run.ok ? 'ok' : threw ? 'failed' : 'error',
+    errorCode: run.ok ? undefined : run.error.code,
+    via: options.via,
+  })
   if (!run.ok) return mcpToolError(run.error)
 
   // `content` is already capped by the registry; reuse it so the size cap
@@ -275,9 +308,14 @@ export async function callMcpTool(
     run.output.summary,
     absolutizeHrefs(
       { summary: run.output.summary, ...cappedData(run.content) },
-      options.origin,
+      origin,
     ) as Record<string, unknown>,
   )
+}
+
+interface WriteOptions {
+  origin: string
+  via?: string
 }
 
 /** `idempotencyKey` out of the arguments (the tools never see it). */
@@ -313,12 +351,17 @@ async function callMcpWrite(
   tool: AnySteelAiTool,
   grant: McpGrant,
   rawArgs: Record<string, unknown>,
-  options: McpCallOptions,
+  options: WriteOptions,
 ): Promise<CallToolResult> {
   const startedAt = Date.now()
+  const base = { startedAt, via: options.via }
   const split = splitIdempotencyKey(rawArgs)
   if (!split.ok) {
-    logCall(tool, grant, startedAt, 'error', split.error.code)
+    await recordCall(tool, grant, {
+      ...base,
+      outcome: 'error',
+      errorCode: split.error.code,
+    })
     return mcpToolError(split.error)
   }
 
@@ -329,7 +372,11 @@ async function callMcpWrite(
   if (scope) {
     const claim = await McpIdempotencyCache.claim(scope, argsHash)
     if (claim.status === 'replay') {
-      logCall(tool, grant, startedAt, 'replayed')
+      await recordCall(tool, grant, {
+        ...base,
+        outcome: 'ok',
+        writeStatus: 'replayed',
+      })
       return claim.result as CallToolResult
     }
     if (claim.status === 'in_progress' || claim.status === 'mismatch') {
@@ -337,26 +384,33 @@ async function callMcpWrite(
         claim.status === 'in_progress'
           ? mcpIdempotencyInProgress()
           : mcpIdempotencyKeyReused()
-      logCall(tool, grant, startedAt, 'error', error.code)
+      await recordCall(tool, grant, {
+        ...base,
+        outcome: 'error',
+        errorCode: error.code,
+      })
       return mcpToolError(error)
     }
   }
 
+  let threw = false
+  const watched = watchedTool(tool, grant, () => {
+    threw = true
+  })
   const result = tool.customerFacing
-    ? await proposeWrite(tool, grant, split.args, options)
-    : await executeWrite(tool, grant, split.args, options)
+    ? await proposeWrite(watched, grant, split.args, options)
+    : await executeWrite(watched, grant, split.args, options)
 
-  logCall(
-    tool,
-    grant,
-    startedAt,
-    result.isError
-      ? 'error'
+  await recordCall(tool, grant, {
+    ...base,
+    outcome: result.isError ? (threw ? 'failed' : 'error') : 'ok',
+    errorCode: result.isError ? errorCodeOf(result) : undefined,
+    writeStatus: result.isError
+      ? undefined
       : tool.customerFacing
         ? 'pending_confirmation'
-        : 'done',
-    result.isError ? errorCodeOf(result) : undefined,
-  )
+        : 'executed',
+  })
 
   if (scope) {
     if (result.isError) await McpIdempotencyCache.release(scope)
@@ -375,7 +429,7 @@ async function executeWrite(
   tool: AnySteelAiTool,
   grant: McpGrant,
   args: Record<string, unknown>,
-  options: McpCallOptions,
+  options: WriteOptions,
 ): Promise<CallToolResult> {
   const executed = await executeMcpWrite(tool, mcpToolContext(grant), args, {
     integrationGrantId: grant.grantId,
@@ -403,7 +457,7 @@ async function proposeWrite(
   tool: AnySteelAiTool,
   grant: McpGrant,
   args: Record<string, unknown>,
-  options: McpCallOptions,
+  options: WriteOptions,
 ): Promise<CallToolResult> {
   const proposed = await proposeMcpWrite(tool, mcpToolContext(grant), args, {
     integrationGrantId: grant.grantId,

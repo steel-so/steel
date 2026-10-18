@@ -148,6 +148,9 @@ export const ALLOWED_LOG_FIELD_KEYS: ReadonlySet<string> = new Set([
   'costUsd',
   'inputTokens',
   'outputTokens',
+  // mcp server (one column each: the MCP dashboard groups by them)
+  'toolName',
+  'clientId',
   // the overflow bucket
   'detail',
 ])

@@ -16,6 +16,37 @@ order: 1
 - **Produto:** as novidades de tela ficam no [changelog do produto](/changelog),
   que também tem [RSS](/changelog/rss.xml).
 
+## 17/10/2026: servidor MCP
+
+- Novo servidor [MCP](/dev/mcp) em `POST /api/mcp` (Streamable HTTP, sem
+  estado). `GET` e `DELETE` respondem `405`. Sem token, ou com token revogado,
+  a resposta é `401` com
+  `WWW-Authenticate: Bearer resource_metadata="<origem>/.well-known/oauth-protected-resource"`.
+- O Steel passa a ser um servidor de autorização OAuth 2.1: código de
+  autorização com PKCE (`S256`), registro dinâmico de cliente, refresh e
+  revogação. Os endereços de cada etapa estão nos metadados, em
+  `/.well-known/oauth-authorization-server` e
+  `/.well-known/oauth-protected-resource`. Os tokens são opacos (`stl_at_…` e
+  `stl_rt_…`); o access token vale 1 hora e o refresh token, pedido com
+  `offline_access`, 30 dias.
+- Escopos `mcp:read` (ferramentas de leitura, *resources* e *prompts*) e
+  `mcp:write` (também criação, edição e ação, se o workspace ligou
+  `mcpWriteEnabled` em `PATCH /api/workspaces/{id}/ai-settings`). Ferramentas
+  de exclusão nunca são expostas.
+- Escritas que chegam a um cliente final (`customerFacing`) não executam pela
+  chamada: o resultado traz o link absoluto para confirmar a ação no Steel. As
+  ferramentas de escrita aceitam o argumento opcional `idempotencyKey`: a mesma
+  chave, na mesma conexão e ferramenta, não repete a ação por 24 horas.
+- *Resources* `steel://servicedesk/kb/{id}` e `steel://wiki/pages/{id}` (em
+  Markdown, 50 por página) e os *prompts* `servicedesk_daily_summary`,
+  `crm_weekly_pipeline` e `whatsapp_unanswered_conversations`.
+- Os `href` devolvidos pelas ferramentas vêm absolutos.
+- Limites de `120` chamadas por minuto por usuário e `600` por cliente OAuth,
+  com `429` e `Retry-After`.
+- Novas rotas de **Apps conectados**, na [referência da API](/dev/api): listar
+  e revogar as conexões do próprio usuário e, para donos e administradores, as
+  de todos os membros do workspace.
+
 ## 14/10/2026: limites mensais do WhatsApp
 
 - Novo `GET /api/workspaces/{id}/whatsapp/usage`, com o uso do mês e os limites

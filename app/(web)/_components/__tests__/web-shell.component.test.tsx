@@ -193,6 +193,8 @@ const OUT = [
   // OAuth consent of MCP clients (ADR 0033): focused authorization screen.
   'oauth/',
   'upgrade/',
+  // OAuth consent of AI clients (MCP): a focused authorization card.
+  'oauth/',
   'jobs/',
   '(private)/',
   // Published CRM sites render their own document (no Steel chrome).
