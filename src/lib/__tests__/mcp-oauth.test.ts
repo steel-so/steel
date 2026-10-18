@@ -52,11 +52,12 @@ describe('parseBearerToken', () => {
 describe('parseOAuthQuery', () => {
   it('reads client, scopes and expiry from the signed query', () => {
     const parsed = parseOAuthQuery(
-      '?client_id=c1&scope=mcp%3Aread+offline_access&exp=1800000000&sig=s',
+      '?client_id=c1&scope=mcp%3Aread+offline_access&exp=1800000000&sig=s&redirect_uri=https%3A%2F%2Fclaude.ai%2Fcb',
     )
     expect(parsed).toEqual({
       clientId: 'c1',
       scopes: ['mcp:read', 'offline_access'],
+      redirectUri: 'https://claude.ai/cb',
       expiresAt: new Date(1_800_000_000_000),
     })
   })
@@ -70,6 +71,7 @@ describe('parseOAuthQuery', () => {
     expect(parseOAuthQuery('client_id=c1&sig=s')).toEqual({
       clientId: 'c1',
       scopes: [],
+      redirectUri: null,
       expiresAt: null,
     })
   })
@@ -79,7 +81,10 @@ describe('parseOAuthQuery', () => {
     const query = parseOAuthQuery('client_id=c&sig=s&exp=1800000000')
     expect(query && isOAuthQueryExpired(query, now)).toBe(true)
     expect(
-      isOAuthQueryExpired({ clientId: 'c', scopes: [], expiresAt: null }, now),
+      isOAuthQueryExpired(
+        { clientId: 'c', scopes: [], redirectUri: null, expiresAt: null },
+        now,
+      ),
     ).toBe(false)
   })
 })
