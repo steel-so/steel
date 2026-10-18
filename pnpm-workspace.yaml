@@ -71,6 +71,12 @@ overrides:
   # @platejs/excalidraw depender de >=0.18.1.
   '@platejs/excalidraw>@excalidraw/excalidraw': '0.18.1'
 
+  # katex 0.18 prefixes the CSS classes of the markup it renders, and the
+  # stylesheet in app/globals.css comes from the root katex. Every renderer must
+  # be on that same line, or its formulas lose their styles: @platejs/math (Wiki
+  # and knowledge base equations) pins 0.16.22 and mermaid asks for ^0.16.
+  katex: '>=0.18.10 <0.19.0'
+
   # Overrides por major, porque o repositório carrega duas linhas da mesma
   # biblioteca e juntar as duas num major só quebraria quem pede a antiga.
   'brace-expansion@1': '2.1.7' # 6 advisories de DoS; a 1.x nunca foi corrigida
