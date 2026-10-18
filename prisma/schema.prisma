@@ -567,6 +567,7 @@ model Workspace {
   sdIntegrations            SdIntegration[]
   sdIntegrationLinks        SdIntegrationLink[]
   searchDocuments           SearchDocument[]
+  aiKnowledgeChunks         AiKnowledgeChunk[]
   workspaceExports          WorkspaceExport[]
   integrations              WorkspaceIntegration[]
   sites                     Site[]
@@ -4230,6 +4231,8 @@ enum AiUsageFeature {
   STEEL_ASSISTANT
   STEEL_AGENT
   WIKI_ASSISTANT
+  /// Embeddings of the Steel AI knowledge index (indexing and queries).
+  KNOWLEDGE_SEARCH
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -4446,6 +4449,9 @@ model AiActionLog {
 model PlatformAiSettings {
   id          String   @id @default("default")
   costMargin  Decimal  @default(1) @map("cost_margin") @db.Decimal(8, 4)
+  /// Semantic half of the Steel AI knowledge search (ADR 0037). Off = the
+  /// index is text-only and nothing is sent to the embedding provider.
+  embeddingsEnabled Boolean @default(true) @map("embeddings_enabled")
   updatedById String?  @map("updated_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -7381,6 +7387,45 @@ model SearchDocument {
   @@index([codes], type: Gin, map: "search_documents_codes_idx")
   @@index([workspaceId, entityType, indexedAt])
   @@map("search_documents")
+}
+
+/// Steel AI knowledge index (ADR 0037): the text the assistant may cite —
+/// KB articles, Wiki pages, resolved tickets, WhatsApp AI documents, CRM
+/// notes and proposals — split into chunks. Permissions are re-applied at
+/// query time (`audience`, `user_ids` and the source-type allow-list). The
+/// embedding of each chunk lives in `ai_vector.ai_knowledge_embeddings`,
+/// outside the Prisma schema, created only where pgvector is installed.
+model AiKnowledgeChunk {
+  id              String                   @id @default(cuid())
+  workspaceId     String                   @map("workspace_id")
+  /// `src/lib/ai/knowledge/sources.ts` (sd-kb-article, wiki-page, ...).
+  sourceType      String                   @map("source_type")
+  sourceId        String                   @map("source_id")
+  chunkIndex      Int                      @map("chunk_index")
+  /// ModuleKind of the source, `null` for platform sources (Wiki).
+  module          String?
+  /// PUBLIC | AGENTS | PARTIES, same meaning as `search_documents.audience`.
+  audience        String                   @default("PUBLIC")
+  /// Requester/participants of a ticket (`PARTIES` access).
+  userIds         String[]                 @default([]) @map("user_ids")
+  title           String
+  content         String
+  /// App path relative to the workspace (the citation link).
+  path            String
+  /// sha256 of title + content: the embedding is redone only when it changes.
+  contentHash     String                   @map("content_hash")
+  sourceUpdatedAt DateTime                 @map("source_updated_at") @db.Timestamptz(6)
+  indexedAt       DateTime                 @default(now()) @map("indexed_at") @db.Timestamptz(6)
+  /// GENERATED ALWAYS (the `dbgenerated` default mirrors the expression so
+  /// `migrate diff` sees no drift).
+  searchVector    Unsupported("tsvector")? @default(dbgenerated("(setweight(to_tsvector('portuguese'::regconfig, f_unaccent(COALESCE(title, ''::text))), 'A'::\"char\") || setweight(to_tsvector('portuguese'::regconfig, f_unaccent(COALESCE(content, ''::text))), 'B'::\"char\"))")) @map("search_vector")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, sourceType, sourceId, chunkIndex])
+  @@index([searchVector], type: Gin, map: "ai_knowledge_chunks_search_vector_idx")
+  @@index([workspaceId, sourceType, indexedAt])
+  @@map("ai_knowledge_chunks")
 }
 
 model WikiPage {
