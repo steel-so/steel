@@ -26,6 +26,10 @@ const IntegrationGrantDTO = z.object({
     uri: z.string().nullable(),
   }),
   workspace: z.object({ id: z.string(), name: z.string(), slug: z.string() }),
+  redirectHost: z.string().nullable().meta({
+    description:
+      'Host do `redirect_uri` mostrado na tela de consentimento (para onde o código foi). O `client.name` é declarado pelo próprio app; o host é o que o identifica. Nulo em concessões anteriores a esse registro.',
+  }),
   scopes: z.array(z.enum(MCP_SCOPES)),
   modules: z.array(IntegrationModuleSchema),
   lastUsedAt: z
@@ -57,6 +61,9 @@ const WorkspaceIntegrationGrantsDTO = z.object({
   clients: z.array(
     z.object({
       client: IntegrationGrantDTO.shape.client,
+      redirectHost: IntegrationGrantDTO.shape.redirectHost.meta({
+        description: 'Host da concessão ativa mais recente do app.',
+      }),
       members: z
         .number()
         .int()
@@ -74,12 +81,9 @@ const WorkspaceIntegrationGrantsDTO = z.object({
 })
 
 const RevokeManyDTO = z.object({
-  revoked: z
-    .number()
-    .int()
-    .meta({
-      description: 'Concessões revogadas (0 se não havia nenhuma ativa).',
-    }),
+  revoked: z.number().int().meta({
+    description: 'Concessões revogadas (0 se não havia nenhuma ativa).',
+  }),
 })
 
 const WORKSPACE_ADMIN_ERRORS: ErrorEntry[] = [

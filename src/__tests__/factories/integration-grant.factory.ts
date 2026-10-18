@@ -35,6 +35,7 @@ export function createFakeIntegrationGrant(
     clientId: `client-${createId()}`,
     scopes: ['mcp:read'],
     modules: ['CRM'],
+    redirectHost: 'claude.ai',
     lastUsedAt: null,
     revokedAt: null,
     createdAt: now,

@@ -115,6 +115,7 @@ export const IntegrationGrantRepository = {
     clientId: string
     scopes: string[]
     modules: ModuleKind[]
+    redirectHost?: string | null
   }): Promise<Result<IntegrationGrant>> {
     try {
       const grant = await prisma.integrationGrant.create({ data })
@@ -126,7 +127,11 @@ export const IntegrationGrantRepository = {
 
   async updateConsent(
     id: string,
-    data: { scopes: string[]; modules: ModuleKind[] },
+    data: {
+      scopes: string[]
+      modules: ModuleKind[]
+      redirectHost?: string | null
+    },
   ): Promise<Result<IntegrationGrant>> {
     try {
       const grant = await prisma.integrationGrant.update({

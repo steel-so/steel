@@ -8195,16 +8195,19 @@ model OauthConsent {
 /// point here through `referenceId`. Unique per (user, client, workspace)
 /// while not revoked — a partial unique index in the migration.
 model IntegrationGrant {
-  id          String       @id @default(cuid())
-  userId      String       @map("user_id")
-  workspaceId String       @map("workspace_id")
-  clientId    String       @map("client_id")
-  scopes      String[]
-  modules     ModuleKind[]
-  lastUsedAt  DateTime?    @map("last_used_at")
-  revokedAt   DateTime?    @map("revoked_at")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id           String       @id @default(cuid())
+  userId       String       @map("user_id")
+  workspaceId  String       @map("workspace_id")
+  clientId     String       @map("client_id")
+  scopes       String[]
+  modules      ModuleKind[]
+  /// Host of the redirect_uri the user saw on the consent screen (where the
+  /// code went). The client's name is self-declared; this is not.
+  redirectHost String?      @map("redirect_host")
+  lastUsedAt   DateTime?    @map("last_used_at")
+  revokedAt    DateTime?    @map("revoked_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
 
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

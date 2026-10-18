@@ -22,6 +22,7 @@ function grant(
     id: 'g1',
     user: { id: 'u1', name: 'Ana Souza', email: 'ana@acme.com', image: null },
     client: CLAUDE,
+    redirectHost: 'claude.ai',
     scopes: ['mcp:read'],
     modules: ['CRM'],
     lastUsedAt: null,
@@ -35,7 +36,12 @@ function grant(
 const DATA: WorkspaceIntegrationGrantsDTO = {
   grants: [
     grant({ id: 'g1', usage: { last7Days: 1, last30Days: 12 } }),
-    grant({ id: 'g2', client: CURSOR, scopes: ['mcp:read', 'mcp:write'] }),
+    grant({
+      id: 'g2',
+      client: CURSOR,
+      redirectHost: 'cursor://anysphere.cursor-mcp',
+      scopes: ['mcp:read', 'mcp:write'],
+    }),
     grant({
       id: 'g3',
       user: { id: 'u2', name: 'Bruno', email: 'bruno@acme.com', image: null },
@@ -46,6 +52,7 @@ const DATA: WorkspaceIntegrationGrantsDTO = {
   clients: [
     {
       client: CLAUDE,
+      redirectHost: 'claude.ai',
       members: 2,
       canWrite: false,
       lastUsedAt: '2026-10-16T18:30:00.000Z',
@@ -53,6 +60,7 @@ const DATA: WorkspaceIntegrationGrantsDTO = {
     },
     {
       client: CURSOR,
+      redirectHost: null,
       members: 1,
       canWrite: true,
       lastUsedAt: null,
@@ -84,6 +92,10 @@ describe('<WorkspaceConnectedAppsPanel />', () => {
     expect(screen.getAllByText('Revogar todos')).toHaveLength(1)
     expect(screen.getByText('Ana Souza')).toBeTruthy()
     expect(screen.getByText('AS')).toBeTruthy()
+    // The host the user consented to sits next to the self-declared name:
+    // on the Claude card and on Ana's and Bruno's Claude grants.
+    expect(screen.getAllByText('claude.ai')).toHaveLength(3)
+    expect(screen.getByText('cursor://anysphere.cursor-mcp')).toBeTruthy()
   })
 
   it('revokes an app from every member after confirming', async () => {
