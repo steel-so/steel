@@ -35,6 +35,11 @@ export const TAG_GROUPS = [
         description:
           'Provedor OAuth 2.1 do Steel para integrações (servidor MCP): autorização com PKCE, registro dinâmico de cliente, tokens, consentimento por workspace e módulos, e a lista de apps conectados do usuário, com revogação (ADR 0033).',
       },
+      {
+        name: 'Tokens de API',
+        description:
+          'Tokens pessoais (`stl_pat_...`) da API pública v1: criação em Ajustes › Segurança, login do CLI pelo fluxo de dispositivo (`steel login` + `/device`), lista e revogação pelo dono do token e pelos administradores do workspace (ADR 0035).',
+      },
     ],
   },
   {
