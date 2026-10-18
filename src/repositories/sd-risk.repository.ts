@@ -228,6 +228,39 @@ export const SdRiskRepository = {
   },
 
   /**
+   * Último evento **de agente** de cada chamado — a régua do fator "sem
+   * interação da equipe". `lastActivityAt` do chamado não serve: mensagem
+   * do cliente (portal, e-mail, WhatsApp) também o atualiza. Chamado sem
+   * nenhum evento de agente fica fora do mapa.
+   */
+  async lastTeamActivityByTicketIds(
+    workspaceId: string,
+    ticketIds: string[],
+  ): Promise<Result<Map<string, Date>>> {
+    if (ticketIds.length === 0) return ok(new Map())
+    try {
+      const rows = await prisma.sdTicketEvent.groupBy({
+        by: ['ticketId'],
+        where: {
+          workspaceId,
+          ticketId: { in: ticketIds },
+          actorKind: 'AGENT',
+        },
+        _max: { createdAt: true },
+      })
+      const out = new Map<string, Date>()
+      for (const row of rows) {
+        if (row._max.createdAt) out.set(row.ticketId, row._max.createdAt)
+      }
+      return ok(out)
+    } catch (error) {
+      return err(
+        dbError('Failed to read ServiceDesk team activity for risk', error),
+      )
+    }
+  },
+
+  /**
    * Topo das escalas do workspace — sem isso não há como dizer se
    * "prioridade 3" é alta ou média neste cliente.
    */

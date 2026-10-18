@@ -7,6 +7,7 @@ import {
   sdGroupIncidents,
   sdIncidentSignature,
   sdIncidentsSince,
+  sdIncidentTermFrequencies,
   sdIncidentTerms,
   sdNormalizeText,
 } from '@/src/lib/servicedesk/incident-cluster'
@@ -69,8 +70,66 @@ describe('sdIncidentTerms', () => {
     ).toHaveLength(SD_CLUSTER_MAX_TERMS)
   })
 
+  it('should cut by relevance in the window, not by alphabetical order', () => {
+    // Cinco termos, cabem quatro. Em ordem alfabética sairia "travada" — o
+    // único que os outros chamados repetem. Pela janela, sai "andar".
+    const title = 'Impressora financeiro travada andar segundo'
+    const frequency = sdIncidentTermFrequencies([
+      title,
+      'Impressora do financeiro travada',
+      'Impressora travada no segundo',
+    ])
+
+    expect(sdIncidentTerms(title)).toEqual([
+      'andar',
+      'financeiro',
+      'impressora',
+      'segundo',
+    ])
+    expect(sdIncidentTerms(title, frequency)).toEqual([
+      'financeiro',
+      'impressora',
+      'segundo',
+      'travada',
+    ])
+  })
+
+  it('should prefer the term the title itself repeats', () => {
+    expect(
+      sdIncidentTerms('vpn caiu: alfa beta gama vpn', new Map([['alfa', 9]])),
+    ).toEqual(['alfa', 'beta', 'caiu', 'vpn'])
+  })
+
+  it('should break ties alphabetically so the cut is deterministic', () => {
+    const frequency = new Map([
+      ['delta', 2],
+      ['alfa', 2],
+      ['charlie', 2],
+      ['bravo', 2],
+      ['echo', 2],
+    ])
+
+    expect(sdIncidentTerms('echo delta charlie bravo alfa', frequency)).toEqual(
+      ['alfa', 'bravo', 'charlie', 'delta'],
+    )
+  })
+
   it('should return nothing for a title with no signal', () => {
     expect(sdIncidentTerms('urgente!!! preciso de ajuda')).toEqual([])
+  })
+})
+
+describe('sdIncidentTermFrequencies', () => {
+  it('should count each term once per incident', () => {
+    const frequency = sdIncidentTermFrequencies([
+      'VPN caiu, VPN fora',
+      'VPN lenta',
+      'ajuda!!',
+    ])
+
+    expect(frequency.get('vpn')).toBe(2)
+    expect(frequency.get('caiu')).toBe(1)
+    expect(frequency.has('ajuda')).toBe(false)
   })
 })
 
@@ -144,6 +203,30 @@ describe('sdGroupIncidents', () => {
     expect(groups[0].title).toBe('E-mail fora do ar no servidor')
     expect(groups[0].firstSeenAt.getTime()).toBe(BASE.getTime() - 2 * DAY)
     expect(groups[0].lastSeenAt.getTime()).toBe(BASE.getTime())
+  })
+
+  it('should group long titles whose alphabetical cut would split them', () => {
+    // Cada título tem um detalhe próprio que, em ordem alfabética, entraria
+    // na assinatura ("andar", "bloco", "anexo") e separaria os três.
+    const groups = sdGroupIncidents([
+      incident({
+        id: 'a',
+        title: 'Impressora financeiro segundo travada andar',
+      }),
+      incident({
+        id: 'b',
+        title: 'Impressora financeiro segundo travada bloco',
+      }),
+      incident({
+        id: 'c',
+        title: 'Impressora financeiro segundo travada anexo',
+      }),
+    ])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].signature).toBe(
+      'cat1:-:-:financeiro-impressora-segundo-travada',
+    )
   })
 
   it('should ignore a pair below the threshold', () => {

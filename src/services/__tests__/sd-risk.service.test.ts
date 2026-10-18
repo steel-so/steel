@@ -127,6 +127,7 @@ beforeEach(() => {
   repo.maxScaleLevels.mockResolvedValue(ok({ priority: 4, severity: 3 }))
   repo.breachHistory.mockResolvedValue(ok({ customerIds: [], serviceIds: [] }))
   repo.levelsByTicketIds.mockResolvedValue(ok(new Map()))
+  repo.lastTeamActivityByTicketIds.mockResolvedValue(ok(new Map()))
   repo.upsertPrediction.mockResolvedValue(ok(createFakeSdRiskPrediction()))
   repo.deleteClosedPredictions.mockResolvedValue(ok(0))
   repo.listRanked.mockResolvedValue(ok([]))
@@ -262,6 +263,56 @@ describe('SdRiskService.recomputeTick', () => {
     ).toBe(true)
   })
 
+  it('mede o silêncio pelos eventos da equipe, não pela mensagem do cliente', async () => {
+    // O cliente escreveu agora (lastActivityAt = NOW), mas a equipe está
+    // calada há 30 h: o fator "sem interação" tem de pegar.
+    tickets.listOpenForSla.mockResolvedValue(ok([calmTicket()]))
+    repo.lastTeamActivityByTicketIds.mockResolvedValue(
+      ok(new Map([['t2', new Date(NOW.getTime() - 30 * HOUR)]])),
+    )
+
+    expectOk(await SdRiskService.recomputeTick({}, NOW))
+
+    expect(repo.lastTeamActivityByTicketIds).toHaveBeenCalledWith('ws1', ['t2'])
+    const factors = repo.upsertPrediction.mock.calls[0][2].factors as {
+      key: string
+      detail: string
+    }[]
+    expect(factors.find((f) => f.key === 'stale')?.detail).toBe(
+      'Sem interação da equipe há 1 d',
+    )
+  })
+
+  it('conta o silêncio desde a abertura quando a equipe nunca agiu', async () => {
+    tickets.listOpenForSla.mockResolvedValue(
+      ok([calmTicket({ createdAt: new Date(NOW.getTime() - 50 * HOUR) })]),
+    )
+
+    expectOk(await SdRiskService.recomputeTick({}, NOW))
+
+    const factors = repo.upsertPrediction.mock.calls[0][2].factors as {
+      key: string
+      weight: number
+    }[]
+    expect(factors.find((f) => f.key === 'stale')?.weight).toBe(12)
+  })
+
+  it('cai na última atividade do chamado quando os eventos não carregam', async () => {
+    tickets.listOpenForSla.mockResolvedValue(
+      ok([calmTicket({ createdAt: new Date(NOW.getTime() - 50 * HOUR) })]),
+    )
+    repo.lastTeamActivityByTicketIds.mockResolvedValue(err(databaseError()))
+
+    const result = expectOk(await SdRiskService.recomputeTick({}, NOW))
+
+    expect(result.errors).toBe(1)
+    const factors = repo.upsertPrediction.mock.calls[0][2].factors as {
+      key: string
+    }[]
+    // lastActivityAt = NOW: sem o fator, como antes.
+    expect(factors.some((f) => f.key === 'stale')).toBe(false)
+  })
+
   it('pagina os chamados abertos', async () => {
     const batch = Array.from({ length: 200 }, (_, i) =>
       calmTicket({ id: `t${i}`, number: i + 1 }),
@@ -300,14 +351,16 @@ describe('SdRiskService.recomputeTick', () => {
     repo.maxScaleLevels.mockResolvedValue(err(databaseError()))
     repo.breachHistory.mockResolvedValue(err(databaseError()))
     repo.levelsByTicketIds.mockResolvedValue(err(databaseError()))
+    repo.lastTeamActivityByTicketIds.mockResolvedValue(err(databaseError()))
     repo.upsertPrediction.mockResolvedValue(err(databaseError()))
     repo.deleteClosedPredictions.mockResolvedValue(err(databaseError()))
     tickets.listOpenForSla.mockResolvedValue(ok([riskyTicket()]))
 
     const result = expectOk(await SdRiskService.recomputeTick({}, NOW))
 
-    // 4 estatísticas + faixas anteriores + gravação + limpeza.
-    expect(result.errors).toBe(7)
+    // 4 estatísticas + faixas anteriores + atividade da equipe + gravação
+    // + limpeza.
+    expect(result.errors).toBe(8)
     expect(result.high).toBe(0)
   })
 

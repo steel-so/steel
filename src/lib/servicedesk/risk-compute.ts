@@ -68,8 +68,13 @@ export interface SdRiskTicketInput extends SdSlaTicketInput {
   companyId: string | null
   serviceId: string | null
   reopenCount: number
-  /** Última interação registrada no chamado. */
-  lastActivityAt: Date
+  /**
+   * Última interação **da equipe** (evento de agente: resposta, nota, mudança
+   * de campo, tarefa…). Mensagem do cliente não conta: ela pede resposta, não
+   * a dá. `null` quando a equipe nunca agiu no chamado — o silêncio conta
+   * desde a abertura.
+   */
+  lastTeamActivityAt: Date | null
   priority: SdRiskScaleRef | null
   severity: SdRiskScaleRef | null
   phase: { name: string; category: SdPhaseCategory; pausesSla: boolean }
@@ -187,20 +192,69 @@ function scaleRatio(ref: SdRiskScaleRef | null, max: number): number {
   return clamp01((ref.level - 1) / (max - 1))
 }
 
-/** Timer que manda no risco: resolução quando há prazo, senão 1ª resposta. */
-function primaryTimer(
+interface SdRiskTimer {
+  timer: SdSlaTimer
+  label: string
+}
+
+/** Relógio que ainda corre (ou já estourou sem conclusão) — o que pesa. */
+function isLive(timer: SdSlaTimer): boolean {
+  return (
+    timer.state === 'ok' ||
+    timer.state === 'at_risk' ||
+    timer.state === 'breached'
+  )
+}
+
+/** Quanto o timer pesa: violado vence qualquer porcentagem. */
+function urgency(timer: SdSlaTimer): number {
+  if (timer.state === 'breached') return Number.POSITIVE_INFINITY
+  return timer.percentUsed ?? 0
+}
+
+/**
+ * Os timers que entram no risco. A resolução entra sempre que tem prazo; a
+ * 1ª resposta entra enquanto **ninguém respondeu** — um chamado com 90% do
+ * prazo de 1ª resposta gasto está em risco mesmo com a resolução folgada.
+ * Sem prazo de resolução, a 1ª resposta segue valendo como antes (inclusive
+ * respondida, para o "já violado" de quem respondeu atrasado).
+ */
+function slaTimers(
   ticket: SdRiskTicketInput,
   now: Date,
   options: SdRiskOptions,
-): { timer: SdSlaTimer; label: string } {
+): SdRiskTimer[] {
   const state = computeSlaState(ticket, now, {
     atRiskPercent: options.atRiskPercent,
     calendar: options.calendar ?? SD_CALENDAR_24X7,
   })
-  if (state.resolution.state !== 'none') {
-    return { timer: state.resolution, label: 'resolução' }
+  const timers: SdRiskTimer[] = []
+  const hasResolution = state.resolution.state !== 'none'
+  if (hasResolution) {
+    timers.push({ timer: state.resolution, label: 'resolução' })
   }
-  return { timer: state.firstResponse, label: '1ª resposta' }
+  if (
+    state.firstResponse.state !== 'none' &&
+    (!ticket.firstRespondedAt || !hasResolution)
+  ) {
+    timers.push({ timer: state.firstResponse, label: '1ª resposta' })
+  }
+  return timers
+}
+
+/**
+ * Timer que explica o fator `sla_consumed`: o mais urgente entre os que
+ * correm (empate fica com a resolução); sem nenhum correndo, o primeiro da
+ * lista (pausado ou cumprido, que não pontua).
+ */
+function drivingTimer(timers: SdRiskTimer[]): SdRiskTimer | null {
+  let best: SdRiskTimer | null = null
+  for (const candidate of timers) {
+    if (!isLive(candidate.timer)) continue
+    if (!best || urgency(candidate.timer) > urgency(best.timer))
+      best = candidate
+  }
+  return best ?? timers[0] ?? null
 }
 
 /* ------------------------------------------------------------------ */
@@ -259,7 +313,8 @@ function staleFactor(
   ticket: SdRiskTicketInput,
   now: Date,
 ): SdRiskFactorResult | null {
-  const minutes = (now.getTime() - ticket.lastActivityAt.getTime()) / MINUTE_MS
+  const since = ticket.lastTeamActivityAt ?? ticket.createdAt
+  const minutes = (now.getTime() - since.getTime()) / MINUTE_MS
   return factor(
     'stale',
     ramp(
@@ -371,6 +426,24 @@ export function sdRiskBreachEta(
 }
 
 /**
+ * Previsão do chamado: o **primeiro** prazo a estourar entre os timers que
+ * entram no risco — a 1ª resposta vence em 1 h mesmo quando a resolução
+ * ainda tem um dia.
+ */
+function earliestBreachEta(
+  timers: SdRiskTimer[],
+  now: Date,
+  calendar: SdCalendar,
+): Date | null {
+  let earliest: Date | null = null
+  for (const { timer } of timers) {
+    const eta = sdRiskBreachEta(timer, now, calendar)
+    if (eta && (!earliest || eta.getTime() < earliest.getTime())) earliest = eta
+  }
+  return earliest
+}
+
+/**
  * Nota, faixa, fatores e previsão de estouro de um chamado. Cada fator que
  * pega soma entre 1 e o seu peso e leva a frase que a interface mostra —
  * selo sem motivo é bug (ADR 0016).
@@ -382,9 +455,10 @@ export function computeSdRiskPrediction(
   options: SdRiskOptions = {},
 ): SdRiskPredictionResult {
   const calendar = options.calendar ?? SD_CALENDAR_24X7
-  const { timer, label } = primaryTimer(ticket, now, options)
+  const timers = slaTimers(ticket, now, options)
+  const driving = drivingTimer(timers)
   const factors = [
-    slaFactor(timer, label),
+    driving ? slaFactor(driving.timer, driving.label) : null,
     unassignedFactor(ticket, now),
     priorityFactor(ticket, stats),
     staleFactor(ticket, now),
@@ -400,6 +474,6 @@ export function computeSdRiskPrediction(
     level: sdRiskLevel(score),
     score,
     factors,
-    breachEtaAt: sdRiskBreachEta(timer, now, calendar),
+    breachEtaAt: earliestBreachEta(timers, now, calendar),
   }
 }

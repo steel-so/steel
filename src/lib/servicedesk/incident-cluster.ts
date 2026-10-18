@@ -3,9 +3,11 @@
  *
  * A assinatura de um incidente é `categoria:subcategoria:serviço:termos`,
  * onde os termos são as palavras significativas do título, normalizadas
- * (sem acento, sem pontuação, sem palavra de ligação) e **ordenadas**, para
- * que "Servidor de e-mail fora do ar" e "E-mail fora do ar no servidor"
- * caiam no mesmo grupo.
+ * (sem acento, sem pontuação, sem palavra de ligação). Quando o título tem
+ * mais termos do que cabem na assinatura, ficam os **mais relevantes** —
+ * os que mais se repetem no título e nos incidentes da janela — e só então
+ * os escolhidos são postos em ordem alfabética, para que "Servidor de e-mail
+ * fora do ar" e "E-mail fora do ar no servidor" caiam no mesmo grupo.
  *
  * Nada de LLM e nada de banco: a detecção é determinística e auditável —
  * dá para explicar por que dois chamados foram agrupados lendo a
@@ -92,20 +94,69 @@ export function sdNormalizeText(text: string): string {
     .trim()
 }
 
+/** Os termos significativos do título, na ordem em que aparecem. */
+function significantWords(title: string): string[] {
+  return sdNormalizeText(title)
+    .split(' ')
+    .filter(
+      (word) =>
+        word.length >= MIN_TERM_LENGTH &&
+        !SD_STOPWORDS.has(word) &&
+        !/^\d+$/.test(word),
+    )
+}
+
 /**
- * Termos significativos do título, sem repetição e em ordem alfabética
- * (limitados a `SD_CLUSTER_MAX_TERMS`). Número puro é descartado: o que
- * varia de chamado para chamado (ramal, IP, protocolo) não agrupa nada.
+ * Em quantos incidentes da janela cada termo aparece (frequência de
+ * documento). É a régua de relevância do corte de termos: um termo que só
+ * um chamado tem não agrupa nada, e um que se repete na janela é justamente
+ * o sinal de incidente repetido.
  */
-export function sdIncidentTerms(title: string): string[] {
-  const terms = new Set<string>()
-  for (const word of sdNormalizeText(title).split(' ')) {
-    if (word.length < MIN_TERM_LENGTH) continue
-    if (SD_STOPWORDS.has(word)) continue
-    if (/^\d+$/.test(word)) continue
-    terms.add(word)
+export function sdIncidentTermFrequencies(
+  titles: readonly string[],
+): Map<string, number> {
+  const frequency = new Map<string, number>()
+  for (const title of titles) {
+    for (const term of new Set(significantWords(title))) {
+      frequency.set(term, (frequency.get(term) ?? 0) + 1)
+    }
   }
-  return [...terms].sort().slice(0, SD_CLUSTER_MAX_TERMS)
+  return frequency
+}
+
+/**
+ * Termos significativos do título, sem repetição (limitados a
+ * `SD_CLUSTER_MAX_TERMS`). Número puro é descartado: o que varia de chamado
+ * para chamado (ramal, IP, protocolo) não agrupa nada.
+ *
+ * O corte é por **relevância**, não por ordem alfabética: primeiro o termo
+ * que mais se repete no próprio título, depois o que aparece em mais
+ * incidentes da janela (`documentFrequency`, de
+ * `sdIncidentTermFrequencies`), e a ordem alfabética só desempata. Os termos
+ * que sobram voltam em ordem alfabética — a assinatura não depende da ordem
+ * das palavras no título.
+ *
+ * Frequência na janela, e não tf-idf: o idf premia o termo raro, que é
+ * exatamente o que **não** se repete e portanto não forma grupo.
+ */
+export function sdIncidentTerms(
+  title: string,
+  documentFrequency?: ReadonlyMap<string, number>,
+): string[] {
+  const inTitle = new Map<string, number>()
+  for (const word of significantWords(title)) {
+    inTitle.set(word, (inTitle.get(word) ?? 0) + 1)
+  }
+  const inWindow = (term: string) => documentFrequency?.get(term) ?? 0
+  return [...inTitle.keys()]
+    .sort(
+      (a, b) =>
+        (inTitle.get(b) ?? 0) - (inTitle.get(a) ?? 0) ||
+        inWindow(b) - inWindow(a) ||
+        (a < b ? -1 : 1),
+    )
+    .slice(0, SD_CLUSTER_MAX_TERMS)
+    .sort()
 }
 
 export interface SdClusterTicketInput {
@@ -127,8 +178,9 @@ export function sdIncidentSignature(
     SdClusterTicketInput,
     'title' | 'categoryId' | 'subcategoryId' | 'serviceId'
   >,
+  documentFrequency?: ReadonlyMap<string, number>,
 ): string | null {
-  const terms = sdIncidentTerms(ticket.title)
+  const terms = sdIncidentTerms(ticket.title, documentFrequency)
   if (terms.length === 0) return null
   const catalog = [
     ticket.categoryId ?? '-',
@@ -161,15 +213,17 @@ export function sdIncidentsSince(
 
 /**
  * Agrupa os incidentes da janela por assinatura e devolve só os grupos que
- * passaram do corte (`minTickets`), do mais recente para o mais antigo.
+ * passaram do corte (`minTickets`), do mais recente para o mais antigo. A
+ * relevância dos termos é medida na própria janela.
  */
 export function sdGroupIncidents(
   tickets: SdClusterTicketInput[],
   minTickets: number = SD_CLUSTER_MIN_TICKETS,
 ): SdIncidentGroup[] {
+  const frequency = sdIncidentTermFrequencies(tickets.map((t) => t.title))
   const groups = new Map<string, SdClusterTicketInput[]>()
   for (const ticket of tickets) {
-    const signature = sdIncidentSignature(ticket)
+    const signature = sdIncidentSignature(ticket, frequency)
     if (!signature) continue
     const bucket = groups.get(signature)
     if (bucket) bucket.push(ticket)

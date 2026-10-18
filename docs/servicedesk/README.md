@@ -270,6 +270,15 @@ a nota sai de uma tabela de pesos versionada e **nunca aparece sem o motivo**.
   minutos úteis restantes no calendário de expediente — 30 minutos úteis às
   17h50 de uma sexta caem na segunda. Os cortes estão em `SD_RISK_TUNING`
   (ajustar peso ou corte não exige migração).
+- **Prazo que pesa**: a resolução entra sempre que tem prazo; a **1ª
+  resposta** entra enquanto ninguém respondeu. O fator `sla_consumed` usa o
+  timer mais urgente (violado vence qualquer porcentagem; empate fica com a
+  resolução) e `breachEtaAt` é o **primeiro** prazo a estourar.
+- **"Sem interação da equipe"** (`stale`) mede o tempo desde o último evento
+  **de agente** (`SdRiskRepository.lastTeamActivityByTicketIds`, eventos com
+  `actorKind = AGENT`), não `SdTicket.lastActivityAt` — este também anda com
+  mensagem do cliente pelo portal, e-mail ou WhatsApp. Se a equipe nunca agiu,
+  conta desde a abertura.
 - **Régua do workspace** (`SdRiskWorkspaceStats`): fila por departamento,
   carga por responsável, topo das escalas de prioridade/severidade e o
   histórico de violação por cliente/serviço. É o que torna "fila cheia"
@@ -277,9 +286,13 @@ a nota sai de uma tabela de pesos versionada e **nunca aparece sem o motivo**.
 - **Agrupamento** `src/lib/servicedesk/incident-cluster.ts`:
   `sdIncidentSignature` = `categoria:subcategoria:serviço:termos`, com os
   termos do título normalizados (sem acento, sem palavra de ligação, sem
-  número) e **ordenados** — "Servidor de e-mail fora do ar" e "E-mail fora do
-  ar no servidor" caem no mesmo grupo. `sdGroupIncidents` só devolve grupo com
-  **3+ incidentes** (`SD_CLUSTER_MIN_TICKETS`) na janela de **7 dias**.
+  número). Quando há mais de 4 termos (`SD_CLUSTER_MAX_TERMS`), ficam os
+  **mais relevantes**: primeiro o que se repete no título, depois o que
+  aparece em mais incidentes da janela (`sdIncidentTermFrequencies`), e a
+  ordem alfabética só desempata; os escolhidos são **ordenados** — "Servidor
+  de e-mail fora do ar" e "E-mail fora do ar no servidor" caem no mesmo
+  grupo. `sdGroupIncidents` só devolve grupo com **3+ incidentes**
+  (`SD_CLUSTER_MIN_TICKETS`) na janela de **7 dias**.
 - **Service** `SdRiskService`: `recomputeTick({ workspaceId? })` (fila
   `servicedesk-risk`, a cada 10 min) grava uma linha por chamado aberto
   (`SdTicketRiskPrediction`, upsert) e apaga a dos encerrados; avisa
@@ -294,12 +307,58 @@ a nota sai de uma tabela de pesos versionada e **nunca aparece sem o motivo**.
   (fila por risco), `GET /tickets/[ticketId]`, `GET /clusters`,
   `POST /clusters/[clusterId]/problem`, `POST /clusters/[clusterId]/dismiss`.
   Tudo com a permissão do chamado (`sd-tickets`) e só para agentes.
+- **Backtest** (`pnpm risk:backtest [workspaceIdOuSlug] [--days=90]
+  [--limit=2000]`, script `scripts/risk-backtest.ts`, lib pura
+  `src/lib/servicedesk/risk-backtest.ts`): reproduz a heurística sobre os
+  chamados **encerrados** com desfecho de SLA conhecido e imprime
+  calibração por faixa, precisão/revocação da faixa alta e antecedência. Ver
+  a seção "Backtest do risco" abaixo.
 - **Para quem desenha chamado**: a previsão viaja **dentro do chamado**
   (`SdTicketDTO.risk`, `null` para solicitante) e a lista aceita
   `?riskLevel=HIGH`. Selo pronto:
   `app/_components/servicedesk/risk/sd-risk-badge.tsx`
   (`SdRiskBadge`, `SdRiskWidget`, `SdRiskFactorList`). Hooks:
   `src/hooks/use-sd-risk.ts`.
+
+### Backtest do risco
+
+Mede se a heurística acerta, com os chamados que já encerraram. **Só lê o
+banco** (nada é gravado), mas lê dado de cliente: rode no servidor, contra
+o banco do ambiente que quer medir, nunca copiando a base para outra máquina.
+
+```bash
+pnpm risk:backtest                    # todo workspace com o ServiceDesk ligado
+pnpm risk:backtest acme               # um workspace (id ou slug)
+pnpm risk:backtest acme --days=180 --limit=5000
+```
+
+Como funciona: para cada chamado encerrado nos últimos `--days` dias que
+tinha prazo de 1ª resposta ou de resolução (até `--limit` por workspace), o
+script tira **três fotos** — a 25%, 50% e 75% do caminho entre a abertura e
+a violação (ou o encerramento, se cumpriu) — e roda
+`computeSdRiskPrediction` com o que já tinha acontecido naquele instante:
+1ª resposta, responsável (desde a primeira atribuição registrada), último
+evento de agente e reaberturas. O desfecho é "violou" quando a flag de
+violação foi gravada ou a conclusão passou do prazo.
+
+O relatório traz:
+
+- **Calibração por faixa** — fotos, violadas e taxa real de violação de
+  cada faixa. Uma heurística bem calibrada mostra a taxa subindo de baixo
+  para alto.
+- **Faixa alta como alarme** — precisão (das fotos em alto, quantas eram de
+  chamado que violou) e revocação (das fotos de chamado que violou, quantas
+  estavam em alto), por foto.
+- **Antecedência** — por chamado violado, o tempo entre a primeira foto em
+  alto e a violação (mínima, mediana, média, máxima), e quantos violados
+  passaram pelo alto antes.
+
+Limites da reconstrução (o histórico do chamado não é versionado): fase e
+pausa de SLA não são reproduzidas (a foto assume fase em andamento com o
+relógio correndo), e fila/carga são recontadas só com os chamados da
+amostra — os fatores `waiting_third_party`, `queue_pressure` e
+`assignee_load` saem subestimados. A matemática das métricas tem teste
+unitário em `src/lib/__tests__/servicedesk-risk-backtest.test.ts`.
 
 ## Rotas de UI
 
