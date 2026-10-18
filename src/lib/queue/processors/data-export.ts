@@ -138,7 +138,9 @@ async function gatherAuditLog(userId: string): Promise<ExportAuditEntry[]> {
     ` | limit ${AUDIT_LOG_MAX_ENTRIES}`
 
   try {
-    const result = await axiomClient.query(apl)
+    // @axiomhq/js 2 defaults to the tabular format; the export reads rows as
+    // `matches` entries (`_time` + `data`), which only the legacy format has.
+    const result = await axiomClient.query(apl, { format: 'legacy' })
     const matches = result.matches ?? []
     return matches.map((entry) => ({
       timestamp: entry._time,
