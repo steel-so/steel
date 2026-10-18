@@ -12,11 +12,11 @@ export const POST = apiV1Route({
   consent: 'POST /api/v1/crm/leads/import',
   query: ImportV1CrmLeadsQuerySchema,
   text: { maxBytes: V1_LEAD_IMPORT_MAX_BYTES },
-  handler: ({ session, query, body }) =>
+  handler: ({ session, query, text }) =>
     ApiV1Service.importLeads(
       session.userId,
       session.workspaceId,
-      body as string,
+      text,
       query.source,
     ),
 })

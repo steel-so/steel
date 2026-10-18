@@ -207,6 +207,7 @@ describe('apiV1Route — input', () => {
       params: { ticketId: 'INC-1' },
       body: { name: 'Ana' },
       query: undefined,
+      text: '',
     })
   })
 
@@ -247,7 +248,7 @@ describe('apiV1Route — input', () => {
         body: 'name\nAna',
       },
     )
-    expect(handler.mock.calls[0][0].body).toBe('name\nAna')
+    expect(handler.mock.calls[0][0].text).toBe('name\nAna')
   })
 
   it.each([

@@ -28,6 +28,8 @@ export interface V1HandlerInput<B, Q> {
   params: RouteParams
   body: B
   query: Q
+  /** Raw body of a `text` route (CSV); `''` otherwise. */
+  text: string
 }
 
 interface V1RouteOptions<B, Q> {
@@ -45,7 +47,7 @@ interface V1RouteOptions<B, Q> {
   allowEmptyBody?: boolean
   /**
    * Raw text body (CSV import) instead of JSON, up to `maxBytes`. Replaces
-   * `body`: the handler receives the text.
+   * `body`: the handler receives it in `text`.
    */
   text?: { maxBytes: number }
   /** Success status (default 200). */
@@ -119,6 +121,7 @@ export function apiV1Route<B = undefined, Q = undefined>(
       }
 
       let body = undefined as B
+      let raw = ''
       if (options.text) {
         const text = await request.text().catch(() => '')
         if (!text.trim()) {
@@ -131,7 +134,7 @@ export function apiV1Route<B = undefined, Q = undefined>(
             ),
           )
         }
-        body = text as B
+        raw = text
       } else if (options.body) {
         const json = await readJsonBody(request, {
           allowEmpty: options.allowEmptyBody,
@@ -150,7 +153,7 @@ export function apiV1Route<B = undefined, Q = undefined>(
 
       const result = await runWithAuditContext(
         { source: 'api', apiTokenId: session.tokenId },
-        () => options.handler({ session, params, body, query }),
+        () => options.handler({ session, params, body, query, text: raw }),
       )
       if (!result.ok) return handleError(result.error)
       return successResponse(result.value ?? null, options.status ?? 200)
