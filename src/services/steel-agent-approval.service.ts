@@ -29,7 +29,10 @@ import {
 } from '@/src/repositories/steel-agent.repository'
 import type { ApproveSteelAgentActionDTO } from '@/src/schemas/steel-agent.schema'
 import type { AiPendingActionDTO } from '@/types/steel-ai'
-import { executeClaimedAction } from './ai-pending-action.service'
+import {
+  assertPreviewUnchanged,
+  executeClaimedAction,
+} from './ai-pending-action.service'
 import { assertMember } from './authz'
 import { canManageSteelAgents } from './steel-agent.service'
 
@@ -157,6 +160,19 @@ export const SteelAgentApprovalService = {
       return err(aiToolNotAllowed())
     }
 
+    const ctx = {
+      workspaceId,
+      actorId: ownerId,
+      source: 'agent' as const,
+      agentId: run.agentId,
+    }
+    // The approver must approve what will actually run.
+    const unchanged = await assertPreviewUnchanged(action, tool, ctx, actorId)
+    if (!unchanged.ok) return unchanged
+    if (unchanged.value === 'decided') {
+      return reloadDecided(actionId, workspaceId)
+    }
+
     const claimed = await AiPendingActionRepository.transitionFromPending(
       actionId,
       { status: 'EXECUTED', decidedById: actorId, decidedAt: now },
@@ -169,12 +185,7 @@ export const SteelAgentApprovalService = {
       { agentId: run.agentId, runId },
       () =>
         executeClaimedAction(claimedAction, tool, {
-          ctx: {
-            workspaceId,
-            actorId: ownerId,
-            source: 'agent',
-            agentId: run.agentId,
-          },
+          ctx,
           deciderId: actorId,
         }),
     )

@@ -41,6 +41,7 @@ import { WorkspaceAiSettingsRepository } from '@/src/repositories/ai-settings.re
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import {
   AiPendingActionService,
+  assertPreviewUnchanged,
   executeAutopilotWrite,
   executeClaimedAction,
 } from '../ai-pending-action.service'
@@ -388,6 +389,163 @@ describe('AiPendingActionService.confirm()', () => {
         await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
       ).status,
     ).toBe('EXECUTED')
+  })
+})
+
+describe('AiPendingActionService.confirm() — stale preview', () => {
+  const SHOWN = {
+    title: 'Atualizar a tarefa “Ligar”',
+    summary: '1 campo(s) alterado(s).',
+    fields: [{ label: 'Status', before: 'A fazer', after: 'Concluída' }],
+  }
+  const preview = vi.mocked(
+    createTask.preview as NonNullable<AnySteelAiTool['preview']>,
+  )
+
+  function setupShown() {
+    const action = pending({ preview: SHOWN })
+    setup(action)
+    repo.refreshPreview.mockImplementation(async (id, fresh) =>
+      ok({ ...action, id, preview: fresh as never }),
+    )
+    return action
+  }
+
+  it('should execute when the rebuilt preview is the one confirmed', async () => {
+    setupShown()
+    // Same content, other key order and an explicit undefined (JSONB copy).
+    preview.mockResolvedValue(
+      ok({
+        fields: [{ after: 'Concluída', before: 'A fazer', label: 'Status' }],
+        summary: SHOWN.summary,
+        title: SHOWN.title,
+        target: undefined,
+      }),
+    )
+
+    const dto = expectOk(
+      await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+    )
+
+    expect(dto.status).toBe('EXECUTED')
+    expect(preview).toHaveBeenCalledWith(
+      { workspaceId: 'ws1', actorId: 'u1', source: 'assistant' },
+      { title: 'Ligar' },
+    )
+    expect(repo.refreshPreview).not.toHaveBeenCalled()
+    expect(execute).toHaveBeenCalledOnce()
+  })
+
+  it('should refuse, keep it pending and store the fresh preview when the record changed', async () => {
+    setupShown()
+    const fresh = {
+      ...SHOWN,
+      title: 'Atualizar a tarefa “Ligar para a Acme”',
+      fields: [{ label: 'Status', before: 'Em andamento', after: 'Concluída' }],
+    }
+    preview.mockResolvedValue(ok(fresh))
+
+    const error = expectErr(
+      await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+      'AI_PENDING_ACTION_CHANGED',
+    )
+
+    expect(error.message).toBe(
+      'O registro mudou desde a prévia. Revise e confirme de novo.',
+    )
+    expect(
+      (error.details as { action: { status: string; preview: unknown } })
+        .action,
+    ).toEqual(expect.objectContaining({ status: 'PENDING', preview: fresh }))
+    expect(repo.refreshPreview).toHaveBeenCalledWith('act1', fresh)
+    expect(repo.transitionFromPending).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'ai_pending_action',
+        action: 'confirm',
+        outcome: 'failure',
+        reason: 'AI_PENDING_ACTION_CHANGED',
+        targetId: 'act1',
+      }),
+    )
+  })
+
+  it('should answer with the other click outcome when it was decided meanwhile', async () => {
+    const action = setupShown()
+    preview.mockResolvedValue(ok({ ...SHOWN, summary: 'mudou' }))
+    repo.refreshPreview.mockResolvedValue(ok(null))
+    repo.findById
+      .mockResolvedValueOnce(ok(action))
+      .mockResolvedValueOnce(ok({ ...action, status: 'EXECUTED' }))
+
+    const dto = expectOk(
+      await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+    )
+
+    expect(dto.status).toBe('EXECUTED')
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('should propagate a failure while storing the fresh preview', async () => {
+    setupShown()
+    preview.mockResolvedValue(ok({ ...SHOWN, summary: 'mudou' }))
+    repo.refreshPreview.mockResolvedValue(err(databaseError()))
+
+    expectErr(
+      await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+      'DATABASE_ERROR',
+    )
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('should let execute decide when the preview cannot be rebuilt', async () => {
+    setupShown()
+    preview.mockResolvedValueOnce(err(forbidden()))
+    expect(
+      expectOk(
+        await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+      ).status,
+    ).toBe('EXECUTED')
+
+    setupShown()
+    preview.mockRejectedValueOnce(new Error('boom'))
+    expect(
+      expectOk(
+        await AiPendingActionService.confirm('u1', 'ws1', 'act1', {}, NOW),
+      ).status,
+    ).toBe('EXECUTED')
+    expect(repo.refreshPreview).not.toHaveBeenCalled()
+  })
+
+  it('assertPreviewUnchanged() should pass tools without preview and bad args', async () => {
+    const action = pending({ preview: SHOWN })
+    const ctx = {
+      workspaceId: 'ws1',
+      actorId: 'u1',
+      source: 'assistant' as const,
+    }
+    expect(
+      expectOk(
+        await assertPreviewUnchanged(
+          action,
+          { ...createTask, preview: undefined },
+          ctx,
+          'u1',
+        ),
+      ),
+    ).toBe('unchanged')
+    expect(
+      expectOk(
+        await assertPreviewUnchanged(
+          action,
+          { ...createTask, parse: () => err(forbidden()) },
+          ctx,
+          'u1',
+        ),
+      ),
+    ).toBe('unchanged')
+    expect(preview).not.toHaveBeenCalled()
   })
 })
 
