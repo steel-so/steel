@@ -1,3 +1,4 @@
+import type { OAuthDestination } from '@/src/lib/mcp/client-trust'
 import type { McpScope } from '@/src/lib/mcp/grant'
 
 export type IntegrationModuleDTO = 'SERVICE_DESK' | 'CRM' | 'COMMUNICATION'
@@ -12,6 +13,11 @@ export interface IntegrationGrantDTO {
     uri: string | null
   }
   workspace: { id: string; name: string; slug: string }
+  /**
+   * Host the user saw on the consent screen (where the code went). The
+   * client name is self-declared; this is what identifies the app.
+   */
+  redirectHost: string | null
   scopes: McpScope[]
   modules: IntegrationModuleDTO[]
   lastUsedAt: string | null
@@ -26,6 +32,11 @@ export interface OAuthConsentContextDTO {
     icon: string | null
     uri: string | null
   }
+  /**
+   * Where the code goes, derived on the server from the signed request's
+   * `redirect_uri` — the identity the user should judge, not `client.name`.
+   */
+  destination: OAuthDestination
   /** Scopes the client asked for, restricted to the MCP ones. */
   requestedScopes: McpScope[]
   workspaces: {
@@ -53,6 +64,7 @@ export interface WorkspaceIntegrationGrantDTO {
   id: string
   user: { id: string; name: string; email: string; image: string | null }
   client: IntegrationGrantDTO['client']
+  redirectHost: string | null
   scopes: McpScope[]
   modules: IntegrationModuleDTO[]
   lastUsedAt: string | null
@@ -63,6 +75,8 @@ export interface WorkspaceIntegrationGrantDTO {
 /** An app (OAuth client) with active grants in the workspace. */
 export interface WorkspaceIntegrationClientDTO {
   client: IntegrationGrantDTO['client']
+  /** Host of the most recent active grant of this app. */
+  redirectHost: string | null
   /** Members holding an active grant for this app. */
   members: number
   /** Whether some active grant of this app has `mcp:write`. */

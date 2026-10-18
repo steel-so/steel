@@ -22,6 +22,11 @@ export function parseBearerToken(header: string | null): string | null {
 export interface ParsedOAuthQuery {
   clientId: string
   scopes: string[]
+  /**
+   * `redirect_uri` of the request. The provider matched it against the
+   * client's registered URIs before signing the query.
+   */
+  redirectUri: string | null
   /** `exp` of the signed query (seconds), when present. */
   expiresAt: Date | null
 }
@@ -40,6 +45,7 @@ export function parseOAuthQuery(raw: string): ParsedOAuthQuery | null {
   return {
     clientId,
     scopes,
+    redirectUri: params.get('redirect_uri') || null,
     expiresAt: Number.isFinite(exp) && exp > 0 ? new Date(exp * 1000) : null,
   }
 }

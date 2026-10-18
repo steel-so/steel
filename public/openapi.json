@@ -9938,6 +9938,17 @@
                                 },
                                 "required": ["id", "name", "slug"]
                               },
+                              "redirectHost": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Host do `redirect_uri` mostrado na tela de consentimento (para onde o código foi). O `client.name` é declarado pelo próprio app; o host é o que o identifica. Nulo em concessões anteriores a esse registro."
+                              },
                               "scopes": {
                                 "type": "array",
                                 "items": {
@@ -9967,7 +9978,16 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["id", "client", "workspace", "scopes", "modules", "lastUsedAt", "createdAt"]
+                            "required": [
+                              "id",
+                              "client",
+                              "workspace",
+                              "redirectHost",
+                              "scopes",
+                              "modules",
+                              "lastUsedAt",
+                              "createdAt"
+                            ]
                           }
                         }
                       }
@@ -55788,6 +55808,17 @@
                                     },
                                     "required": ["clientId", "name", "icon", "uri"]
                                   },
+                                  "redirectHost": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Host do `redirect_uri` mostrado na tela de consentimento (para onde o código foi). O `client.name` é declarado pelo próprio app; o host é o que o identifica. Nulo em concessões anteriores a esse registro."
+                                  },
                                   "scopes": {
                                     "type": "array",
                                     "items": {
@@ -55859,7 +55890,17 @@
                                     "description": "Chamadas de ferramentas (`tools/call`) pelo MCP nos últimos 7 e 30 dias, hoje incluído (dias no fuso de São Paulo). Contadores leves: podem ficar um pouco abaixo do real se o cache falhar."
                                   }
                                 },
-                                "required": ["id", "client", "scopes", "modules", "lastUsedAt", "createdAt", "user", "usage"]
+                                "required": [
+                                  "id",
+                                  "client",
+                                  "redirectHost",
+                                  "scopes",
+                                  "modules",
+                                  "lastUsedAt",
+                                  "createdAt",
+                                  "user",
+                                  "usage"
+                                ]
                               }
                             },
                             "clients": {
@@ -55906,6 +55947,17 @@
                                     },
                                     "required": ["clientId", "name", "icon", "uri"]
                                   },
+                                  "redirectHost": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Host da concessão ativa mais recente do app."
+                                  },
                                   "members": {
                                     "type": "integer",
                                     "minimum": -9007199254740991,
@@ -55944,7 +55996,7 @@
                                     "description": "Chamadas de todas as concessões do app no workspace, inclusive as já revogadas."
                                   }
                                 },
-                                "required": ["client", "members", "canWrite", "lastUsedAt", "usage"]
+                                "required": ["client", "redirectHost", "members", "canWrite", "lastUsedAt", "usage"]
                               }
                             }
                           },

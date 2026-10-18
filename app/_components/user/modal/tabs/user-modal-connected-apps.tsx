@@ -61,6 +61,11 @@ function GrantRow({
           <span className='font-medium text-sm break-all'>{name}</span>
           <Badge variant='secondary'>{accessLabel(grant)}</Badge>
         </div>
+        {grant.redirectHost && (
+          <Muted className='text-xs font-mono break-all'>
+            {grant.redirectHost}
+          </Muted>
+        )}
         <Muted className='text-xs break-words'>
           {grant.workspace.name} ·{' '}
           {grant.modules.map((m) => MCP_MODULE_LABELS[m]).join(', ') ||

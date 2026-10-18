@@ -1,8 +1,11 @@
 'use client'
 
 import {
+  Alert02Icon,
   AlertCircleIcon,
   ArrowDataTransferHorizontalIcon,
+  CheckmarkBadge01Icon,
+  ComputerIcon,
   Shield01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Image from 'next/image'
@@ -10,6 +13,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Muted } from '@/components/typography/text/muted'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -32,6 +36,10 @@ import {
 } from '@/components/ui/select'
 import { notify } from '@/lib/notify'
 import { useAnswerOAuthConsent } from '@/src/hooks/use-integration-grants'
+import {
+  consentClientLabel,
+  type OAuthDestination,
+} from '@/src/lib/mcp/client-trust'
 import {
   MCP_CONSENT_WRITE_NOTICE,
   MCP_MODULE_LABELS,
@@ -68,6 +76,124 @@ function ConsentCard({ children }: { children: React.ReactNode }) {
   )
 }
 
+function ClientAvatar({
+  destination,
+  name,
+}: {
+  destination: OAuthDestination
+  name: string
+}) {
+  const base =
+    'flex size-9 items-center justify-center rounded-full text-sm font-semibold'
+  if (destination.trust === 'unverified') {
+    return (
+      <div aria-hidden className={`${base} bg-destructive/10 text-destructive`}>
+        <SteelIcon icon={Alert02Icon} size={18} />
+      </div>
+    )
+  }
+  if (destination.trust === 'loopback') {
+    return (
+      <div aria-hidden className={`${base} bg-muted text-muted-foreground`}>
+        <SteelIcon icon={ComputerIcon} size={18} />
+      </div>
+    )
+  }
+  return (
+    <div aria-hidden className={`${base} bg-muted text-muted-foreground`}>
+      {initialsOf(name)}
+    </div>
+  )
+}
+
+/**
+ * Who is asking. Only a client verified by its redirect host is called by
+ * name; anything else is identified by the host, with its self-declared
+ * name quoted as a claim (consent phishing — ADR 0033, 2026-10-18).
+ */
+function ClientHeading({
+  destination,
+  declaredName,
+}: {
+  destination: OAuthDestination
+  declaredName: string | null
+}) {
+  if (destination.trust === 'verified' && destination.verifiedName) {
+    return (
+      <h1 className='flex flex-wrap items-center gap-2 text-lg font-semibold text-balance'>
+        <span>{destination.verifiedName} quer acessar o seu Steel</span>
+        <Badge variant='secondary'>
+          <SteelIcon icon={CheckmarkBadge01Icon} data-icon='inline-start' />
+          Verificado
+        </Badge>
+      </h1>
+    )
+  }
+  if (destination.trust === 'loopback') {
+    return (
+      <h1 className='text-lg font-semibold text-balance [overflow-wrap:anywhere]'>
+        {declaredName ?? 'Um app no seu computador'} quer acessar o seu Steel
+      </h1>
+    )
+  }
+  return (
+    <h1 className='text-lg font-semibold text-balance [overflow-wrap:anywhere]'>
+      Um app em{' '}
+      <span className='font-mono text-base' data-testid='oauth-consent-host'>
+        {destination.host}
+      </span>{' '}
+      quer acessar o seu Steel
+    </h1>
+  )
+}
+
+/** Where the browser — and the authorization code — goes after "Permitir". */
+function DestinationLine({ destination }: { destination: OAuthDestination }) {
+  return (
+    <p className='text-sm text-foreground [overflow-wrap:anywhere]'>
+      Depois de permitir, você volta para{' '}
+      {destination.trust === 'loopback' ? (
+        <>
+          <strong>um app no seu computador</strong>{' '}
+          <span className='font-mono text-muted-foreground'>
+            ({destination.host})
+          </span>
+        </>
+      ) : (
+        <strong className='font-mono'>{destination.host}</strong>
+      )}
+      .
+    </p>
+  )
+}
+
+function UnverifiedWarning({
+  destination,
+  declaredName,
+}: {
+  destination: OAuthDestination
+  declaredName: string | null
+}) {
+  return (
+    <div
+      role='alert'
+      className='flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-destructive'
+    >
+      <SteelIcon icon={Alert02Icon} className='mt-0.5 shrink-0' />
+      <div className='flex flex-col gap-1 text-sm'>
+        <span className='font-semibold'>App não verificado</span>
+        <span className='[overflow-wrap:anywhere]'>
+          {declaredName
+            ? `Ele diz chamar-se “${declaredName}”, mas o Steel não tem como confirmar esse nome.`
+            : 'Ele não informou um nome, e o Steel não tem como confirmar quem é.'}{' '}
+          Só permita se você reconhece o endereço {destination.host} e foi você
+          quem iniciou esta conexão.
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function OAuthConsentError({ message }: { message: string }) {
   return (
     <ConsentCard>
@@ -96,7 +222,11 @@ export function OAuthConsentForm({
   oauthQuery: string
   userEmail: string
 }) {
-  const clientName = context.client.name?.trim() || 'Um app sem nome'
+  const { destination } = context
+  const declaredName = context.client.name?.trim() || null
+  // Used in the LGPD notice: the verified name, the loopback app's own
+  // name, or "app em <host>" — never an unverified self-declared name.
+  const clientName = consentClientLabel(destination, declaredName)
   const writeRequested = context.requestedScopes.includes('mcp:write')
   const answer = useAnswerOAuthConsent()
 
@@ -172,18 +302,15 @@ export function OAuthConsentForm({
             icon={ArrowDataTransferHorizontalIcon}
             className='text-muted-foreground'
           />
-          <div
-            aria-hidden
-            className='flex size-9 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground'
-          >
-            {initialsOf(clientName)}
-          </div>
+          <ClientAvatar destination={destination} name={clientName} />
         </div>
 
         <div className='flex flex-col gap-1'>
-          <h1 className='text-lg font-semibold text-balance'>
-            {clientName} quer acessar o seu Steel
-          </h1>
+          <ClientHeading
+            destination={destination}
+            declaredName={declaredName}
+          />
+          <DestinationLine destination={destination} />
           <Muted>O app vai agir em seu nome, com as suas permissões.</Muted>
           <Muted className='text-xs'>
             Conectado como{' '}
@@ -192,6 +319,13 @@ export function OAuthConsentForm({
             </span>
           </Muted>
         </div>
+
+        {destination.trust === 'unverified' && (
+          <UnverifiedWarning
+            destination={destination}
+            declaredName={declaredName}
+          />
+        )}
 
         {context.workspaces.length === 0 ? (
           <div className='rounded-lg border border-border bg-muted/40 p-4'>

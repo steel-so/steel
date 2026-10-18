@@ -36,6 +36,7 @@ describe('toIntegrationGrantDTO', () => {
         uri: null,
       },
       workspace: { id: grant.workspaceId, name: 'Acme', slug: 'acme' },
+      redirectHost: 'claude.ai',
       scopes: ['mcp:read'],
       modules: ['CRM', 'SERVICE_DESK'],
       lastUsedAt: null,
@@ -78,6 +79,7 @@ describe('toWorkspaceIntegrationGrantDTO', () => {
         icon: null,
         uri: null,
       },
+      redirectHost: 'claude.ai',
       scopes: ['mcp:read', 'mcp:write'],
       modules: ['SERVICE_DESK'],
       lastUsedAt: '2026-10-17T11:00:00.000Z',
@@ -108,6 +110,7 @@ describe('toWorkspaceIntegrationClientDTOs', () => {
         clientId: 'cursor',
         userId: 'u1',
         clientName: null,
+        redirectHost: null,
       }),
       createFakeWorkspaceIntegrationGrantRow({
         clientId: 'claude',
@@ -126,6 +129,7 @@ describe('toWorkspaceIntegrationClientDTOs', () => {
     expect(toWorkspaceIntegrationClientDTOs(grants, usage)).toEqual([
       {
         client: { clientId: 'claude', name: 'Claude', icon: null, uri: null },
+        redirectHost: 'claude.ai',
         members: 2,
         canWrite: true,
         lastUsedAt: '2026-10-12T00:00:00.000Z',
@@ -133,6 +137,7 @@ describe('toWorkspaceIntegrationClientDTOs', () => {
       },
       {
         client: { clientId: 'cursor', name: null, icon: null, uri: null },
+        redirectHost: null,
         members: 1,
         canWrite: false,
         lastUsedAt: null,

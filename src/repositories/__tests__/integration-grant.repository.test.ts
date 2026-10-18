@@ -30,8 +30,10 @@ describe('IntegrationGrantRepository', () => {
         clientId: client.clientId,
         scopes: ['mcp:read'],
         modules: ['CRM', 'SERVICE_DESK'],
+        redirectHost: 'claude.ai',
       }),
     )
+    expect(grant.redirectHost).toBe('claude.ai')
     await seedIntegrationGrant({
       userId: user.id,
       workspaceId: workspace.id,
@@ -59,6 +61,7 @@ describe('IntegrationGrantRepository', () => {
     expect(list[0].client.name).toBe('Claude')
     expect(list[0].workspace.slug).toBe(workspace.slug)
     expect(list[0].modules).toEqual(['CRM', 'SERVICE_DESK'])
+    expect(list[0].redirectHost).toBe('claude.ai')
   })
 
   it('allows a single active grant per user, client and workspace', async () => {
@@ -92,10 +95,12 @@ describe('IntegrationGrantRepository', () => {
       await IntegrationGrantRepository.updateConsent(grant.id, {
         scopes: ['mcp:read', 'mcp:write'],
         modules: ['COMMUNICATION'],
+        redirectHost: 'chatgpt.com',
       }),
     )
     expect(updated.scopes).toEqual(['mcp:read', 'mcp:write'])
     expect(updated.modules).toEqual(['COMMUNICATION'])
+    expect(updated.redirectHost).toBe('chatgpt.com')
 
     expectOk(await IntegrationGrantRepository.delete(grant.id))
     expectErr(

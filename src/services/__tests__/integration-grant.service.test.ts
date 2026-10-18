@@ -18,7 +18,7 @@ vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/integration-grant.repository')
 vi.mock('@/src/repositories/oauth-client.repository')
 vi.mock('@/src/lib/mcp/oauth-provider', () => ({
-  OAuthProviderGateway: { consent: vi.fn() },
+  OAuthProviderGateway: { consent: vi.fn(), verifyQuery: vi.fn() },
 }))
 
 import { auditAuth } from '@/lib/axiom/audit'
@@ -47,6 +47,7 @@ function oauthQuery(overrides?: Record<string, string | null>) {
   const params: Record<string, string | null> = {
     client_id: 'client-1',
     scope: 'mcp:read mcp:write offline_access',
+    redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
     exp: String(Math.floor(Date.now() / 1000) + 600),
     sig: 'signature',
     ...overrides,
@@ -92,6 +93,8 @@ beforeEach(() => {
   gateway.consent.mockResolvedValue(
     ok({ redirectUrl: 'https://claude.ai/cb?code=abc' }),
   )
+  gateway.verifyQuery.mockResolvedValue(true)
+  memberships.listByUser.mockResolvedValue(ok([]))
 })
 
 describe('IntegrationGrantService.getConsentContext', () => {
@@ -124,6 +127,11 @@ describe('IntegrationGrantService.getConsentContext', () => {
     )
 
     expect(context.client.clientId).toBe('client-1')
+    expect(context.destination).toEqual({
+      trust: 'verified',
+      host: 'claude.ai',
+      verifiedName: 'Claude',
+    })
     expect(context.requestedScopes).toEqual(['mcp:read', 'mcp:write'])
     expect(context.workspaces).toEqual([
       {
@@ -162,6 +170,65 @@ describe('IntegrationGrantService.getConsentContext', () => {
       await IntegrationGrantService.getConsentContext(USER, oauthQuery()),
       'OAUTH_REQUEST_INVALID',
     )
+  })
+
+  it('derives the destination from the request redirect_uri, not from what the client declared', async () => {
+    // A client that registered itself as "Claude", pointing at claude.ai
+    // in its metadata, but whose code goes to evil.example.
+    clients.findByClientId.mockResolvedValue(
+      ok({ ...CLIENT, name: 'Claude', uri: 'https://claude.ai' }),
+    )
+    const context = expectOk(
+      await IntegrationGrantService.getConsentContext(
+        USER,
+        oauthQuery({ redirect_uri: 'https://claude.ai@evil.example/cb' }),
+      ),
+    )
+    expect(context.destination).toEqual({
+      trust: 'unverified',
+      host: 'evil.example',
+      verifiedName: null,
+    })
+    // The self-declared name still travels, for the "diz chamar-se" line.
+    expect(context.client.name).toBe('Claude')
+  })
+
+  it('marks a loopback redirect as an app on the user computer', async () => {
+    const context = expectOk(
+      await IntegrationGrantService.getConsentContext(
+        USER,
+        oauthQuery({ redirect_uri: 'http://127.0.0.1:33418/callback' }),
+      ),
+    )
+    expect(context.destination).toEqual({
+      trust: 'loopback',
+      host: '127.0.0.1:33418',
+      verifiedName: null,
+    })
+  })
+
+  it('rejects a request without a usable redirect_uri', async () => {
+    for (const redirect of [null, 'not a url']) {
+      expectErr(
+        await IntegrationGrantService.getConsentContext(
+          USER,
+          oauthQuery({ redirect_uri: redirect }),
+        ),
+        'OAUTH_REQUEST_INVALID',
+      )
+    }
+    expect(clients.findByClientId).not.toHaveBeenCalled()
+  })
+
+  it('does not render a query whose signature does not verify', async () => {
+    gateway.verifyQuery.mockResolvedValueOnce(false)
+    const query = oauthQuery({ redirect_uri: 'https://claude.ai/forged' })
+    expectErr(
+      await IntegrationGrantService.getConsentContext(USER, query),
+      'OAUTH_REQUEST_INVALID',
+    )
+    expect(gateway.verifyQuery).toHaveBeenCalledWith(query)
+    expect(memberships.listByUser).not.toHaveBeenCalled()
   })
 
   it('rejects a client that did not ask for mcp:read', async () => {
@@ -236,6 +303,7 @@ describe('IntegrationGrantService.consent (accept)', () => {
       clientId: 'client-1',
       scopes: ['mcp:read', 'mcp:write'],
       modules: ['SERVICE_DESK', 'CRM'],
+      redirectHost: 'claude.ai',
     })
     expect(gateway.consent).toHaveBeenCalledWith({
       headers: HEADERS,
@@ -252,6 +320,8 @@ describe('IntegrationGrantService.consent (accept)', () => {
           grantId: 'grant-1',
           scopes: ['mcp:read', 'mcp:write'],
           modules: ['SERVICE_DESK', 'CRM'],
+          redirectHost: 'claude.ai',
+          clientTrust: 'verified',
           noticeVersion: 'mcp-consent-v1',
         }),
       }),
@@ -279,6 +349,7 @@ describe('IntegrationGrantService.consent (accept)', () => {
     expect(grants.updateConsent).toHaveBeenCalledWith('grant-old', {
       scopes: ['mcp:read'],
       modules: ['SERVICE_DESK', 'CRM'],
+      redirectHost: 'claude.ai',
     })
     // No offline_access asked → none accepted.
     expect(gateway.consent).toHaveBeenCalledWith(
@@ -306,6 +377,7 @@ describe('IntegrationGrantService.consent (accept)', () => {
       id: 'g-old',
       scopes: ['mcp:read', 'mcp:write'],
       modules: ['COMMUNICATION'],
+      redirectHost: 'old.example',
     })
     grants.findActive.mockResolvedValue(ok(existing))
     grants.updateConsent
@@ -320,7 +392,36 @@ describe('IntegrationGrantService.consent (accept)', () => {
     expect(grants.updateConsent).toHaveBeenLastCalledWith('g-old', {
       scopes: ['mcp:read', 'mcp:write'],
       modules: ['COMMUNICATION'],
+      redirectHost: 'old.example',
     })
+  })
+
+  it('records the host of the request redirect_uri on the grant and in the audit', async () => {
+    grants.create.mockResolvedValue(
+      ok(createFakeIntegrationGrant({ id: 'grant-evil' })),
+    )
+    expectOk(
+      await IntegrationGrantService.consent(
+        USER,
+        accept({
+          oauthQuery: oauthQuery({
+            redirect_uri: 'https://claude.ai.evil.example/cb',
+          }),
+        }),
+        HEADERS,
+      ),
+    )
+    expect(grants.create).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectHost: 'claude.ai.evil.example' }),
+    )
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: expect.objectContaining({
+          redirectHost: 'claude.ai.evil.example',
+          clientTrust: 'unverified',
+        }),
+      }),
+    )
   })
 
   it('refuses scopes the client did not ask for', async () => {

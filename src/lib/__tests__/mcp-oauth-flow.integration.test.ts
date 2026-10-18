@@ -147,6 +147,12 @@ describe('MCP OAuth flow', () => {
       await IntegrationGrantService.getConsentContext(user.id, oauthQuery),
     )
     expect(context.client.name).toBe('Test MCP client')
+    // Where the code goes, read from the signed request's redirect_uri.
+    expect(context.destination).toEqual({
+      trust: 'loopback',
+      host: '127.0.0.1:33418',
+      verifiedName: null,
+    })
     expect(context.requestedScopes).toEqual(['mcp:read', 'mcp:write'])
     expect(context.workspaces.map((w) => w.id)).toEqual([workspace.id])
 
@@ -321,6 +327,24 @@ describe('MCP OAuth flow', () => {
     const consentUrl = await authorize(clientId, cookie, pkce().challenge)
     const tampered = new URLSearchParams(consentUrl.search)
     tampered.set('state', 'forged')
+
+    // A forged destination does not even render: the page would show it as
+    // the app's identity.
+    const forged = new URLSearchParams(consentUrl.search)
+    forged.set('redirect_uri', 'https://claude.ai/api/mcp/auth_callback')
+    expectErr(
+      await IntegrationGrantService.getConsentContext(
+        user.id,
+        forged.toString(),
+      ),
+      'OAUTH_REQUEST_INVALID',
+    )
+    expectOk(
+      await IntegrationGrantService.getConsentContext(
+        user.id,
+        consentUrl.search.slice(1),
+      ),
+    )
 
     expectErr(
       await IntegrationGrantService.consent(

@@ -122,6 +122,11 @@ function ClientCard({
             {client.canWrite ? 'Ler e alterar' : 'Somente ler'}
           </Badge>
         </CardTitle>
+        {client.redirectHost && (
+          <CardDescription className='font-mono text-xs break-all'>
+            {client.redirectHost}
+          </CardDescription>
+        )}
         <CardDescription>
           {client.members === 1
             ? '1 membro conectado'
@@ -171,6 +176,11 @@ function GrantItem({
               : 'Somente ler'}
           </Badge>
         </div>
+        {grant.redirectHost && (
+          <Muted className='text-xs font-mono break-all'>
+            {grant.redirectHost}
+          </Muted>
+        )}
         <Muted className='text-xs break-words'>
           {grant.modules.map((m) => MCP_MODULE_LABELS[m]).join(', ') ||
             'Nenhum módulo'}
