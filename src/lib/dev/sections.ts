@@ -32,6 +32,12 @@ export const DEV_SECTIONS: readonly DevSection[] = [
       'Exemplos completos: lead do seu site, chamado do seu sistema, workflow do CRM e eventos do GitHub/GitLab.',
   },
   {
+    slug: 'ferramentas',
+    label: 'CLI e SDK',
+    description:
+      'O Steel CLI no terminal e no CI, os webhooks na sua máquina e o SDK TypeScript da API v1.',
+  },
+  {
     slug: 'mcp',
     label: 'Clientes de IA (MCP)',
     description:
