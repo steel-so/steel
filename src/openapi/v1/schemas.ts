@@ -4,6 +4,7 @@ import {
   CrmPipelineDTO,
   CrmPipelineStageDTO,
 } from '../schemas/crm/opportunities'
+import { SdPhaseDTO } from '../schemas/servicedesk-config'
 
 /**
  * DTOs that only exist in the public API v1 (`types/api-v1.ts`). Every
@@ -158,5 +159,16 @@ export const ApiV1LeadImportResultDTO = dto(
         }),
       }),
     ),
+  }),
+)
+
+export const ApiV1SdPhaseDTO = dto(
+  'ApiV1SdPhase',
+  z.object({
+    ...SdPhaseDTO.shape,
+    nextPhaseIds: z.array(z.string()).nullable().meta({
+      description:
+        'Fases ativas do mesmo tipo para onde um chamado nesta fase pode ir. `null` = o tipo não tem transições cadastradas (fluxo livre: qualquer fase ativa do tipo); `[]` = nenhuma saída. Restrições por departamento valem na hora de mover.',
+    }),
   }),
 )

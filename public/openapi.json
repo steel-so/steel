@@ -6347,7 +6347,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_8"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_COUPON_INVALID"
@@ -10801,7 +10801,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "404": {
             "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
@@ -10864,7 +10864,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED"
           },
           "404": {
             "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND_WEBHOOK_DELIVERY_NOT_FOUND"
@@ -10932,7 +10932,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -10968,7 +10968,7 @@
                   },
                   "events": {
                     "minItems": 1,
-                    "maxItems": 19,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -10991,6 +10991,7 @@
                         "crm.deal.won",
                         "crm.deal.lost",
                         "communication.message.received",
+                        "communication.conversation.waiting",
                         "agents.approval.pending"
                       ]
                     }
@@ -11042,7 +11043,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED"
           },
           "409": {
             "$ref": "#/components/responses/409_WEBHOOK_ENDPOINT_LIMIT_REACHED"
@@ -11104,7 +11105,7 @@
                   },
                   "events": {
                     "minItems": 1,
-                    "maxItems": 19,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -11127,6 +11128,7 @@
                         "crm.deal.won",
                         "crm.deal.lost",
                         "communication.message.received",
+                        "communication.conversation.waiting",
                         "agents.approval.pending"
                       ]
                     }
@@ -11166,7 +11168,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED"
           },
           "404": {
             "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
@@ -11233,7 +11235,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED"
           },
           "404": {
             "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
@@ -11293,7 +11295,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED"
           },
           "404": {
             "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
@@ -11386,7 +11388,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -11476,7 +11478,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED_2"
           },
           "404": {
             "$ref": "#/components/responses/404_WEBHOOK_ENDPOINT_NOT_FOUND"
@@ -12283,7 +12285,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_10"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_9"
           },
           "409": {
             "$ref": "#/components/responses/409_WORKSPACE_OPERATION_IN_PROGRESS"
@@ -15561,7 +15563,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -15665,7 +15667,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
@@ -96136,7 +96138,7 @@
                   },
                   "events": {
                     "minItems": 1,
-                    "maxItems": 19,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -96159,6 +96161,7 @@
                         "crm.deal.won",
                         "crm.deal.lost",
                         "communication.message.received",
+                        "communication.conversation.waiting",
                         "agents.approval.pending"
                       ]
                     }
@@ -96281,7 +96284,7 @@
                   },
                   "events": {
                     "minItems": 1,
-                    "maxItems": 19,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -96304,6 +96307,7 @@
                         "crm.deal.won",
                         "crm.deal.lost",
                         "communication.message.received",
+                        "communication.conversation.waiting",
                         "agents.approval.pending"
                       ]
                     }
@@ -106376,7 +106380,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_11"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_10"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -110668,7 +110672,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
@@ -111918,7 +111922,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
@@ -120838,7 +120842,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Token sem `api:write`, ou o dono não é OWNER/ADMIN",
+                "summary": "FORBIDDEN — O dono do token não é OWNER/ADMIN",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -120872,7 +120876,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — O dono do token não é OWNER/ADMIN",
+                "summary": "FORBIDDEN — Não é membro, ou pediu `scope=workspace` sem ser OWNER/ADMIN",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -120906,40 +120910,6 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro, ou pediu `scope=workspace` sem ser OWNER/ADMIN",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_WORKSPACE_SUSPENDED_8": {
-        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Não é membro, ou pediu `userId` de outra pessoa sem ser OWNER/ADMIN",
                 "value": {
                   "success": false,
@@ -120965,7 +120935,7 @@
           }
         }
       },
-      "403_FORBIDDEN_WORKSPACE_SUSPENDED_9": {
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_8": {
         "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -121010,7 +120980,7 @@
           }
         }
       },
-      "403_FORBIDDEN_WORKSPACE_SUSPENDED_10": {
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_9": {
         "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -121055,7 +121025,7 @@
           }
         }
       },
-      "403_FORBIDDEN_WORKSPACE_SUSPENDED_11": {
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_10": {
         "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -121082,51 +121052,6 @@
                   "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
                   "error": {
                     "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_WORKSPACE_SUSPENDED_12": {
-        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Token sem `api:write`, ou o dono não é OWNER/ADMIN",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — O evento é de um módulo fora do token",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este token não tem acesso ao módulo deste evento.",
-                  "error": {
-                    "code": "FORBIDDEN"
                   }
                 }
               }
@@ -121585,6 +121510,107 @@
                   "message": "A memória do Steel AI está desligada neste workspace.",
                   "error": {
                     "code": "AI_MEMORY_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`, `API_TOKEN_SCOPE_REQUIRED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "API_TOKEN_SCOPE_REQUIRED": {
+                "summary": "API_TOKEN_SCOPE_REQUIRED — Token sem o escopo `api:write` (`details.requiredScope`)",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.",
+                  "error": {
+                    "code": "API_TOKEN_SCOPE_REQUIRED"
+                  }
+                }
+              },
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — O dono do token não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_API_TOKEN_SCOPE_REQUIRED_2": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`, `API_TOKEN_SCOPE_REQUIRED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "API_TOKEN_SCOPE_REQUIRED": {
+                "summary": "API_TOKEN_SCOPE_REQUIRED — Token sem o escopo `api:write` (`details.requiredScope`)",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.",
+                  "error": {
+                    "code": "API_TOKEN_SCOPE_REQUIRED"
+                  }
+                }
+              },
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — O dono do token não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — O evento é de um módulo fora do token",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este token não tem acesso ao módulo deste evento.",
+                  "error": {
+                    "code": "FORBIDDEN"
                   }
                 }
               }
@@ -182562,6 +182588,7 @@
               "crm.deal.won",
               "crm.deal.lost",
               "communication.message.received",
+              "communication.conversation.waiting",
               "agents.approval.pending"
             ]
           },

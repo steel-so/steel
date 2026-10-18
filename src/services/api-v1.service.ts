@@ -1,3 +1,4 @@
+import type { SdTicketType } from '@prisma/client'
 import { logger } from '@/lib/axiom/logger'
 import { unauthorized, validationError } from '@/src/errors/app-error'
 import type { ApiSession } from '@/src/lib/api/session'
@@ -13,6 +14,7 @@ import type {
   ApiV1LeadImportErrorDTO,
   ApiV1LeadImportResultDTO,
   ApiV1MeDTO,
+  ApiV1SdPhaseDTO,
 } from '@/types/api-v1'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import { assertModuleMember } from './authz'
@@ -21,6 +23,7 @@ import {
   CrmPipelineService,
   CrmPipelineStageService,
 } from './crm-pipeline.service'
+import { SdPhaseService } from './sd-phase.service'
 import { UserService } from './user.service'
 import { WhatsAppConnectionService } from './whatsapp-connection.service'
 import { WhatsAppContactService } from './whatsapp-contact.service'
@@ -163,6 +166,60 @@ export const ApiV1Service = {
       out.push({ ...pipeline, stages: result.value })
     }
     return ok(out)
+  },
+
+  /**
+   * Active ServiceDesk phases (per ticket type, in board order) with the
+   * phases a ticket may move to next — what `steel sd ticket move` needs.
+   * A type without transition rules is free flow (`nextPhaseIds: null`);
+   * transitions into an inactive phase are left out. Any module member
+   * reads them, as in the app; moving stays agent-only.
+   */
+  async listSdPhases(
+    actorId: string,
+    workspaceId: string,
+    ticketType?: SdTicketType,
+  ): Promise<Result<ApiV1SdPhaseDTO[]>> {
+    // Inactive phases too: only to know the type of every transition (a
+    // rule from an inactive phase still makes its type a ruled flow).
+    const phases = await SdPhaseService.list(actorId, workspaceId, {
+      ticketType,
+      includeInactive: true,
+    })
+    if (!phases.ok) return phases
+
+    const transitions = await SdPhaseService.listTransitions(
+      actorId,
+      workspaceId,
+      ticketType,
+    )
+    if (!transitions.ok) return transitions
+
+    const typeOf = new Map(phases.value.map((p) => [p.id, p.ticketType]))
+    const active = new Set(
+      phases.value.filter((p) => p.active).map((p) => p.id),
+    )
+    const ruledTypes = new Set<string>()
+    const next = new Map<string, string[]>()
+    for (const transition of transitions.value) {
+      const fromType = typeOf.get(transition.fromPhaseId)
+      if (fromType) ruledTypes.add(fromType)
+      if (!active.has(transition.toPhaseId)) continue
+      const list = next.get(transition.fromPhaseId) ?? []
+      list.push(transition.toPhaseId)
+      next.set(transition.fromPhaseId, list)
+    }
+
+    return ok(
+      phases.value
+        .filter((phase) => phase.active)
+        .map((phase) => ({
+          ...phase,
+          nextPhaseIds: ruledTypes.has(phase.ticketType)
+            ? (next.get(phase.id) ?? [])
+            : null,
+        })),
+    )
   },
 
   /**

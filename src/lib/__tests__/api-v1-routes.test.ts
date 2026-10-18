@@ -22,6 +22,7 @@ vi.mock('@/src/services/api-v1.service', () => ({
     listPipelines: vi.fn(),
     importLeads: vi.fn(),
     sendWhatsAppTemplate: vi.fn(),
+    listSdPhases: vi.fn(),
   },
 }))
 vi.mock('@/src/services/sd-ticket.service', () => ({
@@ -50,6 +51,9 @@ vi.mock('@/src/services/whatsapp-template.service', () => ({
 vi.mock('@/src/services/whatsapp-broadcast.service', () => ({
   WhatsAppBroadcastService: { get: vi.fn() },
 }))
+vi.mock('@/src/services/whatsapp-conversation.service', () => ({
+  WhatsAppConversationService: { listWaiting: vi.fn() },
+}))
 
 import * as leadImport from '@/app/api/v1/crm/leads/import/route'
 import * as leads from '@/app/api/v1/crm/leads/route'
@@ -58,11 +62,13 @@ import * as opportunities from '@/app/api/v1/crm/opportunities/route'
 import * as pipelines from '@/app/api/v1/crm/pipelines/route'
 import * as me from '@/app/api/v1/me/route'
 import * as catalog from '@/app/api/v1/servicedesk/catalog/route'
+import * as phases from '@/app/api/v1/servicedesk/phases/route'
 import * as ticketComments from '@/app/api/v1/servicedesk/tickets/[ticketId]/comments/route'
 import * as ticketPhase from '@/app/api/v1/servicedesk/tickets/[ticketId]/phase/route'
 import * as ticket from '@/app/api/v1/servicedesk/tickets/[ticketId]/route'
 import * as tickets from '@/app/api/v1/servicedesk/tickets/route'
 import * as broadcast from '@/app/api/v1/whatsapp/broadcasts/[broadcastId]/route'
+import * as waiting from '@/app/api/v1/whatsapp/conversations/waiting/route'
 import * as sendTemplate from '@/app/api/v1/whatsapp/messages/template/route'
 import * as templates from '@/app/api/v1/whatsapp/templates/route'
 import { forbidden } from '@/src/errors'
@@ -76,6 +82,7 @@ import { SdCategoryService } from '@/src/services/sd-category.service'
 import { SdTicketService } from '@/src/services/sd-ticket.service'
 import { SdTicketMessageService } from '@/src/services/sd-ticket-message.service'
 import { WhatsAppBroadcastService } from '@/src/services/whatsapp-broadcast.service'
+import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import { WhatsAppTemplateService } from '@/src/services/whatsapp-template.service'
 
 const SESSION: ApiSession = {
@@ -301,6 +308,44 @@ describe('ServiceDesk', () => {
     vi.mocked(SdCategoryService.list).mockResolvedValue(err(forbidden()))
     expect((await call(catalog.GET, '/servicedesk/catalog')).status).toBe(403)
   })
+
+  it('pages the phases of a ticket type', async () => {
+    vi.mocked(ApiV1Service.listSdPhases).mockResolvedValue(
+      ok([{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }] as never),
+    )
+    const res = await call(
+      phases.GET,
+      '/servicedesk/phases?ticketType=CHANGE&limit=2',
+    )
+    expect(ApiV1Service.listSdPhases).toHaveBeenCalledWith(
+      'u1',
+      'ws1',
+      'CHANGE',
+    )
+    expect(res.json.data).toEqual({
+      items: [{ id: 'p1' }, { id: 'p2' }],
+      nextCursor: encodeOffsetCursor(2),
+    })
+  })
+
+  it('lists the phases of every type and refuses an unknown one', async () => {
+    vi.mocked(ApiV1Service.listSdPhases).mockResolvedValue(ok([] as never))
+    const all = await call(phases.GET, '/servicedesk/phases')
+    expect(ApiV1Service.listSdPhases).toHaveBeenCalledWith(
+      'u1',
+      'ws1',
+      undefined,
+    )
+    expect(all.json.data).toEqual({ items: [], nextCursor: null })
+
+    const invalid = await call(phases.GET, '/servicedesk/phases?ticketType=BUG')
+    expect(invalid.status).toBe(422)
+  })
+
+  it('propagates the phases error', async () => {
+    vi.mocked(ApiV1Service.listSdPhases).mockResolvedValue(err(forbidden()))
+    expect((await call(phases.GET, '/servicedesk/phases')).status).toBe(403)
+  })
 })
 
 describe('CRM', () => {
@@ -468,6 +513,34 @@ describe('Comunicação', () => {
       'ws1',
       body,
     )
+  })
+
+  it('pages the waiting conversations, filtered by connection and team', async () => {
+    vi.mocked(WhatsAppConversationService.listWaiting).mockResolvedValue(
+      ok([{ id: 'c1' }, { id: 'c2' }] as never),
+    )
+    const res = await call(
+      waiting.GET,
+      '/whatsapp/conversations/waiting?connectionId=cn1&teamId=t1&limit=1',
+    )
+    expect(WhatsAppConversationService.listWaiting).toHaveBeenCalledWith(
+      'u1',
+      'ws1',
+      { connectionId: 'cn1', teamId: 't1' },
+    )
+    expect(res.json.data).toEqual({
+      items: [{ id: 'c1' }],
+      nextCursor: encodeOffsetCursor(1),
+    })
+  })
+
+  it('propagates the waiting list error', async () => {
+    vi.mocked(WhatsAppConversationService.listWaiting).mockResolvedValue(
+      err(forbidden()),
+    )
+    expect(
+      (await call(waiting.GET, '/whatsapp/conversations/waiting')).status,
+    ).toBe(403)
   })
 
   it('shows a broadcast', async () => {

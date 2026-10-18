@@ -35,6 +35,9 @@ vi.mock('@/src/services/whatsapp-conversation.service', () => ({
 vi.mock('@/src/services/whatsapp-message.service', () => ({
   WhatsAppMessageService: { sendTemplate: vi.fn() },
 }))
+vi.mock('@/src/services/sd-phase.service', () => ({
+  SdPhaseService: { list: vi.fn(), listTransitions: vi.fn() },
+}))
 
 import { logger } from '@/lib/axiom/logger'
 import { ApiV1Service } from '@/src/services/api-v1.service'
@@ -44,11 +47,13 @@ import {
   CrmPipelineService,
   CrmPipelineStageService,
 } from '@/src/services/crm-pipeline.service'
+import { SdPhaseService } from '@/src/services/sd-phase.service'
 import { UserService } from '@/src/services/user.service'
 import { WhatsAppConnectionService } from '@/src/services/whatsapp-connection.service'
 import { WhatsAppContactService } from '@/src/services/whatsapp-contact.service'
 import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import { WhatsAppMessageService } from '@/src/services/whatsapp-message.service'
+import type { SdPhaseDTO, SdPhaseTransitionDTO } from '@/types/sd-config'
 import type { UserDTO } from '@/types/user'
 
 const SESSION: ApiSession = {
@@ -499,5 +504,147 @@ describe('ApiV1Service.sendWhatsAppTemplate', () => {
       'FORBIDDEN',
     )
     expect(WhatsAppMessageService.sendTemplate).not.toHaveBeenCalled()
+  })
+})
+
+function phase(
+  id: string,
+  ticketType: SdPhaseDTO['ticketType'],
+  overrides: Partial<SdPhaseDTO> = {},
+): SdPhaseDTO {
+  return {
+    id,
+    ticketType,
+    name: id,
+    description: null,
+    color: null,
+    category: 'IN_PROGRESS',
+    completionPercent: 0,
+    position: 0,
+    isInitial: false,
+    pausesSla: false,
+    requiresApproval: false,
+    requiredFields: [],
+    wipLimit: 0,
+    active: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function transition(from: string, to: string): SdPhaseTransitionDTO {
+  return {
+    id: `${from}-${to}`,
+    fromPhaseId: from,
+    toPhaseId: to,
+    allowedDepartmentIds: [],
+  }
+}
+
+describe('ApiV1Service.listSdPhases', () => {
+  beforeEach(() => {
+    vi.mocked(SdPhaseService.list).mockReset()
+    vi.mocked(SdPhaseService.listTransitions).mockReset()
+  })
+
+  it('lists active phases with the next phases of ruled types and null for free flows', async () => {
+    vi.mocked(SdPhaseService.list).mockResolvedValue(
+      ok([
+        phase('inc-new', 'INCIDENT', { isInitial: true }),
+        phase('inc-work', 'INCIDENT'),
+        phase('inc-old', 'INCIDENT', { active: false }),
+        phase('inc-done', 'INCIDENT', { category: 'RESOLVED' }),
+        phase('req-new', 'SERVICE_REQUEST'),
+      ]),
+    )
+    vi.mocked(SdPhaseService.listTransitions).mockResolvedValue(
+      ok([
+        transition('inc-new', 'inc-work'),
+        transition('inc-new', 'inc-old'),
+        transition('inc-work', 'inc-done'),
+      ]),
+    )
+
+    const phases = expectOk(await ApiV1Service.listSdPhases('user_1', 'ws_1'))
+
+    expect(SdPhaseService.list).toHaveBeenCalledWith('user_1', 'ws_1', {
+      ticketType: undefined,
+      includeInactive: true,
+    })
+    expect(SdPhaseService.listTransitions).toHaveBeenCalledWith(
+      'user_1',
+      'ws_1',
+      undefined,
+    )
+    expect(phases.map((p) => [p.id, p.nextPhaseIds])).toEqual([
+      // The transition into the inactive phase is left out.
+      ['inc-new', ['inc-work']],
+      ['inc-work', ['inc-done']],
+      // Ruled type, no rule out of it: a dead end.
+      ['inc-done', []],
+      ['req-new', null],
+    ])
+    expect(phases[0]).toMatchObject({ isInitial: true, ticketType: 'INCIDENT' })
+  })
+
+  it('treats a type ruled only from an inactive phase as ruled', async () => {
+    vi.mocked(SdPhaseService.list).mockResolvedValue(
+      ok([
+        phase('chg-old', 'CHANGE', { active: false }),
+        phase('chg-new', 'CHANGE'),
+      ]),
+    )
+    vi.mocked(SdPhaseService.listTransitions).mockResolvedValue(
+      ok([transition('chg-old', 'chg-new')]),
+    )
+
+    const phases = expectOk(
+      await ApiV1Service.listSdPhases('user_1', 'ws_1', 'CHANGE'),
+    )
+
+    expect(SdPhaseService.list).toHaveBeenCalledWith('user_1', 'ws_1', {
+      ticketType: 'CHANGE',
+      includeInactive: true,
+    })
+    expect(phases).toEqual([
+      expect.objectContaining({ id: 'chg-new', nextPhaseIds: [] }),
+    ])
+  })
+
+  it('ignores a transition whose phase is outside the listed ones', async () => {
+    vi.mocked(SdPhaseService.list).mockResolvedValue(
+      ok([phase('prb-new', 'PROBLEM')]),
+    )
+    vi.mocked(SdPhaseService.listTransitions).mockResolvedValue(
+      ok([transition('ghost', 'prb-new')]),
+    )
+
+    const phases = expectOk(await ApiV1Service.listSdPhases('user_1', 'ws_1'))
+    expect(phases[0].nextPhaseIds).toBeNull()
+  })
+
+  it('propagates the access error of the phase list', async () => {
+    vi.mocked(SdPhaseService.list).mockResolvedValue(
+      err(moduleDisabled('ServiceDesk')),
+    )
+
+    expectErr(
+      await ApiV1Service.listSdPhases('user_1', 'ws_1'),
+      'MODULE_DISABLED',
+    )
+    expect(SdPhaseService.listTransitions).not.toHaveBeenCalled()
+  })
+
+  it('propagates a database error of the transitions', async () => {
+    vi.mocked(SdPhaseService.list).mockResolvedValue(ok([]))
+    vi.mocked(SdPhaseService.listTransitions).mockResolvedValue(
+      err(databaseError('boom')),
+    )
+
+    expectErr(
+      await ApiV1Service.listSdPhases('user_1', 'ws_1'),
+      'DATABASE_ERROR',
+    )
   })
 })

@@ -1,6 +1,6 @@
 ---
 title: Comunicação na API v1
-description: Listar templates do WhatsApp, enviar um template aprovado para um número, contato ou conversa e acompanhar uma transmissão, com curl, steel CLI e SDK e os erros de cada operação.
+description: Listar templates do WhatsApp, enviar um template aprovado para um número, contato ou conversa, ver a fila de conversas aguardando atendimento e acompanhar uma transmissão, com curl, steel CLI e SDK e os erros de cada operação.
 section: api-v1
 order: 5
 ---
@@ -13,12 +13,14 @@ rodam com as suas permissões na Comunicação. Os exemplos usam `$STEEL_URL` e
 | --- | --- | --- | --- | --- |
 | Listar templates | `GET /api/v1/whatsapp/templates` | `api:read` | `steel zap templates` | `whatsapp.templates()` |
 | Enviar template | `POST /api/v1/whatsapp/messages/template` | `api:write` | `steel zap send` | `whatsapp.sendTemplate()` |
+| Conversas aguardando | `GET /api/v1/whatsapp/conversations/waiting` | `api:read` | — | — |
 | Situação da transmissão | `GET /api/v1/whatsapp/broadcasts/{broadcastId}` | `api:read` | `steel zap broadcast status` | `whatsapp.broadcast()` |
 
 A v1 envia só **templates** (os modelos aprovados pela Meta), que valem a
 qualquer hora. Texto livre numa conversa fica no aplicativo; na API oficial da
 Meta ele só é aceito dentro da janela de 24 horas depois da última mensagem do
-cliente. As conversas aguardando resposta ainda não estão na v1.
+cliente. A fila de conversas sem atendente está em
+[Conversas aguardando atendimento](#conversas-aguardando-atendimento).
 
 ## Listar templates
 
@@ -194,6 +196,68 @@ if (!sent.ok && sent.error.code === 'RATE_LIMITED') {
 
 Um `502` não deve ser repetido igual: corrija o template ou as variáveis
 primeiro. Um `429` pode ser repetido depois da espera.
+
+## Conversas aguardando atendimento
+
+A **Fila** da caixa de entrada: conversas abertas (`NEW` ou `IN_PROGRESS`),
+não arquivadas e **sem responsável**, da que espera há mais tempo para a mais
+recente (pela última mensagem). Vale a visibilidade das **Equipes** do dono do
+token: ele vê a fila geral e as filas das equipes de que participa; o dono do
+workspace, e administradores fora de equipes, veem todas. Conversas que a IA
+está atendendo também aparecem, com `aiActive: true`.
+
+| Parâmetro | Valores |
+| --- | --- |
+| `connectionId` | Só as conversas de uma conexão |
+| `teamId` | Só a fila de uma equipe |
+| `limit`, `cursor` | [Paginação](/dev/api-v1#paginação) |
+
+```bash
+curl "$STEEL_URL/api/v1/whatsapp/conversations/waiting?limit=10" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2cnv0001",
+        "workspaceId": "cm2ws0001",
+        "connectionId": "cm2con0001",
+        "contactId": "cm2ctt0003",
+        "contactName": "Maria",
+        "contactWaId": "5511999990000",
+        "contactAvatarUrl": null,
+        "status": "NEW",
+        "assignedUserId": null,
+        "teamId": "cm2tea0001",
+        "team": { "id": "cm2tea0001", "name": "Suporte" },
+        "aiActive": false,
+        "aiHandoff": false,
+        "unreadCount": 2,
+        "avgSentimentScore": null,
+        "lastMessageAt": "2026-10-18T12:00:00.000Z",
+        "lastMessagePreview": "Olá, gostaria de um orçamento.",
+        "pinned": false,
+        "archived": false,
+        "closedAt": null,
+        "closeReason": null,
+        "contactSince": "2026-10-18T11:58:00.000Z",
+        "createdAt": "2026-10-18T11:58:00.000Z",
+        "updatedAt": "2026-10-18T12:00:00.000Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+Para ser avisado quando uma conversa entra na fila, em vez de consultar esta
+rota de tempos em tempos, assine o webhook
+[`communication.conversation.waiting`](/dev/webhooks/eventos#communicationconversationwaiting).
 
 ## Acompanhar uma transmissão
 

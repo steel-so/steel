@@ -1,6 +1,7 @@
 import type { ModuleKind } from '@prisma/client'
 import type { ApiScope } from '@/src/lib/api/session'
 import type { CrmPipelineDTO, CrmPipelineStageDTO } from '@/types/crm-pipeline'
+import type { SdPhaseDTO } from '@/types/sd-config'
 
 /**
  * DTOs that exist only in the public API v1 (ADR 0035). Everything else the
@@ -38,4 +39,17 @@ export interface ApiV1LeadImportResultDTO {
   /** Rows matching an open lead by e-mail or phone (not duplicated). */
   skipped: number
   errors: ApiV1LeadImportErrorDTO[]
+}
+
+/**
+ * `GET /api/v1/servicedesk/phases` — an active phase with where a ticket in
+ * it may go next (`steel sd ticket move`).
+ */
+export interface ApiV1SdPhaseDTO extends SdPhaseDTO {
+  /**
+   * Active phases of the same type a ticket may move to from this one.
+   * `null` = the type has no transition rules (free flow: any active phase
+   * of the type). Department limits are checked on the move itself.
+   */
+  nextPhaseIds: string[] | null
 }

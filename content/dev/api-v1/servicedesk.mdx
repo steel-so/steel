@@ -1,6 +1,6 @@
 ---
 title: ServiceDesk na API v1
-description: Listar, ver, abrir, comentar e mover chamados e consultar o catálogo de serviços, com curl, steel CLI e SDK, respostas de exemplo e os erros de cada operação.
+description: Listar, ver, abrir, comentar e mover chamados e consultar as fases e o catálogo de serviços, com curl, steel CLI e SDK, respostas de exemplo e os erros de cada operação.
 section: api-v1
 order: 3
 ---
@@ -17,6 +17,7 @@ solicitantes só os próprios chamados, como no portal. Os exemplos usam
 | Abrir chamado | `POST /api/v1/servicedesk/tickets` | `api:write` | `steel sd ticket create` | `servicedesk.tickets.create()` |
 | Comentar | `POST /api/v1/servicedesk/tickets/{ticketId}/comments` | `api:write` | `steel sd ticket comment` | `servicedesk.tickets.comment()` |
 | Mudar de fase | `POST /api/v1/servicedesk/tickets/{ticketId}/phase` | `api:write` | `steel sd ticket move` | `servicedesk.tickets.move()` |
+| Fases | `GET /api/v1/servicedesk/phases` | `api:read` | — | — |
 | Catálogo | `GET /api/v1/servicedesk/catalog` | `api:read` | `steel sd catalog` | `servicedesk.catalog()` |
 
 Onde a rota pede `{ticketId}`, vale o id, o número (`123`) ou o código
@@ -258,9 +259,8 @@ aprovações e a assinatura digital, como no quadro do aplicativo.
 | `solutionClassificationId` | Classificação da solução, quando a fase exige |
 | `comment` | Comentário da mudança (até 2.000 caracteres) |
 
-A v1 ainda não lista as fases: o id de cada uma aparece em `phase.id` dos
-chamados que estão nela (liste com `status=RESOLVED`, por exemplo, para achar
-a fase de resolução).
+Os ids das fases, e para quais fases cada uma pode ir, vêm de
+[Listar fases](#listar-fases).
 
 ```bash
 curl -X POST "$STEEL_URL/api/v1/servicedesk/tickets/INC-000123/phase" \
@@ -290,6 +290,68 @@ await steel.servicedesk.tickets.move('INC-000123', {
 | `422 SD_APPROVAL_REQUIRED` | A mudança precisa de aprovação antes |
 | `422 SD_SIGNATURE_REQUIRED` | A fase exige assinatura digital, feita no aplicativo |
 | `404 SD_PHASE_NOT_FOUND` | O `phaseId` não existe neste workspace |
+
+## Listar fases
+
+As fases **ativas** de cada tipo de chamado, na ordem do quadro, para escolher
+o `phaseId` de [Mudar de fase](#mudar-de-fase). Qualquer membro do ServiceDesk
+lê a lista; mover continua só para agentes.
+
+| Parâmetro | Valores |
+| --- | --- |
+| `ticketType` | `INCIDENT`, `SERVICE_REQUEST`, `CHANGE` ou `PROBLEM`. Omitido = todos os tipos |
+| `limit`, `cursor` | [Paginação](/dev/api-v1#paginação) |
+
+```bash
+curl "$STEEL_URL/api/v1/servicedesk/phases?ticketType=INCIDENT" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2phs0001",
+        "ticketType": "INCIDENT",
+        "name": "Novo",
+        "description": null,
+        "color": "#64748b",
+        "category": "NEW",
+        "completionPercent": 0,
+        "position": 0,
+        "isInitial": true,
+        "pausesSla": false,
+        "requiresApproval": false,
+        "requiredFields": [],
+        "wipLimit": 0,
+        "active": true,
+        "createdAt": "2026-09-21T12:00:00.000Z",
+        "updatedAt": "2026-09-21T12:00:00.000Z",
+        "nextPhaseIds": ["cm2phs0002", "cm2phs0006"]
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+`nextPhaseIds` diz para onde um chamado nesta fase pode ir:
+
+| Valor | Significado |
+| --- | --- |
+| `null` | O tipo não tem transições cadastradas: vale qualquer fase ativa do mesmo tipo |
+| `["…"]` | Só estas fases. Transições limitadas a departamentos são conferidas na hora de mover (`SD_PHASE_TRANSITION_NOT_ALLOWED`) |
+| `[]` | Nenhuma saída cadastrada a partir desta fase |
+
+`requiredFields` lista o que a fase exige preenchido para receber o chamado
+(`solution`, `solutionClassificationId`, `customFields.<chave>`…).
+
+| Erro | Quando e como resolver |
+| --- | --- |
+| `422 VALIDATION_ERROR` | `ticketType` fora da lista, ou cursor inválido |
 
 ## Catálogo de serviços
 
