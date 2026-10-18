@@ -50,3 +50,6 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0031 | [Kit de Vendas calculado no servidor e modo TV por link com token](./0031-crm-sales-tv-kit.md) | Aceita | 2026-10-15 |
 | 0032 | [Servidor MCP público sobre as ferramentas do Steel AI](./0032-public-mcp-server-over-steel-ai-tools.md) | Aceita | 2026-10-17 |
 | 0033 | [Identidade de integrações: OAuth por usuário e workspace](./0033-integration-identity-oauth-per-user-and-workspace.md) | Aceita | 2026-10-17 |
+| 0034 | [Steel CLI e SDK em repositório próprio](./0034-steel-cli-and-sdk.md) | Aceita | 2026-10-18 |
+| 0035 | [API pública v1 e tokens pessoais](./0035-public-api-v1-and-personal-tokens.md) | Aceita | 2026-10-18 |
+| 0036 | [Webhooks de saída](./0036-outbound-webhooks.md) | Aceita | 2026-10-18 |
