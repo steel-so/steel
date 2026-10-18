@@ -73,4 +73,25 @@ export const ChangelogEmail = ({ subject, items }: ChangelogEmailProps) => (
   </Html>
 )
 
+ChangelogEmail.PreviewProps = {
+  subject: 'O que mudou no Steel',
+  items: [
+    {
+      title: 'Equipes no WhatsApp e botões que fazem o trabalho',
+      body: 'Organize o atendimento por equipes, com visibilidade por equipe, e use botões que já executam ações.',
+      imageUrl: `${baseEmailUrl}/changelog/2026-10-14/capa-whatsapp.jpg`,
+    },
+    {
+      title: 'Sites no CRM, com editor visual completo',
+      body: 'Monte e publique sites direto no CRM, arrastando e soltando seções prontas.',
+      imageUrl: `${baseEmailUrl}/changelog/2026-10-15/capa-sites.jpg`,
+    },
+    {
+      title: 'Novo editor de e-mail, de arrastar e soltar',
+      body: 'Crie e-mails de campanha no mesmo editor visual dos Sites.',
+      imageUrl: null,
+    },
+  ],
+} satisfies ChangelogEmailProps
+
 export default ChangelogEmail
