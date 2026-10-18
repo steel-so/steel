@@ -67,6 +67,30 @@ Corpo do evento: `{ id, type, createdAt, workspaceId, data }`. Cabeçalhos:
 (`v1=<hex do HMAC-SHA256 de "<timestamp>.<corpo>">`). No SSE, cada mensagem
 traz o corpo e os mesmos três valores, para o CLI repassar idêntico.
 
+Detalhes fechados na fatia `webhooks-out`:
+
+- Catálogo: `src/lib/webhooks/events.ts` (tipos, módulo, descrição pt-BR,
+  schema Zod do `data` e dados de exemplo). `steel.ping` existe, mas não é
+  assinável. Endpoint assina tipos ou `*`. Até 20 endpoints por workspace.
+- Tudo é OWNER/ADMIN, inclusive `listen` e `trigger`. Na v1, os eventos de
+  módulos fora do token não aparecem no catálogo nem no `listen`, e o
+  `trigger` deles responde `403`.
+- `listen`: a primeira mensagem é `event: ready` com
+  `{ workspaceId, events, secret }`; depois cada `event: webhook` (com `id:`)
+  traz `{ id, timestamp, signature, body }`. O segredo da escuta é derivado do
+  segredo do servidor por membro e workspace: fixo entre sessões, nada
+  guardado. Heartbeat `: ping` a cada 25 s.
+- `trigger` `{ type, endpointId? }` → `202 { event: { id, type }, deliveries }`:
+  dados de exemplo do catálogo; vai para os ouvintes e, com `endpointId`, para
+  esse endpoint, nunca para os outros inscritos.
+- `endpoints/{id}/test` envia o `steel.ping` na hora (uma tentativa, mesmo
+  desativado) e devolve a entrega; não conta para a desativação automática.
+- `deliveries` pagina por cursor como o resto da v1 (`limit`, `cursor`,
+  `status`, `endpointId`); `retry` responde `202` com a entrega em `PENDING`.
+- Criar e trocar o segredo devolvem `{ endpoint, secret }`; a tela tem ainda
+  rotas de sessão em `/api/workspaces/{id}/webhooks/**` (revelar o segredo
+  com auditoria, trocar, testar, log e reenvio).
+
 ## CLI e SDK (repo `steel-so/steel-cli`)
 
 | Fatia | Fase do plano | Entrega |
