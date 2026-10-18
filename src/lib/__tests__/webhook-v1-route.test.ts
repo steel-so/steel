@@ -46,6 +46,7 @@ function call(route: unknown, request: Request, params = {}) {
 
 describe('webhook API v1 route helper', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mocks.resolveApiSession.mockResolvedValue(ok(session))
     mocks.consume.mockResolvedValue(ok(undefined))
   })
@@ -63,16 +64,31 @@ describe('webhook API v1 route helper', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
-  it('should demand api:write for writes', async () => {
+  it('should demand api:write for writes with the same error as the other v1 routes', async () => {
+    const handler = vi.fn()
     const res = await call(
-      webhookV1Route({ write: true, handler: vi.fn() }),
+      webhookV1Route({ write: true, handler }),
       new Request('https://steel.test/api/v1/webhooks/trigger', {
         method: 'POST',
       }),
     )
     expect(res.status).toBe(403)
     const json = await res.json()
+    expect(json.error).toEqual({
+      code: 'API_TOKEN_SCOPE_REQUIRED',
+      details: { requiredScope: 'api:write' },
+    })
     expect(json.message).toContain('api:write')
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('should refuse a read-only token in authorizeWebhookV1 before the rate limit', async () => {
+    const result = await authorizeWebhookV1(new Request('https://steel.test'), {
+      write: true,
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.code).toBe('API_TOKEN_SCOPE_REQUIRED')
+    expect(mocks.consume).not.toHaveBeenCalled()
   })
 
   it('should rate limit per token', async () => {

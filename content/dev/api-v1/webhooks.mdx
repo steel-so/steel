@@ -12,8 +12,8 @@ formato de cada evento no [Catálogo de eventos](/dev/webhooks/eventos).
 
 As rotas de webhooks não dependem de módulo, mas exigem um token pessoal de
 **dono** ou **administrador** do workspace; o workspace é o do token. As
-alterações exigem `api:write`; sem ele, a resposta é `403 FORBIDDEN` ("Este
-token só tem leitura"). Além do limite de cada token, estas rotas contam 100
+alterações exigem `api:write`; sem ele, a resposta é
+`403 API_TOKEN_SCOPE_REQUIRED`, como nas outras rotas da v1. Além do limite de cada token, estas rotas contam 100
 requisições a cada 60 segundos por token.
 
 | Operação | Rota | Escopo | CLI | SDK (`steel.webhooks.`) |

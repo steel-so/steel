@@ -102,7 +102,10 @@ describe('apiV1Route — scope, module and consent', () => {
     )
 
     expect(res.status).toBe(403)
-    expect((await res.json()).error.code).toBe('API_TOKEN_SCOPE_REQUIRED')
+    expect((await res.json()).error).toEqual({
+      code: 'API_TOKEN_SCOPE_REQUIRED',
+      details: { requiredScope: 'api:write' },
+    })
     expect(consent).not.toHaveBeenCalled()
     expect(handler).not.toHaveBeenCalled()
   })
