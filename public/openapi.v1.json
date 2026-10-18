@@ -136,13 +136,19 @@
             }
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_ACCESS_DENIED"
+          },
+          "410": {
+            "$ref": "#/components/responses/410_EXPIRED_TOKEN"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_API_TOKEN_LIMIT_REACHED"
+          },
+          "428": {
+            "$ref": "#/components/responses/428_AUTHORIZATION_PENDING"
           },
           "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
+            "$ref": "#/components/responses/429_RATE_LIMITED_SLOW_DOWN"
           }
         },
         "security": []
@@ -1965,14 +1971,25 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`",
+      "403_FORBIDDEN_MODULE_DISABLED_ACCESS_DENIED": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `ACCESS_DENIED`",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
             },
             "examples": {
+              "ACCESS_DENIED": {
+                "summary": "ACCESS_DENIED — O usuário recusou o login",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "O login foi recusado no navegador.",
+                  "error": {
+                    "code": "ACCESS_DENIED"
+                  }
+                }
+              },
               "FORBIDDEN": {
                 "summary": "FORBIDDEN — O usuário perdeu o acesso ao workspace",
                 "value": {
@@ -2974,6 +2991,29 @@
           }
         }
       },
+      "410_EXPIRED_TOKEN": {
+        "description": "Expirado: `EXPIRED_TOKEN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "EXPIRED_TOKEN": {
+                "summary": "EXPIRED_TOKEN — Código vencido, desconhecido ou já usado",
+                "value": {
+                  "success": false,
+                  "statusCode": 410,
+                  "message": "O código de login expirou ou é inválido. Rode “steel login” de novo.",
+                  "error": {
+                    "code": "EXPIRED_TOKEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_VALIDATION_ERROR": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
@@ -3113,6 +3153,46 @@
           }
         }
       },
+      "422_VALIDATION_ERROR_API_TOKEN_LIMIT_REACHED": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `API_TOKEN_LIMIT_REACHED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "API_TOKEN_LIMIT_REACHED": {
+                "summary": "API_TOKEN_LIMIT_REACHED — O usuário já tem 50 tokens ativos",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "API_TOKEN_LIMIT_REACHED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_VALIDATION_ERROR_SD_CUSTOM_FIELD_INVALID": {
         "description": "Dados inválidos: `VALIDATION_ERROR`, `SD_CUSTOM_FIELD_INVALID`",
         "content": {
@@ -3228,6 +3308,29 @@
           }
         }
       },
+      "428_AUTHORIZATION_PENDING": {
+        "description": "Aguardando confirmação: `AUTHORIZATION_PENDING`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "AUTHORIZATION_PENDING": {
+                "summary": "AUTHORIZATION_PENDING — O usuário ainda não respondeu",
+                "value": {
+                  "success": false,
+                  "statusCode": 428,
+                  "message": "Aguardando a confirmação no navegador.",
+                  "error": {
+                    "code": "AUTHORIZATION_PENDING"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "429_RATE_LIMITED": {
         "description": "Limite de requisições excedido: `RATE_LIMITED`",
         "content": {
@@ -3295,6 +3398,50 @@
                     "details": {
                       "retryAfterSeconds": 30
                     }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "description": "Segundos até a próxima tentativa ser aceita.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "429_RATE_LIMITED_SLOW_DOWN": {
+        "description": "Limite de requisições excedido: `RATE_LIMITED`, `SLOW_DOWN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "examples": {
+              "RATE_LIMITED": {
+                "summary": "RATE_LIMITED — Limite de requisições excedido",
+                "value": {
+                  "success": false,
+                  "statusCode": 429,
+                  "message": "Muitas requisições",
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "details": {
+                      "retryAfterSeconds": 30
+                    }
+                  }
+                }
+              },
+              "SLOW_DOWN": {
+                "summary": "SLOW_DOWN — Consulta antes do intervalo",
+                "value": {
+                  "success": false,
+                  "statusCode": 429,
+                  "error": {
+                    "code": "SLOW_DOWN"
                   }
                 }
               }
@@ -4056,12 +4203,17 @@
           "SD_CONFIG_NOT_FOUND",
           "SD_CUSTOM_FIELD_INVALID",
           "SD_PORTAL_DISABLED",
+          "API_TOKEN_LIMIT_REACHED",
+          "AUTHORIZATION_PENDING",
+          "SLOW_DOWN",
+          "EXPIRED_TOKEN",
+          "ACCESS_DENIED",
           "API_TOKEN_SCOPE_REQUIRED",
           "API_TOKEN_MODULE_NOT_ALLOWED",
           "INTERNAL_SERVER_ERROR",
           "DATABASE_ERROR"
         ],
-        "description": "Código estável do erro. Use o código — não a mensagem — para tratar erros no cliente. Códigos novos podem aparecer.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `RATE_LIMITED` | 429 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |"
+        "description": "Código estável do erro. Use o código — não a mensagem — para tratar erros no cliente. Códigos novos podem aparecer.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `RATE_LIMITED` | 429 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |"
       },
       "ErrorEnvelope": {
         "type": "object",

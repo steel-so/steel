@@ -1,5 +1,4 @@
-import { ERROR_CODES } from '@/src/errors/codes'
-import type { ErrorEntry, ErrorSpec, OpenApiRegistry } from '../../registry'
+import type { OpenApiRegistry } from '../../registry'
 import {
   DeviceAuthorizationDTO,
   DeviceAuthorizationRequestDTO,
@@ -14,14 +13,6 @@ import {
  */
 
 const TAG = 'v1 · Autenticação' as const
-
-/**
- * The device-flow codes are registered by the api-tokens slice; until it
- * lands they are left out instead of failing the generator.
- */
-function known(entries: ErrorSpec[]): ErrorEntry[] {
-  return entries.filter((entry) => entry.code in ERROR_CODES)
-}
 
 export function registerV1AuthPaths(registry: OpenApiRegistry): void {
   registry.registerRoute({
@@ -55,22 +46,20 @@ export function registerV1AuthPaths(registry: OpenApiRegistry): void {
       200: { description: 'Login aprovado: o token.', schema: DeviceTokenDTO },
     },
     errors: [
-      ...known([
-        {
-          code: 'AUTHORIZATION_PENDING' as never,
-          when: 'O usuário ainda não respondeu',
-        },
-        { code: 'SLOW_DOWN' as never, when: 'Consulta antes do intervalo' },
-        {
-          code: 'EXPIRED_TOKEN' as never,
-          when: 'Código vencido, desconhecido ou já usado',
-        },
-        { code: 'ACCESS_DENIED' as never, when: 'O usuário recusou o login' },
-        {
-          code: 'API_TOKEN_LIMIT_REACHED' as never,
-          when: 'O usuário já tem 50 tokens ativos',
-        },
-      ]),
+      {
+        code: 'AUTHORIZATION_PENDING',
+        when: 'O usuário ainda não respondeu',
+      },
+      { code: 'SLOW_DOWN', when: 'Consulta antes do intervalo' },
+      {
+        code: 'EXPIRED_TOKEN',
+        when: 'Código vencido, desconhecido ou já usado',
+      },
+      { code: 'ACCESS_DENIED', when: 'O usuário recusou o login' },
+      {
+        code: 'API_TOKEN_LIMIT_REACHED',
+        when: 'O usuário já tem 50 tokens ativos',
+      },
       { code: 'FORBIDDEN', when: 'O usuário perdeu o acesso ao workspace' },
       'MODULE_DISABLED',
     ],

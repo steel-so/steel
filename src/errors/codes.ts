@@ -942,6 +942,19 @@ export const ERROR_CODES = {
     code: 'MCP_IDEMPOTENCY_KEY_REUSED',
     status: 422,
   },
+  // Personal API tokens (ADR 0035): unknown, revoked or someone else's
+  // token, and the cap of active tokens per user.
+  API_TOKEN_NOT_FOUND: { code: 'API_TOKEN_NOT_FOUND', status: 404 },
+  API_TOKEN_LIMIT_REACHED: { code: 'API_TOKEN_LIMIT_REACHED', status: 422 },
+  // Device flow of the CLI (ADR 0035, RFC 8628 errors as HTTP statuses —
+  // docs/cli/README.md): the user has not answered yet, the CLI polls too
+  // fast, the code expired (or never existed) and the user refused.
+  AUTHORIZATION_PENDING: { code: 'AUTHORIZATION_PENDING', status: 428 },
+  SLOW_DOWN: { code: 'SLOW_DOWN', status: 429 },
+  EXPIRED_TOKEN: { code: 'EXPIRED_TOKEN', status: 410 },
+  ACCESS_DENIED: { code: 'ACCESS_DENIED', status: 403 },
+  // The code typed on /device is unknown, expired or already answered.
+  DEVICE_CODE_INVALID: { code: 'DEVICE_CODE_INVALID', status: 404 },
   // Public API v1 (ADR 0035): a write with a read-only personal token, and a
   // module route the token was not created for.
   API_TOKEN_SCOPE_REQUIRED: { code: 'API_TOKEN_SCOPE_REQUIRED', status: 403 },

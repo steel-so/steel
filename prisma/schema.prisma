@@ -219,6 +219,7 @@ model User {
   oauthAccessTokens         OauthAccessToken[]
   oauthConsents             OauthConsent[]
   integrationGrants         IntegrationGrant[]
+  apiTokens                 ApiToken[]
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -570,6 +571,7 @@ model Workspace {
   sites                     Site[]
   canvasCollabStates        CanvasCollabState[]
   integrationGrants         IntegrationGrant[]
+  apiTokens                 ApiToken[]
 
   @@index([status])
   @@map("workspaces")
@@ -8209,4 +8211,41 @@ model IntegrationGrant {
   @@index([workspaceId, revokedAt])
   @@index([clientId])
   @@map("integration_grants")
+}
+
+/// How a personal API token was issued (ADR 0035).
+enum ApiTokenCreatedVia {
+  SETTINGS
+  DEVICE
+}
+
+/// Personal API token (`stl_pat_...`) of the public API v1 (ADR 0035): one
+/// user, one workspace, scopes and modules. Only the SHA-256 of the value is
+/// stored; the value itself is shown once, at creation.
+model ApiToken {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  workspaceId String             @map("workspace_id")
+  name        String
+  tokenHash   String             @unique @map("token_hash")
+  /// First 8 characters after `stl_pat_`, for display (`stl_pat_abcd1234…`).
+  prefix      String
+  scopes      String[]
+  modules     ModuleKind[]
+  expiresAt   DateTime           @map("expires_at")
+  /// Written at most once per minute.
+  lastUsedAt  DateTime?          @map("last_used_at")
+  revokedAt   DateTime?          @map("revoked_at")
+  createdVia  ApiTokenCreatedVia @default(SETTINGS) @map("created_via")
+  /// Machine name the CLI sent on the device flow.
+  deviceName  String?            @map("device_name")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([workspaceId, revokedAt])
+  @@map("api_tokens")
 }

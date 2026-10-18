@@ -182,6 +182,26 @@ describe('/api/v1 with a personal token', () => {
     expect((await listed.json()).data).toHaveLength(1)
   })
 
+  it('answers 401 to GET /api/v1/me once the token is revoked', async (ctx) => {
+    const { user, workspace } = await authenticatedOwner()
+    const token = await issueToken(
+      user.cookie,
+      workspace.id,
+      ['api:read'],
+      ['CRM'],
+    )
+    if (!token) return ctx.skip()
+
+    expect((await v1('/api/v1/me', { token })).status).toBe(200)
+
+    const revoked = await v1('/api/v1/auth/token', { method: 'DELETE', token })
+    expect(revoked.status).toBe(204)
+
+    const after = await v1('/api/v1/me', { token })
+    expect(after.status).toBe(401)
+    expect((await after.json()).error.code).toBe('UNAUTHORIZED')
+  })
+
   it('imports leads from a CSV body', async (ctx) => {
     const { user, workspace } = await authenticatedOwner()
     const token = await issueToken(

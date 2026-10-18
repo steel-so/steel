@@ -307,6 +307,13 @@ type AuditAuthEvent =
   | 'auth.oauth_consent.granted'
   | 'auth.oauth_consent.denied'
   | 'auth.integration_grant.revoked'
+  // Personal API tokens (ADR 0035): created in Ajustes or by the CLI device
+  // flow, revoked by the holder or a workspace admin, and the answer the user
+  // gave on /device.
+  | 'auth.api_token.created'
+  | 'auth.api_token.revoked'
+  | 'auth.device_authorization.approved'
+  | 'auth.device_authorization.denied'
 
 interface AuditMutationInput {
   entity: AuditEntity
