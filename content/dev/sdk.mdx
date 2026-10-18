@@ -1,0 +1,437 @@
+---
+title: '@steel-so/sdk'
+description: O SDK TypeScript da API pública v1. Instale, crie o cliente, faça chamadas tipadas, percorra páginas, trate erros sem exceção, faça o login por dispositivo e confira webhooks.
+section: ferramentas
+order: 4
+---
+
+O `@steel-so/sdk` é o SDK TypeScript da [API pública v1](/dev/api-v1). Os tipos
+são gerados do documento OpenAPI da v1 (`/dev/api/v1/openapi.json`), então o
+editor completa rotas, parâmetros e campos de resposta. É o mesmo SDK que o
+[Steel CLI](/dev/cli) usa.
+
+O código fica em
+[steel-so/steel-cli](https://github.com/steel-so/steel-cli/tree/main/packages/sdk),
+na pasta `packages/sdk`. A versão atual é a **0.1.0**.
+
+## Instale
+
+```bash
+npm install @steel-so/sdk
+# ou: pnpm add @steel-so/sdk  /  yarn add @steel-so/sdk
+```
+
+- **Node.js 22.12 ou mais novo.** O pacote é ESM.
+- **Só no servidor.** O token dá acesso ao workspace em seu nome; não coloque
+  no navegador nem num aplicativo móvel. A API também não libera chamadas de
+  outros domínios pelo navegador (CORS).
+- A única dependência é o [`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/).
+
+## Crie o cliente
+
+Você precisa de um token pessoal (`stl_pat_…`), criado em **Ajustes › Segurança
+› Tokens de API** ou pelo `steel login`. Veja
+[Token pessoal](/dev/api-v1#token-pessoal).
+
+```ts
+import { createSteelClient } from '@steel-so/sdk'
+
+const steel = createSteelClient({
+  baseUrl: 'https://homologacao.stratustelecom.com.br',
+  token: process.env.STEEL_TOKEN,
+})
+
+const me = await steel.me()
+if (!me.ok) throw new Error(`${me.error.status} ${me.error.code}`)
+console.log(me.data.user.name, me.data.workspace.slug, me.data.scopes)
+```
+
+| Opção | Padrão | Para quê |
+| --- | --- | --- |
+| `baseUrl` | (obrigatória) | O endereço do Steel, sem `/api` |
+| `token` | nenhum | O token pessoal. Só o login por dispositivo funciona sem ele |
+| `timeoutMs` | `30000` | Tempo máximo de cada requisição, em milissegundos |
+| `fetch` | `globalThis.fetch` | Outra implementação de `fetch` (testes, proxy) |
+| `userAgent` | nenhum | Cabeçalho `User-Agent` das requisições |
+
+## O resultado: sem exceção
+
+O SDK não lança exceção em erro HTTP nem de rede. Toda chamada resolve num
+`SteelResult`, com `ok` para separar os dois casos:
+
+```ts
+type SteelResult<T> =
+  | { ok: true; status: number; data: T }
+  | { ok: false; error: SteelError }
+
+interface SteelError {
+  status: number             // status HTTP, ou 0 quando não houve resposta
+  code: string               // error.code do Steel, ou NETWORK_ERROR, TIMEOUT, ABORTED
+  message?: string           // mensagem para pessoas (pt-BR); pode mudar
+  details?: unknown          // em VALIDATION_ERROR, os problemas de cada campo
+  retryAfterSeconds?: number // do cabeçalho Retry-After, quando vem
+}
+```
+
+`data` já é o conteúdo do envelope (`{ success, statusCode, data }`), sem o
+envelope. Trate os erros pelo `code`:
+
+```ts
+const created = await steel.crm.leads.create({
+  name: 'Ana Souza',
+  emails: ['ana@exemplo.com'],
+  source: 'site',
+})
+
+if (!created.ok) {
+  switch (created.error.code) {
+    case 'CRM_LEAD_DUPLICATE':
+      break // já existe um lead em aberto com esse e-mail ou telefone
+    case 'API_TOKEN_SCOPE_REQUIRED':
+      throw new Error('O token é só leitura: crie um com api:write')
+    case 'RATE_LIMITED':
+      await new Promise((r) => setTimeout(r, (created.error.retryAfterSeconds ?? 60) * 1000))
+      break
+    default:
+      throw new Error(`${created.error.status} ${created.error.code}: ${created.error.message ?? ''}`)
+  }
+} else {
+  console.log(created.status, created.data.id, created.data.score, created.data.ownerId)
+}
+```
+
+Os códigos que a v1 pode responder estão no tipo `ErrorCode` e em
+[Formato de resposta e erros](/dev/respostas-e-erros). Os mais comuns:
+
+| Status | Código | O que significa |
+| --- | --- | --- |
+| `0` | `NETWORK_ERROR`, `TIMEOUT`, `ABORTED` | Não houve resposta: rede, tempo esgotado ou `AbortSignal` |
+| `401` | `UNAUTHORIZED` | Token ausente, inválido, vencido ou revogado, ou o dono saiu do workspace |
+| `403` | `API_TOKEN_SCOPE_REQUIRED` | Escrita com um token só de leitura |
+| `403` | `API_TOKEN_MODULE_NOT_ALLOWED` | Rota de um módulo que o token não tem, ou que foi desabilitado |
+| `403` | `FORBIDDEN` | O seu papel não permite, ou falta aceitar os termos no Steel |
+| `404` | `RESOURCE_NOT_FOUND`, `SD_TICKET_NOT_FOUND`… | O registro não existe ou você não o vê |
+| `409` | `CRM_LEAD_DUPLICATE` | Já existe um lead em aberto com o mesmo e-mail ou telefone |
+| `422` | `VALIDATION_ERROR` | Corpo ou parâmetro inválido; veja `details` |
+| `429` | `RATE_LIMITED` | Limite de requisições; espere `retryAfterSeconds` |
+
+## Atalhos por módulo
+
+Cada módulo tem métodos tipados. Os nomes dos campos são os da
+[referência da API v1](/dev/api/v1).
+
+### ServiceDesk
+
+```ts
+const queue = await steel.servicedesk.tickets.list({
+  assigneeId: ['me'],
+  status: ['NEW', 'IN_PROGRESS', 'WAITING'],
+  limit: 50,
+})
+
+const ticket = await steel.servicedesk.tickets.create({
+  type: 'INCIDENT',
+  title: 'VPN fora do ar',
+  description: '<p>Usuários da filial sem acesso desde 9h.</p>',
+})
+if (ticket.ok) {
+  await steel.servicedesk.tickets.comment(ticket.data.id, {
+    body: 'Já estamos olhando',
+    visibility: 'INTERNAL',
+  })
+}
+
+await steel.servicedesk.tickets.get('42')            // pelo id ou pelo número
+await steel.servicedesk.tickets.move('42', { phaseId: '<id-da-fase>', solution: 'Link restabelecido' })
+await steel.servicedesk.catalog({ ticketType: 'SERVICE_REQUEST' })
+```
+
+`tickets.create` exige `type` e `title`. Um chamado criado pela API fica com o
+canal `API`, e passa pelas mesmas regras da abertura no aplicativo (modelo,
+prioridade, roteamento, SLA e automações). Mover de fase é só para agentes e
+respeita transições, requisitos, aprovações e assinatura.
+
+### CRM
+
+```ts
+await steel.crm.leads.list({ stage: 'QUALIFIED' })
+await steel.crm.leads.create({ name: 'Ana Souza', emails: ['ana@exemplo.com'], source: 'site' })
+
+import { readFile } from 'node:fs/promises'
+const report = await steel.crm.leads.import(await readFile('leads.csv', 'utf8'), { source: 'Feira' })
+if (report.ok) console.log(report.data.created, report.data.skipped, report.data.errors)
+
+const pipelines = await steel.crm.pipelines()
+await steel.crm.opportunities.list({ pipelineId: '<id-do-funil>' })
+await steel.crm.opportunities.move('<id-da-oportunidade>', { stageId: '<id-da-etapa>' })
+```
+
+`leads.create` exige `name`, `source` e ao menos um e-mail ou telefone.
+`leads.import` envia o CSV como está (`text/csv`, até 5.000 linhas); o formato
+está em [Importar leads de um CSV](/dev/api-v1#importar-leads-de-um-csv).
+
+### Comunicação (WhatsApp)
+
+```ts
+const templates = await steel.whatsapp.templates({ status: 'APPROVED' })
+
+const sent = await steel.whatsapp.sendTemplate({
+  to: '+5511999990000',
+  templateName: 'boas_vindas',
+  language: 'pt_BR',
+  components: [{ type: 'body', parameters: [{ type: 'text', text: 'Ana' }] }],
+})
+if (sent.ok) console.log(sent.data.id, sent.data.status) // PENDING, SENT…
+
+await steel.whatsapp.broadcast('<id-do-disparo>')
+```
+
+Em vez de `to`, informe `conversationId`, ou `contactId` com `connectionId`.
+Sem `connectionId`, o envio usa a única conexão do workspace. Só conexões da
+Meta enviam template, e cada envio consome o limite mensal de mensagens do
+módulo e o de 20 por minuto da conexão.
+
+## Percorra todas as páginas
+
+Toda lista da v1 pagina por cursor: `limit` (padrão 25, máximo 100) e `cursor`,
+com `data.items` e `data.nextCursor` (`null` na última página). O `collectAll`
+busca página por página até o fim e para no primeiro erro:
+
+```ts
+import { collectAll } from '@steel-so/sdk'
+
+const all = await collectAll((cursor) =>
+  steel.crm.leads.list({ limit: 100, cursor }),
+)
+if (all.ok) console.log(`${all.data.items.length} leads`)
+```
+
+Numa lista muito grande, prefira percorrer você mesmo e processar cada página
+ao chegar, para não guardar tudo na memória:
+
+```ts
+let cursor: string | undefined
+do {
+  const page = await steel.servicedesk.tickets.list({ limit: 100, cursor })
+  if (!page.ok) throw new Error(page.error.code)
+  for (const ticket of page.data.items) console.log(ticket.code, ticket.title)
+  cursor = page.data.nextCursor ?? undefined
+} while (cursor)
+```
+
+## Qualquer rota, tipada: `steel.api`
+
+`steel.api` é um cliente
+[`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/) sobre o documento
+inteiro da v1, já com o token. Use-o para uma rota que ainda não tem atalho. Ele
+devolve `{ data, error, response }`, onde `data` é o **envelope** completo:
+
+```ts
+const { data, error, response } = await steel.api.GET('/api/v1/crm/leads', {
+  params: { query: { limit: 10, stage: 'RECEIVED' } },
+})
+if (data) console.log(data.data?.items.length)
+else console.error(response.status, error)
+```
+
+Para uma chamada sem tipos (como faz o `steel api`), há
+`steel.request({ method, path, query, body })`. Ele só devolve `ok: false` em
+falha de rede; um erro HTTP vem em `data`, com `status`, `ok`, `headers` e o
+`body` já lido.
+
+## Login por dispositivo
+
+Para um app de linha de comando seu, o SDK traz o mesmo login do
+`steel login`: o usuário confirma um código em `/device` e o seu app recebe um
+token pessoal.
+
+```ts
+import { createSteelClient, waitForDeviceToken } from '@steel-so/sdk'
+import { hostname } from 'node:os'
+
+const steel = createSteelClient({ baseUrl: 'https://homologacao.stratustelecom.com.br' })
+
+const started = await steel.auth.startDevice({
+  clientName: 'meu-script/1.0',
+  deviceName: hostname(),
+})
+if (!started.ok) throw new Error(started.error.code)
+
+console.log(`Abra ${started.data.verificationUriComplete} e confirme o código ${started.data.userCode}`)
+
+const abort = new AbortController()
+process.once('SIGINT', () => abort.abort())
+
+const outcome = await waitForDeviceToken(steel, started.data, { signal: abort.signal })
+switch (outcome.status) {
+  case 'approved':
+    // outcome.token: { token, tokenId, expiresAt, workspace, scopes, modules }
+    console.log(`Conectado a ${outcome.token.workspace.name}`)
+    break
+  case 'expired':   // passaram os 10 minutos
+  case 'denied':    // o usuário clicou em Recusar
+  case 'cancelled': // o AbortSignal disparou
+    process.exitCode = 3
+    break
+  case 'error':
+    throw new Error(outcome.error.code)
+}
+```
+
+- `startDevice` não usa token. `deviceName` dá nome ao token
+  (`Steel CLI — <deviceName>`); `clientName` vai só para a auditoria.
+- O código vale 10 minutos (`expiresIn: 600`) e o intervalo começa em 5
+  segundos (`interval`). `waitForDeviceToken` espera o intervalo entre as
+  consultas, soma 5 segundos a cada `SLOW_DOWN` e tolera 3 falhas de rede
+  seguidas (`maxNetworkFailures`). `onPending` é chamado a cada consulta ainda
+  pendente.
+- O token aprovado aparece **uma vez só**: guarde-o num lugar seguro. Para
+  revogar o token com que o cliente foi criado, use
+  `steel.auth.revokeToken()` (`DELETE /api/v1/auth/token`, `204`).
+- O início é limitado a 10 por IP a cada 10 minutos, e as consultas a 120 por
+  minuto.
+
+## Confira a assinatura de um webhook
+
+`verifySignature` confere uma entrega dos
+[webhooks que o Steel envia](/dev/webhooks#webhooks-que-o-steel-envia). Passe o
+segredo do endpoint (`whsec_…`), os cabeçalhos `Steel-Signature` e
+`Steel-Webhook-Timestamp` e o **corpo bruto**, exatamente como chegou, antes de
+qualquer `JSON.parse`:
+
+```ts
+// Next.js: app/api/webhooks/steel/route.ts
+import { verifySignature } from '@steel-so/sdk'
+
+export async function POST(request: Request) {
+  const rawBody = await request.text()
+  const valid = verifySignature(
+    process.env.STEEL_WEBHOOK_SECRET ?? '',
+    request.headers.get('steel-signature'),
+    request.headers.get('steel-webhook-timestamp'),
+    rawBody,
+  )
+  if (!valid) return new Response('assinatura inválida', { status: 401 })
+
+  const event = JSON.parse(rawBody) as { id: string; type: string; createdAt: string; data: unknown }
+  // Use event.id (o mesmo Steel-Webhook-Id em todas as tentativas) para não processar duas vezes.
+  return new Response(null, { status: 204 })
+}
+```
+
+```ts
+// Express: o corpo precisa chegar cru, sem express.json() antes
+import express from 'express'
+import { verifySignature } from '@steel-so/sdk'
+
+const app = express()
+app.post('/webhooks/steel', express.raw({ type: 'application/json' }), (req, res) => {
+  const rawBody = req.body.toString('utf8')
+  const ok = verifySignature(
+    process.env.STEEL_WEBHOOK_SECRET ?? '',
+    req.get('steel-signature'),
+    req.get('steel-webhook-timestamp'),
+    rawBody,
+  )
+  if (!ok) return res.status(401).send('assinatura inválida')
+  res.sendStatus(204)
+})
+```
+
+- A assinatura é `v1=<hex do HMAC-SHA256 de "<timestamp>.<corpo>">`, com o
+  segredo do endpoint usado como texto.
+- A comparação é em tempo constante. O cabeçalho pode trazer várias
+  assinaturas separadas por vírgula, durante uma troca de segredo; basta uma
+  conferir.
+- Timestamps a mais de 5 minutos do relógio do seu servidor são recusados.
+  Ajuste com `{ toleranceSeconds }` no quinto argumento (`0` desliga a
+  conferência) e mantenha o relógio do servidor sincronizado.
+- Devolve `false` (nunca lança exceção) para segredo vazio, cabeçalho ausente,
+  timestamp que não é um número inteiro ou assinatura que não confere.
+
+Para testes do seu receptor, `signPayload(secret, timestamp, body)` gera o
+`v1=…` que o Steel enviaria, e `WEBHOOK_HEADERS` traz os nomes dos três
+cabeçalhos:
+
+```ts
+import { signPayload, WEBHOOK_HEADERS } from '@steel-so/sdk'
+
+const body = JSON.stringify({ id: 'evt_teste', type: 'crm.lead.created', createdAt: new Date().toISOString(), workspaceId: 'ws', data: {} })
+const timestamp = Math.floor(Date.now() / 1000)
+await fetch('http://localhost:3001/api/webhooks/steel', {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    [WEBHOOK_HEADERS.id]: 'evt_teste',
+    [WEBHOOK_HEADERS.timestamp]: String(timestamp),
+    [WEBHOOK_HEADERS.signature]: signPayload('whsec_teste', timestamp, body),
+  },
+  body,
+})
+```
+
+Para receber eventos de verdade na sua máquina, use o
+[`steel listen`](/dev/cli/webhooks).
+
+## Endpoints, entregas e a escuta
+
+`steel.webhooks` cobre o resto dos webhooks pela API v1. Todas as chamadas são
+para o dono e os administradores do workspace:
+
+| Método | Faz |
+| --- | --- |
+| `events()` | O catálogo de eventos que o token alcança |
+| `listEndpoints()`, `createEndpoint(body)`, `updateEndpoint(id, body)`, `deleteEndpoint(id)` | Endpoints. O segredo só vem na resposta de `createEndpoint` |
+| `testEndpoint(id)` | Envia um `steel.ping` e devolve a entrega |
+| `listDeliveries({ endpointId, status, limit, cursor })`, `retryDelivery(id)` | O log de entregas (30 dias) e o reenvio |
+| `trigger({ type, endpointId })` | Um evento de teste com os dados de exemplo |
+| `listen({ events, signal })` | A escuta em tempo real (Server-Sent Events) |
+
+```ts
+const opened = await steel.webhooks.listen({ events: ['crm.lead.created'] })
+if (!opened.ok) throw new Error(opened.error.code) // 401, 403, tipo fora do catálogo
+
+for await (const message of opened.data) {
+  if (message.type === 'ready') console.log('segredo da escuta:', message.ready.secret)
+  if (message.type === 'webhook') console.log(message.event?.type, message.frame.id)
+  if (message.type === 'disconnected') console.log('fim:', message.reason) // end, idle, aborted, network
+}
+```
+
+A escuta é uma conexão só: depois de `disconnected`, reconectar é com você. Sem
+nenhum byte por 60 segundos (o servidor manda um sinal a cada 25), a conexão é
+dada como morta (`idle`); ajuste com `idleTimeoutMs`.
+
+## O que mais o pacote exporta
+
+- **Tipos dos modelos:** `Me`, `SdTicket`, `SdTicketCreate`, `CrmLead`,
+  `CrmLeadCreate`, `CrmOpportunity`, `CrmPipeline`, `WhatsAppTemplate`,
+  `WhatsAppTemplateSend`, `WebhookEndpoint`, `WebhookDelivery`,
+  `WebhookEvent`, `Page<T>`, `ErrorCode` e os outros, e `paths` e
+  `components`, os tipos crus do documento OpenAPI.
+- **Utilitários:** `errorFromResponse` e `toNetworkError` (o que o SDK usa
+  para montar um `SteelError`), `parseSse` (o leitor de Server-Sent Events da
+  escuta), `DEFAULT_TOLERANCE_SECONDS` (300), `SIGNATURE_VERSION` (`v1`) e
+  `DEFAULT_LISTEN_IDLE_TIMEOUT_MS` (60000).
+
+## Limites e versões
+
+- As chamadas contam nos limites da API v1: 300 a cada 60 segundos por token,
+  e o limite do usuário dono do token. Veja [Limites de requisição](/dev/limites).
+- Os tipos do SDK são gerados do documento da v1, que segue a
+  [política de estabilidade](/dev/api-v1#estabilidade-e-depreciação): campos
+  novos podem aparecer, e nada some nem muda de tipo sem aviso no
+  [changelog](/dev/changelog). Uma versão nova do SDK traz os campos novos
+  nos tipos.
+- Para fixar a versão no seu projeto, use `npm install @steel-so/sdk@0.1.0`.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| Erro de tipo em `process.env.STEEL_TOKEN` | `token` aceita `undefined`, mas `verifySignature` exige `string`: passe `process.env.STEEL_WEBHOOK_SECRET ?? ''` |
+| `UNAUTHORIZED` em toda chamada | O token venceu, foi revogado ou é de outro ambiente. Confira com `steel.me()` |
+| `API_TOKEN_MODULE_NOT_ALLOWED` | Crie um token que inclua o módulo da rota |
+| `verifySignature` sempre `false` | O corpo foi lido como JSON e serializado de novo, o segredo é de outro endpoint (ou da escuta) ou o relógio do servidor está fora de hora |
+| `TIMEOUT` em chamadas longas | Aumente `timeoutMs` no `createSteelClient` |
+| `data` vem `undefined` em `steel.api.GET` | Houve erro: leia `error` e `response.status`, ou use os atalhos, que já devolvem `SteelResult` |
