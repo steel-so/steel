@@ -3,6 +3,7 @@
  * the backend, the `/ai` chat screen and, later, Steel Agents.
  */
 
+import type { AiCitationDTO } from './ai-knowledge'
 import type { AiMemoryRefDTO } from './ai-memory'
 
 /**
@@ -48,6 +49,8 @@ export interface AiToolCallDTO {
   memory?: AiMemoryRefDTO
   /** Teste mode: the write that would have run (nothing was changed). */
   simulation?: AiSimulatedActionDTO
+  /** `steel_search` only: the sources found, linked under the answer. */
+  citations?: AiCitationDTO[]
 }
 
 /** A write simulated in Teste mode, built from the tool's preview. */

@@ -10,6 +10,7 @@ import {
 const row = {
   id: 'default',
   costMargin: new Prisma.Decimal('1.5'),
+  embeddingsEnabled: true,
   updatedById: 'a',
   createdAt: new Date('2026-10-01T00:00:00Z'),
   updatedAt: new Date('2026-10-06T00:00:00Z'),

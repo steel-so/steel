@@ -12,6 +12,7 @@ import type {
   AiToolCallDTO,
 } from '@/types/steel-ai'
 import { SteelAiMessageAttachments } from './steel-ai-attachments'
+import { citationsOf, SteelAiCitations } from './steel-ai-citations'
 import { SteelAiExecutedActionCard } from './steel-ai-executed-action-card'
 import { SteelAiMarkdown } from './steel-ai-markdown'
 import { SteelAiMemoryChip } from './steel-ai-memory-chip'
@@ -88,6 +89,7 @@ function AssistantBlock({
   )
   const simulatedIds = new Set(simulated.map((call) => call.id))
   const chips = toolCalls.filter((call) => !simulatedIds.has(call.id))
+  const citations = citationsOf(toolCalls)
   return (
     <div className='flex min-w-0 gap-3'>
       <span
@@ -137,6 +139,9 @@ function AssistantBlock({
               />
             ) : null}
           </div>
+        ) : null}
+        {citations.length > 0 && !streaming ? (
+          <SteelAiCitations citations={citations} />
         ) : null}
         {simulated.map((call) => (
           <SteelAiSimulatedActionCard key={call.id} call={call} />

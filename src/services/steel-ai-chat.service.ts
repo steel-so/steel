@@ -18,6 +18,10 @@ import {
   resolveSkillInvocation,
   skillsCatalogForPrompt,
 } from '@/src/lib/ai/context/skills'
+import {
+  readCitations,
+  STEEL_SEARCH_TOOL_NAME,
+} from '@/src/lib/ai/knowledge/citations'
 import { AI_PROVIDER_LABELS, findAiModel } from '@/src/lib/ai/models'
 import { addAiUsage, currentPeriodStart } from '@/src/lib/ai/quota'
 import {
@@ -319,6 +323,7 @@ async function* runTurn(
     let proposed = false
     let memory: AiToolCallDTO['memory']
     let simulation: AiToolCallDTO['simulation']
+    let citations: AiToolCallDTO['citations']
     // Teste: every write — memory included — is simulated here, on the
     // server; `execute` is never reached for it.
     const simulated =
@@ -377,6 +382,10 @@ async function* runTurn(
       content = run.content
       status = run.ok ? 'done' : 'error'
       summary = run.ok ? run.output.summary : run.error.message
+      if (run.ok && tool.name === STEEL_SEARCH_TOOL_NAME) {
+        const found = readCitations(run.output.data)
+        if (found.length > 0) citations = found
+      }
     } else if (input.mode === 'AUTOPILOT') {
       toolModules.push(tool.module)
       const executed = await executeAutopilotWrite(
@@ -441,6 +450,7 @@ async function* runTurn(
       summary,
       ...(memory && { memory }),
       ...(simulation && { simulation }),
+      ...(citations && { citations }),
     }
     toolCalls.push(finished)
     yield { type: 'tool.end', call: finished }

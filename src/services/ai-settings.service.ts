@@ -12,6 +12,7 @@ import {
   findAiModel,
   isAiProviderConfigured,
 } from '@/src/lib/ai'
+import { onWorkspaceAiSwitch } from '@/src/lib/ai/knowledge/index-hooks'
 import { currentPeriodStart } from '@/src/lib/ai/quota'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
@@ -234,6 +235,10 @@ export const AiSettingsService = {
         ).filter((key) => current.value[key] !== next[key]),
       },
     })
+    // Knowledge index (ADR 0037): off purges it, on rebuilds it.
+    if (current.value.aiEnabled !== next.aiEnabled) {
+      void onWorkspaceAiSwitch(workspaceId, next.aiEnabled)
+    }
 
     return buildDTO(
       actorId,

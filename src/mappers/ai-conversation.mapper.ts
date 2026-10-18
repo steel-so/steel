@@ -6,6 +6,10 @@ import type {
   ModuleKind,
 } from '@prisma/client'
 import { readMemoryRef } from '@/src/lib/ai/context/memory-tool-names'
+import {
+  readCitations,
+  STEEL_SEARCH_TOOL_NAME,
+} from '@/src/lib/ai/knowledge/citations'
 import { storedToolCalls } from '@/src/lib/ai/steel-ai-history'
 import { readSimulation } from '@/src/lib/ai/tools/simulation'
 import {
@@ -170,6 +174,10 @@ export function toAiMessageDTOs(
       if (memory) call.memory = memory
       const simulation = readSimulation(payload)
       if (simulation) call.simulation = simulation
+      if (call.name === STEEL_SEARCH_TOOL_NAME && payload.status === 'done') {
+        const citations = readCitations(payload.data)
+        if (citations.length > 0) call.citations = citations
+      }
     }
   }
 

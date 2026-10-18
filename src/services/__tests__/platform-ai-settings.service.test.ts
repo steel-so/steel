@@ -33,6 +33,7 @@ function row(margin: string): PlatformAiSettings {
   return {
     id: 'default',
     costMargin: new Prisma.Decimal(margin),
+    embeddingsEnabled: true,
     updatedById: 'admin1',
     createdAt: new Date('2026-10-01T00:00:00Z'),
     updatedAt: new Date('2026-10-06T12:00:00Z'),

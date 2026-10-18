@@ -1,6 +1,7 @@
 import { logger } from '@/lib/axiom/logger'
 import { TRIAL_EXPIRY_CRON } from '@/src/config/trial'
 import {
+  AiIndexJob,
   AiUsageWeeklyEmailJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
@@ -33,6 +34,7 @@ import {
   WorkspaceIntegrationsJob,
 } from './jobs'
 import {
+  getAiIndexQueue,
   getAiUsageWeeklyEmailQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
@@ -65,6 +67,7 @@ import {
   getWorkspaceIntegrationsQueue,
 } from './queues'
 import {
+  AiIndexReindexCron,
   AiUsageWeeklyEmailCron,
   CommunicationWaitingCron,
   CrmCampaignsTickCron,
@@ -596,6 +599,21 @@ export async function scheduleSitePostsJobs(): Promise<void> {
   logger.info('queue.scheduler.site_posts_registered', {
     component: 'Worker',
     pattern: SitePostsPublishCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleAiIndexJobs(): Promise<void> {
+  const queue = getAiIndexQueue()
+  await queue.upsertJobScheduler(
+    AiIndexJob.ReindexAll,
+    { pattern: AiIndexReindexCron, tz: RetentionTimezone },
+    { name: AiIndexJob.ReindexAll, data: {} },
+  )
+
+  logger.info('queue.scheduler.ai_index_registered', {
+    component: 'Worker',
+    pattern: AiIndexReindexCron,
     timezone: RetentionTimezone,
   })
 }

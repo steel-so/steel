@@ -30,6 +30,17 @@ vi.mock('@/src/lib/search/index-hooks', () => ({
   removeSearchDocument: vi.fn(async () => undefined),
 }))
 
+// Steel AI knowledge index hooks (fire-and-forget after writes, ADR 0037):
+// no-op in unit tests; `ai-knowledge-index-hooks.test.ts` un-mocks them.
+vi.mock('@/src/lib/ai/knowledge/index-hooks', () => ({
+  KNOWLEDGE_INDEX_DEBOUNCE_MS: 30_000,
+  knowledgeSourceOfSearchEntity: vi.fn(() => null),
+  scheduleKnowledgeIndex: vi.fn(async () => undefined),
+  scheduleKnowledgeReindex: vi.fn(async () => undefined),
+  removeKnowledgeSource: vi.fn(async () => undefined),
+  onWorkspaceAiSwitch: vi.fn(async () => undefined),
+}))
+
 // Equipes (Comunicação): the conversation visibility reads the team snapshot
 // through Redis. Unit default = cache miss + a workspace without teams;
 // `whatsapp-team*.test.ts` drive these mocks to exercise the rule.

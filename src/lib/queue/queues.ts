@@ -3,6 +3,8 @@ import { getQueueConnection } from './connection'
 import {
   type AccountLifecycleJob,
   type AccountLifecycleJobPayload,
+  type AiIndexJob,
+  type AiIndexJobPayload,
   type AiUsageWeeklyEmailJob,
   type AiUsageWeeklyEmailJobPayload,
   type ChangelogJob,
@@ -135,6 +137,7 @@ let aiUsageWeeklyEmailQueue: Queue | null = null
 let workspaceExportQueue: Queue | null = null
 let workspaceIntegrationsQueue: Queue | null = null
 let webhooksDeliveryQueue: Queue | null = null
+let aiIndexQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 
@@ -803,6 +806,7 @@ export async function closeQueues(): Promise<void> {
     workspaceExportQueue?.close(),
     workspaceIntegrationsQueue?.close(),
     webhooksDeliveryQueue?.close(),
+    aiIndexQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -841,6 +845,7 @@ export async function closeQueues(): Promise<void> {
   workspaceExportQueue = null
   workspaceIntegrationsQueue = null
   webhooksDeliveryQueue = null
+  aiIndexQueue = null
 }
 
 export function getCrmTaskRemindersQueue(): Queue<
@@ -1104,9 +1109,36 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WhatsappButtonActions]: getWhatsappButtonActionsQueue,
   [QueueName.SitePosts]: getSitePostsQueue,
   [QueueName.WebhooksDelivery]: getWebhooksDeliveryQueue,
+  [QueueName.AiIndex]: getAiIndexQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
 export function getQueueByName(name: QueueName): Queue {
   return QUEUE_GETTERS[name]() as Queue
+}
+
+/**
+ * Steel AI knowledge index (ADR 0037). Finished jobs are removed at once:
+ * the debounce (`deduplication`) must never find an old completed job.
+ */
+export function getAiIndexQueue(): Queue<
+  AiIndexJobPayload[AiIndexJob],
+  unknown,
+  AiIndexJob
+> {
+  if (!aiIndexQueue) {
+    aiIndexQueue = new Queue(QueueName.AiIndex, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        ...defaultJobOptions,
+        removeOnComplete: true,
+        removeOnFail: { age: 60 * 60 * 24 * 7, count: 1000 },
+      },
+    })
+  }
+  return aiIndexQueue as Queue<
+    AiIndexJobPayload[AiIndexJob],
+    unknown,
+    AiIndexJob
+  >
 }

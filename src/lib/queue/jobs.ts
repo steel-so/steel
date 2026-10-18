@@ -41,6 +41,7 @@ export const QueueName = {
   WhatsappButtonActions: 'whatsapp-button-actions',
   SitePosts: 'site-posts',
   WebhooksDelivery: 'webhooks-delivery',
+  AiIndex: 'ai-index',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -803,4 +804,34 @@ export type WebhooksDeliveryJobPayload = {
     /** Manual re-delivery: also sent to a disabled endpoint. */
     manual?: boolean
   }
+}
+
+/**
+ * Steel AI knowledge index (ADR 0037): `refresh` re-reads the sources a
+ * write touched (debounced per source by `scheduleKnowledgeIndex`) and
+ * embeds what is missing; `reindex-workspace` rebuilds one workspace
+ * (Steel AI switched back on, `pnpm ai:index <ws>`); `reindex-all` is the
+ * nightly rebuild that also enables pgvector where it appeared.
+ */
+export const AiIndexJob = {
+  Refresh: 'refresh',
+  ReindexWorkspace: 'reindex-workspace',
+  ReindexAll: 'reindex-all',
+} as const
+
+export type AiIndexJob = (typeof AiIndexJob)[keyof typeof AiIndexJob]
+
+export type AiIndexJobPayload = {
+  [AiIndexJob.Refresh]: {
+    workspaceId: string
+    /** `KnowledgeSourceType` (`src/lib/ai/knowledge/sources.ts`). */
+    sourceType: string
+    sourceIds: string[]
+  }
+  [AiIndexJob.ReindexWorkspace]: {
+    workspaceId: string
+    /** Only these source types (default: all). */
+    sourceTypes?: string[]
+  }
+  [AiIndexJob.ReindexAll]: Record<string, never>
 }

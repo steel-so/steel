@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { KNOWLEDGE_SOURCE_TYPES } from '@/src/lib/ai/knowledge/sources'
 import { dto } from '../common'
 
 /** DTOs do Steel AI (`types/steel-ai.d.ts`). */
@@ -132,6 +133,20 @@ const AiToolCallDTO = z.object({
         'Só nas ferramentas de memória (`memory_save`, `memory_forget`): o fato salvo/esquecido, para o chip "Memória salva" com desfazer.',
     }),
   simulation: AiSimulatedAction.optional(),
+  citations: z
+    .array(
+      z.object({
+        sourceType: z.enum(KNOWLEDGE_SOURCE_TYPES),
+        label: z.string().meta({ example: 'Página da Wiki' }),
+        title: z.string(),
+        href: z.string().meta({ example: '/demo/wiki/clx1' }),
+      }),
+    )
+    .optional()
+    .meta({
+      description:
+        'Só em `steel_search`: as fontes encontradas, mostradas como links abaixo da resposta.',
+    }),
 })
 
 export const AiPendingActionDTO = dto(

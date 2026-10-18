@@ -2,15 +2,21 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
 import { persistAdminAction } from '@/src/lib/admin-audit'
+import { isEmbeddingProviderConfigured } from '@/src/lib/ai/knowledge/embeddings'
 import { DEFAULT_AI_COST_MARGIN } from '@/src/lib/ai/models'
 import { ok, type Result } from '@/src/lib/result'
 import {
   toCostMargin,
+  toEmbeddingsEnabled,
   toPlatformAiSettingsDTO,
 } from '@/src/mappers/platform-ai-settings.mapper'
+import { AiKnowledgeChunkRepository } from '@/src/repositories/ai-knowledge-chunk.repository'
 import { PlatformAiSettingsRepository } from '@/src/repositories/platform-ai-settings.repository'
 import type { UpdatePlatformAiSettingsDTO } from '@/src/schemas/platform-ai-settings.schema'
-import type { PlatformAiSettingsDTO } from '@/types/platform-ai-settings'
+import type {
+  PlatformAiSettingsDTO,
+  PlatformKnowledgeSearchStatusDTO,
+} from '@/types/platform-ai-settings'
 import { assertPlatformAdmin } from './authz'
 
 /**
@@ -21,6 +27,24 @@ import { assertPlatformAdmin } from './authz'
 export const COST_MARGIN_TTL_MS = 60_000
 
 let cachedMargin: { value: number; expiresAt: number } | null = null
+let cachedEmbeddings: { value: boolean; expiresAt: number } | null = null
+
+/** What a knowledge search runs on this deployment right now (ADR 0037). */
+async function knowledgeSearchStatus(
+  embeddingsEnabled: boolean,
+): Promise<PlatformKnowledgeSearchStatusDTO> {
+  const providerConfigured = isEmbeddingProviderConfigured()
+  const vector = await AiKnowledgeChunkRepository.vectorEnabled()
+  const vectorIndexReady = vector.ok && vector.value
+  return {
+    providerConfigured,
+    vectorIndexReady,
+    mode:
+      embeddingsEnabled && providerConfigured && vectorIndexReady
+        ? 'hybrid'
+        : 'text',
+  }
+}
 
 /**
  * Platform-wide AI settings (global admin): today only the margin applied
@@ -49,9 +73,35 @@ export const PlatformAiSettingsService = {
     return value
   },
 
+  /**
+   * Knowledge search embeddings switch (ADR 0037), cached like the margin.
+   * On a database error it keeps the last value, or off: failing closed
+   * only costs the semantic half of the search.
+   */
+  async getEmbeddingsEnabled(now: number = Date.now()): Promise<boolean> {
+    if (cachedEmbeddings && cachedEmbeddings.expiresAt > now) {
+      return cachedEmbeddings.value
+    }
+    const row = await PlatformAiSettingsRepository.find()
+    if (!row.ok) {
+      logger.warn(
+        'ai.embeddings_setting_unavailable',
+        logFields({
+          component: 'PlatformAiSettingsService',
+          message: row.error.message,
+        }),
+      )
+      return cachedEmbeddings?.value ?? false
+    }
+    const value = toEmbeddingsEnabled(row.value)
+    cachedEmbeddings = { value, expiresAt: now + COST_MARGIN_TTL_MS }
+    return value
+  },
+
   /** Drops the in-process margin (tests, and after an update). */
   clearCache(): void {
     cachedMargin = null
+    cachedEmbeddings = null
   },
 
   async get(actorId: string): Promise<Result<PlatformAiSettingsDTO>> {
@@ -59,7 +109,8 @@ export const PlatformAiSettingsService = {
     if (!admin.ok) return admin
     const row = await PlatformAiSettingsRepository.find()
     if (!row.ok) return row
-    return ok(toPlatformAiSettingsDTO(row.value))
+    const status = await knowledgeSearchStatus(toEmbeddingsEnabled(row.value))
+    return ok(toPlatformAiSettingsDTO(row.value, status))
   },
 
   async update(
@@ -72,12 +123,22 @@ export const PlatformAiSettingsService = {
     const current = await PlatformAiSettingsRepository.find()
     if (!current.ok) return current
     const previous = toCostMargin(current.value)
+    const previousEmbeddings = toEmbeddingsEnabled(current.value)
+    const embeddingsEnabled = input.embeddingsEnabled ?? previousEmbeddings
 
     const saved = await PlatformAiSettingsRepository.upsert({
       costMargin: input.costMargin,
+      embeddingsEnabled,
       updatedById: actorId,
     })
-    const meta = { previousMargin: previous, costMargin: input.costMargin }
+    const meta = {
+      previousMargin: previous,
+      costMargin: input.costMargin,
+      ...(embeddingsEnabled !== previousEmbeddings && {
+        previousEmbeddingsEnabled: previousEmbeddings,
+        embeddingsEnabled,
+      }),
+    }
     if (!saved.ok) {
       auditMutation({
         entity: 'platform_ai_settings',
@@ -105,6 +166,7 @@ export const PlatformAiSettingsService = {
       reason: input.reason ?? null,
       meta,
     })
-    return ok(toPlatformAiSettingsDTO(saved.value))
+    const status = await knowledgeSearchStatus(embeddingsEnabled)
+    return ok(toPlatformAiSettingsDTO(saved.value, status))
   },
 }

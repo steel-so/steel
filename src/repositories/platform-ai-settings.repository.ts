@@ -20,6 +20,7 @@ export const PlatformAiSettingsRepository = {
 
   async upsert(data: {
     costMargin: number
+    embeddingsEnabled?: boolean
     updatedById: string
   }): Promise<Result<PlatformAiSettings>> {
     try {
