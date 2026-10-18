@@ -91,6 +91,11 @@ const PUBLIC_ROUTES = [
   '/api/mcp',
   '/.well-known/oauth-authorization-server',
   '/.well-known/oauth-protected-resource',
+  // Public API v1 (ADR 0035): authenticated by the personal token
+  // (`Authorization: Bearer stl_pat_...`) inside each route, never by the
+  // session cookie; the CLI device-flow endpoints live here too. The
+  // confirmation page `/device` stays behind the session gate on purpose.
+  '/api/v1',
   // Proxy reverso do PostHog (o next.config.ts reescreve direto para o
   // PostHog). Analytics é coletado nas páginas públicas também, onde ninguém
   // tem sessão, então o gate de autenticação responderia cada beacon com um

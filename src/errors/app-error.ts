@@ -1500,3 +1500,38 @@ export const mcpIdempotencyKeyReused = (): AppError =>
     'MCP_IDEMPOTENCY_KEY_REUSED',
     'Esta chave de idempotência já foi usada com outros argumentos. Gere uma chave nova para cada ação diferente.',
   )
+
+export const apiTokenNotFound = (): AppError =>
+  appError('API_TOKEN_NOT_FOUND', 'Token de API não encontrado ou já revogado.')
+
+export const apiTokenLimitReached = (max: number): AppError =>
+  appError(
+    'API_TOKEN_LIMIT_REACHED',
+    `Você já tem ${max} tokens de API ativos. Revogue um que não usa mais para criar outro.`,
+    { max },
+  )
+
+export const authorizationPending = (): AppError =>
+  appError('AUTHORIZATION_PENDING', 'Aguardando a confirmação no navegador.')
+
+export const slowDown = (intervalSeconds: number): AppError =>
+  appError(
+    'SLOW_DOWN',
+    `Consultas rápidas demais. Espere ${intervalSeconds} segundos entre elas.`,
+    { interval: intervalSeconds },
+  )
+
+export const expiredDeviceCode = (): AppError =>
+  appError(
+    'EXPIRED_TOKEN',
+    'O código de login expirou ou é inválido. Rode “steel login” de novo.',
+  )
+
+export const deviceAccessDenied = (): AppError =>
+  appError('ACCESS_DENIED', 'O login foi recusado no navegador.')
+
+export const deviceCodeInvalid = (): AppError =>
+  appError(
+    'DEVICE_CODE_INVALID',
+    'Código não encontrado ou expirado. Confira o código no terminal ou rode “steel login” de novo.',
+  )

@@ -1,6 +1,7 @@
 import { errorCodeSchema } from './errors'
 import type { JsonSchema } from './json-schema'
 import { registerAdminPaths } from './paths/admin'
+import { registerApiTokenPaths } from './paths/api-tokens'
 import { registerAuthPaths } from './paths/auth'
 import { registerCorePaths } from './paths/core'
 import { registerCrmPaths } from './paths/crm'
@@ -48,6 +49,7 @@ export function createRegistry(): OpenApiRegistry {
   registerSettingsExportsWorklogsPaths(registry)
   registerIntegrationPaths(registry)
   registerIntegrationGrantPaths(registry)
+  registerApiTokenPaths(registry)
   return registry
 }
 

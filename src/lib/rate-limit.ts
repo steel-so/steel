@@ -68,6 +68,25 @@ const OAUTH_DURATION_SECONDS = 60
 const OAUTH_REGISTER_POINTS = 10
 const OAUTH_REGISTER_DURATION_SECONDS = 60 * 60
 
+// Public API v1 (ADR 0035): one budget per personal token, consumed by
+// `resolveApiSession` on every call (the per-user `apiLimiter` still applies
+// in the routes).
+const API_TOKEN_POINTS = 300
+const API_TOKEN_DURATION_SECONDS = 60
+
+// CLI device flow, per IP: starting a login creates a code (tight); polling
+// runs every 5 s per pending login, so it gets room for several developers
+// behind the same NAT. Typing a code on /device is per user, against
+// guessing.
+const DEVICE_START_POINTS = 10
+const DEVICE_START_DURATION_SECONDS = 10 * 60
+
+const DEVICE_POLL_POINTS = 120
+const DEVICE_POLL_DURATION_SECONDS = 60
+
+const DEVICE_VERIFY_POINTS = 20
+const DEVICE_VERIFY_DURATION_SECONDS = 10 * 60
+
 const authInsurance = new RateLimiterMemory({
   points: AUTH_POINTS,
   duration: AUTH_DURATION_SECONDS,
@@ -219,6 +238,42 @@ export const oauthRegisterLimiter = new RateLimiterRedis({
   duration: OAUTH_REGISTER_DURATION_SECONDS,
 })
 
+export const apiTokenLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:api:token',
+  points: API_TOKEN_POINTS,
+  duration: API_TOKEN_DURATION_SECONDS,
+})
+
+export const deviceStartLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:device:start',
+  points: DEVICE_START_POINTS,
+  duration: DEVICE_START_DURATION_SECONDS,
+})
+
+export const devicePollLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:device:poll',
+  points: DEVICE_POLL_POINTS,
+  duration: DEVICE_POLL_DURATION_SECONDS,
+})
+
+export const deviceVerifyLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:device:verify',
+  points: DEVICE_VERIFY_POINTS,
+  duration: DEVICE_VERIFY_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -238,6 +293,10 @@ const limiterNames = new WeakMap<Limiter, string>([
 
   [oauthLimiter, 'oauth'],
   [oauthRegisterLimiter, 'oauth_register'],
+  [apiTokenLimiter, 'api_token'],
+  [deviceStartLimiter, 'device_start'],
+  [devicePollLimiter, 'device_poll'],
+  [deviceVerifyLimiter, 'device_verify'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

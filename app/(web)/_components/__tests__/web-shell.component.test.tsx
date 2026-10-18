@@ -192,6 +192,8 @@ const OUT = [
   'onboarding/',
   // OAuth consent of MCP clients (ADR 0033): focused authorization screen.
   'oauth/',
+  // Steel CLI login confirmation (ADR 0035): focused authorization card.
+  'device/',
   'upgrade/',
   // OAuth consent of AI clients (MCP): a focused authorization card.
   'oauth/',
