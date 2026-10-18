@@ -9,6 +9,7 @@ import {
   SparklesIcon,
   Upload01Icon,
   UserMultipleIcon,
+  WebhookIcon,
   WhiteboardIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import type { ReactNode } from 'react'
@@ -55,6 +56,9 @@ export default async function SettingsLayout({
         <NavGroup>
           <NavItem href={`${base}/integrations`} icon={ChartRelationshipIcon}>
             Integrações
+          </NavItem>
+          <NavItem href={`${base}/integrations/webhooks`} icon={WebhookIcon}>
+            Webhooks
           </NavItem>
           <NavItem href={`${base}/connected-apps`} icon={McpServerIcon}>
             Apps conectados

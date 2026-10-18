@@ -1,5 +1,9 @@
-import { ChartRelationshipIcon } from '@hugeicons-pro/core-stroke-rounded'
+import {
+  ChartRelationshipIcon,
+  WebhookIcon,
+} from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
   HeaderBreadcrumbCrumb,
@@ -66,10 +70,29 @@ export default async function SettingsIntegrationsPage({
           </Muted>
         </div>
         {canManage ? (
-          <IntegrationsManager
-            workspaceId={membership.value.workspaceId}
-            slackResult={slackResult}
-          />
+          <>
+            <IntegrationsManager
+              workspaceId={membership.value.workspaceId}
+              slackResult={slackResult}
+            />
+            <Link
+              href={`/${slug}/settings/integrations/webhooks`}
+              className='flex min-w-0 items-center gap-3 rounded-xl p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted'
+            >
+              <SteelIcon
+                icon={WebhookIcon}
+                strokeWidth={2}
+                className='shrink-0 text-primary'
+              />
+              <span className='min-w-0'>
+                <span className='block text-sm font-medium'>Webhooks</span>
+                <span className='block text-xs text-muted-foreground'>
+                  Envie os eventos do Steel para os seus sistemas, assinados com
+                  HMAC-SHA256.
+                </span>
+              </span>
+            </Link>
+          </>
         ) : (
           <Muted>
             Apenas o dono e os administradores do workspace podem gerenciar as
