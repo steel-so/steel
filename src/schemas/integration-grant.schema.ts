@@ -51,3 +51,7 @@ export type OAuthConsentAcceptInput = Extract<
 >
 
 export const IntegrationGrantIdSchema = z.string().min(1).max(64)
+
+/** Path params of the workspace "Apps conectados" (OWNER/ADMIN). */
+export const WorkspaceGrantMemberIdSchema = z.string().min(1).max(64)
+export const WorkspaceGrantClientIdSchema = z.string().min(1).max(255)

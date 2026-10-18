@@ -2,7 +2,10 @@ import { createId } from '@paralleldrive/cuid2'
 import type { IntegrationGrant, ModuleKind } from '@prisma/client'
 import { hashOpaqueToken } from '@/src/lib/mcp/oauth-utils'
 import { prisma } from '@/src/lib/prisma'
-import type { IntegrationGrantWithRelations } from '@/src/repositories/integration-grant.repository'
+import type {
+  IntegrationGrantWithRelations,
+  WorkspaceIntegrationGrantRow,
+} from '@/src/repositories/integration-grant.repository'
 import type {
   OauthAccessTokenWithClient,
   OauthClientSummary,
@@ -137,4 +140,30 @@ export async function seedOauthAccessToken(data: {
     },
   })
   return { row, raw: `stl_at_${raw}` }
+}
+
+export function createFakeWorkspaceIntegrationGrantRow(
+  overrides?: Partial<IntegrationGrant> & {
+    user?: Partial<WorkspaceIntegrationGrantRow['user']>
+    clientName?: string | null
+  },
+): WorkspaceIntegrationGrantRow {
+  const { user, clientName, ...rest } = overrides ?? {}
+  const grant = createFakeIntegrationGrant(rest)
+  return {
+    ...grant,
+    client: {
+      clientId: grant.clientId,
+      name: clientName === undefined ? 'Claude' : clientName,
+      icon: null,
+      uri: null,
+    },
+    user: {
+      id: grant.userId,
+      name: 'Ana',
+      email: 'ana@example.com',
+      image: null,
+      ...user,
+    },
+  }
 }

@@ -4,6 +4,7 @@ import {
   Building02Icon,
   ChartRelationshipIcon,
   Chatting01Icon,
+  McpServerIcon,
   Notification01Icon,
   SparklesIcon,
   Upload01Icon,
@@ -54,6 +55,9 @@ export default async function SettingsLayout({
         <NavGroup>
           <NavItem href={`${base}/integrations`} icon={ChartRelationshipIcon}>
             Integrações
+          </NavItem>
+          <NavItem href={`${base}/connected-apps`} icon={McpServerIcon}>
+            Apps conectados
           </NavItem>
           <NavItem href={`${base}/wiki`} icon={BookOpen01Icon}>
             Wiki

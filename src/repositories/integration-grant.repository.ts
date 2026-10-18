@@ -21,6 +21,20 @@ const WITH_RELATIONS = {
   workspace: { select: { id: true, name: true, slug: true } },
 } as const
 
+/** A grant as the workspace admin sees it: who holds it and for which app. */
+export type WorkspaceIntegrationGrantRow = IntegrationGrant & {
+  client: IntegrationGrantWithRelations['client']
+  user: { id: string; name: string; email: string; image: string | null }
+}
+
+const WITH_CLIENT_AND_USER = {
+  client: WITH_RELATIONS.client,
+  user: { select: { id: true, name: true, email: true, image: true } },
+} as const
+
+/** Which active grants of a workspace a bulk revocation targets. */
+export type WorkspaceGrantFilter = { userId: string } | { clientId: string }
+
 export const IntegrationGrantRepository = {
   async findById(id: string): Promise<Result<IntegrationGrant>> {
     try {
@@ -60,6 +74,38 @@ export const IntegrationGrantRepository = {
       return ok(grants)
     } catch (error) {
       return err(dbError('Failed to list integration grants', error))
+    }
+  },
+
+  /** Active grants of every member of a workspace, most recent first. */
+  async listActiveByWorkspace(
+    workspaceId: string,
+  ): Promise<Result<WorkspaceIntegrationGrantRow[]>> {
+    try {
+      const grants = await prisma.integrationGrant.findMany({
+        where: { workspaceId, revokedAt: null },
+        include: WITH_CLIENT_AND_USER,
+        orderBy: { createdAt: 'desc' },
+      })
+      return ok(grants)
+    } catch (error) {
+      return err(dbError('Failed to list workspace integration grants', error))
+    }
+  },
+
+  /** Ids of the active grants of one member, or of one app, in a workspace. */
+  async listActiveIdsByWorkspace(
+    workspaceId: string,
+    filter: WorkspaceGrantFilter,
+  ): Promise<Result<string[]>> {
+    try {
+      const grants = await prisma.integrationGrant.findMany({
+        where: { workspaceId, revokedAt: null, ...filter },
+        select: { id: true },
+      })
+      return ok(grants.map((grant) => grant.id))
+    } catch (error) {
+      return err(dbError('Failed to list workspace integration grants', error))
     }
   },
 
@@ -125,6 +171,32 @@ export const IntegrationGrantRepository = {
       return ok(grant)
     } catch (error) {
       return err(dbError('Failed to revoke integration grant', error))
+    }
+  },
+
+  /**
+   * `revoke` for several grants at once, in one transaction: only the ones
+   * still active are touched. Resolves to how many were revoked.
+   */
+  async revokeMany(ids: string[], at: Date): Promise<Result<number>> {
+    if (ids.length === 0) return ok(0)
+    try {
+      const referenceId = { in: ids }
+      const [revoked] = await prisma.$transaction([
+        prisma.integrationGrant.updateMany({
+          where: { id: { in: ids }, revokedAt: null },
+          data: { revokedAt: at },
+        }),
+        prisma.oauthAccessToken.deleteMany({ where: { referenceId } }),
+        prisma.oauthRefreshToken.updateMany({
+          where: { referenceId, revoked: null },
+          data: { revoked: at },
+        }),
+        prisma.oauthConsent.deleteMany({ where: { referenceId } }),
+      ])
+      return ok(revoked.count)
+    } catch (error) {
+      return err(dbError('Failed to revoke integration grants', error))
     }
   },
 

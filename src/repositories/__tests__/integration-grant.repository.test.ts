@@ -205,6 +205,132 @@ describe('IntegrationGrantRepository', () => {
     ).toEqual(later)
   })
 
+  it('lists a workspace active grants with user and client, newest first', async () => {
+    const { user, workspace, client } = await scenario()
+    const other = await seedUser({ name: 'Bia' })
+    const older = await seedIntegrationGrant({
+      userId: user.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+    })
+    await prisma.integrationGrant.update({
+      where: { id: older.id },
+      data: { createdAt: new Date('2026-01-01T00:00:00Z') },
+    })
+    const newer = await seedIntegrationGrant({
+      userId: other.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+    })
+    await seedIntegrationGrant({
+      userId: other.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+      revokedAt: new Date(),
+    })
+    await seedIntegrationGrant({
+      userId: user.id,
+      workspaceId: (await seedWorkspace()).id,
+      clientId: client.clientId,
+    })
+
+    const list = expectOk(
+      await IntegrationGrantRepository.listActiveByWorkspace(workspace.id),
+    )
+    expect(list.map((g) => g.id)).toEqual([newer.id, older.id])
+    expect(list[0].user).toEqual({
+      id: other.id,
+      name: 'Bia',
+      email: other.email,
+      image: null,
+    })
+    expect(list[0].client.name).toBe('Claude')
+  })
+
+  it('lists active ids by member or by app and revokes many at once', async () => {
+    const { user, workspace, client } = await scenario()
+    const other = await seedUser()
+    const cursor = await seedOauthClient({ name: 'Cursor' })
+    const a = await seedIntegrationGrant({
+      userId: user.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+    })
+    const b = await seedIntegrationGrant({
+      userId: user.id,
+      workspaceId: workspace.id,
+      clientId: cursor.clientId,
+    })
+    const c = await seedIntegrationGrant({
+      userId: other.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+    })
+    const token = await seedOauthAccessToken({
+      clientId: client.clientId,
+      userId: user.id,
+      referenceId: a.id,
+    })
+    const refresh = await prisma.oauthRefreshToken.create({
+      data: {
+        token: 'refresh-many',
+        clientId: cursor.clientId,
+        userId: user.id,
+        referenceId: b.id,
+        scopes: ['mcp:read', 'offline_access'],
+      },
+    })
+    await prisma.oauthConsent.create({
+      data: {
+        clientId: client.clientId,
+        userId: user.id,
+        referenceId: a.id,
+        scopes: ['mcp:read'],
+      },
+    })
+
+    const byMember = expectOk(
+      await IntegrationGrantRepository.listActiveIdsByWorkspace(workspace.id, {
+        userId: user.id,
+      }),
+    )
+    expect(byMember.sort()).toEqual([a.id, b.id].sort())
+    const byClient = expectOk(
+      await IntegrationGrantRepository.listActiveIdsByWorkspace(workspace.id, {
+        clientId: client.clientId,
+      }),
+    )
+    expect(byClient.sort()).toEqual([a.id, c.id].sort())
+
+    expect(
+      expectOk(await IntegrationGrantRepository.revokeMany([], new Date())),
+    ).toBe(0)
+    const at = new Date('2026-10-17T12:00:00Z')
+    expect(
+      expectOk(await IntegrationGrantRepository.revokeMany(byMember, at)),
+    ).toBe(2)
+    // Already revoked grants are not counted again.
+    expect(
+      expectOk(await IntegrationGrantRepository.revokeMany(byMember, at)),
+    ).toBe(0)
+
+    expect(
+      await prisma.oauthAccessToken.findUnique({ where: { id: token.row.id } }),
+    ).toBeNull()
+    expect(
+      (await prisma.oauthRefreshToken.findUnique({ where: { id: refresh.id } }))
+        ?.revoked,
+    ).toEqual(at)
+    expect(
+      await prisma.oauthConsent.count({ where: { referenceId: a.id } }),
+    ).toBe(0)
+    expect(
+      expectOk(
+        await IntegrationGrantRepository.listActiveByWorkspace(workspace.id),
+      ).map((g) => g.id),
+    ).toEqual([c.id])
+  })
+
   it('returns DATABASE_ERROR when prisma throws', async () => {
     const boom = new Error('boom')
     vi.spyOn(prisma.integrationGrant, 'findUnique').mockRejectedValueOnce(boom)
@@ -237,6 +363,24 @@ describe('IntegrationGrantRepository', () => {
     )
     expectErr(
       await IntegrationGrantRepository.revoke('missing', new Date()),
+      'DATABASE_ERROR',
+    )
+
+    vi.spyOn(prisma.integrationGrant, 'findMany').mockRejectedValueOnce(boom)
+    expectErr(
+      await IntegrationGrantRepository.listActiveByWorkspace('w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.integrationGrant, 'findMany').mockRejectedValueOnce(boom)
+    expectErr(
+      await IntegrationGrantRepository.listActiveIdsByWorkspace('w', {
+        userId: 'u',
+      }),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(boom)
+    expectErr(
+      await IntegrationGrantRepository.revokeMany(['x'], new Date()),
       'DATABASE_ERROR',
     )
   })

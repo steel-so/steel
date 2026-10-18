@@ -42,6 +42,7 @@ async function rpc(
   method: string,
   params?: Record<string, unknown>,
   registry: AnySteelAiTool[] = tools,
+  onToolCall?: (tool: { name: string }) => void,
 ) {
   const request = new Request('http://localhost/api/mcp', {
     method: 'POST',
@@ -56,7 +57,7 @@ async function rpc(
     request,
     mcpGrant(),
     mcpAccess({ isPrivileged: true }),
-    { tools: registry },
+    { tools: registry, onToolCall },
   )
   return { status: response.status, body: await response.json() }
 }
@@ -93,6 +94,25 @@ describe('handleMcpRequest()', () => {
       data: { total: 3 },
     })
     expect(body.result.content[0]).toEqual({ type: 'text', text: '3 chamados' })
+  })
+
+  it('should report each call of a visible tool, never of a hidden one', async () => {
+    const onToolCall = vi.fn()
+    await rpc(
+      'tools/call',
+      { name: 'sd_list', arguments: {} },
+      tools,
+      onToolCall,
+    )
+    await rpc(
+      'tools/call',
+      { name: 'sd_create', arguments: {} },
+      tools,
+      onToolCall,
+    )
+    await rpc('tools/list', undefined, tools, onToolCall)
+    expect(onToolCall).toHaveBeenCalledTimes(1)
+    expect(onToolCall.mock.calls[0][0].name).toBe('sd_list')
   })
 
   it('should treat hidden tools like unknown ones', async () => {
@@ -205,6 +225,7 @@ describe('handleMcpRequest() with many tools', () => {
   })
 
   it('should run a hidden READ tool through steel_call_tool or by name', async () => {
+    const onToolCall = vi.fn()
     const viaMeta = await rpc(
       'tools/call',
       {
@@ -212,8 +233,12 @@ describe('handleMcpRequest() with many tools', () => {
         arguments: { name: 'sd_cmdb_3', arguments: {} },
       },
       registry,
+      onToolCall,
     )
     expect(viaMeta.body.result.structuredContent.summary).toBe('ok')
+    // Counted as the target tool, never as the meta-tool.
+    expect(onToolCall).toHaveBeenCalledTimes(1)
+    expect(onToolCall.mock.calls[0][0].name).toBe('sd_cmdb_3')
 
     const direct = await rpc(
       'tools/call',

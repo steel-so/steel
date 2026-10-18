@@ -60,6 +60,13 @@ const INSTRUCTIONS = [
 
 export interface McpServerDeps {
   tools?: readonly AnySteelAiTool[]
+  /**
+   * Runs once per `tools/call` that reaches a tool the grant can see —
+   * directly or through `steel_call_tool` — before it executes (usage
+   * counters of the workspace "Apps conectados"). Must not throw nor be
+   * awaited for the call to proceed.
+   */
+  onToolCall?: (tool: AnySteelAiTool) => void
 }
 
 export function createSteelMcpServer(
@@ -112,13 +119,14 @@ export function createSteelMcpServer(
         if (plan.hidden.length > 0) {
           return name === MCP_FIND_TOOLS_NAME
             ? findToolsResult(grant, tools, plan, args)
-            : callHiddenTool(grant, tools, args)
+            : callHiddenTool(grant, tools, args, deps.onToolCall)
         }
       }
       // A hidden tool (compact list) still runs by its own name; one the
       // grant can't see answers exactly like one that doesn't exist.
       const tool = tools.find((t) => t.name === name)
       if (!tool) throw unknownTool(name)
+      deps.onToolCall?.(tool)
       return callMcpTool(tool, grant, args)
     }),
   )
@@ -188,9 +196,11 @@ async function callHiddenTool(
   grant: McpGrant,
   tools: AnySteelAiTool[],
   args: unknown,
+  onToolCall?: McpServerDeps['onToolCall'],
 ): Promise<CallToolResult> {
   const target = resolveCallToolTarget(tools, args)
   if (target.ok) {
+    onToolCall?.(target.tool)
     return callMcpTool(target.tool, grant, target.arguments, {
       via: MCP_CALL_TOOL_NAME,
     })
