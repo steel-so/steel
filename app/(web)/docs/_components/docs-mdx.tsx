@@ -97,7 +97,7 @@ export async function DocsMdx({
   })
 
   return (
-    <div className='prose prose-neutral dark:prose-invert max-w-none w-full prose-headings:scroll-mt-24 prose-headings:font-medium prose-a:text-primary prose-a:underline-offset-4 prose-img:rounded-2xl prose-pre:rounded-xl prose-pre:bg-muted prose-code:before:content-none prose-code:after:content-none'>
+    <div className='prose prose-neutral dark:prose-invert max-w-none w-full prose-headings:scroll-mt-24 prose-headings:font-medium prose-a:text-primary prose-a:underline-offset-4 prose-img:rounded-2xl prose-pre:rounded-xl prose-pre:border prose-pre:border-border prose-pre:bg-muted prose-pre:text-foreground prose-code:before:content-none prose-code:after:content-none'>
       <Content components={{ ...COMPONENTS, ...components }} />
     </div>
   )
