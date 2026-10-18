@@ -62,6 +62,25 @@ describe('logMcpToolCall()', () => {
     })
   })
 
+  it('should carry the write status in the detail', () => {
+    logMcpToolCall(mcpGrant(), {
+      tool: {
+        name: 'zap_message_send_text',
+        kind: 'ACTION',
+        module: 'COMMUNICATION',
+      },
+      outcome: 'ok',
+      durationMs: 5,
+      writeStatus: 'pending_confirmation',
+    })
+    const fields = vi.mocked(logger.info).mock.lastCall?.[1] as {
+      detail: string
+    }
+    expect(JSON.parse(fields.detail)).toMatchObject({
+      writeStatus: 'pending_confirmation',
+    })
+  })
+
   it('should log failures at error level with the code and PLATFORM module', () => {
     logMcpToolCall(mcpGrant(), {
       tool: { name: 'ws_overview', kind: 'READ', module: null },

@@ -152,7 +152,8 @@ export const IntegrationGrantRepository = {
   /**
    * Revokes the grant and everything the provider issued for it: access
    * tokens are deleted, refresh tokens marked revoked and the consent row
-   * removed (so the next authorization asks again). One transaction.
+   * removed (so the next authorization asks again). Writes the client
+   * proposed and nobody confirmed yet are canceled. One transaction.
    */
   async revoke(id: string, at: Date): Promise<Result<IntegrationGrant>> {
     try {
@@ -167,6 +168,10 @@ export const IntegrationGrantRepository = {
           data: { revoked: at },
         }),
         prisma.oauthConsent.deleteMany({ where: { referenceId: id } }),
+        prisma.aiPendingAction.updateMany({
+          where: { integrationGrantId: id, status: 'PENDING' },
+          data: { status: 'CANCELED', decidedAt: at },
+        }),
       ])
       return ok(grant)
     } catch (error) {

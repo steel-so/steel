@@ -158,6 +158,8 @@ export interface InboxAiPendingItemDTO {
   conversation: { id: string; title: string | null } | null
   agent: { id: string; name: string } | null
   runId: string | null
+  /** External AI client (MCP) that proposed it; null for chat and agents. */
+  client: { id: string; name: string | null } | null
 }
 
 export interface InboxAiPendingListDTO {

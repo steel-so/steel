@@ -19,9 +19,11 @@ import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-mo
 import { STEEL_AI_TOOLS } from '../ai/tools'
 import {
   type AiToolAccess,
+  aiActionSource,
   assertValidToolRegistry,
   availableTools,
   findTool,
+  hasToolAccess,
   isWriteMode,
   PENDING_ACTION_TTL_MS,
   proposeWriteTool,
@@ -580,6 +582,39 @@ describe('Steel AI 2 — AUTOPILOT and workspace switches', () => {
         agentsEnabled: false,
         autopilotEnabled: true,
         mcpWriteEnabled: true,
+      }),
+    )
+  })
+})
+
+describe('MCP governance helpers', () => {
+  it('aiActionSource() should map each context source', () => {
+    expect(aiActionSource({ source: 'assistant' })).toBe('ASSISTANT')
+    expect(aiActionSource({ source: 'agent' })).toBe('AGENT')
+    expect(aiActionSource({ source: 'mcp' })).toBe('MCP')
+  })
+
+  it('hasToolAccess() should check module and RBAC, not the mode switches', () => {
+    const off = access({ agentModeEnabled: false, autopilotEnabled: false })
+    expect(hasToolAccess(write, off)).toBe(true)
+    expect(hasToolAccess(write, access({ modules: ['CRM'] }))).toBe(false)
+    expect(hasToolAccess(crmRead, access({ permissions: null }))).toBe(false)
+  })
+
+  it('proposeWriteTool() should own MCP proposals by the user and keep the grant', async () => {
+    const repo = vi.mocked(AiPendingActionRepository)
+    repo.create.mockResolvedValue(ok(createFakeAiPendingAction()))
+    await proposeWriteTool(
+      write,
+      { ...ctx, source: 'mcp', oauthClientId: 'client1' },
+      {},
+      { integrationGrantId: 'g1' },
+    )
+    expect(repo.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        requestedById: 'u1',
+        conversationId: null,
+        integrationGrantId: 'g1',
       }),
     )
   })

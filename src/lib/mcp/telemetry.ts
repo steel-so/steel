@@ -37,6 +37,12 @@ export interface McpToolCallLog {
   durationMs: number
   /** `steel_call_tool` when the call came through the discovery meta-tool. */
   via?: string
+  /**
+   * Writes (mcp-governance): `executed` ran at once, `pending_confirmation`
+   * waits for a human in the Steel inbox, `replayed` answered from the
+   * idempotency key. All are `outcome: ok`.
+   */
+  writeStatus?: 'executed' | 'pending_confirmation' | 'replayed'
 }
 
 export function logMcpToolCall(grant: McpGrant, entry: McpToolCallLog): void {
@@ -57,6 +63,7 @@ export function logMcpToolCall(grant: McpGrant, entry: McpToolCallLog): void {
       grantId: grant.grantId,
       clientName: grant.clientName,
       ...(entry.via && { via: entry.via }),
+      ...(entry.writeStatus && { writeStatus: entry.writeStatus }),
     }),
   }
   const level = entry.outcome === 'failed' ? 'error' : 'info'

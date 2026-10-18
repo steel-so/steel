@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  seedIntegrationGrant,
+  seedOauthClient,
+} from '@/src/__tests__/factories/integration-grant.factory'
+import {
   seedSteelAgent,
   seedSteelAgentRun,
 } from '@/src/__tests__/factories/steel-agent.factory'
@@ -98,6 +102,38 @@ describe('InboxAiPendingRepository.listAssistant', () => {
       id: conversation.id,
       title: 'Priorizar VPN',
     })
+  })
+})
+
+describe('InboxAiPendingRepository.listAssistant — MCP', () => {
+  it('should include the connected app of actions an MCP client proposed', async () => {
+    const { workspace, me } = await context()
+    const client = await seedOauthClient({ name: 'Claude' })
+    const grant = await seedIntegrationGrant({
+      userId: me.id,
+      workspaceId: workspace.id,
+      clientId: client.clientId,
+      scopes: ['mcp:read', 'mcp:write'],
+    })
+    const mcp = await seedAiPendingAction(workspace.id, {
+      requestedById: me.id,
+      integrationGrantId: grant.id,
+      expiresAt: at(10),
+    })
+    const chat = await seedAiPendingAction(workspace.id, {
+      requestedById: me.id,
+      expiresAt: at(20),
+    })
+
+    const rows = expectOk(
+      await InboxAiPendingRepository.listAssistant(workspace.id, me.id, NOW),
+    )
+
+    expect(rows.map((row) => row.id)).toEqual([mcp.id, chat.id])
+    expect(rows[0].integrationGrant).toEqual({
+      client: { clientId: client.clientId, name: 'Claude' },
+    })
+    expect(rows[1].integrationGrant).toBeNull()
   })
 })
 

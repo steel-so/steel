@@ -101,8 +101,10 @@ Como a concessão chega ao token (decidido na fatia mcp-auth):
 
 ## Regras do servidor
 
-- `tools/list`: `isToolAllowed` do registry com o `AiToolAccess` do usuário,
-  restrito a `grant.modules`, só `READ` sem `mcp:write`.
+- `tools/list`: módulo + RBAC do registry (`hasToolAccess`) com o
+  `AiToolAccess` do usuário, restrito a `grant.modules` e aos tipos de
+  `mcpAllowedKinds(grant, access)` — só `READ` sem `mcp:write` ou sem o
+  interruptor do admin; `DELETE` nunca.
 - `tools/call`: workspace e usuário vêm do grant, nunca dos argumentos.
   `AppError` vira resultado com `isError: true` e mensagem em pt-BR.
 - Anotações: `readOnlyHint` nas de leitura, `destructiveHint` onde couber,
@@ -157,8 +159,9 @@ torná-los absolutos (`<origem>/<caminho>`).
   no grant, ou acesso que responde 401/403/404 (membro removido), devolve
   `401` com `WWW-Authenticate: Bearer resource_metadata="<BETTER_AUTH_URL>/.well-known/oauth-protected-resource"`
   (mais `error="invalid_token"` quando veio token).
-- **Escrita:** `mcpAllowedKinds(grant)` em `src/lib/mcp/tools.ts` devolve só
-  `READ` na onda 1, mesmo com `mcp:write`. A onda 2 alarga **só essa função**.
+- **Escrita:** `mcpAllowedKinds(grant, access)` em `src/lib/mcp/tools.ts`
+  (onda 1: só `READ`; a onda 2 alargou só essa função — ver "Escrita via MCP"
+  abaixo).
 - **Steel IA desligada** (`aiEnabled = false` em Ajustes › Steel IA): nenhuma
   ferramenta aparece. Resources e prompts continuam.
 - **Ferramenta fora do grant** responde igual a uma inexistente
@@ -211,6 +214,62 @@ torná-los absolutos (`<origem>/<caminho>`).
   (`/<slug>/settings/connected-apps`), com as seções "Por app" e "Por
   membro".
 
+## Escrita via MCP (fatia mcp-governance, onda 2)
+
+- **Quando aparece:** `mcpAllowedKinds(grant, access)` devolve `READ`,
+  `CREATE`, `UPDATE` e `ACTION` só com `mcp:write` no grant **e**
+  `AiToolAccess.mcpWriteEnabled`. `DELETE` nunca. Não depende de
+  `agentModeEnabled` nem de `autopilotEnabled` (que valem para o chat do
+  app). O filtro de módulo/RBAC é `hasToolAccess` do registry.
+- **Sem `customerFacing`:** executa na hora, como o Autopilot (ADR 0021):
+  `executeMcpWrite` (`ai-pending-action.service.ts`) cria a
+  `AiPendingAction` já reivindicada (`EXECUTED`, `autoExecuted`,
+  `integrationGrantId`), roda, grava `AiActionLog` com `source = MCP` e
+  `oauthClientId`, e audita `ai_pending_action` / `auto_execute` com
+  `meta.mode = 'MCP'`. Resultado: `structuredContent = { status:
+  'executed', summary, actionId, target?, data, truncated?, note? }`.
+- **Com `customerFacing`:** só propõe. `proposeMcpWrite` cria a
+  `AiPendingAction` `PENDING` (dona = usuário do grant, 30 min,
+  `integrationGrantId`) e audita `ai_pending_action` / `request`. Resultado:
+  `{ status: 'pending_confirmation', summary, actionId, confirmUrl,
+  expiresAt, preview }`, com `confirmUrl = <origem>/<slug>/inbox?view=ai&action=<id>`.
+  A descrição da ferramenta em `tools/list` ganha um parágrafo avisando
+  disso.
+- **Elicitation:** não é usada. Ela exige um pedido servidor→cliente no meio
+  da chamada, e o transporte sem estado (servidor novo por POST, resposta
+  JSON) não tem como receber a resposta. O link de confirmação é o único
+  caminho, e funciona em qualquer cliente.
+- **Confirmação:** a mesma rota do chat
+  (`POST /api/workspaces/{id}/ai/actions/{actionId}/confirm`), pela
+  Caixa de entrada › Pendências da IA. Para ação com `integrationGrantId` o
+  portão é o do MCP, não o do modo agente: `mcpWriteEnabled` ligado
+  (senão `403 MCP_WRITE_DISABLED`), grant ativo do mesmo usuário com
+  `mcp:write` e o módulo, ferramenta ainda permitida e não `DELETE` (senão
+  `403 AI_TOOL_NOT_ALLOWED`). Executa com `source: 'mcp'` e o
+  `oauthClientId`, então o `AiActionLog` sai como MCP.
+- **Inbox:** `InboxAiPendingItemDTO.client` (`{ id, name }`) marca o que veio
+  de um app conectado; `path` é `/inbox?view=ai`. O cartão mostra "App
+  conectado · <nome>" e destaca a ação de `?action=<id>`; ação que não está
+  mais pendente mostra um aviso.
+- **Revogar** (`IntegrationGrantRepository.revoke`, qualquer caminho) cancela,
+  na mesma transação, as `AiPendingAction` `PENDING` daquele grant.
+- **`idempotencyKey`:** argumento opcional de toda escrita (1–200
+  caracteres; o adaptador o acrescenta ao `inputSchema` e o tira dos
+  argumentos antes do `parse`). Redis `mcp:idem:<grantId>:<tool>:<sha256(chave)>`:
+  `SET NX` de um marcador `pending` (2 min), resultado final guardado por
+  24 h junto com o hash canônico dos argumentos (`src/cache/mcp-idempotency.cache.ts`).
+  Mesma chave e argumentos → devolve o primeiro resultado; em execução →
+  `MCP_IDEMPOTENCY_IN_PROGRESS` (409); argumentos diferentes →
+  `MCP_IDEMPOTENCY_KEY_REUSED` (422); falha libera a chave. Redis fora do ar
+  não bloqueia a escrita (roda sem dedupe e registra aviso).
+- **Links absolutos:** todo `href` (string que começa com uma única `/`) nos
+  resultados, de leitura e de escrita, vira `<origem do BETTER_AUTH_URL><caminho>`
+  (`absolutizeHrefs`).
+- **Modelo:** `AiActionSource.MCP`, `AiActionLog.oauthClientId` e
+  `AiPendingAction.integrationGrantId` (FK com cascade), migração
+  `mcp_action_source`. `aiActionSource(ctx)` no registry mapeia
+  `assistant`/`agent`/`mcp`.
+
 ## Observabilidade e descoberta (fatia mcp-observability)
 
 ### Log (Axiom)
@@ -220,7 +279,7 @@ argumentos, resultado de ferramenta nem texto do usuário (LGPD).
 
 | `message` | Nível | Campos (`fields.*`) |
 | --- | --- | --- |
-| `mcp.tool_call` | `info` (`error` se `failed`) | `toolName`, `kind`, `module` (`PLATFORM` sem módulo), `workspaceId`, `userId`, `clientId`, `outcome` (`ok` · `error` = `AppError` devolvido como `isError` · `failed` = a ferramenta lançou), `errorCode`, `durationMs`, `source = mcp`; `detail` = `{ grantId, clientName, via? }` (`via = steel_call_tool`) |
+| `mcp.tool_call` | `info` (`error` se `failed`) | `toolName`, `kind`, `module` (`PLATFORM` sem módulo), `workspaceId`, `userId`, `clientId`, `outcome` (`ok` · `error` = `AppError` devolvido como `isError` · `failed` = a ferramenta lançou), `errorCode`, `durationMs`, `source = mcp`; `detail` = `{ grantId, clientName, via?, writeStatus? }` (`via = steel_call_tool`; `writeStatus` nas escritas: `executed` · `pending_confirmation` · `replayed`, todas com `outcome = ok`) |
 | `mcp.tools_list` | `info` | `count` (listadas), `clientId`, `workspaceId`, `userId`; `detail` = `{ hidden }` |
 | `mcp.rejected` | `warn` | `reason` (`invalid_token`, `stale_grant`, `rate_limited_user`, `rate_limited_client`, `access_failed`), `errorCode`, `clientId`/`userId`/`workspaceId` quando há grant |
 | `mcp.handler_failed` | `error` | `toolName` (só em `tools/call`), `clientId`, `workspaceId`, `message`; `detail` = `{ method }` |
@@ -302,4 +361,7 @@ Incidente com um cliente: `docs/runbooks/mcp-incident.md`.
 | mcp-observability | 2 | log por chamada no Axiom + painel, Sentry no adaptador, descoberta (`steel_find_tools`/`steel_call_tool`) acima de 40 ferramentas, runbook de incidente |
 | mcp-governance | 2 | escrita via `mcp:write`, interruptor do admin, changelog; tira o aviso "Escrita em liberação" de `content/dev/mcp.mdx` |
 | mcp-workspace-apps | 2 | Apps conectados do workspace (OWNER/ADMIN): lista, revogação unitária, por membro e por app, contagem de chamadas por app em 7/30 dias |
+
+| mcp-governance | 2 | escrita via `mcp:write` + interruptor do admin, confirmação no Steel das ações com cliente final, `idempotencyKey`, `AiActionLog` com origem MCP, links absolutos; tira o aviso "Escrita em liberação" de `content/dev/mcp.mdx` |
+| mcp-workspace-apps | 2 | Apps conectados do workspace (OWNER/ADMIN), uso por cliente |
 | mcp-launch | 3 | changelog do produto e da API, [envio aos diretórios](directory-submission.md) do Claude e do ChatGPT, `pnpm mcp:smoke` (cliente MCP de smoke, com `--oauth`) |

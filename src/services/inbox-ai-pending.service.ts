@@ -20,15 +20,22 @@ import { steelAgentRunPath } from './steel-agent-notifications'
 export const AI_ACTION_EXPIRY_NOTICE_MS = 5 * 60 * 1000
 
 function assistantItem(row: InboxAssistantPendingRow): InboxAiPendingItemDTO {
+  const client = row.integrationGrant?.client ?? null
   return {
     source: 'ASSISTANT',
     action: toAiPendingActionDTO(row),
-    path: row.conversation ? `/ai/${row.conversation.id}` : '/ai',
+    // MCP actions have no conversation: they are decided right here.
+    path: row.conversation
+      ? `/ai/${row.conversation.id}`
+      : client
+        ? '/inbox?view=ai'
+        : '/ai',
     conversation: row.conversation
       ? { id: row.conversation.id, title: row.conversation.title }
       : null,
     agent: null,
     runId: null,
+    client: client ? { id: client.clientId, name: client.name } : null,
   }
 }
 
@@ -41,6 +48,7 @@ function agentItem(row: InboxAgentPendingRow): InboxAiPendingItemDTO {
     conversation: null,
     agent: run ? { id: run.agent.id, name: run.agent.name } : null,
     runId: run?.id ?? null,
+    client: null,
   }
 }
 

@@ -4374,6 +4374,9 @@ model AiPendingAction {
   executedAt            DateTime?             @map("executed_at")
   /// Executed straight away in AUTOPILOT mode (born claimed, never PENDING).
   autoExecuted          Boolean               @default(false) @map("auto_executed")
+  /// MCP grant whose external AI client proposed it (ADR 0032); null for
+  /// the in-app assistant and Steel Agents.
+  integrationGrantId    String?               @map("integration_grant_id")
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
 
@@ -4382,16 +4385,20 @@ model AiPendingAction {
   decidedBy    User?           @relation("AiPendingActionDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
   conversation AiConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   agentRun     SteelAgentRun?  @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+  integrationGrant IntegrationGrant? @relation(fields: [integrationGrantId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, status])
   @@index([conversationId])
   @@index([agentRunId])
+  @@index([integrationGrantId])
   @@map("ai_pending_actions")
 }
 
 enum AiActionSource {
   ASSISTANT
   AGENT
+  /// External AI client through the public MCP server (ADR 0032).
+  MCP
 }
 
 /// Durable trail of every write executed by AI (assistant or agent), on top
@@ -4416,6 +4423,8 @@ model AiActionLog {
   /// pt-BR summary of what the tool did (null on failure).
   summary         String?
   error           String?
+  /// OAuth client of an MCP write (no relation: the trail outlives it).
+  oauthClientId   String?        @map("oauth_client_id")
   createdAt       DateTime       @default(now()) @map("created_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -8193,6 +8202,8 @@ model IntegrationGrant {
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client    OauthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  pendingActions AiPendingAction[]
 
   @@index([userId, revokedAt])
   @@index([workspaceId, revokedAt])

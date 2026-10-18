@@ -607,6 +607,13 @@ export const InboxAiPendingListDTO = dto(
           .nullable(),
         agent: z.object({ id: z.string(), name: z.string() }).nullable(),
         runId: z.string().nullable(),
+        client: z
+          .object({ id: z.string(), name: z.string().nullable() })
+          .nullable()
+          .meta({
+            description:
+              'App conectado (cliente MCP) que pediu a ação, quando veio de fora do Steel; a decisão é a mesma de `ASSISTANT`.',
+          }),
       }),
     ),
     count: z.number().int(),

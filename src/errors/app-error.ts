@@ -1482,3 +1482,21 @@ export const integrationGrantNotFound = (): AppError =>
 export const oauthRequestInvalid = (
   message = 'O pedido de autorização é inválido ou expirou. Volte ao app e conecte de novo.',
 ): AppError => appError('OAUTH_REQUEST_INVALID', message)
+
+export const mcpWriteDisabled = (): AppError =>
+  appError(
+    'MCP_WRITE_DISABLED',
+    'A escrita via MCP está desligada neste workspace. Peça a um administrador para ativá-la em Ajustes > Steel IA.',
+  )
+
+export const mcpIdempotencyInProgress = (): AppError =>
+  appError(
+    'MCP_IDEMPOTENCY_IN_PROGRESS',
+    'Uma chamada com esta chave de idempotência ainda está em andamento. Aguarde alguns segundos e tente de novo.',
+  )
+
+export const mcpIdempotencyKeyReused = (): AppError =>
+  appError(
+    'MCP_IDEMPOTENCY_KEY_REUSED',
+    'Esta chave de idempotência já foi usada com outros argumentos. Gere uma chave nova para cada ação diferente.',
+  )

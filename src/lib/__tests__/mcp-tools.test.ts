@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
-import { validationError } from '@/src/errors/app-error'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createFakeAiPendingAction } from '@/src/__tests__/factories/steel-ai.factory'
+import { databaseError } from '@/src/errors'
+import { forbidden, validationError } from '@/src/errors/app-error'
 import { STEEL_AI_TOOLS } from '@/src/lib/ai/tools'
 import {
+  absolutizeHrefs,
   callMcpTool,
+  IDEMPOTENCY_KEY_ARG,
   isMcpToolExposed,
   mcpAllowedKinds,
   mcpToolContext,
@@ -16,6 +20,39 @@ import { fakeTool, mcpAccess, mcpGrant } from './mcp.fixtures'
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
+vi.mock('@/src/services/ai-pending-action.service', () => ({
+  executeMcpWrite: vi.fn(),
+  proposeMcpWrite: vi.fn(),
+}))
+vi.mock('@/src/cache/mcp-idempotency.cache', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/src/cache/mcp-idempotency.cache')>()
+  return {
+    ...actual,
+    McpIdempotencyCache: {
+      claim: vi.fn(),
+      complete: vi.fn(),
+      release: vi.fn(),
+    },
+  }
+})
+
+import { McpIdempotencyCache } from '@/src/cache/mcp-idempotency.cache'
+import {
+  executeMcpWrite,
+  proposeMcpWrite,
+} from '@/src/services/ai-pending-action.service'
+
+const ORIGIN = 'https://steel.example.com/'
+const OPTS = { origin: ORIGIN }
+const idem = vi.mocked(McpIdempotencyCache)
+const mockedExecute = vi.mocked(executeMcpWrite)
+const mockedPropose = vi.mocked(proposeMcpWrite)
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  idem.claim.mockResolvedValue({ status: 'claimed' })
+})
 vi.mock('@/src/lib/mcp/tool-usage', () => ({
   recordMcpToolUsage: vi.fn(async () => undefined),
 }))
@@ -63,13 +100,64 @@ describe('mcpTools()', () => {
     ])
   })
 
-  it('should never expose writes in wave 1, even with mcp:write', () => {
-    const grant = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
-    expect(mcpAllowedKinds(grant)).toEqual(['READ'])
-    expect(isMcpToolExposed(sdCreate, grant, mcpAccess())).toBe(false)
+  it('should expose writes only with mcp:write AND the admin switch', () => {
+    const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+    const reader = mcpGrant()
+    const on = mcpAccess({ mcpWriteEnabled: true })
+
+    expect(mcpAllowedKinds(writer, on)).toEqual([
+      'READ',
+      'CREATE',
+      'UPDATE',
+      'ACTION',
+    ])
+    expect(mcpAllowedKinds(writer, mcpAccess())).toEqual(['READ'])
+    expect(mcpAllowedKinds(reader, on)).toEqual(['READ'])
+
+    expect(isMcpToolExposed(sdCreate, writer, on)).toBe(true)
+    expect(isMcpToolExposed(sdCreate, writer, mcpAccess())).toBe(false)
+    expect(isMcpToolExposed(sdCreate, reader, on)).toBe(false)
+  })
+
+  it('should not depend on the in-app agent mode or Autopilot', () => {
+    const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+    const access = mcpAccess({
+      mcpWriteEnabled: true,
+      agentModeEnabled: false,
+      autopilotEnabled: false,
+    })
+    expect(isMcpToolExposed(sdCreate, writer, access)).toBe(true)
+  })
+
+  it('should never expose DELETE, whatever the scopes and role', () => {
+    const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
     expect(
-      isMcpToolExposed(sdDelete, grant, mcpAccess({ isPrivileged: true })),
+      isMcpToolExposed(
+        sdDelete,
+        writer,
+        mcpAccess({ isPrivileged: true, mcpWriteEnabled: true }),
+      ),
     ).toBe(false)
+  })
+
+  it('should apply the RBAC matrix to writes too', () => {
+    const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+    const crmCreate = fakeTool({
+      name: 'crm_create',
+      module: 'CRM',
+      kind: 'CREATE',
+      permission: { resource: 'leads', action: 'CREATE' },
+    })
+    expect(
+      isMcpToolExposed(crmCreate, writer, mcpAccess({ mcpWriteEnabled: true })),
+    ).toBe(false)
+    expect(
+      isMcpToolExposed(
+        crmCreate,
+        writer,
+        mcpAccess({ mcpWriteEnabled: true, isPrivileged: true }),
+      ),
+    ).toBe(true)
   })
 
   it('should drop tools of modules left out of the consent', () => {
@@ -99,7 +187,7 @@ describe('mcpTools()', () => {
     ).toEqual([])
   })
 
-  it('should keep the real registry READ-only and DELETE-free', () => {
+  it('should keep the real registry READ-only without the switch', () => {
     const exposed = mcpTools(
       STEEL_AI_TOOLS,
       mcpGrant({ scopes: ['mcp:read', 'mcp:write'] }),
@@ -107,6 +195,17 @@ describe('mcpTools()', () => {
     )
     expect(exposed.length).toBeGreaterThan(0)
     expect(exposed.every((t) => t.kind === 'READ')).toBe(true)
+  })
+
+  it('should expose real writes but never a DELETE with the switch on', () => {
+    const exposed = mcpTools(
+      STEEL_AI_TOOLS,
+      mcpGrant({ scopes: ['mcp:read', 'mcp:write'] }),
+      mcpAccess({ isPrivileged: true, mcpWriteEnabled: true }),
+    )
+    expect(exposed.some((t) => t.kind !== 'READ')).toBe(true)
+    expect(exposed.some((t) => t.kind === 'DELETE')).toBe(false)
+    expect(exposed.some((t) => t.customerFacing)).toBe(true)
   })
 })
 
@@ -155,10 +254,12 @@ describe('callMcpTool()', () => {
     const execute = vi.fn(async () => ok({ data: [1, 2], summary: '2 itens' }))
     const tool = fakeTool({ name: 'sd_list', execute })
 
-    const result = await callMcpTool(tool, mcpGrant(), {
-      workspaceId: 'other',
-      q: 'x',
-    })
+    const result = await callMcpTool(
+      tool,
+      mcpGrant(),
+      { workspaceId: 'other', q: 'x' },
+      OPTS,
+    )
 
     expect(execute).toHaveBeenCalledWith(
       {
@@ -183,7 +284,7 @@ describe('callMcpTool()', () => {
 
   it('should pass empty arguments when the client sends none', async () => {
     const parse = vi.fn((args: Record<string, unknown>) => ok(args))
-    await callMcpTool(fakeTool({ parse }), mcpGrant(), undefined)
+    await callMcpTool(fakeTool({ parse }), mcpGrant(), undefined, OPTS)
     expect(parse).toHaveBeenCalledWith({})
   })
 
@@ -193,7 +294,7 @@ describe('callMcpTool()', () => {
       execute: vi.fn(async () => ok({ data: { big }, summary: 'grande' })),
     })
 
-    const result = await callMcpTool(tool, mcpGrant(), {})
+    const result = await callMcpTool(tool, mcpGrant(), {}, OPTS)
 
     const structured = result.structuredContent as Record<string, unknown>
     expect(structured.truncated).toBe(true)
@@ -207,7 +308,7 @@ describe('callMcpTool()', () => {
     const tool = fakeTool({
       parse: () => err(validationError('Parâmetros inválidos')),
     })
-    expect(await callMcpTool(tool, mcpGrant(), {})).toEqual({
+    expect(await callMcpTool(tool, mcpGrant(), {}, OPTS)).toEqual({
       isError: true,
       content: [{ type: 'text', text: 'Parâmetros inválidos' }],
       structuredContent: {
@@ -220,14 +321,16 @@ describe('callMcpTool()', () => {
     const failing = fakeTool({
       execute: vi.fn(async () => err(validationError('Sem acesso'))),
     })
-    expect((await callMcpTool(failing, mcpGrant(), {})).isError).toBe(true)
+    expect((await callMcpTool(failing, mcpGrant(), {}, OPTS)).isError).toBe(
+      true,
+    )
 
     const throwing = fakeTool({
       execute: vi.fn(async () => {
         throw new Error('boom')
       }),
     })
-    const result = await callMcpTool(throwing, mcpGrant(), {})
+    const result = await callMcpTool(throwing, mcpGrant(), {}, OPTS)
     expect(result.isError).toBe(true)
     expect(result.structuredContent).toEqual({
       error: {
@@ -237,6 +340,321 @@ describe('callMcpTool()', () => {
     })
   })
 
+  it('should make relative hrefs absolute in read results', async () => {
+    const tool = fakeTool({
+      execute: vi.fn(async () =>
+        ok({
+          data: { items: [{ href: '/demo/servicedesk/tickets/42' }] },
+          summary: '1 chamado',
+        }),
+      ),
+    })
+    const result = await callMcpTool(tool, mcpGrant(), {}, OPTS)
+    expect(result.structuredContent).toEqual({
+      summary: '1 chamado',
+      data: {
+        items: [
+          { href: 'https://steel.example.com/demo/servicedesk/tickets/42' },
+        ],
+      },
+    })
+  })
+})
+
+const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+const zapSend = fakeTool({
+  name: 'zap_message_send_text',
+  label: 'Enviando mensagem',
+  module: 'COMMUNICATION',
+  kind: 'ACTION',
+  customerFacing: true,
+  annotations: { destructiveHint: false, openWorldHint: true },
+  preview: vi.fn(),
+})
+
+function executedRun(data: unknown = { id: 't1' }) {
+  return ok({
+    action: createFakeAiPendingAction({ id: 'act1', status: 'EXECUTED' }),
+    run: {
+      ok: true as const,
+      output: {
+        data,
+        summary: 'Chamado criado',
+        target: {
+          type: 'sd_ticket',
+          id: 't1',
+          href: '/demo/servicedesk/tickets/7',
+        },
+      },
+      content: JSON.stringify({
+        status: 'done',
+        summary: 'Chamado criado',
+        data,
+      }),
+    },
+  })
+}
+
+describe('callMcpTool() — writes', () => {
+  it('should run a non customer-facing write at once, with absolute links', async () => {
+    mockedExecute.mockResolvedValue(executedRun())
+
+    const result = await callMcpTool(sdCreate, writer, { title: 'x' }, OPTS)
+
+    expect(mockedExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'sd_create', kind: 'CREATE' }),
+      mcpToolContext(writer),
+      { title: 'x' },
+      { integrationGrantId: 'g1' },
+    )
+    expect(mockedPropose).not.toHaveBeenCalled()
+    expect(result.isError).toBeUndefined()
+    expect(result.structuredContent).toEqual({
+      status: 'executed',
+      summary: 'Chamado criado',
+      actionId: 'act1',
+      target: {
+        type: 'sd_ticket',
+        id: 't1',
+        href: 'https://steel.example.com/demo/servicedesk/tickets/7',
+      },
+      data: { id: 't1' },
+    })
+    // No key: no idempotency bookkeeping.
+    expect(idem.claim).not.toHaveBeenCalled()
+  })
+
+  it('should turn execution and service failures into isError results', async () => {
+    mockedExecute.mockResolvedValue(
+      ok({
+        action: createFakeAiPendingAction({ status: 'FAILED' }),
+        run: {
+          ok: false as const,
+          error: forbidden('Sem permissão'),
+          content: '{}',
+        },
+      }),
+    )
+    const failed = await callMcpTool(sdCreate, writer, {}, OPTS)
+    expect(failed.isError).toBe(true)
+    expect(failed.structuredContent).toEqual({
+      error: { code: 'FORBIDDEN', message: 'Sem permissão' },
+    })
+
+    mockedExecute.mockResolvedValue(err(databaseError()))
+    expect((await callMcpTool(sdCreate, writer, {}, OPTS)).isError).toBe(true)
+  })
+
+  it('should only propose a customer-facing write and return the confirm link', async () => {
+    mockedPropose.mockResolvedValue(
+      ok({
+        action: createFakeAiPendingAction({
+          id: 'act9',
+          preview: {
+            title: 'Enviar mensagem para Ana',
+            summary: 'Olá',
+            target: {
+              type: 'zap_conversation',
+              label: 'Ana',
+              href: '/demo/zap/c1',
+            },
+          },
+          expiresAt: new Date('2026-10-17T12:30:00.000Z'),
+        }),
+        confirmPath: '/demo/inbox?view=ai&action=act9',
+      }),
+    )
+
+    const result = await callMcpTool(zapSend, writer, { text: 'Olá' }, OPTS)
+
+    expect(mockedExecute).not.toHaveBeenCalled()
+    expect(zapSend.execute).not.toHaveBeenCalled()
+    const structured = result.structuredContent as Record<string, unknown>
+    expect(structured).toMatchObject({
+      status: 'pending_confirmation',
+      actionId: 'act9',
+      confirmUrl: 'https://steel.example.com/demo/inbox?view=ai&action=act9',
+      expiresAt: '2026-10-17T12:30:00.000Z',
+      preview: {
+        target: { href: 'https://steel.example.com/demo/zap/c1' },
+      },
+    })
+    const text = (result.content[0] as { text: string }).text
+    expect(text).toContain('Nada foi feito ainda')
+    expect(text).toContain(
+      'https://steel.example.com/demo/inbox?view=ai&action=act9',
+    )
+  })
+
+  it('should report a failed proposal as isError', async () => {
+    mockedPropose.mockResolvedValue(err(forbidden('Sem acesso')))
+    expect((await callMcpTool(zapSend, writer, {}, OPTS)).isError).toBe(true)
+  })
+
+  it('should strip the idempotency key and store the result under it', async () => {
+    mockedExecute.mockResolvedValue(executedRun())
+
+    const result = await callMcpTool(
+      sdCreate,
+      writer,
+      { title: 'x', [IDEMPOTENCY_KEY_ARG]: 'k-1' },
+      OPTS,
+    )
+
+    const scope = { grantId: 'g1', toolName: 'sd_create', key: 'k-1' }
+    expect(mockedExecute.mock.calls[0][2]).toEqual({ title: 'x' })
+    expect(idem.claim).toHaveBeenCalledWith(scope, expect.any(String))
+    expect(idem.complete).toHaveBeenCalledWith(
+      scope,
+      idem.claim.mock.calls[0][1],
+      result,
+    )
+    expect(idem.release).not.toHaveBeenCalled()
+  })
+
+  it('should replay a finished key without running again', async () => {
+    const stored = { content: [{ type: 'text', text: 'antes' }] }
+    idem.claim.mockResolvedValue({ status: 'replay', result: stored })
+
+    const result = await callMcpTool(
+      sdCreate,
+      writer,
+      { [IDEMPOTENCY_KEY_ARG]: 'k-1' },
+      OPTS,
+    )
+
+    expect(result).toEqual(stored)
+    expect(mockedExecute).not.toHaveBeenCalled()
+  })
+
+  it('should refuse a key in progress or reused with other arguments', async () => {
+    idem.claim.mockResolvedValue({ status: 'in_progress' })
+    const running = await callMcpTool(
+      sdCreate,
+      writer,
+      { [IDEMPOTENCY_KEY_ARG]: 'k-1' },
+      OPTS,
+    )
+    expect(running.structuredContent).toMatchObject({
+      error: { code: 'MCP_IDEMPOTENCY_IN_PROGRESS' },
+    })
+
+    idem.claim.mockResolvedValue({ status: 'mismatch' })
+    const reused = await callMcpTool(
+      sdCreate,
+      writer,
+      { [IDEMPOTENCY_KEY_ARG]: 'k-1' },
+      OPTS,
+    )
+    expect(reused.structuredContent).toMatchObject({
+      error: { code: 'MCP_IDEMPOTENCY_KEY_REUSED' },
+    })
+    expect(mockedExecute).not.toHaveBeenCalled()
+  })
+
+  it('should release the key when the write failed, so a retry runs', async () => {
+    mockedExecute.mockResolvedValue(err(databaseError()))
+    await callMcpTool(sdCreate, writer, { [IDEMPOTENCY_KEY_ARG]: 'k-1' }, OPTS)
+    expect(idem.release).toHaveBeenCalledWith({
+      grantId: 'g1',
+      toolName: 'sd_create',
+      key: 'k-1',
+    })
+    expect(idem.complete).not.toHaveBeenCalled()
+  })
+
+  it('should run without dedupe when Redis is unavailable', async () => {
+    idem.claim.mockResolvedValue({ status: 'unavailable' })
+    mockedExecute.mockResolvedValue(executedRun())
+    const result = await callMcpTool(
+      sdCreate,
+      writer,
+      { [IDEMPOTENCY_KEY_ARG]: 'k-1' },
+      OPTS,
+    )
+    expect(result.isError).toBeUndefined()
+  })
+
+  it.each([
+    ['empty', '  '],
+    ['not a string', 42],
+    ['too long', 'x'.repeat(201)],
+  ])('should reject an idempotency key that is %s', async (_label, key) => {
+    const result = await callMcpTool(
+      sdCreate,
+      writer,
+      { [IDEMPOTENCY_KEY_ARG]: key },
+      OPTS,
+    )
+    expect(result.structuredContent).toMatchObject({
+      error: { code: 'VALIDATION_ERROR' },
+    })
+    expect(mockedExecute).not.toHaveBeenCalled()
+  })
+
+  it('should ignore a null idempotency key', async () => {
+    mockedExecute.mockResolvedValue(executedRun())
+    await callMcpTool(sdCreate, writer, { [IDEMPOTENCY_KEY_ARG]: null }, OPTS)
+    expect(mockedExecute.mock.calls[0][2]).toEqual({})
+    expect(idem.claim).not.toHaveBeenCalled()
+  })
+})
+
+describe('toMcpTool() — writes', () => {
+  it('should add the optional idempotency key to write schemas only', () => {
+    const write = toMcpTool(sdCreate)
+    expect(write.inputSchema.properties).toHaveProperty(IDEMPOTENCY_KEY_ARG)
+    expect(write.inputSchema.required ?? []).not.toContain(IDEMPOTENCY_KEY_ARG)
+    expect(toMcpTool(sdRead).inputSchema.properties).not.toHaveProperty(
+      IDEMPOTENCY_KEY_ARG,
+    )
+    const bare = toMcpTool(
+      fakeTool({ kind: 'UPDATE', parameters: { type: 'object' } }),
+    )
+    expect(Object.keys(bare.inputSchema.properties ?? {})).toEqual([
+      IDEMPOTENCY_KEY_ARG,
+    ])
+  })
+
+  it('should tell clients that customer-facing writes need confirmation', () => {
+    expect(toMcpTool(zapSend).description).toContain('confirmUrl')
+    expect(toMcpTool(sdCreate).description).toBe('d')
+  })
+})
+
+describe('absolutizeHrefs()', () => {
+  it('should prefix only single-slash href strings, at any depth', () => {
+    expect(
+      absolutizeHrefs(
+        {
+          href: '/a',
+          list: [{ href: '/b' }, { href: 'https://x.dev/c' }],
+          other: { href: '//evil.dev/d', path: '/e', n: 1 },
+          nested: { href: 7 },
+        },
+        'https://steel.example.com/some/path',
+      ),
+    ).toEqual({
+      href: 'https://steel.example.com/a',
+      list: [
+        { href: 'https://steel.example.com/b' },
+        { href: 'https://x.dev/c' },
+      ],
+      other: { href: '//evil.dev/d', path: '/e', n: 1 },
+      nested: { href: 7 },
+    })
+    expect(absolutizeHrefs('texto', ORIGIN)).toBe('texto')
+  })
+
+  it('should stop at a safe depth', () => {
+    let deep: Record<string, unknown> = { href: '/fundo' }
+    for (let i = 0; i < 20; i++) deep = { child: deep }
+    const out = JSON.stringify(absolutizeHrefs(deep, ORIGIN))
+    expect(out).toContain('"href":"/fundo"')
+  })
+})
+
+describe('callMcpTool() — telemetry', () => {
   it('should log each call by outcome and count it, without arguments', async () => {
     vi.mocked(logMcpToolCall).mockClear()
     vi.mocked(reportMcpError).mockClear()
@@ -291,10 +709,44 @@ describe('callMcpTool()', () => {
     })
   })
 
-  it('should refuse a write tool even if called directly', async () => {
-    const result = await callMcpTool(sdCreate, mcpGrant(), {})
-    expect(result.isError).toBe(true)
-    expect(sdCreate.execute).not.toHaveBeenCalled()
+  it('should log writes with their status and count them', async () => {
+    const writer = mcpGrant({ scopes: ['mcp:read', 'mcp:write'] })
+    mockedExecute.mockResolvedValue(executedRun())
+    await callMcpTool(sdCreate, writer, {}, OPTS)
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'ok',
+      writeStatus: 'executed',
+    })
+    expect(recordMcpToolUsage).toHaveBeenLastCalledWith('ws1', 'sd_create')
+
+    idem.claim.mockResolvedValue({ status: 'replay', result: {} })
+    await callMcpTool(sdCreate, writer, { idempotencyKey: 'k' }, OPTS)
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'ok',
+      writeStatus: 'replayed',
+    })
+  })
+
+  it('should report a write that threw and log it as failed', async () => {
+    const boom = new Error('boom')
+    mockedExecute.mockImplementation(async (tool, ctx) => {
+      await tool.execute(ctx, {}).catch(() => undefined)
+      return err(databaseError())
+    })
+    const throwing = fakeTool({
+      ...sdCreate,
+      execute: vi.fn(async () => {
+        throw boom
+      }),
+    })
+    await callMcpTool(throwing, mcpGrant(), {}, OPTS)
+    expect(reportMcpError).toHaveBeenCalledWith(
+      boom,
+      expect.objectContaining({ tool: 'sd_create' }),
+    )
+    expect(vi.mocked(logMcpToolCall).mock.lastCall?.[1]).toMatchObject({
+      outcome: 'failed',
+    })
   })
 })
 

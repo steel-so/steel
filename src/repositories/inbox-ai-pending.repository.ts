@@ -7,6 +7,8 @@ const LIST_LIMIT = 50
 
 export type InboxAssistantPendingRow = AiPendingAction & {
   conversation: { id: string; title: string | null } | null
+  /** MCP actions: the external client that proposed it. */
+  integrationGrant: { client: { clientId: string; name: string | null } } | null
 }
 
 export type InboxAgentPendingRow = AiPendingAction & {
@@ -46,7 +48,12 @@ export const InboxAiPendingRepository = {
           status: 'PENDING',
           expiresAt: { gt: now },
         },
-        include: { conversation: { select: { id: true, title: true } } },
+        include: {
+          conversation: { select: { id: true, title: true } },
+          integrationGrant: {
+            select: { client: { select: { clientId: true, name: true } } },
+          },
+        },
         orderBy: { expiresAt: 'asc' },
         take: LIST_LIMIT,
       })

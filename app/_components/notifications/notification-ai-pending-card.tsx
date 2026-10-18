@@ -5,10 +5,11 @@ import {
   ArrowRight01Icon,
   Clock01Icon,
   Loading03Icon,
+  PlugSocketIcon,
   RoboticIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -57,23 +58,33 @@ export function isExpiringSoon(expiresAt: string, now: number): boolean {
 
 /**
  * One "Pendências da IA" item: the preview (before → after), where it came
- * from (chat or agent run), the expiry countdown and the inline decision.
- * Assistant items say Confirmar/Cancelar (only the requester sees them);
- * agent items say Aprovar/Rejeitar. Exclusion asks twice and sends
- * `doubleConfirmed: true` — the server checks it again either way.
+ * from (chat, agent run or a connected app over MCP), the expiry countdown
+ * and the inline decision. Assistant and MCP items say Confirmar/Cancelar
+ * (only the requester sees them); agent items say Aprovar/Rejeitar.
+ * Exclusion asks twice and sends `doubleConfirmed: true` — the server
+ * checks it again either way. `highlighted` is the action an MCP confirm
+ * link points at (`?action=<id>`): scrolled into view and outlined.
  */
 export function NotificationAiPendingCard({
   workspaceId,
   slug,
   item,
   now,
+  highlighted = false,
 }: {
   workspaceId: string
   slug: string
   item: InboxAiPendingItemDTO
   /** Shared clock (ms) so every countdown ticks together. */
   now: number
+  highlighted?: boolean
 }) {
+  const cardRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (highlighted) {
+      cardRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    }
+  }, [highlighted])
   const decide = useDecideInboxAiPending(workspaceId)
   const [askTwice, setAskTwice] = useState(false)
   const [pendingDecision, setPendingDecision] = useState<
@@ -82,6 +93,7 @@ export function NotificationAiPendingCard({
   const { action } = item
   const { preview } = action
   const isAgent = item.source === 'AGENT'
+  const client = item.client
   const isDelete = action.kind === 'DELETE' || action.requiresDoubleConfirm
   const expired = Date.parse(action.expiresAt) <= now
   const soon = isExpiringSoon(action.expiresAt, now)
@@ -127,15 +139,26 @@ export function NotificationAiPendingCard({
 
   const sourceLabel = isAgent
     ? (item.agent?.name ?? 'Steel Agent')
-    : (item.conversation?.title ?? 'Conversa com o Steel AI')
+    : client
+      ? (client.name ?? 'App conectado')
+      : (item.conversation?.title ?? 'Conversa com o Steel AI')
+  const originLabel = isAgent ? 'Agente' : client ? 'App conectado' : 'Steel AI'
+  const originIcon = isAgent
+    ? RoboticIcon
+    : client
+      ? PlugSocketIcon
+      : AiMagicIcon
 
   return (
     <article
+      ref={cardRef}
       aria-label={`Pendência da IA: ${preview.title}`}
-      data-source={item.source}
+      aria-current={highlighted ? 'true' : undefined}
+      data-source={client ? 'MCP' : item.source}
       className={cn(
         'space-y-3 rounded-xl border bg-card p-3.5 text-card-foreground',
         isDelete ? 'border-destructive/40' : 'border-border/80',
+        highlighted && 'ring-2 ring-primary/60',
       )}
     >
       <header className='space-y-1.5'>
@@ -147,12 +170,12 @@ export function NotificationAiPendingCard({
           </Badge>
           <span className='inline-flex min-w-0 items-center gap-1 text-muted-foreground'>
             <SteelIcon
-              icon={isAgent ? RoboticIcon : AiMagicIcon}
+              icon={originIcon}
               strokeWidth={2}
               className='size-3.5 shrink-0'
             />
             <span className='truncate'>
-              {isAgent ? 'Agente' : 'Steel AI'} · {sourceLabel}
+              {originLabel} · {sourceLabel}
             </span>
           </span>
           <span
@@ -175,6 +198,12 @@ export function NotificationAiPendingCard({
         <h3 className='font-semibold text-sm leading-snug'>{preview.title}</h3>
         {preview.summary ? (
           <p className='text-muted-foreground text-xs'>{preview.summary}</p>
+        ) : null}
+        {client ? (
+          <p className='text-muted-foreground text-xs'>
+            Pedido por {client.name ?? 'um app conectado'} em seu nome, via MCP.
+            Nada foi feito ainda: confirme só se reconhece o pedido.
+          </p>
         ) : null}
       </header>
 
@@ -210,12 +239,14 @@ export function NotificationAiPendingCard({
       ) : null}
 
       <footer className='flex flex-wrap items-center gap-2'>
-        <Link
-          href={`/${slug}${item.path}`}
-          className='text-primary text-xs hover:underline'
-        >
-          {isAgent ? 'Ver execução do agente' : 'Abrir conversa'}
-        </Link>
+        {client ? null : (
+          <Link
+            href={`/${slug}${item.path}`}
+            className='text-primary text-xs hover:underline'
+          >
+            {isAgent ? 'Ver execução do agente' : 'Abrir conversa'}
+          </Link>
+        )}
         <div className='ml-auto flex items-center gap-2'>
           <Button
             size='xs'

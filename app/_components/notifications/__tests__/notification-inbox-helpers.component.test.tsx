@@ -320,6 +320,7 @@ describe('<NotificationAiPendingCard />', () => {
     conversation: null,
     agent: null,
     runId: null,
+    client: null,
     action: {
       id: 'pa9',
       conversationId: null,
@@ -406,5 +407,49 @@ describe('<NotificationAiPendingCard />', () => {
       (screen.getByRole('button', { name: 'Confirmar' }) as HTMLButtonElement)
         .disabled,
     ).toBe(true)
+  })
+
+  it('shows an MCP action as a connected app request, highlighted from its link', () => {
+    const scrollIntoView = vi.fn()
+    HTMLElement.prototype.scrollIntoView = scrollIntoView
+    renderWithQuery(
+      <NotificationAiPendingCard
+        workspaceId='ws_1'
+        slug='acme'
+        item={{
+          ...base,
+          path: '/inbox?view=ai',
+          client: { id: 'cl1', name: 'Claude' },
+        }}
+        now={Date.now()}
+        highlighted
+      />,
+    )
+    const card = screen.getByRole('article', {
+      name: 'Pendência da IA: Enviar e-mail ao lead',
+    })
+    expect(card.getAttribute('data-source')).toBe('MCP')
+    expect(card.getAttribute('aria-current')).toBe('true')
+    expect(screen.getByText('App conectado · Claude')).toBeTruthy()
+    expect(
+      screen.getByText(/Pedido por Claude em seu nome, via MCP/),
+    ).toBeTruthy()
+    // Decided right here: no conversation to open.
+    expect(screen.queryByRole('link', { name: 'Abrir conversa' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toBeTruthy()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('names an MCP client without a name generically', () => {
+    renderWithQuery(
+      <NotificationAiPendingCard
+        workspaceId='ws_1'
+        slug='acme'
+        item={{ ...base, client: { id: 'cl1', name: null } }}
+        now={Date.now()}
+      />,
+    )
+    expect(screen.getByText('App conectado · App conectado')).toBeTruthy()
+    expect(screen.getByText(/Pedido por um app conectado/)).toBeTruthy()
   })
 })

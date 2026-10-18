@@ -67,6 +67,23 @@ A IA **nunca exclui** nada pelo conector. E o que fala com o seu cliente (uma
 mensagem de WhatsApp, um e-mail, um link de aprovação) não sai direto: o
 assistente devolve um link para você conferir e confirmar no Steel.
 
+## Confirmar uma ação pedida pelo assistente
+
+Quando o assistente quer enviar algo a um cliente, ele responde com um link do
+Steel em vez de enviar. Para concluir:
+
+1. Abra o link. Ele leva à **Caixa de entrada › Pendências da IA**, com o pedido
+   em destaque e a etiqueta **App conectado** e o nome do assistente.
+2. Confira a prévia: para quem vai e o que vai ser enviado.
+3. Clique em **Confirmar** para executar ou em **Cancelar** para descartar.
+
+O pedido vale por **30 minutos** e só você, que conectou o assistente, pode
+confirmar. Se você desconectar o assistente, os pedidos dele que ainda estavam
+esperando são cancelados.
+
+As outras alterações (criar um lead, registrar uma nota, atualizar um chamado)
+acontecem na hora e ficam no histórico de ações da IA com a origem **MCP**.
+
 <Callout type='admin'>
   A permissão de alterar dados por assistentes externos vem desligada. O dono ou
   um administrador liga em **Ajustes › Steel IA › Permitir escrita via MCP**.
@@ -105,6 +122,7 @@ assistente de uma vez para todo o workspace.
 | O assistente pede login de novo ou diz que não tem acesso | A conexão foi revogada ou você saiu do workspace. Remova o conector e conecte de novo |
 | Um módulo não aparece na tela de autorização | Ele está desligado no workspace ou o seu papel não tem acesso. Fale com um administrador |
 | O assistente diz que não consegue fazer uma alteração | A conexão é só de consulta, ou a escrita via MCP está desligada no workspace |
+| O link do assistente diz que a ação não está mais pendente | O pedido passou dos 30 minutos, já foi decidido ou a conexão foi revogada. Peça ao assistente para tentar de novo |
 | Os dados são de outro workspace | Revogue em **Apps conectados** e conecte escolhendo o workspace certo |
 
 Quem desenvolve integrações encontra os detalhes técnicos (endereço, escopos e a

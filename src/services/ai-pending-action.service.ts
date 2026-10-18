@@ -14,10 +14,14 @@ import {
   aiPendingActionNotFound,
   aiPendingActionNotPending,
   aiToolNotAllowed,
+  mcpWriteDisabled,
 } from '@/src/errors/app-error'
 import {
+  type AiToolAccess,
   type AiToolRunResult,
+  aiActionSource,
   findTool,
+  hasToolAccess,
   isToolAllowed,
   proposeWriteTool,
   resolveToolAccess,
@@ -35,6 +39,8 @@ import { toAiPendingActionDTO } from '@/src/mappers/ai-pending-action.mapper'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
 import { AiMessageRepository } from '@/src/repositories/ai-conversation.repository'
 import { AiPendingActionRepository } from '@/src/repositories/ai-pending-action.repository'
+import { IntegrationGrantRepository } from '@/src/repositories/integration-grant.repository'
+import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type { ConfirmAiPendingActionDTO } from '@/src/schemas/steel-ai.schema'
 import type { AiPendingActionDTO } from '@/types/steel-ai'
 import { assertSteelAiEnabled } from './ai-conversation.service'
@@ -74,14 +80,21 @@ async function appendDecision(
 }
 
 /** Outcome of running a claimed action, plus the raw tool run. */
-interface ClaimedRun {
+export interface ClaimedRun {
   action: AiPendingAction
   run: AiToolRunResult
 }
 
 /**
+ * Writes that ran without a per-action confirmation (audit action
+ * `auto_execute`): Autopilot in the app, or an MCP client with `mcp:write`
+ * on a tool that is not customer-facing.
+ */
+type AutoMode = 'AUTOPILOT' | 'MCP'
+
+/**
  * Runs a claimed action and records it everywhere: outcome on the row
- * (EXECUTED or FAILED), AiActionLog and audit. `autopilot` marks writes
+ * (EXECUTED or FAILED), AiActionLog and audit. `autoMode` marks writes
  * that ran without a confirmation (audit action `auto_execute`).
  */
 async function runClaimed(
@@ -90,7 +103,7 @@ async function runClaimed(
   input: {
     ctx: AiToolContext
     deciderId: string | null
-    autopilot?: boolean
+    autoMode?: AutoMode
   },
 ): Promise<Result<ClaimedRun>> {
   const run = await runTool(
@@ -117,7 +130,7 @@ async function runClaimed(
 
   const log = await AiActionLogRepository.create({
     workspaceId: action.workspaceId,
-    source: input.ctx.source === 'agent' ? 'AGENT' : 'ASSISTANT',
+    source: aiActionSource(input.ctx),
     actorId: input.deciderId,
     agentId: input.ctx.agentId ?? null,
     pendingActionId: action.id,
@@ -130,6 +143,7 @@ async function runClaimed(
     outcome: run.ok ? 'success' : 'failure',
     summary: run.ok ? run.output.summary : null,
     error: run.ok ? null : run.error.message,
+    oauthClientId: input.ctx.oauthClientId ?? null,
   })
   if (!log.ok) {
     logger.error(
@@ -145,7 +159,7 @@ async function runClaimed(
 
   auditMutation({
     entity: 'ai_pending_action',
-    action: input.autopilot ? 'auto_execute' : 'confirm',
+    action: input.autoMode ? 'auto_execute' : 'confirm',
     actorId: input.deciderId,
     targetId: action.id,
     outcome: run.ok ? 'success' : 'failure',
@@ -157,7 +171,11 @@ async function runClaimed(
       module: action.module,
       targetType: target?.type,
       targetRecordId: target?.id,
-      ...(input.autopilot && { mode: 'AUTOPILOT' }),
+      ...(input.autoMode && { mode: input.autoMode }),
+      ...(input.ctx.source === 'mcp' && {
+        source: 'mcp',
+        oauthClientId: input.ctx.oauthClientId,
+      }),
     },
   })
 
@@ -237,7 +255,7 @@ export async function executeAutopilotWrite(
   const claimed = await runClaimed(created.value, tool, {
     ctx,
     deciderId: ctx.actorId,
-    autopilot: true,
+    autoMode: 'AUTOPILOT',
   })
   if (!claimed.ok) return claimed
   const { action, run } = claimed.value
@@ -272,6 +290,187 @@ export async function executeAutopilotWrite(
   return ok({
     action,
     content: serializeToolResult(payload, TOOL_OUTPUT_MAX_BYTES),
+  })
+}
+
+/** Inbox screen where the requester confirms an MCP action. */
+export function mcpConfirmPath(slug: string, actionId: string): string {
+  return `/${slug}/inbox?view=ai&action=${encodeURIComponent(actionId)}`
+}
+
+/**
+ * MCP write of a tool that is NOT customer-facing (mcp-governance): runs at
+ * once, like Autopilot (ADR 0021) — the user consented to `mcp:write` and
+ * an admin turned on "Permitir escrita via MCP". The row is born claimed;
+ * AiActionLog (source MCP + OAuth client) and audit `auto_execute` (mode
+ * MCP). The MCP adapter already checked that the grant exposes the tool.
+ */
+export async function executeMcpWrite(
+  tool: AnySteelAiTool,
+  ctx: AiToolContext,
+  rawArgs: Record<string, unknown>,
+  origin: { integrationGrantId: string },
+  now: Date = new Date(),
+): Promise<Result<ClaimedRun>> {
+  const created = await proposeWriteTool(
+    tool,
+    ctx,
+    rawArgs,
+    { claimedBy: ctx.actorId, integrationGrantId: origin.integrationGrantId },
+    now,
+  )
+  if (!created.ok) return created
+
+  const claimed = await runClaimed(created.value, tool, {
+    ctx,
+    deciderId: ctx.actorId,
+    autoMode: 'MCP',
+  })
+  if (!claimed.ok) return claimed
+
+  logger.info(
+    'steel_ai.mcp_write_executed',
+    logFields(
+      {
+        component: 'AiPendingActionService',
+        workspaceId: ctx.workspaceId,
+        actionId: claimed.value.action.id,
+      },
+      {
+        toolName: tool.name,
+        kind: tool.kind,
+        status: claimed.value.action.status,
+        clientId: ctx.oauthClientId,
+      },
+    ),
+  )
+  return claimed
+}
+
+/**
+ * Customer-facing MCP write (WhatsApp message, public reply, approval
+ * link…): only proposed. The AiPendingAction belongs to the grant's user,
+ * lasts 30 minutes and is confirmed in the Steel inbox ("Pendências da
+ * IA") exactly like a Build-mode action. Returns the path of that screen.
+ */
+export async function proposeMcpWrite(
+  tool: AnySteelAiTool,
+  ctx: AiToolContext,
+  rawArgs: Record<string, unknown>,
+  origin: { integrationGrantId: string },
+  now: Date = new Date(),
+): Promise<Result<{ action: AiPendingAction; confirmPath: string }>> {
+  const workspace = await WorkspaceRepository.findById(ctx.workspaceId)
+  if (!workspace.ok) return workspace
+
+  const created = await proposeWriteTool(
+    tool,
+    ctx,
+    rawArgs,
+    { integrationGrantId: origin.integrationGrantId },
+    now,
+  )
+  if (!created.ok) return created
+
+  auditMutation({
+    entity: 'ai_pending_action',
+    action: 'request',
+    actorId: ctx.actorId,
+    targetId: created.value.id,
+    meta: {
+      workspaceId: ctx.workspaceId,
+      toolName: tool.name,
+      kind: tool.kind,
+      module: tool.module,
+      source: 'mcp',
+      oauthClientId: ctx.oauthClientId,
+    },
+  })
+  logger.info(
+    'steel_ai.mcp_write_proposed',
+    logFields(
+      {
+        component: 'AiPendingActionService',
+        workspaceId: ctx.workspaceId,
+        actionId: created.value.id,
+      },
+      { toolName: tool.name, kind: tool.kind, clientId: ctx.oauthClientId },
+    ),
+  )
+
+  return ok({
+    action: created.value,
+    confirmPath: mcpConfirmPath(workspace.value.slug, created.value.id),
+  })
+}
+
+/** Tool and execution context of a confirmed action. */
+interface ConfirmTarget {
+  tool: AnySteelAiTool
+  ctx: AiToolContext
+}
+
+/**
+ * Confirm gate of an action an MCP client proposed: the MCP rules apply
+ * instead of agent mode — the admin switch is still on, the grant is still
+ * active with `mcp:write` and the module, and the user can still use the
+ * tool. The execution context carries the OAuth client.
+ */
+async function mcpConfirmGate(
+  action: AiPendingAction,
+  integrationGrantId: string,
+  actorId: string,
+  access: AiToolAccess,
+): Promise<Result<ConfirmTarget>> {
+  if (!access.mcpWriteEnabled) return err(mcpWriteDisabled())
+  const tool = findTool(action.toolName)
+  const grant = await IntegrationGrantRepository.findById(integrationGrantId)
+  if (!grant.ok) return grant
+  if (
+    grant.value.revokedAt ||
+    grant.value.userId !== actorId ||
+    !grant.value.scopes.includes('mcp:write')
+  ) {
+    return err(
+      aiToolNotAllowed(
+        'O app conectado que pediu esta ação foi revogado ou perdeu a permissão de escrita.',
+      ),
+    )
+  }
+  if (
+    !tool ||
+    tool.kind === 'READ' ||
+    tool.kind === 'DELETE' ||
+    !hasToolAccess(tool, access) ||
+    (action.module !== null && !grant.value.modules.includes(action.module))
+  ) {
+    return err(aiToolNotAllowed())
+  }
+  return ok({
+    tool,
+    ctx: {
+      workspaceId: action.workspaceId,
+      actorId,
+      source: 'mcp',
+      oauthClientId: grant.value.clientId,
+    },
+  })
+}
+
+/** Confirm gate of a Build-mode action: agent mode on and the tool allowed. */
+function assistantConfirmGate(
+  action: AiPendingAction,
+  actorId: string,
+  access: AiToolAccess,
+): Result<ConfirmTarget> {
+  if (!access.agentModeEnabled) return err(aiAgentModeDisabled())
+  const tool = findTool(action.toolName)
+  if (!tool || !isToolAllowed(tool, access, 'AGENT')) {
+    return err(aiToolNotAllowed())
+  }
+  return ok({
+    tool,
+    ctx: { workspaceId: action.workspaceId, actorId, source: 'assistant' },
   })
 }
 
@@ -357,12 +556,18 @@ export const AiPendingActionService = {
     if (action.value.requiresDoubleConfirm && dto.doubleConfirmed !== true) {
       return err(aiDoubleConfirmationRequired())
     }
-    if (!access.value.agentModeEnabled) return err(aiAgentModeDisabled())
 
-    const tool = findTool(action.value.toolName)
-    if (!tool || !isToolAllowed(tool, access.value, 'AGENT')) {
-      return err(aiToolNotAllowed())
-    }
+    const gate = action.value.integrationGrantId
+      ? // Proposed by an external AI client: MCP rules, not agent mode.
+        await mcpConfirmGate(
+          action.value,
+          action.value.integrationGrantId,
+          actorId,
+          access.value,
+        )
+      : assistantConfirmGate(action.value, actorId, access.value)
+    if (!gate.ok) return gate
+    const { tool, ctx } = gate.value
 
     const claimed = await AiPendingActionRepository.transitionFromPending(
       actionId,
@@ -379,7 +584,7 @@ export const AiPendingActionService = {
     }
 
     const executed = await executeClaimedAction(claimed.value, tool, {
-      ctx: { workspaceId, actorId, source: 'assistant' },
+      ctx,
       deciderId: actorId,
     })
     if (!executed.ok) return executed

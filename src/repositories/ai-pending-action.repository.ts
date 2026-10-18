@@ -30,6 +30,8 @@ export interface CreateAiPendingActionInput {
   decidedById?: string | null
   decidedAt?: Date | null
   autoExecuted?: boolean
+  /** MCP: grant of the external client that proposed it (ADR 0032). */
+  integrationGrantId?: string | null
 }
 
 /** Writes proposed by Steel AI that wait for a human decision. */

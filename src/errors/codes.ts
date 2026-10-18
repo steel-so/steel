@@ -929,6 +929,19 @@ export const ERROR_CODES = {
   // The signed OAuth authorization request is missing, tampered with or
   // expired (10 min), or asks for something the consent cannot give.
   OAUTH_REQUEST_INVALID: { code: 'OAUTH_REQUEST_INVALID', status: 400 },
+  // MCP writes (mcp-governance): the admin switch "Permitir escrita via MCP"
+  // is off, so an action proposed by an external client can't be confirmed.
+  MCP_WRITE_DISABLED: { code: 'MCP_WRITE_DISABLED', status: 403 },
+  // Same `idempotencyKey` still running for this grant and tool.
+  MCP_IDEMPOTENCY_IN_PROGRESS: {
+    code: 'MCP_IDEMPOTENCY_IN_PROGRESS',
+    status: 409,
+  },
+  // Same `idempotencyKey` reused with different arguments.
+  MCP_IDEMPOTENCY_KEY_REUSED: {
+    code: 'MCP_IDEMPOTENCY_KEY_REUSED',
+    status: 422,
+  },
 
   // Server Errors (500)
   INTERNAL_SERVER_ERROR: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
