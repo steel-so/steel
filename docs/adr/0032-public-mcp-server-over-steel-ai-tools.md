@@ -59,3 +59,10 @@ Detalhes para aplicar:
   pedem confirmação.
 - O proxy da homologação precisa repassar SSE sem buffering em `/api/mcp`.
 - Revisitar o plano em que o MCP entra quando houver uso medido.
+
+## Atualização (18/10/2026)
+
+O número do contexto está errado: quando esta ADR foi aceita, o registry
+(`STEEL_AI_TOOLS` em `src/lib/ai/tools/index.ts`) já tinha **98**
+ferramentas, não 91. O número muda a cada leva de ferramentas; a lista viva,
+com o que cada uma faz, está em `/dev/mcp` (gerada do registry).
