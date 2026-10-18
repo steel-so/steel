@@ -1,7 +1,13 @@
 import { toNextJsHandler } from 'better-auth/next-js'
 import { withAxiom } from '@/lib/axiom/server'
 import { auth } from '@/src/lib/auth'
-import { authLimiter, consume, otpLimiter } from '@/src/lib/rate-limit'
+import {
+  authLimiter,
+  consume,
+  oauthLimiter,
+  oauthRegisterLimiter,
+  otpLimiter,
+} from '@/src/lib/rate-limit'
 import { getClientIp } from '@/src/lib/rate-limit-helpers'
 import { handleError } from '@/utils/http-response'
 
@@ -44,14 +50,37 @@ async function getOtpRateKey(request: Request): Promise<string> {
   return `ip:${getClientIp(request)}`
 }
 
+const OAUTH_PREFIX = '/api/auth/oauth2/'
+const OAUTH_REGISTER_PATH = '/api/auth/oauth2/register'
+
+/**
+ * OAuth provider endpoints (authorize, token, register, revoke…, ADR 0033)
+ * get their own per-IP budget. Better Auth's built-in limiter only runs in
+ * production and keeps its counters in memory, per container.
+ */
+async function limitOAuth(request: Request, pathname: string) {
+  if (!pathname.startsWith(OAUTH_PREFIX)) return null
+  const ip = getClientIp(request)
+  const limiter =
+    pathname === OAUTH_REGISTER_PATH ? oauthRegisterLimiter : oauthLimiter
+  const result = await consume(limiter, `${ip}:${pathname}`)
+  return result.ok ? null : handleError(result.error)
+}
+
 const handler = toNextJsHandler(auth)
 
 export const GET = withAxiom(async (request: Request) => {
+  const limited = await limitOAuth(request, new URL(request.url).pathname)
+  if (limited) return limited
+
   return handler.GET(request)
 })
 
 export const POST = withAxiom(async (request: Request) => {
   const pathname = new URL(request.url).pathname
+
+  const limited = await limitOAuth(request, pathname)
+  if (limited) return limited
 
   if (shouldRateLimit(pathname)) {
     const ip = getClientIp(request)

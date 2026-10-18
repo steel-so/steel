@@ -1,3 +1,4 @@
+import { oauthProvider } from '@better-auth/oauth-provider'
 import { createId } from '@paralleldrive/cuid2'
 import { hash, verify } from 'argon2'
 import { betterAuth } from 'better-auth'
@@ -19,6 +20,14 @@ import { sendResetPasswordEmail } from '@/src/lib/mail/user/send-reset-password'
 import { sendVerify2faAccessOtp } from '@/src/lib/mail/user/send-verify-2fa-access-otp'
 import { sendVerifyEmailWithOtp } from '@/src/lib/mail/user/send-verify-email-with-otp'
 import { sendWelcomeEmail } from '@/src/lib/mail/user/send-welcome'
+import { currentGrantReference } from '@/src/lib/mcp/consent-reference'
+import {
+  appOrigin,
+  mcpResourceUrl,
+  OAUTH_SCOPES,
+  OAUTH_TOKEN_PREFIX,
+  oauthIssuer,
+} from '@/src/lib/mcp/oauth-config'
 import { UserService } from '@/src/services/user.service'
 import { prisma } from './prisma'
 import { generateUniqueUsername } from './username'
@@ -306,6 +315,38 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    // OAuth 2.1 provider for integrations — MCP clients today, the Steel CLI
+    // later (ADR 0033, docs/mcp/README.md). Authorization code + PKCE,
+    // dynamic client registration, refresh and revocation.
+    oauthProvider({
+      // Both prompts land on our consent page: without a session the proxy
+      // sends the user to /sign-in and back (`?redirect=`), so the login
+      // step needs no `oauth_query` support in the sign-in form.
+      loginPage: '/oauth/consent',
+      consentPage: '/oauth/consent',
+      scopes: [...OAUTH_SCOPES],
+      // MCP clients send `resource=<app>/api/mcp` (RFC 8707). The issuer and
+      // the bare origin stay valid for clients that send one of those.
+      validAudiences: [mcpResourceUrl(), oauthIssuer(), appOrigin()],
+      grantTypes: ['authorization_code', 'refresh_token'],
+      // MCP clients (Claude, ChatGPT, Cursor) register themselves; the
+      // consent screen is where the user decides, not the registration.
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      // Opaque tokens only: every call resolves the token to its grant in the
+      // database, so a revocation or a removed membership cuts access on the
+      // next request — a self-contained JWT would outlive both.
+      disableJwtPlugin: true,
+      prefix: { ...OAUTH_TOKEN_PREFIX },
+      // The grant (workspace + modules) is chosen on the consent page; its id
+      // becomes the `referenceId` of the consent, code and tokens.
+      postLogin: {
+        page: '/oauth/consent',
+        shouldRedirect: () => false,
+        consentReferenceId: () => currentGrantReference(),
+      },
+      silenceWarnings: { oauthAuthServerConfig: true },
+    }),
     emailOTP({
       overrideDefaultEmailVerification: true,
       async sendVerificationOTP({ email, otp, type }) {

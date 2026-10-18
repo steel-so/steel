@@ -1,6 +1,7 @@
 import type { ModuleKind } from '@prisma/client'
 import { unauthorized } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
+import { parseBearerToken } from '@/src/lib/mcp/oauth-utils'
 import { err, type Result } from '@/src/lib/result'
 
 /**
@@ -29,10 +30,17 @@ export interface McpGrant {
  * grant. Missing, expired or revoked tokens, revoked grants and users who
  * are no longer members all return `unauthorized`.
  *
- * Placeholder until the `mcp-auth` slice lands.
+ * The lookup lives in `IntegrationGrantService.resolveAccessToken`; it is
+ * imported lazily so this contract module stays light for its consumers
+ * (and easy to mock in their tests).
  */
 export async function resolveMcpGrant(
-  _request: Request,
+  request: Request,
 ): Promise<Result<McpGrant, AppError>> {
-  return err(unauthorized('Token de integração inválido'))
+  const token = parseBearerToken(request.headers.get('authorization'))
+  if (!token) return err(unauthorized('Token de integração ausente'))
+  const { IntegrationGrantService } = await import(
+    '@/src/services/integration-grant.service'
+  )
+  return IntegrationGrantService.resolveAccessToken(token)
 }

@@ -1472,3 +1472,13 @@ export const crmSalesWidgetUnsupported = (): AppError =>
     'CRM_SALES_WIDGET_UNSUPPORTED',
     'Os widgets de Vendas só podem ser usados em painéis do CRM.',
   )
+
+export const integrationGrantNotFound = (): AppError =>
+  appError(
+    'INTEGRATION_GRANT_NOT_FOUND',
+    'App conectado não encontrado ou já revogado.',
+  )
+
+export const oauthRequestInvalid = (
+  message = 'O pedido de autorização é inválido ou expirou. Volte ao app e conecte de novo.',
+): AppError => appError('OAUTH_REQUEST_INVALID', message)

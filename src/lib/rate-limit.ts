@@ -58,6 +58,16 @@ const MCP_USER_DURATION_SECONDS = 60
 const MCP_CLIENT_POINTS = 600
 const MCP_CLIENT_DURATION_SECONDS = 60
 
+// OAuth provider (ADR 0033), per IP and endpoint. AI clients call the token
+// endpoint from shared egress IPs (every Claude user behind the same few
+// addresses), so it gets a roomier budget than the sign-in limiter; dynamic
+// client registration creates rows and is kept tight.
+const OAUTH_POINTS = 60
+const OAUTH_DURATION_SECONDS = 60
+
+const OAUTH_REGISTER_POINTS = 10
+const OAUTH_REGISTER_DURATION_SECONDS = 60 * 60
+
 const authInsurance = new RateLimiterMemory({
   points: AUTH_POINTS,
   duration: AUTH_DURATION_SECONDS,
@@ -191,6 +201,24 @@ export const mcpClientLimiter = new RateLimiterRedis({
   duration: MCP_CLIENT_DURATION_SECONDS,
 })
 
+export const oauthLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:oauth',
+  points: OAUTH_POINTS,
+  duration: OAUTH_DURATION_SECONDS,
+})
+
+export const oauthRegisterLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:oauth:register',
+  points: OAUTH_REGISTER_POINTS,
+  duration: OAUTH_REGISTER_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -207,6 +235,9 @@ const limiterNames = new WeakMap<Limiter, string>([
   [aiMessageLimiter, 'ai_message'],
   [mcpUserLimiter, 'mcp_user'],
   [mcpClientLimiter, 'mcp_client'],
+
+  [oauthLimiter, 'oauth'],
+  [oauthRegisterLimiter, 'oauth_register'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

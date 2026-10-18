@@ -214,6 +214,11 @@ model User {
   sitesCreated              Site[]                     @relation("SiteCreatedBy")
   sitesUpdated              Site[]                     @relation("SiteUpdatedBy")
   siteVersionsPublished     SiteVersion[]              @relation("SiteVersionPublishedBy")
+  oauthClients              OauthClient[]
+  oauthRefreshTokens        OauthRefreshToken[]
+  oauthAccessTokens         OauthAccessToken[]
+  oauthConsents             OauthConsent[]
+  integrationGrants         IntegrationGrant[]
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -352,6 +357,9 @@ model Session {
   updatedAt DateTime @updatedAt @map("updated_at")
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  oauthRefreshTokens OauthRefreshToken[]
+  oauthAccessTokens  OauthAccessToken[]
 
   @@map("sessions")
 }
@@ -561,6 +569,7 @@ model Workspace {
   integrations              WorkspaceIntegration[]
   sites                     Site[]
   canvasCollabStates        CanvasCollabState[]
+  integrationGrants         IntegrationGrant[]
 
   @@index([status])
   @@map("workspaces")
@@ -8043,4 +8052,150 @@ model SiteExperimentEvent {
   @@unique([experimentId, run, kind, visitorKey])
   @@index([experimentId, run, variantKey])
   @@map("site_experiment_events")
+}
+
+// ---------------------------------------------------------------------------
+// OAuth 2.1 provider for integrations (ADR 0033): models required by
+// `@better-auth/oauth-provider`. Model and field names follow the plugin's
+// schema (the Prisma adapter maps `oauthClient` → `prisma.oauthClient`).
+// Tokens and client secrets are stored hashed (SHA-256) by the plugin.
+// ---------------------------------------------------------------------------
+
+model OauthClient {
+  id                      String    @id @default(cuid())
+  clientId                String    @unique @map("client_id")
+  clientSecret            String?   @map("client_secret")
+  disabled                Boolean?  @default(false)
+  skipConsent             Boolean?  @map("skip_consent")
+  enableEndSession        Boolean?  @map("enable_end_session")
+  subjectType             String?   @map("subject_type")
+  scopes                  String[]
+  userId                  String?   @map("user_id")
+  createdAt               DateTime? @default(now()) @map("created_at")
+  updatedAt               DateTime? @updatedAt @map("updated_at")
+  name                    String?
+  uri                     String?
+  icon                    String?
+  contacts                String[]
+  tos                     String?
+  policy                  String?
+  softwareId              String?   @map("software_id")
+  softwareVersion         String?   @map("software_version")
+  softwareStatement       String?   @map("software_statement")
+  redirectUris            String[]  @map("redirect_uris")
+  postLogoutRedirectUris  String[]  @map("post_logout_redirect_uris")
+  tokenEndpointAuthMethod String?   @map("token_endpoint_auth_method")
+  grantTypes              String[]  @map("grant_types")
+  responseTypes           String[]  @map("response_types")
+  public                  Boolean?
+  type                    String?
+  requirePKCE             Boolean?  @map("require_pkce")
+  referenceId             String?   @map("reference_id")
+  metadata                Json?
+
+  user              User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens     OauthRefreshToken[]
+  accessTokens      OauthAccessToken[]
+  consents          OauthConsent[]
+  integrationGrants IntegrationGrant[]
+
+  @@index([userId])
+  @@map("oauth_clients")
+}
+
+model OauthRefreshToken {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  clientId    String    @map("client_id")
+  sessionId   String?   @map("session_id")
+  userId      String    @map("user_id")
+  /// `IntegrationGrant.id` the token was issued for.
+  referenceId String?   @map("reference_id")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime? @default(now()) @map("created_at")
+  revoked     DateTime?
+  authTime    DateTime? @map("auth_time")
+  scopes      String[]
+
+  client       OauthClient        @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  session      Session?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessTokens OauthAccessToken[]
+
+  @@index([clientId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([referenceId])
+  @@map("oauth_refresh_tokens")
+}
+
+model OauthAccessToken {
+  id          String    @id @default(cuid())
+  token       String?   @unique
+  clientId    String    @map("client_id")
+  sessionId   String?   @map("session_id")
+  userId      String?   @map("user_id")
+  /// `IntegrationGrant.id` the token was issued for.
+  referenceId String?   @map("reference_id")
+  refreshId   String?   @map("refresh_id")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime? @default(now()) @map("created_at")
+  scopes      String[]
+
+  client       OauthClient        @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  session      Session?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken OauthRefreshToken? @relation(fields: [refreshId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([refreshId])
+  @@index([referenceId])
+  @@map("oauth_access_tokens")
+}
+
+model OauthConsent {
+  id          String    @id @default(cuid())
+  clientId    String    @map("client_id")
+  userId      String?   @map("user_id")
+  /// `IntegrationGrant.id` the consent belongs to.
+  referenceId String?   @map("reference_id")
+  scopes      String[]
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  client OauthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user   User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([referenceId])
+  @@map("oauth_consents")
+}
+
+/// What an integration (MCP client, later the CLI) may do on behalf of a user:
+/// one workspace, the consented scopes and modules (ADR 0033). OAuth tokens
+/// point here through `referenceId`. Unique per (user, client, workspace)
+/// while not revoked — a partial unique index in the migration.
+model IntegrationGrant {
+  id          String       @id @default(cuid())
+  userId      String       @map("user_id")
+  workspaceId String       @map("workspace_id")
+  clientId    String       @map("client_id")
+  scopes      String[]
+  modules     ModuleKind[]
+  lastUsedAt  DateTime?    @map("last_used_at")
+  revokedAt   DateTime?    @map("revoked_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    OauthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([workspaceId, revokedAt])
+  @@index([clientId])
+  @@map("integration_grants")
 }
