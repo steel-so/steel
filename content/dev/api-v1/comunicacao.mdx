@@ -1,0 +1,284 @@
+---
+title: Comunicação na API v1
+description: Listar templates do WhatsApp, enviar um template aprovado para um número, contato ou conversa e acompanhar uma transmissão, com curl, steel CLI e SDK e os erros de cada operação.
+section: api-v1
+order: 5
+---
+
+Todas as rotas desta página exigem um token com o módulo **Comunicação** e
+rodam com as suas permissões na Comunicação. Os exemplos usam `$STEEL_URL` e
+`$STEEL_TOKEN` (veja [Antes da primeira chamada](/dev/api-v1#antes-da-primeira-chamada)).
+
+| Operação | Rota | Escopo | CLI | SDK |
+| --- | --- | --- | --- | --- |
+| Listar templates | `GET /api/v1/whatsapp/templates` | `api:read` | `steel zap templates` | `whatsapp.templates()` |
+| Enviar template | `POST /api/v1/whatsapp/messages/template` | `api:write` | `steel zap send` | `whatsapp.sendTemplate()` |
+| Situação da transmissão | `GET /api/v1/whatsapp/broadcasts/{broadcastId}` | `api:read` | `steel zap broadcast status` | `whatsapp.broadcast()` |
+
+A v1 envia só **templates** (os modelos aprovados pela Meta), que valem a
+qualquer hora. Texto livre numa conversa fica no aplicativo; na API oficial da
+Meta ele só é aceito dentro da janela de 24 horas depois da última mensagem do
+cliente. As conversas aguardando resposta ainda não estão na v1.
+
+## Listar templates
+
+Os templates das conexões do workspace. **Por padrão, só os aprovados** pela
+Meta.
+
+| Parâmetro | Valores |
+| --- | --- |
+| `status` | `APPROVED` (padrão), `PENDING`, `REJECTED`, `PAUSED`, `DISABLED` ou `ALL` |
+| `connectionId` | Só os templates de uma conexão |
+| `limit`, `cursor` | [Paginação](/dev/api-v1#paginação) |
+
+```bash
+curl "$STEEL_URL/api/v1/whatsapp/templates" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2tpl0001",
+        "workspaceId": "cm2ws0001",
+        "connectionId": "cm2con0001",
+        "name": "boas_vindas",
+        "language": "pt_BR",
+        "category": "MARKETING",
+        "status": "APPROVED",
+        "components": [
+          { "type": "BODY", "text": "Olá, {{1}}! Obrigado pelo contato com a Acme." }
+        ],
+        "quality": "GREEN",
+        "qualityUpdatedAt": "2026-10-10T12:00:00.000Z",
+        "statusReason": null,
+        "headerFormat": null,
+        "headerMediaUrl": null,
+        "buttons": [],
+        "createdAt": "2026-09-20T12:00:00.000Z",
+        "updatedAt": "2026-10-10T12:00:00.000Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+`components` é o formato da Cloud API da Meta: as variáveis do corpo aparecem
+como `{{1}}`, `{{2}}` (ou com nome, `{{nome}}`). `quality` é a nota de
+qualidade da Meta: `GREEN`, `YELLOW`, `RED` ou `UNKNOWN`. Um template em
+`PAUSED` ou `DISABLED` não envia.
+
+```bash
+steel zap templates                    # aprovados
+steel zap templates --status todos     # todos; também pendente, rejeitado, pausado, desativado
+```
+
+```ts
+const templates = await steel.whatsapp.templates({ status: 'APPROVED' })
+```
+
+## Enviar um template
+
+Envia um template aprovado. Diga **para onde** de uma de três formas:
+
+| Destino | Campos | Conversa usada |
+| --- | --- | --- |
+| Um número | `to` (E.164, `+5511999990000`) e, se houver mais de uma conexão, `connectionId` | Acha ou cria o contato; usa a conversa aberta dele ou abre uma |
+| Um contato do Steel | `contactId` + `connectionId` | A conversa aberta do contato, ou uma nova |
+| Uma conversa | `conversationId` | Ela mesma |
+
+Sem `connectionId` com `to`, o Steel usa a única conexão do workspace (ou a
+única conectada, se houver várias). Sempre obrigatórios: `templateName` e
+`language` (por exemplo `pt_BR`, como na lista de templates).
+
+As variáveis vão em `components`, no formato da Cloud API:
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/whatsapp/messages/template" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": "+5511999990000",
+    "templateName": "boas_vindas",
+    "language": "pt_BR",
+    "components": [
+      { "type": "body", "parameters": [{ "type": "text", "text": "Ana" }] }
+    ]
+  }'
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "id": "cm2msg0101",
+    "workspaceId": "cm2ws0001",
+    "conversationId": "cm2cnv0007",
+    "direction": "OUT",
+    "type": "TEMPLATE",
+    "text": "boas_vindas",
+    "mediaUrl": null,
+    "status": "SENT",
+    "senderUserId": "cm2usr0001",
+    "sentByAi": false,
+    "replyToMessageId": null,
+    "createdAt": "2026-10-18T13:00:00.000Z"
+  }
+}
+```
+
+`status` começa em `SENT` e muda para `DELIVERED`, `READ` ou `FAILED` conforme
+a Meta avisa; a mensagem aparece na conversa do aplicativo com você como autor.
+Para saber quando o cliente responde, assine o evento de webhook
+`communication.message.received` ([eventos](/dev/webhooks/eventos)).
+
+Variáveis com nome usam `parameter_name`; as do cabeçalho vão num componente
+`header`:
+
+```json
+[
+  { "type": "header", "parameters": [{ "type": "text", "text": "Outubro" }] },
+  { "type": "body", "parameters": [{ "type": "text", "parameter_name": "nome", "text": "Ana" }] }
+]
+```
+
+O CLI monta `components` para você, a partir do template: `--var 1=Ana` para
+`{{1}}`, `--var nome=Ana` para `{{nome}}` e `--var header.1=Outubro` para o
+cabeçalho. Uma variável que o template não tem é erro de uso; no terminal, as
+que faltarem são perguntadas.
+
+```bash
+steel zap send --template boas_vindas --to 5511999990000 --var 1=Ana --yes
+steel zap send --template boas_vindas --contact cm2ctt0003 --connection cm2con0001 --var 1=Ana --yes
+steel zap send --template lembrete --conversation cm2cnv0007 --var nome=Ana --yes
+```
+
+```ts
+const sent = await steel.whatsapp.sendTemplate({
+  to: '+5511999990000',
+  templateName: 'boas_vindas',
+  language: 'pt_BR',
+  components: [{ type: 'body', parameters: [{ type: 'text', text: 'Ana' }] }],
+})
+if (!sent.ok && sent.error.code === 'RATE_LIMITED') {
+  // espere sent.error.retryAfterSeconds e tente de novo
+}
+```
+
+### Limites do envio
+
+- **20 mensagens por minuto por conexão**, somando todos os envios do
+  workspace por ela. Passou, `429 RATE_LIMITED` com `Retry-After`.
+- A **cota mensal de mensagens** e a de **conversas** do plano. Esgotada,
+  `402 WHATSAPP_MESSAGE_LIMIT_REACHED` ou `402 WHATSAPP_CONVERSATION_LIMIT_REACHED`
+  até o mês virar ou o plano mudar.
+- Só conexões da **Meta (Cloud API)** enviam template. Uma conexão Z-API
+  responde `502 WHATSAPP_PROVIDER_ERROR`.
+
+### Erros
+
+| Erro | Quando e o que fazer |
+| --- | --- |
+| `422 VALIDATION_ERROR` "O workspace tem mais de uma conexão do WhatsApp: informe connectionId." | Envio por `to` sem `connectionId` num workspace com várias conexões conectadas |
+| `422 VALIDATION_ERROR` | Faltou `templateName` ou `language`, número fora do E.164 ou nenhum destino |
+| `404 WHATSAPP_CONNECTION_NOT_FOUND`, `WHATSAPP_CONTACT_NOT_FOUND`, `WHATSAPP_CONVERSATION_NOT_FOUND` | O id não existe neste workspace |
+| `409 WHATSAPP_CONVERSATION_AI_HANDLING` | A IA está atendendo a conversa. Tire a conversa do atendimento da IA no aplicativo e envie de novo |
+| `502 WHATSAPP_PROVIDER_ERROR` | A Meta recusou: template não aprovado nesse idioma, variáveis a mais ou a menos, número sem WhatsApp, ou conexão Z-API. A mensagem traz o motivo quando a Meta informa |
+| `429 RATE_LIMITED` | 20 por minuto por conexão, ou o limite do token. Espere o `Retry-After` |
+
+Um `502` não deve ser repetido igual: corrija o template ou as variáveis
+primeiro. Um `429` pode ser repetido depois da espera.
+
+## Acompanhar uma transmissão
+
+Uma transmissão (disparo em massa) é criada no aplicativo, em **Comunicação ›
+Transmissões**. Pela v1 você acompanha o andamento: os contadores e cada
+destinatário com o status de envio.
+
+```bash
+curl "$STEEL_URL/api/v1/whatsapp/broadcasts/cm2brd0001" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "id": "cm2brd0001",
+    "connectionId": "cm2con0001",
+    "name": "Promoção de outubro",
+    "status": "RUNNING",
+    "scheduledAt": null,
+    "recipientCount": 1200,
+    "sentCount": 830,
+    "failedCount": 12,
+    "skippedCount": 5,
+    "createdAt": "2026-10-18T10:00:00.000Z",
+    "updatedAt": "2026-10-18T10:41:00.000Z",
+    "recipients": [
+      { "id": "cm2rcp0001", "contactId": "cm2ctt0003", "contactName": "Ana", "contactWaId": "5511999990000", "status": "SENT", "errorMessage": null, "sentAt": "2026-10-18T10:01:00.000Z" },
+      { "id": "cm2rcp0002", "contactId": "cm2ctt0004", "contactName": null, "contactWaId": "5511988887777", "status": "FAILED", "errorMessage": "Número sem WhatsApp", "sentAt": null }
+    ]
+  }
+}
+```
+
+`status` da transmissão: `DRAFT`, `QUEUED`, `RUNNING`, `DONE` ou `FAILED`.
+Cada destinatário: `PENDING`, `SENT`, `FAILED` ou `SKIPPED` (por exemplo,
+contato descadastrado pela LGPD).
+
+```bash
+steel zap broadcast status cm2brd0001
+```
+
+```ts
+const b = await steel.whatsapp.broadcast('cm2brd0001')
+if (b.ok) console.log(`${b.data.sentCount}/${b.data.recipientCount}`)
+```
+
+Erro: `404 WHATSAPP_BROADCAST_NOT_FOUND`.
+
+## Receita: aviso de pedido despachado pelo seu ERP
+
+```ts
+async function avisarDespacho(telefone: string, nome: string, pedido: string) {
+  const sent = await steel.whatsapp.sendTemplate({
+    to: telefone,                      // '+5511999990000'
+    connectionId: process.env.STEEL_ZAP_CONNECTION,
+    templateName: 'pedido_despachado', // aprovado na Meta, com {{1}} e {{2}}
+    language: 'pt_BR',
+    components: [{
+      type: 'body',
+      parameters: [
+        { type: 'text', text: nome },
+        { type: 'text', text: pedido },
+      ],
+    }],
+  })
+  if (sent.ok) return sent.data.id
+  if (sent.error.code === 'RATE_LIMITED') {
+    await new Promise((r) => setTimeout(r, (sent.error.retryAfterSeconds ?? 5) * 1000))
+    return avisarDespacho(telefone, nome, pedido)
+  }
+  throw new Error(`${sent.error.code}: ${sent.error.message}`)
+}
+```
+
+Para muitos destinatários de uma vez, prefira uma transmissão no aplicativo: ela
+respeita os limites sozinha e mostra o andamento.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| A lista de templates vem vazia | Nenhum template aprovado ainda. Veja todos com `status=ALL`; os pendentes dependem da Meta |
+| `502` com um template aprovado | O idioma (`language`) precisa ser exatamente o do template, e o número de variáveis tem de bater com o do corpo |
+| A mensagem não aparece na caixa de entrada | Foi enviada numa conversa nova do contato; procure pelo número. Se a conexão estava desconectada, o envio falha com `502` |
+| O cliente não recebeu, mas o envio deu `201` | O `status` da mensagem muda depois; consulte a conversa no aplicativo. `FAILED` costuma ser número sem WhatsApp ou bloqueio de qualidade da Meta |

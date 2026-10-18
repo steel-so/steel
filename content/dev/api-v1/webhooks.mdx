@@ -1,0 +1,342 @@
+---
+title: Webhooks pela API v1
+description: Cadastrar, alterar e remover endpoints, ler o log de entregas, reenviar, disparar eventos de teste e escutar em tempo real por SSE, com curl, steel CLI e SDK.
+section: api-v1
+order: 6
+---
+
+Tudo o que a tela **Ajustes › Webhooks** faz também dá para fazer
+pela API v1. Esta página cobre as chamadas; como receber e conferir as
+entregas está em [Receber os webhooks do Steel](/dev/webhooks/receber), e o
+formato de cada evento no [Catálogo de eventos](/dev/webhooks/eventos).
+
+As rotas de webhooks não dependem de módulo, mas exigem um token pessoal de
+**dono** ou **administrador** do workspace; o workspace é o do token. As
+alterações exigem `api:write`; sem ele, a resposta é `403 FORBIDDEN` ("Este
+token só tem leitura"). Além do limite de cada token, estas rotas contam 100
+requisições a cada 60 segundos por token.
+
+| Operação | Rota | Escopo | CLI | SDK (`steel.webhooks.`) |
+| --- | --- | --- | --- | --- |
+| Catálogo de eventos | `GET /api/v1/webhooks/events` | `api:read` | `steel webhooks events` | `events()` |
+| Listar endpoints | `GET /api/v1/webhooks/endpoints` | `api:read` | `steel webhooks endpoints list` | `listEndpoints()` |
+| Cadastrar endpoint | `POST /api/v1/webhooks/endpoints` | `api:write` | `steel webhooks endpoints create` | `createEndpoint()` |
+| Alterar endpoint | `PATCH /api/v1/webhooks/endpoints/{id}` | `api:write` | — | `updateEndpoint()` |
+| Remover endpoint | `DELETE /api/v1/webhooks/endpoints/{id}` | `api:write` | `steel webhooks endpoints delete` | `deleteEndpoint()` |
+| Enviar teste | `POST /api/v1/webhooks/endpoints/{id}/test` | `api:write` | `steel webhooks endpoints test` | `testEndpoint()` |
+| Log de entregas | `GET /api/v1/webhooks/deliveries` | `api:read` | `steel webhooks deliveries list` | `listDeliveries()` |
+| Reenviar entrega | `POST /api/v1/webhooks/deliveries/{id}/retry` | `api:write` | `steel webhooks deliveries retry` | `retryDelivery()` |
+| Evento de teste | `POST /api/v1/webhooks/trigger` | `api:write` | `steel trigger` | `trigger()` |
+| Escutar (SSE) | `GET /api/v1/webhooks/listen` | `api:read` | `steel listen` | `listen()` |
+
+## Catálogo de eventos
+
+```bash
+curl "$STEEL_URL/api/v1/webhooks/events" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    { "type": "steel.ping", "module": "PLATFORM", "description": "Evento de teste enviado pelo botão \"Enviar teste\".", "subscribable": false },
+    { "type": "servicedesk.ticket.created", "module": "SERVICE_DESK", "description": "Chamado aberto, por qualquer canal.", "subscribable": true },
+    { "type": "crm.lead.created", "module": "CRM", "description": "Novo lead, por qualquer canal.", "subscribable": true }
+  ]
+}
+```
+
+Os tipos de módulos fora do token não aparecem. `subscribable: false` só no
+`steel.ping`, que não entra em assinatura.
+
+## Cadastrar um endpoint
+
+| Campo | Regra |
+| --- | --- |
+| `url` | Obrigatório. `https://` num endereço público, até 2.048 caracteres ([URLs aceitas](/dev/webhooks/receber#urls-aceitas)) |
+| `events` | Obrigatório. Lista de tipos, ou `["*"]` para todos |
+| `description` | Opcional, até 200 caracteres |
+| `active` | Opcional; `false` cadastra pausado |
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/webhooks/endpoints" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://erp.suaempresa.com.br/steel",
+    "events": ["servicedesk.ticket.created", "crm.deal.won"],
+    "description": "ERP financeiro"
+  }'
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "endpoint": {
+      "id": "cm2whe0001",
+      "workspaceId": "cm2ws0001",
+      "url": "https://erp.suaempresa.com.br/steel",
+      "description": "ERP financeiro",
+      "events": ["servicedesk.ticket.created", "crm.deal.won"],
+      "active": true,
+      "secretHint": "Xk9q",
+      "disabledAt": null,
+      "disabledReason": null,
+      "failingSince": null,
+      "lastSuccessAt": null,
+      "lastFailureAt": null,
+      "createdById": "cm2usr0001",
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:00:00.000Z"
+    },
+    "secret": "whsec_3q2-7wE…Xk9q"
+  }
+}
+```
+
+O `secret` **só volta nesta resposta**: guarde na hora. Depois, só pela tela
+(**Revelar segredo**). `secretHint` são os quatro últimos caracteres, para
+saber qual segredo está em uso.
+
+```bash
+steel webhooks endpoints create --url https://erp.suaempresa.com.br/steel \
+  --events "servicedesk.ticket.created,crm.deal.won" --description "ERP financeiro"
+steel webhooks endpoints create --url https://bi.suaempresa.com.br/steel --events "*" --inactive
+```
+
+```ts
+const created = await steel.webhooks.createEndpoint({
+  url: 'https://erp.suaempresa.com.br/steel',
+  events: ['servicedesk.ticket.created', 'crm.deal.won'],
+})
+if (created.ok) await saveSecret(created.data.secret)
+```
+
+| Erro | Quando |
+| --- | --- |
+| `422 WEBHOOK_URL_NOT_ALLOWED` | URL sem `https://`, com usuário e senha, privada ou sem DNS. A mensagem diz qual |
+| `422 VALIDATION_ERROR` | `events` vazio ou com um tipo que não existe |
+| `409 WEBHOOK_ENDPOINT_LIMIT_REACHED` | O workspace já tem 20 endpoints |
+| `403 FORBIDDEN` | Você não é dono nem administrador, ou o token é só leitura |
+
+## Listar, alterar e remover
+
+```bash
+curl "$STEEL_URL/api/v1/webhooks/endpoints" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+A resposta traz `data.items` com os endpoints, no formato acima e sem o
+segredo. Um endpoint desativado pelo Steel tem `active: false`,
+`disabledReason: "auto"` e `disabledAt`; desativado por alguém,
+`disabledReason: "manual"`. `failingSince` mostra desde quando ele falha.
+
+`PATCH` muda só os campos enviados. Reativar (`"active": true`) zera
+`disabledAt`, `disabledReason` e `failingSince`:
+
+```bash
+curl -X PATCH "$STEEL_URL/api/v1/webhooks/endpoints/cm2whe0001" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"active": true, "events": ["*"]}'
+```
+
+```ts
+await steel.webhooks.updateEndpoint('cm2whe0001', { active: true })
+```
+
+`DELETE` remove o endpoint na hora e responde `{ "id": "..." }`. As entregas
+que estavam na fila são descartadas.
+
+```bash
+curl -X DELETE "$STEEL_URL/api/v1/webhooks/endpoints/cm2whe0001" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```bash
+steel webhooks endpoints delete cm2whe0001 --yes
+```
+
+Um id que não existe responde `404 WEBHOOK_ENDPOINT_NOT_FOUND`.
+
+## Enviar teste
+
+Manda um `steel.ping` só para aquele endpoint, **na hora** e numa tentativa,
+mesmo se ele estiver desativado, e devolve a entrega com a resposta. Não conta
+para a desativação automática.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/webhooks/endpoints/cm2whe0001/test" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "id": "cm2dlv0001",
+    "endpointId": "cm2whe0001",
+    "eventId": "evt_cm2x7k3p0000ping",
+    "eventType": "steel.ping",
+    "status": "SUCCEEDED",
+    "attempts": 1,
+    "responseStatus": 204,
+    "responseBody": null,
+    "durationMs": 182,
+    "error": null,
+    "requestBody": "{\"id\":\"evt_cm2x7k3p0000ping\",\"type\":\"steel.ping\",...}",
+    "lastAttemptAt": "2026-10-18T12:01:00.000Z",
+    "deliveredAt": "2026-10-18T12:01:00.000Z",
+    "createdAt": "2026-10-18T12:01:00.000Z"
+  }
+}
+```
+
+O teste responde `200` mesmo quando a sua URL falha: olhe `status`,
+`responseStatus` e `error` (`http_500`, `timeout`, `network_error: ...`).
+
+```bash
+steel webhooks endpoints test cm2whe0001
+```
+
+## Log de entregas
+
+Mais novas primeiro, dos últimos **30 dias**. Filtros: `endpointId` e `status`
+(`PENDING`, `SUCCEEDED`, `RETRYING`, `FAILED` ou `SKIPPED`), mais
+[paginação](/dev/api-v1#paginação).
+
+```bash
+curl "$STEEL_URL/api/v1/webhooks/deliveries?endpointId=cm2whe0001&status=FAILED&limit=50" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+Cada item tem o formato da resposta do teste. `requestBody` é o corpo exato
+enviado; `responseBody`, o primeiro 1 KB da resposta.
+
+```bash
+steel webhooks deliveries list --endpoint cm2whe0001 --status FAILED --all
+```
+
+```ts
+const failed = await steel.webhooks.listDeliveries({ endpointId: 'cm2whe0001', status: 'FAILED' })
+```
+
+## Reenviar uma entrega
+
+Mais uma tentativa da mesma entrega: mesmo corpo, mesmo `Steel-Webhook-Id`,
+timestamp e assinatura novos. Vai mesmo a um endpoint desativado. Responde
+`202` com a entrega já na fila.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/webhooks/deliveries/cm2dlv0042/retry" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```bash
+steel webhooks deliveries retry cm2dlv0042
+```
+
+Reenviar todas as que falharam num endpoint:
+
+```bash
+steel webhooks deliveries list --endpoint cm2whe0001 --status FAILED --all --json \
+  | jq -r '.items[].id' \
+  | xargs -n1 steel webhooks deliveries retry
+```
+
+Erros: `404 WEBHOOK_DELIVERY_NOT_FOUND` (passou dos 30 dias ou não existe) e
+`404 WEBHOOK_ENDPOINT_NOT_FOUND` (o endpoint foi removido).
+
+## Disparar um evento de teste
+
+Cria um evento do tipo pedido com os dados de exemplo do
+[catálogo](/dev/webhooks/eventos). Ele vai para quem está escutando
+(`steel listen`) e, com `endpointId`, para aquele endpoint. **Nunca** para os
+outros endpoints que assinam o tipo.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/webhooks/trigger" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"crm.deal.won","endpointId":"cm2whe0001"}'
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 202,
+  "data": {
+    "event": { "id": "evt_cm2x7k3p0000trig", "type": "crm.deal.won" },
+    "deliveries": 1
+  }
+}
+```
+
+`deliveries` é `0` sem `endpointId`: só quem escuta recebe. Um tipo de módulo
+fora do token responde `403`; um tipo que não existe, `422`.
+
+```bash
+steel trigger crm.deal.won --endpoint cm2whe0001
+```
+
+## Escutar em tempo real (SSE)
+
+`GET /api/v1/webhooks/listen` abre um stream
+[Server-Sent Events](https://developer.mozilla.org/pt-BR/docs/Web/API/Server-sent_events)
+com os eventos do workspace, na hora em que acontecem. É o que o `steel listen`
+usa. Não há replay: só chega o que acontece com a conexão aberta.
+`?events=a,b` filtra por tipo.
+
+```bash
+curl -N "$STEEL_URL/api/v1/webhooks/listen?events=crm.lead.created,crm.deal.won" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```text
+event: ready
+data: {"workspaceId":"cm2ws0001","events":["crm.lead.created","crm.deal.won"],"secret":"whsec_…"}
+
+event: webhook
+id: evt_cm2x7k3p0000abcd
+data: {"id":"evt_cm2x7k3p0000abcd","timestamp":1760788800,"signature":"v1=…","body":"{\"id\":\"evt_cm2x7k3p0000abcd\",\"type\":\"crm.lead.created\",…}"}
+
+: ping
+```
+
+- `ready` chega primeiro, com o **segredo da escuta**: fixo por pessoa e
+  workspace, diferente do segredo dos endpoints.
+- Cada `webhook` traz o corpo exato (`body`, como texto) e os valores dos três
+  cabeçalhos `Steel-Webhook-*` (`id`, `timestamp`, `signature`), assinados com
+  o segredo da escuta. Repasse assim, sem alterar, e a verificação do seu app
+  funciona igual à de produção.
+- `: ping` a cada 25 segundos mantém a conexão aberta através de proxies.
+
+No SDK, `listen()` devolve um iterador que nunca lança exceção e sempre
+termina com uma mensagem `disconnected`; reconectar fica com você:
+
+```ts
+const opened = await steel.webhooks.listen({ events: ['crm.lead.created'] })
+if (!opened.ok) throw new Error(opened.error.code)
+for await (const message of opened.data) {
+  if (message.type === 'webhook') console.log(message.event?.type, message.frame.id)
+  if (message.type === 'disconnected') console.warn('caiu:', message.reason)
+}
+```
+
+Para o uso do dia a dia, prefira o `steel listen --forward`, que já reconecta e
+repassa: veja [Testar na sua máquina](/dev/webhooks/receber#testar-na-sua-máquina).
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| `403 FORBIDDEN` em toda rota de webhooks | O dono do token não é dono nem administrador do workspace |
+| `403 FORBIDDEN` só em `POST`, `PATCH` e `DELETE` | O token é **Somente ler** |
+| O `secret` sumiu da resposta de listagem | É assim: ele só volta na criação. Pegue de novo na tela, em **Revelar segredo** |
+| `curl` da escuta não mostra nada até fechar | Use `curl -N` (sem buffer). Um proxy corporativo pode segurar SSE |
+| `steel trigger` não chegou ao endpoint | Sem `--endpoint`, o evento de teste só vai para quem está escutando |

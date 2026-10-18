@@ -1,59 +1,116 @@
 ---
 title: API pública v1
-description: A API estável do Steel para scripts, CI e o Steel CLI. Token pessoal, escopos, módulos, paginação por cursor, limites e a política de estabilidade e depreciação.
-section: fundamentos
-order: 5
+description: A API estável do Steel para scripts, CI e o Steel CLI. Token pessoal, escopos, módulos, erros, paginação por cursor, limites e a política de estabilidade.
+section: api-v1
+order: 1
 ---
 
 A API pública v1 é um recorte estável do Steel, em `/api/v1/...`, feito para quem
 automatiza: scripts, pipelines de CI, integrações internas e o `steel` CLI.
-Ela cobre chamados do ServiceDesk, leads, oportunidades e funis do CRM e envio
-de templates do WhatsApp. O resto da API (`/api/workspaces/<id>/...`) é a que o
-aplicativo usa e pode mudar a cada versão; a v1 não.
+O resto da API (`/api/workspaces/<id>/...`) é a que o aplicativo usa e pode
+mudar a cada versão; a v1 não.
+
+| Recurso | O que dá para fazer | Página |
+| --- | --- | --- |
+| Conta e login | Ver o token em uso, login do CLI pelo navegador, revogar | [Conta e login](/dev/api-v1/conta) |
+| ServiceDesk | Listar, ver, abrir, comentar e mover chamados; consultar o catálogo | [ServiceDesk](/dev/api-v1/servicedesk) |
+| CRM | Listar e criar leads, importar CSV, listar e mover oportunidades, listar funis | [CRM](/dev/api-v1/crm) |
+| Comunicação | Listar templates aprovados, enviar template, acompanhar transmissão | [Comunicação](/dev/api-v1/comunicacao) |
+| Webhooks | Endpoints, log de entregas, reenvio, eventos de teste e escuta em tempo real | [Webhooks pela API](/dev/api-v1/webhooks) |
 
 A referência completa, com cada rota, parâmetro e código de erro, está em
 [Referência da API v1](/dev/api/v1). O documento OpenAPI fica em
-`/dev/api/v1/openapi.json`, e é dele que o SDK TypeScript do Steel é gerado.
+`/dev/api/v1/openapi.json`; é dele que o SDK TypeScript `@steel-so/sdk` é
+gerado. O [Steel CLI](/dev/cli) e o [SDK](/dev/sdk) têm guias próprios; aqui
+cada operação aparece nas três formas: `curl`, `steel` e SDK.
+
+## Antes da primeira chamada
+
+Os exemplos usam duas variáveis de ambiente, as mesmas que o CLI lê:
+
+```bash
+export STEEL_URL=https://homologacao.stratustelecom.com.br
+export STEEL_TOKEN=stl_pat_...
+```
+
+No SDK:
+
+```ts
+import { createSteelClient } from '@steel-so/sdk'
+
+const steel = createSteelClient({
+  baseUrl: process.env.STEEL_URL!,
+  token: process.env.STEEL_TOKEN,
+})
+```
+
+O SDK nunca lança exceção por erro HTTP ou de rede: toda chamada resolve em
+`{ ok: true, status, data }` ou `{ ok: false, error: { status, code, message } }`.
+O `data` já vem sem o envelope.
 
 ## Token pessoal
 
-Toda chamada leva um **token pessoal** no cabeçalho:
+Toda chamada leva um **token pessoal** (`stl_pat_` seguido de 43 caracteres)
+no cabeçalho `Authorization`:
 
 ```bash
-curl https://homologacao.stratustelecom.com.br/api/v1/me \
-  -H "Authorization: Bearer stl_pat_..."
+curl "$STEEL_URL/api/v1/me" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
 ```
 
-O cookie de sessão do aplicativo não vale na v1, nem a chave `crm_live_` do CRM.
+O cookie de sessão do aplicativo não vale na v1, nem a chave `crm_live_` do
+CRM, nem o token do MCP (`stl_at_`).
 
-Há duas formas de obter um token:
+### Criar um token na tela
 
-- **Ajustes › Segurança › Tokens de API**: dê um nome, escolha o workspace, os
-  módulos, o escopo e a validade (90 dias por padrão, até 1 ano). O valor
-  aparece uma vez só; guarde-o num cofre de segredos.
-- **`steel login`**: o CLI mostra um código, abre `/device` no navegador e você
-  confirma o workspace, os módulos e o escopo. O token se chama
-  `Steel CLI — <nome da máquina>`.
+1. No menu do seu avatar, abra **Configurações** e vá à aba **Segurança**.
+2. Em **Tokens de API**, clique em **Criar token**.
+3. Preencha:
+   - **Nome**: para você reconhecer depois (por exemplo, "Deploy no GitHub
+     Actions");
+   - **Workspace**: o token vale só para ele;
+   - **Módulos**: ServiceDesk, CRM e/ou Comunicação. Aparecem só os módulos
+     habilitados no workspace;
+   - **Nível de acesso**: **Somente ler** (`api:read`) ou **Ler e alterar**
+     (`api:read` + `api:write`);
+   - **Validade**: 7, 30, 90 (padrão) ou 180 dias, ou 1 ano.
+4. Clique em **Criar token**. A janela **Token criado** mostra o valor **uma
+   vez só**: copie e guarde num cofre de segredos (no GitHub Actions, um
+   _secret_ do repositório).
 
-Cada token pertence a você e a um workspace. A chamada roda com as suas
+A lista mostra cada token com o workspace, os módulos, o nível de acesso, a
+validade e o último uso. **Revogar** corta o acesso na chamada seguinte. Cada
+pessoa tem até 50 tokens ativos; o 51º responde
+`422 API_TOKEN_LIMIT_REACHED`.
+
+### Criar um token pelo terminal
+
+`steel login` faz o mesmo pelo navegador, sem copiar nada: o CLI mostra um
+código, você confirma em `/device` escolhendo workspace, módulos e nível de
+acesso, e o token (chamado `Steel CLI — <nome da máquina>`) fica no chaveiro
+do sistema. Detalhes do fluxo em [Conta e login](/dev/api-v1/conta#login-pelo-navegador-fluxo-de-dispositivo).
+
+### O que o token pode fazer
+
+Cada token pertence a você e a **um** workspace. A chamada roda com as suas
 permissões nesse workspace: o papel e o perfil de acesso valem como no
-aplicativo. Se você sair do workspace, se o token vencer ou for revogado (por
-você ou por um administrador do workspace), a próxima chamada responde
-`401 UNAUTHORIZED`.
-
-### Escopos
+aplicativo, e cada alteração entra na auditoria com `source: api` e o id do
+token.
 
 | Escopo | Permite |
 | --- | --- |
-| `api:read` | Ler (todo token tem) |
+| `api:read` | Ler. Todo token tem |
 | `api:write` | Criar e alterar. Sem ele, escritas respondem `403 API_TOKEN_SCOPE_REQUIRED` |
 
-### Módulos
+O token só alcança os módulos escolhidos na criação que **continuam
+habilitados** no workspace. Uma rota de outro módulo responde
+`403 API_TOKEN_MODULE_NOT_ALLOWED`. Se um administrador desligar um módulo, o
+token perde aquele módulo na hora; religado, volta a valer.
 
-O token só alcança os módulos escolhidos na criação (ServiceDesk, CRM,
-Comunicação) que continuam habilitados no workspace. Uma rota de outro módulo
-responde `403 API_TOKEN_MODULE_NOT_ALLOWED`. `GET /api/v1/me` mostra os escopos,
-os módulos e a validade do token em uso.
+As rotas de webhooks (`/api/v1/webhooks/...`) não dependem de módulo, mas
+exigem que você seja **OWNER** ou **ADMIN** do workspace.
+
+`GET /api/v1/me` mostra os escopos, os módulos e a validade do token em uso.
 
 ## Respostas e erros
 
@@ -68,12 +125,42 @@ O envelope é o mesmo do resto do Steel (veja
 {
   "success": false,
   "statusCode": 403,
-  "message": "Este token só permite leitura...",
+  "message": "Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.",
   "error": { "code": "API_TOKEN_SCOPE_REQUIRED" }
 }
 ```
 
-Trate os erros pelo `error.code`; a mensagem é para pessoas e pode mudar.
+Trate os erros pelo `error.code`; a mensagem é para pessoas e pode mudar. Os
+que aparecem em qualquer rota da v1:
+
+| Status | Código | Quando | O que fazer |
+| --- | --- | --- | --- |
+| `401` | `UNAUTHORIZED` | Token ausente, mal formado, vencido ou revogado; você saiu do workspace | Gere um token novo (`steel login` ou **Tokens de API**) |
+| `403` | `API_TOKEN_SCOPE_REQUIRED` | Escrita com um token **Somente ler** | Crie um token **Ler e alterar** |
+| `403` | `API_TOKEN_MODULE_NOT_ALLOWED` | A rota é de um módulo fora do token | Crie um token com o módulo |
+| `403` | `MODULE_DISABLED` | O módulo está desligado no workspace | Peça a um administrador para habilitar |
+| `403` | `WORKSPACE_SUSPENDED` | O workspace está suspenso | Fale com o suporte da Stratus Telecom |
+| `403` | `FORBIDDEN` | O seu papel não permite a ação, ou falta o aceite dos Termos de Uso e da Política de Privacidade (exigido em toda escrita) | Peça a permissão, ou entre no Steel e aceite os termos |
+| `404` | `<RECURSO>_NOT_FOUND` | O id não existe ou não está no workspace do token | Confira o id e o workspace (`steel whoami`) |
+| `409` | Varia | Conflito de estado: lead duplicado, chamado encerrado | Veja a página do recurso |
+| `422` | `VALIDATION_ERROR` | Corpo ou parâmetro inválido; `error.details` lista cada campo | Corrija o pedido; não repita igual |
+| `429` | `RATE_LIMITED` | Limite de requisições | Espere o `Retry-After` |
+
+Num `422`, `error.details` traz os problemas no formato do Zod:
+
+```json
+{
+  "success": false,
+  "statusCode": 422,
+  "message": "Dados inválidos",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "details": [
+      { "code": "too_small", "path": ["title"], "message": "Título é obrigatório" }
+    ]
+  }
+}
+```
 
 ## Paginação
 
@@ -99,30 +186,43 @@ while :; do
 done
 ```
 
-## Importar leads de um CSV
-
-`POST /api/v1/crm/leads/import` recebe o próprio CSV como corpo, até 5.000
-linhas:
+No CLI, `--all` percorre todas as páginas; `--limit` e `--cursor` pedem uma
+só:
 
 ```bash
-curl -X POST "$STEEL_URL/api/v1/crm/leads/import?source=Feira" \
-  -H "Authorization: Bearer $STEEL_TOKEN" \
-  -H "Content-Type: text/csv" \
-  --data-binary @leads.csv
+steel crm lead list --all --json | jq '.items | length'
 ```
 
-A primeira linha é o cabeçalho, com `,` ou `;`. A coluna `name` (ou `nome`) é
-obrigatória; as outras são `email`, `telefone`, `empresa`, `cargo`, `cidade`,
-`linkedin`, `origem` e `canal`. Cada linha passa pelas mesmas regras de um lead
-criado no Steel. A resposta diz quantos foram criados, quantos já existiam
-(`skipped`) e quais linhas foram recusadas, com o número da linha.
+No SDK, `collectAll` faz o laço e para no primeiro erro:
+
+```ts
+import { collectAll } from '@steel-so/sdk'
+
+const all = await collectAll((cursor) =>
+  steel.crm.leads.list({ limit: 100, cursor }),
+)
+if (all.ok) console.log(all.data.items.length)
+```
 
 ## Limites
 
-Cada token tem 300 requisições a cada 60 segundos, e o usuário dono do token mantém o
-limite de sempre (100 por minuto, somando aplicativo e API). Ao passar, a
-resposta é `429 RATE_LIMITED` com o cabeçalho `Retry-After` em segundos. Veja
+Cada token tem 300 requisições a cada 60 segundos, e o usuário dono do token
+mantém o limite de sempre (100 requisições por minuto, somando aplicativo e
+API). Ao passar, a resposta é `429 RATE_LIMITED` com o cabeçalho `Retry-After`
+em segundos e o mesmo valor em `error.details.retryAfterSeconds`. O SDK põe
+esse número em `error.retryAfterSeconds`. Veja
 [Limites de requisição](/dev/limites).
+
+Outros limites que você encontra na v1:
+
+| O quê | Limite |
+| --- | --- |
+| Importação de leads | 5.000 linhas e 5 MB por chamada |
+| Envio de template do WhatsApp | 20 mensagens por minuto por conexão, além da cota mensal do plano |
+| Endpoints de webhook | 20 por workspace |
+| Log de entregas de webhook | 30 dias |
+| Login do CLI (`/api/v1/auth/device`) | 10 inícios a cada 10 minutos por IP; o código vale 10 minutos |
+| Validade de um token | 1 ano no máximo; 90 dias por padrão |
 
 ## Estabilidade e depreciação
 
@@ -139,3 +239,18 @@ O build do Steel verifica isso a cada mudança: se o documento da v1 perde um
 campo ou muda um tipo, o build falha. Uma mudança incompatível, quando
 necessária, vira uma nova versão da API (a v2), e a v1 continua no ar durante a
 transição.
+
+## Solução de problemas
+
+| Sintoma | Causa provável e correção |
+| --- | --- |
+| `401` logo na primeira chamada | Faltou `Bearer ` antes do token, o token tem espaço ou quebra de linha, ou é um token de outro ambiente. Teste com `GET /api/v1/me` |
+| `401` num token que funcionava | Venceu, foi revogado (por você ou por um administrador) ou você saiu do workspace. Gere outro |
+| `403 API_TOKEN_MODULE_NOT_ALLOWED` numa rota que deveria funcionar | O token foi criado sem o módulo, ou o módulo foi desligado depois. `GET /api/v1/me` mostra os módulos que valem agora |
+| `403 FORBIDDEN` só nas escritas | Falta o aceite dos termos (entre no Steel uma vez) ou o seu papel não permite a ação no aplicativo |
+| `404` num id que existe | O registro é de outro workspace. Cada token vale para um só |
+| `422` com `Cursor inválido` | O cursor foi montado à mão ou veio de outra lista. Use o `nextCursor` da mesma rota, com os mesmos filtros |
+| `429` em rajadas | Distribua as chamadas ou use páginas maiores (`limit=100`). Lembre que o aplicativo aberto também consome o limite do usuário |
+| A lista de chamados volta vazia | Sem `status`, só os abertos aparecem; e quem é solicitante vê só os próprios |
+
+Dúvidas sobre a integração: [Suporte](/dev/suporte).

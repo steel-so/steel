@@ -20,6 +20,12 @@ export const DEV_SECTIONS: readonly DevSection[] = [
       'Autenticação, formato de resposta, erros, limites de requisição e paginação.',
   },
   {
+    slug: 'api-v1',
+    label: 'API pública v1',
+    description:
+      'Token pessoal, chamados, leads, oportunidades, templates do WhatsApp e webhooks, com exemplos em curl, CLI e SDK.',
+  },
+  {
     slug: 'webhooks',
     label: 'Webhooks',
     description:

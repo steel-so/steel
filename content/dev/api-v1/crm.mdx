@@ -1,0 +1,386 @@
+---
+title: CRM na API v1
+description: Listar e criar leads, importar leads de um CSV, listar e mover oportunidades e listar funis, com curl, steel CLI e SDK, respostas de exemplo e os erros de cada operação.
+section: api-v1
+order: 4
+---
+
+Todas as rotas desta página exigem um token com o módulo **CRM** e rodam com as
+suas permissões no CRM. Os exemplos usam `$STEEL_URL` e `$STEEL_TOKEN` (veja
+[Antes da primeira chamada](/dev/api-v1#antes-da-primeira-chamada)).
+
+| Operação | Rota | Escopo | CLI | SDK |
+| --- | --- | --- | --- | --- |
+| Listar leads | `GET /api/v1/crm/leads` | `api:read` | `steel crm lead list` | `crm.leads.list()` |
+| Criar lead | `POST /api/v1/crm/leads` | `api:write` | `steel crm lead create` | `crm.leads.create()` |
+| Importar CSV | `POST /api/v1/crm/leads/import` | `api:write` | `steel crm lead import` | `crm.leads.import()` |
+| Listar oportunidades | `GET /api/v1/crm/opportunities` | `api:read` | `steel crm opportunity list` | `crm.opportunities.list()` |
+| Mover oportunidade | `POST /api/v1/crm/opportunities/{opportunityId}/stage` | `api:write` | `steel crm opportunity move` | `crm.opportunities.move()` |
+| Listar funis | `GET /api/v1/crm/pipelines` | `api:read` | `steel crm pipelines` | `crm.pipelines()` |
+
+## Listar leads
+
+Na ordem do funil de leads. `stage` filtra por etapa: `RECEIVED`,
+`IN_CONTACT`, `QUALIFIED`, `OPPORTUNITY`, `PROPOSAL` ou `CLOSED`.
+
+```bash
+curl "$STEEL_URL/api/v1/crm/leads?stage=QUALIFIED&limit=50" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2lead0001",
+        "workspaceId": "cm2ws0001",
+        "name": "Maria Souza",
+        "emails": ["maria@acme.com.br"],
+        "phones": ["+5511999990000"],
+        "company": "Acme Ltda",
+        "jobTitle": "Gerente de TI",
+        "city": "São Paulo",
+        "linkedin": null,
+        "source": "Site",
+        "channel": "FORM",
+        "stage": "QUALIFIED",
+        "score": 62,
+        "ownerId": "cm2usr0001",
+        "convertedPersonId": null,
+        "closeResult": null,
+        "closedAt": null,
+        "closedAmount": null,
+        "lostReason": null,
+        "createdById": "cm2usr0001",
+        "position": 3,
+        "createdAt": "2026-10-15T14:00:00.000Z",
+        "updatedAt": "2026-10-17T09:30:00.000Z"
+      }
+    ],
+    "nextCursor": "bzo1MA"
+  }
+}
+```
+
+Um lead fechado traz `closeResult` (`WON` ou `LOST`), `closedAt`,
+`closedAmount` e `billingType` (`ONE_TIME`, `MONTHLY` ou `YEARLY`); perdido,
+também `lostReason` e `lostNote`.
+
+No CLI, `--stage` aceita `recebido`, `em-contato`, `qualificado`,
+`oportunidade`, `proposta`, `fechado` ou o valor da API:
+
+```bash
+steel crm lead list --stage qualificado
+steel crm lead list --all --json | jq -r '.items[] | [.name, .emails[0], .score] | @tsv'
+```
+
+```ts
+const leads = await steel.crm.leads.list({ stage: 'QUALIFIED', limit: 50 })
+```
+
+## Criar um lead
+
+A mesma entrada de leads do aplicativo: calcula a pontuação, aplica as regras
+de roteamento de dono e dispara os workflows de **lead criado** (e o evento de
+webhook `crm.lead.created`). Todo lead nasce na etapa `RECEIVED`.
+
+| Campo | Regra |
+| --- | --- |
+| `name` | Obrigatório, até 200 caracteres |
+| `source` | Obrigatório, até 100 caracteres (`Site`, `Feira`, `Indicação`...) |
+| `emails`, `phones` | Listas. **Pelo menos um** e-mail ou telefone |
+| `company`, `jobTitle`, `city`, `linkedin`, `channel` | Opcionais |
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/crm/leads" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Carlos Lima",
+    "emails": ["carlos@empresa.com.br"],
+    "phones": ["+5511988887777"],
+    "company": "Empresa SA",
+    "source": "Feira"
+  }'
+```
+
+A resposta é `201` com o lead, no formato da lista, com `score` e `ownerId`
+já calculados.
+
+```bash
+steel crm lead create --name "Carlos Lima" --email carlos@empresa.com.br \
+  --phone +5511988887777 --company "Empresa SA" --source Feira --yes
+```
+
+Sem `--source`, o CLI usa `CLI` como origem.
+
+```ts
+const lead = await steel.crm.leads.create({
+  name: 'Carlos Lima',
+  emails: ['carlos@empresa.com.br'],
+  phones: [],
+  source: 'Feira',
+})
+if (!lead.ok && lead.error.code === 'CRM_LEAD_DUPLICATE') {
+  // já existe um lead em aberto com esse contato
+}
+```
+
+| Erro | Quando |
+| --- | --- |
+| `409 CRM_LEAD_DUPLICATE` | Já existe um lead **em aberto** com o mesmo e-mail ou telefone. Não repita; atualize o existente no aplicativo |
+| `422 VALIDATION_ERROR` | Faltou nome ou origem, nenhum e-mail nem telefone (`path: ["emails"]`, "Informe ao menos um email ou telefone"), ou e-mail inválido |
+
+O `409` deixa a criação **idempotente pelo contato**: repetir o mesmo lead
+depois de uma falha de rede não cria dois.
+
+## Importar leads de um CSV
+
+`POST /api/v1/crm/leads/import` recebe o próprio CSV como corpo
+(`Content-Type: text/csv`), até **5.000 linhas** e **5 MB**. A primeira linha é
+o cabeçalho; o separador é `,` ou `;`.
+
+| Coluna (maiúsculas e acentos não importam) | Campo |
+| --- | --- |
+| `name` ou `nome` | Nome (obrigatória) |
+| `email` | E-mails; vários na mesma célula separados por `;` |
+| `phone`, `telefone` ou `celular` | Telefones; vários separados por `;` |
+| `company` ou `empresa` | Empresa |
+| `job_title` ou `cargo` | Cargo |
+| `city` ou `cidade` | Cidade |
+| `linkedin` | LinkedIn |
+| `source` ou `origem` | Origem; vazia usa o `?source=` da chamada, ou `API` |
+| `channel` ou `canal` | Canal |
+
+Cada linha passa pela mesma entrada do [Criar um lead](#criar-um-lead), em
+ordem. Uma linha igual a um lead em aberto conta em `skipped`; uma linha
+recusada vai para `errors` com o número dela, e as outras seguem.
+
+```csv
+nome;email;telefone;empresa;origem
+Carlos Lima;carlos@empresa.com.br;11999990000;Empresa SA;Site
+Bia Rocha;;11988887777;;
+Sem Contato;;;;
+```
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/crm/leads/import?source=Feira" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: text/csv" \
+  --data-binary @leads.csv
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "total": 3,
+    "created": 2,
+    "skipped": 0,
+    "errors": [
+      { "row": 4, "code": "VALIDATION_ERROR", "message": "Informe ao menos um email ou telefone" }
+    ]
+  }
+}
+```
+
+`row` conta o cabeçalho como linha 1. Use `--data-binary`, não `-d`: o `-d`
+do `curl` remove as quebras de linha e junta tudo numa linha só.
+
+```bash
+steel crm lead import leads.csv --source Feira --yes
+cat leads.csv | steel crm lead import - --yes
+```
+
+O `steel crm lead import` sai com código **1** quando alguma linha volta com
+erro, e lista cada uma; num pipeline de CI isso faz o passo falhar.
+
+```ts
+import { readFile } from 'node:fs/promises'
+
+const csv = await readFile('leads.csv', 'utf-8')
+const result = await steel.crm.leads.import(csv, { source: 'Feira' })
+if (result.ok) {
+  for (const e of result.data.errors) console.warn(`linha ${e.row}: ${e.message}`)
+}
+```
+
+| Erro | Quando |
+| --- | --- |
+| `422 VALIDATION_ERROR` "Envie o conteúdo no corpo" | Corpo vazio |
+| `422 VALIDATION_ERROR` "Corpo maior que 5 MB" | Arquivo grande demais. Divida em partes |
+| `422 VALIDATION_ERROR` "O CSV precisa de uma linha de cabeçalho com a coluna name (ou nome)" | Falta o cabeçalho ou a coluna do nome |
+| `422 VALIDATION_ERROR` "O CSV não tem linhas de dados" | Só veio o cabeçalho |
+| `422 VALIDATION_ERROR` "O CSV tem N linhas; o limite é 5000 por importação" | Divida o arquivo |
+
+## Listar oportunidades
+
+Filtráveis por `pipelineId` e `stageId`.
+
+```bash
+curl "$STEEL_URL/api/v1/crm/opportunities?pipelineId=cm2pip0001&limit=100" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2opp0001",
+        "name": "Renovação do contrato de suporte",
+        "amount": 12000,
+        "probability": 60,
+        "closeDate": "2026-11-30T00:00:00.000Z",
+        "pipelineId": "cm2pip0001",
+        "stageId": "cm2stg0003",
+        "companyId": "cm2cmp0001",
+        "pointOfContactId": "cm2per0001",
+        "ownerId": "cm2usr0001",
+        "source": "Indicação",
+        "workspaceId": "cm2ws0001",
+        "createdById": "cm2usr0001",
+        "position": 0,
+        "createdAt": "2026-10-01T12:00:00.000Z",
+        "updatedAt": "2026-10-16T18:00:00.000Z",
+        "customFields": {}
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+```bash
+steel crm opportunity list --pipeline cm2pip0001 --all
+```
+
+```ts
+const opps = await steel.crm.opportunities.list({ pipelineId: 'cm2pip0001' })
+```
+
+## Mover uma oportunidade de etapa
+
+Leva a oportunidade para outra etapa e, com `pipelineId`, para outro funil.
+Uma etapa da categoria `WON` marca a data de ganho, como no aplicativo. A
+mudança dispara os workflows de **oportunidade atualizada** e os eventos
+`crm.opportunity.stage_changed` e, numa etapa de ganho ou perda,
+`crm.deal.won` ou `crm.deal.lost`.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/crm/opportunities/cm2opp0001/stage" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"stageId":"cm2stg0004"}'
+```
+
+A resposta é `200` com a oportunidade já na etapa nova.
+
+No CLI, `--stage` e `--pipeline` aceitam o id **ou o nome** (o CLI procura nos
+funis):
+
+```bash
+steel crm opportunity move cm2opp0001 --stage Negociação --yes
+steel crm opportunity move cm2opp0001 --stage Proposta --pipeline Vendas --yes
+```
+
+```ts
+await steel.crm.opportunities.move('cm2opp0001', { stageId: 'cm2stg0004' })
+```
+
+| Erro | Quando |
+| --- | --- |
+| `404 RESOURCE_NOT_FOUND` | A oportunidade ou o funil não existe neste workspace, ou a etapa não pertence ao funil (o atual, ou o `pipelineId` enviado) |
+| `422 VALIDATION_ERROR` | Faltou `stageId` |
+
+## Listar funis
+
+Cada funil com as etapas, na ordem. É de onde saem os `stageId` e
+`pipelineId` das outras rotas.
+
+```bash
+curl "$STEEL_URL/api/v1/crm/pipelines" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2pip0001",
+        "workspaceId": "cm2ws0001",
+        "name": "Vendas",
+        "position": 0,
+        "isDefault": true,
+        "stages": [
+          { "id": "cm2stg0001", "pipelineId": "cm2pip0001", "name": "Qualificação", "position": 0, "probability": 10, "category": "OPEN", "color": null },
+          { "id": "cm2stg0003", "pipelineId": "cm2pip0001", "name": "Proposta", "position": 2, "probability": 60, "category": "OPEN", "color": null },
+          { "id": "cm2stg0005", "pipelineId": "cm2pip0001", "name": "Ganho", "position": 4, "probability": 100, "category": "WON", "color": "#16a34a" },
+          { "id": "cm2stg0006", "pipelineId": "cm2pip0001", "name": "Perdido", "position": 5, "probability": 0, "category": "LOST", "color": "#dc2626" }
+        ]
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+```bash
+steel crm pipelines
+steel crm pipelines --json | jq -r '.items[] | .name as $p | .stages[] | "\($p)\t\(.name)\t\(.id)"'
+```
+
+```ts
+const pipelines = await steel.crm.pipelines()
+```
+
+## Receitas
+
+**Enviar leads de uma planilha toda noite:** exporte a planilha como CSV e
+rode no agendador do seu servidor:
+
+```bash
+STEEL_TOKEN=$(cat /etc/steel/token) steel crm lead import /srv/export/leads.csv --source Planilha --yes --json \
+  > /var/log/steel-import.json
+```
+
+**Valor em aberto por etapa:**
+
+```ts
+import { collectAll } from '@steel-so/sdk'
+
+const [pipes, opps] = await Promise.all([
+  steel.crm.pipelines(),
+  collectAll((cursor) => steel.crm.opportunities.list({ limit: 100, cursor })),
+])
+if (pipes.ok && opps.ok) {
+  for (const stage of pipes.data.items[0].stages) {
+    const total = opps.data.items
+      .filter((o) => o.stageId === stage.id)
+      .reduce((sum, o) => sum + (o.amount ?? 0), 0)
+    console.log(stage.name, total)
+  }
+}
+```
+
+Para reagir a um lead novo ou a um negócio ganho, assine `crm.lead.created`,
+`crm.deal.won` e `crm.deal.lost` em [Webhooks](/dev/webhooks/eventos).
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| `409 CRM_LEAD_DUPLICATE` num contato novo | Algum lead **em aberto** já usa aquele e-mail ou telefone, talvez com outro nome. Procure no CRM pelo contato |
+| A importação acentua errado | Salve o CSV em UTF-8. Planilhas exportadas em "CSV (separado por ponto e vírgula)" costumam vir em Windows-1252 |
+| A chamada inteira volta `422` sobre o cabeçalho | O cabeçalho não tem `name`/`nome`, ou o separador não é `,` nem `;` |
+| O lead criado não ficou com o dono esperado | As regras de roteamento do CRM escolhem o dono; o token não passa `ownerId` |
+| `stageId` de outro funil responde `404` | Passe também o `pipelineId` do funil de destino |

@@ -1,0 +1,216 @@
+---
+title: Conta e login
+description: Ver o token em uso com GET /me, o login do CLI pelo navegador (fluxo de dispositivo) passo a passo e como revogar um token.
+section: api-v1
+order: 2
+---
+
+Três rotas cuidam do token: uma mostra quem você é para a API, duas fazem o
+login do CLI pelo navegador e uma revoga o token em uso. Os exemplos usam
+`$STEEL_URL` e `$STEEL_TOKEN` (veja [Antes da primeira chamada](/dev/api-v1#antes-da-primeira-chamada)).
+
+| Operação | Rota | Escopo | Módulo |
+| --- | --- | --- | --- |
+| Token em uso | `GET /api/v1/me` | `api:read` | Nenhum |
+| Iniciar login do CLI | `POST /api/v1/auth/device` | Sem token | — |
+| Consultar o login | `POST /api/v1/auth/device/token` | Sem token | — |
+| Revogar o token em uso | `DELETE /api/v1/auth/token` | `api:read` | Nenhum |
+
+## Token em uso
+
+`GET /api/v1/me` responde com o dono do token, o workspace, o seu papel nele,
+os escopos, os módulos que valem agora e a validade. É a primeira chamada
+para testar um token novo.
+
+```bash
+curl "$STEEL_URL/api/v1/me" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "user": { "id": "cm2usr0001", "name": "Ana Souza", "email": "ana@empresa.com.br" },
+    "workspace": { "id": "cm2ws0001", "slug": "acme", "name": "Acme" },
+    "role": "ADMIN",
+    "scopes": ["api:read", "api:write"],
+    "modules": ["SERVICE_DESK", "CRM"],
+    "token": { "id": "cm2tok0001", "expiresAt": "2027-01-16T12:00:00.000Z" }
+  }
+}
+```
+
+`modules` lista só os módulos do token que **continuam habilitados** no
+workspace: se um administrador desligou o CRM, ele some daqui e as rotas do CRM
+respondem `403`.
+
+No CLI:
+
+```bash
+steel whoami          # usuário, workspace, escopos, módulos e validade
+steel whoami --json   # o mesmo objeto data, para scripts
+```
+
+No SDK:
+
+```ts
+const me = await steel.me()
+if (!me.ok) throw new Error(me.error.code)
+console.log(me.data.workspace.slug, me.data.scopes)
+```
+
+Erros: `401 UNAUTHORIZED` (token ausente, vencido, revogado ou de quem saiu do
+workspace) e `429 RATE_LIMITED`.
+
+## Login pelo navegador (fluxo de dispositivo)
+
+É o que `steel login` faz por baixo, seguindo o RFC 8628. Use as mesmas rotas
+se você escreve outra ferramenta de terminal que precisa de um token sem pedir
+para a pessoa copiar e colar.
+
+### Passo a passo de quem faz o login
+
+1. No terminal, rode `steel login`. O CLI mostra um código de 8 letras e
+   números, como `BCDF-GH23`, e abre o navegador em `/device` com o código já
+   preenchido. Com `--no-browser`, ele só mostra o link.
+2. Se você não estiver logado no Steel, entre com a sua conta. A página
+   **Entrar no Steel CLI** mostra o código: confira se é o mesmo do terminal.
+   Se você não rodou `steel login` agora, recuse.
+3. Escolha o **Workspace**, os **Módulos**, o **Nível de acesso** (**Somente
+   ler** ou **Ler e alterar**) e a **Validade**.
+4. Clique em **Permitir acesso**. A página mostra **Pronto! Volte ao
+   terminal**, e o terminal confirma o login com o workspace escolhido.
+
+O token criado se chama `Steel CLI — <nome da máquina>` e aparece com os
+outros em **Configurações › Segurança › Tokens de API**, onde dá para revogar.
+
+### As chamadas
+
+Primeiro, a ferramenta pede um código. `clientName` e `deviceName` são
+opcionais; o `deviceName` vira parte do nome do token.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/auth/device" \
+  -H "Content-Type: application/json" \
+  -d '{"clientName":"Minha ferramenta","deviceName":"notebook-ana"}'
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "deviceCode": "8f3c…",
+    "userCode": "BCDF-GH23",
+    "verificationUri": "https://homologacao.stratustelecom.com.br/device",
+    "verificationUriComplete": "https://homologacao.stratustelecom.com.br/device?code=BCDF-GH23",
+    "interval": 5,
+    "expiresIn": 600
+  }
+}
+```
+
+Mostre o `userCode`, abra o `verificationUriComplete` no navegador e guarde o
+`deviceCode` (ele é secreto: nunca o exiba). Depois, consulte a cada
+`interval` segundos:
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/auth/device/token" \
+  -H "Content-Type: application/json" \
+  -d '{"deviceCode":"8f3c…"}'
+```
+
+Enquanto a pessoa não responde, a resposta é `428`:
+
+```json
+{
+  "success": false,
+  "statusCode": 428,
+  "message": "Aguardando a confirmação no navegador.",
+  "error": { "code": "AUTHORIZATION_PENDING" }
+}
+```
+
+Aprovado, vem o token, **uma vez só**:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "token": "stl_pat_…",
+    "tokenId": "cm2tok0002",
+    "expiresAt": "2027-01-16T12:00:00.000Z",
+    "workspace": { "id": "cm2ws0001", "slug": "acme", "name": "Acme" },
+    "scopes": ["api:read"],
+    "modules": ["SERVICE_DESK"]
+  }
+}
+```
+
+| Resposta | Significa | O que fazer |
+| --- | --- | --- |
+| `428 AUTHORIZATION_PENDING` | A pessoa ainda não respondeu | Espere `interval` segundos e consulte de novo |
+| `429 SLOW_DOWN` | Consultou antes do intervalo | Use o novo intervalo de `error.details.interval` (some 5 segundos ao atual se ele não vier) |
+| `403 ACCESS_DENIED` | A pessoa clicou em recusar | Pare e avise; para tentar de novo, peça outro código |
+| `410 EXPIRED_TOKEN` | O código passou dos 10 minutos ou já foi usado | Peça outro código |
+| `422 API_TOKEN_LIMIT_REACHED` | A pessoa já tem 50 tokens ativos | Revogue tokens antigos e recomece |
+| `429 RATE_LIMITED` | Limite por IP: 10 inícios a cada 10 minutos, 120 consultas a cada 60 segundos | Espere o `Retry-After` |
+
+No SDK, `waitForDeviceToken` faz o laço, respeita o `interval` e o
+`SLOW_DOWN`, e devolve o resultado final:
+
+```ts
+import { createSteelClient, waitForDeviceToken } from '@steel-so/sdk'
+
+const anon = createSteelClient({ baseUrl: process.env.STEEL_URL! })
+const start = await anon.auth.startDevice({ clientName: 'Minha ferramenta' })
+if (!start.ok) throw new Error(start.error.code)
+
+console.log(`Confirme o código ${start.data.userCode} em ${start.data.verificationUriComplete}`)
+const outcome = await waitForDeviceToken(anon, start.data)
+if (outcome.status === 'approved') {
+  // outcome.token.token é o stl_pat_; guarde num cofre ou no chaveiro
+}
+```
+
+`outcome.status` também pode ser `denied`, `expired`, `cancelled` (você passou
+um `signal` e abortou) ou `error`.
+
+## Revogar o token em uso
+
+`DELETE /api/v1/auth/token` revoga o token que fez a chamada e responde `204`
+sem corpo. A próxima chamada com ele responde `401`.
+
+```bash
+curl -X DELETE "$STEEL_URL/api/v1/auth/token" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+No CLI, `steel logout` faz isso e apaga a cópia local do chaveiro. Se o Steel
+não responder, ele apaga a cópia mesmo assim e avisa: aí revogue na tela. Um
+token passado em `STEEL_TOKEN` não é revogado pelo `steel logout`.
+
+No SDK:
+
+```ts
+const revoked = await steel.auth.revokeToken()
+// revoked.ok === true: o token não vale mais
+```
+
+Para revogar **outro** token (um vazado, de uma máquina perdida), use a tela:
+**Configurações › Segurança › Tokens de API** para os seus, ou **Ajustes ›
+Apps conectados** se você é dono ou administrador e precisa revogar o de um
+membro.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| A página `/device` diz que o código é inválido | O código foi digitado errado, passou dos 10 minutos ou já foi usado. Rode `steel login` de novo |
+| A página não mostra nenhum workspace | Nenhum workspace seu tem ServiceDesk, CRM ou Comunicação habilitado. Peça a um administrador |
+| Um token **Ler e alterar** recebe `403 FORBIDDEN` nas escritas | O nível de acesso não amplia o seu papel: se no aplicativo você não pode alterar aquilo, pela API também não |
+| O terminal fica esperando depois de **Permitir acesso** | O terminal perdeu a rede. Interrompa com Ctrl+C e rode `steel login` de novo; o token que sobrou pode ser revogado na tela |
+| `steel whoami` responde código de saída 3 | Sem login, token vencido ou revogado. Rode `steel login` |

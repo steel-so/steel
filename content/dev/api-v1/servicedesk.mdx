@@ -1,0 +1,391 @@
+---
+title: ServiceDesk na API v1
+description: Listar, ver, abrir, comentar e mover chamados e consultar o catálogo de serviços, com curl, steel CLI e SDK, respostas de exemplo e os erros de cada operação.
+section: api-v1
+order: 3
+---
+
+Todas as rotas desta página exigem um token com o módulo **ServiceDesk** e
+rodam com as suas permissões no ServiceDesk: agentes veem a fila do workspace,
+solicitantes só os próprios chamados, como no portal. Os exemplos usam
+`$STEEL_URL` e `$STEEL_TOKEN` (veja [Antes da primeira chamada](/dev/api-v1#antes-da-primeira-chamada)).
+
+| Operação | Rota | Escopo | CLI | SDK |
+| --- | --- | --- | --- | --- |
+| Listar chamados | `GET /api/v1/servicedesk/tickets` | `api:read` | `steel sd ticket list` | `servicedesk.tickets.list()` |
+| Ver chamado | `GET /api/v1/servicedesk/tickets/{ticketId}` | `api:read` | `steel sd ticket view` | `servicedesk.tickets.get()` |
+| Abrir chamado | `POST /api/v1/servicedesk/tickets` | `api:write` | `steel sd ticket create` | `servicedesk.tickets.create()` |
+| Comentar | `POST /api/v1/servicedesk/tickets/{ticketId}/comments` | `api:write` | `steel sd ticket comment` | `servicedesk.tickets.comment()` |
+| Mudar de fase | `POST /api/v1/servicedesk/tickets/{ticketId}/phase` | `api:write` | `steel sd ticket move` | `servicedesk.tickets.move()` |
+| Catálogo | `GET /api/v1/servicedesk/catalog` | `api:read` | `steel sd catalog` | `servicedesk.catalog()` |
+
+Onde a rota pede `{ticketId}`, vale o id, o número (`123`) ou o código
+(`INC-000123`).
+
+## Listar chamados
+
+Mais novos primeiro. **Sem `status`, só os abertos** (fases das categorias
+`NEW`, `IN_PROGRESS` e `WAITING`).
+
+| Parâmetro | Valores |
+| --- | --- |
+| `status` | Categorias de fase, separadas por vírgula: `NEW`, `IN_PROGRESS`, `WAITING`, `RESOLVED`, `CLOSED`, `CANCELED` |
+| `type` | `INCIDENT`, `SERVICE_REQUEST`, `CHANGE`, `PROBLEM` (vírgula para vários) |
+| `assigneeId` | Ids de usuário, `me` (você) ou `unassigned` (sem responsável) |
+| `phaseId`, `priorityId` | Ids, separados por vírgula (até 100) |
+| `q` | Texto no título, na descrição ou no código (até 200 caracteres) |
+| `limit`, `cursor` | [Paginação](/dev/api-v1#paginação) |
+
+```bash
+curl "$STEEL_URL/api/v1/servicedesk/tickets?assigneeId=me&status=NEW,IN_PROGRESS,WAITING&limit=10" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2tkt0001",
+        "number": 123,
+        "code": "INC-000123",
+        "type": "INCIDENT",
+        "title": "VPN fora do ar na filial",
+        "channel": "PORTAL",
+        "phaseId": "cm2phs0002",
+        "phase": {
+          "id": "cm2phs0002",
+          "name": "Em atendimento",
+          "color": "#2563eb",
+          "category": "IN_PROGRESS",
+          "completionPercent": 40,
+          "position": 2,
+          "wipLimit": 0
+        },
+        "priority": { "id": "cm2pri0002", "name": "P2 – Alta", "level": 2, "color": "#f97316" },
+        "assignee": { "id": "cm2usr0001", "name": "Ana Souza", "email": "ana@empresa.com.br", "image": null },
+        "requester": { "id": "cm2usr0009", "name": "Bruno Lima", "email": "bruno@empresa.com.br", "image": null },
+        "sla": {
+          "firstResponse": { "dueAt": "2026-10-18T13:00:00.000Z", "remainingMinutes": null, "percentUsed": null, "state": "met" },
+          "resolution": { "dueAt": "2026-10-18T17:00:00.000Z", "remainingMinutes": 45, "percentUsed": 81, "state": "at_risk" }
+        },
+        "risk": { "level": "HIGH", "score": 78, "factors": [], "breachEtaAt": "2026-10-18T16:40:00.000Z", "computedAt": "2026-10-18T15:30:00.000Z" },
+        "tags": ["vpn"],
+        "createdAt": "2026-10-18T12:00:00.000Z",
+        "updatedAt": "2026-10-18T15:10:00.000Z"
+      }
+    ],
+    "nextCursor": "cm2tkt0001"
+  }
+}
+```
+
+O chamado completo tem mais campos (categoria, serviço, departamento, cliente,
+campos personalizados, planos de mudança, causa raiz, CSAT); a lista de cada um
+está na [referência](/dev/api/v1). `sla.*.state` é `ok`, `at_risk`,
+`breached`, `met`, `paused` ou `none`; `remainingMinutes` conta minutos úteis
+do calendário do SLA e fica negativo quando atrasa. `risk` é `null` para
+solicitantes e enquanto não há previsão.
+
+No CLI, `--status` e `--type` aceitam os nomes em português (`novo`,
+`andamento`, `aguardando`, `resolvido`, `fechado`, `cancelado`; `incidente`,
+`requisicao`, `mudanca`, `problema`) ou os valores da API:
+
+```bash
+steel sd ticket list --assignee me
+steel sd ticket list --status aguardando --type incidente --all
+steel sd ticket list -s "vpn" --json | jq -r '.items[].code'
+```
+
+No SDK, os filtros de lista vão como texto separado por vírgula ou lista:
+
+```ts
+const page = await steel.servicedesk.tickets.list({
+  assigneeId: ['me'],
+  status: ['NEW', 'IN_PROGRESS', 'WAITING'],
+  limit: 10,
+})
+if (page.ok) for (const t of page.data.items) console.log(t.code, t.sla.resolution.state)
+```
+
+## Ver um chamado
+
+```bash
+curl "$STEEL_URL/api/v1/servicedesk/tickets/INC-000123" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+A resposta é o chamado completo, no mesmo formato de cada item da lista.
+
+```bash
+steel sd ticket view 123
+steel sd ticket view INC-000123 --json
+```
+
+```ts
+const ticket = await steel.servicedesk.tickets.get('INC-000123')
+```
+
+Erros: `404 SD_TICKET_NOT_FOUND` (não existe neste workspace) e
+`403 SD_TICKET_FORBIDDEN` (existe, mas você não pode vê-lo; por exemplo, um
+solicitante pedindo o chamado de outra pessoa).
+
+## Abrir um chamado
+
+Valem as mesmas regras da abertura no aplicativo: o modelo, a matriz de
+prioridade (impacto × urgência), o roteamento, o SLA e as automações. O canal
+é `API` quando o corpo não diz outro. Quem é solicitante abre como no portal.
+
+Obrigatórios: `type` (`INCIDENT`, `SERVICE_REQUEST`, `CHANGE` ou `PROBLEM`) e
+`title` (até 200 caracteres). Os mais usados entre os opcionais:
+
+| Campo | Para quê |
+| --- | --- |
+| `description` | Texto do chamado (até 100.000 caracteres) |
+| `serviceId`, `categoryId`, `subcategoryId` | Onde no catálogo; veja [Catálogo de serviços](#catálogo-de-serviços) |
+| `impactId`, `urgencyId` ou `priorityId` | Prioridade direta ou pela matriz |
+| `assigneeId`, `departmentId` | Responsável e departamento, se você não quer o roteamento |
+| `requesterId`, `customerId`, `companyId`, `contactId` | Quem pediu e para quem |
+| `templateId` | Modelo de chamado |
+| `tags` | Até 30, cada uma com até 50 caracteres |
+| `customFields` | Campos personalizados, `{ "<chave>": valor }` |
+| `changeType`, `changeRisk`, `plannedStartAt`, `plannedEndAt`, `implementationPlan`, `rollbackPlan`, `testPlan` | Mudanças |
+| `rootCause`, `workaround`, `knownError` | Problemas |
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/servicedesk/tickets" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "INCIDENT",
+    "title": "VPN fora do ar na filial",
+    "description": "Desde as 9h ninguém da filial Centro conecta.",
+    "tags": ["vpn", "filial-centro"]
+  }'
+```
+
+A resposta é `201` com o chamado criado, no formato acima, já com `code`,
+`phase` e os prazos de SLA calculados.
+
+```bash
+steel sd ticket create --type incidente --title "VPN fora do ar na filial" \
+  --description @descricao.md --tag vpn --tag filial-centro --yes
+```
+
+No terminal, o que faltar (tipo, título) é perguntado e a criação pede
+confirmação; `--yes` pula a confirmação. Num script, faltar `--type` ou
+`--title` é erro de uso (código de saída 2).
+
+```ts
+const created = await steel.servicedesk.tickets.create({
+  type: 'INCIDENT',
+  title: 'VPN fora do ar na filial',
+  tags: ['vpn'],
+})
+if (created.ok) console.log(created.data.code)
+```
+
+| Erro | Quando |
+| --- | --- |
+| `404 SD_CATEGORY_NOT_FOUND`, `SD_PHASE_NOT_FOUND`, `SD_DEPARTMENT_NOT_FOUND` | Um id do corpo não existe neste workspace |
+| `404 SD_CONFIG_NOT_FOUND` | A configuração do ServiceDesk do workspace não foi encontrada. Fale com um administrador do workspace |
+| `422 SD_CUSTOM_FIELD_INVALID` | Um campo personalizado obrigatório faltou ou veio no formato errado |
+| `403 SD_PORTAL_DISABLED` | Você é solicitante e o portal está desligado |
+| `403 SD_TICKET_FORBIDDEN` | Você é solicitante e o tipo não pode ser aberto pelo portal |
+
+## Comentar
+
+Uma mensagem no histórico do chamado. `visibility` é `PUBLIC` (padrão: o
+solicitante vê e é avisado) ou `INTERNAL` (só os agentes). Até 10.000
+caracteres; sem anexos na v1.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/servicedesk/tickets/INC-000123/comments" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"body":"Link da operadora caiu; previsão de volta às 14h.","visibility":"INTERNAL"}'
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "id": "cm2msg0001",
+    "ticketId": "cm2tkt0001",
+    "authorKind": "AGENT",
+    "author": { "id": "cm2usr0001", "name": "Ana Souza", "email": "ana@empresa.com.br", "image": null },
+    "contact": null,
+    "visibility": "INTERNAL",
+    "channel": "PLATFORM",
+    "body": "Link da operadora caiu; previsão de volta às 14h.",
+    "attachments": [],
+    "mentionedUserIds": [],
+    "editedAt": null,
+    "createdAt": "2026-10-18T13:05:00.000Z",
+    "canEdit": true,
+    "editableUntil": "2026-10-18T13:20:00.000Z"
+  }
+}
+```
+
+```bash
+steel sd ticket comment 123 -m "Link da operadora caiu" --internal
+git log -1 --format=%B | steel sd ticket comment 123 -m @- --yes
+```
+
+```ts
+await steel.servicedesk.tickets.comment('INC-000123', {
+  body: 'Link da operadora caiu; previsão de volta às 14h.',
+  visibility: 'INTERNAL',
+})
+```
+
+Erros: `409 SD_TICKET_CLOSED` (o chamado está fechado ou cancelado; reabra no
+aplicativo) e os `404`/`403` de [Ver um chamado](#ver-um-chamado).
+
+## Mudar de fase
+
+Só agentes. Valem as transições permitidas, os requisitos da fase, as
+aprovações e a assinatura digital, como no quadro do aplicativo.
+
+| Campo | Para quê |
+| --- | --- |
+| `phaseId` | Fase de destino (obrigatório) |
+| `solution` | Texto da solução, quando a fase resolve o chamado |
+| `solutionClassificationId` | Classificação da solução, quando a fase exige |
+| `comment` | Comentário da mudança (até 2.000 caracteres) |
+
+A v1 ainda não lista as fases: o id de cada uma aparece em `phase.id` dos
+chamados que estão nela (liste com `status=RESOLVED`, por exemplo, para achar
+a fase de resolução).
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/servicedesk/tickets/INC-000123/phase" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"phaseId":"cm2phs0005","solution":"Link restabelecido pela operadora."}'
+```
+
+A resposta é `200` com o chamado já na nova fase.
+
+```bash
+steel sd ticket move 123 --phase cm2phs0005 --solution @solucao.md --yes
+```
+
+```ts
+await steel.servicedesk.tickets.move('INC-000123', {
+  phaseId: 'cm2phs0005',
+  solution: 'Link restabelecido pela operadora.',
+})
+```
+
+| Erro | Quando e como resolver |
+| --- | --- |
+| `403 SD_NOT_AGENT` | Você é solicitante. Só agentes movem chamados |
+| `422 SD_PHASE_TRANSITION_NOT_ALLOWED` | O fluxo não permite ir da fase atual para essa. Veja as transições em **Configurações do ServiceDesk › Fluxos** |
+| `422 SD_PHASE_REQUIREMENTS_UNMET` | A fase pede algo que falta (solução, classificação, campo). A mensagem diz o quê |
+| `422 SD_APPROVAL_REQUIRED` | A mudança precisa de aprovação antes |
+| `422 SD_SIGNATURE_REQUIRED` | A fase exige assinatura digital, feita no aplicativo |
+| `404 SD_PHASE_NOT_FOUND` | O `phaseId` não existe neste workspace |
+
+## Catálogo de serviços
+
+Categorias, subcategorias e serviços ativos numa lista plana e ordenada. Cada
+item diz o nível (`level`: `CATEGORY`, `SUBCATEGORY` ou `SERVICE`) e o pai
+(`parentId`). Solicitantes veem só o que está visível no portal. `ticketType`
+filtra os itens que aparecem num tipo de chamado.
+
+```bash
+curl "$STEEL_URL/api/v1/servicedesk/catalog?ticketType=SERVICE_REQUEST&limit=100" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "items": [
+      {
+        "id": "cm2cat0001",
+        "parentId": null,
+        "level": "CATEGORY",
+        "name": "Acessos",
+        "description": null,
+        "icon": null,
+        "ticketTypes": ["SERVICE_REQUEST"],
+        "departmentId": null,
+        "slaPolicyId": null,
+        "portalVisible": true,
+        "active": true,
+        "position": 0,
+        "createdAt": "2026-09-01T12:00:00.000Z",
+        "updatedAt": "2026-09-01T12:00:00.000Z"
+      },
+      {
+        "id": "cm2svc0007",
+        "parentId": "cm2cat0001",
+        "level": "SERVICE",
+        "name": "Criar usuário na VPN",
+        "ticketTypes": ["SERVICE_REQUEST"],
+        "portalVisible": true,
+        "active": true,
+        "position": 3
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+Use o `id` de um item `SERVICE` como `serviceId` ao abrir o chamado.
+
+```bash
+steel sd catalog --type requisicao --all
+```
+
+```ts
+const catalog = await steel.servicedesk.catalog({ ticketType: 'SERVICE_REQUEST', limit: 100 })
+```
+
+## Receitas
+
+**Abrir um chamado quando o deploy falha (GitHub Actions):**
+
+```yaml
+- name: Abrir chamado no Steel
+  if: failure()
+  env:
+    STEEL_URL: https://homologacao.stratustelecom.com.br
+    STEEL_TOKEN: ${{ secrets.STEEL_TOKEN }}
+  run: |
+    steel sd ticket create --type incidente \
+      --title "Deploy falhou: ${{ github.repository }}@${{ github.sha }}" \
+      --description "Execução: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+      --yes
+```
+
+O token precisa do módulo ServiceDesk e de **Ler e alterar**.
+
+**Resumo diário da sua fila:**
+
+```bash
+steel sd ticket list --assignee me --all --json \
+  | jq -r '.items[] | select(.sla.resolution.state == "at_risk" or .sla.resolution.state == "breached") | "\(.code)  \(.title)"'
+```
+
+Para ser avisado em vez de consultar, assine os eventos
+`servicedesk.ticket.*` e `servicedesk.sla.*` em [Webhooks](/dev/webhooks/eventos).
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| A lista não traz chamados resolvidos | Sem `status`, só os abertos voltam. Passe `status=RESOLVED,CLOSED` |
+| A lista vem vazia, mas o chamado existe | Você é solicitante no ServiceDesk e vê só os seus, ou os filtros se anulam (`assigneeId=unassigned` com `assigneeId=me`) |
+| `403 API_TOKEN_MODULE_NOT_ALLOWED` | O token não tem o módulo ServiceDesk |
+| O chamado abriu com prioridade ou responsável diferente do enviado | Uma automação ou regra de roteamento do workspace mudou depois da abertura, como no aplicativo |
+| `422 SD_CUSTOM_FIELD_INVALID` | A chave é a **Chave** do campo, não o rótulo. Confira em **Configurações do ServiceDesk › Campos customizados** |
