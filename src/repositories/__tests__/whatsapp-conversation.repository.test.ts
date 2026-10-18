@@ -294,6 +294,54 @@ describe('WhatsAppConversationRepository', () => {
     })
   })
 
+  describe('listByWorkspace() queue filters', () => {
+    it('should keep only unassigned conversations, optionally of one team', async () => {
+      const { workspace, user, connection, contact } = await seedFixtures()
+      const team = await prisma.whatsAppTeam.create({
+        data: { workspaceId: workspace.id, name: 'Suporte' },
+      })
+      const base = {
+        workspaceId: workspace.id,
+        connectionId: connection.id,
+        contactId: contact.id,
+        status: 'NEW' as const,
+      }
+      const general = expectOk(
+        await WhatsAppConversationRepository.create(base),
+      )
+      const ofTeam = expectOk(
+        await WhatsAppConversationRepository.create({
+          ...base,
+          teamId: team.id,
+        }),
+      )
+      await WhatsAppConversationRepository.create({
+        ...base,
+        status: 'IN_PROGRESS',
+        assignedUserId: user.id,
+        teamId: team.id,
+      })
+
+      const queue = expectOk(
+        await WhatsAppConversationRepository.listByWorkspace(workspace.id, {
+          status: 'OPEN',
+          unassigned: true,
+        }),
+      )
+      expect(queue.map((c) => c.id).sort()).toEqual(
+        [general.id, ofTeam.id].sort(),
+      )
+
+      const teamQueue = expectOk(
+        await WhatsAppConversationRepository.listByWorkspace(workspace.id, {
+          unassigned: true,
+          teamId: team.id,
+        }),
+      )
+      expect(teamQueue.map((c) => c.id)).toEqual([ofTeam.id])
+    })
+  })
+
   describe('findLatestClosedByContact()', () => {
     it('should return the closed, non-deleted conversation of the contact', async () => {
       const { workspace, connection, contact } = await seedFixtures()

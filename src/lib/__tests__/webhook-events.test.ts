@@ -36,6 +36,7 @@ describe('webhook event catalog', () => {
       'crm.opportunity.stage_changed',
       'crm.deal.won',
       'communication.message.received',
+      'communication.conversation.waiting',
     ]) {
       expect(isWebhookEventType(type)).toBe(true)
     }

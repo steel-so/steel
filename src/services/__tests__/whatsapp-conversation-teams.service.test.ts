@@ -16,6 +16,10 @@ import type { SearchDocumentHit } from '@/src/lib/search/search-document'
  * leader / agent / member without a team.
  */
 
+// Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
+  emitWhatsAppConversationWaiting: vi.fn(),
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')

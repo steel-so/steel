@@ -157,6 +157,29 @@ export const WEBHOOK_DATA_SCHEMAS = {
     }),
     connectionId: z.string(),
   }),
+  'communication.conversation.waiting': z.object({
+    conversation: z.object({
+      id: z.string(),
+      status: z.enum(['NEW', 'IN_PROGRESS']),
+      connectionId: z.string(),
+      /** Team queue it waits in; `null` = the general queue. */
+      teamId: z.string().nullable(),
+      /** The AI is answering it meanwhile. */
+      aiActive: z.boolean(),
+      unreadCount: z.number().int(),
+      lastMessageAt: isoDate.nullable(),
+      createdAt: isoDate,
+    }),
+    contact: z.object({
+      id: z.string(),
+      waId: z.string(),
+      name: z.string().nullable(),
+    }),
+    /** How it got into the queue. */
+    reason: z.enum(['new', 'reopened', 'returned_to_queue']),
+    /** Who did it; `null` = the contact or the system. */
+    actorId: z.string().nullable(),
+  }),
   'agents.approval.pending': z.object({
     agent: z.object({ id: z.string(), name: z.string() }),
     runId: z.string(),
@@ -288,6 +311,13 @@ export const WEBHOOK_EVENTS: readonly WebhookEventDefinition[] = [
     type: 'communication.message.received',
     module: 'COMMUNICATION',
     description: 'Mensagem de WhatsApp recebida de um contato.',
+    subscribable: true,
+  },
+  {
+    type: 'communication.conversation.waiting',
+    module: 'COMMUNICATION',
+    description:
+      'Conversa entrou na fila, aguardando um atendente: nova, reaberta sem responsável ou devolvida para a fila.',
     subscribable: true,
   },
   {
@@ -487,6 +517,25 @@ export const WEBHOOK_EVENT_EXAMPLES: {
       name: 'Maria',
     },
     connectionId: 'cm2con000000example',
+  },
+  'communication.conversation.waiting': {
+    conversation: {
+      id: 'cm2cnv000000example',
+      status: 'NEW',
+      connectionId: 'cm2con000000example',
+      teamId: null,
+      aiActive: false,
+      unreadCount: 1,
+      lastMessageAt: '2026-10-18T12:00:00.000Z',
+      createdAt: '2026-10-18T12:00:00.000Z',
+    },
+    contact: {
+      id: 'cm2ctt000000example',
+      waId: '5511999990000',
+      name: 'Maria',
+    },
+    reason: 'new',
+    actorId: null,
   },
   'agents.approval.pending': {
     agent: { id: 'cm2agt000000example', name: 'Triagem de leads' },

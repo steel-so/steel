@@ -14,6 +14,10 @@ import { databaseError, forbidden, whatsappProviderError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 import type { WhatsAppButtonAction } from '@/src/schemas/whatsapp-button.schema'
 
+// Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
+  emitWhatsAppConversationWaiting: vi.fn(),
+}))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -68,6 +72,7 @@ import { CrmWorkflowService } from '@/src/services/crm-workflow.service'
 import { WhatsAppAiReplyService } from '@/src/services/whatsapp-ai-reply.service'
 import { notifyWhatsAppUsers } from '@/src/services/whatsapp-notify'
 import { WhatsAppButtonActionService } from '../whatsapp-button-action.service'
+import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 
 const templateRepo = vi.mocked(WhatsAppTemplateRepository)
 const quickReplyRepo = vi.mocked(WhatsAppQuickReplyRepository)
@@ -430,6 +435,47 @@ describe('runActions', () => {
         title: 'Nova conversa na fila da equipe Suporte',
       }),
     )
+    // It had no agent: it was already waiting.
+    expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+  })
+
+  it('ASSIGN_TEAM announces a conversation taken from its agent as waiting', async () => {
+    arrange([{ kind: 'ASSIGN_TEAM', teamId: 't1' }])
+    teamRepo.findTeam.mockResolvedValue(
+      ok({ id: 't1', name: 'Suporte', memberIds: [] }),
+    )
+    conversationRepo.findByIdWithConnection.mockResolvedValue(
+      ok({ ...conversation, assignedUserId: 'u2' }),
+    )
+    const queued = { ...conversation, teamId: 't1', status: 'NEW' as const }
+    conversationRepo.update.mockResolvedValue(ok(queued))
+
+    expectOk(await WhatsAppButtonActionService.runActions(job))
+
+    expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
+      conversation: queued,
+      contact,
+      reason: 'returned_to_queue',
+      actorId: null,
+    })
+  })
+
+  it('ASSIGN_TEAM stays quiet for a ServiceDesk connection', async () => {
+    arrange([{ kind: 'ASSIGN_TEAM', teamId: 't1' }])
+    teamRepo.findTeam.mockResolvedValue(
+      ok({ id: 't1', name: 'Suporte', memberIds: [] }),
+    )
+    conversationRepo.findByIdWithConnection.mockResolvedValue(
+      ok({
+        ...conversation,
+        assignedUserId: 'u2',
+        connection: { ...connection, module: 'SERVICE_DESK' },
+      }),
+    )
+
+    expectOk(await WhatsAppButtonActionService.runActions(job))
+
+    expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
   })
 
   it('ASSIGN_TEAM fails for an unknown team or a failed write', async () => {

@@ -81,6 +81,9 @@ export const WhatsAppConversationRepository = {
       assignedUserId?: string
       archived?: boolean
       connectionId?: string
+      /** Only the queue: conversations with no assignee. */
+      unassigned?: boolean
+      teamId?: string
     } = {},
     /** Scoped viewer (Equipes); `undefined` = every conversation. */
     visibility?: WhatsAppConversationVisibility,
@@ -104,6 +107,8 @@ export const WhatsAppConversationRepository = {
           ...(filters.connectionId
             ? { connectionId: filters.connectionId }
             : {}),
+          ...(filters.unassigned ? { assignedUserId: null } : {}),
+          ...(filters.teamId ? { teamId: filters.teamId } : {}),
         },
         include: conversationListInclude,
         orderBy: [

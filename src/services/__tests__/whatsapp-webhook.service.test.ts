@@ -12,6 +12,10 @@ import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-me
 import { expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { ok } from '@/src/lib/result'
 
+// Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
+  emitWhatsAppConversationWaiting: vi.fn(),
+}))
 vi.mock('@/src/services/whatsapp-usage.service', () => ({
   WhatsAppUsageService: {
     assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
@@ -56,6 +60,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 import { WhatsAppWebhookService } from '../whatsapp-webhook.service'
 
@@ -184,6 +189,33 @@ describe('WhatsAppWebhookService', () => {
       )
       // A reopened conversation is a new attendance: counts in the month.
       expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
+      // Its agent still has it: it does not enter the queue.
+      expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+    })
+
+    it('should announce a reopened conversation without an agent as waiting', async () => {
+      arrangeClosed({ aiConfigActive: false })
+      const closed = createFakeWhatsAppConversation({
+        id: 'closed1',
+        workspaceId: 'ws1',
+        contactId: 'contact1',
+        status: 'CLOSED',
+        assignedUserId: null,
+      })
+      const reopened = { ...closed, status: 'NEW' as const }
+      mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
+        ok(closed),
+      )
+      mockedConversationRepo.update.mockResolvedValue(ok(reopened))
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
+        conversation: reopened,
+        contact: expect.objectContaining({ id: 'contact1' }),
+        reason: 'reopened',
+        actorId: null,
+      })
     })
 
     it('should reopen without AI when the workspace AI is off', async () => {
@@ -271,6 +303,13 @@ describe('WhatsAppWebhookService', () => {
         'analyze-message',
         expect.objectContaining({ messageId: expect.any(String) }),
       )
+      // A brand-new conversation lands in the queue.
+      expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
+        conversation: created,
+        contact,
+        reason: 'new',
+        actorId: null,
+      })
     })
 
     describe('LGPD opt-out keyword', () => {
@@ -449,6 +488,8 @@ describe('WhatsAppWebhookService', () => {
         expect.objectContaining({ aiActive: true }),
       )
       expect(aiReplyAdd).toHaveBeenCalled()
+      // Already open: no new "waiting" event per message.
+      expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
     })
 
     it('should NOT re-activate the AI once a human has explicitly taken over (aiHandoff)', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseWebhookEventData } from '@/src/lib/webhooks/events'
 import {
+  communicationConversationWaitingData,
   communicationMessageReceivedData,
   crmLeadCreatedData,
   crmLeadDealData,
@@ -184,5 +185,74 @@ describe('webhook payload builders', () => {
     expect(
       parseWebhookEventData('communication.message.received', data).success,
     ).toBe(true)
+  })
+
+  it('should build the waiting conversation data', () => {
+    const conversation = {
+      id: 'c1',
+      status: 'NEW',
+      connectionId: 'cn1',
+      teamId: 't1',
+      aiActive: true,
+      unreadCount: 2,
+      lastMessageAt: at,
+      createdAt: at,
+      // Internal fields of the row never reach the payload.
+      assignedUserId: null,
+      closeReason: 'x',
+    }
+    const data = communicationConversationWaitingData({
+      conversation,
+      contact: { id: 'ct1', waId: '5511', name: 'Maria' },
+      reason: 'returned_to_queue',
+      actorId: 'u1',
+    })
+    expect(data).toEqual({
+      conversation: {
+        id: 'c1',
+        status: 'NEW',
+        connectionId: 'cn1',
+        teamId: 't1',
+        aiActive: true,
+        unreadCount: 2,
+        lastMessageAt: at.toISOString(),
+        createdAt: at.toISOString(),
+      },
+      contact: { id: 'ct1', waId: '5511', name: 'Maria' },
+      reason: 'returned_to_queue',
+      actorId: 'u1',
+    })
+    expect(
+      parseWebhookEventData('communication.conversation.waiting', data).success,
+    ).toBe(true)
+
+    const silent = communicationConversationWaitingData({
+      conversation: { ...conversation, lastMessageAt: null },
+      contact: { id: 'ct1', waId: '5511', name: null },
+      reason: 'new',
+      actorId: null,
+    })
+    expect(silent.conversation.lastMessageAt).toBeNull()
+  })
+
+  it('should refuse a closed conversation as waiting', () => {
+    const data = communicationConversationWaitingData({
+      conversation: {
+        id: 'c1',
+        status: 'CLOSED',
+        connectionId: 'cn1',
+        teamId: null,
+        aiActive: false,
+        unreadCount: 0,
+        lastMessageAt: null,
+        createdAt: at,
+      },
+      contact: { id: 'ct1', waId: '5511', name: null },
+      reason: 'new',
+      actorId: null,
+    })
+    expect(
+      parseWebhookEventData('communication.conversation.waiting', data).success,
+    ).toBe(false)
   })
 })

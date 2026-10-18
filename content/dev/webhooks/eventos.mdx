@@ -39,6 +39,7 @@ O catálogo vivo, com os tipos dos módulos do seu token, está em
 | [`crm.opportunity.stage_changed`](#oportunidade-mudou-de-etapa) | CRM |
 | [`crm.deal.won` e `crm.deal.lost`](#crmdealwon-e-crmdeallost) | CRM |
 | [`communication.message.received`](#communicationmessagereceived) | Comunicação |
+| [`communication.conversation.waiting`](#communicationconversationwaiting) | Comunicação |
 | [`agents.approval.pending`](#agentsapprovalpending) | Steel Agents |
 | [`steel.ping`](#steelping) | Plataforma |
 
@@ -352,6 +353,54 @@ chamado e **não** geram este evento.
 | `connectionId` | A conexão que recebeu |
 
 A mídia não vem no evento. Abra a conversa no Steel pelo `conversationId`.
+
+### communication.conversation.waiting
+
+Uma conversa da Comunicação **entrou na fila**, aguardando um atendente:
+aberta, não arquivada e sem responsável — a mesma regra de
+[`GET /api/v1/whatsapp/conversations/waiting`](/dev/api-v1/comunicacao#conversas-aguardando-atendimento).
+O evento sai uma vez por entrada na fila, não a cada mensagem nova de uma
+conversa que já está nela.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "communication.conversation.waiting",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "conversation": {
+      "id": "cm2cnv000000example",
+      "status": "NEW",
+      "connectionId": "cm2con000000example",
+      "teamId": null,
+      "aiActive": false,
+      "unreadCount": 1,
+      "lastMessageAt": "2026-10-18T12:00:00.000Z",
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    "contact": {
+      "id": "cm2ctt000000example",
+      "waId": "5511999990000",
+      "name": "Maria"
+    },
+    "reason": "new",
+    "actorId": null
+  }
+}
+```
+
+| Campo | O que é |
+| --- | --- |
+| `reason` | `new`: o contato abriu uma conversa nova; `reopened`: uma conversa fechada foi reaberta (pelo contato ou por um atendente) sem responsável; `returned_to_queue`: o responsável saiu (devolvida para a fila, ou um botão de resposta a moveu para a fila de uma equipe) |
+| `conversation.teamId` | Fila da equipe em que a conversa espera; `null` = fila geral |
+| `conversation.aiActive` | `true` quando a IA está respondendo enquanto ninguém assume |
+| `actorId` | Quem devolveu ou reabriu; `null` quando foi o contato ou uma automação |
+
+Conversas de conexões ligadas ao ServiceDesk viram chamados e **não** geram
+este evento. Uma conversa **nova** aberta do lado da empresa (por um atendente, no
+Steel ou pelo celular, ou por um envio da API) também não gera, mesmo sem
+responsável: o evento avisa quando um **contato** passa a esperar.
 
 ## Steel Agents
 
