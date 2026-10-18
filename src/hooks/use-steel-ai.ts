@@ -21,7 +21,7 @@ import type {
   AiPendingActionDTO,
   AiPendingActionStatusDTO,
 } from '@/types/steel-ai'
-import { ApiError, apiFetch, apiSend } from './_fetch'
+import { ApiError, apiFetch, apiSend, isApiErrorCode } from './_fetch'
 
 /** @deprecated use AiCapabilitiesDTO from types/steel-ai */
 export type SteelAiCapabilitiesDTO = AiCapabilitiesDTO
@@ -208,6 +208,21 @@ function patchCachedAction(
   )
 }
 
+/**
+ * The refreshed action of an `AI_PENDING_ACTION_CHANGED` refusal: the
+ * records changed after the preview, so the server kept the action PENDING
+ * with a fresh preview (`error.details.action`) for a new confirmation.
+ */
+export function changedPendingAction(
+  error: unknown,
+): AiPendingActionDTO | null {
+  if (!isApiErrorCode(error, 'AI_PENDING_ACTION_CHANGED')) return null
+  const details = (error as ApiError).details as
+    | { action?: AiPendingActionDTO }
+    | undefined
+  return details?.action ?? null
+}
+
 export function useConfirmSteelAiAction(workspaceId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -227,6 +242,10 @@ export function useConfirmSteelAiAction(workspaceId: string) {
         },
         'Erro ao executar a ação',
       ),
+    onError: (error) => {
+      const fresh = changedPendingAction(error)
+      if (fresh) patchCachedAction(queryClient, workspaceId, fresh)
+    },
     onSuccess: (action) => {
       patchCachedAction(queryClient, workspaceId, action)
       // The executed write is appended to the history as a TOOL message.

@@ -24,6 +24,7 @@ import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { isApiErrorCode } from '@/src/hooks/_fetch'
 import {
+  changedPendingAction,
   useCancelSteelAiAction,
   useConfirmSteelAiAction,
 } from '@/src/hooks/use-steel-ai'
@@ -106,6 +107,16 @@ export function SteelAiPendingActionCard({
       setAskTwice(false)
       if (isApiErrorCode(error, 'AI_PENDING_ACTION_EXPIRED')) {
         setOverride({ ...action, status: 'EXPIRED' })
+        return
+      }
+      // The record changed after the preview: show the fresh one and wait
+      // for a new confirmation instead of running something nobody saw.
+      const fresh = changedPendingAction(error)
+      if (fresh) {
+        setOverride(fresh)
+        notify.warning(
+          'O registro mudou desde a prévia. Revise e confirme de novo.',
+        )
         return
       }
       notify.error(error)

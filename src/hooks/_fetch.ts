@@ -9,12 +9,20 @@ import type { SuccessResponse } from '@/types/http-response'
 export class ApiError extends Error {
   readonly code: string | null
   readonly status: number
+  /** `error.details` of the envelope, when the server sent any. */
+  readonly details: unknown
 
-  constructor(message: string, code: string | null, status: number) {
+  constructor(
+    message: string,
+    code: string | null,
+    status: number,
+    details?: unknown,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.code = code
     this.status = status
+    this.details = details
   }
 }
 
@@ -31,6 +39,7 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
     body?.message ?? fallback,
     body?.error?.code ?? null,
     res.status,
+    body?.error?.details,
   )
 }
 

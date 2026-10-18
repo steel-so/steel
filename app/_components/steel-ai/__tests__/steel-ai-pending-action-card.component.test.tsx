@@ -4,7 +4,11 @@ import { fetchBody, mockFetch } from '@/src/__tests__/component-utils'
 import { SteelAiPendingActionCard } from '../steel-ai-pending-action-card'
 import { pendingAction, renderSteelAi, WS } from './steel-ai-test-utils'
 
-const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
+const notify = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}))
 vi.mock('@/lib/notify', () => ({ notify }))
 
 describe('<SteelAiPendingActionCard />', () => {
@@ -216,5 +220,49 @@ describe('<SteelAiPendingActionCard />', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
     expect(await screen.findByText(/Expirada/)).toBeTruthy()
     expect(notify.error).not.toHaveBeenCalled()
+  })
+
+  it('shows the fresh preview when the record changed after the proposal', async () => {
+    const base = pendingAction()
+    const fresh = pendingAction({
+      preview: {
+        ...base.preview,
+        title: 'Alterar a oportunidade “Contrato Acme 2027”',
+      },
+    })
+    mockFetch([
+      {
+        method: 'POST',
+        match: '/confirm',
+        handler: () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              statusCode: 409,
+              message:
+                'O registro mudou desde a prévia. Revise e confirme de novo.',
+              error: {
+                code: 'AI_PENDING_ACTION_CHANGED',
+                details: { action: fresh },
+              },
+            }),
+            { status: 409 },
+          ),
+      },
+    ])
+    renderSteelAi(<SteelAiPendingActionCard workspaceId={WS} action={base} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Alterar a oportunidade “Contrato Acme 2027”',
+      }),
+    ).toBeTruthy()
+    expect(notify.warning).toHaveBeenCalledWith(
+      'O registro mudou desde a prévia. Revise e confirme de novo.',
+    )
+    expect(notify.error).not.toHaveBeenCalled()
+    // Still pending: the user confirms the new preview.
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toBeTruthy()
   })
 })
