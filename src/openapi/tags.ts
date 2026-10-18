@@ -473,6 +473,38 @@ export const TAG_GROUPS = [
       },
     ],
   },
+  {
+    // Public API v1 (`public/openapi.v1.json`, ADR 0035). The v1 document
+    // drops the `v1 · ` prefix; the main document never uses these tags.
+    name: 'API pública v1',
+    tags: [
+      {
+        name: 'v1 · Autenticação',
+        description:
+          'Login do `steel` CLI pelo fluxo de dispositivo e logout (revogar o token em uso).',
+      },
+      {
+        name: 'v1 · Conta',
+        description:
+          'O token pessoal em uso: dono, workspace, escopos e módulos.',
+      },
+      {
+        name: 'v1 · ServiceDesk',
+        description:
+          'Chamados (listar, ver, abrir, comentar, mudar de fase) e o catálogo de serviços.',
+      },
+      {
+        name: 'v1 · CRM',
+        description:
+          'Leads (listar, criar, importar CSV), oportunidades (listar, mudar de etapa) e funis.',
+      },
+      {
+        name: 'v1 · Comunicação',
+        description:
+          'WhatsApp: templates aprovados, envio de template e situação de uma transmissão.',
+      },
+    ],
+  },
 ] as const satisfies readonly TagGroupDefinition[]
 
 export type TagName = (typeof TAG_GROUPS)[number]['tags'][number]['name']

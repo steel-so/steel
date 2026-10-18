@@ -12,11 +12,25 @@ import {
 } from '../route-inventory'
 import { UNDOCUMENTED_CRM } from '../undocumented/crm'
 import { UNDOCUMENTED_WHATSAPP } from '../undocumented/whatsapp'
+import { createV1Registry } from '../v1/document'
 
 const root = join(__dirname, '..', '..', '..')
 
 const routes = listRouteOperations(root)
-const documented = createRegistry().listOperations()
+// `/api/v1/**` is documented in the v1 document, with paths relative to
+// `/api/v1` (`GET /me` covers `app/api/v1/me/route.ts`).
+const documentedV1 = createV1Registry()
+  .listOperations()
+  .map((op) => op.replace(' ', ' /v1'))
+const documented = [...createRegistry().listOperations(), ...documentedV1]
+// Device-flow routes the v1 document describes for the SDK while the
+// api-tokens slice (which implements them) is merged in parallel. Delete
+// this set once `app/api/v1/auth/**` is on main.
+const V1_DOCUMENTED_AHEAD = new Set([
+  'POST /v1/auth/device',
+  'POST /v1/auth/device/token',
+  'DELETE /v1/auth/token',
+])
 const generated = generateOpenApiJson(root)
 const spec = JSON.parse(generated) as Record<string, any>
 
@@ -115,9 +129,19 @@ describe('route coverage', () => {
     ).toEqual([])
   })
 
+  it('documents in the v1 document only routes under app/api/v1', () => {
+    expect(
+      routes
+        .filter((route) => documentedV1.some((op) => isCoveredBy(route, op)))
+        .filter((route) => !route.path.startsWith('/v1/')),
+    ).toEqual([])
+  })
+
   it('only documents operations that exist in app/api', () => {
     const stale = documented.filter(
-      (op) => !routes.some((route) => isCoveredBy(route, op)),
+      (op) =>
+        !V1_DOCUMENTED_AHEAD.has(op) &&
+        !routes.some((route) => isCoveredBy(route, op)),
     )
     expect(stale, 'operações documentadas sem route.ts correspondente').toEqual(
       [],
