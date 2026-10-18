@@ -167,7 +167,7 @@
     "imapflow": "^2.0.6",
     "input-otp": "^1.4.2",
     "ioredis": "5.10.1",
-    "katex": "^0.16.47",
+    "katex": "^0.18.2",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.23.0",
     "mailparser": "^3.9.28",
