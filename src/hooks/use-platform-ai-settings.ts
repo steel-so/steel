@@ -6,12 +6,19 @@ import { apiFetch } from './_fetch'
 
 export const platformAiSettingsKey = ['admin', 'platform-ai-settings'] as const
 
-/** Global admin: saves the platform AI cost margin. */
+/**
+ * Global admin: saves the platform AI cost margin and the knowledge search
+ * embeddings switch (ADR 0037; absent = keep the saved value).
+ */
 export function useUpdatePlatformAiSettings() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (variables: { costMargin: number; reason?: string }) =>
+    mutationFn: (variables: {
+      costMargin: number
+      embeddingsEnabled?: boolean
+      reason?: string
+    }) =>
       apiFetch<PlatformAiSettingsDTO>(
         '/api/admin/ai',
         {
@@ -19,7 +26,7 @@ export function useUpdatePlatformAiSettings() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(variables),
         },
-        'Erro ao salvar a margem de IA',
+        'Erro ao salvar os ajustes de IA',
       ),
     onSuccess: (settings) => {
       queryClient.setQueryData(platformAiSettingsKey, settings)

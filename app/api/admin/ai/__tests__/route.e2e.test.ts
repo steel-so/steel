@@ -72,4 +72,18 @@ describe('/api/admin/ai', () => {
     })
     expect(audit?.reason).toBe('e2e')
   })
+
+  it('should switch the knowledge search embeddings and report the mode', async () => {
+    const admin = await createPlatformAdmin()
+    const res = await patchJson(
+      '/api/admin/ai',
+      { costMargin: 1, embeddingsEnabled: false },
+      admin.cookie,
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.data.embeddingsEnabled).toBe(false)
+    expect(body.data.knowledgeSearch).toMatchObject({ mode: 'text' })
+    await prisma.platformAiSettings.deleteMany()
+  })
 })

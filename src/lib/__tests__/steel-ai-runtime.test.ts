@@ -295,6 +295,9 @@ describe('buildSteelAiSystemPrompt()', () => {
     })
     expect(prompt).toContain('Usuário: Ana')
     expect(prompt).toContain('Workspace: Acme')
+    // Knowledge questions go to steel_search, with linked citations.
+    expect(prompt).toContain('steel_search')
+    expect(prompt).toContain('[Título](href)')
     expect(prompt).toContain('6 de outubro de 2026')
     expect(prompt).toContain('11:30')
     expect(prompt.indexOf('- ServiceDesk (')).toBeLessThan(
