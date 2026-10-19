@@ -59,6 +59,10 @@ export interface RecordingUpload {
   arrayBuffer(): Promise<ArrayBuffer>
 }
 
+function messageOf(cause: unknown): string {
+  return cause instanceof Error ? cause.message : String(cause)
+}
+
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
@@ -93,7 +97,7 @@ async function deleteStoredObject(key: string): Promise<boolean> {
     logger.error('phone_call.recording_delete_failed', {
       component: 'PhoneCallRecordingService',
       key,
-      message: cause instanceof Error ? cause.message : String(cause),
+      message: messageOf(cause),
     })
     return false
   }
@@ -161,7 +165,7 @@ export const PhoneCallRecordingService = {
         component: 'PhoneCallRecordingService',
         workspaceId: call.workspaceId,
         callId: call.id,
-        message: cause instanceof Error ? cause.message : String(cause),
+        message: messageOf(cause),
       })
       return err(storageError('Falha ao armazenar a gravação'))
     }
@@ -207,7 +211,7 @@ export const PhoneCallRecordingService = {
           component: 'PhoneCallRecordingService',
           workspaceId: call.workspaceId,
           callId: call.id,
-          message: cause instanceof Error ? cause.message : String(cause),
+          message: messageOf(cause),
         })
       }
     }
@@ -299,7 +303,7 @@ export const PhoneCallRecordingService = {
     } catch (cause) {
       logger.error('phone_call.recording_sweep_failed', {
         component: 'PhoneCallRecordingService',
-        message: cause instanceof Error ? cause.message : String(cause),
+        message: messageOf(cause),
       })
       return err(storageError('Falha ao listar as gravações'))
     }
@@ -325,7 +329,7 @@ export const PhoneCallRecordingService = {
     } catch (cause) {
       logger.error('phone_call.recording_sweep_failed', {
         component: 'PhoneCallRecordingService',
-        message: cause instanceof Error ? cause.message : String(cause),
+        message: messageOf(cause),
       })
       return err(storageError('Falha ao apagar gravações órfãs'))
     }

@@ -229,6 +229,28 @@ describe('PhoneCallAiService.process()', () => {
     )
   })
 
+  it('prices at cost without a margin and with no known duration', async () => {
+    const plain = prepared(chat as never)
+    delete plain.costMargin
+    aiUsage.prepare.mockResolvedValue(ok(plain))
+    callRepo.findById.mockResolvedValue(
+      ok(pendingCall({ durationSeconds: null })),
+    )
+    mocks.transcribe.mockResolvedValue({ text: 'oi', durationSeconds: null })
+
+    expectOk(await PhoneCallAiService.process('call1'))
+    expect(usageRepo.record).toHaveBeenCalledWith(
+      expect.objectContaining({ costUsd: 0 }),
+    )
+
+    usageRepo.record.mockClear()
+    mocks.transcribe.mockResolvedValue({ text: 'oi', durationSeconds: 60 })
+    expectOk(await PhoneCallAiService.process('call1'))
+    expect(usageRepo.record).toHaveBeenCalledWith(
+      expect.objectContaining({ costUsd: 0.006 }),
+    )
+  })
+
   it('keeps the transcript when the summary fails or is unparseable', async () => {
     chat.mockRejectedValueOnce(new Error('provider down'))
     const first = expectOk(await PhoneCallAiService.process('call1'))

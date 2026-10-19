@@ -323,7 +323,7 @@ export const PhoneCallAiService = {
       bucket: PHONE_CALL_RECORDINGS_BUCKET,
       key: call.recordingKey,
     })
-    const ext = call.recordingKey.split('.').pop() ?? 'wav'
+    const ext = call.recordingKey.slice(call.recordingKey.lastIndexOf('.') + 1)
 
     let transcription: Awaited<ReturnType<typeof transcribeAudio>>
     try {
