@@ -5,8 +5,13 @@ import { describe, expect, it } from 'vitest'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { auth } from '@/src/lib/auth'
+import {
+  ISSUER_METADATA_PATH,
+  patchAuthServerMetadataResponse,
+} from '@/src/lib/mcp/auth-server-metadata'
 import { resolveMcpGrant } from '@/src/lib/mcp/grant'
 import { appOrigin, mcpResourceUrl } from '@/src/lib/mcp/oauth-config'
+import { withGrantLifecycle } from '@/src/lib/mcp/token-lifecycle'
 import { prisma } from '@/src/lib/prisma'
 import { IntegrationGrantService } from '@/src/services/integration-grant.service'
 
@@ -380,5 +385,148 @@ describe('MCP OAuth flow', () => {
       await resolveMcpGrant(new Request(`${ORIGIN}/api/mcp`)),
       'UNAUTHORIZED',
     )
+  })
+})
+
+/** A request to the provider through the same wrapper as the route. */
+function lifecycleCall(path: string, body: Record<string, string>) {
+  const request = new Request(`${ORIGIN}/api/auth${path}`, {
+    ...form(body),
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      origin: ORIGIN,
+    },
+  })
+  return withGrantLifecycle(request, `/api/auth${path}`, (r) => auth.handler(r))
+}
+
+/** Signed-in member, consented grant and a first token pair. */
+async function connected() {
+  const { user, cookie } = await signedInUser()
+  const workspace = await seedWorkspace()
+  await prisma.membership.create({
+    data: { userId: user.id, workspaceId: workspace.id, role: 'MEMBER' },
+  })
+  await prisma.workspaceModuleAccess.create({
+    data: {
+      workspaceId: workspace.id,
+      module: 'CRM',
+      enabled: true,
+      grantedById: user.id,
+    },
+  })
+  const clientId = await registerClient()
+  const { verifier, challenge } = pkce()
+  const consentUrl = await authorize(clientId, cookie, challenge)
+  const consent = expectOk(
+    await IntegrationGrantService.consent(
+      user.id,
+      {
+        accept: true,
+        oauthQuery: consentUrl.search.slice(1),
+        workspaceId: workspace.id,
+        modules: ['CRM'],
+        scopes: ['mcp:read'],
+      },
+      new Headers({ cookie, origin: ORIGIN }),
+    ),
+  )
+  const code = new URL(consent.redirectUrl).searchParams.get('code') as string
+  const res = await call(
+    '/oauth2/token',
+    form({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: REDIRECT_URI,
+      client_id: clientId,
+      code_verifier: verifier,
+      resource: mcpResourceUrl(),
+    }),
+  )
+  const tokens = (await res.json()) as {
+    access_token: string
+    refresh_token: string
+  }
+  const grant = await prisma.integrationGrant.findFirstOrThrow({
+    where: { userId: user.id, clientId },
+  })
+  return { user, clientId, tokens, grant }
+}
+
+describe('MCP OAuth grant lifecycle', () => {
+  it('advertises public-client revocation in the metadata', async () => {
+    const res = await patchAuthServerMetadataResponse(
+      await auth.handler(new Request(`${ORIGIN}${ISSUER_METADATA_PATH}`)),
+    )
+    const body = (await res.json()) as Record<string, string[]>
+    expect(body.revocation_endpoint_auth_methods_supported).toContain('none')
+  })
+
+  it('retires the grant when the client revokes its refresh token (logout)', async () => {
+    const { user, clientId, tokens, grant } = await connected()
+
+    // A rotation leaves the first access token behind, still unexpired.
+    const rotated = await lifecycleCall('/oauth2/token', {
+      grant_type: 'refresh_token',
+      refresh_token: tokens.refresh_token,
+      client_id: clientId,
+      resource: mcpResourceUrl(),
+    })
+    expect(rotated.status).toBe(200)
+    const fresh = (await rotated.json()) as { refresh_token: string }
+    expect(
+      expectOk(await IntegrationGrantService.listForUser(user.id)),
+    ).toHaveLength(1)
+
+    // Revoking an access token alone leaves the live refresh token.
+    const accessOnly = await lifecycleCall('/oauth2/revoke', {
+      token: tokens.access_token,
+      token_type_hint: 'access_token',
+      client_id: clientId,
+    })
+    expect(accessOnly.status).toBe(200)
+    expect(
+      expectOk(await IntegrationGrantService.listForUser(user.id)),
+    ).toHaveLength(1)
+
+    const revoked = await lifecycleCall('/oauth2/revoke', {
+      token: fresh.refresh_token,
+      token_type_hint: 'refresh_token',
+      client_id: clientId,
+    })
+    expect(revoked.status).toBe(200)
+
+    expect(
+      expectOk(await IntegrationGrantService.listForUser(user.id)),
+    ).toEqual([])
+    const stored = await prisma.integrationGrant.findUniqueOrThrow({
+      where: { id: grant.id },
+    })
+    expect(stored.revokedAt).not.toBeNull()
+    expect(
+      await prisma.oauthAccessToken.count({ where: { referenceId: grant.id } }),
+    ).toBe(0)
+  })
+
+  it('retires the grant when a reused refresh token kills the family', async () => {
+    const { user, clientId, tokens } = await connected()
+    const rotated = await lifecycleCall('/oauth2/token', {
+      grant_type: 'refresh_token',
+      refresh_token: tokens.refresh_token,
+      client_id: clientId,
+    })
+    expect(rotated.status).toBe(200)
+
+    // Reusing the rotated-out token: the provider kills the whole family.
+    const reused = await lifecycleCall('/oauth2/token', {
+      grant_type: 'refresh_token',
+      refresh_token: tokens.refresh_token,
+      client_id: clientId,
+    })
+    expect(reused.status).toBeGreaterThanOrEqual(400)
+
+    expect(
+      expectOk(await IntegrationGrantService.listForUser(user.id)),
+    ).toEqual([])
   })
 })

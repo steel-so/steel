@@ -315,6 +315,9 @@ type AuditAuthEvent =
   | 'auth.oauth_consent.granted'
   | 'auth.oauth_consent.denied'
   | 'auth.integration_grant.revoked'
+  // A grant retired automatically: no live token left on it, after the
+  // client revoked its tokens, a refresh was refused or they all expired.
+  | 'auth.integration_grant.expired'
   // Personal API tokens (ADR 0035): created in Ajustes or by the CLI device
   // flow, revoked by the holder or a workspace admin, and the answer the user
   // gave on /device.
