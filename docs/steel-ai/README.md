@@ -55,7 +55,7 @@ Agentes autônomos que um admin configura em **Steel AI > Agentes** (`/[slug]/ai
 
 - **Configuração** (`SteelAgent`): nome, descrição, **instruções** (prompt do agente), **gatilho** (`SCHEDULE` com cron de 5 campos + fuso, `EVENT` com uma chave do catálogo, `MANUAL` só pelo botão "Executar agora"), **responsável** (o agente roda com as permissões dele), máximo de etapas (padrão 8, até 20), limite opcional de execuções por mês, ativo/pausado.
 - **Ferramentas** (`SteelAgentTool`): qualquer ferramenta de `STEEL_AI_TOOLS` dos módulos habilitados. Leitura sempre roda; escrita é **Automática** (`AUTO`) ou **Requer aprovação** (`APPROVAL`, padrão). **Exclusão sempre requer aprovação** — travado no editor, no service e no runner.
-- **Eventos** (`src/lib/steel-agents/events.ts`): `sd.ticket.created`, `crm.lead.created`, `zap.conversation.assigned`, `zap.ai.handoff`. O gancho é `dispatchSteelAgentEvent(workspaceId, eventKey, payload)`, chamado com `void` depois da escrita de negócio (nunca falha a operação). Escrita feita por agente não dispara agentes.
+- **Eventos** (`src/lib/steel-agents/events.ts`): `sd.ticket.created`, `crm.lead.created`, `zap.conversation.assigned`, `zap.ai.handoff` e, desde a IA proativa (ADR 0040), `sd.insight.detected`, `crm.insight.detected`, `zap.insight.detected`. O gancho é `dispatchSteelAgentEvent(workspaceId, eventKey, payload)`, chamado com `void` depois da escrita de negócio (nunca falha a operação). Escrita feita por agente não dispara agentes.
 - **Execução** (`SteelAgentRun` + `SteelAgentRunStep`): fila `steel-agents`; `QUEUED → RUNNING → SUCCEEDED | FAILED | SKIPPED`, ou `WAITING_APPROVAL` quando alguma escrita pediu aprovação. A linha do tempo registra cada chamada ao modelo (`MODEL`), ferramenta (`TOOL`) e aprovação (`APPROVAL`). Tokens e custo ficam na execução e no razão `AiUsage` (`STEEL_AGENT`).
 - **Aprovação**: notificação `AGENT_APPROVAL_REQUESTED` para o responsável e os admins, com link para a tela da execução (prévia antes → depois, Aprovar/Rejeitar, confirmação dupla para exclusão). Decide o responsável ou quem tem `steel-agents` EDIT; a ferramenta executa **como o responsável**. A aprovação vale 72 h; depois vira `EXPIRED`. Execução que falha avisa com `AGENT_RUN_FAILED`.
 - **Não roda (SKIPPED)** quando: agente pausado, sem responsável, responsável fora do workspace, workspace suspenso, cota de IA esgotada, nenhum modelo disponível, limite mensal atingido, ou modo agente desligado com ferramentas de escrita.
@@ -233,3 +233,59 @@ Decisão: [ADR 0043](../adr/0043-pabx-call-recording-transcription-and-summary.m
 - **Telas**: `PhoneCallCard` / `PhoneCallList` (`app/_components/phone-calls/`), na linha do tempo da conversa, na aba **Ligações** do chamado e na atividade da pessoa/oportunidade; "Criar tarefa" por próximo passo. Hook `src/hooks/use-phone-calls.ts`; o SSE `phone-call.updated` invalida as listas.
 - **Retenção**: `data-retention` › `purge-call-recordings` (03:00) apaga áudio vencido e órfão.
 - **Fase 2** (não construída): atendente de voz com IA na URA — ver a ADR.
+
+## IA proativa — alertas e resumo diário (frente 3, 18/10/2026)
+
+Decisão: [ADR 0040](../adr/0040-steel-ai-proactive-insights-and-daily-digest.md).
+Manual: [IA proativa](../../content/docs/steel-ai/ia-proativa.mdx).
+
+- **Alertas** (`AiInsight`, uma linha por pessoa e `dedupeKey`): regras puras
+  em `src/lib/ai/proactive/rules.ts` (limiares em `PROACTIVE_RULES`), sem LLM.
+  Tipos: `SD_SLA_BREACH_FORECAST` (responsável; líderes do departamento e
+  admins do ServiceDesk), `CRM_STALE_OPPORTUNITIES` (dono; OWNER/ADMIN o
+  total), `CRM_STALLED_STAGE`, `CRM_FORECAST_GAP` (OWNER/ADMIN),
+  `ZAP_WAITING_TOO_LONG` (regra de Equipes) e `ZAP_NEGATIVE_SENTIMENT`
+  (responsável, líderes e quem vê tudo; até 5 por pessoa).
+- **Episódio** (`src/lib/ai/proactive/reconcile.ts`): recalculado = mesma
+  linha com números novos; sumiu numa avaliação bem-sucedida do módulo =
+  `RESOLVED`; voltou = episódio novo (dispensa e adiamento zerados). Módulo
+  que falhou fica intocado; módulo desligado no workspace resolve. Episódios
+  `RESOLVED` são apagados depois de 30 dias.
+- **Permissão**: no cálculo, `SdAccess` (só agentes), `assertModuleMember`
+  (`opportunities`/`conversations` `VIEW`) e `canSeeConversation` sobre o
+  retrato das equipes; na leitura (`src/services/ai-insight-access.ts`),
+  módulo habilitado + `VIEW` do recurso principal do módulo
+  (`sd-tickets`, `opportunities`, `conversations`). Alerta de outra pessoa
+  responde 404.
+- **Steel Agents**: eventos `sd.insight.detected`, `crm.insight.detected`,
+  `zap.insight.detected` (`src/lib/steel-agents/events.ts`), uma vez por
+  condição nova e só para o que é igual para todos (fila do departamento,
+  totais do CRM, sentimento de uma conversa). Payload: `insightKind`,
+  `severity`, `dedupeKey`, `title`, `facts`, `href`.
+- **Resumo diário** (`src/services/ai-digest.service.ts`): das 08:00 às
+  10:59 no fuso da pessoa (`UserPreference.timezone`), uma vez por dia local
+  (`AiDigestSetting.lastSentOn` + `dedupeKey` `ai-digest:<dia>` da
+  notificação), só com alerta ativo. Notificação `AI_DAILY_DIGEST` e e-mail
+  `components/emails/steel-ai/ai-daily-digest.tsx`. O LLM
+  (`PROACTIVE_DIGEST`, modelo de sentimento) só escreve a abertura; se citar
+  número fora dos dados (`isDigestIntroGrounded`), vale a frase
+  determinística. Opt-out por pessoa em Ajustes › Notificações.
+- **Interruptor**: `WorkspaceAiSettings.proactiveEnabled` (padrão ligado).
+- **Ferramenta** `ws_insights` (READ, plataforma) em
+  `src/lib/ai/tools/insights.ts`: assistente, agentes e MCP.
+- **Fila** `ai-proactive`: `insights-tick` (`7,22,37,52 * * * *`) e
+  `digest-tick` (`10 * * * *`), `attempts: 1`.
+- **UI**: `app/_components/steel-ai-insights/*` (cartão, feed, destaques),
+  página inicial e tela do Steel AI ("Para sua atenção"), caixa de entrada
+  (`?view=insights`), `AiDigestSettingsCard` em Ajustes › Notificações.
+  "Perguntar ao Steel AI" abre `/ai?prompt=` com a pergunta no campo.
+
+| Método | Rota (`/api/workspaces/[id]/ai/**`) | Corpo | Resposta |
+|---|---|---|---|
+| GET | `/insights?state=&module=&limit=` | — | `AiInsightFeedDTO` (`enabled`, `items`, `counts`) |
+| PATCH | `/insights/[insightId]` | `UpdateAiInsightSchema` (`dismiss`, `snooze` + `hours`, `restore`) | `AiInsightDTO` |
+| GET / PUT | `/digest-settings` | `UpdateAiDigestSettingsSchema` (`inApp?`, `email?`) | `AiDigestSettingsDTO` |
+
+Tipos: `types/ai-insight.d.ts`. Schemas: `src/schemas/ai-insight.schema.ts`.
+Hooks: `src/hooks/use-ai-insights.ts`.
+

@@ -258,6 +258,26 @@ fontes que usou pelo `title`, com o link `href` prefixado pelo domínio do
 Steel. O mesmo resultado está em
 `GET /api/workspaces/{id}/ai/knowledge/search?q=`.
 
+### Alertas da IA proativa (`ws_insights`)
+
+`ws_insights` devolve os alertas ativos do usuário da conexão: chamados que
+devem estourar o SLA nas próximas horas, oportunidades sem contato, etapa do
+funil travada, previsão do mês abaixo da meta, conversas aguardando atendente
+e sentimento em queda. Os alertas são calculados por regra, a cada 15
+minutos, a partir dos dados do workspace — o modelo deve citar os números
+como vieram. Serve para perguntas como "o que precisa da minha atenção?".
+
+| Argumento | Tipo | Descrição |
+| --- | --- | --- |
+| `module` | `SERVICE_DESK`, `CRM` ou `COMMUNICATION` (opcional) | Só os alertas de um módulo |
+| `limit` | inteiro 1–20 (opcional) | Quantidade de alertas (padrão 10) |
+
+O resultado traz `enabled` (`false` quando o workspace desligou a IA
+proativa), `total` e `insights`, cada um com `module`, `severity` (Urgente,
+Atenção, Informativo), `title`, `body`, `facts` (rótulo e valor) e `href`
+(caminho no app, com o slug). O mesmo conteúdo está em
+`GET /api/workspaces/{id}/ai/insights`.
+
 ### Quando há muitas ferramentas
 
 Se o acesso concedido expõe mais de 40 ferramentas, o `tools/list` vem enxuto:

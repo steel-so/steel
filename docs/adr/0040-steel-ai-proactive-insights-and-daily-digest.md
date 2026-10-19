@@ -73,8 +73,9 @@ descartada se citar um número que não veio das consultas.**
 
 ### Resumo diário
 
-- Tique de hora em hora; cada pessoa recebe às **08:00 no fuso dela**
-  (Preferências; padrão `America/Sao_Paulo`), no máximo uma vez por dia local
+- Tique de hora em hora; cada pessoa recebe **a partir das 08:00 no fuso
+  dela** (Preferências; padrão `America/Sao_Paulo`; uma janela até 10:59 para
+  um tique perdido não custar o dia), no máximo uma vez por dia local
   (`AiDigestSetting.lastSentOn`), na caixa de entrada (`AI_DAILY_DIGEST`) e
   por e-mail. **Dia sem alerta ativo não gera resumo.**
 - O conteúdo são os alertas ativos da pessoa (já filtrados por permissão),

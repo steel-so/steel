@@ -327,6 +327,25 @@ describe('buildCrmInsights', () => {
     expect(noQuota).toEqual([])
   })
 
+  it('picks the stage with most stale deals, then the highest value', () => {
+    const deals = [
+      ...['a', 'b', 'c'].map((id) => stale(id, { stageId: 'small' })),
+      ...['d', 'e', 'f'].map((id) =>
+        stale(id, { stageId: 'big', stageName: 'Negociação', amount: 5000 }),
+      ),
+    ]
+    const drafts = buildCrmInsights({
+      slug: 'acme',
+      deals,
+      forecast: null,
+      viewers: [{ userId: 'admin', isPrivileged: true }],
+    })
+    expect(drafts.map((d) => d.dedupeKey)).toEqual([
+      'crm-stale:all',
+      'crm-stage:big',
+    ])
+  })
+
   it('reports a mild gap as informative', () => {
     const [gap] = buildCrmInsights({
       slug: 'acme',

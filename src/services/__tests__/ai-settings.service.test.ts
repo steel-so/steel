@@ -281,6 +281,29 @@ describe('AiSettingsService', () => {
       )
     })
 
+    it('should let an admin turn the proactive AI off (ADR 0040)', async () => {
+      asRole('ADMIN')
+      withState()
+
+      expectOk(
+        await AiSettingsService.update('u1', 'ws1', {
+          proactiveEnabled: false,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ proactiveEnabled: false }),
+      )
+      expect(vi.mocked(auditMutation)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meta: expect.objectContaining({
+            proactiveEnabled: false,
+            changedSwitches: ['proactiveEnabled'],
+          }),
+        }),
+      )
+    })
+
     it('should forbid a MEMBER from allowing writes over MCP', async () => {
       asRole('MEMBER')
       withState()

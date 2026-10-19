@@ -1,0 +1,81 @@
+---
+title: IA proativa — alertas e resumo diário
+description: Os alertas que a Steel AI levanta sozinha (SLA, oportunidades paradas, conversas esperando, sentimento em queda), onde eles aparecem, como dispensar ou adiar e o resumo diário por e-mail.
+section: steel-ai
+order: 11
+---
+
+Você não precisa perguntar para saber o que está pegando fogo. A cada 15
+minutos o Steel olha os dados do workspace e levanta **alertas** para a pessoa
+certa: o chamado que vai estourar o SLA, as oportunidades que ninguém toca há
+dias, a fila do WhatsApp que está esperando demais.
+
+Todo alerta diz **por que** apareceu, com os números, e traz um link para os
+registros. Os alertas são calculados por regras fixas a partir dos dados: a IA
+não inventa nenhum número.
+
+## Que alertas existem
+
+| Alerta | Quem recebe | Quando aparece |
+| --- | --- | --- |
+| **Previsão de estouro de SLA** | Quem é responsável pelo chamado; líderes do departamento e administradores do ServiceDesk veem a fila do departamento | O risco preditivo prevê que o prazo vence nas próximas 4 horas |
+| **Oportunidades sem contato** | O dono da oportunidade; donos e administradores do workspace veem o total | Oportunidade aberta sem atividade há 10 dias ou mais |
+| **Etapa travada** | Donos e administradores do workspace | Uma etapa do funil concentra 3 ou mais oportunidades paradas |
+| **Previsão abaixo da meta** | Donos e administradores do workspace | Há meta cadastrada no mês e a previsão ponderada está abaixo de 90% dela |
+| **Conversas aguardando** | Quem vê a fila de atendimento (respeitando as Equipes) | Conversa sem responsável esperando há mais de 30 minutos |
+| **Sentimento em queda** | O responsável pela conversa, os líderes da equipe e quem vê todas as conversas | A média de sentimento chegou ao limiar de alerta configurado na Comunicação |
+
+Cada pessoa só recebe alertas dos módulos a que tem acesso e só sobre o que ela
+já poderia abrir. Se você perde o acesso a um módulo, os alertas dele somem na
+hora.
+
+## Onde os alertas aparecem
+
+- **Página inicial**, em **Para sua atenção**: os três mais urgentes.
+- **Steel AI**, abaixo das sugestões da tela de nova conversa.
+- **Caixa de entrada**, no filtro **Alertas da IA**: todos, com as abas
+  **Ativos**, **Adiados** e **Dispensados** e o filtro por módulo.
+
+## O que dá para fazer em um alerta
+
+- **Abrir**: vai para o chamado, a lista de oportunidades, a previsão ou a
+  conversa.
+- **Perguntar ao Steel AI**: abre uma conversa nova com a pergunta já escrita.
+  Você revisa e envia; se pedir alterações no modo Build, cada uma passa pela
+  confirmação de sempre.
+- **Adiar** por 1 hora, 4 horas, 1 dia ou 1 semana: o alerta volta depois, se a
+  situação continuar.
+- **Dispensar**: o alerta some enquanto a situação durar. Se ela se resolver e
+  voltar a acontecer, aparece um alerta novo.
+- **Restaurar**, nas abas Adiados e Dispensados.
+
+Quando a situação se resolve (o chamado foi atendido, a oportunidade teve
+contato, a conversa foi assumida), o alerta sai sozinho no próximo ciclo.
+
+## Resumo diário
+
+A partir das **08:00 no seu fuso horário** (definido em **Preferências**), o
+Steel manda um resumo dos seus alertas ativos, do mais urgente para o menos
+urgente:
+
+- na **caixa de entrada**, com o link para os alertas;
+- por **e-mail**, com cada alerta e o link para abrir no Steel.
+
+**Dia sem alerta não tem resumo.** A frase de abertura é escrita pela IA, mas
+só com os números dos alertas: se ela citar qualquer número que não veio dos
+dados, o Steel descarta a frase e usa um texto padrão.
+
+Para desligar, vá em **Ajustes › Notificações › Resumo diário da IA** e
+escolha os canais. A escolha vale só para você.
+
+## Para administradores
+
+- O interruptor **Ativar IA proativa** fica em **Ajustes › Steel IA**. Ligado
+  por padrão; desligado, os alertas somem para todos e o resumo não sai.
+- Os alertas não consomem a cota de IA. A frase do resumo usa o modelo de
+  **análise de sentimento** e aparece em **Uso** como **Resumo diário da IA**.
+- Steel Agents podem reagir aos alertas: escolha o gatilho por evento
+  **Alerta da IA no ServiceDesk**, **no CRM** ou **na Comunicação**. Os alertas
+  pessoais (os seus chamados, as suas oportunidades) não disparam agentes.
+- O limiar do sentimento é o mesmo do alerta de sentimento negativo da
+  Comunicação; desligar aquele alerta desliga também este.

@@ -34,7 +34,7 @@ export interface AiDailyDigestEmailProps {
   items: AiDailyDigestEmailItem[]
   /** Absolute URL of the inbox "Alertas da IA" view. */
   feedUrl: string
-  /** Absolute URL of Configurações › Notificações (to turn it off). */
+  /** Absolute URL of Ajustes › Notificações (to turn it off). */
   settingsUrl: string
 }
 
@@ -105,7 +105,7 @@ export const AiDailyDigest = ({
             <Text className='text-[14px] leading-6.5 font-light'>
               Os números deste resumo vêm direto do Steel. Não quer mais
               recebê-lo? Desligue em{' '}
-              <Link href={settingsUrl}>Configurações &gt; Notificações</Link>.
+              <Link href={settingsUrl}>Ajustes &gt; Notificações</Link>.
             </Text>
           </Section>
           <EmailFooter />
