@@ -45,6 +45,8 @@ export const UpdateWorkspaceAiSettingsSchema = z.object({
   agentModel: AiModelKeySchema.nullable().optional(),
   /** Automatic provider failover (ADR 0042). */
   failoverEnabled: z.boolean().optional(),
+  /** Proactive AI: insights feed and daily digest (ADR 0040). */
+  proactiveEnabled: z.boolean().optional(),
 })
 
 export type UpdateWorkspaceAiSettingsDTO = z.infer<

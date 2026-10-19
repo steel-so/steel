@@ -11,6 +11,7 @@ import { QueueName } from '../src/lib/queue/jobs'
 import { processAccountLifecycle } from '../src/lib/queue/processors/account-lifecycle'
 import { processAiEval } from '../src/lib/queue/processors/ai-eval'
 import { processAiIndex } from '../src/lib/queue/processors/ai-index'
+import { processAiProactive } from '../src/lib/queue/processors/ai-proactive'
 import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-weekly-email'
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
@@ -54,6 +55,7 @@ import { processWorkspaceIntegrations } from '../src/lib/queue/processors/worksp
 import '../src/lib/zod-locale'
 import {
   scheduleAiIndexJobs,
+  scheduleAiProactiveJobs,
   scheduleAiUsageWeeklyEmailJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
@@ -250,6 +252,7 @@ async function main(): Promise<void> {
   workers.push(registerWorker(QueueName.SearchReindex, processSearchReindex))
   workers.push(registerWorker(QueueName.AiIndex, processAiIndex))
   workers.push(registerWorker(QueueName.PhoneCallAi, processPhoneCallAi))
+  workers.push(registerWorker(QueueName.AiProactive, processAiProactive))
   workers.push(
     registerWorker(QueueName.AiUsageWeeklyEmail, processAiUsageWeeklyEmail),
   )
@@ -299,6 +302,7 @@ async function main(): Promise<void> {
   await scheduleNotificationsJobs()
   await scheduleSearchReindexJobs()
   await scheduleAiIndexJobs()
+  await scheduleAiProactiveJobs()
   await scheduleAiUsageWeeklyEmailJobs()
   await scheduleWorkspaceExportJobs()
   await scheduleWorkspaceIntegrationsJobs()

@@ -962,6 +962,7 @@ describe('SteelAiChatService.capabilities()', () => {
           mcpWriteEnabled: false,
           agentModel: null,
           failoverEnabled: true,
+          proactiveEnabled: true,
         },
         model: {
           key: 'openai:gpt-4o-mini',
@@ -1549,6 +1550,7 @@ describe('SteelAiChatService.capabilities() — switches', () => {
           mcpWriteEnabled: false,
           agentModel: null,
           failoverEnabled: true,
+          proactiveEnabled: true,
         },
         model: null,
       }),

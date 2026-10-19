@@ -1,4 +1,5 @@
 export {
+  aiInsightNotFound,
   aiModelNotEnabled,
   aiProviderUnavailable,
   aiQuotaExceeded,

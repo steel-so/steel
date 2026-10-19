@@ -9,6 +9,7 @@ import {
 } from '@/app/_components/header/breadcrumb-page'
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { HomeSteelAiPrompt } from '@/app/_components/home/home-steel-ai-prompt'
+import { AiInsightHighlights } from '@/app/_components/steel-ai-insights/ai-insight-highlights'
 import { UserShortcutLinkList } from '@/app/_components/user/shortcut-link/user-shortcut-link-list'
 import { UserShortcutLinkModal } from '@/app/_components/user/shortcut-link/user-shortcut-link-modal'
 import { UserStickyCreateButton } from '@/app/_components/user/sticky/user-sticky-create-button'
@@ -140,6 +141,11 @@ export default async function Page({
         </div>
 
         <HomeSteelAiPrompt
+          workspaceId={membership.value.workspaceId}
+          slug={slug}
+        />
+
+        <AiInsightHighlights
           workspaceId={membership.value.workspaceId}
           slug={slug}
         />

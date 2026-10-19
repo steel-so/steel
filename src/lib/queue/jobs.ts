@@ -44,6 +44,7 @@ export const QueueName = {
   AiIndex: 'ai-index',
   AiEval: 'ai-eval',
   PhoneCallAi: 'phone-call-ai',
+  AiProactive: 'ai-proactive',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -871,4 +872,23 @@ export type PhoneCallAiJob =
 
 export type PhoneCallAiJobPayload = {
   [PhoneCallAiJob.ProcessRecording]: { callId: string }
+}
+
+/**
+ * Proactive AI (ADR 0040): `insights-tick` recomputes every workspace's
+ * insights (every 15 min); `digest-tick` sends the daily digest to whoever
+ * is at the digest hour in their time zone (hourly). Single attempt: a
+ * retry could only duplicate work the next tick does anyway.
+ */
+export const AiProactiveJob = {
+  InsightsTick: 'insights-tick',
+  DigestTick: 'digest-tick',
+} as const
+
+export type AiProactiveJob =
+  (typeof AiProactiveJob)[keyof typeof AiProactiveJob]
+
+export type AiProactiveJobPayload = {
+  [AiProactiveJob.InsightsTick]: Record<string, never>
+  [AiProactiveJob.DigestTick]: Record<string, never>
 }

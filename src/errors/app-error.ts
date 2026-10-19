@@ -1636,3 +1636,6 @@ export const aiEvalRunInProgress = (): AppError =>
     'AI_EVAL_RUN_IN_PROGRESS',
     'Já existe uma avaliação deste conjunto em andamento. Aguarde terminar.',
   )
+export const aiInsightNotFound = (
+  message = 'Alerta não encontrado',
+): AppError => appError('AI_INSIGHT_NOT_FOUND', message)

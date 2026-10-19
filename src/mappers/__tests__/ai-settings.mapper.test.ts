@@ -24,6 +24,7 @@ describe('toEffectiveAiSettings()', () => {
       mcpWriteEnabled: false,
       agentModel: null,
       failoverEnabled: true,
+      proactiveEnabled: true,
     })
   })
 

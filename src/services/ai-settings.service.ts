@@ -161,6 +161,9 @@ export const AiSettingsService = {
       ...(dto.failoverEnabled !== undefined && {
         failoverEnabled: dto.failoverEnabled,
       }),
+      ...(dto.proactiveEnabled !== undefined && {
+        proactiveEnabled: dto.proactiveEnabled,
+      }),
     }
 
     // Só barra provedor sem chave no que está sendo alterado agora: um
@@ -221,6 +224,7 @@ export const AiSettingsService = {
       mcpWriteEnabled: next.mcpWriteEnabled,
       agentModel: next.agentModel,
       failoverEnabled: next.failoverEnabled,
+      proactiveEnabled: next.proactiveEnabled,
     })
     if (!saved.ok) return saved
 
@@ -241,6 +245,7 @@ export const AiSettingsService = {
         mcpWriteEnabled: next.mcpWriteEnabled,
         agentModel: next.agentModel,
         failoverEnabled: next.failoverEnabled,
+        proactiveEnabled: next.proactiveEnabled,
         // Toggles flipped by this request (who turned what on or off).
         changedSwitches: (
           [
@@ -252,6 +257,7 @@ export const AiSettingsService = {
             'usageWeeklyEmailEnabled',
             'mcpWriteEnabled',
             'failoverEnabled',
+            'proactiveEnabled',
           ] as const
         ).filter((key) => current.value[key] !== next[key]),
       },

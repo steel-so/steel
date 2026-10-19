@@ -224,6 +224,8 @@ model User {
   integrationGrants         IntegrationGrant[]
   apiTokens                 ApiToken[]
   webhookEndpointsCreated   WebhookEndpoint[]          @relation("WebhookEndpointCreatedBy")
+  aiInsights                AiInsight[]
+  aiDigestSettings          AiDigestSetting[]
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -583,6 +585,8 @@ model Workspace {
   apiTokens                 ApiToken[]
   webhookEndpoints          WebhookEndpoint[]
   webhookDeliveries         WebhookDelivery[]
+  aiInsights                AiInsight[]
+  aiDigestSettings          AiDigestSetting[]
 
   @@index([status])
   @@map("workspaces")
@@ -4275,6 +4279,8 @@ model WorkspaceAiSettings {
   /// Automatic failover to another provider/model when the chosen one fails
   /// or times out (ADR 0042). On by default.
   failoverEnabled         Boolean  @default(true) @map("failover_enabled")
+  /// Proactive AI (ADR 0040): insights feed and daily digest. On by default.
+  proactiveEnabled        Boolean  @default(true) @map("proactive_enabled")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
@@ -4353,6 +4359,8 @@ enum AiUsageFeature {
   AI_GUARDRAIL
   /// Call recordings: transcription (per minute) and summary (ADR 0043).
   PHONE_CALL_AI
+  /// Proactive AI (ADR 0040): phrasing of the daily digest intro.
+  PROACTIVE_DIGEST
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -4956,6 +4964,8 @@ enum NotificationKind {
   AI_ACTION_EXPIRING
   /// Outbound webhooks (ADR 0036): an endpoint failing for 3 days was disabled.
   WEBHOOK_ENDPOINT_DISABLED
+  /// Proactive AI (ADR 0040): the user's daily digest of active insights.
+  AI_DAILY_DIGEST
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -8683,4 +8693,98 @@ model WebhookDelivery {
   @@index([endpointId, createdAt])
   @@index([createdAt])
   @@map("webhook_deliveries")
+}
+
+// ─── Proactive AI (ADR 0040) ─────────────────────────────────────────────────
+
+/// What an insight is about. Rules live in `src/lib/ai/proactive/rules.ts`.
+enum AiInsightKind {
+  /// ServiceDesk: tickets predicted to breach the SLA in the next hours.
+  SD_SLA_BREACH_FORECAST
+  /// CRM: open deals without activity for N days.
+  CRM_STALE_OPPORTUNITIES
+  /// CRM: one stage concentrates idle deals.
+  CRM_STALLED_STAGE
+  /// CRM: weighted forecast of the month below the quota.
+  CRM_FORECAST_GAP
+  /// Comunicação: unassigned conversations waiting too long.
+  ZAP_WAITING_TOO_LONG
+  /// Comunicação: a conversation's sentiment fell to the alert threshold.
+  ZAP_NEGATIVE_SENTIMENT
+}
+
+enum AiInsightSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AiInsightStatus {
+  /// The condition holds (last evaluation found it).
+  ACTIVE
+  /// The condition is gone; a recurrence opens a new episode.
+  RESOLVED
+}
+
+/// One explainable insight for one user, recomputed by the `ai-proactive`
+/// worker. `dedupeKey` identifies the condition (e.g. `sd-breach:dept:<id>`),
+/// so a recomputation updates the same row instead of piling up.
+model AiInsight {
+  id           String            @id @default(cuid())
+  workspaceId  String            @map("workspace_id")
+  userId       String            @map("user_id")
+  kind         AiInsightKind
+  module       ModuleKind
+  severity     AiInsightSeverity @default(INFO)
+  dedupeKey    String            @map("dedupe_key")
+  /// pt-BR, numbers included ("3 chamados de N1 devem estourar o SLA até 15:00").
+  title        String
+  /// pt-BR: why — the numbers behind the insight.
+  body         String
+  /// [{"label":"Chamados","value":"3"}] — the facts shown as chips.
+  facts        Json              @default("[]")
+  /// Path inside the workspace (slug included) to open the records.
+  href         String?
+  /// Prefilled Steel AI question for "Perguntar ao Steel AI".
+  prompt       String?
+  status       AiInsightStatus   @default(ACTIVE)
+  /// Start of the current episode (reset when a resolved insight recurs).
+  firstSeenAt  DateTime          @default(now()) @map("first_seen_at")
+  lastSeenAt   DateTime          @default(now()) @map("last_seen_at")
+  resolvedAt   DateTime?         @map("resolved_at")
+  /// Hidden by the user while the episode lasts.
+  dismissedAt  DateTime?         @map("dismissed_at")
+  /// Hidden by the user until then.
+  snoozedUntil DateTime?         @map("snoozed_until")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId, dedupeKey])
+  @@index([userId, workspaceId, status])
+  @@index([workspaceId, status, module])
+  @@index([status, resolvedAt])
+  @@map("ai_insights")
+}
+
+/// Per-user channels of the daily AI digest (no row = both on) and the
+/// local day it was last sent (once a day, in the user's time zone).
+model AiDigestSetting {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  inApp       Boolean  @default(true) @map("in_app")
+  email       Boolean  @default(true)
+  /// `YYYY-MM-DD` in the user's time zone of the last digest sent.
+  lastSentOn  String?  @map("last_sent_on")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@map("ai_digest_settings")
 }

@@ -61,6 +61,7 @@ export type NotificationKindDTO =
   | 'AGENT_RUN_FAILED'
   | 'AI_ACTION_EXPIRING'
   | 'WEBHOOK_ENDPOINT_DISABLED'
+  | 'AI_DAILY_DIGEST'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'

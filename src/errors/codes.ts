@@ -581,6 +581,8 @@ export const ERROR_CODES = {
   AI_SKILL_SLUG_TAKEN: { code: 'AI_SKILL_SLUG_TAKEN', status: 409 },
   AI_MEMORY_NOT_FOUND: { code: 'AI_MEMORY_NOT_FOUND', status: 404 },
   AI_MEMORY_DISABLED: { code: 'AI_MEMORY_DISABLED', status: 403 },
+  // Proactive AI (ADR 0040): an insight of another user, or gone.
+  AI_INSIGHT_NOT_FOUND: { code: 'AI_INSIGHT_NOT_FOUND', status: 404 },
   // Steel Agents (autonomous agents running with the owner's permissions).
   STEEL_AGENT_NOT_FOUND: { code: 'STEEL_AGENT_NOT_FOUND', status: 404 },
   STEEL_AGENT_RUN_NOT_FOUND: { code: 'STEEL_AGENT_RUN_NOT_FOUND', status: 404 },

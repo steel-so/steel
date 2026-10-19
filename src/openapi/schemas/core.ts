@@ -381,6 +381,10 @@ export const WorkspaceAiSettingsDTO = dto(
       description:
         'Contingência automática: se o modelo escolhido falhar ou demorar, a chamada vai para outro provedor/modelo habilitado. Ligado por padrão.',
     }),
+    proactiveEnabled: z.boolean().meta({
+      description:
+        'IA proativa (ADR 0040): alertas por pessoa e resumo diário. Ligado por padrão.',
+    }),
     usage: z.object({
       periodStart: dateTime().meta({ description: '1º dia do mês (UTC).' }),
       inputTokens: z.number().int(),
@@ -534,6 +538,7 @@ export const NotificationListDTO = dto(
           'AGENT_RUN_FAILED',
           'AI_ACTION_EXPIRING',
           'WEBHOOK_ENDPOINT_DISABLED',
+          'AI_DAILY_DIGEST',
         ]),
         title: z.string(),
         body: z.string(),

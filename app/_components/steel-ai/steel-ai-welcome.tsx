@@ -3,6 +3,7 @@
 import { AiMagicIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { AiInsightHighlights } from '@/app/_components/steel-ai-insights/ai-insight-highlights'
 import { SteelIcon } from '@/components/icon/icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { notify } from '@/lib/notify'
@@ -37,6 +38,19 @@ export function skillFromSearch(search: string): string | null {
   return AI_SKILL_SLUG_PATTERN.test(slug) ? slug : null
 }
 
+/** Longest prefilled prompt accepted from the URL. */
+const MAX_PROMPT_FROM_URL = 2000
+
+/**
+ * `?prompt=…` → the text to prefill (the "Perguntar ao Steel AI" button of
+ * the proactive AI insights, ADR 0040). Only fills the composer: the user
+ * reviews and sends it.
+ */
+export function promptFromSearch(search: string): string | null {
+  const prompt = new URLSearchParams(search).get('prompt')?.trim() ?? ''
+  return prompt ? prompt.slice(0, MAX_PROMPT_FROM_URL) : null
+}
+
 /** Starters shown on phones — the rest appear from `sm` up. */
 const MOBILE_STARTERS = 4
 
@@ -61,6 +75,8 @@ export function SteelAiWelcome() {
   useEffect(() => {
     const slug = skillFromSearch(window.location.search)
     if (slug) setDraft(`/${slug} `)
+    const prompt = promptFromSearch(window.location.search)
+    if (prompt) setDraft(prompt)
   }, [])
   // No conversation yet: files wait until it is created on submit.
   const files = useSteelAiDraftAttachments({
@@ -246,6 +262,17 @@ export function SteelAiWelcome() {
               </ul>
             ) : null}
           </div>
+
+          {aiDisabled ? null : (
+            <div
+              className={cn(
+                'w-full motion-safe:transition-opacity motion-safe:duration-300',
+                leaving && 'opacity-0',
+              )}
+            >
+              <AiInsightHighlights workspaceId={workspaceId} slug={slug} />
+            </div>
+          )}
         </div>
       </div>
     </div>

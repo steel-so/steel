@@ -2,6 +2,7 @@
 
 import {
   AiMagicIcon,
+  Alert02Icon,
   Archive02Icon,
   ArchiveRestoreIcon,
   Delete02Icon,
@@ -19,6 +20,7 @@ import {
   useShortcut,
   useShortcuts,
 } from '@/app/_components/shortcuts/shortcuts-provider'
+import { AiInsightFeed } from '@/app/_components/steel-ai-insights/ai-insight-feed'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +44,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { useAiInsights } from '@/src/hooks/use-ai-insights'
 import {
   useArchiveReadNotifications,
   useInboxAiPending,
@@ -71,7 +74,12 @@ import { NotificationSnoozeDialog } from './notification-snooze-dialog'
 import { NotificationSnoozeMenu } from './notification-snooze-menu'
 
 type Folder = NotificationFolder
-type View = 'notifications' | 'ai'
+/** `insights` = proactive AI insights (ADR 0040), `?view=insights`. */
+type View = 'notifications' | 'ai' | 'insights'
+
+function viewFromSearch(value: string | null | undefined): View {
+  return value === 'ai' || value === 'insights' ? value : 'notifications'
+}
 
 const FOLDERS: { value: Folder; label: string }[] = [
   { value: 'all', label: 'Tudo' },
@@ -143,7 +151,7 @@ export function NotificationInbox({
   const searchParams = useSearchParams()
 
   const [view, setView] = useState<View>(
-    searchParams?.get('view') === 'ai' ? 'ai' : 'notifications',
+    viewFromSearch(searchParams?.get('view')),
   )
   const [folder, setFolder] = useState<Folder>('all')
   const [quick, setQuick] = useState<NotificationQuickFilter | null>(null)
@@ -191,6 +199,7 @@ export function NotificationInbox({
     enabled: view === 'notifications',
   })
   const aiPending = useInboxAiPending(workspaceId)
+  const insights = useAiInsights(workspaceId, { state: 'active', limit: 1 })
   const action = useNotificationAction(workspaceId)
   const markRead = useMarkNotificationsRead(workspaceId)
   const archiveRead = useArchiveReadNotifications(workspaceId)
@@ -207,6 +216,7 @@ export function NotificationInbox({
     snoozed: 0,
   }
   const aiCount = aiPending.data?.count ?? 0
+  const insightCount = insights.data?.enabled ? insights.data.counts.active : 0
 
   const active = items.find((item) => item.id === activeId) ?? null
 
@@ -442,7 +452,7 @@ export function NotificationInbox({
 
       <div className='flex flex-wrap items-center gap-2 border-b px-4 py-3'>
         <Tabs
-          value={view === 'ai' ? '' : folder}
+          value={view === 'notifications' ? folder : ''}
           onValueChange={(value) => {
             setFolder(value as Folder)
             switchView('notifications')
@@ -639,10 +649,38 @@ export function NotificationInbox({
         </Button>
         <Button
           size='xs'
-          variant={view !== 'ai' && folder === 'unread' ? 'default' : 'outline'}
-          aria-pressed={view !== 'ai' && folder === 'unread'}
+          variant={view === 'insights' ? 'default' : 'outline'}
+          aria-pressed={view === 'insights'}
+          onClick={() =>
+            switchView(view === 'insights' ? 'notifications' : 'insights')
+          }
+          className='shrink-0'
+        >
+          <SteelIcon icon={Alert02Icon} size={14} strokeWidth={2} />
+          Alertas da IA
+          {insightCount > 0 ? (
+            <Badge
+              variant='secondary'
+              aria-label={`${insightCount} alertas ativos`}
+            >
+              {insightCount}
+            </Badge>
+          ) : null}
+        </Button>
+        <Button
+          size='xs'
+          variant={
+            view === 'notifications' && folder === 'unread'
+              ? 'default'
+              : 'outline'
+          }
+          aria-pressed={view === 'notifications' && folder === 'unread'}
           onClick={() => {
-            setFolder(folder === 'unread' && view !== 'ai' ? 'all' : 'unread')
+            setFolder(
+              folder === 'unread' && view === 'notifications'
+                ? 'all'
+                : 'unread',
+            )
             switchView('notifications')
           }}
           className='shrink-0'
@@ -651,7 +689,7 @@ export function NotificationInbox({
           Não lidas
         </Button>
         {QUICK_FILTERS.map((item) => {
-          const pressed = view !== 'ai' && quick === item.value
+          const pressed = view === 'notifications' && quick === item.value
           return (
             <Button
               key={item.value}
@@ -749,6 +787,10 @@ export function NotificationInbox({
             workspaceId={workspaceId}
             slug={slug ?? ''}
           />
+        </div>
+      ) : view === 'insights' ? (
+        <div className='min-h-0 flex-1 overflow-y-auto'>
+          <AiInsightFeed workspaceId={workspaceId} slug={slug ?? ''} />
         </div>
       ) : (
         <div className='grid min-h-0 flex-1 lg:grid-cols-[minmax(20rem,26rem)_1fr]'>

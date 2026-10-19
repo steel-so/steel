@@ -80,6 +80,8 @@ export const AI_TASK_CLASS_BY_FEATURE: Record<AiUsageFeature, AiTaskClass> = {
   // Call summaries (ADR 0043) read a customer conversation like the
   // WhatsApp auto-reply; the transcription itself is Whisper.
   PHONE_CALL_AI: 'CONVERSATION',
+  // Daily digest intro (ADR 0040): short phrasing, the cheap model.
+  PROACTIVE_DIGEST: 'CLASSIFICATION',
 }
 
 /** Workspace model of a task class, most specific first. */

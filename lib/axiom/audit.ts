@@ -219,6 +219,9 @@ export type AuditEntity =
   // guardrails did on a call (masked counts, injection alerts, handoffs).
   | 'workspace_ai_guardrails'
   | 'ai_guardrail'
+  // Proactive AI (ADR 0040): dismiss/snooze an insight, daily digest channels
+  | 'ai_insight'
+  | 'ai_digest_setting'
 
 export type AuditAction =
   | 'create'

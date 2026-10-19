@@ -161,3 +161,12 @@ export const SitePostsPublishCron = '* * * * *' as const
  * Only changed chunks are re-embedded, so the provider cost is the delta.
  */
 export const AiIndexReindexCron = '45 2 * * *' as const
+
+/** Proactive AI insights (ADR 0040): every 15 minutes, off the hour marks. */
+export const AiProactiveInsightsCron = '7,22,37,52 * * * *' as const
+
+/**
+ * Proactive AI daily digest: hourly at :10 (after the :07 insights tick),
+ * each person at the digest hour of their own time zone.
+ */
+export const AiProactiveDigestCron = '10 * * * *' as const
