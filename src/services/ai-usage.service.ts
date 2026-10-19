@@ -52,6 +52,9 @@ const MODEL_FIELD_BY_FEATURE: Record<
   STEEL_AGENT: 'crmAssistantModel',
   // Wiki inline rewrite (paraphrase, summarize...) uses the assistant model.
   WIKI_ASSISTANT: 'crmAssistantModel',
+  // Never resolved here: the knowledge search embeddings use their own
+  // platform model (ADR 0037) and are recorded by AiKnowledgeEmbeddingService.
+  KNOWLEDGE_SEARCH: 'whatsappSentimentModel',
 }
 
 /** Features where the user's own model preference applies. */

@@ -13,6 +13,10 @@ vi.mock('@/src/services/crm-workflow-dispatcher')
 vi.mock('@/lib/axiom/audit')
 
 import { auditMutation } from '@/lib/axiom/audit'
+import {
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+} from '@/src/lib/ai/knowledge/index-hooks'
 import { CrmActivityRepository } from '@/src/repositories/crm-activity.repository'
 import { CrmNoteRepository } from '@/src/repositories/crm-note.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -150,6 +154,11 @@ describe('CrmNoteService', () => {
       expect(mockedDispatch).toHaveBeenCalledWith(
         expect.objectContaining({ entity: 'note', event: 'created' }),
       )
+      expect(scheduleKnowledgeIndex).toHaveBeenCalledWith(
+        'crm-note',
+        'ws1',
+        'n1',
+      )
     })
 
     it('should audit a failure and skip side effects on repository error', async () => {
@@ -256,6 +265,11 @@ describe('CrmNoteService', () => {
       )
       expect(mockedDispatch).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'deleted' }),
+      )
+      expect(removeKnowledgeSource).toHaveBeenCalledWith(
+        'crm-note',
+        'ws1',
+        'n1',
       )
     })
 

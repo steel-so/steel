@@ -1,4 +1,8 @@
 import { auditMutation } from '@/lib/axiom/audit'
+import {
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+} from '@/src/lib/ai/knowledge/index-hooks'
 import { ok, type Result } from '@/src/lib/result'
 import { toCrmNoteDTO } from '@/src/mappers/crm-note.mapper'
 import { CrmNoteRepository } from '@/src/repositories/crm-note.repository'
@@ -70,6 +74,7 @@ export const CrmNoteService = {
     })
 
     const createdDto = toCrmNoteDTO(result.value)
+    void scheduleKnowledgeIndex('crm-note', workspaceId, result.value.id)
     void recordCrmActivity({
       workspaceId,
       actorUserId: actorId,
@@ -123,6 +128,7 @@ export const CrmNoteService = {
     })
 
     const updatedDto = toCrmNoteDTO(result.value)
+    void scheduleKnowledgeIndex('crm-note', workspaceId, noteId)
     void recordCrmActivity({
       workspaceId,
       actorUserId: actorId,
@@ -165,6 +171,7 @@ export const CrmNoteService = {
       actorId,
       targetId: noteId,
     })
+    void removeKnowledgeSource('crm-note', workspaceId, noteId)
 
     void recordCrmActivity({
       workspaceId,

@@ -112,7 +112,9 @@ jobs:
     timeout-minutes: 25
     services:
       postgres:
-        image: postgres:16
+        # pgvector for the knowledge search (ADR 0037); a fresh DB per run, so
+        # the Debian image is fine here (the servers stay on alpine).
+        image: pgvector/pgvector:0.8.7-pg17
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -182,7 +184,9 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:16
+        # pgvector for the knowledge search (ADR 0037); a fresh DB per run, so
+        # the Debian image is fine here (the servers stay on alpine).
+        image: pgvector/pgvector:0.8.7-pg17
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -332,7 +336,9 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:16
+        # pgvector for the knowledge search (ADR 0037); a fresh DB per run, so
+        # the Debian image is fine here (the servers stay on alpine).
+        image: pgvector/pgvector:0.8.7-pg17
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -407,7 +413,9 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:16
+        # pgvector for the knowledge search (ADR 0037); a fresh DB per run, so
+        # the Debian image is fine here (the servers stay on alpine).
+        image: pgvector/pgvector:0.8.7-pg17
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test

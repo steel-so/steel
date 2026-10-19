@@ -52,6 +52,7 @@
     "seed:user-timezone": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/backfill-user-timezone.ts",
     "sites:migrate-landing-pages": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/sites-migrate-landing-pages.ts",
     "search:reindex": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/search-reindex.ts",
+    "ai:index": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/ai-index.ts",
     "backup:workspace": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/trigger-workspace-backup.ts",
     "backup:full": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/trigger-full-backup.ts",
     "restore:full": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/restore-full-backup.ts",

@@ -1,9 +1,11 @@
 'use client'
 
 import { type FormEvent, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -49,6 +51,25 @@ export function AdminAiSettingsPanel({
     parsed >= MIN_AI_COST_MARGIN &&
     parsed <= MAX_AI_COST_MARGIN
   const dirty = valid && parsed !== settings.costMargin
+  const search = settings.knowledgeSearch
+
+  function handleEmbeddings(enabled: boolean) {
+    update.mutate(
+      { costMargin: settings.costMargin, embeddingsEnabled: enabled },
+      {
+        onSuccess: (saved) => {
+          setSettings(saved)
+          notify.success(
+            enabled
+              ? 'Busca semântica ligada'
+              : 'Busca semântica desligada: a busca segue só por texto',
+          )
+        },
+        onError: (error) =>
+          notify.error(error, 'Não foi possível salvar a busca semântica'),
+      },
+    )
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -122,6 +143,60 @@ export function AdminAiSettingsPanel({
             </Button>
           </div>
         </form>
+      </AdminPanel>
+
+      <AdminPanel
+        title='Busca de conhecimento'
+        description='O Steel AI busca em artigos, Wiki, chamados resolvidos, documentos da IA do WhatsApp e notas e propostas do CRM, por texto e por significado. A parte por significado usa embeddings da OpenAI (text-embedding-3-small, US$ 0,02 por 1 milhão de tokens × margem), lançados no consumo de IA de cada workspace.'
+      >
+        <div className='grid max-w-xl gap-3'>
+          <div className='flex items-center justify-between gap-3'>
+            <Label htmlFor='ai-embeddings-enabled' className='font-medium'>
+              Busca semântica (embeddings)
+            </Label>
+            <Switch
+              id='ai-embeddings-enabled'
+              checked={settings.embeddingsEnabled}
+              disabled={update.isPending}
+              onCheckedChange={handleEmbeddings}
+            />
+          </div>
+          <ul
+            aria-label='Estado da busca de conhecimento'
+            className='flex flex-wrap gap-1.5'
+          >
+            <li>
+              <Badge
+                variant={search.providerConfigured ? 'secondary' : 'outline'}
+              >
+                {search.providerConfigured
+                  ? 'Chave da OpenAI configurada'
+                  : 'Sem chave da OpenAI'}
+              </Badge>
+            </li>
+            <li>
+              <Badge
+                variant={search.vectorIndexReady ? 'secondary' : 'outline'}
+              >
+                {search.vectorIndexReady
+                  ? 'pgvector instalado'
+                  : 'pgvector não instalado'}
+              </Badge>
+            </li>
+            <li>
+              <Badge variant={search.mode === 'hybrid' ? 'default' : 'outline'}>
+                {search.mode === 'hybrid'
+                  ? 'Modo: texto + significado'
+                  : 'Modo: só texto'}
+              </Badge>
+            </li>
+          </ul>
+          <p className='text-muted-foreground text-xs'>
+            Sem a chave, sem o pgvector ou com a chave desligada, a busca segue
+            funcionando só por texto. Ligar de novo gera os embeddings que
+            faltam na próxima reindexação (todo dia às 02:45).
+          </p>
+        </div>
       </AdminPanel>
 
       <AdminPanel

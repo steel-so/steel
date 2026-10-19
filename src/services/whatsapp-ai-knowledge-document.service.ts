@@ -1,6 +1,10 @@
 import { createId } from '@paralleldrive/cuid2'
 import { auditMutation } from '@/lib/axiom/audit'
 import { storageError, whatsappAiKnowledgeDocumentNotFound } from '@/src/errors'
+import {
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+} from '@/src/lib/ai/knowledge/index-hooks'
 import { err, ok, type Result } from '@/src/lib/result'
 import { deleteObject, ensureBucket, putObject } from '@/src/lib/storage/s3'
 import {
@@ -101,6 +105,13 @@ export const WhatsAppAiKnowledgeDocumentService = {
       targetId: updated.value.id,
       meta: { filename: input.filename, status: updated.value.status },
     })
+    if (updated.value.status === 'READY') {
+      void scheduleKnowledgeIndex(
+        'zap-knowledge-doc',
+        workspaceId,
+        updated.value.id,
+      )
+    }
 
     return ok(toWhatsAppAiKnowledgeDocumentDTO(updated.value))
   },
@@ -140,6 +151,7 @@ export const WhatsAppAiKnowledgeDocumentService = {
       actorId,
       targetId: id,
     })
+    void removeKnowledgeSource('zap-knowledge-doc', workspaceId, id)
 
     return ok(undefined)
   },

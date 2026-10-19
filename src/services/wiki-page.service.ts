@@ -10,6 +10,11 @@ import {
   wikiPageLocked,
   wikiPageNotFound,
 } from '../errors'
+import {
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+  scheduleKnowledgeReindex,
+} from '../lib/ai/knowledge/index-hooks'
 import { err, ok, type Result } from '../lib/result'
 import { publishWikiLockChange } from '../lib/wiki-lock-channel'
 import { toWikiPageDTO } from '../mappers/wiki-page.mapper'
@@ -240,6 +245,7 @@ export const WikiPageService = {
         meta: { fields: Object.keys(dto) },
       })
     }
+    void scheduleKnowledgeIndex('wiki-page', workspaceId, wikiPageId)
 
     return viewerDTO(actorId, membership, result.value)
   },
@@ -328,6 +334,9 @@ export const WikiPageService = {
       actorId,
       targetId: wikiPageId,
     })
+    // Sub-pages are archived with it: the wiki part of the index is rebuilt.
+    void removeKnowledgeSource('wiki-page', workspaceId, wikiPageId)
+    void scheduleKnowledgeReindex(workspaceId, ['wiki-page'])
 
     return viewerDTO(actorId, membership, result.value)
   },
@@ -571,6 +580,7 @@ export const WikiPageService = {
       meta: { workspaceId, sourceId: wikiPageId },
     })
     if (!result.ok) return result
+    void scheduleKnowledgeIndex('wiki-page', workspaceId, result.value.id)
 
     return ok(
       toWikiPageDTO(result.value, { canManageLock: true, isFavorite: false }),

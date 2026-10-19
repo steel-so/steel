@@ -154,3 +154,10 @@ export const CrmCampaignsTickCron = '*/5 * * * *' as const
 
 /** Site blog: publish the scheduled posts that are due — every minute. */
 export const SitePostsPublishCron = '* * * * *' as const
+
+/**
+ * Steel AI knowledge index full rebuild (ADR 0037): 02:45, after the 02:30
+ * global search reindex and before the 03:00 retention and 03:15 backup.
+ * Only changed chunks are re-embedded, so the provider cost is the delta.
+ */
+export const AiIndexReindexCron = '45 2 * * *' as const

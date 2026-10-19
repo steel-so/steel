@@ -1,6 +1,10 @@
 services:
   steel-db:
-    image: postgres:17-alpine
+    # postgres:17-alpine + pgvector (ADR 0037). Same base image as before, so
+    # the existing data directory is reused as is — never switch to a Debian
+    # image here (collation change). Swap: docs/runbooks/postgres-pgvector.md
+    build: ./infra/postgres
+    image: steel-postgres:17-alpine-pgvector
     container_name: steel-db
     restart: unless-stopped
     environment:

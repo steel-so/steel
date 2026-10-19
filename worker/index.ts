@@ -9,6 +9,7 @@ import {
 } from '../src/lib/queue/failure-listener'
 import { QueueName } from '../src/lib/queue/jobs'
 import { processAccountLifecycle } from '../src/lib/queue/processors/account-lifecycle'
+import { processAiIndex } from '../src/lib/queue/processors/ai-index'
 import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-weekly-email'
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
@@ -50,6 +51,7 @@ import { processWorkspaceExport } from '../src/lib/queue/processors/workspace-ex
 import { processWorkspaceIntegrations } from '../src/lib/queue/processors/workspace-integrations'
 import '../src/lib/zod-locale'
 import {
+  scheduleAiIndexJobs,
   scheduleAiUsageWeeklyEmailJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
@@ -244,6 +246,7 @@ async function main(): Promise<void> {
   workers.push(registerWorker(QueueName.SteelAgents, processSteelAgents))
   workers.push(registerWorker(QueueName.Notifications, processNotifications))
   workers.push(registerWorker(QueueName.SearchReindex, processSearchReindex))
+  workers.push(registerWorker(QueueName.AiIndex, processAiIndex))
   workers.push(
     registerWorker(QueueName.AiUsageWeeklyEmail, processAiUsageWeeklyEmail),
   )
@@ -291,6 +294,7 @@ async function main(): Promise<void> {
   await scheduleSteelAgentsJobs()
   await scheduleNotificationsJobs()
   await scheduleSearchReindexJobs()
+  await scheduleAiIndexJobs()
   await scheduleAiUsageWeeklyEmailJobs()
   await scheduleWorkspaceExportJobs()
   await scheduleWorkspaceIntegrationsJobs()

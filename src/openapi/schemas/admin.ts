@@ -391,5 +391,19 @@ export const PlatformAiSettingsDTO = dto(
         chargedOutputUsdPer1M: z.number(),
       }),
     ),
+    embeddingsEnabled: z.boolean().meta({
+      description:
+        'Embeddings da busca de conhecimento do Steel AI (ADR 0037). Desligado = busca só por texto.',
+    }),
+    knowledgeSearch: z
+      .object({
+        providerConfigured: z.boolean(),
+        vectorIndexReady: z.boolean(),
+        mode: z.enum(['hybrid', 'text']),
+      })
+      .meta({
+        description:
+          'Estado da busca de conhecimento neste ambiente: chave do provedor de embeddings, pgvector instalado e o modo que uma busca usa agora.',
+      }),
   }),
 )

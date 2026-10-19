@@ -14,6 +14,14 @@ export const UpdatePlatformAiSettingsSchema = z.object({
     .meta({
       description: 'Multiplicador sobre o preço do provedor (1 = custo).',
     }),
+  /**
+   * Semantic half of the Steel AI knowledge search (ADR 0037). Optional:
+   * absent keeps the saved value.
+   */
+  embeddingsEnabled: z.boolean().optional().meta({
+    description:
+      'Embeddings da busca de conhecimento (OpenAI). Desligado = busca só por texto.',
+  }),
   reason: z.string().trim().max(500).optional(),
 })
 

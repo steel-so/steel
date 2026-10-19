@@ -522,6 +522,12 @@ export const ERROR_CODES = {
   AI_QUOTA_EXCEEDED: { code: 'AI_QUOTA_EXCEEDED', status: 402 },
   AI_MODEL_NOT_ENABLED: { code: 'AI_MODEL_NOT_ENABLED', status: 422 },
   AI_PROVIDER_UNAVAILABLE: { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 },
+  // The embedding provider of the knowledge search failed (ADR 0037). Only
+  // the indexer sees it: the search itself falls back to full-text.
+  AI_KNOWLEDGE_EMBEDDING_FAILED: {
+    code: 'AI_KNOWLEDGE_EMBEDDING_FAILED',
+    status: 502,
+  },
   FEATURE_NOT_ENABLED: { code: 'FEATURE_NOT_ENABLED', status: 403 },
   // Steel AI (cross-system assistant): agent-mode writes only run through a
   // pending action confirmed by a human (see AiPendingAction).

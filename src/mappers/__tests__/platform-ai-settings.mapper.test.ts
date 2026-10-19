@@ -4,12 +4,14 @@ import { AI_MODEL_CATALOG } from '@/src/lib/ai/models'
 import {
   toAiModelPriceDTOs,
   toCostMargin,
+  toEmbeddingsEnabled,
   toPlatformAiSettingsDTO,
 } from '../platform-ai-settings.mapper'
 
 const row = {
   id: 'default',
   costMargin: new Prisma.Decimal('1.5'),
+  embeddingsEnabled: true,
   updatedById: 'a',
   createdAt: new Date('2026-10-01T00:00:00Z'),
   updatedAt: new Date('2026-10-06T00:00:00Z'),
@@ -45,5 +47,26 @@ describe('platform AI settings mapper', () => {
       costMargin: 1,
       updatedAt: null,
     })
+  })
+
+  it('should expose the embeddings switch and the knowledge search state', () => {
+    expect(toEmbeddingsEnabled(null)).toBe(true)
+    expect(toEmbeddingsEnabled({ ...row, embeddingsEnabled: false })).toBe(
+      false,
+    )
+    expect(toPlatformAiSettingsDTO(null)).toMatchObject({
+      embeddingsEnabled: true,
+      knowledgeSearch: {
+        providerConfigured: false,
+        vectorIndexReady: false,
+        mode: 'text',
+      },
+    })
+    const status = {
+      providerConfigured: true,
+      vectorIndexReady: true,
+      mode: 'hybrid' as const,
+    }
+    expect(toPlatformAiSettingsDTO(row, status).knowledgeSearch).toBe(status)
   })
 })

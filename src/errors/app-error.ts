@@ -1573,3 +1573,7 @@ export const webhookUrlNotAllowed = (
 export const webhookEventUnknown = (
   message = 'Tipo de evento fora do catálogo de webhooks.',
 ): AppError => appError('WEBHOOK_EVENT_UNKNOWN', message)
+
+export const aiKnowledgeEmbeddingFailed = (
+  message = 'Falha ao gerar os embeddings da busca de conhecimento.',
+): AppError => appError('AI_KNOWLEDGE_EMBEDDING_FAILED', message)

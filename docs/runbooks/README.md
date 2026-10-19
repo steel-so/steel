@@ -15,6 +15,7 @@ confirmar que deu certo.
 | Claude/ChatGPT/Cursor não conectam ao Steel / instalar o MCP no proxy | [Proxy de borda do servidor MCP](./mcp-edge-proxy.md) |
 | Um cliente de IA (MCP) abusando, errando em série ou com token vazado | [Cliente MCP com mau comportamento](./mcp-incident.md) |
 | Réplicas do app: instalar o upstream do nginx, réplica `unhealthy`, PgBouncer, teste de capacidade | [Réplicas do app](./app-replicas.md) |
+| Ligar a busca semântica do Steel AI (instalar o pgvector no `steel-db`) | [pgvector no Postgres](./postgres-pgvector.md) |
 
 ## Referência rápida do servidor
 

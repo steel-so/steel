@@ -3,6 +3,7 @@ import { AI_MODEL_CATALOG, DEFAULT_AI_COST_MARGIN } from '@/src/lib/ai/models'
 import type {
   PlatformAiModelPriceDTO,
   PlatformAiSettingsDTO,
+  PlatformKnowledgeSearchStatusDTO,
 } from '@/types/platform-ai-settings'
 
 /** Margin of the saved row, or the default when there is none. */
@@ -28,13 +29,27 @@ export function toAiModelPriceDTOs(margin: number): PlatformAiModelPriceDTO[] {
   }))
 }
 
+/** Embeddings switch of the saved row (default on). */
+export function toEmbeddingsEnabled(row: PlatformAiSettings | null): boolean {
+  return row ? row.embeddingsEnabled : true
+}
+
+const TEXT_ONLY: PlatformKnowledgeSearchStatusDTO = {
+  providerConfigured: false,
+  vectorIndexReady: false,
+  mode: 'text',
+}
+
 export function toPlatformAiSettingsDTO(
   row: PlatformAiSettings | null,
+  knowledgeSearch: PlatformKnowledgeSearchStatusDTO = TEXT_ONLY,
 ): PlatformAiSettingsDTO {
   const margin = toCostMargin(row)
   return {
     costMargin: margin,
     updatedAt: row ? row.updatedAt.toISOString() : null,
     models: toAiModelPriceDTOs(margin),
+    embeddingsEnabled: toEmbeddingsEnabled(row),
+    knowledgeSearch,
   }
 }

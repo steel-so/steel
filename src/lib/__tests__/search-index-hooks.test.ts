@@ -10,6 +10,11 @@ vi.mock('@/lib/axiom/logger', () => ({
 }))
 
 import { logger } from '@/lib/axiom/logger'
+import {
+  knowledgeSourceOfSearchEntity,
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+} from '@/src/lib/ai/knowledge/index-hooks'
 import { SearchIndexService } from '@/src/services/search-index.service'
 import {
   indexSearchDocument,
@@ -67,5 +72,27 @@ describe('search index hooks', () => {
       'search.index.crashed',
       expect.objectContaining({ op: 'index', error: 'weird' }),
     )
+  })
+
+  it('should forward KB, ticket and proposal writes to the knowledge index', async () => {
+    service.refresh.mockResolvedValue(ok({ indexed: 1, removed: 0 }))
+    service.remove.mockResolvedValue(ok(1))
+    vi.mocked(knowledgeSourceOfSearchEntity).mockReturnValue('sd-ticket')
+
+    await indexSearchDocument('sd-ticket', 'ws1', 't1')
+    expect(scheduleKnowledgeIndex).toHaveBeenCalledWith(
+      'sd-ticket',
+      'ws1',
+      't1',
+    )
+    await removeSearchDocument('sd-ticket', 'ws1', ['t2'])
+    expect(removeKnowledgeSource).toHaveBeenCalledWith('sd-ticket', 'ws1', [
+      't2',
+    ])
+
+    vi.mocked(knowledgeSourceOfSearchEntity).mockReturnValue(null)
+    vi.mocked(scheduleKnowledgeIndex).mockClear()
+    await indexSearchDocument('crm-lead', 'ws1', 'l1')
+    expect(scheduleKnowledgeIndex).not.toHaveBeenCalled()
   })
 })
