@@ -3,10 +3,14 @@
 import {
   type ColumnDef,
   flexRender,
-  getCoreRowModel,
+  metaHelper,
   type OnChangeFn,
+  columnVisibilityFeature,
+  type RowData,
+  rowSortingFeature,
   type SortingState,
-  useReactTable,
+  tableFeatures,
+  useTable,
 } from '@tanstack/react-table'
 import { Muted } from '@/components/typography/text/muted'
 import {
@@ -22,8 +26,28 @@ import {
   DataTablePagination,
 } from './data-table-pagination'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
+/** Optional `meta: { className }` on a column styles its header and cells. */
+interface DataTableColumnMeta {
+  className?: string
+}
+
+/**
+ * Features of the shared server-driven table: sorting state only. The rows
+ * come already sorted and paged from the API, and the pager below the table
+ * is driven by the parent's `page`, not by table state. Column
+ * definitions for `DataTable` are `ColumnDef<DataTableFeatures, TData>`.
+ */
+export const dataTableFeatures = tableFeatures({
+  rowSortingFeature,
+  // `row.getVisibleCells()` lives in the visibility feature.
+  columnVisibilityFeature,
+  columnMeta: metaHelper<DataTableColumnMeta>(),
+})
+
+export type DataTableFeatures = typeof dataTableFeatures
+
+interface DataTableProps<TData extends RowData> {
+  columns: ColumnDef<DataTableFeatures, TData>[]
   data: TData[]
   sorting: SortingState
   onSortingChange: OnChangeFn<SortingState>
@@ -37,18 +61,17 @@ interface DataTableProps<TData, TValue> {
   itemLabel?: DataTableItemLabel
 }
 
-/** Optional `meta: { className }` on a column styles its header and cells. */
-function columnClassName<TData, TValue>(
-  column: ColumnDef<TData, TValue>,
+function columnClassName<TData extends RowData>(
+  column: ColumnDef<DataTableFeatures, TData>,
 ): string | undefined {
-  return (column.meta as { className?: string } | undefined)?.className
+  return column.meta?.className
 }
 
 /**
  * Server-driven table (sorting and pagination happen in the API): the parent
  * owns `sorting` and `page` and refetches when they change.
  */
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   sorting,
@@ -61,16 +84,14 @@ export function DataTable<TData, TValue>({
   loadingMessage = 'Carregando...',
   emptyMessage = 'Nenhum resultado encontrado.',
   itemLabel,
-}: DataTableProps<TData, TValue>) {
-  const table = useReactTable({
+}: DataTableProps<TData>) {
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns,
     state: { sorting },
     onSortingChange,
     manualSorting: true,
-    manualPagination: true,
-    pageCount: Math.max(1, Math.ceil(total / pageSize)),
-    getCoreRowModel: getCoreRowModel(),
   })
 
   return (

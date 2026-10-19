@@ -4,3 +4,14 @@ ddc321be85c8da815bcadeb0caa48020ae746de3:src/lib/shortcuts/registry.ts:generic-a
 ddc321be85c8da815bcadeb0caa48020ae746de3:src/lib/shortcuts/registry.ts:generic-api-key:909
 ddc321be85c8da815bcadeb0caa48020ae746de3:src/lib/shortcuts/registry.ts:generic-api-key:1014
 0dcff6bf3ea0afcac4506d1d328587bddbcee5a4:.gitleaksignore:generic-api-key:1
+
+# Older false positives, reached only by a full-history scan (a new branch,
+# or a push whose before commit is gone). PR and push scans cover new commits.
+# Fake credentials in a redaction test fixture.
+a034a748958647c74fb3d9e069398f0e16af7a11:src/lib/__tests__/ai-memory-context.test.ts:aws-access-token:52
+# Fake signed unsubscribe token in a schema test.
+0836413445cd8573b2fc36b45fda0fc806da195a:src/schemas/__tests__/crm-email-opt-out.schema.test.ts:generic-api-key:8
+# LinkedIn OAuth token endpoint URL, not a client id.
+1ce45f140263729d049f071682fd89281021f0ae:src/lib/social/providers/linkedin.ts:linkedin-client-id:17
+# Codecov badge token (public, read-only badge URL).
+6d83de01ff39348390ad50ca5027e05ca48e9663:README.md:generic-api-key:29

@@ -7,7 +7,7 @@ import {
   CheckIcon,
   EraserIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
-import type { Column } from '@tanstack/react-table'
+import type { CellData, Column, RowData } from '@tanstack/react-table'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   DropdownMenu,
@@ -16,9 +16,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import type { DataTableFeatures } from './data-table'
 
-interface DataTableColumnHeaderProps<TData, TValue> {
-  column: Column<TData, TValue>
+interface DataTableColumnHeaderProps<TData extends RowData, TValue extends CellData> {
+  column: Column<DataTableFeatures, TData, TValue>
   title: string
   className?: string
   ascLabel?: string
@@ -26,7 +27,7 @@ interface DataTableColumnHeaderProps<TData, TValue> {
 }
 
 /** Column title that opens a sort menu (server-side sorting). */
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue extends CellData>({
   column,
   title,
   className,

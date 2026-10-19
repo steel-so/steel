@@ -367,6 +367,7 @@ describe('processDataExport', () => {
 
     expect(axiomQueryMock).toHaveBeenCalledWith(
       expect.stringContaining("['fields.actorId'] == 'user-1'"),
+      { format: 'legacy' },
     )
     const uploaded = JSON.parse(putObjectMock.mock.calls[0][0].body)
     expect(uploaded.profile.deletionScheduledAt).toBe(scheduled.toISOString())

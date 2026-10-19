@@ -14,8 +14,13 @@ interface DomMatchers<R = unknown> {
   toHaveClass(name: string): R
 }
 
+// Vitest 5 merges custom matchers through `Matchers`, which `Assertion` and
+// the asymmetric matchers extend; the type parameters must match its own.
 declare module 'vitest' {
-  interface Assertion<T> extends DomMatchers<T> {}
+  interface Matchers<
+    R extends void | Promise<void> = void | Promise<void>,
+    T = unknown,
+  > extends DomMatchers<R> {}
 }
 
 const asElement = (received: unknown) =>

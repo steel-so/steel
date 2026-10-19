@@ -17,6 +17,7 @@ import {
   AddressPanel,
   type CrmCompanyAddress,
 } from '@/app/_components/crm/table/address-panel'
+import type { CrmTableFeatures } from '@/app/_components/crm/table/table-features'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -1213,8 +1214,8 @@ function EditableCell<T extends WithId>({
   table,
 }: {
   col: GridColumn
-  row: Row<T>
-  table: Table<T>
+  row: Row<CrmTableFeatures, T>
+  table: Table<CrmTableFeatures, T>
 }) {
   const grid = table.options.meta?.grid
   if (!grid) return null
@@ -1284,17 +1285,21 @@ function EditableCell<T extends WithId>({
 export function buildGridColumns<T extends WithId>(
   cols: GridColumn[],
   lookups: Lookups,
-): ColumnDef<T>[] {
-  return cols.map((col): ColumnDef<T> => {
+): ColumnDef<CrmTableFeatures, T>[] {
+  return cols.map((col): ColumnDef<CrmTableFeatures, T> => {
     const shared = {
       id: col.key,
       header: col.header,
       size: DATA_COL_WIDTH,
       filterFn: 'includesString' as const,
       meta: { kind: col.kind },
-      cell: ({ row, table }: { row: Row<T>; table: Table<T> }) => (
-        <EditableCell col={col} row={row} table={table} />
-      ),
+      cell: ({
+        row,
+        table,
+      }: {
+        row: Row<CrmTableFeatures, T>
+        table: Table<CrmTableFeatures, T>
+      }) => <EditableCell col={col} row={row} table={table} />,
     }
     if (col.kind === 'relation') {
       return {

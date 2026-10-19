@@ -42,17 +42,11 @@ import {
   type Column,
   type ColumnDef,
   type ColumnFiltersState,
+  type ColumnVisibilityState,
   flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   type Row,
   type SortingState,
-  useReactTable,
-  type VisibilityState,
+  useTable,
 } from '@tanstack/react-table'
 import * as React from 'react'
 import {
@@ -67,6 +61,10 @@ import {
   CrmKanbanView,
 } from '@/app/_components/crm/table/kanban-view'
 import { RecordPanel } from '@/app/_components/crm/table/record-panel'
+import {
+  type CrmTableFeatures,
+  crmTableFeatures,
+} from '@/app/_components/crm/table/table-features'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import {
   focusedRow,
@@ -162,9 +160,7 @@ const CALC_LABEL: Record<CalcType, string> = {
 }
 
 /** Tipos de coluna numéricos: habilitam soma/média/mín/máx no rodapé. */
-type ColumnKind = NonNullable<
-  import('@tanstack/react-table').ColumnDef<unknown>['meta']
->['kind']
+type ColumnKind = GridColumn['kind'] | undefined
 
 function isNumericKind(kind: ColumnKind): boolean {
   return kind === 'number' || kind === 'money'
@@ -310,7 +306,9 @@ function computeCalc(
   }
 }
 
-function columnLabel<TData>(column: Column<TData, unknown>): string {
+function columnLabel<TData extends WithId>(
+  column: Column<CrmTableFeatures, TData>,
+): string {
   const header = column.columnDef.header
   return typeof header === 'string' ? header : column.id
 }
@@ -342,7 +340,7 @@ function DraggableRow<TData extends WithId>({
   canDelete,
   primaryKey,
 }: {
-  row: Row<TData>
+  row: Row<CrmTableFeatures, TData>
   onDelete: (id: string) => void
   canDelete: boolean
   primaryKey: string | null
@@ -401,14 +399,14 @@ function DraggableRow<TData extends WithId>({
   )
 }
 
-function CalcFooterCell<TData>({
+function CalcFooterCell<TData extends WithId>({
   column,
   rows,
   value,
   onChange,
 }: {
-  column: Column<TData, unknown>
-  rows: Row<TData>[]
+  column: Column<CrmTableFeatures, TData>
+  rows: Row<CrmTableFeatures, TData>[]
   value: CalcType
   onChange: (calc: CalcType) => void
 }) {
@@ -515,7 +513,11 @@ function CalcFooterCell<TData>({
 }
 
 /** Dropdown do cabeçalho: filtro, ordenação e ocultar — acionam as funções. */
-function HeaderMenu<TData>({ column }: { column: Column<TData, unknown> }) {
+function HeaderMenu<TData extends WithId>({
+  column,
+}: {
+  column: Column<CrmTableFeatures, TData>
+}) {
   const label = columnLabel(column)
   const sorted = column.getIsSorted()
   return (
@@ -734,7 +736,7 @@ export function DataTable<TData extends WithId>({
 
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<ColumnVisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   )
@@ -925,8 +927,10 @@ export function DataTable<TData extends WithId>({
     addRow()
   }, [addRow, disableInlineCreate])
 
-  const tableColumns = React.useMemo<ColumnDef<TData>[]>(() => {
-    const drag: ColumnDef<TData> = {
+  const tableColumns = React.useMemo<
+    ColumnDef<CrmTableFeatures, TData>[]
+  >(() => {
+    const drag: ColumnDef<CrmTableFeatures, TData> = {
       id: 'drag',
       header: () => null,
       cell: () => null,
@@ -934,7 +938,7 @@ export function DataTable<TData extends WithId>({
       enableSorting: false,
       enableHiding: false,
     }
-    const select: ColumnDef<TData> = {
+    const select: ColumnDef<CrmTableFeatures, TData> = {
       id: 'select',
       size: SELECT_COL_SIZE,
       header: ({ table }) => (
@@ -960,7 +964,7 @@ export function DataTable<TData extends WithId>({
       enableSorting: false,
       enableHiding: false,
     }
-    const actions: ColumnDef<TData> = {
+    const actions: ColumnDef<CrmTableFeatures, TData> = {
       id: 'actions',
       header: () => null,
       cell: () => null,
@@ -976,7 +980,8 @@ export function DataTable<TData extends WithId>({
     [rows],
   )
 
-  const table = useReactTable({
+  const table = useTable({
+    features: crmTableFeatures,
     data: rows,
     columns: tableColumns,
     state: {
@@ -1007,12 +1012,6 @@ export function DataTable<TData extends WithId>({
     onGlobalFilterChange: setGlobalFilter,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
   function handleDragEnd(event: DragEndEvent) {
@@ -1560,7 +1559,7 @@ export function DataTable<TData extends WithId>({
             <div className='flex items-center gap-2'>
               <span className='text-sm'>Linhas por página</span>
               <Select
-                value={`${table.getState().pagination.pageSize}`}
+                value={`${pagination.pageSize}`}
                 onValueChange={(value) => table.setPageSize(Number(value))}
               >
                 <SelectTrigger size='sm' className='w-18'>
@@ -1576,8 +1575,7 @@ export function DataTable<TData extends WithId>({
               </Select>
             </div>
             <span className='text-sm'>
-              Página {table.getState().pagination.pageIndex + 1} de{' '}
-              {table.getPageCount() || 1}
+              Página {pagination.pageIndex + 1} de {table.getPageCount() || 1}
             </span>
             <div className='flex items-center gap-1'>
               <Button
