@@ -67,3 +67,15 @@ export function formatDateTime(iso: string | null): string {
   const date = new Date(iso)
   return Number.isNaN(date.getTime()) ? '—' : DATE_TIME.format(date)
 }
+
+/** pt-BR explanation for each skip reason recorded by the import runner. */
+export const SKIP_REASON_LABELS: Record<string, string> = {
+  no_email:
+    'Sem e-mail utilizável (a Apollo cobra o enriquecimento mesmo assim)',
+  opted_out: 'Pediu descadastro (LGPD)',
+  already_imported: 'Já importado antes',
+  duplicate_lead: 'Já existe um lead com esse e-mail',
+  no_phone_yet:
+    'Sem e-mail; o lead só é criado se a Apollo entregar um telefone',
+  not_found: 'A Apollo não encontrou a pessoa',
+}

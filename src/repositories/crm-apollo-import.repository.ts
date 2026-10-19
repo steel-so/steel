@@ -104,9 +104,28 @@ export const CrmApolloImportRepository = {
       cursor: number
       phonesRequested?: number
       phoneOnlyPeople?: Prisma.InputJsonValue
+      skipReasons?: Record<string, number>
     },
   ): Promise<Result<CrmApolloImport>> {
     try {
+      let skipReasons: Prisma.InputJsonValue | undefined
+      if (
+        progress.skipReasons &&
+        Object.keys(progress.skipReasons).length > 0
+      ) {
+        // One worker walks an import at a time, so read-merge-write is safe.
+        const current = await prisma.crmApolloImport.findUnique({
+          where: { id },
+          select: { skipReasons: true },
+        })
+        const merged: Record<string, number> = {
+          ...((current?.skipReasons as Record<string, number> | null) ?? {}),
+        }
+        for (const [reason, count] of Object.entries(progress.skipReasons)) {
+          merged[reason] = (merged[reason] ?? 0) + count
+        }
+        skipReasons = merged
+      }
       return ok(
         await prisma.crmApolloImport.update({
           where: { id },
@@ -116,6 +135,7 @@ export const CrmApolloImportRepository = {
             failedCount: { increment: progress.failed },
             creditsConsumed: { increment: progress.credits },
             cursor: progress.cursor,
+            ...(skipReasons ? { skipReasons } : {}),
             ...(progress.phonesRequested
               ? { phonesRequested: { increment: progress.phonesRequested } }
               : {}),

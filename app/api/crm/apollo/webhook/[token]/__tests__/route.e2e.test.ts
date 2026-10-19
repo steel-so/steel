@@ -37,11 +37,11 @@ describe('POST /api/crm/apollo/webhook/[token]', () => {
     expect(response.status).toBe(404)
   })
 
-  it('should answer 400 for a malformed payload', async () => {
+  it('should answer 422 for a malformed payload', async () => {
     const response = await postJson('/api/crm/apollo/webhook/anything', {
       webhook_result: { people: [{ id: '' }] },
     })
-    expect(response.status).toBe(400)
+    expect(response.status).toBe(422)
   })
 
   it('should append the phone to the imported lead, once', async () => {

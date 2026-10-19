@@ -80,6 +80,8 @@ export interface ApolloLabel {
 
 export interface ApolloContact {
   id: string
+  /** The Apollo person behind the contact (what enrichment and phones key on). */
+  personId: string | null
   name: string
   firstName: string | null
   lastName: string | null
@@ -314,6 +316,7 @@ export const ApolloClient = {
         totalPages: num(pagination.total_pages) ?? 0,
         contacts: list(raw.contacts).map((c) => ({
           id: String(c.id ?? ''),
+          personId: str(c.person_id),
           name:
             str(c.name) ??
             [str(c.first_name), str(c.last_name)].filter(Boolean).join(' '),

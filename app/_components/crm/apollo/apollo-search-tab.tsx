@@ -3,6 +3,7 @@
 import { Search01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -55,7 +56,28 @@ export function ApolloSearchTab({
   const [selectingAll, setSelectingAll] = useState(false)
   const search = useCrmApolloSearch(workspaceId)
   const [revealPhones, setRevealPhones] = useState(false)
+  // People seen in results without an e-mail: they cost a credit and only
+  // become leads when a phone is revealed, so they start unselected.
+  const [noEmailIds, setNoEmailIds] = useState<Set<string>>(new Set())
   const createImport = useCreateCrmApolloImport(workspaceId)
+
+  function rememberNoEmail(list: CrmApolloSearchResultDTO['people']) {
+    setNoEmailIds((current) => {
+      const next = new Set(current)
+      for (const person of list) if (!person.hasEmail) next.add(person.id)
+      return next
+    })
+  }
+
+  function changeRevealPhones(value: boolean) {
+    setRevealPhones(value)
+    // Without phones, a person with no e-mail is only wasted credit.
+    if (!value) {
+      setSelected(
+        (current) => new Set([...current].filter((id) => !noEmailIds.has(id))),
+      )
+    }
+  }
 
   function run(
     next: ApolloSearchFiltersDTO,
@@ -66,6 +88,7 @@ export function ApolloSearchTab({
       { filters: next, page, perPage: PER_PAGE },
       {
         onSuccess: (data) => {
+          rememberNoEmail(data.people)
           setResult(data)
           setApplied(next)
           if (resetSelection) setSelected(new Set())
@@ -87,7 +110,10 @@ export function ApolloSearchTab({
           page,
           perPage: BULK_PER_PAGE,
         })
-        for (const person of data.people) ids.add(person.id)
+        rememberNoEmail(data.people)
+        for (const person of data.people) {
+          if (person.hasEmail || revealPhones) ids.add(person.id)
+        }
         if (page >= data.totalPages || data.people.length === 0) break
       }
       setSelected(new Set([...ids].slice(0, MAX_IMPORT)))
@@ -104,14 +130,16 @@ export function ApolloSearchTab({
   }
 
   const people = result?.people ?? []
+  const selectable = people.filter((person) => person.hasEmail || revealPhones)
   const pageSelected =
-    people.length > 0 && people.every((person) => selected.has(person.id))
+    selectable.length > 0 &&
+    selectable.every((person) => selected.has(person.id))
 
   function togglePage(checked: boolean) {
     setSelected((current) => {
       const next = new Set(current)
       for (const person of people) {
-        if (checked) next.add(person.id)
+        if (checked && (person.hasEmail || revealPhones)) next.add(person.id)
         else next.delete(person.id)
       }
       return next
@@ -162,7 +190,8 @@ export function ApolloSearchTab({
         </Button>
         <p className='text-muted-foreground text-xs'>
           A busca não gasta créditos. Só a importação consome (cerca de 1 por
-          pessoa).
+          pessoa, mesmo quando a Apollo não encontra o e-mail). Quem está sem
+          e-mail fica desmarcado, a menos que você revele telefones.
         </p>
       </div>
 
@@ -225,6 +254,11 @@ export function ApolloSearchTab({
                       </TableCell>
                       <TableCell className='font-medium'>
                         {person.name}
+                        {person.hasEmail ? null : (
+                          <Badge variant='outline' className='ml-2'>
+                            sem e-mail
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className='max-w-64 truncate'>
                         {person.title ?? '—'}
@@ -250,7 +284,7 @@ export function ApolloSearchTab({
           count={selected.size}
           creditsPerPerson={1}
           revealPhones={revealPhones}
-          onRevealPhonesChange={setRevealPhones}
+          onRevealPhonesChange={changeRevealPhones}
           phoneRevealAvailable={phoneRevealAvailable}
           mailingListId={mailingListId}
           onMailingListChange={setMailingListId}

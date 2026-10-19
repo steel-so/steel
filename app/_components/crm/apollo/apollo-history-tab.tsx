@@ -14,6 +14,7 @@ import {
   formatDateTime,
   IMPORT_STATUS_LABELS,
   IMPORT_STATUS_VARIANT,
+  SKIP_REASON_LABELS,
 } from './apollo-labels'
 
 /** "Histórico de importações": counts and credits, polled while one runs. */
@@ -79,7 +80,10 @@ export function ApolloHistoryTab({ workspaceId }: { workspaceId: string }) {
             </TableCell>
             <TableCell className='text-right'>{item.requestedCount}</TableCell>
             <TableCell className='text-right'>{item.createdCount}</TableCell>
-            <TableCell className='text-right'>{item.skippedCount}</TableCell>
+            <TableCell className='text-right'>
+              {item.skippedCount}
+              <SkipReasons reasons={item.skipReasons} />
+            </TableCell>
             <TableCell className='text-right'>{item.failedCount}</TableCell>
             <TableCell className='text-right'>
               {item.creditsConsumed}
@@ -93,5 +97,20 @@ export function ApolloHistoryTab({ workspaceId }: { workspaceId: string }) {
         ))}
       </TableBody>
     </Table>
+  )
+}
+
+/** Why people were ignored, one line per reason (pt-BR). */
+function SkipReasons({ reasons }: { reasons: Record<string, number> }) {
+  const entries = Object.entries(reasons)
+  if (entries.length === 0) return null
+  return (
+    <ul className='mt-1 flex max-w-64 flex-col gap-0.5 text-left text-muted-foreground text-xs'>
+      {entries.map(([reason, count]) => (
+        <li key={reason}>
+          <strong>{count}</strong> · {SKIP_REASON_LABELS[reason] ?? reason}
+        </li>
+      ))}
+    </ul>
   )
 }

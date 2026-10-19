@@ -8853,6 +8853,8 @@ model CrmApolloImport {
   /// People without an importable e-mail whose phone was requested: the lead
   /// is only created when the webhook brings a number.
   phoneOnlyPeople Json?                 @map("phone_only_people")
+  /// Why people were skipped: counts by reason (`no_email`, `opted_out`...).
+  skipReasons     Json?                 @map("skip_reasons")
   error           String?
   startedAt       DateTime?             @map("started_at")
   finishedAt      DateTime?             @map("finished_at")
