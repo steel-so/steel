@@ -2,6 +2,7 @@ import { createDefaultCacheHandler } from 'next/dist/server/lib/cache-handlers/d
 import { tagsManifest } from 'next/dist/server/lib/incremental-cache/tags-manifest.external'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  CLOCK_SKEW_MS,
   createHandlerFromEnv,
   createRedisGetter,
   createSharedTagsCacheHandler,
@@ -274,6 +275,34 @@ describe('createSharedTagsCacheHandler', () => {
     expect(manifest.has('site:bad')).toBe(false)
   })
 
+  it('counts a remote expiration slightly ahead of this clock as now', async () => {
+    const manifest = new Map<string, TagEntry>()
+    const redis = createFakeRedis()
+    const handler = createSharedTagsCacheHandler({
+      base: createFakeBase(manifest),
+      manifest,
+      getRedis: () => redis as never,
+      log: vi.fn(),
+      keyPrefix: PREFIX,
+      now: () => 10_000,
+    })
+    // Another process' clock (or its rounding) is a little ahead.
+    redis.seed('expired', 'site:skewed', 10_000 + 400)
+    redis.seed('stale', 'site:skewed', 10_000 + 400)
+    // A deliberate expiration further out than the skew stays in the future.
+    redis.seed('expired', 'site:later', 10_000 + CLOCK_SKEW_MS + 1)
+
+    await handler.refreshTags()
+
+    expect(manifest.get('site:skewed')).toEqual({
+      expired: 10_000,
+      stale: 10_400,
+    })
+    expect(manifest.get('site:later')).toEqual({
+      expired: 10_000 + CLOCK_SKEW_MS + 1,
+    })
+  })
+
   it('pulls the hashes only when the version moved', async () => {
     const { handler, redis } = setup()
 
@@ -367,7 +396,10 @@ describe('with the real Next default handler', () => {
       base: {
         ...createFakeBase(manifestB),
         updateTags: vi.fn(async (tags: string[]) => {
-          const now = Math.round(performance.timeOrigin + performance.now())
+          // Replica B's clock runs a few ms ahead of A's (and Next rounds
+          // up): A must still treat the tag as expired right away.
+          const now =
+            Math.round(performance.timeOrigin + performance.now()) + 50
           for (const tag of tags) manifestB.set(tag, { stale: now, expired: now })
         }),
       },
