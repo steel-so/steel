@@ -45,7 +45,7 @@ export const IMPORT_STATUS_VARIANT: Record<
 
 /** Company/email-only note shown wherever an import can be started. */
 export const WHATSAPP_NOTE =
-  'Leads da Apollo são contatos frios: eles entram só no canal de e-mail das campanhas (com link de descadastro). O WhatsApp exige consentimento prévio e fica de fora.'
+  'Leads da Apollo são contatos frios. Antes de campanhas por e-mail ou WhatsApp, a workspace responde pela base legal (LGPD) e pela política de templates da Meta; o descadastro é respeitado nos dois canais.'
 
 export const MAX_IMPORT = 1000
 

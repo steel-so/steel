@@ -21,6 +21,11 @@ vi.mock('@/lib/axiom/logger', () => ({
 vi.mock('@/src/lib/integrations/apollo-client', () => ({
   ApolloClient: { bulkMatch: vi.fn() },
 }))
+vi.mock('@/src/lib/integrations/apollo-webhook', () => ({
+  apolloWebhookToken: (id: string) => `tok-${id}`,
+  buildApolloWebhookUrl: (token: string) => `https://steel.test/hook/${token}`,
+  isApolloPhoneRevealAvailable: vi.fn(),
+}))
 vi.mock('@/src/lib/queue/queues', () => ({ getCrmApolloImportQueue: vi.fn() }))
 vi.mock('@/src/services/sd-integration-credentials')
 vi.mock('@/src/services/crm-lead.service', () => ({
@@ -36,6 +41,7 @@ vi.mock('@/src/repositories/crm-mailing-list.repository')
 vi.mock('@/src/repositories/workspace-integration.repository')
 
 import { ApolloClient } from '@/src/lib/integrations/apollo-client'
+import { isApolloPhoneRevealAvailable } from '@/src/lib/integrations/apollo-webhook'
 import { getCrmApolloImportQueue } from '@/src/lib/queue/queues'
 import { CrmApolloImportRepository } from '@/src/repositories/crm-apollo-import.repository'
 import { CrmEmailOptOutRepository } from '@/src/repositories/crm-email-opt-out.repository'
@@ -110,6 +116,7 @@ beforeEach(() => {
   leadRepo.findExistingExternalIds.mockResolvedValue(ok(new Set(['dup'])))
   memberRepo.addMany.mockResolvedValue(ok(1))
   intake.mockResolvedValue(ok({ lead: {} as never, created: true }))
+  vi.mocked(isApolloPhoneRevealAvailable).mockReturnValue(true)
 })
 
 describe('CrmApolloImportRunner.run', () => {
@@ -357,5 +364,102 @@ describe('CrmApolloImportRunner.run', () => {
       .mockResolvedValueOnce(ok(createFakeCrmApolloImport()))
       .mockResolvedValueOnce(err(databaseError('x')))
     expect(expectOk(await CrmApolloImportRunner.run('imp1')).state).toBe('DONE')
+  })
+})
+
+describe('CrmApolloImportRunner.run with revealPhones', () => {
+  it('asks for phones on SEARCH and remembers people without e-mail', async () => {
+    loadRow({
+      revealPhones: true,
+      apolloIds: ['a1', 'a2'],
+      phoneOnlyPeople: [{ id: 'old', name: 'Antiga' }, { nope: true }],
+    })
+    bulkMatch.mockResolvedValue(
+      matches([
+        person('a1'),
+        person('a2', { email: null, linkedinUrl: 'https://l/a2' }),
+      ]),
+    )
+    const result = expectOk(await CrmApolloImportRunner.run('imp1'))
+    expect(result.state).toBe('DONE')
+    expect(bulkMatch).toHaveBeenCalledWith('the-key', ['a1', 'a2'], {
+      webhookUrl: 'https://steel.test/hook/tok-imp1',
+    })
+    expect(intake).toHaveBeenCalledTimes(1)
+    const progress = importRepo.addProgress.mock.calls[0][1]
+    expect(progress.phonesRequested).toBe(2)
+    expect(progress.phoneOnlyPeople).toEqual([
+      { id: 'old', name: 'Antiga' },
+      expect.objectContaining({ id: 'a2', linkedin: 'https://l/a2' }),
+    ])
+  })
+
+  it('does not queue a phone-only person that already is a lead', async () => {
+    loadRow({ revealPhones: true, apolloIds: ['dup'] })
+    bulkMatch.mockResolvedValue(matches([person('dup', { email: null })]))
+    expectOk(await CrmApolloImportRunner.run('imp1'))
+    expect(importRepo.addProgress.mock.calls[0][1].phoneOnlyPeople).toEqual([])
+  })
+
+  it('re-enriches the picked LIST contacts only to reveal phones', async () => {
+    loadRow({
+      source: 'LIST',
+      revealPhones: true,
+      apolloIds: [],
+      contacts: [
+        {
+          id: 'c1',
+          name: 'Ana',
+          email: 'ana@acme.com',
+          emailStatus: 'verified',
+        },
+        { id: 'c2', name: 'Sem email' },
+      ],
+    })
+    bulkMatch.mockResolvedValue(matches([person('c1'), null], 8))
+    expectOk(await CrmApolloImportRunner.run('imp1'))
+    expect(bulkMatch).toHaveBeenCalledWith('the-key', ['c1', 'c2'], {
+      webhookUrl: 'https://steel.test/hook/tok-imp1',
+    })
+    expect(intake).toHaveBeenCalledTimes(1)
+    expect(importRepo.addProgress).toHaveBeenCalledWith(
+      'imp1',
+      expect.objectContaining({ created: 1, credits: 8, phonesRequested: 1 }),
+    )
+    const people = importRepo.addProgress.mock.calls[0][1].phoneOnlyPeople
+    expect(people).toEqual([expect.objectContaining({ id: 'c2' })])
+  })
+
+  it('still imports a LIST batch when only the phone reveal fails', async () => {
+    loadRow({
+      source: 'LIST',
+      revealPhones: true,
+      apolloIds: [],
+      contacts: [
+        {
+          id: 'c1',
+          name: 'Ana',
+          email: 'ana@acme.com',
+          emailStatus: 'verified',
+        },
+      ],
+    })
+    bulkMatch.mockResolvedValue(err(crmApolloRequestFailed()))
+    const result = expectOk(await CrmApolloImportRunner.run('imp1'))
+    expect(result.state).toBe('DONE')
+    expect(intake).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips the reveal when the public URL is not HTTPS', async () => {
+    vi.mocked(isApolloPhoneRevealAvailable).mockReturnValue(false)
+    loadRow({ revealPhones: true, apolloIds: ['a1'] })
+    bulkMatch.mockResolvedValue(matches([person('a1', { email: null })]))
+    expectOk(await CrmApolloImportRunner.run('imp1'))
+    expect(bulkMatch).toHaveBeenCalledWith('the-key', ['a1'], {
+      webhookUrl: undefined,
+    })
+    expect(importRepo.addProgress.mock.calls[0][1].phoneOnlyPeople).toBe(
+      undefined,
+    )
   })
 })

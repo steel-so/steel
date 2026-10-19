@@ -26,6 +26,8 @@ export interface CrmApolloConnectionDTO {
   keyHint: string | null
   lastCheckedAt: string | null
   defaultMailingListId: string | null
+  /** false when the public URL is not HTTPS (Apollo refuses the callback). */
+  phoneRevealAvailable: boolean
 }
 
 export interface CrmApolloPersonDTO {
@@ -84,6 +86,9 @@ export interface CrmApolloImportDTO {
   skippedCount: number
   failedCount: number
   creditsConsumed: number
+  revealPhones: boolean
+  phonesRequested: number
+  phonesReceived: number
   error: string | null
   createdById: string
   startedAt: string | null

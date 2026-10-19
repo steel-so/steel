@@ -19,6 +19,7 @@ export function apolloDefaultMailingListId(config: unknown): string | null {
 
 export function toCrmApolloConnectionDTO(
   integration: WorkspaceIntegration | null,
+  phoneRevealAvailable = false,
 ): CrmApolloConnectionDTO {
   if (!integration) {
     return {
@@ -28,6 +29,7 @@ export function toCrmApolloConnectionDTO(
       keyHint: null,
       lastCheckedAt: null,
       defaultMailingListId: null,
+      phoneRevealAvailable,
     }
   }
   return {
@@ -37,6 +39,7 @@ export function toCrmApolloConnectionDTO(
     keyHint: integration.externalName,
     lastCheckedAt: integration.lastCheckedAt?.toISOString() ?? null,
     defaultMailingListId: apolloDefaultMailingListId(integration.config),
+    phoneRevealAvailable,
   }
 }
 
@@ -81,6 +84,9 @@ export function toCrmApolloImportDTO(row: CrmApolloImport): CrmApolloImportDTO {
     skippedCount: row.skippedCount,
     failedCount: row.failedCount,
     creditsConsumed: row.creditsConsumed,
+    revealPhones: row.revealPhones,
+    phonesRequested: row.phonesRequested,
+    phonesReceived: row.phonesReceived,
     error: row.error,
     createdById: row.createdById,
     startedAt: row.startedAt?.toISOString() ?? null,

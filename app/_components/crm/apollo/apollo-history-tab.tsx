@@ -81,7 +81,14 @@ export function ApolloHistoryTab({ workspaceId }: { workspaceId: string }) {
             <TableCell className='text-right'>{item.createdCount}</TableCell>
             <TableCell className='text-right'>{item.skippedCount}</TableCell>
             <TableCell className='text-right'>{item.failedCount}</TableCell>
-            <TableCell className='text-right'>{item.creditsConsumed}</TableCell>
+            <TableCell className='text-right'>
+              {item.creditsConsumed}
+              {item.revealPhones ? (
+                <span className='block text-muted-foreground text-xs'>
+                  {item.phonesReceived}/{item.phonesRequested} com telefone
+                </span>
+              ) : null}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

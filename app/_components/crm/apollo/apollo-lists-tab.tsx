@@ -35,10 +35,12 @@ const PER_PAGE = 25
 export function ApolloListsTab({
   workspaceId,
   defaultMailingListId,
+  phoneRevealAvailable,
   onImported,
 }: {
   workspaceId: string
   defaultMailingListId: string | null
+  phoneRevealAvailable: boolean
   onImported: () => void
 }) {
   const lists = useCrmApolloLists(workspaceId, true)
@@ -58,6 +60,7 @@ export function ApolloListsTab({
     page,
     PER_PAGE,
   )
+  const [revealPhones, setRevealPhones] = useState(false)
   const createImport = useCreateCrmApolloImport(workspaceId)
 
   if (lists.isLoading) {
@@ -119,6 +122,7 @@ export function ApolloListsTab({
           city: contact.city,
         })),
         mailingListId,
+        revealPhones: phoneRevealAvailable && revealPhones,
       },
       {
         onSuccess: () => {
@@ -250,6 +254,9 @@ export function ApolloListsTab({
           workspaceId={workspaceId}
           count={selected.size}
           creditsPerPerson={0}
+          revealPhones={revealPhones}
+          onRevealPhonesChange={setRevealPhones}
+          phoneRevealAvailable={phoneRevealAvailable}
           mailingListId={mailingListId}
           onMailingListChange={setMailingListId}
           pending={createImport.isPending}

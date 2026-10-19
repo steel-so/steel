@@ -68,6 +68,8 @@ export interface ApolloEnrichedPerson {
 export interface ApolloBulkMatchResult {
   matches: Array<ApolloEnrichedPerson | null>
   creditsConsumed: number
+  /** Present when phones were requested: ties the webhook to this call. */
+  requestId: string | null
 }
 
 export interface ApolloLabel {
@@ -218,17 +220,24 @@ export const ApolloClient = {
 
   /**
    * Enrichment: ~1 credit per matched person, max 10 ids per call. Personal
-   * e-mails are never revealed (LGPD).
+   * e-mails are never revealed (LGPD). With `webhookUrl` Apollo also reveals
+   * phone numbers (+8 credits per mobile): they are NOT in this answer, they
+   * arrive later at the webhook (`reveal_phone_number` requires an HTTPS URL).
    */
   async bulkMatch(
     key: string,
     ids: string[],
+    options: { webhookUrl?: string } = {},
   ): Promise<Result<ApolloReply<ApolloBulkMatchResult>>> {
-    const result = await request<Raw>(
-      key,
-      '/people/bulk_match?reveal_personal_emails=false',
-      { method: 'POST', body: { details: ids.map((id) => ({ id })) } },
-    )
+    const query = new URLSearchParams({ reveal_personal_emails: 'false' })
+    if (options.webhookUrl) {
+      query.set('reveal_phone_number', 'true')
+      query.set('webhook_url', options.webhookUrl)
+    }
+    const result = await request<Raw>(key, `/people/bulk_match?${query}`, {
+      method: 'POST',
+      body: { details: ids.map((id) => ({ id })) },
+    })
     if (!result.ok) return result
     const raw = result.value.data
     const matches = Array.isArray(raw.matches) ? raw.matches : []
@@ -236,6 +245,11 @@ export const ApolloClient = {
       rateLimit: result.value.rateLimit,
       data: {
         creditsConsumed: num(raw.credits_consumed) ?? 0,
+        requestId:
+          typeof raw.request_id === 'string' ||
+          typeof raw.request_id === 'number'
+            ? String(raw.request_id)
+            : null,
         matches: matches.map((entry): ApolloEnrichedPerson | null => {
           const p = rec(entry)
           if (!str(p.id)) return null

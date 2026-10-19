@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   ApolloListContactsSchema,
+  ApolloPhoneWebhookSchema,
   ApolloSearchSchema,
   ConnectApolloSchema,
   CreateApolloImportSchema,
@@ -43,6 +44,10 @@ const Connection = dto(
     keyHint: z.string().nullable().meta({ example: '••••ab12' }),
     lastCheckedAt: dateTime().nullable(),
     defaultMailingListId: z.string().nullable(),
+    phoneRevealAvailable: z.boolean().meta({
+      description:
+        'false quando a URL pública não é HTTPS (a Apollo recusa o webhook).',
+    }),
   }),
 )
 
@@ -116,6 +121,9 @@ const ImportRun = dto(
     skippedCount: z.number().int(),
     failedCount: z.number().int(),
     creditsConsumed: z.number().int(),
+    revealPhones: z.boolean(),
+    phonesRequested: z.number().int(),
+    phonesReceived: z.number().int(),
     error: z.string().nullable(),
     createdById: z.string(),
     startedAt: dateTime().nullable(),
@@ -360,7 +368,7 @@ export const crmApolloRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Importar pessoas da Apollo como leads',
     description: describe(
-      'Cria a importação e a enfileira (`202`): o worker enriquece as pessoas em lotes de 10 (~1 crédito por pessoa; contatos de lista salva custam 0), ignora quem não tem e-mail verificado, quem se descadastrou e quem já foi importado, e cria os leads (origem `Apollo`, sem aviso por lead). Ao final, uma notificação com o resumo. Nunca revela e-mail pessoal nem telefone. Leads da Apollo ficam fora do WhatsApp das campanhas; o e-mail segue.',
+      'Cria a importação e a enfileira (`202`): o worker enriquece as pessoas em lotes de 10 (~1 crédito por pessoa; contatos de lista salva custam 0), ignora quem não tem e-mail verificado, quem se descadastrou e quem já foi importado, e cria os leads (origem `Apollo`, sem aviso por lead). Ao final, uma notificação com o resumo. Nunca revela e-mail pessoal. Com `revealPhones`, pede também os telefones (até +8 créditos por pessoa), que chegam depois pelo webhook `/crm/apollo/webhook/{token}`.',
       crmAccess('leads', 'CREATE'),
     ),
     consent: true,
@@ -391,6 +399,33 @@ export const crmApolloRoutes: RouteConfig[] = [
       {
         code: 'CRM_APOLLO_IMPORT_NOT_FOUND',
         when: 'Importação inexistente no workspace',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/crm/apollo/webhook/{token}',
+    tags: [TAG],
+    summary: 'Webhook de telefones revelados (Apollo)',
+    description:
+      'Chamado pela Apollo minutos depois de uma importação com `revealPhones`: traz os telefones das pessoas enriquecidas. Público — o `token` secreto da URL (derivado da importação; só o hash é guardado) autentica a chamada. Os números são normalizados e acrescentados aos leads da Apollo (ou criam o lead de quem não tinha e-mail). Reentregas não têm efeito.',
+    auth: 'public',
+    rateLimit: 'ip',
+    params: { token: 'Token secreto da importação.' },
+    body: ApolloPhoneWebhookSchema,
+    responses: {
+      200: {
+        description: 'Recebido.',
+        schema: dto(
+          'ApolloPhoneWebhookAck',
+          z.object({ received: z.boolean() }),
+        ),
+      },
+    },
+    errors: [
+      {
+        code: 'CRM_APOLLO_IMPORT_NOT_FOUND',
+        when: 'Token desconhecido ou expirado',
       },
     ],
   },

@@ -1,4 +1,4 @@
-import type { CrmApolloImport } from '@prisma/client'
+import type { CrmApolloImport, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
@@ -6,12 +6,18 @@ import {
   APOLLO_BULK_MATCH_SIZE,
   APOLLO_LEAD_SOURCE,
   APOLLO_SOURCE,
+  type ApolloPhoneOnlyPerson,
   isImportableEmailStatus,
 } from '@/src/lib/integrations/apollo'
 import {
   ApolloClient,
   type ApolloEnrichedPerson,
 } from '@/src/lib/integrations/apollo-client'
+import {
+  apolloWebhookToken,
+  buildApolloWebhookUrl,
+  isApolloPhoneRevealAvailable,
+} from '@/src/lib/integrations/apollo-webhook'
 import { CrmApolloImportJob } from '@/src/lib/queue/jobs'
 import { getCrmApolloImportQueue } from '@/src/lib/queue/queues'
 import { ok, type Result } from '@/src/lib/result'
@@ -97,6 +103,17 @@ function fromContacts(raw: unknown): ImportCandidate[] {
   })
 }
 
+function phoneOnlyFromRow(
+  row: CrmApolloImport,
+): Map<string, ApolloPhoneOnlyPerson> {
+  const map = new Map<string, ApolloPhoneOnlyPerson>()
+  if (!Array.isArray(row.phoneOnlyPeople)) return map
+  for (const entry of row.phoneOnlyPeople as unknown as ApolloPhoneOnlyPerson[]) {
+    if (entry?.id) map.set(entry.id, entry)
+  }
+  return map
+}
+
 function leadName(candidate: ImportCandidate, email: string): string {
   return clip(candidate.name, 200) ?? email.split('@')[0]
 }
@@ -169,9 +186,16 @@ export const CrmApolloImportRunner = {
     )
     if (!optOuts.ok) return optOuts
 
+    // Phones are only asked for when Apollo can call back over HTTPS.
+    const webhookUrl =
+      row.revealPhones && isApolloPhoneRevealAvailable()
+        ? buildApolloWebhookUrl(apolloWebhookToken(row.id))
+        : undefined
+    const phoneOnly = phoneOnlyFromRow(row)
+
     let key: string | null = null
     let integrationId: string | null = null
-    if (row.source === 'SEARCH') {
+    if (row.source === 'SEARCH' || webhookUrl) {
       const integration = await WorkspaceIntegrationRepository.findByKind(
         row.workspaceId,
         'APOLLO',
@@ -204,11 +228,16 @@ export const CrmApolloImportRunner = {
       let batch: ImportCandidate[]
       let missing = 0
       let credits = 0
+      let phonesRequested = 0
       let minuteLeft: number | null = null
 
-      if (row.source === 'SEARCH' && key) {
-        const ids = row.apolloIds.slice(cursor, end)
-        const matched = await ApolloClient.bulkMatch(key, ids)
+      const ids =
+        row.source === 'SEARCH'
+          ? row.apolloIds.slice(cursor, end)
+          : contacts.slice(cursor, end).map((c) => c.externalId)
+      // SEARCH always enriches; a saved LIST only to reveal phones.
+      if (key && (row.source === 'SEARCH' || webhookUrl)) {
+        const matched = await ApolloClient.bulkMatch(key, ids, { webhookUrl })
         if (!matched.ok) {
           const code = matched.error.code
           if (code === 'CRM_APOLLO_RATE_LIMITED') {
@@ -226,38 +255,68 @@ export const CrmApolloImportRunner = {
             }
             return ok(await finish(row, 'FAILED', matched.error.message))
           }
-          consecutiveFailures += 1
-          await CrmApolloImportRepository.addProgress(row.id, {
-            created: 0,
-            skipped: 0,
-            failed: ids.length,
-            credits: 0,
-            cursor: end,
-          })
-          cursor = end
-          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            return ok(await finish(row, 'FAILED', matched.error.message))
+          if (row.source === 'SEARCH') {
+            consecutiveFailures += 1
+            await CrmApolloImportRepository.addProgress(row.id, {
+              created: 0,
+              skipped: 0,
+              failed: ids.length,
+              credits: 0,
+              cursor: end,
+            })
+            cursor = end
+            if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+              return ok(await finish(row, 'FAILED', matched.error.message))
+            }
+            continue
           }
-          continue
+          // LIST: the e-mails are already in hand; only the phones are lost.
+          logger.warn(
+            'crm.apollo.phone_reveal_failed',
+            logFields(
+              {
+                component: 'CrmApolloImportRunner',
+                workspaceId: row.workspaceId,
+              },
+              { importId: row.id, code },
+            ),
+          )
+          batch = contacts.slice(cursor, end)
+        } else {
+          consecutiveFailures = 0
+          credits = matched.value.data.creditsConsumed
+          minuteLeft = matched.value.rateLimit.minuteLeft
+          if (webhookUrl)
+            phonesRequested = matched.value.data.matches.filter(Boolean).length
+          if (row.source === 'SEARCH') {
+            batch = matched.value.data.matches.flatMap((m) =>
+              m ? [fromEnriched(m)] : [],
+            )
+            missing = ids.length - batch.length
+          } else {
+            batch = contacts.slice(cursor, end)
+          }
         }
-        consecutiveFailures = 0
-        credits = matched.value.data.creditsConsumed
-        minuteLeft = matched.value.rateLimit.minuteLeft
-        batch = matched.value.data.matches.flatMap((m) =>
-          m ? [fromEnriched(m)] : [],
-        )
-        missing = ids.length - batch.length
       } else {
         batch = contacts.slice(cursor, end)
       }
 
-      const progress = await processBatch(row, batch, optOuts.value.emails)
+      const progress = await processBatch(
+        row,
+        batch,
+        optOuts.value.emails,
+        webhookUrl ? phoneOnly : null,
+      )
       await CrmApolloImportRepository.addProgress(row.id, {
         created: progress.created,
         skipped: progress.skipped + missing,
         failed: progress.failed,
         credits,
         cursor: end,
+        phonesRequested,
+        phoneOnlyPeople: webhookUrl
+          ? ([...phoneOnly.values()] as unknown as Prisma.InputJsonValue)
+          : undefined,
       })
       cursor = end
 
@@ -298,6 +357,7 @@ async function processBatch(
   row: CrmApolloImport,
   batch: ImportCandidate[],
   optedOut: Set<string>,
+  phoneOnly: Map<string, ApolloPhoneOnlyPerson> | null,
 ): Promise<{ created: number; skipped: number; failed: number }> {
   const tally = { created: 0, skipped: 0, failed: 0 }
   const known = await CrmLeadRepository.findExistingExternalIds(
@@ -315,6 +375,7 @@ async function processBatch(
       optedOut,
       alreadyImported,
       listMembers,
+      phoneOnly,
     )
     tally[outcome] += 1
   }
@@ -343,9 +404,22 @@ async function importOne(
   optedOut: Set<string>,
   alreadyImported: Set<string>,
   listMembers: Array<{ email: string; name?: string }>,
+  phoneOnly: Map<string, ApolloPhoneOnlyPerson> | null,
 ): Promise<Outcome> {
   const email = candidate.email?.trim().toLowerCase() ?? null
   if (!email || !isImportableEmailStatus(candidate.emailStatus)) {
+    // No usable e-mail: with phones requested the lead is only created if the
+    // webhook brings a number (then through intake, phone only).
+    if (phoneOnly && !alreadyImported.has(candidate.externalId)) {
+      phoneOnly.set(candidate.externalId, {
+        id: candidate.externalId,
+        name: candidate.name,
+        title: candidate.title,
+        company: candidate.company,
+        city: candidate.city,
+        linkedin: candidate.linkedin,
+      })
+    }
     return 'skipped'
   }
   if (optedOut.has(email)) return 'skipped'

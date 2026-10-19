@@ -1,6 +1,5 @@
 import type { CrmLeadStage } from '@prisma/client'
 import type { CampaignCandidate } from '@/src/lib/crm-campaign/audience'
-import { APOLLO_SOURCE } from '@/src/lib/integrations/apollo'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
@@ -80,7 +79,6 @@ export const CrmCampaignAudienceRepository = {
             emails: true,
             phones: true,
             convertedPersonId: true,
-            externalSource: true,
           },
           orderBy: { createdAt: 'asc' },
         })
@@ -92,7 +90,6 @@ export const CrmCampaignAudienceRepository = {
             name: lead.name,
             email: lead.emails[0] ?? null,
             phone: lead.phones[0] ?? null,
-            whatsappBlocked: lead.externalSource === APOLLO_SOURCE,
           })
         }
       }

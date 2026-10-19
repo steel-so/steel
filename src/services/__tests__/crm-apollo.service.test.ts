@@ -13,6 +13,11 @@ import {
   forbidden,
   notFound,
 } from '@/src/errors'
+import {
+  apolloWebhookToken,
+  hashApolloWebhookToken,
+  isApolloPhoneRevealAvailable,
+} from '@/src/lib/integrations/apollo-webhook'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
@@ -34,6 +39,10 @@ vi.mock('@/src/lib/integrations/apollo-client', () => ({
     listLabels: vi.fn(),
     searchContacts: vi.fn(),
   },
+}))
+vi.mock('@/src/lib/integrations/apollo-webhook', async (original) => ({
+  ...(await original<object>()),
+  isApolloPhoneRevealAvailable: vi.fn(),
 }))
 vi.mock('@/src/lib/queue/queues', () => ({ getCrmApolloImportQueue: vi.fn() }))
 vi.mock('@/src/repositories/workspace-integration.repository')
@@ -493,9 +502,11 @@ describe('createImport', () => {
     filters: FILTERS,
     apolloIds: ['a1', 'a2', 'a1'],
     mailingListId: 'ml1',
+    revealPhones: false,
   }
 
   beforeEach(() => {
+    vi.mocked(isApolloPhoneRevealAvailable).mockReturnValue(true)
     listRepo.findById.mockResolvedValue(ok(createFakeCrmMailingList()))
     importRepo.create.mockImplementation(async (data) =>
       ok(
@@ -540,6 +551,7 @@ describe('createImport', () => {
           { id: 'c1', name: 'Ana', email: 'ana@acme.com' },
           { id: 'c1', name: 'Ana', email: 'ana@acme.com' },
         ],
+        revealPhones: false,
       }),
     )
     const created = importRepo.create.mock.calls[0][0]
@@ -556,6 +568,7 @@ describe('createImport', () => {
         source: 'LIST',
         labelId: 'l1',
         contacts: [{ id: 'c1', name: 'Ana', email: 'ana@acme.com' }],
+        revealPhones: false,
       }),
     )
     expect(importRepo.create.mock.calls[0][0].filters).toEqual({
@@ -604,6 +617,38 @@ describe('createImport', () => {
       'FAILED',
       expect.objectContaining({ error: expect.any(String) }),
     )
+  })
+
+  it('stores the webhook token hash only when phones are revealed', async () => {
+    expectOk(await CrmApolloService.createImport('u1', 'ws1', searchDto))
+    expect(importRepo.create.mock.calls[0][0]).toMatchObject({
+      revealPhones: false,
+      webhookTokenHash: null,
+    })
+    expectOk(
+      await CrmApolloService.createImport('u1', 'ws1', {
+        ...searchDto,
+        revealPhones: true,
+      }),
+    )
+    const data = importRepo.create.mock.calls[1][0]
+    expect(data.revealPhones).toBe(true)
+    expect(data.webhookTokenHash).toBe(
+      hashApolloWebhookToken(apolloWebhookToken(data.id as string)),
+    )
+    expect(data.webhookTokenHash).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('refuses phones when the public URL is not HTTPS', async () => {
+    vi.mocked(isApolloPhoneRevealAvailable).mockReturnValue(false)
+    const error = expectErr(
+      await CrmApolloService.createImport('u1', 'ws1', {
+        ...searchDto,
+        revealPhones: true,
+      }),
+    )
+    expect(error.code).toBe('VALIDATION_ERROR')
+    expect(importRepo.create).not.toHaveBeenCalled()
   })
 
   it('does not require a mailing list', async () => {

@@ -35,10 +35,12 @@ const BULK_PER_PAGE = 100
 export function ApolloSearchTab({
   workspaceId,
   defaultMailingListId,
+  phoneRevealAvailable,
   onImported,
 }: {
   workspaceId: string
   defaultMailingListId: string | null
+  phoneRevealAvailable: boolean
   onImported: () => void
 }) {
   const [filters, setFilters] = useState<ApolloSearchFiltersDTO>(EMPTY_FILTERS)
@@ -52,6 +54,7 @@ export function ApolloSearchTab({
   )
   const [selectingAll, setSelectingAll] = useState(false)
   const search = useCrmApolloSearch(workspaceId)
+  const [revealPhones, setRevealPhones] = useState(false)
   const createImport = useCreateCrmApolloImport(workspaceId)
 
   function run(
@@ -132,6 +135,7 @@ export function ApolloSearchTab({
         filters: applied,
         apolloIds: [...selected],
         mailingListId,
+        revealPhones: phoneRevealAvailable && revealPhones,
       },
       {
         onSuccess: () => {
@@ -245,6 +249,9 @@ export function ApolloSearchTab({
           workspaceId={workspaceId}
           count={selected.size}
           creditsPerPerson={1}
+          revealPhones={revealPhones}
+          onRevealPhonesChange={setRevealPhones}
+          phoneRevealAvailable={phoneRevealAvailable}
           mailingListId={mailingListId}
           onMailingListChange={setMailingListId}
           pending={createImport.isPending}
