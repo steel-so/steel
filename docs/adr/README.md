@@ -56,6 +56,7 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0037 | [Busca unificada do Steel AI: índice híbrido (texto + pgvector)](./0037-unified-knowledge-search-hybrid-pgvector.md) | Aceita | 2026-10-18 |
 | 0038 | [Réplicas do app atrás de um upstream do nginx](./0038-app-replicas-behind-nginx-upstream.md) | Aceita | 2026-10-18 |
 | 0039 | [Avaliação e feedback das respostas de IA](./0039-steel-ai-feedback-and-evals.md) | Aceita | 2026-10-18 |
+| 0040 | [IA proativa: alertas calculados por regra e resumo diário com números do banco](./0040-steel-ai-proactive-insights-and-daily-digest.md) | Aceita | 2026-10-18 |
 | 0041 | [Proteções da IA: mascaramento de dados pessoais, prompt injection e limites da resposta automática](./0041-ai-guardrails-pii-injection-auto-reply-limits.md) | Aceita | 2026-10-18 |
 | 0042 | [Modelo por tarefa e contingência automática de provedor](./0042-ai-model-per-task-and-provider-failover.md) | Aceita | 2026-10-18 |
 | 0043 | [Voz no PABX, fase 1: gravação, transcrição e resumo da ligação](./0043-pabx-call-recording-transcription-and-summary.md) | Aceita | 2026-10-18 |
