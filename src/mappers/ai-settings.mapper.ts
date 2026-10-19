@@ -40,6 +40,8 @@ export interface EffectiveAiSettings {
   agentModel: AiModelKey | null
   /** Provider failover (ADR 0042); on by default. */
   failoverEnabled: boolean
+  /** Proactive AI (insights + daily digest, ADR 0040); on by default. */
+  proactiveEnabled: boolean
 }
 
 function modelOrDefault(key: string): AiModelKey {
@@ -72,6 +74,7 @@ export function toEffectiveAiSettings(
       mcpWriteEnabled: false,
       agentModel: null,
       failoverEnabled: true,
+      proactiveEnabled: true,
     }
   }
   return {
@@ -91,6 +94,7 @@ export function toEffectiveAiSettings(
     agentModel:
       row.agentModel && isAiModelKey(row.agentModel) ? row.agentModel : null,
     failoverEnabled: row.failoverEnabled,
+    proactiveEnabled: row.proactiveEnabled,
   }
 }
 
@@ -142,6 +146,7 @@ export function toWorkspaceAiSettingsDTO(input: {
     mcpWriteEnabled: settings.mcpWriteEnabled,
     agentModel: settings.agentModel,
     failoverEnabled: settings.failoverEnabled,
+    proactiveEnabled: settings.proactiveEnabled,
     usage: {
       periodStart: input.periodStart.toISOString(),
       inputTokens: usage.inputTokens,

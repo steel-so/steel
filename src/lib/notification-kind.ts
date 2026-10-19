@@ -461,6 +461,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'disconnected',
     color: 'rose',
   },
+  AI_DAILY_DIGEST: {
+    module: 'OTHER',
+    label: 'Resumo diário da IA',
+    icon: 'digest',
+    color: 'violet',
+  },
 }
 
 const MODULE_BY_PREFIX: [string, NotificationModule][] = [
@@ -548,12 +554,24 @@ export function notificationTicketRef(
 }
 
 /**
+ * Kinds with their own preference card (channels of their own), kept out of
+ * the generic per-kind list so there are never two switches for one thing:
+ * the daily AI digest (`AiDigestSetting`, ADR 0040).
+ */
+export const SELF_MANAGED_NOTIFICATION_KINDS: readonly string[] = [
+  'AI_DAILY_DIGEST',
+]
+
+/**
  * Kinds a user can mute on the notification preferences screen: everything
  * outside the ServiceDesk, which has its own preference model
  * (`SdNotificationPreference`, per event and channel).
  */
 export function isConfigurableNotificationKind(kind: string): boolean {
-  return notificationModuleOf(kind) !== 'SERVICE_DESK'
+  return (
+    notificationModuleOf(kind) !== 'SERVICE_DESK' &&
+    !SELF_MANAGED_NOTIFICATION_KINDS.includes(kind)
+  )
 }
 
 /** Catalog of the configurable kinds (preferences screen), groupable by module. */

@@ -20,6 +20,7 @@ export interface UpdateAiSettingsInput {
   mcpWriteEnabled?: boolean
   agentModel?: string | null
   failoverEnabled?: boolean
+  proactiveEnabled?: boolean
 }
 
 export function useAiSettings(workspaceId: string) {

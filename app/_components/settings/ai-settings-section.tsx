@@ -92,6 +92,7 @@ interface FormState {
   mcpWriteEnabled: boolean
   agentModel: string
   failoverEnabled: boolean
+  proactiveEnabled: boolean
 }
 
 type SwitchField =
@@ -101,6 +102,7 @@ type SwitchField =
   | 'autopilotEnabled'
   | 'usageWeeklyEmailEnabled'
   | 'mcpWriteEnabled'
+  | 'proactiveEnabled'
 
 const SWITCHES: { field: SwitchField; label: string; hint: string }[] = [
   {
@@ -117,6 +119,11 @@ const SWITCHES: { field: SwitchField; label: string; hint: string }[] = [
     field: 'memoryEnabled',
     label: 'Ativar memória',
     hint: 'O Steel AI pode guardar e usar memórias do espaço de trabalho e de cada pessoa (sempre revisáveis).',
+  },
+  {
+    field: 'proactiveEnabled',
+    label: 'Ativar IA proativa',
+    hint: 'Alertas para a pessoa certa (SLA que vai estourar, oportunidades paradas, conversas esperando, sentimento em queda) e um resumo diário às 08:00 no fuso de cada um. Os alertas não consomem cota; o resumo usa o modelo de sentimento.',
   },
   {
     field: 'autopilotEnabled',
@@ -151,6 +158,7 @@ function toForm(settings: WorkspaceAiSettingsDTO): FormState {
     mcpWriteEnabled: settings.mcpWriteEnabled,
     agentModel: settings.agentModel ?? INHERIT,
     failoverEnabled: settings.failoverEnabled,
+    proactiveEnabled: settings.proactiveEnabled,
   }
 }
 
@@ -366,6 +374,7 @@ function AdminForm({
         mcpWriteEnabled: form.mcpWriteEnabled,
         agentModel: form.agentModel === INHERIT ? null : form.agentModel,
         failoverEnabled: form.failoverEnabled,
+        proactiveEnabled: form.proactiveEnabled,
       },
       {
         onSuccess: () => notify.success('Ajustes de IA salvos'),

@@ -32,6 +32,27 @@ export const STEEL_AGENT_EVENTS = [
     description:
       'Quando a IA do WhatsApp transfere a conversa para um atendente.',
   },
+  {
+    key: 'sd.insight.detected',
+    module: 'SERVICE_DESK',
+    label: 'Alerta da IA no ServiceDesk',
+    description:
+      'Quando a IA proativa detecta que a fila de um departamento deve estourar o SLA.',
+  },
+  {
+    key: 'crm.insight.detected',
+    module: 'CRM',
+    label: 'Alerta da IA no CRM',
+    description:
+      'Quando a IA proativa detecta oportunidades paradas, uma etapa travada ou a previsão abaixo da meta.',
+  },
+  {
+    key: 'zap.insight.detected',
+    module: 'COMMUNICATION',
+    label: 'Alerta da IA na Comunicação',
+    description:
+      'Quando a IA proativa detecta que o sentimento de uma conversa caiu.',
+  },
 ] as const satisfies readonly {
   key: string
   module: ModuleKind

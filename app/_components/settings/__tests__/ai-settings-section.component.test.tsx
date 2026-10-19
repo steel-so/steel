@@ -61,6 +61,7 @@ function settings(
     mcpWriteEnabled: false,
     agentModel: null,
     failoverEnabled: true,
+    proactiveEnabled: true,
     usage: {
       periodStart: '2026-09-01T00:00:00.000Z',
       inputTokens: 1500,
@@ -151,6 +152,7 @@ describe('<AiSettingsSection />', () => {
       mcpWriteEnabled: false,
       agentModel: null,
       failoverEnabled: true,
+      proactiveEnabled: true,
     })
   })
 

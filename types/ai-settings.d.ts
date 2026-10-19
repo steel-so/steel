@@ -60,6 +60,8 @@ export interface WorkspaceAiSettingsDTO {
   agentModel: string | null
   /** Automatic failover to another provider/model when one fails. */
   failoverEnabled: boolean
+  /** Proactive AI: insights feed and daily digest (admin, on by default). */
+  proactiveEnabled: boolean
   usage: AiUsageSummaryDTO
   /** Modelo escolhido pelo usuário atual (`null` = segue o padrão). */
   userPreference: string | null

@@ -2,6 +2,7 @@ import { logger } from '@/lib/axiom/logger'
 import { TRIAL_EXPIRY_CRON } from '@/src/config/trial'
 import {
   AiIndexJob,
+  AiProactiveJob,
   AiUsageWeeklyEmailJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
@@ -35,6 +36,7 @@ import {
 } from './jobs'
 import {
   getAiIndexQueue,
+  getAiProactiveQueue,
   getAiUsageWeeklyEmailQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
@@ -68,6 +70,8 @@ import {
 } from './queues'
 import {
   AiIndexReindexCron,
+  AiProactiveDigestCron,
+  AiProactiveInsightsCron,
   AiUsageWeeklyEmailCron,
   CommunicationWaitingCron,
   CrmCampaignsTickCron,
@@ -633,6 +637,27 @@ export async function scheduleAiIndexJobs(): Promise<void> {
   logger.info('queue.scheduler.ai_index_registered', {
     component: 'Worker',
     pattern: AiIndexReindexCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleAiProactiveJobs(): Promise<void> {
+  const queue = getAiProactiveQueue()
+  await queue.upsertJobScheduler(
+    AiProactiveJob.InsightsTick,
+    { pattern: AiProactiveInsightsCron, tz: RetentionTimezone },
+    { name: AiProactiveJob.InsightsTick, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    AiProactiveJob.DigestTick,
+    { pattern: AiProactiveDigestCron, tz: RetentionTimezone },
+    { name: AiProactiveJob.DigestTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.ai_proactive_registered', {
+    component: 'Worker',
+    insightsPattern: AiProactiveInsightsCron,
+    digestPattern: AiProactiveDigestCron,
     timezone: RetentionTimezone,
   })
 }

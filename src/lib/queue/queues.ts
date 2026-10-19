@@ -7,6 +7,8 @@ import {
   type AiEvalJobPayload,
   type AiIndexJob,
   type AiIndexJobPayload,
+  type AiProactiveJob,
+  type AiProactiveJobPayload,
   type AiUsageWeeklyEmailJob,
   type AiUsageWeeklyEmailJobPayload,
   type ChangelogJob,
@@ -144,6 +146,7 @@ let webhooksDeliveryQueue: Queue | null = null
 let aiIndexQueue: Queue | null = null
 let aiEvalQueue: Queue | null = null
 let phoneCallAiQueue: Queue | null = null
+let aiProactiveQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 
@@ -814,6 +817,7 @@ export async function closeQueues(): Promise<void> {
     webhooksDeliveryQueue?.close(),
     aiIndexQueue?.close(),
     aiEvalQueue?.close(),
+    aiProactiveQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -854,6 +858,7 @@ export async function closeQueues(): Promise<void> {
   webhooksDeliveryQueue = null
   aiIndexQueue = null
   aiEvalQueue = null
+  aiProactiveQueue = null
 }
 
 export function getCrmTaskRemindersQueue(): Queue<
@@ -1135,6 +1140,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.AiIndex]: getAiIndexQueue,
   [QueueName.AiEval]: getAiEvalQueue,
   [QueueName.PhoneCallAi]: getPhoneCallAiQueue,
+  [QueueName.AiProactive]: getAiProactiveQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1184,5 +1190,28 @@ export function getPhoneCallAiQueue(): Queue<
     PhoneCallAiJobPayload[PhoneCallAiJob],
     unknown,
     PhoneCallAiJob
+  >
+}
+
+/** Proactive AI ticks (ADR 0040). One attempt: the next tick redoes it. */
+export function getAiProactiveQueue(): Queue<
+  AiProactiveJobPayload[AiProactiveJob],
+  unknown,
+  AiProactiveJob
+> {
+  if (!aiProactiveQueue) {
+    aiProactiveQueue = new Queue(QueueName.AiProactive, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        removeOnComplete: { age: 60 * 60 * 24 * 7, count: 200 },
+        removeOnFail: { age: 60 * 60 * 24 * 7 },
+        attempts: 1,
+      },
+    })
+  }
+  return aiProactiveQueue as Queue<
+    AiProactiveJobPayload[AiProactiveJob],
+    unknown,
+    AiProactiveJob
   >
 }

@@ -143,6 +143,15 @@ describe('configurable notification kinds', () => {
     expect(isConfigurableNotificationKind('SD_TICKET_ASSIGNED')).toBe(false)
   })
 
+  it('should keep the daily AI digest out of the generic list (own card)', () => {
+    expect(isConfigurableNotificationKind('AI_DAILY_DIGEST')).toBe(false)
+    expect(
+      configurableNotificationKinds().some(
+        (info) => info.kind === 'AI_DAILY_DIGEST',
+      ),
+    ).toBe(false)
+  })
+
   it('should list only configurable kinds, with pt-BR labels', () => {
     const catalog = configurableNotificationKinds()
 
