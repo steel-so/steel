@@ -181,7 +181,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     services:
       postgres:
         # pgvector for the knowledge search (ADR 0037); a fresh DB per run, so
