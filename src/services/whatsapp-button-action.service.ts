@@ -39,6 +39,7 @@ import type { WhatsAppButtonDTO } from '@/types/whatsapp-button'
 import { assertMember } from './authz'
 import { CrmWorkflowService } from './crm-workflow.service'
 import { WhatsAppAiReplyService } from './whatsapp-ai-reply.service'
+import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import {
   notifyWhatsAppUsers,
   WHATSAPP_NOTIFY_ADMIN_CAP,
@@ -238,6 +239,19 @@ async function runAssignTeam(
     status: 'NEW',
   })
   if (!updated.ok) return updated
+  // An unassigned conversation was already waiting (the contact's message
+  // put it there); only one taken from an agent enters the queue now.
+  if (
+    ctx.conversation.assignedUserId &&
+    ctx.conversation.connection.module === 'COMMUNICATION'
+  ) {
+    emitWhatsAppConversationWaiting({
+      conversation: updated.value,
+      contact: ctx.contact,
+      reason: 'returned_to_queue',
+      actorId: null,
+    })
+  }
   const event = await recordEvent(ctx, 'TEAM_CHANGED', team.value.name)
   if (!event.ok) return event
 

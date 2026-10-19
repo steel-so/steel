@@ -22,6 +22,8 @@ const READ_ROUTES = [
   '/api/v1/crm/opportunities',
   '/api/v1/crm/pipelines',
   '/api/v1/whatsapp/templates',
+  '/api/v1/servicedesk/phases',
+  '/api/v1/whatsapp/conversations/waiting',
 ]
 
 async function v1(
@@ -126,6 +128,18 @@ describe('/api/v1 with a personal token', () => {
     })
     expect(write.status).toBe(403)
     expect((await write.json()).error.code).toBe('API_TOKEN_SCOPE_REQUIRED')
+
+    // The webhook routes refuse the same way (not a generic FORBIDDEN).
+    const webhook = await v1('/api/v1/webhooks/endpoints', {
+      method: 'POST',
+      token,
+      body: { url: 'https://example.com/steel', events: ['*'] },
+    })
+    expect(webhook.status).toBe(403)
+    expect((await webhook.json()).error).toEqual({
+      code: 'API_TOKEN_SCOPE_REQUIRED',
+      details: { requiredScope: 'api:write' },
+    })
   })
 
   it('refuses a module the token was not created for', async (ctx) => {
@@ -140,7 +154,9 @@ describe('/api/v1 with a personal token', () => {
 
     for (const path of [
       '/api/v1/servicedesk/tickets',
+      '/api/v1/servicedesk/phases',
       '/api/v1/whatsapp/templates',
+      '/api/v1/whatsapp/conversations/waiting',
     ]) {
       const res = await v1(path, { token })
       expect(res.status).toBe(403)

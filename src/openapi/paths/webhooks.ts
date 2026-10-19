@@ -135,10 +135,10 @@ const V1_ERRORS: ErrorEntry[] = [
 ]
 const V1_WRITE_ERRORS: ErrorEntry[] = [
   {
-    code: 'FORBIDDEN',
-    when: 'Token sem `api:write`, ou o dono não é OWNER/ADMIN',
+    code: 'API_TOKEN_SCOPE_REQUIRED',
+    when: 'Token sem o escopo `api:write` (`details.requiredScope`)',
   },
-  'WORKSPACE_SUSPENDED',
+  ...V1_ERRORS,
 ]
 
 const DELIVERY_QUERY_NOTE =

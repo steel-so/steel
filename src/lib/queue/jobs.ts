@@ -50,6 +50,7 @@ export const DataRetentionJob = {
   CleanupExpiredVerificationTokens: 'cleanup-expired-verification-tokens',
   ExpireStaleInvitations: 'expire-stale-invitations',
   CleanupWebhookDeliveries: 'cleanup-webhook-deliveries',
+  CleanupApiTokens: 'cleanup-api-tokens',
 } as const
 
 export type DataRetentionJob =
@@ -60,6 +61,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.CleanupExpiredVerificationTokens]: Record<string, never>
   [DataRetentionJob.ExpireStaleInvitations]: Record<string, never>
   [DataRetentionJob.CleanupWebhookDeliveries]: Record<string, never>
+  [DataRetentionJob.CleanupApiTokens]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {

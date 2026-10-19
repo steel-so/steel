@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     verification: { deleteMany: vi.fn() },
     workspaceInvitation: { updateMany: vi.fn() },
     webhookDelivery: { deleteMany: vi.fn() },
+    apiToken: { deleteMany: vi.fn() },
   },
 }))
 
@@ -265,6 +266,26 @@ describe('processDataRetention', () => {
     expect(mocks.loggerMock.info).toHaveBeenCalledWith(
       'queue.data_retention.webhook_deliveries_cleaned',
       expect.objectContaining({ deleted: 7 }),
+    )
+  })
+
+  it('deletes API tokens revoked or expired more than 90 days ago', async () => {
+    mocks.prisma.apiToken.deleteMany.mockResolvedValue({ count: 3 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.CleanupApiTokens),
+    )
+
+    expect(result.deleted).toBe(3)
+    const where = mocks.prisma.apiToken.deleteMany.mock.calls[0][0].where
+    const [revoked, expired] = where.OR
+    expect(revoked.revokedAt.lt).toBe(expired.expiresAt.lt)
+    const days = (Date.now() - revoked.revokedAt.lt.getTime()) / 86_400_000
+    expect(Math.round(days)).toBe(90)
+    expect(revoked.revokedAt.lt.toISOString()).toBe(result.cutoff)
+    expect(mocks.loggerMock.info).toHaveBeenCalledWith(
+      'queue.data_retention.api_tokens_cleaned',
+      expect.objectContaining({ deleted: 3 }),
     )
   })
 

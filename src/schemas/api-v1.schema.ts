@@ -97,6 +97,17 @@ export const ListV1SdCatalogSchema = V1PageQuerySchema.extend({
 })
 export type ListV1SdCatalogDTO = z.infer<typeof ListV1SdCatalogSchema>
 
+export const ListV1SdPhasesSchema = V1PageQuerySchema.extend({
+  ticketType: z.preprocess(
+    blank,
+    SdTicketTypeEnum.optional().meta({
+      description:
+        'Só as fases deste tipo de chamado (INCIDENT, SERVICE_REQUEST, CHANGE, PROBLEM). Omitido = todos os tipos.',
+    }),
+  ),
+})
+export type ListV1SdPhasesDTO = z.infer<typeof ListV1SdPhasesSchema>
+
 /* ------------------------------------------------------------------ */
 /* CRM                                                                  */
 /* ------------------------------------------------------------------ */
@@ -167,6 +178,21 @@ export const ListV1WhatsAppTemplatesSchema = V1PageQuerySchema.extend({
 })
 export type ListV1WhatsAppTemplatesDTO = z.infer<
   typeof ListV1WhatsAppTemplatesSchema
+>
+
+export const ListV1WhatsAppWaitingConversationsSchema =
+  V1PageQuerySchema.extend({
+    connectionId: z.preprocess(
+      blank,
+      id.optional().meta({ description: 'Só as conversas desta conexão.' }),
+    ),
+    teamId: z.preprocess(
+      blank,
+      id.optional().meta({ description: 'Só a fila desta equipe.' }),
+    ),
+  })
+export type ListV1WhatsAppWaitingConversationsDTO = z.infer<
+  typeof ListV1WhatsAppWaitingConversationsSchema
 >
 
 /** E.164: optional `+`, country code and number, 8–15 digits. */

@@ -6,6 +6,10 @@ import { createFakeWhatsAppConversationWithPreview } from '@/src/__tests__/facto
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { err, ok } from '@/src/lib/result'
 
+// Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
+  emitWhatsAppConversationWaiting: vi.fn(),
+}))
 vi.mock('@/src/services/whatsapp-usage.service', () => ({
   WhatsAppUsageService: {
     assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
@@ -38,12 +42,13 @@ vi.mock('@/src/services/whatsapp-notify', async (importOriginal) => ({
   notifyWhatsAppUsers: vi.fn(async () => 1),
 }))
 
-import { whatsappConversationLimitReached } from '@/src/errors'
+import { databaseError, whatsappConversationLimitReached } from '@/src/errors'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
+import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { notifyWhatsAppUsers } from '../whatsapp-notify'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 
@@ -421,6 +426,155 @@ describe('WhatsAppConversationService', () => {
         // Back to the queue.
         status: 'NEW',
       })
+    })
+
+    it('should announce a conversation handed back to the queue', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const conversation = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        status: 'IN_PROGRESS',
+        assignedUserId: 'u2',
+      })
+      const back = {
+        ...conversation,
+        status: 'NEW' as const,
+        assignedUserId: null,
+      }
+      mockedConversationRepo.findById
+        .mockResolvedValueOnce(ok(conversation))
+        .mockResolvedValue(ok(back))
+      mockedConversationRepo.update.mockResolvedValue(ok(back))
+
+      expectOk(
+        await WhatsAppConversationService.assign('u1', 'ws1', 'conv1', null),
+      )
+
+      expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
+        conversation: back,
+        contact: back.contact,
+        reason: 'returned_to_queue',
+        actorId: 'u1',
+      })
+    })
+
+    it('should not announce a closed conversation nor one that stayed unassigned', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const closed = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        status: 'CLOSED',
+        assignedUserId: 'u2',
+      })
+      mockedConversationRepo.findById.mockResolvedValue(ok(closed))
+      mockedConversationRepo.update.mockResolvedValue(ok(closed))
+      expectOk(
+        await WhatsAppConversationService.assign('u1', 'ws1', 'conv1', null),
+      )
+
+      const queued = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        status: 'NEW',
+        assignedUserId: null,
+      })
+      mockedConversationRepo.findById.mockResolvedValue(ok(queued))
+      mockedConversationRepo.update.mockResolvedValue(ok(queued))
+      expectOk(
+        await WhatsAppConversationService.assign('u1', 'ws1', 'conv1', null),
+      )
+
+      expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('listWaiting()', () => {
+    it('should list the open unassigned queue the viewer sees, oldest first', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      const recent = createFakeWhatsAppConversationWithPreview({
+        id: 'recent',
+        assignedUserId: null,
+        lastMessageAt: new Date('2026-10-18T12:00:00.000Z'),
+      })
+      const old = createFakeWhatsAppConversationWithPreview({
+        id: 'old',
+        assignedUserId: null,
+        lastMessageAt: new Date('2026-10-18T09:00:00.000Z'),
+      })
+      const silent = createFakeWhatsAppConversationWithPreview({
+        id: 'silent',
+        assignedUserId: null,
+        lastMessageAt: null,
+        createdAt: new Date('2026-10-18T10:00:00.000Z'),
+      })
+      const tie = createFakeWhatsAppConversationWithPreview({
+        id: 'a-tie',
+        assignedUserId: null,
+        lastMessageAt: new Date('2026-10-18T12:00:00.000Z'),
+      })
+      mockedConversationRepo.listByWorkspace.mockResolvedValue(
+        ok([recent, old, silent, tie]),
+      )
+
+      const result = expectOk(
+        await WhatsAppConversationService.listWaiting('u1', 'ws1', {
+          connectionId: 'conn1',
+          teamId: 'team1',
+        }),
+      )
+
+      expect(result.map((c) => c.id)).toEqual([
+        'old',
+        'silent',
+        'a-tie',
+        'recent',
+      ])
+      // A member outside any team is scoped (Equipes).
+      expect(mockedConversationRepo.listByWorkspace).toHaveBeenCalledWith(
+        'ws1',
+        {
+          status: 'OPEN',
+          archived: false,
+          unassigned: true,
+          connectionId: 'conn1',
+          teamId: 'team1',
+        },
+        expect.objectContaining({ userId: 'u1' }),
+      )
+    })
+
+    it('should see the whole queue as OWNER', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'OWNER' })),
+      )
+      mockedConversationRepo.listByWorkspace.mockResolvedValue(ok([]))
+
+      expectOk(await WhatsAppConversationService.listWaiting('u1', 'ws1'))
+      expect(mockedConversationRepo.listByWorkspace).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ unassigned: true }),
+        undefined,
+      )
+    })
+
+    it('should refuse a non-member and propagate a database error', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(ok(null))
+      expectErr(await WhatsAppConversationService.listWaiting('u9', 'ws1'))
+      expect(mockedConversationRepo.listByWorkspace).not.toHaveBeenCalled()
+
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'OWNER' })),
+      )
+      mockedConversationRepo.listByWorkspace.mockResolvedValue(
+        err(databaseError('boom')),
+      )
+      expectErr(
+        await WhatsAppConversationService.listWaiting('u1', 'ws1'),
+        'DATABASE_ERROR',
+      )
     })
   })
 

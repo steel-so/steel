@@ -2,6 +2,7 @@ import type {
   ModuleKind,
   WhatsAppConnection,
   WhatsAppContact,
+  WhatsAppConversation,
   WhatsAppMessage,
   WhatsAppMessageStatus,
 } from '@prisma/client'
@@ -19,7 +20,10 @@ import {
 } from '@/src/lib/queue/queues'
 import { ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
-import { communicationMessageReceivedData } from '@/src/lib/webhooks/payloads'
+import {
+  type ConversationWaitingReason,
+  communicationMessageReceivedData,
+} from '@/src/lib/webhooks/payloads'
 import {
   isWhatsAppOptOutKeyword,
   WHATSAPP_OPT_OUT_CONFIRMATION,
@@ -43,6 +47,7 @@ import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
+import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppTeamService } from './whatsapp-team.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
@@ -220,6 +225,11 @@ export const WhatsAppWebhookService = {
 
     let conversationId: string
     let aiActive: boolean
+    /** Set when this message puts the conversation in the agents' queue. */
+    let waiting: {
+      conversation: WhatsAppConversation
+      reason: ConversationWaitingReason
+    } | null = null
 
     if (existingConversation.value) {
       const conversation = existingConversation.value
@@ -266,6 +276,9 @@ export const WhatsAppWebhookService = {
         if (!reopened.ok) return reopened
         conversationId = reopened.value.id
         aiActive = aiConfigActive
+        if (!closed.value.assignedUserId) {
+          waiting = { conversation: reopened.value, reason: 'reopened' }
+        }
         if (!serviceDesk) {
           await WhatsAppUsageService.record(workspaceId, 'conversations')
         }
@@ -283,6 +296,7 @@ export const WhatsAppWebhookService = {
         if (!created.ok) return created
         conversationId = created.value.id
         aiActive = aiConfigActive
+        waiting = { conversation: created.value, reason: 'new' }
         // Inbound is counted toward the monthly limit but never blocked.
         if (!serviceDesk) {
           await WhatsAppUsageService.record(workspaceId, 'conversations')
@@ -341,6 +355,13 @@ export const WhatsAppWebhookService = {
         connectionId: connection.id,
       }),
     )
+    if (waiting) {
+      emitWhatsAppConversationWaiting({
+        ...waiting,
+        contact: contact.value,
+        actorId: null,
+      })
+    }
     // Unassigned conversation of a team: the team queue hears about it.
     await WhatsAppTeamService.notifyQueueOnInbound(workspaceId, conversationId)
 

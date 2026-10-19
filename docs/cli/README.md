@@ -75,6 +75,7 @@ cookie não vale). Envelope igual ao resto da API
 | `POST /api/v1/servicedesk/tickets/{id}/comments` | `steel sd ticket comment` (público ou interno) |
 | `POST /api/v1/servicedesk/tickets/{id}/phase` | `steel sd ticket move` |
 | `GET /api/v1/servicedesk/catalog` | serviços e categorias para o `create` |
+| `GET /api/v1/servicedesk/phases` | fases ativas por tipo, com as próximas fases permitidas (para o `move`) |
 | `GET /api/v1/crm/leads`, `POST /api/v1/crm/leads` | `steel crm lead list/create` |
 | `POST /api/v1/crm/leads/import` | `steel crm lead import <csv>` (até 5.000 linhas; resposta com criados, ignorados e erros por linha) |
 | `GET /api/v1/crm/opportunities`, `POST /api/v1/crm/opportunities/{id}/stage` | `steel crm opportunity list/move` |
@@ -82,6 +83,7 @@ cookie não vale). Envelope igual ao resto da API
 | `GET /api/v1/whatsapp/templates` | templates aprovados |
 | `POST /api/v1/whatsapp/messages/template` | `steel zap send --template` |
 | `GET /api/v1/whatsapp/broadcasts/{id}` | `steel zap broadcast status` |
+| `GET /api/v1/whatsapp/conversations/waiting` | fila de conversas sem atendente |
 
 Detalhes de cada rota (fatia `api-v1`):
 
@@ -100,6 +102,16 @@ Detalhes de cada rota (fatia `api-v1`):
   comment? }`). `{id}` aceita id, número ou código.
 - `GET /api/v1/servicedesk/catalog?ticketType=`: lista plana (`level` +
   `parentId`) de categorias, subcategorias e serviços ativos.
+- `GET /api/v1/servicedesk/phases?ticketType=`: fases ativas (componente
+  `ApiV1SdPhase` = `SdPhase` + `nextPhaseIds`), por tipo e na ordem do quadro.
+  `nextPhaseIds: null` = o tipo não tem transições (fluxo livre); senão, as
+  fases ativas de destino permitidas a partir desta (restrição por
+  departamento é conferida no `move`). Qualquer membro do ServiceDesk lê.
+- `GET /api/v1/whatsapp/conversations/waiting?connectionId=&teamId=`: a
+  "Fila" da caixa de entrada — conversas abertas, não arquivadas e sem
+  responsável, com a visibilidade das Equipes do dono do token, da mais
+  antiga para a mais nova (`WhatsAppConversationService.listWaiting`). A
+  entrada na fila gera o webhook `communication.conversation.waiting`.
 - `POST /api/v1/crm/leads/import?source=`: o corpo é o próprio CSV
   (`Content-Type: text/csv`, até 5 MB e 5.000 linhas, `,` ou `;`). Colunas:
   `name`/`nome` (obrigatória), `email`, `phone`/`telefone`/`celular`,

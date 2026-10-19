@@ -1,9 +1,12 @@
 import type { NextRequest } from 'next/server'
 import type { z } from 'zod'
 import { withAxiom } from '@/lib/axiom/server'
-import { forbidden } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
-import { type ApiSession, resolveApiSession } from '@/src/lib/api/session'
+import {
+  type ApiSession,
+  apiScopeRequiredError,
+  resolveApiSession,
+} from '@/src/lib/api/session'
 import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
 import { readJsonBody } from '@/utils/http-request'
@@ -15,7 +18,8 @@ import {
 
 /**
  * Handler of the `/api/v1/webhooks/**` routes (ADR 0035/0036): personal
- * token (`resolveApiSession`, never the cookie) → `api:write` for changes →
+ * token (`resolveApiSession`, never the cookie) → `api:write` for changes
+ * (`API_TOKEN_SCOPE_REQUIRED`, as every other v1 route) →
  * rate limit per token → Zod (query/body) → service → envelope. Authorization
  * (OWNER/ADMIN) lives in `WebhookService`, with the token owner as actor.
  */
@@ -47,11 +51,7 @@ export async function authorizeWebhookV1(
   const session = await resolveApiSession(request)
   if (!session.ok) return session
   if (options.write && !session.value.scopes.includes('api:write')) {
-    return err(
-      forbidden(
-        'Este token só tem leitura. Crie um token com o escopo api:write.',
-      ),
-    )
+    return err(apiScopeRequiredError('api:write'))
   }
   const limit = await consume(apiLimiter, `api-token:${session.value.tokenId}`)
   if (!limit.ok) return limit

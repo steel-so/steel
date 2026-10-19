@@ -59,6 +59,7 @@ import {
   resolveConversationScope,
   whatsAppTeamMemberIds,
 } from './whatsapp-conversation-scope.service'
+import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import {
   notifyWhatsAppUsers,
   whatsAppConversationPath,
@@ -247,6 +248,48 @@ export const WhatsAppConversationService = {
     if (!result.ok) return result
 
     return ok(result.value.map(toWhatsAppConversationDTO))
+  },
+
+  /**
+   * Conversations waiting for an agent — the inbox "Fila (sem responsável)":
+   * open (NEW or IN_PROGRESS), not archived nor deleted, with no assignee,
+   * as the viewer may see them (Equipes: the general queue plus the queues
+   * of their teams). Oldest first (by last message, else creation), the
+   * order they should be picked up in. Conversations the AI is answering
+   * are included (`aiActive`), as in the inbox.
+   */
+  async listWaiting(
+    actorId: string,
+    workspaceId: string,
+    filters: { connectionId?: string; teamId?: string } = {},
+  ): Promise<Result<WhatsAppConversationDTO[]>> {
+    const access = await authorizeViewer(actorId, workspaceId, 'VIEW')
+    if (!access.ok) return access
+
+    const result = await WhatsAppConversationRepository.listByWorkspace(
+      workspaceId,
+      {
+        status: 'OPEN',
+        archived: false,
+        unassigned: true,
+        connectionId: filters.connectionId,
+        teamId: filters.teamId,
+      },
+      scopeVisibility(access.value.scope),
+    )
+    if (!result.ok) return result
+
+    const waitingSince = (c: WhatsAppConversationDTO) =>
+      c.lastMessageAt ?? c.createdAt
+    return ok(
+      result.value
+        .map(toWhatsAppConversationDTO)
+        .sort(
+          (a, b) =>
+            waitingSince(a).localeCompare(waitingSince(b)) ||
+            a.id.localeCompare(b.id),
+        ),
+    )
   },
 
   async start(
@@ -676,6 +719,16 @@ export const WhatsAppConversationService = {
       conversation: dto,
     })
 
+    // Handed back to the queue: it waits for an agent again.
+    if (changed && !assignedUserId && existing.status !== 'CLOSED') {
+      emitWhatsAppConversationWaiting({
+        conversation: fresh.value,
+        contact: fresh.value.contact,
+        reason: 'returned_to_queue',
+        actorId,
+      })
+    }
+
     auditMutation({
       entity: 'whatsapp_conversation',
       action: 'assign',
@@ -834,6 +887,14 @@ export const WhatsAppConversationService = {
     })
     if (!reopened.ok) return reopened
     await WhatsAppUsageService.record(workspaceId, 'conversations')
+    if (!reopened.value.assignedUserId) {
+      emitWhatsAppConversationWaiting({
+        conversation: reopened.value,
+        contact: existing.contact,
+        reason: 'reopened',
+        actorId,
+      })
+    }
 
     void indexSearchDocument('zap-conversation', workspaceId, id)
     return publishConversation(workspaceId, id)

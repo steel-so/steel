@@ -148,10 +148,11 @@ export const SdPhaseService = {
     })
   },
 
+  /** Transitions of one ticket type, or of every type when omitted. */
   async listTransitions(
     actorId: string,
     workspaceId: string,
-    ticketType: SdTicketType,
+    ticketType?: SdTicketType,
   ): Promise<Result<SdPhaseTransitionDTO[]>> {
     const ctx = await SdAccess.resolve(actorId, workspaceId)
     if (!ctx.ok) return ctx

@@ -1,6 +1,7 @@
 import {
   CreateV1SdTicketCommentSchema,
   ListV1SdCatalogSchema,
+  ListV1SdPhasesSchema,
   ListV1SdTicketsSchema,
 } from '@/src/schemas/api-v1.schema'
 import {
@@ -11,7 +12,7 @@ import type { ErrorEntry, OpenApiRegistry } from '../../registry'
 import { SdTicketMessageDTO } from '../../schemas/servicedesk/ticket-tabs'
 import { SdCategoryDTO } from '../../schemas/servicedesk-config'
 import { SdTicketDTO } from '../../schemas/servicedesk-tickets'
-import { v1Page } from '../schemas'
+import { ApiV1SdPhaseDTO, v1Page } from '../schemas'
 import {
   moduleErrors,
   PAGINATION_NOTE,
@@ -156,6 +157,27 @@ export function registerV1ServiceDeskPaths(registry: OpenApiRegistry): void {
       200: {
         description: 'Página do catálogo.',
         schema: v1Page('SdCatalog', SdCategoryDTO),
+      },
+    },
+    errors: [
+      ...ACCESS,
+      { code: 'VALIDATION_ERROR', message: 'Cursor inválido' },
+    ],
+  })
+
+  registry.registerRoute({
+    method: 'get',
+    path: '/servicedesk/phases',
+    tags: [TAG],
+    summary: 'Listar fases',
+    operationId: 'listPhases',
+    description: `Fases ativas de cada tipo de chamado (incidente, requisição, mudança, problema), na ordem do quadro, com \`nextPhaseIds\`: para onde um chamado em cada fase pode ir (\`null\` = fluxo livre do tipo). Use os ids em \`POST /servicedesk/tickets/{ticketId}/phase\`. Qualquer membro do ServiceDesk lê; mover continua só para agentes. ${PAGINATION_NOTE} ${V1_READ}`,
+    auth: 'apiToken',
+    query: ListV1SdPhasesSchema,
+    responses: {
+      200: {
+        description: 'Página de fases.',
+        schema: v1Page('SdPhase', ApiV1SdPhaseDTO),
       },
     },
     errors: [

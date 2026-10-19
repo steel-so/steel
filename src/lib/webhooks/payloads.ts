@@ -268,3 +268,44 @@ export function communicationMessageReceivedData(input: {
     connectionId: input.connectionId,
   }
 }
+
+export type ConversationWaitingReason =
+  WebhookEventData<'communication.conversation.waiting'>['reason']
+
+export function communicationConversationWaitingData(input: {
+  conversation: {
+    id: string
+    status: string
+    connectionId: string
+    teamId: string | null
+    aiActive: boolean
+    unreadCount: number
+    lastMessageAt: Date | null
+    createdAt: Date
+  }
+  contact: { id: string; waId: string; name: string | null }
+  reason: ConversationWaitingReason
+  actorId: string | null
+}): WebhookEventData<'communication.conversation.waiting'> {
+  const { conversation } = input
+  return {
+    conversation: {
+      id: conversation.id,
+      // Only open conversations wait; anything else fails the catalog check.
+      status: conversation.status as 'NEW' | 'IN_PROGRESS',
+      connectionId: conversation.connectionId,
+      teamId: conversation.teamId,
+      aiActive: conversation.aiActive,
+      unreadCount: conversation.unreadCount,
+      lastMessageAt: conversation.lastMessageAt?.toISOString() ?? null,
+      createdAt: conversation.createdAt.toISOString(),
+    },
+    contact: {
+      id: input.contact.id,
+      waId: input.contact.waId,
+      name: input.contact.name,
+    },
+    reason: input.reason,
+    actorId: input.actorId,
+  }
+}

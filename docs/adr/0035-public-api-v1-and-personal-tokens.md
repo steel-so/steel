@@ -54,3 +54,20 @@ Detalhes para aplicar:
   `ApiToken` com escopo restrito numa decisão futura.
 - O MCP continua com OAuth (ADR 0033); os dois tipos de token aparecem juntos
   em Ajustes › Segurança.
+
+## Atualização (18/10/2026) — lacunas achadas no CLI
+
+- **Escopo nas rotas de webhooks:** `/api/v1/webhooks/**` respondia
+  `403 FORBIDDEN` a uma escrita com token só de leitura. Agora responde
+  `403 API_TOKEN_SCOPE_REQUIRED`, como as outras rotas da v1, e o erro traz
+  `details.requiredScope` (`api:write`) em toda a v1.
+- **Rotas novas (aditivas):** `GET /api/v1/servicedesk/phases` (fases ativas
+  com `nextPhaseIds`, para o `steel sd ticket move`) e
+  `GET /api/v1/whatsapp/conversations/waiting` (a fila sem atendente), mais o
+  evento de webhook `communication.conversation.waiting` (ADR 0036).
+- **Limpeza de tokens:** o job `data-retention` (03:00) apaga, todo dia, os
+  tokens pessoais revogados ou vencidos há mais de 90 dias
+  (`cleanup-api-tokens`). Os 90 dias mantêm o nome e o prefixo do token para
+  quem cruza a auditoria (`apiTokenId` nos eventos do Axiom) com a lista em
+  Ajustes. Os códigos do fluxo de dispositivo não precisam de limpeza: ficam só
+  no Redis, com TTL de `expiresIn` + 2 minutos.

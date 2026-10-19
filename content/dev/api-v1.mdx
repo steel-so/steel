@@ -126,7 +126,10 @@ O envelope é o mesmo do resto do Steel (veja
   "success": false,
   "statusCode": 403,
   "message": "Este token só permite leitura. Crie um token com o escopo api:write para alterar dados.",
-  "error": { "code": "API_TOKEN_SCOPE_REQUIRED" }
+  "error": {
+    "code": "API_TOKEN_SCOPE_REQUIRED",
+    "details": { "requiredScope": "api:write" }
+  }
 }
 ```
 

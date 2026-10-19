@@ -1,10 +1,12 @@
 import {
   ListV1WhatsAppTemplatesSchema,
+  ListV1WhatsAppWaitingConversationsSchema,
   SendV1WhatsAppTemplateSchema,
 } from '@/src/schemas/api-v1.schema'
 import type { OpenApiRegistry } from '../../registry'
 import {
   WhatsAppBroadcastDetailDTO,
+  WhatsAppConversationDTO,
   WhatsAppMessageDTO,
   WhatsAppTemplateDTO,
 } from '../../schemas/whatsapp'
@@ -100,5 +102,26 @@ export function registerV1WhatsAppPaths(registry: OpenApiRegistry): void {
       200: { description: 'Transmissão.', schema: WhatsAppBroadcastDetailDTO },
     },
     errors: [...ACCESS, 'WHATSAPP_BROADCAST_NOT_FOUND'],
+  })
+
+  registry.registerRoute({
+    method: 'get',
+    path: '/whatsapp/conversations/waiting',
+    tags: [TAG],
+    summary: 'Conversas aguardando atendimento',
+    operationId: 'listWaitingConversations',
+    description: `A fila da caixa de entrada: conversas abertas (\`NEW\` ou \`IN_PROGRESS\`), não arquivadas e **sem responsável**, da mais antiga para a mais nova (pela última mensagem). Segue a visibilidade das Equipes do dono do token: a fila geral e as filas das equipes dele (o dono e administradores fora de equipes veem todas). Conversas que a IA está atendendo entram, com \`aiActive: true\`. Quando uma conversa entra nesta fila, o webhook \`communication.conversation.waiting\` é enviado. ${PAGINATION_NOTE} ${V1_READ}`,
+    auth: 'apiToken',
+    query: ListV1WhatsAppWaitingConversationsSchema,
+    responses: {
+      200: {
+        description: 'Página de conversas aguardando.',
+        schema: v1Page('WhatsAppConversation', WhatsAppConversationDTO),
+      },
+    },
+    errors: [
+      ...ACCESS,
+      { code: 'VALIDATION_ERROR', message: 'Cursor inválido' },
+    ],
   })
 }
