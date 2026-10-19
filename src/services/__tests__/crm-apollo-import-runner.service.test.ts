@@ -12,7 +12,11 @@ import {
   crmApolloRequestFailed,
   databaseError,
 } from '@/src/errors'
-import { err, ok } from '@/src/lib/result'
+import type {
+  ApolloBulkMatchResult,
+  ApolloReply,
+} from '@/src/lib/integrations/apollo-client'
+import { err, ok, type Result } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/lib/axiom/logger', () => ({
@@ -85,9 +89,16 @@ function person(id: string, over: Record<string, unknown> = {}) {
   }
 }
 const RATE = { minuteLeft: 30, hourLeft: 100, dayLeft: 500 }
-const matches = (list: unknown[], credits = list.length) =>
+const matches = (
+  list: unknown[],
+  credits = list.length,
+): Result<ApolloReply<ApolloBulkMatchResult>> =>
   ok({
-    data: { matches: list as never, creditsConsumed: credits },
+    data: {
+      matches: list as ApolloBulkMatchResult['matches'],
+      creditsConsumed: credits,
+      requestId: null,
+    },
     rateLimit: RATE,
   })
 
@@ -167,7 +178,17 @@ describe('CrmApolloImportRunner.run', () => {
     expect(intake).not.toHaveBeenCalled()
     expect(importRepo.addProgress).toHaveBeenCalledWith(
       'imp1',
-      expect.objectContaining({ created: 0, skipped: 5, failed: 0 }),
+      expect.objectContaining({
+        created: 0,
+        skipped: 5,
+        failed: 0,
+        skipReasons: {
+          opted_out: 1,
+          no_email: 2,
+          already_imported: 1,
+          not_found: 1,
+        },
+      }),
     )
     // The known lead's address still goes to the destination list.
     expect(memberRepo.addMany).not.toHaveBeenCalled()
@@ -186,7 +207,12 @@ describe('CrmApolloImportRunner.run', () => {
     expectOk(await CrmApolloImportRunner.run('imp1'))
     expect(importRepo.addProgress).toHaveBeenCalledWith(
       'imp1',
-      expect.objectContaining({ created: 1, skipped: 1, failed: 1 }),
+      expect.objectContaining({
+        created: 1,
+        skipped: 1,
+        failed: 1,
+        skipReasons: { duplicate_lead: 1 },
+      }),
     )
     expect(intake.mock.calls[2][2].name).toBe('c')
   })
@@ -255,8 +281,11 @@ describe('CrmApolloImportRunner.run', () => {
     bulkMatch.mockImplementation(async (_k, batch) =>
       ok({
         data: {
-          matches: batch.map((id) => person(id)) as never,
+          matches: batch.map((id) =>
+            person(id),
+          ) as ApolloBulkMatchResult['matches'],
           creditsConsumed: 10,
+          requestId: null,
         },
         rateLimit: { minuteLeft: 0, hourLeft: 5, dayLeft: 5 },
       }),
@@ -388,6 +417,7 @@ describe('CrmApolloImportRunner.run with revealPhones', () => {
     expect(intake).toHaveBeenCalledTimes(1)
     const progress = importRepo.addProgress.mock.calls[0][1]
     expect(progress.phonesRequested).toBe(2)
+    expect(progress.skipReasons).toEqual({ no_phone_yet: 1 })
     expect(progress.phoneOnlyPeople).toEqual([
       { id: 'old', name: 'Antiga' },
       expect.objectContaining({ id: 'a2', linkedin: 'https://l/a2' }),
@@ -399,6 +429,9 @@ describe('CrmApolloImportRunner.run with revealPhones', () => {
     bulkMatch.mockResolvedValue(matches([person('dup', { email: null })]))
     expectOk(await CrmApolloImportRunner.run('imp1'))
     expect(importRepo.addProgress.mock.calls[0][1].phoneOnlyPeople).toEqual([])
+    expect(importRepo.addProgress.mock.calls[0][1].skipReasons).toEqual({
+      already_imported: 1,
+    })
   })
 
   it('re-enriches the picked LIST contacts only to reveal phones', async () => {
@@ -461,5 +494,30 @@ describe('CrmApolloImportRunner.run with revealPhones', () => {
     expect(importRepo.addProgress.mock.calls[0][1].phoneOnlyPeople).toBe(
       undefined,
     )
+  })
+})
+
+describe('CrmApolloImportRunner.run with LIST person ids', () => {
+  it('keys enrichment and the lead on the Apollo person, not the contact', async () => {
+    loadRow({
+      source: 'LIST',
+      revealPhones: true,
+      apolloIds: [],
+      contacts: [
+        {
+          id: 'c1',
+          personId: 'p1',
+          name: 'Ana',
+          email: 'ana@acme.com',
+          emailStatus: 'verified',
+        },
+      ],
+    })
+    bulkMatch.mockResolvedValue(matches([person('p1')]))
+    expectOk(await CrmApolloImportRunner.run('imp1'))
+    expect(bulkMatch.mock.calls[0][1]).toEqual(['p1'])
+    expect(intake.mock.calls[0][3]).toMatchObject({
+      external: { source: 'apollo', id: 'p1' },
+    })
   })
 })
