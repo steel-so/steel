@@ -113,6 +113,7 @@ export function ApolloListsTab({
         labelName: label,
         contacts: [...selected.values()].map((contact) => ({
           id: contact.id,
+          personId: contact.personId,
           name: contact.name,
           email: contact.email,
           emailStatus: contact.emailStatus,

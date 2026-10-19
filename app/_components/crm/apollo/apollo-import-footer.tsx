@@ -148,6 +148,13 @@ export function ApolloImportFooter({
           </p>
         )}
       </div>
+      {creditsPerPerson === 1 ? (
+        <p className='text-muted-foreground text-xs'>
+          A Apollo cobra o enriquecimento mesmo quando não encontra e-mail:
+          pessoas marcadas como &quot;sem e-mail&quot; consomem crédito e só
+          viram lead se o telefone for revelado.
+        </p>
+      ) : null}
       <p className='text-muted-foreground text-xs'>{WHATSAPP_NOTE}</p>
     </div>
   )

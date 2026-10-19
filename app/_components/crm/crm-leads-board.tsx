@@ -4,8 +4,8 @@ import {
   Download01Icon,
   PlusSignIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
 import {
   LEAD_STAGES,
   STAGE_LABELS,
@@ -17,7 +17,7 @@ import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-bu
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -159,6 +159,13 @@ export function CrmLeadsBoard({
     if (id) setSelectedLeadId(id)
   }, [])
   const [createOpen, setCreateOpen] = useState(false)
+  const [apolloOpen, setApolloOpen] = useState(false)
+  // `?apollo=1` (old import page redirect) opens the Apollo import modal.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('apollo') === '1') {
+      setApolloOpen(true)
+    }
+  }, [])
   // Quick action from the global search (`?new=1`): opens the create form.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('new') === '1') {
@@ -189,18 +196,25 @@ export function CrmLeadsBoard({
 
   return (
     <div className='flex h-full min-h-0 w-full flex-col gap-4 p-4'>
+      <ApolloImportDialog
+        open={apolloOpen}
+        onOpenChange={setApolloOpen}
+        workspaceId={workspaceId}
+        slug={slug}
+      />
       <div className='flex items-center justify-between'>
         <p className='text-muted-foreground text-sm'>
           {leads.length} lead{leads.length === 1 ? '' : 's'} no funil
         </p>
         <div className='flex items-center gap-2'>
-          <Link
-            href={`/${slug}/crm/leads/apollo`}
-            className={buttonVariants({ size: 'sm', variant: 'outline' })}
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={() => setApolloOpen(true)}
           >
             <SteelIcon icon={Download01Icon} strokeWidth={2} />
             Importar da Apollo
-          </Link>
+          </Button>
           <Button size='sm' onClick={() => setCreateOpen(true)}>
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Novo lead

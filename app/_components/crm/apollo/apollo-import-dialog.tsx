@@ -3,6 +3,13 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { buttonVariants } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCrmApolloConnection } from '@/src/hooks/use-crm-apollo'
 import { ApolloHistoryTab } from './apollo-history-tab'
@@ -11,8 +18,39 @@ import { ApolloSearchTab } from './apollo-search-tab'
 
 type TabValue = 'search' | 'lists' | 'history'
 
-/** Importar da Apollo: search, saved lists and import history. */
-export function ApolloImportPage({
+/** Importar da Apollo: search, saved lists and import history, in a modal. */
+export function ApolloImportDialog({
+  open,
+  onOpenChange,
+  workspaceId,
+  slug,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  workspaceId: string
+  slug: string
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='flex h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] flex-col gap-3 overflow-hidden p-4 sm:h-[90dvh] sm:max-w-6xl sm:p-6'>
+        <DialogHeader>
+          <DialogTitle>Importar da Apollo</DialogTitle>
+          <DialogDescription>
+            Busque pessoas na Apollo.io, escolha uma lista salva e acompanhe o
+            histórico das importações.
+          </DialogDescription>
+        </DialogHeader>
+        <div className='min-h-0 flex-1 overflow-y-auto'>
+          {open ? (
+            <ApolloImportBody workspaceId={workspaceId} slug={slug} />
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ApolloImportBody({
   workspaceId,
   slug,
 }: {
@@ -55,13 +93,7 @@ export function ApolloImportPage({
 
   const defaultList = connection.data.defaultMailingListId
   return (
-    <div className='flex min-w-0 flex-col gap-4 p-4'>
-      <Link
-        href={`/${slug}/crm/leads`}
-        className='w-fit text-muted-foreground text-sm hover:text-foreground'
-      >
-        ← Voltar aos leads
-      </Link>
+    <div className='flex min-w-0 flex-col gap-4'>
       {connection.data.status === 'ERROR' && connection.data.statusError ? (
         <p
           role='alert'
