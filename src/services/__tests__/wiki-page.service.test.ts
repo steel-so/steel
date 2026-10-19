@@ -4,6 +4,11 @@ import { createFakeMembership } from '@/src/__tests__/factories/membership.facto
 import { createFakeWikiPage } from '@/src/__tests__/factories/wiki-page.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'
+import {
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+  scheduleKnowledgeReindex,
+} from '@/src/lib/ai/knowledge/index-hooks'
 import { err, ok } from '@/src/lib/result'
 import { publishWikiLockChange } from '@/src/lib/wiki-lock-channel'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -211,6 +216,11 @@ describe('WikiPageService', () => {
       })
 
       expectOk(result)
+      expect(scheduleKnowledgeIndex).toHaveBeenCalledWith(
+        'wiki-page',
+        'ws1',
+        'w1',
+      )
     })
 
     it('should return FORBIDDEN when actor is not a workspace member', async () => {
@@ -391,6 +401,15 @@ describe('WikiPageService', () => {
 
       const dto = expectOk(result)
       expect(dto.archivedAt).not.toBeNull()
+      expect(removeKnowledgeSource).toHaveBeenCalledWith(
+        'wiki-page',
+        'ws1',
+        'w1',
+      )
+      // Sub-pages were archived too: the wiki part of the index is rebuilt.
+      expect(scheduleKnowledgeReindex).toHaveBeenCalledWith('ws1', [
+        'wiki-page',
+      ])
     })
 
     it('should return FORBIDDEN when actor is not a workspace member', async () => {
@@ -1054,6 +1073,11 @@ describe('WikiPageService.duplicate()', () => {
         targetId: 'copy',
         meta: { workspaceId: 'ws1', sourceId: 'w1' },
       }),
+    )
+    expect(scheduleKnowledgeIndex).toHaveBeenCalledWith(
+      'wiki-page',
+      'ws1',
+      'copy',
     )
   })
 

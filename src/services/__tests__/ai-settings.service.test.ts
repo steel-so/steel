@@ -5,6 +5,7 @@ import {
 } from '@/src/__tests__/factories/ai-settings.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import { onWorkspaceAiSwitch } from '@/src/lib/ai/knowledge/index-hooks'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/audit')
@@ -304,6 +305,11 @@ describe('AiSettingsService', () => {
         'ws1',
         expect.objectContaining({ aiEnabled: false, autopilotEnabled: true }),
       )
+      // The switch did not change: the knowledge index is left alone.
+      expect(onWorkspaceAiSwitch).not.toHaveBeenCalled()
+
+      expectOk(await AiSettingsService.update('u1', 'ws1', { aiEnabled: true }))
+      expect(onWorkspaceAiSwitch).toHaveBeenCalledWith('ws1', true)
     })
 
     it('should keep the agent mode when the patch does not mention it', async () => {

@@ -550,6 +550,71 @@ describe('SteelAiChatService.sendMessage() — the turn', () => {
     expect(endOf(events).message.content).toBe('Vou consultar.\n\nSão 3.')
   })
 
+  it('should attach the steel_search sources to the tool call as citations', async () => {
+    const searchExecute = vi.fn()
+    searchExecute.mockResolvedValueOnce(
+      ok({
+        data: {
+          mode: 'text',
+          results: [
+            {
+              ref: 1,
+              sourceType: 'wiki-page',
+              source: 'Página da Wiki',
+              title: 'Política de férias',
+              snippet: '30 dias',
+              href: '/demo/wiki/p1',
+            },
+          ],
+        },
+        summary: '1 fonte(s) para "férias"',
+      }),
+    )
+    searchExecute.mockResolvedValueOnce(
+      ok({ data: { mode: 'text', results: [] }, summary: 'Nada' }),
+    )
+    tools.list = [
+      {
+        ...readTool,
+        name: 'steel_search',
+        module: null,
+        execute: searchExecute,
+      },
+    ]
+    setup({
+      rounds: [
+        {
+          response: {
+            toolCalls: [
+              call('c1', 'steel_search', { query: 'férias' }),
+              call('c2', 'steel_search', { query: 'licença' }),
+              call('c3', 'sd_list_tickets'),
+            ],
+          },
+        },
+        { response: { text: '30 dias [Política de férias](/demo/wiki/p1).' } },
+      ],
+      conversationOverrides: { title: 'x' },
+    })
+    tools.list.push(readTool)
+
+    const events = await send({ content: 'Quantos dias de férias?' })
+    const ends = events.filter(
+      (e): e is Extract<SteelAiStreamEvent, { type: 'tool.end' }> =>
+        e.type === 'tool.end',
+    )
+    expect(ends[0].call.citations).toEqual([
+      {
+        sourceType: 'wiki-page',
+        label: 'Página da Wiki',
+        title: 'Política de férias',
+        href: '/demo/wiki/p1',
+      },
+    ])
+    expect(ends[1].call.citations).toBeUndefined()
+    expect(ends[2].call.citations).toBeUndefined()
+  })
+
   it('should report read tool errors and unavailable tools to the model', async () => {
     readExecute.mockResolvedValue(err(forbidden()))
     setup({

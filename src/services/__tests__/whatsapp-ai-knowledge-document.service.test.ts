@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeWhatsAppAiKnowledgeDocument } from '@/src/__tests__/factories/whatsapp-ai-knowledge-document.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import {
+  removeKnowledgeSource,
+  scheduleKnowledgeIndex,
+} from '@/src/lib/ai/knowledge/index-hooks'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
@@ -129,6 +133,11 @@ describe('WhatsAppAiKnowledgeDocumentService', () => {
         status: 'READY',
         extractedText: 'texto extraído',
       })
+      expect(scheduleKnowledgeIndex).toHaveBeenCalledWith(
+        'zap-knowledge-doc',
+        'ws1',
+        'doc1',
+      )
     })
 
     it('should mark the document FAILED when extraction fails', async () => {
@@ -167,6 +176,7 @@ describe('WhatsAppAiKnowledgeDocumentService', () => {
         status: 'FAILED',
         errorMessage: 'pdf corrompido',
       })
+      expect(scheduleKnowledgeIndex).not.toHaveBeenCalled()
     })
   })
 
@@ -215,6 +225,11 @@ describe('WhatsAppAiKnowledgeDocumentService', () => {
         bucket: 'whatsapp-ai-knowledge',
         key: 'ws1/doc1.pdf',
       })
+      expect(removeKnowledgeSource).toHaveBeenCalledWith(
+        'zap-knowledge-doc',
+        'ws1',
+        'doc1',
+      )
     })
   })
 })

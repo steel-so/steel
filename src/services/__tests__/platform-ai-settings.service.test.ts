@@ -9,9 +9,18 @@ vi.mock('@/src/repositories/platform-ai-settings.repository')
 vi.mock('@/src/repositories/user.repository')
 vi.mock('@/src/lib/admin-audit', () => ({ persistAdminAction: vi.fn() }))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
+vi.mock('@/src/repositories/ai-knowledge-chunk.repository')
+vi.mock('@/src/lib/ai/knowledge/embeddings', () => ({
+  isEmbeddingProviderConfigured: vi.fn(() => true),
+}))
+vi.mock('@/lib/axiom/logger', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { persistAdminAction } from '@/src/lib/admin-audit'
+import { isEmbeddingProviderConfigured } from '@/src/lib/ai/knowledge/embeddings'
+import { AiKnowledgeChunkRepository } from '@/src/repositories/ai-knowledge-chunk.repository'
 import { PlatformAiSettingsRepository } from '@/src/repositories/platform-ai-settings.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import {
@@ -21,6 +30,7 @@ import {
 
 const repo = vi.mocked(PlatformAiSettingsRepository)
 const users = vi.mocked(UserRepository)
+const chunks = vi.mocked(AiKnowledgeChunkRepository)
 
 const admin = createFakeUser({
   id: 'admin1',
@@ -46,9 +56,15 @@ beforeEach(() => {
     ok(id === 'admin1' ? admin : regular),
   )
   repo.find.mockResolvedValue(ok(null))
-  repo.upsert.mockImplementation(async (data) =>
-    ok(row(String(data.costMargin))),
-  )
+  repo.upsert.mockImplementation(async (data) => ({
+    ok: true,
+    value: {
+      ...row(String(data.costMargin)),
+      embeddingsEnabled: data.embeddingsEnabled ?? true,
+    },
+  }))
+  chunks.vectorEnabled.mockResolvedValue(ok(true))
+  vi.mocked(isEmbeddingProviderConfigured).mockReturnValue(true)
 })
 
 describe('PlatformAiSettingsService.getCostMargin()', () => {
@@ -131,6 +147,7 @@ describe('PlatformAiSettingsService.update()', () => {
     expect(dto.costMargin).toBe(1.25)
     expect(repo.upsert).toHaveBeenCalledWith({
       costMargin: 1.25,
+      embeddingsEnabled: true,
       updatedById: 'admin1',
     })
     expect(auditMutation).toHaveBeenCalledWith({
@@ -177,5 +194,91 @@ describe('PlatformAiSettingsService.update()', () => {
       'DATABASE_ERROR',
     )
     expect(repo.upsert).not.toHaveBeenCalled()
+  })
+})
+
+describe('PlatformAiSettingsService — knowledge search embeddings', () => {
+  it('should read the switch (default on), cache it and fail closed', async () => {
+    expect(await PlatformAiSettingsService.getEmbeddingsEnabled(0)).toBe(true)
+    repo.find.mockResolvedValue(ok({ ...row('1'), embeddingsEnabled: false }))
+    expect(await PlatformAiSettingsService.getEmbeddingsEnabled(1_000)).toBe(
+      true,
+    )
+    expect(
+      await PlatformAiSettingsService.getEmbeddingsEnabled(
+        COST_MARGIN_TTL_MS + 1,
+      ),
+    ).toBe(false)
+
+    PlatformAiSettingsService.clearCache()
+    repo.find.mockResolvedValue(err(databaseError()))
+    expect(await PlatformAiSettingsService.getEmbeddingsEnabled(0)).toBe(false)
+    repo.find.mockResolvedValue(ok(row('1')))
+    expect(await PlatformAiSettingsService.getEmbeddingsEnabled(0)).toBe(true)
+    repo.find.mockResolvedValue(err(databaseError()))
+    expect(
+      await PlatformAiSettingsService.getEmbeddingsEnabled(
+        COST_MARGIN_TTL_MS + 1,
+      ),
+    ).toBe(true)
+  })
+
+  it('should report the live state of the knowledge search', async () => {
+    expect(
+      expectOk(await PlatformAiSettingsService.get('admin1')),
+    ).toMatchObject({
+      embeddingsEnabled: true,
+      knowledgeSearch: {
+        providerConfigured: true,
+        vectorIndexReady: true,
+        mode: 'hybrid',
+      },
+    })
+    chunks.vectorEnabled.mockResolvedValue(err(databaseError()))
+    expect(
+      expectOk(await PlatformAiSettingsService.get('admin1')).knowledgeSearch,
+    ).toEqual({
+      providerConfigured: true,
+      vectorIndexReady: false,
+      mode: 'text',
+    })
+    chunks.vectorEnabled.mockResolvedValue(ok(true))
+    vi.mocked(isEmbeddingProviderConfigured).mockReturnValue(false)
+    expect(
+      expectOk(await PlatformAiSettingsService.get('admin1')).knowledgeSearch
+        .mode,
+    ).toBe('text')
+  })
+
+  it('should switch embeddings off, audit the change and keep it otherwise', async () => {
+    const dto = expectOk(
+      await PlatformAiSettingsService.update('admin1', {
+        costMargin: 1,
+        embeddingsEnabled: false,
+      }),
+    )
+    expect(dto.embeddingsEnabled).toBe(false)
+    expect(dto.knowledgeSearch.mode).toBe('text')
+    expect(repo.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ embeddingsEnabled: false }),
+    )
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: {
+          previousMargin: 1,
+          costMargin: 1,
+          previousEmbeddingsEnabled: true,
+          embeddingsEnabled: false,
+        },
+      }),
+    )
+
+    repo.find.mockResolvedValue(ok({ ...row('1'), embeddingsEnabled: false }))
+    expectOk(
+      await PlatformAiSettingsService.update('admin1', { costMargin: 2 }),
+    )
+    expect(repo.upsert).toHaveBeenLastCalledWith(
+      expect.objectContaining({ embeddingsEnabled: false }),
+    )
   })
 })
