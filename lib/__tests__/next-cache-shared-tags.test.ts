@@ -367,7 +367,9 @@ describe('with the real Next default handler', () => {
       base: {
         ...createFakeBase(manifestB),
         updateTags: vi.fn(async (tags: string[]) => {
-          const now = Math.round(performance.timeOrigin + performance.now())
+          // Floor, not round: a rounded-up stamp lands after Next's "now"
+          // and the entry would not count as expired yet (flaky).
+          const now = Math.floor(performance.timeOrigin + performance.now())
           for (const tag of tags) manifestB.set(tag, { stale: now, expired: now })
         }),
       },
