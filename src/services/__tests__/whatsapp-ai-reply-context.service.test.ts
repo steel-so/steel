@@ -40,6 +40,10 @@ vi.mock('@/src/lib/ai', async (importOriginal) => ({
 import { logger } from '@/lib/axiom/logger'
 import { databaseError } from '@/src/errors'
 import { getOpenAiClient } from '@/src/lib/ai'
+import {
+  type UntrustedSource,
+  wrapUntrusted,
+} from '@/src/lib/ai/guardrails/injection'
 import type { AiChatResponse, AiProvider } from '@/src/lib/ai/types'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
@@ -53,6 +57,10 @@ import {
   type PreparedAiCall,
 } from '@/src/services/ai-usage.service'
 import { WhatsAppAiReplyService } from '../whatsapp-ai-reply.service'
+
+/** Customer text and documents reach the model fenced (ADR 0041). */
+const fenced = (text: string, source: UntrustedSource = 'whatsapp_message') =>
+  wrapUntrusted(text, source)
 
 const mockedConversationRepo = vi.mocked(WhatsAppConversationRepository)
 const mockedAiConfigRepo = vi.mocked(WhatsAppAiConfigRepository)
@@ -206,8 +214,12 @@ describe('WhatsAppAiReplyService.generateReply() — context building', () => {
 
     const system = systemPrompt(chat)
     expect(system).toContain('Base de conhecimento')
-    expect(system).toContain(`### faq.md\n${'a'.repeat(15_000)}`)
-    expect(system).toContain(`### precos.md\n${'b'.repeat(5_000)}`)
+    expect(system).toContain(
+      `### faq.md\n${fenced('a'.repeat(15_000), 'knowledge_document')}`,
+    )
+    expect(system).toContain(
+      `### precos.md\n${fenced('b'.repeat(5_000), 'knowledge_document')}`,
+    )
     expect(system).not.toContain('b'.repeat(5_001))
     expect(system).not.toContain('ignorado.md')
   })
@@ -271,12 +283,12 @@ describe('WhatsAppAiReplyService.generateReply() — context building', () => {
     expectOk(await generate('h6'))
 
     expect(sentMessages(chat)).toEqual([
-      { role: 'user', content: '[imagem]' },
+      { role: 'user', content: fenced('[imagem]') },
       { role: 'assistant', content: 'Resposta' },
-      { role: 'user', content: '[áudio]' },
-      { role: 'user', content: '[vídeo]' },
-      { role: 'user', content: '[documento]' },
-      { role: 'user', content: '[mensagem]' },
+      { role: 'user', content: fenced('[áudio]') },
+      { role: 'user', content: fenced('[vídeo]') },
+      { role: 'user', content: fenced('[documento]') },
+      { role: 'user', content: fenced('[mensagem]') },
     ])
   })
 
@@ -312,20 +324,20 @@ describe('WhatsAppAiReplyService.generateReply() — context building', () => {
     expectOk(await generate('cap'))
 
     expect(sentMessages(chat, 0)).toEqual([
-      { role: 'user', content: '[imagem]' },
+      { role: 'user', content: fenced('[imagem]') },
       {
         role: 'user',
         content: [
-          { type: 'text', text: 'Imagem enviada pelo cliente' },
+          { type: 'text', text: fenced('Imagem enviada pelo cliente') },
           { type: 'image', url: 'https://cdn.example.com/a.jpg' },
         ],
       },
-      { role: 'user', content: 'Olha isso' },
+      { role: 'user', content: fenced('Olha isso') },
     ])
     expect(sentMessages(chat, 1)[2]).toEqual({
       role: 'user',
       content: [
-        { type: 'text', text: 'Olha isso' },
+        { type: 'text', text: fenced('Olha isso') },
         { type: 'image', url: 'https://cdn.example.com/b.jpg' },
       ],
     })
@@ -358,10 +370,10 @@ describe('WhatsAppAiReplyService.generateReply() — context building', () => {
     expectOk(await generate('doc'))
 
     expect(sentMessages(chat, 0)).toEqual([
-      { role: 'user', content: '[vídeo]' },
+      { role: 'user', content: fenced('[vídeo]') },
     ])
     expect(sentMessages(chat, 1)).toEqual([
-      { role: 'user', content: 'contrato.pdf' },
+      { role: 'user', content: fenced('contrato.pdf') },
     ])
   })
 
@@ -463,7 +475,7 @@ describe('WhatsAppAiReplyService.generateReply() — audio transcription', () =>
       expect.objectContaining({ model: 'whisper-1' }),
     )
     expect(sentMessages(chat)).toEqual([
-      { role: 'user', content: '[áudio transcrito] quero remarcar' },
+      { role: 'user', content: fenced('[áudio transcrito] quero remarcar') },
     ])
   })
 
@@ -474,7 +486,9 @@ describe('WhatsAppAiReplyService.generateReply() — audio transcription', () =>
 
     expectOk(await generate('aud'))
 
-    expect(sentMessages(chat)).toEqual([{ role: 'user', content: '[áudio]' }])
+    expect(sentMessages(chat)).toEqual([
+      { role: 'user', content: fenced('[áudio]') },
+    ])
   })
 
   it('should fall back to the placeholder when the media download fails', async () => {
@@ -484,7 +498,9 @@ describe('WhatsAppAiReplyService.generateReply() — audio transcription', () =>
     expectOk(await generate('aud'))
 
     expect(transcriptionsCreate).not.toHaveBeenCalled()
-    expect(sentMessages(chat)).toEqual([{ role: 'user', content: '[áudio]' }])
+    expect(sentMessages(chat)).toEqual([
+      { role: 'user', content: fenced('[áudio]') },
+    ])
   })
 
   it.each([
@@ -503,7 +519,9 @@ describe('WhatsAppAiReplyService.generateReply() — audio transcription', () =>
         'queue.whatsapp_ai_reply.transcription_failed',
         expect.objectContaining({ message: logged }),
       )
-      expect(sentMessages(chat)).toEqual([{ role: 'user', content: '[áudio]' }])
+      expect(sentMessages(chat)).toEqual([
+        { role: 'user', content: fenced('[áudio]') },
+      ])
     },
   )
 
@@ -515,7 +533,9 @@ describe('WhatsAppAiReplyService.generateReply() — audio transcription', () =>
     expectOk(await generate('aud'))
 
     expect(fetchMock).not.toHaveBeenCalled()
-    expect(sentMessages(chat)).toEqual([{ role: 'user', content: '[áudio]' }])
+    expect(sentMessages(chat)).toEqual([
+      { role: 'user', content: fenced('[áudio]') },
+    ])
   })
 })
 

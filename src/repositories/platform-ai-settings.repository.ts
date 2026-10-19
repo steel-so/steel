@@ -21,6 +21,11 @@ export const PlatformAiSettingsRepository = {
   async upsert(data: {
     costMargin: number
     embeddingsEnabled?: boolean
+    classificationModel?: string | null
+    conversationModel?: string | null
+    assistantModel?: string | null
+    agentModel?: string | null
+    failoverEnabled?: boolean
     updatedById: string
   }): Promise<Result<PlatformAiSettings>> {
     try {

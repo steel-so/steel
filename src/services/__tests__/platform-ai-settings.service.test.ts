@@ -44,6 +44,11 @@ function row(margin: string): PlatformAiSettings {
     id: 'default',
     costMargin: new Prisma.Decimal(margin),
     embeddingsEnabled: true,
+    classificationModel: null,
+    conversationModel: null,
+    assistantModel: null,
+    agentModel: null,
+    failoverEnabled: true,
     updatedById: 'admin1',
     createdAt: new Date('2026-10-01T00:00:00Z'),
     updatedAt: new Date('2026-10-06T12:00:00Z'),
@@ -148,6 +153,11 @@ describe('PlatformAiSettingsService.update()', () => {
     expect(repo.upsert).toHaveBeenCalledWith({
       costMargin: 1.25,
       embeddingsEnabled: true,
+      classificationModel: null,
+      conversationModel: null,
+      assistantModel: null,
+      agentModel: null,
+      failoverEnabled: true,
       updatedById: 'admin1',
     })
     expect(auditMutation).toHaveBeenCalledWith({
@@ -279,6 +289,129 @@ describe('PlatformAiSettingsService — knowledge search embeddings', () => {
     )
     expect(repo.upsert).toHaveBeenLastCalledWith(
       expect.objectContaining({ embeddingsEnabled: false }),
+    )
+  })
+})
+
+describe('PlatformAiSettingsService routing defaults (ADR 0042)', () => {
+  it('should default to no model override with failover on, and cache it', async () => {
+    expect(await PlatformAiSettingsService.getRoutingDefaults(0)).toEqual({
+      taskModels: {
+        CLASSIFICATION: null,
+        CONVERSATION: null,
+        ASSISTANT: null,
+        AGENT: null,
+      },
+      failoverEnabled: true,
+    })
+    repo.find.mockResolvedValue(
+      ok({ ...row('1'), assistantModel: 'anthropic:claude-sonnet-5' }),
+    )
+    expect(
+      (await PlatformAiSettingsService.getRoutingDefaults(1_000)).taskModels
+        .ASSISTANT,
+    ).toBeNull()
+    expect(
+      (
+        await PlatformAiSettingsService.getRoutingDefaults(
+          COST_MARGIN_TTL_MS + 1,
+        )
+      ).taskModels.ASSISTANT,
+    ).toBe('anthropic:claude-sonnet-5')
+  })
+
+  it('should ignore models that left the catalog', async () => {
+    repo.find.mockResolvedValue(
+      ok({ ...row('1'), agentModel: 'openai:retired-model' }),
+    )
+    expect(
+      (await PlatformAiSettingsService.getRoutingDefaults(0)).taskModels.AGENT,
+    ).toBeNull()
+  })
+
+  it('should keep the last value, or the defaults, on a database error', async () => {
+    repo.find.mockResolvedValue(err(databaseError()))
+    expect(
+      (await PlatformAiSettingsService.getRoutingDefaults(0)).failoverEnabled,
+    ).toBe(true)
+    repo.find.mockResolvedValue(ok({ ...row('1'), failoverEnabled: false }))
+    expect(
+      (
+        await PlatformAiSettingsService.getRoutingDefaults(
+          COST_MARGIN_TTL_MS + 1,
+        )
+      ).failoverEnabled,
+    ).toBe(false)
+    repo.find.mockResolvedValue(err(databaseError()))
+    expect(
+      (
+        await PlatformAiSettingsService.getRoutingDefaults(
+          3 * COST_MARGIN_TTL_MS,
+        )
+      ).failoverEnabled,
+    ).toBe(false)
+  })
+
+  it('should save task models and the failover switch, auditing the change', async () => {
+    repo.upsert.mockImplementation(async (data) => ({
+      ok: true,
+      value: {
+        ...row(String(data.costMargin)),
+        classificationModel: data.classificationModel ?? null,
+        conversationModel: data.conversationModel ?? null,
+        assistantModel: data.assistantModel ?? null,
+        agentModel: data.agentModel ?? null,
+        failoverEnabled: data.failoverEnabled ?? true,
+      },
+    }))
+    const dto = expectOk(
+      await PlatformAiSettingsService.update('admin1', {
+        costMargin: 1,
+        taskModels: {
+          CLASSIFICATION: 'openai:gpt-4o-mini',
+          AGENT: 'anthropic:claude-opus-5',
+          ASSISTANT: undefined,
+        },
+        failoverEnabled: false,
+      }),
+    )
+    expect(dto.taskModels).toEqual({
+      CLASSIFICATION: 'openai:gpt-4o-mini',
+      CONVERSATION: null,
+      ASSISTANT: null,
+      AGENT: 'anthropic:claude-opus-5',
+    })
+    expect(dto.failoverEnabled).toBe(false)
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: expect.objectContaining({
+          previousFailoverEnabled: true,
+          failoverEnabled: false,
+          taskModels: expect.objectContaining({
+            AGENT: 'anthropic:claude-opus-5',
+          }),
+        }),
+      }),
+    )
+  })
+
+  it('should keep the saved routing when the patch does not mention it', async () => {
+    repo.find.mockResolvedValue(
+      ok({ ...row('1'), conversationModel: 'anthropic:claude-haiku-4-5' }),
+    )
+    expectOk(
+      await PlatformAiSettingsService.update('admin1', { costMargin: 2 }),
+    )
+    expect(repo.upsert).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        conversationModel: 'anthropic:claude-haiku-4-5',
+        failoverEnabled: true,
+      }),
+    )
+    expect(auditMutation).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        meta: { previousMargin: 1, costMargin: 2 },
+      }),
     )
   })
 })

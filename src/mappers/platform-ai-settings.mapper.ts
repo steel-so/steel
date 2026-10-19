@@ -1,5 +1,11 @@
 import type { PlatformAiSettings } from '@prisma/client'
-import { AI_MODEL_CATALOG, DEFAULT_AI_COST_MARGIN } from '@/src/lib/ai/models'
+import {
+  AI_MODEL_CATALOG,
+  type AiModelKey,
+  type AiTaskClass,
+  DEFAULT_AI_COST_MARGIN,
+  isAiModelKey,
+} from '@/src/lib/ai/models'
 import type {
   PlatformAiModelPriceDTO,
   PlatformAiSettingsDTO,
@@ -34,6 +40,31 @@ export function toEmbeddingsEnabled(row: PlatformAiSettings | null): boolean {
   return row ? row.embeddingsEnabled : true
 }
 
+/** Platform routing defaults (ADR 0042): model per task class + failover. */
+export interface AiRoutingDefaults {
+  /** Null = the platform default model (agents: the assistant's). */
+  taskModels: Record<AiTaskClass, AiModelKey | null>
+  failoverEnabled: boolean
+}
+
+function modelKeyOrNull(key: string | null | undefined): AiModelKey | null {
+  return key && isAiModelKey(key) ? key : null
+}
+
+export function toAiRoutingDefaults(
+  row: PlatformAiSettings | null,
+): AiRoutingDefaults {
+  return {
+    taskModels: {
+      CLASSIFICATION: modelKeyOrNull(row?.classificationModel),
+      CONVERSATION: modelKeyOrNull(row?.conversationModel),
+      ASSISTANT: modelKeyOrNull(row?.assistantModel),
+      AGENT: modelKeyOrNull(row?.agentModel),
+    },
+    failoverEnabled: row ? row.failoverEnabled : true,
+  }
+}
+
 const TEXT_ONLY: PlatformKnowledgeSearchStatusDTO = {
   providerConfigured: false,
   vectorIndexReady: false,
@@ -45,11 +76,14 @@ export function toPlatformAiSettingsDTO(
   knowledgeSearch: PlatformKnowledgeSearchStatusDTO = TEXT_ONLY,
 ): PlatformAiSettingsDTO {
   const margin = toCostMargin(row)
+  const routing = toAiRoutingDefaults(row)
   return {
     costMargin: margin,
     updatedAt: row ? row.updatedAt.toISOString() : null,
     models: toAiModelPriceDTOs(margin),
     embeddingsEnabled: toEmbeddingsEnabled(row),
     knowledgeSearch,
+    taskModels: routing.taskModels,
+    failoverEnabled: routing.failoverEnabled,
   }
 }

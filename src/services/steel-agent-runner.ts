@@ -443,7 +443,9 @@ export async function executeSteelAgentRun(
       tool.kind,
       modeOf.get(tool.name) ?? 'APPROVAL',
     )
-    if (mode === 'AUTO') {
+    // Third-party content tried to instruct the model in this run (ADR
+    // 0041): even an AUTO write waits for a human approval in the inbox.
+    if (mode === 'AUTO' && !call.guard?.tainted()) {
       const result = await runInSteelAgentContext(
         { agentId: agent.id, runId: run.id },
         () => runTool(tool, ctx, toolCall.arguments),

@@ -53,6 +53,13 @@ export interface WorkspaceAiSettingsDTO {
    * update and run actions; DELETE is never exposed (admin, off by default).
    */
   mcpWriteEnabled: boolean
+  /**
+   * Model of the Steel Agents task class (ADR 0042). Null = the platform
+   * default for agents, else the assistant model.
+   */
+  agentModel: string | null
+  /** Automatic failover to another provider/model when one fails. */
+  failoverEnabled: boolean
   usage: AiUsageSummaryDTO
   /** Modelo escolhido pelo usuário atual (`null` = segue o padrão). */
   userPreference: string | null

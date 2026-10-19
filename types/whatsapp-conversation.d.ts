@@ -41,12 +41,14 @@ export type WhatsAppConversationEventKindDTO =
   | 'BUTTON_CLICKED'
   | 'ASSIGNED'
   | 'TEAM_CHANGED'
+  | 'AI_GUARDRAIL_HANDOFF'
 export type WhatsAppConversationEventSourceDTO =
   | 'AGENT'
   | 'CONTACT'
   | 'INACTIVITY'
   | 'SENTIMENT'
   | 'BUTTON_ACTION'
+  | 'AI_GUARDRAIL'
 
 export interface WhatsAppConversationEventDTO {
   id: string

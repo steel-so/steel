@@ -17,6 +17,14 @@ export function useUpdatePlatformAiSettings() {
     mutationFn: (variables: {
       costMargin: number
       embeddingsEnabled?: boolean
+      /** Default model per task class (ADR 0042); null = platform default. */
+      taskModels?: Partial<
+        Record<
+          'CLASSIFICATION' | 'CONVERSATION' | 'ASSISTANT' | 'AGENT',
+          string | null
+        >
+      >
+      failoverEnabled?: boolean
       reason?: string
     }) =>
       apiFetch<PlatformAiSettingsDTO>(

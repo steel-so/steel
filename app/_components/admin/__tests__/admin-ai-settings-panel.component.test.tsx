@@ -37,6 +37,13 @@ const SETTINGS: PlatformAiSettingsDTO = {
     vectorIndexReady: false,
     mode: 'text',
   },
+  taskModels: {
+    CLASSIFICATION: null,
+    CONVERSATION: null,
+    ASSISTANT: null,
+    AGENT: null,
+  },
+  failoverEnabled: true,
 }
 
 describe('<AdminAiSettingsPanel />', () => {
@@ -129,6 +136,32 @@ describe('<AdminAiSettingsPanel />', () => {
     expect(fetchBody(spy, '/api/admin/ai', 'PATCH')).toEqual({
       costMargin: 1,
       embeddingsEnabled: false,
+    })
+  })
+
+  it('turns the provider failover off (ADR 0042)', async () => {
+    const fetchSpy = mockFetch([
+      {
+        method: 'PATCH',
+        match: '/api/admin/ai',
+        data: { ...SETTINGS, failoverEnabled: false },
+      },
+    ])
+    renderWithQuery(<AdminAiSettingsPanel initial={SETTINGS} />)
+    expect(screen.getByText('Modelo por tipo de tarefa')).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('switch', {
+        name: 'Contingência automática entre provedores',
+      }),
+    )
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith(
+        'Contingência automática desligada',
+      ),
+    )
+    expect(fetchBody(fetchSpy, '/api/admin/ai', 'PATCH')).toEqual({
+      costMargin: 1,
+      failoverEnabled: false,
     })
   })
 })

@@ -373,6 +373,14 @@ export const WorkspaceAiSettingsDTO = dto(
       description:
         'Clientes de IA conectados por MCP com o escopo `mcp:write` podem criar, editar e executar ações (exclusões nunca são expostas). Desligado por padrão.',
     }),
+    agentModel: z.string().nullable().meta({
+      description:
+        'Modelo da classe de tarefa dos Steel Agents (ADR 0042). `null` = padrão da plataforma para agentes, senão o do assistente.',
+    }),
+    failoverEnabled: z.boolean().meta({
+      description:
+        'Contingência automática: se o modelo escolhido falhar ou demorar, a chamada vai para outro provedor/modelo habilitado. Ligado por padrão.',
+    }),
     usage: z.object({
       periodStart: dateTime().meta({ description: '1º dia do mês (UTC).' }),
       inputTokens: z.number().int(),
@@ -386,6 +394,41 @@ export const WorkspaceAiSettingsDTO = dto(
     }),
     canManage: z.boolean().meta({
       description: 'O usuário pode alterar os ajustes (OWNER/ADMIN).',
+    }),
+  }),
+)
+
+export const WorkspaceAiGuardrailsDTO = dto(
+  'WorkspaceAiGuardrails',
+  z.object({
+    workspaceId: z.string(),
+    piiMaskingPolicy: z.enum(['OFF', 'AUTO_REPLIES', 'EVERYWHERE']).meta({
+      description:
+        'O que é mascarado antes de ir ao provedor de IA (CPF, CNPJ, cartão, telefone, e-mail). `AUTO_REPLIES` = só respostas automáticas (WhatsApp e pré-atendimento). Padrão `AUTO_REPLIES`.',
+    }),
+    injectionClassifierEnabled: z.boolean().meta({
+      description:
+        'Textos de terceiros ambíguos passam também por um modelo classificador (custo contado na cota). Desligado por padrão.',
+    }),
+    forbiddenTopics: z.array(z.string()).meta({
+      description:
+        'Assuntos que a resposta automática não trata: o atendimento passa a um humano.',
+    }),
+    maxDiscountPercent: z.number().int().nullable().meta({
+      description:
+        'Desconto máximo que a IA pode prometer (`0` = nenhum, `null` = sem limite).',
+    }),
+    maxRefundAmount: z.number().nullable().meta({
+      description:
+        'Reembolso máximo (R$) que a IA pode prometer (`0` = nenhum, `null` = sem limite).',
+    }),
+    maxDeadlineDays: z.number().int().nullable().meta({
+      description:
+        'Prazo máximo (dias) que a IA pode prometer (`null` = sem limite).',
+    }),
+    updatedAt: dateTime().nullable(),
+    canManage: z.boolean().meta({
+      description: 'O usuário pode alterar (OWNER/ADMIN).',
     }),
   }),
 )

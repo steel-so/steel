@@ -17,6 +17,11 @@ import {
   sdTicketForbidden,
 } from '@/src/errors'
 import type { AiChatRequest, AiChatResponse, AiMessage } from '@/src/lib/ai'
+import { wrapUntrusted } from '@/src/lib/ai/guardrails/injection'
+import {
+  type AutoReplyLimitHit,
+  autoReplyLimitsInstruction,
+} from '@/src/lib/ai/guardrails/limits'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
   buildSdCopilotSystem,
@@ -83,6 +88,10 @@ import type {
   SdAiTicketDraftDTO,
   SdAiTriageRecordDTO,
 } from '@/types/sd-ai'
+import {
+  checkAutoReplyGuardrails,
+  reportAutoReplyGuardrailHit,
+} from './ai-guardrails.service'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
 import { SdAccess, type SdAccessContext } from './sd-access'
 import { fireSdAutomations } from './sd-automation-engine'
@@ -134,6 +143,9 @@ const PRE_SERVICE_HISTORY = 16
 const KB_LIMIT = 4
 const HANDOFF_REPLY =
   'Certo! Vou encaminhar para o nosso time de atendimento. Você pode abrir o chamado agora com o resumo da nossa conversa.'
+/** Sent instead of a draft that hit a guardrail (ADR 0041). */
+const GUARDRAIL_HANDOFF_REPLY =
+  'Esse assunto precisa de um atendente. Vou encaminhar para o nosso time, e ele continua por aqui.'
 const PROVIDER_FAILED =
   'Não foi possível falar com o provedor de IA agora. Tente novamente em instantes.'
 
@@ -349,6 +361,8 @@ interface TurnResult {
   output: SdAiTurnOutput
   articles: SdAiArticleCardDTO[]
   draft: SdAiTicketDraftDTO
+  /** The draft hit a guardrail and was replaced by a handoff (ADR 0041). */
+  guardrail?: AutoReplyLimitHit
 }
 
 function allowedTypes(
@@ -430,25 +444,33 @@ async function assistantTurn(input: TurnInput): Promise<Result<TurnResult>> {
   if (!catalog.ok) return catalog
 
   const types = allowedTypes(input.settings, input.portalOnly)
+  // Requester text is third-party content (ADR 0041): fenced as data.
+  const source =
+    input.channel === 'portal' ? 'portal_message' : 'whatsapp_message'
   const messages: AiMessage[] = input.history
     .slice(-PRE_SERVICE_HISTORY)
     .map((m) =>
       m.role === 'user'
-        ? { role: 'user', content: redactSdPii(m.content) }
+        ? {
+            role: 'user',
+            content: wrapUntrusted(redactSdPii(m.content), source),
+          }
         : { role: 'assistant', content: m.content },
     )
+  const limits = call.value.guardrails?.limits
   const response = await complete(
     call.value,
     {
-      system: buildSdPreServiceSystem({
-        aiPersona: input.settings.aiPersona,
-        aiInstructions: input.settings.aiInstructions,
-        channel: input.channel,
-        ticketTypes: types,
-        catalog: catalog.value,
-        kb: formatSdKbContext(kb.value),
-        ticketOpen: input.ticketOpen,
-      }),
+      system:
+        buildSdPreServiceSystem({
+          aiPersona: input.settings.aiPersona,
+          aiInstructions: input.settings.aiInstructions,
+          channel: input.channel,
+          ticketTypes: types,
+          catalog: catalog.value,
+          kb: formatSdKbContext(kb.value),
+          ticketOpen: input.ticketOpen,
+        }) + (limits ? autoReplyLimitsInstruction(limits) : ''),
       messages,
       jsonSchema: { name: 'sd_assistant_turn', schema: SD_AI_TURN_JSON_SCHEMA },
       maxTokens: 1500,
@@ -468,10 +490,35 @@ async function assistantTurn(input: TurnInput): Promise<Result<TurnResult>> {
     confidence: 0.5,
     ticket: null,
   }
+  const draft = normalizeDraft(
+    output.ticket,
+    catalog.value,
+    types,
+    input.history,
+  )
+  const hit = checkAutoReplyGuardrails(call.value, {
+    inbound: userTexts.at(-1) ?? '',
+    reply: output.reply,
+  })
+  if (hit) {
+    // The draft never reaches the requester: a human takes over.
+    return ok({
+      output: {
+        ...output,
+        reply: GUARDRAIL_HANDOFF_REPLY,
+        action: 'open_ticket',
+        articleIds: [],
+        confidence: 1,
+      },
+      articles: [],
+      draft,
+      guardrail: hit,
+    })
+  }
   return ok({
     output,
     articles: toCards(kb.value, output.articleIds),
-    draft: normalizeDraft(output.ticket, catalog.value, types, input.history),
+    draft,
   })
 }
 
@@ -603,6 +650,8 @@ async function openFromPreService(input: {
   history: SdAiMessageDTO[]
   draft: SdAiTicketDraftDTO | null
   reason: string
+  /** Guardrail note for the agent who takes over (ADR 0041). */
+  note?: string
 }): Promise<Result<SdAiWhatsappOutcome>> {
   const opened = await SdWhatsappInboundService.openTicketFromWhatsapp({
     connection: input.conversation.connection,
@@ -634,6 +683,7 @@ async function openFromPreService(input: {
       conversationId: input.aiConversation.id,
       channel: 'WHATSAPP',
       reason: input.reason,
+      ...(input.note && { note: input.note }),
     },
   })
   return ok({
@@ -1306,7 +1356,25 @@ export const SdAiService = {
         reason: `ai_${turn.error.code.toLowerCase()}`,
       })
     }
-    const { output, articles, draft } = turn.value
+    const { output, articles, draft, guardrail } = turn.value
+    if (guardrail) {
+      reportAutoReplyGuardrailHit({
+        workspaceId,
+        feature: 'SERVICEDESK_PRE_SERVICE',
+        kind: guardrail.kind,
+        targetType: 'sd_ai_conversation',
+        targetId: aiConversation.id,
+      })
+      return openFromPreService({
+        conversation,
+        config: config.value,
+        aiConversation,
+        history,
+        draft,
+        reason: `guardrail_${guardrail.kind}`,
+        note: guardrail.note,
+      })
+    }
     if (shouldOpenTicket(output)) {
       return openFromPreService({
         conversation,
@@ -1355,7 +1423,11 @@ export const SdAiService = {
 
 /** Texto enviado para a triagem (sem dados pessoais). */
 function triageInput(ticket: SdTicketWithRelations): string {
-  return `Tipo: ${TYPE_LABEL[ticket.type]}\nTítulo: ${redactSdPii(ticket.title)}\nDescrição:\n${redactSdPii(clipSdText(sdHtmlToText(ticket.description ?? '') || '(sem descrição)', 4000))}`
+  // Ticket text is third-party content (ADR 0041): fenced as data.
+  return wrapUntrusted(
+    `Tipo: ${TYPE_LABEL[ticket.type]}\nTítulo: ${redactSdPii(ticket.title)}\nDescrição:\n${redactSdPii(clipSdText(sdHtmlToText(ticket.description ?? '') || '(sem descrição)', 4000))}`,
+    'ticket',
+  )
 }
 
 /** Só os campos vazios do chamado recebem a sugestão da triagem. */
@@ -1413,6 +1485,7 @@ async function autoReply(input: {
   const handoff = sdHandoffRequested(input.content, settings.aiHandoffKeywords)
   let reply: string
   let action: SdAiTurnOutput['action'] = 'open_ticket'
+  let guardrail: AutoReplyLimitHit | undefined
   if (handoff) {
     reply = 'Certo! Avisei o time — um atendente vai continuar por aqui.'
   } else {
@@ -1447,6 +1520,16 @@ async function autoReply(input: {
     if (!turn.ok) return ok({ status: 'failed', reason: turn.error.code })
     reply = turn.value.output.reply
     action = turn.value.output.action
+    guardrail = turn.value.guardrail
+    if (guardrail) {
+      reportAutoReplyGuardrailHit({
+        workspaceId,
+        feature: 'SERVICEDESK_PRE_SERVICE',
+        kind: guardrail.kind,
+        targetType: 'sd_ticket',
+        targetId: ticket.value.id,
+      })
+    }
   }
 
   const sent = await sendSdWhatsappText({
@@ -1472,7 +1555,11 @@ async function autoReply(input: {
       ticketId: ticket.value.id,
       actorKind: 'AI',
       action: 'ai.handoff',
-      meta: { channel: 'WHATSAPP', trigger: handoff ? 'keyword' : 'ai' },
+      meta: {
+        channel: 'WHATSAPP',
+        trigger: handoff ? 'keyword' : guardrail ? 'guardrail' : 'ai',
+        ...(guardrail && { guardrail: guardrail.kind, note: guardrail.note }),
+      },
     })
     return ok({ status: 'handoff' })
   }

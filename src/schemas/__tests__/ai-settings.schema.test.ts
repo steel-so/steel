@@ -89,3 +89,24 @@ describe('SetUserAiPreferenceSchema', () => {
     ).toBe(false)
   })
 })
+
+describe('UpdateWorkspaceAiSettingsSchema — task classes (ADR 0042)', () => {
+  it('should accept the agent model (or null) and the failover switch', () => {
+    expect(
+      UpdateWorkspaceAiSettingsSchema.safeParse({
+        agentModel: 'anthropic:claude-opus-5',
+        failoverEnabled: false,
+      }).success,
+    ).toBe(true)
+    expect(
+      UpdateWorkspaceAiSettingsSchema.safeParse({ agentModel: null }).success,
+    ).toBe(true)
+    expect(
+      UpdateWorkspaceAiSettingsSchema.safeParse({ agentModel: 'x:y' }).success,
+    ).toBe(false)
+    expect(
+      UpdateWorkspaceAiSettingsSchema.safeParse({ failoverEnabled: 'yes' })
+        .success,
+    ).toBe(false)
+  })
+})

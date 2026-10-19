@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { AI_MODEL_CATALOG } from '@/src/lib/ai/models'
 import {
   toAiModelPriceDTOs,
+  toAiRoutingDefaults,
   toCostMargin,
   toEmbeddingsEnabled,
   toPlatformAiSettingsDTO,
@@ -12,6 +13,11 @@ const row = {
   id: 'default',
   costMargin: new Prisma.Decimal('1.5'),
   embeddingsEnabled: true,
+  classificationModel: null,
+  conversationModel: null,
+  assistantModel: 'anthropic:claude-sonnet-5',
+  agentModel: 'not-in-catalog',
+  failoverEnabled: false,
   updatedById: 'a',
   createdAt: new Date('2026-10-01T00:00:00Z'),
   updatedAt: new Date('2026-10-06T00:00:00Z'),
@@ -68,5 +74,30 @@ describe('platform AI settings mapper', () => {
       mode: 'hybrid' as const,
     }
     expect(toPlatformAiSettingsDTO(row, status).knowledgeSearch).toBe(status)
+  })
+
+  it('should expose the routing defaults, dropping keys outside the catalog', () => {
+    expect(toAiRoutingDefaults(null)).toEqual({
+      taskModels: {
+        CLASSIFICATION: null,
+        CONVERSATION: null,
+        ASSISTANT: null,
+        AGENT: null,
+      },
+      failoverEnabled: true,
+    })
+    expect(toAiRoutingDefaults(row)).toEqual({
+      taskModels: {
+        CLASSIFICATION: null,
+        CONVERSATION: null,
+        ASSISTANT: 'anthropic:claude-sonnet-5',
+        AGENT: null,
+      },
+      failoverEnabled: false,
+    })
+    expect(toPlatformAiSettingsDTO(row)).toMatchObject({
+      taskModels: { ASSISTANT: 'anthropic:claude-sonnet-5' },
+      failoverEnabled: false,
+    })
   })
 })

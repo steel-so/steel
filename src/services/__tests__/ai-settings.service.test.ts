@@ -12,7 +12,18 @@ vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/ai-settings.repository')
 vi.mock('@/src/services/platform-ai-settings.service', () => ({
-  PlatformAiSettingsService: { getCostMargin: vi.fn(async () => 1) },
+  PlatformAiSettingsService: {
+    getCostMargin: vi.fn(async () => 1),
+    getRoutingDefaults: vi.fn(async () => ({
+      taskModels: {
+        CLASSIFICATION: null,
+        CONVERSATION: null,
+        ASSISTANT: null,
+        AGENT: null,
+      },
+      failoverEnabled: true,
+    })),
+  },
 }))
 vi.mock('@/src/lib/ai', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/src/lib/ai')>()
@@ -65,6 +76,8 @@ function withState(options?: {
         whatsappReplyModel: data.whatsappReplyModel,
         whatsappSentimentModel: data.whatsappSentimentModel,
         mcpWriteEnabled: data.mcpWriteEnabled,
+        agentModel: data.agentModel ?? null,
+        failoverEnabled: data.failoverEnabled ?? true,
       }),
     ),
   )
@@ -567,5 +580,65 @@ describe('AiSettingsService failure paths', () => {
       }),
       'DATABASE_ERROR',
     )
+  })
+
+  describe('task classes and failover (ADR 0042)', () => {
+    it('should save the agent model and the failover switch, auditing the flip', async () => {
+      asRole('ADMIN')
+      withState()
+      const dto = expectOk(
+        await AiSettingsService.update('u1', 'ws1', {
+          agentModel: 'anthropic:claude-sonnet-5',
+          failoverEnabled: false,
+        }),
+      )
+      expect(dto.agentModel).toBe('anthropic:claude-sonnet-5')
+      expect(dto.failoverEnabled).toBe(false)
+      expect(vi.mocked(auditMutation)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meta: expect.objectContaining({
+            agentModel: 'anthropic:claude-sonnet-5',
+            failoverEnabled: false,
+            changedSwitches: ['failoverEnabled'],
+          }),
+        }),
+      )
+    })
+
+    it('should clear the agent model with null', async () => {
+      asRole('ADMIN')
+      withState({
+        settings: createFakeWorkspaceAiSettings({
+          agentModel: 'anthropic:claude-sonnet-5',
+        }),
+      })
+      const dto = expectOk(
+        await AiSettingsService.update('u1', 'ws1', { agentModel: null }),
+      )
+      expect(dto.agentModel).toBeNull()
+    })
+
+    it('should reject an agent model that is not enabled', async () => {
+      asRole('OWNER')
+      // The factory enables gpt-4o-mini and Claude Sonnet 5 only.
+      withState({ settings: createFakeWorkspaceAiSettings() })
+      expectErr(
+        await AiSettingsService.update('u1', 'ws1', {
+          agentModel: 'anthropic:claude-opus-5',
+        }),
+        'VALIDATION_ERROR',
+      )
+    })
+
+    it('should reject an agent model whose provider has no key', async () => {
+      asRole('OWNER')
+      withState({ anthropicAvailable: false })
+      expectErr(
+        await AiSettingsService.update('u1', 'ws1', {
+          agentModel: 'anthropic:claude-sonnet-5',
+        }),
+        'AI_PROVIDER_UNAVAILABLE',
+      )
+    })
   })
 })

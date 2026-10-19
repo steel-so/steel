@@ -1,5 +1,6 @@
 import type { WhatsAppSentiment } from '@prisma/client'
 import { logger } from '@/lib/axiom/logger'
+import { wrapUntrusted } from '@/src/lib/ai/guardrails/injection'
 import { ok, type Result } from '@/src/lib/result'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
@@ -156,7 +157,13 @@ export const WhatsAppSentimentService = {
       const response = await call.provider.chat({
         model: call.model.model,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: message.text }],
+        // Customer text is third-party content (ADR 0041): fenced as data.
+        messages: [
+          {
+            role: 'user',
+            content: wrapUntrusted(message.text, 'whatsapp_message'),
+          },
+        ],
         jsonSchema: { name: 'sentiment', schema: SENTIMENT_JSON_SCHEMA },
       })
       await AiUsageService.record(call, {

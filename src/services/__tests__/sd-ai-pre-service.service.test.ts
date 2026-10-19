@@ -869,3 +869,38 @@ describe('preServiceClose', () => {
     )
   })
 })
+
+describe('preServiceMessage — proteções (ADR 0041)', () => {
+  it('troca o rascunho por um encaminhamento quando o solicitante toca num assunto proibido', async () => {
+    prepare.mockResolvedValue(
+      ok({
+        ...preparedCall(),
+        guardrails: {
+          piiMaskingPolicy: 'AUTO_REPLIES' as const,
+          injectionClassifierEnabled: false,
+          limits: {
+            forbiddenTopics: ['processo judicial'],
+            maxDiscountPercent: null,
+            maxRefundAmount: null,
+            maxDeadlineDays: null,
+          },
+        },
+      }),
+    )
+    chat.mockResolvedValue(turn())
+
+    const result = expectOk(
+      await SdAiService.preServiceMessage('u1', WS, {
+        message: 'Vou entrar com um processo judicial',
+      }),
+    )
+    expect(result.reply).toContain('precisa de um atendente')
+    expect(result.action).toBe('open_ticket')
+    expect(result.articles).toEqual([])
+    expect(result.suggestOpenTicket).toBe(true)
+    // The requester text reaches the model fenced as third-party content.
+    expect(JSON.stringify(chat.mock.calls[0]?.[0].messages)).toContain(
+      'untrusted_content source=\\"portal_message\\"',
+    )
+  })
+})

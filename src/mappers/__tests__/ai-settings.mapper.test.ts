@@ -22,6 +22,55 @@ describe('toEffectiveAiSettings()', () => {
       autopilotEnabled: false,
       usageWeeklyEmailEnabled: true,
       mcpWriteEnabled: false,
+      agentModel: null,
+      failoverEnabled: true,
+    })
+  })
+
+  it('should start a workspace without a row from the platform task defaults', () => {
+    const settings = toEffectiveAiSettings(null, {
+      taskModels: {
+        CLASSIFICATION: 'anthropic:claude-haiku-4-5',
+        CONVERSATION: null,
+        ASSISTANT: 'anthropic:claude-sonnet-5',
+        AGENT: 'anthropic:claude-opus-5',
+      },
+      failoverEnabled: true,
+    })
+    expect(settings.whatsappSentimentModel).toBe('anthropic:claude-haiku-4-5')
+    expect(settings.whatsappReplyModel).toBe('openai:gpt-4o-mini')
+    expect(settings.crmAssistantModel).toBe('anthropic:claude-sonnet-5')
+    // The agent default is resolved at call time, not frozen here.
+    expect(settings.agentModel).toBeNull()
+  })
+
+  it('should carry the agent model and the failover switch from the row', () => {
+    const settings = toEffectiveAiSettings(
+      createFakeWorkspaceAiSettings({
+        agentModel: 'anthropic:claude-opus-5',
+        failoverEnabled: false,
+      }),
+    )
+    expect(settings.agentModel).toBe('anthropic:claude-opus-5')
+    expect(settings.failoverEnabled).toBe(false)
+    expect(
+      toEffectiveAiSettings(
+        createFakeWorkspaceAiSettings({ agentModel: 'retired:model' }),
+      ).agentModel,
+    ).toBeNull()
+    expect(
+      toWorkspaceAiSettingsDTO({
+        workspaceId: 'ws1',
+        settings,
+        usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+        periodStart: new Date('2026-10-01T00:00:00Z'),
+        userPreference: null,
+        canManage: true,
+        isProviderAvailable: () => true,
+      }),
+    ).toMatchObject({
+      agentModel: 'anthropic:claude-opus-5',
+      failoverEnabled: false,
     })
   })
 

@@ -386,7 +386,9 @@ async function* runTurn(
         const found = readCitations(run.output.data)
         if (found.length > 0) citations = found
       }
-    } else if (input.mode === 'AUTOPILOT') {
+    } else if (input.mode === 'AUTOPILOT' && !call.guard?.tainted()) {
+      // Third-party content tried to instruct the model in this turn (ADR
+      // 0041): autopilot writes fall back to a confirmation (branch below).
       toolModules.push(tool.module)
       const executed = await executeAutopilotWrite(
         tool,

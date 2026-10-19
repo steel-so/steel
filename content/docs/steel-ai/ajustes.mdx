@@ -1,6 +1,6 @@
 ---
 title: Ajustes da Steel IA
-description: Provedores e modelos habilitados, modelo padrão por recurso, os interruptores da Steel AI, o modo Build, o Autopilot, a escrita via MCP e a cota mensal.
+description: Provedores e modelos habilitados, modelo por tipo de tarefa, os interruptores da Steel AI, o modo Build, o Autopilot, a escrita via MCP e a cota mensal.
 section: steel-ai
 order: 8
 ---
@@ -22,8 +22,13 @@ Qualquer membro escolhe o seu **modelo preferido** para as conversas.
 
 - **Provedores e modelos habilitados**: quais modelos da OpenAI e da Anthropic
   aparecem para a equipe.
-- **Modelo padrão por funcionalidade**: Steel AI (assistente), resposta
-  automática do WhatsApp e análise de sentimento do WhatsApp.
+- **Modelo por tipo de tarefa**: cada uso da IA pertence a um tipo, e cada
+  tipo tem o seu modelo. Veja [Proteções e modelo por tarefa](/docs/steel-ai/protecoes#modelo-por-tipo-de-tarefa).
+- **Contingência automática entre provedores**: se o modelo escolhido falhar,
+  a chamada vai para outro modelo habilitado. Ligada por padrão.
+- **Proteções e LGPD**: mascaramento de dados pessoais, defesa contra textos
+  que tentam dar ordens à IA e limites da resposta automática. Veja
+  [Proteções e modelo por tarefa](/docs/steel-ai/protecoes).
 
 ### Recursos da Steel AI
 

@@ -995,3 +995,38 @@ describe('executeSteelAgentRun — test runs ("Testar agente")', () => {
     expect(notifyAgentRunFailed).not.toHaveBeenCalled()
   })
 })
+
+describe('executeSteelAgentRun() — prompt injection (ADR 0041)', () => {
+  it('should turn an AUTO write into an approval once the run saw an injection', async () => {
+    const { fake } = setup({
+      tools: [{ toolName: 'crm_create_task', mode: 'AUTO' }],
+      rounds: [
+        { toolCalls: [call('crm_create_task', { title: 'Ligar' })] },
+        { text: 'Aguardando aprovação.' },
+      ],
+    })
+    usage.prepare.mockResolvedValue(
+      ok({
+        ...prepared(fake.provider),
+        guard: {
+          report: {
+            piiCounts: { EMAIL: 0, CNPJ: 0, CPF: 0, CARD: 0, PHONE: 0 },
+            injection: {
+              detected: true,
+              signals: ['fake_role_tag'],
+              sources: ['tool_result'],
+            },
+            failovers: [],
+          },
+          tainted: () => true,
+        },
+      }),
+    )
+
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('waiting')
+    expect(createExecute).not.toHaveBeenCalled()
+    expect(pending.create).toHaveBeenCalledWith(
+      expect.objectContaining({ toolName: 'crm_create_task' }),
+    )
+  })
+})

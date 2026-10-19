@@ -49,21 +49,22 @@ type FeatureField =
   | 'whatsappReplyModel'
   | 'whatsappSentimentModel'
 
+/** Task classes (ADR 0042), stored in the per-feature fields. */
 const FEATURES: { field: FeatureField; label: string; hint: string }[] = [
   {
     field: 'crmAssistantModel',
-    label: 'Steel AI (assistente)',
-    hint: 'Padrão para quem não escolheu um modelo próprio.',
+    label: 'Assistente',
+    hint: 'Steel AI, copiloto do ServiceDesk, IA da Wiki e do CRM. Padrão para quem não escolheu um modelo próprio — prefira um modelo forte.',
   },
   {
     field: 'whatsappReplyModel',
-    label: 'Resposta automática do WhatsApp',
-    hint: 'Usado pelo atendimento automático (em segundo plano).',
+    label: 'Atendimento automático',
+    hint: 'Resposta automática do WhatsApp e pré-atendimento do ServiceDesk (em segundo plano).',
   },
   {
     field: 'whatsappSentimentModel',
-    label: 'Análise de sentimento do WhatsApp',
-    hint: 'Classifica as mensagens recebidas (em segundo plano).',
+    label: 'Classificação',
+    hint: 'Sentimento do WhatsApp, triagem do ServiceDesk e verificação das proteções. Um modelo rápido e barato basta.',
   },
 ]
 
@@ -72,6 +73,9 @@ const EVAL_TARGET_BY_FIELD: Partial<Record<FeatureField, AiEvalTargetKey>> = {
   crmAssistantModel: 'STEEL_ASSISTANT',
   whatsappReplyModel: 'WHATSAPP_REPLY',
 }
+
+/** Select value for "follow the default" (agent model = null). */
+const INHERIT = 'inherit'
 
 interface FormState {
   enabledModels: string[]
@@ -86,6 +90,8 @@ interface FormState {
   autopilotEnabled: boolean
   usageWeeklyEmailEnabled: boolean
   mcpWriteEnabled: boolean
+  agentModel: string
+  failoverEnabled: boolean
 }
 
 type SwitchField =
@@ -143,6 +149,8 @@ function toForm(settings: WorkspaceAiSettingsDTO): FormState {
     autopilotEnabled: settings.autopilotEnabled,
     usageWeeklyEmailEnabled: settings.usageWeeklyEmailEnabled,
     mcpWriteEnabled: settings.mcpWriteEnabled,
+    agentModel: settings.agentModel ?? INHERIT,
+    failoverEnabled: settings.failoverEnabled,
   }
 }
 
@@ -323,6 +331,16 @@ function AdminForm({
     const missingDefault = FEATURES.find(
       (f) => !form.enabledModels.includes(form[f.field]),
     )
+    if (
+      !missingDefault &&
+      form.agentModel !== INHERIT &&
+      !form.enabledModels.includes(form.agentModel)
+    ) {
+      notify.error(
+        new Error('O modelo dos Steel Agents precisa estar habilitado.'),
+      )
+      return
+    }
     if (missingDefault) {
       notify.error(
         new Error(
@@ -346,6 +364,8 @@ function AdminForm({
         autopilotEnabled: form.autopilotEnabled,
         usageWeeklyEmailEnabled: form.usageWeeklyEmailEnabled,
         mcpWriteEnabled: form.mcpWriteEnabled,
+        agentModel: form.agentModel === INHERIT ? null : form.agentModel,
+        failoverEnabled: form.failoverEnabled,
       },
       {
         onSuccess: () => notify.success('Ajustes de IA salvos'),
@@ -419,10 +439,12 @@ function AdminForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Modelo padrão por funcionalidade</CardTitle>
+          <CardTitle>Modelo por tipo de tarefa</CardTitle>
           <CardDescription>
-            Jobs em segundo plano sempre usam o padrão do workspace; no Steel AI
-            cada usuário pode escolher outro modelo habilitado.
+            Cada uso da IA pertence a um tipo de tarefa: classificar pede um
+            modelo barato, conversar e agir pedem um modelo forte. Jobs em
+            segundo plano sempre usam o modelo do workspace; no Steel AI cada
+            usuário pode escolher outro modelo habilitado.
           </CardDescription>
         </CardHeader>
         <CardContent className='grid gap-4'>
@@ -474,6 +496,68 @@ function AdminForm({
               ) : null}
             </div>
           ))}
+          <div className='grid gap-1.5 md:grid-cols-[1fr_18rem] md:items-center'>
+            <div>
+              <p className='font-medium text-sm'>Steel Agents</p>
+              <p className='text-muted-foreground text-xs'>
+                Execuções dos agentes (agenda, evento e botão). Sem escolha,
+                segue o padrão da plataforma para agentes ou o modelo do
+                assistente.
+              </p>
+            </div>
+            <Select
+              value={form.agentModel}
+              onValueChange={(value) => {
+                if (typeof value !== 'string') return
+                setForm((current) => ({ ...current, agentModel: value }))
+              }}
+            >
+              <SelectTrigger aria-label='Steel Agents' className='w-full'>
+                <SelectValue>
+                  {(value: string) =>
+                    value === INHERIT ? 'Seguir o padrão' : labelOf(value)
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectGroup>
+                  <SelectItem value={INHERIT}>Seguir o padrão</SelectItem>
+                  {enabledOptions.map((m) => (
+                    <SelectItem
+                      key={m.key}
+                      value={m.key}
+                      disabled={!m.available}
+                    >
+                      {m.label}
+                      {!m.available && ' (indisponível)'}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='flex items-center justify-between gap-4 border-t pt-4'>
+            <div className='min-w-0'>
+              <Label htmlFor='failoverEnabled' className='font-medium'>
+                Contingência automática entre provedores
+              </Label>
+              <p className='text-muted-foreground text-xs'>
+                Se o modelo escolhido falhar ou demorar demais, a chamada vai
+                para outro modelo habilitado — de preferência do outro provedor.
+                O consumo registra o modelo que respondeu de fato.
+              </p>
+            </div>
+            <Switch
+              id='failoverEnabled'
+              checked={form.failoverEnabled}
+              onCheckedChange={(checked) =>
+                setForm((current) => ({
+                  ...current,
+                  failoverEnabled: checked === true,
+                }))
+              }
+            />
+          </div>
         </CardContent>
       </Card>
 
