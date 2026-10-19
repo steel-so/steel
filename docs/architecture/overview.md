@@ -429,7 +429,7 @@ Avisos de CI/CD vão para outro canal (secret `SLACK_WEBHOOK_URL`). Queda do ser
 
 | Serviço | Container | Porta (host) | Observação |
 | ------- | --------- | ------------ | ---------- |
-| App Next | `nextjs-app`, `steel-app-2`, `steel-app-3` | 3000, 127.0.0.1:3001, 127.0.0.1:3002 | réplicas no `docker-compose.yml` atrás do upstream `steel_app` (`least_conn`) do nginx, deploy em rolagem; config do nginx em `infra/nginx/` — ADR 0037, `docs/runbooks/app-replicas.md` |
+| App Next | `nextjs-app`, `steel-app-2`, `steel-app-3` | 3000, 127.0.0.1:3001, 127.0.0.1:3002 | réplicas no `docker-compose.yml` atrás do upstream `steel_app` (`least_conn`) do nginx, deploy em rolagem; config do nginx em `infra/nginx/` — ADR 0038, `docs/runbooks/app-replicas.md` |
 | PgBouncer (opcional) | `steel-pgbouncer` | — | perfil `pooler` do compose, modo transaction; o app usa quando há `DATABASE_URL_POOLED` |
 | Worker | `steel-worker` | — | mesma imagem, `node dist/worker.cjs` |
 | Realtime (Wiki) | `steel-realtime` | 127.0.0.1:1235 | mesma imagem, `node dist/realtime.cjs` (Hocuspocus); nginx `/realtime` — ver `docs/runbooks/realtime-wiki.md` |

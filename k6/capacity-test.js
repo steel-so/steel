@@ -3,7 +3,7 @@ import http from 'k6/http';
 import { Counter } from 'k6/metrics';
 import { requestCeilingMs, thresholds } from './profiles.js';
 
-// Capacity test towards the 6,000-VU goal (ADR 0037). Each VU behaves like a
+// Capacity test towards the 6,000-VU goal (ADR 0038). Each VU behaves like a
 // visitor with think time between pages — unlike a stress loop, where one VU
 // fires the next request the moment the previous one returns (Nexo's
 // EXPERIMENT-LOG: one VU without sleep made 258 requests in 3s). Read the

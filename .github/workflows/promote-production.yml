@@ -108,7 +108,7 @@ jobs:
           ref: refs/tags/${{ needs.prepare.outputs.version }}
           persist-credentials: false
 
-      # Deployment id for the version skew protection (ADR 0037): the commit
+      # Deployment id for the version skew protection (ADR 0038): the commit
       # of the release tag (CalVer has dots, which Next rejects).
       - name: Resolve deployment id
         id: dpl

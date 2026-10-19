@@ -1,5 +1,5 @@
 /**
- * Connection settings of the main Prisma client (ADR 0037). Pure, so the
+ * Connection settings of the main Prisma client (ADR 0038). Pure, so the
  * env parsing is testable without opening a pool.
  */
 

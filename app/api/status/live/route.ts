@@ -3,7 +3,7 @@ import { successResponse } from '@/utils/http-response'
 
 /**
  * Liveness of this app process, for the container healthcheck and the
- * rolling deploy (ADR 0037): answers as soon as the server serves requests,
+ * rolling deploy (ADR 0038): answers as soon as the server serves requests,
  * without touching Postgres or Redis (those are the status page's job), so a
  * database blip never takes every replica out of nginx's upstream at once.
  *

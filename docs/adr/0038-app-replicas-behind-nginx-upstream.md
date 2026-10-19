@@ -1,4 +1,4 @@
-# 0037 — Réplicas do app atrás de um upstream do nginx
+# 0038 — Réplicas do app atrás de um upstream do nginx
 
 - **Status:** Aceita
 - **Data:** 2026-10-18

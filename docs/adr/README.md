@@ -53,4 +53,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0034 | [Steel CLI e SDK em repositório próprio](./0034-steel-cli-and-sdk.md) | Aceita | 2026-10-18 |
 | 0035 | [API pública v1 e tokens pessoais](./0035-public-api-v1-and-personal-tokens.md) | Aceita | 2026-10-18 |
 | 0036 | [Webhooks de saída](./0036-outbound-webhooks.md) | Aceita | 2026-10-18 |
-| 0037 | [Réplicas do app atrás de um upstream do nginx](./0037-app-replicas-behind-nginx-upstream.md) | Aceita | 2026-10-18 |
+| 0038 | [Réplicas do app atrás de um upstream do nginx](./0038-app-replicas-behind-nginx-upstream.md) | Aceita | 2026-10-18 |

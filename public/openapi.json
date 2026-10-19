@@ -8572,7 +8572,7 @@
         "tags": ["Status"],
         "summary": "Liveness do processo do app",
         "operationId": "getStatusLive",
-        "description": "Responde assim que o processo atende requisições, sem consultar banco nem Redis. Usada pelo healthcheck dos containers e pelo deploy em rolagem das réplicas (ADR 0037). Pública, sem cache (`Cache-Control: no-store`) e sem limite de taxa.",
+        "description": "Responde assim que o processo atende requisições, sem consultar banco nem Redis. Usada pelo healthcheck dos containers e pelo deploy em rolagem das réplicas (ADR 0038). Pública, sem cache (`Cache-Control: no-store`) e sem limite de taxa.",
         "responses": {
           "200": {
             "description": "Processo vivo.",

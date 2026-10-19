@@ -35,7 +35,7 @@ const BUDGETS = {
     local: { durationP95: 800, durationP99: 1500, failed: 0.01 },
     remote: { durationP95: 2500, durationP99: 5000, failed: 0.01 },
   },
-  // capacity-test.js: what "holding up" means at thousands of VUs (ADR 0037).
+  // capacity-test.js: what "holding up" means at thousands of VUs (ADR 0038).
   capacity: {
     local: { ttfbP95: 1000, durationP95: 1500, durationP99: 3000, failed: 0.01 },
     remote: { ttfbP95: 1500, durationP95: 2500, durationP99: 5000, failed: 0.01 },

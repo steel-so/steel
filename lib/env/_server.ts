@@ -388,7 +388,7 @@ export const serverEnvSchema = z.object({
       )
       .optional(),
   ),
-  // App replicas (ADR 0037). Runtime connection through PgBouncer in
+  // App replicas (ADR 0038). Runtime connection through PgBouncer in
   // transaction mode (`steel-pgbouncer`, compose profile `pooler`). Optional:
   // without it the app talks to Postgres directly. Migrations, pg_dump and
   // pg_restore always use DATABASE_URL — DDL and session state do not survive

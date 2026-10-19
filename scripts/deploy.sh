@@ -14,7 +14,7 @@
 # seguro porque toda migration precisa ser compatível com a versão anterior do
 # código (expand/contract) — ver o ADR no topo de .github/workflows/cd.yml.
 #
-# Deploy em rolagem (ADR 0037): o app roda em réplicas (serviços steel-app,
+# Deploy em rolagem (ADR 0038): o app roda em réplicas (serviços steel-app,
 # steel-app-2, ... do docker-compose.yml) atrás do upstream `steel_app` do
 # nginx. Primeiro sobem os demais serviços (worker, realtime, pooler), depois
 # UMA réplica por vez: recria, espera o healthcheck do container ficar

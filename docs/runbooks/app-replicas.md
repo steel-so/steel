@@ -1,7 +1,7 @@
 # Runbook — réplicas do app (upstream do nginx)
 
 O app do Steel roda como **três réplicas** iguais atrás do upstream
-`steel_app` do nginx (ADR 0037). Use este runbook na primeira instalação de
+`steel_app` do nginx (ADR 0038). Use este runbook na primeira instalação de
 um host, para conferir a saúde das réplicas, tirar ou acrescentar uma, ligar
 o PgBouncer e rodar o teste de capacidade.
 

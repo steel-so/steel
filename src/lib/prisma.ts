@@ -19,7 +19,7 @@ export function createPrismaClient(
   return new PrismaClient({ adapter })
 }
 
-// Through PgBouncer when DATABASE_URL_POOLED is set (ADR 0037). Migrations
+// Through PgBouncer when DATABASE_URL_POOLED is set (ADR 0038). Migrations
 // (prisma.config.ts) and pg_dump/pg_restore keep the direct DATABASE_URL.
 export const prisma = createPrismaClient(
   resolveRuntimeDatabaseUrl(DATABASE_URL, DATABASE_URL_POOLED),

@@ -4,7 +4,7 @@
 x-steel-image: &steel-image ghcr.io/steel-so/steel:${STEEL_IMAGE_TAG:?STEEL_IMAGE_TAG não definido; use scripts/deploy.sh <tag>}
 
 # The web app runs as identical replicas behind nginx's `steel_app` upstream
-# (least_conn, infra/nginx/steel-upstream.conf) — ADR 0037. One Node process
+# (least_conn, infra/nginx/steel-upstream.conf) — ADR 0038. One Node process
 # saturates a single core, and nothing in a request depends on which replica
 # serves it: sessions live in Postgres; rate limits, SSE fan-out (Redis
 # pub/sub) and the 'use cache' tag state (lib/next-cache) in Redis. Each
@@ -104,7 +104,7 @@ services:
     networks:
       - app-network
 
-  # PgBouncer in transaction mode in front of steel-db (ADR 0037). Opt-in per
+  # PgBouncer in transaction mode in front of steel-db (ADR 0038). Opt-in per
   # environment: it only starts with `COMPOSE_PROFILES=pooler` in the .env,
   # and the app only uses it once DATABASE_URL_POOLED points at
   # steel-pgbouncer:5432. Migrations, backups and restores keep DATABASE_URL
