@@ -486,6 +486,22 @@ export const WhatsAppSettingsDTO = dto(
     }),
     sentimentAlertAssignToId: z.string().nullable(),
     sentimentAlertCooldownHours: z.number().int(),
+    callRecordingEnabled: z.boolean().meta({
+      description:
+        'Gravar as ligações do "Ligar" pelo PABX (padrão: desligado; ADR 0043).',
+    }),
+    callRecordingNotice: z.string().meta({
+      description:
+        'Aviso que o atendente lê ao contato durante a ligação gravada (o salvo ou o padrão).',
+    }),
+    callRecordingRetentionDays: z.number().int().meta({
+      description:
+        'Dias que o áudio fica guardado (1 a 1.825; padrão 90). Transcrição e resumo ficam.',
+    }),
+    callTranscriptionEnabled: z.boolean().meta({
+      description:
+        'Transcrever e resumir as gravações com o Steel AI (padrão: ligado).',
+    }),
   }),
 )
 

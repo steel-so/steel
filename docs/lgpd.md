@@ -104,3 +104,31 @@ Credenciais, senhas, segredos e tokens de acesso são removidos do arquivo de
 dados; os logs não trazem IP nem corpo de requisição. Quem baixa passa a ser
 responsável pela guarda da cópia.
 
+
+## Gravação das ligações (PABX)
+
+As ligações do botão **Ligar** podem ser gravadas pelo PABX, transcritas e
+resumidas pelo Steel AI ([ADR 0043](./adr/0043-pabx-call-recording-transcription-and-summary.md),
+[runbook](./runbooks/pabx-call-recording.md)). Voz é dado pessoal:
+
+- **Desligado por padrão.** OWNER/ADMIN liga em WhatsApp › Configurações ›
+  Atendimento, define o **aviso de gravação** e por quantos dias o áudio fica
+  guardado (padrão 90, de 1 a 1.825).
+- **Aviso ao contato.** Durante a ligação gravada, a faixa da ligação mostra
+  ao atendente o aviso para ler ao contato. O texto mostrado fica registrado
+  na ligação (`recording_notice`), como prova do aviso.
+- **Retenção.** A data de expiração é congelada no upload. O job das 03:00
+  (`data-retention` › `purge-call-recordings`) apaga o áudio vencido e também
+  o áudio de ligação que não existe mais (apagada junto com a conversa, o
+  contato ou o workspace). A transcrição e o resumo ficam com a ligação e
+  saem quando ela sai.
+- **Exclusão na hora.** OWNER/ADMIN apaga o áudio de uma ligação pelo card
+  ("Apagar áudio"), auditado (`audit.mutation.whatsapp_phone_call_recording.delete`);
+  o upload também é auditado (`...recording.create`), sem o conteúdo.
+- **Quem ouve.** Quem vê o registro onde a ligação aparece: a conversa
+  (equipes e responsável), o chamado vinculado (só agentes; o solicitante não
+  ouve) ou a pessoa/oportunidade do CRM (permissão de leitura do recurso).
+- **Provedor.** A transcrição usa o Whisper da OpenAI e o resumo o modelo do
+  workspace; nada sai com a transcrição desligada ou o Steel AI desligado. O
+  mascaramento de dados pessoais antes do provedor entra com a frente de
+  proteções (ADR 0041).

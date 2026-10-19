@@ -222,3 +222,14 @@ Decisões: [ADR 0041](../adr/0041-ai-guardrails-pii-injection-auto-reply-limits.
 - **API**: `GET/PATCH /api/workspaces/{id}/ai-guardrails` (`WorkspaceAiGuardrailsDTO`, `UpdateWorkspaceAiGuardrailsSchema`, hook `src/hooks/use-ai-guardrails.ts`). `PATCH /ai-settings` aceita `agentModel` e `failoverEnabled`; `PATCH /api/admin/ai` aceita `taskModels` e `failoverEnabled`.
 - **Uso**: o classificador opcional entra no razão como `AI_GUARDRAIL` (rótulo "Proteções da IA (classificador)").
 
+
+## Voz no PABX — ligação vira informação (frente 4, fase 1, 18/10/2026)
+
+Decisão: [ADR 0043](../adr/0043-pabx-call-recording-transcription-and-summary.md). Instalação no PABX: [runbook](../runbooks/pabx-call-recording.md).
+
+- **Gravação**: com `WhatsAppSettings.callRecordingEnabled`, `WhatsAppPhoneCallService.start` pede `gravar=1` ao PABX e grava `recordingRequested` + o aviso mostrado (`recordingNotice`). O PABX envia o áudio ao fim da ligação em `POST /api/pabx/calls/webhook/recording` (multipart `token` + `file`, mesmo token por ligação do webhook de status; WAV/MP3/OGG pelos bytes, até 10 MB). `PhoneCallRecordingService.intake` guarda no bucket `phone-call-recordings` (`<ws>/<callId>.<ext>`) com `recordingExpiresAt` congelado e enfileira `phone-call-ai`.
+- **IA** (`PhoneCallAiService.process`, fila `phone-call-ai`): Whisper (`src/lib/ai/transcription.ts`, o mesmo caminho do áudio na resposta automática) → resumo, sentimento e até 5 próximos passos em JSON com o modelo de resposta do WhatsApp → vínculos (`sdTicketId`: chamado da conversa, abertos primeiro; `crmPersonId`: telefone por DDD + 8 últimos dígitos; `crmOpportunityId`: oportunidade aberta da pessoa). Uso no razão como `PHONE_CALL_AI` (Whisper por minuto: US$ 0,006 × margem). Pula com motivo (`aiSkipReason`) quando a transcrição ou o Steel AI estão desligados, sem chave da OpenAI ou sem cota. TODO: mascaramento de PII (ADR 0041) antes do resumo.
+- **Leitura** (`PhoneCallService`): `GET .../whatsapp/conversations/{id}/calls`, `.../servicedesk/tickets/{ticketId}/calls` (só agentes), `.../crm/people/{personId}/calls`, `.../crm/opportunities/{opportunityId}/calls` → `PhoneCallRecordDTO[]` (`types/whatsapp-phone-call.d.ts`); áudio em `GET/DELETE /api/workspaces/{id}/phone-calls/{callId}/recording` (stream com `Range`; apagar = OWNER/ADMIN).
+- **Telas**: `PhoneCallCard` / `PhoneCallList` (`app/_components/phone-calls/`), na linha do tempo da conversa, na aba **Ligações** do chamado e na atividade da pessoa/oportunidade; "Criar tarefa" por próximo passo. Hook `src/hooks/use-phone-calls.ts`; o SSE `phone-call.updated` invalida as listas.
+- **Retenção**: `data-retention` › `purge-call-recordings` (03:00) apaga áudio vencido e órfão.
+- **Fase 2** (não construída): atendente de voz com IA na URA — ver a ADR.

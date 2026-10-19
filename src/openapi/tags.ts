@@ -233,6 +233,11 @@ export const TAG_GROUPS = [
         description:
           'Equipes de atendimento (líderes e agentes) e a visibilidade das conversas.',
       },
+      {
+        name: 'Comunicação · Ligações',
+        description:
+          'Ligações do "Ligar" pelo PABX: gravação, transcrição, resumo e onde aparecem (conversa, chamado, CRM).',
+      },
     ],
   },
   {
