@@ -283,7 +283,11 @@ describe('AiEvalRepository', () => {
         'aggregate',
       ]) {
         if (typeof model[method] === 'function') {
-          vi.spyOn(model as never, method as never).mockImplementation(boom)
+          const spyOn = vi.spyOn as unknown as (
+            target: unknown,
+            name: string,
+          ) => { mockImplementation: (impl: never) => void }
+          spyOn(model, method).mockImplementation(boom)
         }
       }
     }

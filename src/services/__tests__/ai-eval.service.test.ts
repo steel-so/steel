@@ -478,7 +478,7 @@ describe('runs', () => {
         ACTOR,
         WS,
         SET,
-        runInput({ modelKey: 'openai:gpt-4o' }),
+        runInput({ modelKey: 'openai:gpt-5' }),
       ),
       'AI_MODEL_NOT_ENABLED',
     )
