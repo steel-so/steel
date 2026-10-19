@@ -19,6 +19,7 @@ import {
   WhatsAppConversationEventDTO,
   WhatsAppMessageDTO,
 } from '../../schemas/whatsapp'
+import { WhatsAppPhoneCallFields } from './phone-calls'
 import {
   CONVERSATION_PARAM,
   PROVIDER_ERRORS,
@@ -27,7 +28,6 @@ import {
   SEND_ERRORS,
   SEND_NOTE,
 } from './shared'
-import { WhatsAppPhoneCallFields } from './phone-calls'
 
 const TAG = 'Comunicação · Conversas' as const
 const BASE = '/workspaces/{id}/whatsapp/conversations/{conversationId}'

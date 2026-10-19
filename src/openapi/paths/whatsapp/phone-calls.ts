@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { PABX_RECORDING_MAX_BYTES } from '@/src/schemas/whatsapp-phone-call.schema'
 import type { RouteConfig } from '../../registry'
-import { CONVERSATION_PARAM, permErrors, PRIVILEGED_ERRORS } from './shared'
+import { CONVERSATION_PARAM, PRIVILEGED_ERRORS, permErrors } from './shared'
 
 const TAG = 'Comunicação · Ligações' as const
 const MAX_MB = Math.round(PABX_RECORDING_MAX_BYTES / (1024 * 1024))
@@ -115,7 +115,10 @@ export const phoneCallRoutes: RouteConfig[] = [
         when: 'A ligação não pediu gravação, não foi atendida ou o prazo acabou',
       },
       { code: 'PABX_RECORDING_DUPLICATE', when: 'A ligação já tem gravação' },
-      { code: 'PABX_RECORDING_TOO_LARGE', when: `Arquivo acima de ${MAX_MB} MB` },
+      {
+        code: 'PABX_RECORDING_TOO_LARGE',
+        when: `Arquivo acima de ${MAX_MB} MB`,
+      },
       {
         code: 'PABX_RECORDING_UNSUPPORTED',
         when: 'O arquivo não é WAV, MP3 nem OGG',
