@@ -100,7 +100,7 @@ describe('POST/GET/DELETE /ai/feedback', () => {
       { surface: 'SD_COPILOT', targetId: 't1', rating: 'UP' },
       user.cookie,
     )
-    expect(invalid.status).toBe(400)
+    expect(invalid.status).toBe(422)
   })
 
   it('needs a session', async () => {
