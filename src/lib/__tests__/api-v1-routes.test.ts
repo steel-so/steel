@@ -8,7 +8,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/axiom/server', () => ({
   withAxiom: (handler: unknown) => handler,
 }))
-vi.mock('@/src/lib/api/session', () => ({ resolveApiSession: vi.fn() }))
+vi.mock('@/src/lib/api/session', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/src/lib/api/session')>()),
+  resolveApiSession: vi.fn(),
+}))
 vi.mock('@/src/lib/rate-limit', () => ({
   apiLimiter: {},
   consume: vi.fn(async () => ({ ok: true, value: undefined })),

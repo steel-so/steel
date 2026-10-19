@@ -1,6 +1,7 @@
 import type { ModuleKind } from '@prisma/client'
 import { unauthorized } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
+import { apiTokenScopeRequired } from '@/src/errors/app-error'
 import { parseBearerToken } from '@/src/lib/mcp/oauth-utils'
 import { err, type Result } from '@/src/lib/result'
 
@@ -12,6 +13,15 @@ import { err, type Result } from '@/src/lib/result'
 
 export const API_SCOPES = ['api:read', 'api:write'] as const
 export type ApiScope = (typeof API_SCOPES)[number]
+
+/**
+ * The refusal of a call that needs a scope the token lacks, shared by every
+ * v1 route (`apiV1Route` and the webhook routes): `API_TOKEN_SCOPE_REQUIRED`
+ * with `details.requiredScope`, so clients can say what to ask for.
+ */
+export function apiScopeRequiredError(requiredScope: ApiScope): AppError {
+  return { ...apiTokenScopeRequired(), details: { requiredScope } }
+}
 
 /** What a personal API token (`stl_pat_...`) resolves to on every call. */
 export interface ApiSession {

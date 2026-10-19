@@ -5,11 +5,14 @@ import { runWithAuditContext } from '@/lib/axiom/audit-context'
 import { withAxiom } from '@/lib/axiom/server'
 import {
   apiTokenModuleNotAllowed,
-  apiTokenScopeRequired,
   validationError,
 } from '@/src/errors/app-error'
 import { annotateRequest } from '@/src/lib/analytics/request-context'
-import { type ApiSession, resolveApiSession } from '@/src/lib/api/session'
+import {
+  type ApiSession,
+  apiScopeRequiredError,
+  resolveApiSession,
+} from '@/src/lib/api/session'
 import { requireConsent } from '@/src/lib/consent'
 import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import type { Result } from '@/src/lib/result'
@@ -89,7 +92,7 @@ export function apiV1Route<B = undefined, Q = undefined>(
       if (!byUser.ok) return handleError(byUser.error)
 
       if (options.access === 'write' && !session.scopes.includes('api:write')) {
-        return handleError(apiTokenScopeRequired('api:write'))
+        return handleError(apiScopeRequiredError('api:write'))
       }
       if (options.module && !session.modules.includes(options.module)) {
         return handleError(apiTokenModuleNotAllowed())

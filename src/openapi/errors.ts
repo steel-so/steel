@@ -72,6 +72,7 @@ const EXAMPLE_DETAILS: Partial<Record<ErrorCode, unknown>> = {
     },
   ],
   RATE_LIMITED: { retryAfterSeconds: 30 },
+  API_TOKEN_SCOPE_REQUIRED: { requiredScope: 'api:write' },
 }
 
 export function errorExample(

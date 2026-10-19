@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/axiom/server', () => ({
   withAxiom: <T>(handler: T) => handler,
 }))
-vi.mock('@/src/lib/api/session', () => ({
+vi.mock('@/src/lib/api/session', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/src/lib/api/session')>()),
   resolveApiSession: mocks.resolveApiSession,
 }))
 vi.mock('@/src/lib/rate-limit', () => ({

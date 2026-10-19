@@ -5,7 +5,10 @@ import { z } from 'zod'
 vi.mock('@/lib/axiom/server', () => ({
   withAxiom: (handler: unknown) => handler,
 }))
-vi.mock('@/src/lib/api/session', () => ({ resolveApiSession: vi.fn() }))
+vi.mock('@/src/lib/api/session', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/src/lib/api/session')>()),
+  resolveApiSession: vi.fn(),
+}))
 vi.mock('@/src/lib/rate-limit', () => ({
   apiLimiter: { name: 'api' },
   consume: vi.fn(),
