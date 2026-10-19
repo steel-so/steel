@@ -1,3 +1,4 @@
+import { createId } from '@paralleldrive/cuid2'
 import type { Prisma, WorkspaceIntegration } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
@@ -10,6 +11,11 @@ import {
   maskApolloKey,
 } from '@/src/lib/integrations/apollo'
 import { ApolloClient } from '@/src/lib/integrations/apollo-client'
+import {
+  apolloWebhookToken,
+  hashApolloWebhookToken,
+  isApolloPhoneRevealAvailable,
+} from '@/src/lib/integrations/apollo-webhook'
 import { CrmApolloImportJob } from '@/src/lib/queue/jobs'
 import { getCrmApolloImportQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -116,7 +122,9 @@ export const CrmApolloService = {
       'APOLLO',
     )
     if (!found.ok) return found
-    return ok(toCrmApolloConnectionDTO(found.value))
+    return ok(
+      toCrmApolloConnectionDTO(found.value, isApolloPhoneRevealAvailable()),
+    )
   },
 
   /** Saves the key after Apollo confirms it (admin only). */
@@ -213,7 +221,9 @@ export const CrmApolloService = {
       targetId: updated.value.id,
       meta: { workspaceId, kind: 'APOLLO', fields: ['defaultMailingListId'] },
     })
-    return ok(toCrmApolloConnectionDTO(updated.value))
+    return ok(
+      toCrmApolloConnectionDTO(updated.value, isApolloPhoneRevealAvailable()),
+    )
   },
 
   /** "Testar conexão" (admin only) — shared with the integrations page. */
@@ -342,6 +352,14 @@ export const CrmApolloService = {
     const loaded = await loadKey(workspaceId)
     if (!loaded.ok) return loaded
 
+    if (dto.revealPhones && !isApolloPhoneRevealAvailable()) {
+      return err(
+        validationError(
+          'A revelação de telefones exige que o Steel esteja publicado em HTTPS, para a Apollo entregar os números. Importe sem telefones.',
+        ),
+      )
+    }
+
     if (dto.mailingListId) {
       const list = await CrmMailingListRepository.findById(
         dto.mailingListId,
@@ -350,10 +368,16 @@ export const CrmApolloService = {
       if (!list.ok) return list
     }
 
+    const id = createId()
     const common = {
+      id,
       workspaceId,
       createdById: actorId,
       mailingListId: dto.mailingListId ?? null,
+      revealPhones: dto.revealPhones,
+      webhookTokenHash: dto.revealPhones
+        ? hashApolloWebhookToken(apolloWebhookToken(id))
+        : null,
     }
     const created =
       dto.source === 'SEARCH'
@@ -413,6 +437,7 @@ export const CrmApolloService = {
         source: dto.source,
         requested: created.value.requestedCount,
         mailingListId: dto.mailingListId ?? null,
+        revealPhones: dto.revealPhones,
       },
     })
     return ok(toCrmApolloImportDTO(created.value))

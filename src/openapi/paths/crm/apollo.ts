@@ -43,6 +43,10 @@ const Connection = dto(
     keyHint: z.string().nullable().meta({ example: '••••ab12' }),
     lastCheckedAt: dateTime().nullable(),
     defaultMailingListId: z.string().nullable(),
+    phoneRevealAvailable: z.boolean().meta({
+      description:
+        'false quando a URL pública não é HTTPS (a Apollo recusa o webhook).',
+    }),
   }),
 )
 
@@ -116,6 +120,9 @@ const ImportRun = dto(
     skippedCount: z.number().int(),
     failedCount: z.number().int(),
     creditsConsumed: z.number().int(),
+    revealPhones: z.boolean(),
+    phonesRequested: z.number().int(),
+    phonesReceived: z.number().int(),
     error: z.string().nullable(),
     createdById: z.string(),
     startedAt: dateTime().nullable(),

@@ -19179,6 +19179,10 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "revealPhones": {
+                        "default": false,
+                        "type": "boolean"
                       }
                     },
                     "required": ["source", "filters", "apolloIds"]
@@ -19297,6 +19301,10 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "revealPhones": {
+                        "default": false,
+                        "type": "boolean"
                       }
                     },
                     "required": ["source", "labelId", "contacts"]
@@ -151280,6 +151288,10 @@
                 "type": "null"
               }
             ]
+          },
+          "phoneRevealAvailable": {
+            "type": "boolean",
+            "description": "false quando a URL pública não é HTTPS (a Apollo recusa o webhook)."
           }
         },
         "required": [
@@ -151288,7 +151300,8 @@
           "statusError",
           "keyHint",
           "lastCheckedAt",
-          "defaultMailingListId"
+          "defaultMailingListId",
+          "phoneRevealAvailable"
         ]
       },
       "CrmApolloContactsResult": {
@@ -151454,6 +151467,19 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "revealPhones": {
+            "type": "boolean"
+          },
+          "phonesRequested": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "phonesReceived": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "error": {
             "anyOf": [
               {
@@ -151505,6 +151531,9 @@
           "skippedCount",
           "failedCount",
           "creditsConsumed",
+          "revealPhones",
+          "phonesRequested",
+          "phonesReceived",
           "error",
           "createdById",
           "startedAt",
