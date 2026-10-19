@@ -1,4 +1,5 @@
 import type { AiUsageFeature, ModuleKind } from '@prisma/client'
+import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
 import { aiProviderUnavailable, aiQuotaExceeded } from '@/src/errors'
@@ -9,54 +10,95 @@ import {
   findAiModel,
   getAiProvider,
 } from '@/src/lib/ai'
-import { aiModelPricing } from '@/src/lib/ai/models'
+import { getAiCircuitBreaker } from '@/src/lib/ai/guardrails/circuit-breaker'
+import { selectFallbackModels } from '@/src/lib/ai/guardrails/failover'
+import {
+  type AiCallGuard,
+  type AiCallTarget,
+  createGuardedProvider,
+} from '@/src/lib/ai/guardrails/guarded-provider'
+import {
+  INJECTION_CLASSIFIER_PROMPT,
+  INJECTION_CLASSIFIER_SCHEMA,
+  parseClassifierVerdict,
+  wrapUntrusted,
+} from '@/src/lib/ai/guardrails/injection'
+import { PII_KINDS } from '@/src/lib/ai/guardrails/pii'
+import {
+  AI_TASK_TIMEOUT_MS,
+  type AiModelKey,
+  type AiTaskClass,
+  aiModelPricing,
+} from '@/src/lib/ai/models'
 import {
   currentPeriodStart,
   isQuotaExceeded,
   priceAiUsage,
 } from '@/src/lib/ai/quota'
 import { err, ok, type Result } from '@/src/lib/result'
+import type { EffectiveAiGuardrails } from '@/src/mappers/ai-guardrails.mapper'
 import {
   type EffectiveAiSettings,
   toEffectiveAiSettings,
 } from '@/src/mappers/ai-settings.mapper'
+import type { AiRoutingDefaults } from '@/src/mappers/platform-ai-settings.mapper'
 import {
   AiUsageRepository,
   UserAiPreferenceRepository,
   WorkspaceAiSettingsRepository,
 } from '@/src/repositories/ai-settings.repository'
-import { AI_FEATURE_SETTING_FIELDS, isModelUsable } from './ai-settings.service'
+import { AiGuardrailsService, shouldMaskPii } from './ai-guardrails.service'
+import { isModelUsable } from './ai-settings.service'
 import { PlatformAiSettingsService } from './platform-ai-settings.service'
 import { notifyAiQuota } from './platform-notifications'
 
 /**
- * Modelo padrão de cada funcionalidade. As do ServiceDesk ainda não têm
- * seletor próprio em Ajustes > Steel IA e herdam o de uma equivalente:
- * copiloto (conversa com o agente) = assistente do CRM; pré-atendimento
- * (conversa com o solicitante) = resposta automática do WhatsApp; triagem
- * (classificação) = análise de sentimento.
+ * Task class of each feature (ADR 0042). The class decides the model
+ * (cheap for classification, strong for the assistant and the agents), the
+ * failover tier and the per-call timeout. Classes are stored in the
+ * workspace settings as: CLASSIFICATION = `whatsappSentimentModel`,
+ * CONVERSATION = `whatsappReplyModel`, ASSISTANT = `crmAssistantModel`,
+ * AGENT = `agentModel` (null = platform default for agents, else the
+ * assistant's).
  */
-const MODEL_FIELD_BY_FEATURE: Record<
-  AiUsageFeature,
-  keyof Pick<
-    EffectiveAiSettings,
-    'crmAssistantModel' | 'whatsappReplyModel' | 'whatsappSentimentModel'
-  >
-> = {
-  ...AI_FEATURE_SETTING_FIELDS,
-  SERVICEDESK_COPILOT: 'crmAssistantModel',
-  SERVICEDESK_PRE_SERVICE: 'whatsappReplyModel',
-  SERVICEDESK_TRIAGE: 'whatsappSentimentModel',
-  // Steel AI reuses the assistant model setting (the CRM widget is gone).
-  STEEL_ASSISTANT: 'crmAssistantModel',
-  STEEL_AGENT: 'crmAssistantModel',
-  // Wiki inline rewrite (paraphrase, summarize...) uses the assistant model.
-  WIKI_ASSISTANT: 'crmAssistantModel',
+export const AI_TASK_CLASS_BY_FEATURE: Record<AiUsageFeature, AiTaskClass> = {
+  CRM_ASSISTANT: 'ASSISTANT',
+  WHATSAPP_REPLY: 'CONVERSATION',
+  WHATSAPP_SENTIMENT: 'CLASSIFICATION',
+  SERVICEDESK_COPILOT: 'ASSISTANT',
+  SERVICEDESK_PRE_SERVICE: 'CONVERSATION',
+  SERVICEDESK_TRIAGE: 'CLASSIFICATION',
+  STEEL_ASSISTANT: 'ASSISTANT',
+  STEEL_AGENT: 'AGENT',
+  WIKI_ASSISTANT: 'ASSISTANT',
   // Never resolved here: the knowledge search embeddings use their own
   // platform model (ADR 0037) and are recorded by AiKnowledgeEmbeddingService.
-  KNOWLEDGE_SEARCH: 'whatsappSentimentModel',
-  // Eval runs (ADR 0039) default to the assistant model; a run may pin one.
-  AI_EVAL: 'crmAssistantModel',
+  KNOWLEDGE_SEARCH: 'CLASSIFICATION',
+  // Eval runs (ADR 0039) run as the assistant; a run may pin a model.
+  AI_EVAL: 'ASSISTANT',
+  AI_GUARDRAIL: 'CLASSIFICATION',
+}
+
+/** Workspace model of a task class, most specific first. */
+export function taskClassModels(
+  settings: EffectiveAiSettings,
+  taskClass: AiTaskClass,
+  defaults: AiRoutingDefaults,
+): (AiModelKey | null)[] {
+  switch (taskClass) {
+    case 'CLASSIFICATION':
+      return [settings.whatsappSentimentModel]
+    case 'CONVERSATION':
+      return [settings.whatsappReplyModel]
+    case 'ASSISTANT':
+      return [settings.crmAssistantModel]
+    case 'AGENT':
+      return [
+        settings.agentModel,
+        defaults.taskModels.AGENT,
+        settings.crmAssistantModel,
+      ]
+  }
 }
 
 /** Features where the user's own model preference applies. */
@@ -114,6 +156,87 @@ export interface PreparedAiCall {
    * uses it to warn the admins at 80% and at 100% (absent = no warning).
    */
   monthlyQuotaUsd?: number
+  /** Task class of the feature (ADR 0042). */
+  taskClass?: AiTaskClass
+  /**
+   * What the guardrails did on this call (ADR 0041): masked counts,
+   * prompt-injection detection (`tainted()`), failovers. Absent on calls
+   * built by hand (tests).
+   */
+  guard?: AiCallGuard
+  /** Guardrails in force when the call was prepared (auto-reply limits). */
+  guardrails?: EffectiveAiGuardrails
+}
+
+/** Masked values already audited per call (record may run several times). */
+const auditedPii = new WeakMap<PreparedAiCall, number>()
+
+function auditPiiMasking(
+  call: PreparedAiCall,
+  userId: string | null,
+  workspaceId: string,
+) {
+  if (!call.guard) return
+  const counts = call.guard.report.piiCounts
+  const total = PII_KINDS.reduce((sum, kind) => sum + counts[kind], 0)
+  if (total <= (auditedPii.get(call) ?? 0)) return
+  auditedPii.set(call, total)
+  // Counts only — the masked values never leave the call's vault.
+  auditMutation({
+    entity: 'ai_guardrail',
+    action: 'mask',
+    actorId: userId,
+    targetId: workspaceId,
+    meta: { workspaceId, feature: call.feature, total, counts },
+  })
+}
+
+/**
+ * Optional prompt-injection classifier (ADR 0041): asks the cheap
+ * classification model whether a suspicious third-party text is an
+ * instruction to the AI. Its cost is recorded as AI_GUARDRAIL. Any failure
+ * answers "no": the heuristics already ran and the policy stays in force.
+ */
+async function classifyInjection(
+  workspaceId: string,
+  text: string,
+): Promise<boolean> {
+  const prepared = await AiUsageService.prepare(workspaceId, 'AI_GUARDRAIL')
+  if (!prepared.ok) return false
+  const call = prepared.value
+  const usage: AiUsageTokens = { inputTokens: 0, outputTokens: 0 }
+  try {
+    const response = await call.provider.chat({
+      model: call.model.model,
+      system: INJECTION_CLASSIFIER_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: wrapUntrusted(text.slice(0, 4_000), 'tool_result'),
+        },
+      ],
+      jsonSchema: INJECTION_CLASSIFIER_SCHEMA,
+      maxTokens: 60,
+    })
+    usage.inputTokens = response.usage.inputTokens
+    usage.outputTokens = response.usage.outputTokens
+    return parseClassifierVerdict(response.text)
+  } catch (error) {
+    logger.warn(
+      'ai.injection_classifier_failed',
+      logFields(
+        {
+          component: 'AiUsageService',
+          workspaceId,
+          message: error instanceof Error ? error.message : String(error),
+        },
+        { model: call.model.key },
+      ),
+    )
+    return false
+  } finally {
+    await AiUsageService.record(call, { workspaceId, userId: null, usage })
+  }
 }
 
 /**
@@ -150,7 +273,8 @@ export const AiUsageService = {
   > {
     const row = await WorkspaceAiSettingsRepository.findByWorkspace(workspaceId)
     if (!row.ok) return row
-    const settings = toEffectiveAiSettings(row.value)
+    const defaults = await PlatformAiSettingsService.getRoutingDefaults()
+    const settings = toEffectiveAiSettings(row.value, defaults)
 
     const candidates: string[] = preferredModelKeys.filter(
       (key): key is string => Boolean(key),
@@ -164,7 +288,11 @@ export const AiUsageService = {
       if (preference.value) candidates.push(preference.value.modelKey)
     }
     candidates.push(
-      settings[MODEL_FIELD_BY_FEATURE[feature]],
+      ...taskClassModels(
+        settings,
+        AI_TASK_CLASS_BY_FEATURE[feature],
+        defaults,
+      ).filter((key): key is AiModelKey => Boolean(key)),
       ...settings.enabledModels,
     )
 
@@ -218,15 +346,72 @@ export const AiUsageService = {
       )
     }
 
-    const costMargin = await PlatformAiSettingsService.getCostMargin()
+    const guardrails = await AiGuardrailsService.loadEffective(workspaceId)
+    if (!guardrails.ok) return guardrails
 
-    return ok({
+    const [costMargin, routing] = await Promise.all([
+      PlatformAiSettingsService.getCostMargin(),
+      PlatformAiSettingsService.getRoutingDefaults(),
+    ])
+    const taskClass = AI_TASK_CLASS_BY_FEATURE[feature]
+    const fallbacks: AiCallTarget[] =
+      settings.failoverEnabled && routing.failoverEnabled
+        ? selectFallbackModels(
+            model,
+            settings.enabledModels
+              .filter((key) => isModelUsable(settings, key))
+              .map((key) => findAiModel(key) as AiModelDefinition),
+            taskClass,
+          ).flatMap((fallback) => {
+            const fallbackProvider = getAiProvider(fallback.provider)
+            return fallbackProvider
+              ? [{ model: fallback, provider: fallbackProvider }]
+              : []
+          })
+        : []
+
+    const call: PreparedAiCall = {
       feature,
       provider,
       model,
       costMargin,
       monthlyQuotaUsd: settings.monthlyQuotaUsd,
+      taskClass,
+      guardrails: guardrails.value,
+    }
+    const guarded = createGuardedProvider({
+      primary: { model, provider },
+      fallbacks,
+      maskPii: shouldMaskPii(guardrails.value.piiMaskingPolicy, feature),
+      // The classifier call itself is never classified (no recursion).
+      ...(guardrails.value.injectionClassifierEnabled &&
+        feature !== 'AI_GUARDRAIL' && {
+          classify: (text: string) => classifyInjection(workspaceId, text),
+        }),
+      ...(fallbacks.length > 0 && { breaker: getAiCircuitBreaker() }),
+      timeoutMs: AI_TASK_TIMEOUT_MS[taskClass],
+      onModelChange: (next) => {
+        call.model = next
+      },
+      onInjection: ({ signals, source }) =>
+        auditMutation({
+          entity: 'ai_guardrail',
+          action: 'alert',
+          actorId: userId ?? null,
+          targetId: workspaceId,
+          meta: {
+            workspaceId,
+            feature,
+            kind: 'prompt_injection',
+            source,
+            signals,
+          },
+        }),
+      log: { workspaceId, feature },
     })
+    call.provider = guarded.provider
+    call.guard = guarded.guard
+    return ok(call)
   },
 
   /**
@@ -259,6 +444,7 @@ export const AiUsageService = {
       }
     },
   ): Promise<void> {
+    auditPiiMasking(call, input.userId, input.workspaceId)
     // Chamada que falhou antes de consumir qualquer token: nada a lançar.
     if (input.usage.inputTokens === 0 && input.usage.outputTokens === 0) {
       return
@@ -312,6 +498,10 @@ export const AiUsageService = {
           outputTokens: input.usage.outputTokens,
           costMargin: call.costMargin ?? 1,
           costUsd,
+          ...(call.guard &&
+            call.guard.report.failovers.length > 0 && {
+              failovers: call.guard.report.failovers,
+            }),
         },
       ),
     )

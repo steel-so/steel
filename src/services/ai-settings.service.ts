@@ -56,7 +56,10 @@ async function loadEffective(
 ): Promise<Result<EffectiveAiSettings>> {
   const row = await WorkspaceAiSettingsRepository.findByWorkspace(workspaceId)
   if (!row.ok) return row
-  return ok(toEffectiveAiSettings(row.value))
+  const defaults = row.value
+    ? undefined
+    : await PlatformAiSettingsService.getRoutingDefaults()
+  return ok(toEffectiveAiSettings(row.value, defaults))
 }
 
 async function buildDTO(
@@ -154,6 +157,10 @@ export const AiSettingsService = {
       ...(dto.mcpWriteEnabled !== undefined && {
         mcpWriteEnabled: dto.mcpWriteEnabled,
       }),
+      ...(dto.agentModel !== undefined && { agentModel: dto.agentModel }),
+      ...(dto.failoverEnabled !== undefined && {
+        failoverEnabled: dto.failoverEnabled,
+      }),
     }
 
     // Só barra provedor sem chave no que está sendo alterado agora: um
@@ -166,6 +173,7 @@ export const AiSettingsService = {
       dto.crmAssistantModel,
       dto.whatsappReplyModel,
       dto.whatsappSentimentModel,
+      dto.agentModel,
     ].filter((key): key is AiModelKey => Boolean(key))
     for (const key of touched) {
       const model = findAiModel(key)
@@ -190,6 +198,14 @@ export const AiSettingsService = {
       }
     }
 
+    if (next.agentModel && !next.enabledModels.includes(next.agentModel)) {
+      return err(
+        validationError(
+          'O modelo dos Steel Agents precisa estar entre os habilitados',
+        ),
+      )
+    }
+
     const saved = await WorkspaceAiSettingsRepository.upsert(workspaceId, {
       enabledModels: next.enabledModels,
       crmAssistantModel: next.crmAssistantModel,
@@ -203,6 +219,8 @@ export const AiSettingsService = {
       autopilotEnabled: next.autopilotEnabled,
       usageWeeklyEmailEnabled: next.usageWeeklyEmailEnabled,
       mcpWriteEnabled: next.mcpWriteEnabled,
+      agentModel: next.agentModel,
+      failoverEnabled: next.failoverEnabled,
     })
     if (!saved.ok) return saved
 
@@ -221,6 +239,8 @@ export const AiSettingsService = {
         autopilotEnabled: next.autopilotEnabled,
         usageWeeklyEmailEnabled: next.usageWeeklyEmailEnabled,
         mcpWriteEnabled: next.mcpWriteEnabled,
+        agentModel: next.agentModel,
+        failoverEnabled: next.failoverEnabled,
         // Toggles flipped by this request (who turned what on or off).
         changedSwitches: (
           [
@@ -231,6 +251,7 @@ export const AiSettingsService = {
             'autopilotEnabled',
             'usageWeeklyEmailEnabled',
             'mcpWriteEnabled',
+            'failoverEnabled',
           ] as const
         ).filter((key) => current.value[key] !== next[key]),
       },

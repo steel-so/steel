@@ -6,6 +6,8 @@ import { isEmbeddingProviderConfigured } from '@/src/lib/ai/knowledge/embeddings
 import { DEFAULT_AI_COST_MARGIN } from '@/src/lib/ai/models'
 import { ok, type Result } from '@/src/lib/result'
 import {
+  type AiRoutingDefaults,
+  toAiRoutingDefaults,
   toCostMargin,
   toEmbeddingsEnabled,
   toPlatformAiSettingsDTO,
@@ -28,6 +30,7 @@ export const COST_MARGIN_TTL_MS = 60_000
 
 let cachedMargin: { value: number; expiresAt: number } | null = null
 let cachedEmbeddings: { value: boolean; expiresAt: number } | null = null
+let cachedRouting: { value: AiRoutingDefaults; expiresAt: number } | null = null
 
 /** What a knowledge search runs on this deployment right now (ADR 0037). */
 async function knowledgeSearchStatus(
@@ -98,10 +101,39 @@ export const PlatformAiSettingsService = {
     return value
   },
 
+  /**
+   * Routing defaults (ADR 0042): default model per task class and the
+   * failover switch, cached like the margin. On a database error it keeps
+   * the last value, or the built-in defaults (no model override, failover
+   * on) — routing must never block an AI call.
+   */
+  async getRoutingDefaults(
+    now: number = Date.now(),
+  ): Promise<AiRoutingDefaults> {
+    if (cachedRouting && cachedRouting.expiresAt > now) {
+      return cachedRouting.value
+    }
+    const row = await PlatformAiSettingsRepository.find()
+    if (!row.ok) {
+      logger.warn(
+        'ai.routing_defaults_unavailable',
+        logFields({
+          component: 'PlatformAiSettingsService',
+          message: row.error.message,
+        }),
+      )
+      return cachedRouting?.value ?? toAiRoutingDefaults(null)
+    }
+    const value = toAiRoutingDefaults(row.value)
+    cachedRouting = { value, expiresAt: now + COST_MARGIN_TTL_MS }
+    return value
+  },
+
   /** Drops the in-process margin (tests, and after an update). */
   clearCache(): void {
     cachedMargin = null
     cachedEmbeddings = null
+    cachedRouting = null
   },
 
   async get(actorId: string): Promise<Result<PlatformAiSettingsDTO>> {
@@ -125,18 +157,43 @@ export const PlatformAiSettingsService = {
     const previous = toCostMargin(current.value)
     const previousEmbeddings = toEmbeddingsEnabled(current.value)
     const embeddingsEnabled = input.embeddingsEnabled ?? previousEmbeddings
+    const previousRouting = toAiRoutingDefaults(current.value)
+    const taskModels = {
+      ...previousRouting.taskModels,
+      ...Object.fromEntries(
+        Object.entries(input.taskModels ?? {}).filter(
+          ([, key]) => key !== undefined,
+        ),
+      ),
+    } as AiRoutingDefaults['taskModels']
+    const failoverEnabled =
+      input.failoverEnabled ?? previousRouting.failoverEnabled
 
     const saved = await PlatformAiSettingsRepository.upsert({
       costMargin: input.costMargin,
       embeddingsEnabled,
+      classificationModel: taskModels.CLASSIFICATION,
+      conversationModel: taskModels.CONVERSATION,
+      assistantModel: taskModels.ASSISTANT,
+      agentModel: taskModels.AGENT,
+      failoverEnabled,
       updatedById: actorId,
     })
+    const routingChanged =
+      failoverEnabled !== previousRouting.failoverEnabled ||
+      JSON.stringify(taskModels) !== JSON.stringify(previousRouting.taskModels)
     const meta = {
       previousMargin: previous,
       costMargin: input.costMargin,
       ...(embeddingsEnabled !== previousEmbeddings && {
         previousEmbeddingsEnabled: previousEmbeddings,
         embeddingsEnabled,
+      }),
+      ...(routingChanged && {
+        previousTaskModels: previousRouting.taskModels,
+        taskModels,
+        previousFailoverEnabled: previousRouting.failoverEnabled,
+        failoverEnabled,
       }),
     }
     if (!saved.ok) {

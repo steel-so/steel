@@ -10,6 +10,7 @@ import {
   isAiModelKey,
 } from '@/src/lib/ai/models'
 import { isQuotaExceeded, remainingUsd } from '@/src/lib/ai/quota'
+import type { AiRoutingDefaults } from '@/src/mappers/platform-ai-settings.mapper'
 import type { AiUsageTotals } from '@/src/repositories/ai-settings.repository'
 import type { WorkspaceAiSettingsDTO } from '@/types/ai-settings'
 import { toAiModelPriceDTOs } from './platform-ai-settings.mapper'
@@ -35,21 +36,32 @@ export interface EffectiveAiSettings {
   usageWeeklyEmailEnabled: boolean
   /** MCP clients with `mcp:write` may write; off by default. */
   mcpWriteEnabled: boolean
+  /** Model of the AGENT task class; null = platform default / assistant's. */
+  agentModel: AiModelKey | null
+  /** Provider failover (ADR 0042); on by default. */
+  failoverEnabled: boolean
 }
 
 function modelOrDefault(key: string): AiModelKey {
   return isAiModelKey(key) ? key : DEFAULT_AI_MODEL_KEY
 }
 
+/**
+ * `defaults` = the platform routing defaults (ADR 0042): a workspace
+ * without a saved row starts from the model the global admin picked for
+ * each task class.
+ */
 export function toEffectiveAiSettings(
   row: WorkspaceAiSettings | null,
+  defaults?: AiRoutingDefaults,
 ): EffectiveAiSettings {
   if (!row) {
+    const task = defaults?.taskModels
     return {
       enabledModels: AI_MODEL_CATALOG.map((m) => m.key),
-      crmAssistantModel: DEFAULT_AI_MODEL_KEY,
-      whatsappReplyModel: DEFAULT_AI_MODEL_KEY,
-      whatsappSentimentModel: DEFAULT_AI_MODEL_KEY,
+      crmAssistantModel: task?.ASSISTANT ?? DEFAULT_AI_MODEL_KEY,
+      whatsappReplyModel: task?.CONVERSATION ?? DEFAULT_AI_MODEL_KEY,
+      whatsappSentimentModel: task?.CLASSIFICATION ?? DEFAULT_AI_MODEL_KEY,
       monthlyQuotaUsd: DEFAULT_MONTHLY_QUOTA_USD,
       agentModeEnabled: true,
       aiEnabled: true,
@@ -58,6 +70,8 @@ export function toEffectiveAiSettings(
       autopilotEnabled: false,
       usageWeeklyEmailEnabled: true,
       mcpWriteEnabled: false,
+      agentModel: null,
+      failoverEnabled: true,
     }
   }
   return {
@@ -74,6 +88,9 @@ export function toEffectiveAiSettings(
     autopilotEnabled: row.autopilotEnabled,
     usageWeeklyEmailEnabled: row.usageWeeklyEmailEnabled,
     mcpWriteEnabled: row.mcpWriteEnabled,
+    agentModel:
+      row.agentModel && isAiModelKey(row.agentModel) ? row.agentModel : null,
+    failoverEnabled: row.failoverEnabled,
   }
 }
 
@@ -123,6 +140,8 @@ export function toWorkspaceAiSettingsDTO(input: {
     autopilotEnabled: settings.autopilotEnabled,
     usageWeeklyEmailEnabled: settings.usageWeeklyEmailEnabled,
     mcpWriteEnabled: settings.mcpWriteEnabled,
+    agentModel: settings.agentModel,
+    failoverEnabled: settings.failoverEnabled,
     usage: {
       periodStart: input.periodStart.toISOString(),
       inputTokens: usage.inputTokens,

@@ -41,6 +41,10 @@ export const UpdateWorkspaceAiSettingsSchema = z.object({
   usageWeeklyEmailEnabled: z.boolean().optional(),
   /** External AI clients (MCP) with `mcp:write` may write. */
   mcpWriteEnabled: z.boolean().optional(),
+  /** Steel Agents task class model (ADR 0042); null = follow the default. */
+  agentModel: AiModelKeySchema.nullable().optional(),
+  /** Automatic provider failover (ADR 0042). */
+  failoverEnabled: z.boolean().optional(),
 })
 
 export type UpdateWorkspaceAiSettingsDTO = z.infer<

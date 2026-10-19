@@ -22,6 +22,16 @@ export interface PlatformAiSettingsDTO {
   embeddingsEnabled: boolean
   /** Live state of the knowledge search on this deployment. */
   knowledgeSearch: PlatformKnowledgeSearchStatusDTO
+  /**
+   * Default model of each task class (ADR 0042) for workspaces that did not
+   * choose one. Null = the platform default model (agents: the assistant's).
+   */
+  taskModels: Record<
+    'CLASSIFICATION' | 'CONVERSATION' | 'ASSISTANT' | 'AGENT',
+    string | null
+  >
+  /** Platform-wide switch of the provider failover. */
+  failoverEnabled: boolean
 }
 
 export interface PlatformKnowledgeSearchStatusDTO {
