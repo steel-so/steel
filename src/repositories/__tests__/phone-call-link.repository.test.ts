@@ -183,7 +183,12 @@ describe('PhoneCallLinkRepository', () => {
       data: { ...base, name: 'Ganha', stageId: won.id },
     })
     await prisma.crmOpportunity.create({
-      data: { ...base, name: 'Apagada', stageId: open.id, deletedAt: new Date() },
+      data: {
+        ...base,
+        name: 'Apagada',
+        stageId: open.id,
+        deletedAt: new Date(),
+      },
     })
     const target = await prisma.crmOpportunity.create({
       data: { ...base, name: 'Aberta', stageId: open.id },

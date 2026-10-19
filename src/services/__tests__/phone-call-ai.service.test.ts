@@ -365,7 +365,9 @@ describe('PhoneCallAiService.process()', () => {
       reason: 'call_not_found',
     })
 
-    callRepo.findById.mockResolvedValueOnce(ok(pendingCall({ aiStatus: 'DONE' })))
+    callRepo.findById.mockResolvedValueOnce(
+      ok(pendingCall({ aiStatus: 'DONE' })),
+    )
     expect(expectOk(await PhoneCallAiService.process('call1'))).toEqual({
       status: 'ignored',
       reason: 'not_pending',
@@ -421,7 +423,13 @@ describe('PhoneCallAiService.process()', () => {
 
   it.each([
     ['skip', () => mocks.getOpenAiClient.mockReturnValue(null)],
-    ['no recording', () => callRepo.findById.mockResolvedValue(ok(pendingCall({ recordingKey: null })))],
+    [
+      'no recording',
+      () =>
+        callRepo.findById.mockResolvedValue(
+          ok(pendingCall({ recordingKey: null })),
+        ),
+    ],
   ])('propagates a failure writing the %s state', async (_label, arrange) => {
     arrange()
     callRepo.update.mockResolvedValue(err(DB))
@@ -431,14 +439,17 @@ describe('PhoneCallAiService.process()', () => {
   it.each([
     ['FAILED', () => mocks.transcribe.mockRejectedValue(new Error('down'))],
     ['empty', () => mocks.transcribe.mockResolvedValue(null)],
-  ])('propagates a failure writing the %s state after processing', async (_label, arrange) => {
-    arrange()
-    const call = pendingCall()
-    callRepo.update
-      .mockResolvedValueOnce(ok({ ...call, aiStatus: 'PROCESSING' }))
-      .mockResolvedValueOnce(err(DB))
-    expectErr(await PhoneCallAiService.process('call1'), 'DATABASE_ERROR')
-  })
+  ])(
+    'propagates a failure writing the %s state after processing',
+    async (_label, arrange) => {
+      arrange()
+      const call = pendingCall()
+      callRepo.update
+        .mockResolvedValueOnce(ok({ ...call, aiStatus: 'PROCESSING' }))
+        .mockResolvedValueOnce(err(DB))
+      expectErr(await PhoneCallAiService.process('call1'), 'DATABASE_ERROR')
+    },
+  )
 })
 
 describe('parseCallSummary()', () => {
@@ -474,10 +485,42 @@ describe('parseCallSummary()', () => {
 
   it.each([
     ['not json', 'oi'],
-    ['no summary', JSON.stringify({ summary: ' ', sentiment: 'NEUTRAL', score: 0, nextSteps: [] })],
-    ['bad sentiment', JSON.stringify({ summary: 's', sentiment: 'HAPPY', score: 0, nextSteps: [] })],
-    ['bad score', JSON.stringify({ summary: 's', sentiment: 'NEUTRAL', score: '1', nextSteps: [] })],
-    ['bad steps', JSON.stringify({ summary: 's', sentiment: 'NEUTRAL', score: 0, nextSteps: 'x' })],
+    [
+      'no summary',
+      JSON.stringify({
+        summary: ' ',
+        sentiment: 'NEUTRAL',
+        score: 0,
+        nextSteps: [],
+      }),
+    ],
+    [
+      'bad sentiment',
+      JSON.stringify({
+        summary: 's',
+        sentiment: 'HAPPY',
+        score: 0,
+        nextSteps: [],
+      }),
+    ],
+    [
+      'bad score',
+      JSON.stringify({
+        summary: 's',
+        sentiment: 'NEUTRAL',
+        score: '1',
+        nextSteps: [],
+      }),
+    ],
+    [
+      'bad steps',
+      JSON.stringify({
+        summary: 's',
+        sentiment: 'NEUTRAL',
+        score: 0,
+        nextSteps: 'x',
+      }),
+    ],
     ['null', 'null'],
   ])('returns null for %s', (_label, content) => {
     expect(parseCallSummary(content)).toBeNull()

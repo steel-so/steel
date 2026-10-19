@@ -6,6 +6,7 @@ import {
   ArrowDown01Icon,
   ArrowUpDoubleIcon,
   BookOpen01Icon,
+  Call02Icon,
   CheckListIcon,
   Clock01Icon,
   HierarchyIcon,
@@ -29,6 +30,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { SdTicketTypeDTO } from '@/types/sd-ticket'
 import { SdTicketApprovalsTab } from './tabs/approvals-tab'
+import { SdTicketCallsTab } from './tabs/calls-tab'
 import { SdTicketChangeTab } from './tabs/change-tab'
 import { SdTicketChildrenTab } from './tabs/children-tab'
 import { SdTicketCostsTab } from './tabs/costs-tab'
@@ -77,6 +79,13 @@ export const SD_TICKET_TABS: SdTicketTabDef[] = [
     label: 'WhatsApp',
     icon: WhatsappIcon,
     component: SdTicketWhatsappTab,
+    agentOnly: true,
+  },
+  {
+    id: 'calls',
+    label: 'Ligações',
+    icon: Call02Icon,
+    component: SdTicketCallsTab,
     agentOnly: true,
   },
   {

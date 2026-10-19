@@ -44,7 +44,9 @@ const DB = databaseError('db down')
 
 const MEMBERSHIP = { role: 'MEMBER', isPrivileged: false, permissions: null }
 
-function call(overrides: Parameters<typeof createFakePhoneCallWithNames>[0] = {}) {
+function call(
+  overrides: Parameters<typeof createFakePhoneCallWithNames>[0] = {},
+) {
   return createFakePhoneCallWithNames({
     id: 'call1',
     workspaceId: 'ws1',

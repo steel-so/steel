@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
+import { phoneCallsKey } from './use-phone-calls'
 
 type WhatsAppRealtimeEvent =
   | {
@@ -77,6 +78,8 @@ export function useWhatsAppRealtimeEvents(workspaceId: string) {
           ['whatsapp-phone-call', workspaceId, parsed.call.conversationId],
           parsed.call,
         )
+        // Recording / transcript / summary landed: refresh the call cards.
+        queryClient.invalidateQueries({ queryKey: phoneCallsKey(workspaceId) })
       }
 
       if (parsed.type === 'group-message.created') {

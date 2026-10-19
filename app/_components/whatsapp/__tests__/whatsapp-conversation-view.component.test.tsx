@@ -1058,4 +1058,112 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       ),
     )
   })
+
+  describe('phone calls in the timeline', () => {
+    function call(overrides: Record<string, unknown> = {}) {
+      return {
+        id: 'call1',
+        conversationId: 'cv_1',
+        userId: 'u_1',
+        extension: '200',
+        destination: '11999998888',
+        status: 'COMPLETED',
+        answeredAt: null,
+        endedAt: null,
+        durationSeconds: 125,
+        createdAt: '2026-01-01T12:30:00.000Z',
+        recordingNotice: null,
+        hasRecording: true,
+        aiStatus: 'DONE',
+        userName: 'Eu Mesmo',
+        contactName: 'Maria',
+        recording: {
+          mimeType: 'audio/mpeg',
+          sizeBytes: 100,
+          expiresAt: '2026-04-01T12:00:00.000Z',
+        },
+        transcript: 'Bom dia, preciso da segunda via.',
+        summary: 'Cliente pediu a segunda via do boleto.',
+        sentiment: 'POSITIVE',
+        sentimentScore: 0.6,
+        nextSteps: ['Enviar a segunda via do boleto'],
+        aiModel: 'openai:gpt-4o-mini',
+        aiSkipReason: null,
+        aiProcessedAt: null,
+        sdTicketId: null,
+        crmPersonId: 'p1',
+        crmOpportunityId: null,
+        ...overrides,
+      }
+    }
+
+    it('shows the finished call with audio, summary and next steps', async () => {
+      const fetchSpy = setup([
+        {
+          match: `${API}/conversations/cv_1/calls`,
+          data: [
+            call(),
+            call({ id: 'live', status: 'IN_PROGRESS', summary: 'ao vivo' }),
+          ],
+        },
+        { method: 'POST', match: '/crm/tasks', data: { id: 't1' } },
+      ])
+      const { container } = renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+        />,
+      )
+
+      expect(
+        await screen.findByText('Cliente pediu a segunda via do boleto.'),
+      ).toBeTruthy()
+      expect(screen.queryByText('ao vivo')).toBeNull()
+      expect(screen.getByText('Cliente satisfeito')).toBeTruthy()
+      expect(screen.getByText(/02:05/)).toBeTruthy()
+      expect(container.querySelector('audio')?.getAttribute('src')).toBe(
+        '/api/workspaces/ws_1/phone-calls/call1/recording',
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /Criar tarefa/ }))
+      await waitFor(() =>
+        expect(notify.success).toHaveBeenCalledWith('Tarefa criada'),
+      )
+      expect(fetchBody(fetchSpy, '/crm/tasks')).toMatchObject({
+        title: 'Enviar a segunda via do boleto',
+        personId: 'p1',
+      })
+    })
+
+    it('explains why a call was not transcribed and hides the task button without a record', async () => {
+      setup([
+        {
+          match: `${API}/conversations/cv_1/calls`,
+          data: [
+            call({
+              aiStatus: 'SKIPPED',
+              aiSkipReason: 'ai_quota_exceeded',
+              summary: null,
+              transcript: null,
+              nextSteps: [],
+              recording: null,
+              hasRecording: false,
+              crmPersonId: null,
+            }),
+          ],
+        },
+      ])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+        />,
+      )
+
+      expect(
+        await screen.findByText('A cota de IA do mês acabou.'),
+      ).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /Criar tarefa/ })).toBeNull()
+    })
+  })
 })

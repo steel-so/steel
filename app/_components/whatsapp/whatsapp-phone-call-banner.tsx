@@ -86,14 +86,27 @@ export function WhatsappPhoneCallBanner({
     <div
       role='status'
       className={cn(
-        'flex items-center gap-2 border-b px-4 py-2 text-sm',
+        'flex items-start gap-2 border-b px-4 py-2 text-sm',
         state.active
           ? 'bg-primary/10 text-primary'
           : 'bg-muted text-muted-foreground',
       )}
     >
-      <SteelIcon icon={state.active ? Call02Icon : CallEnd01Icon} size={16} />
-      <span>{state.label}</span>
+      <SteelIcon
+        icon={state.active ? Call02Icon : CallEnd01Icon}
+        size={16}
+        className='shrink-0'
+      />
+      <div className='min-w-0'>
+        <span>{state.label}</span>
+        {state.active && call?.recordingNotice ? (
+          // Recorded call (ADR 0043): the agent reads this to the contact.
+          <p className='break-words text-xs'>
+            <strong className='font-medium'>Ligação gravada.</strong>{' '}
+            {call.recordingNotice}
+          </p>
+        ) : null}
+      </div>
     </div>
   )
 }

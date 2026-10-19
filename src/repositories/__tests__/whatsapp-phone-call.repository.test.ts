@@ -213,7 +213,9 @@ describe('WhatsAppPhoneCallRepository', () => {
     })
 
     expect(
-      expectOk(await WhatsAppPhoneCallRepository.listExpiredRecordings(now, 10)),
+      expectOk(
+        await WhatsAppPhoneCallRepository.listExpiredRecordings(now, 10),
+      ),
     ).toEqual([
       {
         id: expired.id,

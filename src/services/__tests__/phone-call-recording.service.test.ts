@@ -149,7 +149,10 @@ describe('PhoneCallRecordingService.intake()', () => {
     )
     expect(publishWhatsAppEvent).toHaveBeenCalledWith('ws1', {
       type: 'phone-call.updated',
-      call: expect.objectContaining({ hasRecording: true, aiStatus: 'PENDING' }),
+      call: expect.objectContaining({
+        hasRecording: true,
+        aiStatus: 'PENDING',
+      }),
     })
   })
 
@@ -200,7 +203,10 @@ describe('PhoneCallRecordingService.intake()', () => {
 
   it.each([
     ['no recording asked', { recordingRequested: false }],
-    ['the upload window is over', { createdAt: new Date('2026-10-17T11:00:00Z') }],
+    [
+      'the upload window is over',
+      { createdAt: new Date('2026-10-17T11:00:00Z') },
+    ],
     ['the call was not answered', { status: 'NO_ANSWER' as const }],
   ])('refuses the upload when %s', async (_label, overrides) => {
     callRepo.findByCallbackTokenHash.mockResolvedValue(
@@ -309,7 +315,9 @@ describe('PhoneCallRecordingService.deleteRecording()', () => {
   })
 
   it('deletes the object, clears the fields and audits it', async () => {
-    expectOk(await PhoneCallRecordingService.deleteRecording('u1', 'ws1', 'call1'))
+    expectOk(
+      await PhoneCallRecordingService.deleteRecording('u1', 'ws1', 'call1'),
+    )
 
     expect(mocks.deleteObject).toHaveBeenCalledWith({
       bucket: 'phone-call-recordings',
@@ -404,13 +412,19 @@ describe('PhoneCallRecordingService.purgeExpired()', () => {
 
   it('propagates database failures', async () => {
     callRepo.listExpiredRecordings.mockResolvedValueOnce(err(DB))
-    expectErr(await PhoneCallRecordingService.purgeExpired(NOW), 'DATABASE_ERROR')
+    expectErr(
+      await PhoneCallRecordingService.purgeExpired(NOW),
+      'DATABASE_ERROR',
+    )
 
     callRepo.listExpiredRecordings.mockResolvedValueOnce(
       ok([{ id: 'c1', workspaceId: 'ws1', recordingKey: 'ws1/c1.wav' }]),
     )
     callRepo.clearRecording.mockResolvedValueOnce(err(DB))
-    expectErr(await PhoneCallRecordingService.purgeExpired(NOW), 'DATABASE_ERROR')
+    expectErr(
+      await PhoneCallRecordingService.purgeExpired(NOW),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -463,14 +477,20 @@ describe('PhoneCallRecordingService.sweepOrphans()', () => {
 
   it('fails with STORAGE_ERROR when listing or deleting fails', async () => {
     mocks.listObjects.mockRejectedValueOnce('s3 down')
-    expectErr(await PhoneCallRecordingService.sweepOrphans(NOW), 'STORAGE_ERROR')
+    expectErr(
+      await PhoneCallRecordingService.sweepOrphans(NOW),
+      'STORAGE_ERROR',
+    )
 
     mocks.listObjects.mockResolvedValueOnce([
       { key: 'ws1/orphan.wav', size: 1, lastModified: old },
     ])
     callRepo.findExistingRecordingKeys.mockResolvedValueOnce(ok(new Set()))
     mocks.deleteObjects.mockRejectedValueOnce(new Error('s3 down'))
-    expectErr(await PhoneCallRecordingService.sweepOrphans(NOW), 'STORAGE_ERROR')
+    expectErr(
+      await PhoneCallRecordingService.sweepOrphans(NOW),
+      'STORAGE_ERROR',
+    )
   })
 
   it('propagates database failures', async () => {
@@ -478,6 +498,9 @@ describe('PhoneCallRecordingService.sweepOrphans()', () => {
       { key: 'ws1/orphan.wav', size: 1, lastModified: old },
     ])
     callRepo.findExistingRecordingKeys.mockResolvedValue(err(DB))
-    expectErr(await PhoneCallRecordingService.sweepOrphans(NOW), 'DATABASE_ERROR')
+    expectErr(
+      await PhoneCallRecordingService.sweepOrphans(NOW),
+      'DATABASE_ERROR',
+    )
   })
 })

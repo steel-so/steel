@@ -49,7 +49,11 @@ describe('transcribeAudio()', () => {
 
   it('returns null for an empty transcription', async () => {
     expect(
-      await transcribeAudio(client({ text: '  ' }).client, Buffer.from('a'), 'a.wav'),
+      await transcribeAudio(
+        client({ text: '  ' }).client,
+        Buffer.from('a'),
+        'a.wav',
+      ),
     ).toBeNull()
     expect(
       await transcribeAudio(client({}).client, Buffer.from('a'), 'a.wav'),

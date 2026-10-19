@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { mockFetch } from '@/src/__tests__/component-utils'
+import { mockFetch, renderWithQuery } from '@/src/__tests__/component-utils'
 import type { CrmActivityDTO } from '@/types/crm-activity'
 import { CrmRecordTimeline } from '../crm-record-timeline'
 
@@ -26,25 +26,34 @@ const minutesAgo = (m: number) =>
 
 describe('<CrmRecordTimeline />', () => {
   it('shows a loading state and then the empty state', async () => {
-    mockFetch([{ match: '/crm/activities', data: [] }])
-    render(<CrmRecordTimeline workspaceId='ws1' personId='p1' />)
+    mockFetch([
+      { match: '/calls', data: [] },
+      { match: '/crm/activities', data: [] },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' personId='p1' />)
 
     expect(screen.getByText('Carregando…')).toBeTruthy()
     expect(await screen.findByText('Sem atividade ainda.')).toBeTruthy()
   })
 
   it('filters the feed by the record it belongs to', async () => {
-    const fetchSpy = mockFetch([{ match: '/crm/activities', data: [] }])
-    render(<CrmRecordTimeline workspaceId='ws1' opportunityId='o9' />)
+    const fetchSpy = mockFetch([
+      { match: '/calls', data: [] },
+      { match: '/crm/activities', data: [] },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' opportunityId='o9' />)
 
     await screen.findByText('Sem atividade ainda.')
-    expect(String(fetchSpy.mock.calls[0][0])).toBe(
+    const urls = fetchSpy.mock.calls.map((call) => String(call[0]))
+    expect(urls).toContain(
       '/api/workspaces/ws1/crm/activities?opportunityId=o9',
     )
+    expect(urls).toContain('/api/workspaces/ws1/crm/opportunities/o9/calls')
   })
 
   it('resolves actors, falls back to summaries/verbs and relative times', async () => {
     mockFetch([
+      { match: '/calls', data: [] },
       {
         match: '/crm/activities',
         data: [
@@ -75,7 +84,7 @@ describe('<CrmRecordTimeline />', () => {
         ],
       },
     ])
-    render(
+    renderWithQuery(
       <CrmRecordTimeline
         workspaceId='ws1'
         personId='p1'
@@ -97,7 +106,61 @@ describe('<CrmRecordTimeline />', () => {
 
   it('degrades to the empty state when the request fails', async () => {
     mockFetch([{ match: '/crm/activities', status: 500, error: 'boom' }])
-    render(<CrmRecordTimeline workspaceId='ws1' companyId='c1' />)
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' companyId='c1' />)
     expect(await screen.findByText('Sem atividade ainda.')).toBeTruthy()
+  })
+
+  it('shows the calls of the person above the activity', async () => {
+    mockFetch([
+      {
+        match: '/crm/people/p1/calls',
+        data: [
+          {
+            id: 'call1',
+            conversationId: 'conv1',
+            userId: 'u1',
+            extension: '200',
+            destination: '11999998888',
+            status: 'COMPLETED',
+            answeredAt: null,
+            endedAt: null,
+            durationSeconds: 75,
+            createdAt: '2026-10-18T15:00:00.000Z',
+            recordingNotice: null,
+            hasRecording: false,
+            aiStatus: 'DONE',
+            userName: 'Ana',
+            contactName: 'Maria',
+            recording: null,
+            transcript: 'Olá',
+            summary: 'Cliente pediu o boleto.',
+            sentiment: 'NEUTRAL',
+            sentimentScore: 0,
+            nextSteps: ['Enviar o boleto'],
+            aiModel: 'openai:gpt-4o-mini',
+            aiSkipReason: null,
+            aiProcessedAt: null,
+            sdTicketId: null,
+            crmPersonId: 'p1',
+            crmOpportunityId: null,
+          },
+        ],
+      },
+      { match: '/crm/activities', data: [] },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' personId='p1' />)
+
+    expect(await screen.findByText('Cliente pediu o boleto.')).toBeTruthy()
+    expect(screen.getByText('Ligações')).toBeTruthy()
+    expect(screen.getByText('Enviar o boleto')).toBeTruthy()
+  })
+
+  it('does not ask for calls on a company', async () => {
+    const fetchSpy = mockFetch([{ match: '/crm/activities', data: [] }])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' companyId='c1' />)
+    await screen.findByText('Sem atividade ainda.')
+    expect(
+      fetchSpy.mock.calls.some((call) => String(call[0]).includes('/calls')),
+    ).toBe(false)
   })
 })

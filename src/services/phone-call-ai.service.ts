@@ -127,9 +127,7 @@ async function finish(
 }
 
 /** Why the AI step cannot run for this workspace, or `null` when it can. */
-async function blocker(
-  workspaceId: string,
-): Promise<
+async function blocker(workspaceId: string): Promise<
   Result<
     | { reason: string }
     | {

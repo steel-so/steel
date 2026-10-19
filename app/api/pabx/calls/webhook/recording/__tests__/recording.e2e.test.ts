@@ -24,7 +24,10 @@ const WAV = new Uint8Array([
 async function seedCall(
   workspaceId: string,
   userId: string,
-  overrides: { recordingRequested?: boolean; status?: 'COMPLETED' | 'BUSY' } = {},
+  overrides: {
+    recordingRequested?: boolean
+    status?: 'COMPLETED' | 'BUSY'
+  } = {},
 ) {
   const connection = await prisma.whatsAppConnection.create({
     data: {
@@ -164,8 +167,8 @@ describe('GET calls of a ticket and of CRM records', () => {
   it('answers an empty list for records without calls', async () => {
     const { user, workspace } = await authenticatedOwner()
     for (const path of [
-      `crm/opportunities/unknown/calls`,
-      `crm/people/unknown/calls`,
+      'crm/opportunities/unknown/calls',
+      'crm/people/unknown/calls',
     ]) {
       const res = await getJson(
         `/api/workspaces/${workspace.id}/${path}`,

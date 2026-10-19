@@ -8,6 +8,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { WhatsappSettingsAi } from '@/app/_components/whatsapp/settings/whatsapp-settings-ai'
 import { WhatsappSettingsAiKnowledge } from '@/app/_components/whatsapp/settings/whatsapp-settings-ai-knowledge'
+import { WhatsappSettingsCallRecording } from '@/app/_components/whatsapp/settings/whatsapp-settings-call-recording'
 import { WhatsappSettingsConnections } from '@/app/_components/whatsapp/settings/whatsapp-settings-connections'
 import { WhatsappSettingsService } from '@/app/_components/whatsapp/settings/whatsapp-settings-service'
 import { SteelIcon } from '@/components/icon/icon'
@@ -67,6 +68,7 @@ export default async function ZapSettingsPage({
           </TabsContent>
           <TabsContent value='service' className='space-y-6 pt-4'>
             <WhatsappSettingsService workspaceId={workspaceId} />
+            <WhatsappSettingsCallRecording workspaceId={workspaceId} />
           </TabsContent>
         </Tabs>
       </div>
