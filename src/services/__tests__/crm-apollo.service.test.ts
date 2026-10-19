@@ -443,6 +443,7 @@ describe('listLabels and listContacts', () => {
           contacts: [
             {
               id: 'c1',
+              personId: 'p1',
               name: 'Ana',
               firstName: 'Ana',
               lastName: null,

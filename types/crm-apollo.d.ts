@@ -56,6 +56,7 @@ export interface CrmApolloLabelDTO {
 
 export interface CrmApolloContactDTO {
   id: string
+  personId: string | null
   name: string
   email: string | null
   emailStatus: string | null
@@ -89,6 +90,8 @@ export interface CrmApolloImportDTO {
   revealPhones: boolean
   phonesRequested: number
   phonesReceived: number
+  /** Skip counts by reason (`no_email`, `opted_out`, ...). */
+  skipReasons: Record<string, number>
   error: string | null
   createdById: string
   startedAt: string | null

@@ -97,6 +97,7 @@ describe('toCrmApolloPersonDTO', () => {
 describe('toCrmApolloContactDTO', () => {
   const contact = {
     id: 'c1',
+    personId: 'p1',
     name: 'Ana Lima',
     firstName: 'Ana',
     lastName: 'Lima',
@@ -111,6 +112,7 @@ describe('toCrmApolloContactDTO', () => {
   it('maps the contact', () => {
     expect(toCrmApolloContactDTO(contact)).toMatchObject({
       id: 'c1',
+      personId: 'p1',
       name: 'Ana Lima',
       email: 'ana@acme.com',
     })
@@ -123,6 +125,18 @@ describe('toCrmApolloContactDTO', () => {
     expect(
       toCrmApolloContactDTO({ ...contact, name: '', email: null }).name,
     ).toBe('Sem nome')
+  })
+})
+
+describe('toCrmApolloImportDTO skip reasons', () => {
+  it('keeps positive numeric counts and ignores malformed JSON', () => {
+    const dto = (skipReasons: unknown) =>
+      toCrmApolloImportDTO(
+        createFakeCrmApolloImport({ skipReasons: skipReasons as never }),
+      ).skipReasons
+    expect(dto({ no_email: 2, bad: 'x', zero: 0 })).toEqual({ no_email: 2 })
+    expect(dto(null)).toEqual({})
+    expect(dto([1])).toEqual({})
   })
 })
 

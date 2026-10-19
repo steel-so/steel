@@ -95,6 +95,8 @@ const opt = (max: number) => z.string().trim().max(max).nullish()
 
 export const ApolloImportContactSchema = z.object({
   id: z.string().min(1).max(64),
+  /** Apollo person id; enrichment and the phone webhook key on it. */
+  personId: z.string().min(1).max(64).nullish(),
   name: z.string().trim().max(200).default(''),
   email: opt(254),
   emailStatus: opt(40),

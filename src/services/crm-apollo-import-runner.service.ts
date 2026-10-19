@@ -57,6 +57,12 @@ interface ImportCandidate {
 
 type Outcome = 'created' | 'skipped' | 'failed'
 
+type SkipReasons = Record<string, number>
+
+function bump(reasons: SkipReasons, reason: string, by = 1): void {
+  reasons[reason] = (reasons[reason] ?? 0) + by
+}
+
 export type RunImportOutcome = {
   state: 'DONE' | 'FAILED' | 'PAUSED_RATE_LIMIT' | 'IGNORED'
 }
@@ -90,7 +96,7 @@ function fromContacts(raw: unknown): ImportCandidate[] {
     const c = parsed.data
     return [
       {
-        externalId: c.id,
+        externalId: c.personId ?? c.id,
         name: c.name,
         email: c.email ?? null,
         emailStatus: c.emailStatus ?? null,
@@ -311,6 +317,9 @@ export const CrmApolloImportRunner = {
         created: progress.created,
         skipped: progress.skipped + missing,
         failed: progress.failed,
+        skipReasons: missing
+          ? { ...progress.skipReasons, not_found: missing }
+          : progress.skipReasons,
         credits,
         cursor: end,
         phonesRequested,
@@ -358,8 +367,14 @@ async function processBatch(
   batch: ImportCandidate[],
   optedOut: Set<string>,
   phoneOnly: Map<string, ApolloPhoneOnlyPerson> | null,
-): Promise<{ created: number; skipped: number; failed: number }> {
+): Promise<{
+  created: number
+  skipped: number
+  failed: number
+  skipReasons: SkipReasons
+}> {
   const tally = { created: 0, skipped: 0, failed: 0 }
+  const skipReasons: SkipReasons = {}
   const known = await CrmLeadRepository.findExistingExternalIds(
     row.workspaceId,
     APOLLO_SOURCE,
@@ -376,6 +391,7 @@ async function processBatch(
       alreadyImported,
       listMembers,
       phoneOnly,
+      skipReasons,
     )
     tally[outcome] += 1
   }
@@ -395,7 +411,7 @@ async function processBatch(
       )
     }
   }
-  return tally
+  return { ...tally, skipReasons }
 }
 
 async function importOne(
@@ -405,12 +421,14 @@ async function importOne(
   alreadyImported: Set<string>,
   listMembers: Array<{ email: string; name?: string }>,
   phoneOnly: Map<string, ApolloPhoneOnlyPerson> | null,
+  reasons: SkipReasons,
 ): Promise<Outcome> {
   const email = candidate.email?.trim().toLowerCase() ?? null
   if (!email || !isImportableEmailStatus(candidate.emailStatus)) {
     // No usable e-mail: with phones requested the lead is only created if the
     // webhook brings a number (then through intake, phone only).
     if (phoneOnly && !alreadyImported.has(candidate.externalId)) {
+      bump(reasons, 'no_phone_yet')
       phoneOnly.set(candidate.externalId, {
         id: candidate.externalId,
         name: candidate.name,
@@ -420,14 +438,28 @@ async function importOne(
         linkedin: candidate.linkedin,
       })
     }
+    if (!phoneOnly || alreadyImported.has(candidate.externalId)) {
+      bump(
+        reasons,
+        alreadyImported.has(candidate.externalId)
+          ? 'already_imported'
+          : 'no_email',
+      )
+    }
     return 'skipped'
   }
-  if (optedOut.has(email)) return 'skipped'
+  if (optedOut.has(email)) {
+    bump(reasons, 'opted_out')
+    return 'skipped'
+  }
 
   const name = leadName(candidate, email)
   // The address is wanted in the list even when the lead already existed.
   listMembers.push({ email, name })
-  if (alreadyImported.has(candidate.externalId)) return 'skipped'
+  if (alreadyImported.has(candidate.externalId)) {
+    bump(reasons, 'already_imported')
+    return 'skipped'
+  }
 
   const intake = await CrmLeadService.intake(
     row.workspaceId,
@@ -461,5 +493,9 @@ async function importOne(
     )
     return 'failed'
   }
-  return intake.value.created ? 'created' : 'skipped'
+  if (!intake.value.created) {
+    bump(reasons, 'duplicate_lead')
+    return 'skipped'
+  }
+  return 'created'
 }

@@ -62,6 +62,7 @@ export function toCrmApolloContactDTO(
 ): CrmApolloContactDTO {
   return {
     id: contact.id,
+    personId: contact.personId,
     name: contact.name || contact.email || 'Sem nome',
     email: contact.email,
     emailStatus: contact.emailStatus,
@@ -70,6 +71,16 @@ export function toCrmApolloContactDTO(
     linkedinUrl: contact.linkedinUrl,
     city: contact.city,
   }
+}
+
+function toSkipReasons(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, number] =>
+        typeof entry[1] === 'number' && entry[1] > 0,
+    ),
+  )
 }
 
 export function toCrmApolloImportDTO(row: CrmApolloImport): CrmApolloImportDTO {
@@ -87,6 +98,7 @@ export function toCrmApolloImportDTO(row: CrmApolloImport): CrmApolloImportDTO {
     revealPhones: row.revealPhones,
     phonesRequested: row.phonesRequested,
     phonesReceived: row.phonesReceived,
+    skipReasons: toSkipReasons(row.skipReasons),
     error: row.error,
     createdById: row.createdById,
     startedAt: row.startedAt?.toISOString() ?? null,

@@ -40,6 +40,7 @@ export function createFakeCrmApolloImport(
     webhookTokenHash: null,
     phonesRequested: 0,
     phonesReceived: 0,
+    skipReasons: null,
     phoneOnlyPeople: null,
     error: null,
     startedAt: null,

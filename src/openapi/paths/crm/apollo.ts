@@ -81,6 +81,7 @@ const Label = dto(
 
 const Contact = z.object({
   id: z.string(),
+  personId: z.string().nullable(),
   name: z.string(),
   email: z.string().nullable(),
   emailStatus: z.string().nullable(),
@@ -124,6 +125,7 @@ const ImportRun = dto(
     revealPhones: z.boolean(),
     phonesRequested: z.number().int(),
     phonesReceived: z.number().int(),
+    skipReasons: z.record(z.string(), z.number().int()),
     error: z.string().nullable(),
     createdById: z.string(),
     startedAt: dateTime().nullable(),

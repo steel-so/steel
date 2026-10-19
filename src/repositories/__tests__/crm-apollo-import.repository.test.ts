@@ -87,6 +87,24 @@ describe('CrmApolloImportRepository', () => {
     })
   })
 
+  it('merges skip reasons across batches', async () => {
+    const [ws, user] = await Promise.all([seedWorkspace(), seedUser()])
+    const row = await seedCrmApolloImport(ws.id, user.id)
+    const base = { created: 0, skipped: 2, failed: 0, credits: 0, cursor: 10 }
+    await CrmApolloImportRepository.addProgress(row.id, {
+      ...base,
+      skipReasons: { no_email: 1, opted_out: 1 },
+    })
+    const after = expectOk(
+      await CrmApolloImportRepository.addProgress(row.id, {
+        ...base,
+        cursor: 20,
+        skipReasons: { no_email: 2 },
+      }),
+    )
+    expect(after.skipReasons).toEqual({ no_email: 3, opted_out: 1 })
+  })
+
   it('returns database errors for unknown rows', async () => {
     expectErr(
       await CrmApolloImportRepository.setStatus('nope', 'DONE'),

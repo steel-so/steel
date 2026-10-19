@@ -19363,6 +19363,18 @@
                               "minLength": 1,
                               "maxLength": 64
                             },
+                            "personId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "name": {
                               "default": "",
                               "type": "string",
@@ -151515,6 +151527,16 @@
                 "id": {
                   "type": "string"
                 },
+                "personId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "name": {
                   "type": "string"
                 },
@@ -151581,6 +151603,7 @@
               },
               "required": [
                 "id",
+                "personId",
                 "name",
                 "email",
                 "emailStatus",
@@ -151660,6 +151683,14 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "skipReasons": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
           "error": {
             "anyOf": [
               {
@@ -151714,6 +151745,7 @@
           "revealPhones",
           "phonesRequested",
           "phonesReceived",
+          "skipReasons",
           "error",
           "createdById",
           "startedAt",
