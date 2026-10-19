@@ -59,6 +59,8 @@ function settings(
     autopilotEnabled: false,
     usageWeeklyEmailEnabled: true,
     mcpWriteEnabled: false,
+    agentModel: null,
+    failoverEnabled: true,
     usage: {
       periodStart: '2026-09-01T00:00:00.000Z',
       inputTokens: 1500,
@@ -147,7 +149,52 @@ describe('<AiSettingsSection />', () => {
       autopilotEnabled: false,
       usageWeeklyEmailEnabled: true,
       mcpWriteEnabled: false,
+      agentModel: null,
+      failoverEnabled: true,
     })
+  })
+
+  it('lets an admin turn the provider failover off (ADR 0042)', async () => {
+    const fetchSpy = mockFetch([
+      {
+        method: 'PATCH',
+        match: URL,
+        data: settings({ failoverEnabled: false }),
+      },
+      { match: URL, data: settings() },
+    ])
+    renderAs(true)
+
+    expect(await screen.findByText('Modelo por tipo de tarefa')).toBeTruthy()
+    expect(screen.getByText('Steel Agents')).toBeTruthy()
+    const toggle = screen.getByRole('switch', {
+      name: 'Contingência automática entre provedores',
+    })
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(toggle)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Salvar ajustes de IA' }),
+    )
+    await waitFor(() =>
+      expect(fetchBody(fetchSpy, URL, 'PATCH')).toMatchObject({
+        failoverEnabled: false,
+        agentModel: null,
+      }),
+    )
+  })
+
+  it('refuses an agent model that is no longer enabled', async () => {
+    mockFetch([
+      {
+        match: URL,
+        data: settings({ agentModel: 'anthropic:claude-sonnet-5' }),
+      },
+    ])
+    renderAs(true)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Salvar ajustes de IA' }),
+    )
+    await waitFor(() => expect(notify.error).toHaveBeenCalled())
   })
 
   it('lets an admin turn the weekly usage e-mail off', async () => {
@@ -304,7 +351,7 @@ describe('<AiSettingsSection />', () => {
         agentModeEnabled: false,
       }),
     )
-    expect(screen.getByText('Steel AI (assistente)')).toBeTruthy()
+    expect(screen.getByText('Assistente')).toBeTruthy()
   })
 
   it('warns when the quota is exhausted', async () => {

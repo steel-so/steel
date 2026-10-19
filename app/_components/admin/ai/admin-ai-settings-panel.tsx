@@ -5,6 +5,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import {
   Table,
@@ -16,7 +24,14 @@ import {
 } from '@/components/ui/table'
 import { notify } from '@/lib/notify'
 import { useUpdatePlatformAiSettings } from '@/src/hooks/use-platform-ai-settings'
-import { MAX_AI_COST_MARGIN, MIN_AI_COST_MARGIN } from '@/src/lib/ai/models'
+import {
+  AI_TASK_CLASS_LABELS,
+  AI_TASK_CLASSES,
+  type AiTaskClass,
+  DEFAULT_AI_MODEL_KEY,
+  MAX_AI_COST_MARGIN,
+  MIN_AI_COST_MARGIN,
+} from '@/src/lib/ai/models'
 import type { PlatformAiSettingsDTO } from '@/types/platform-ai-settings'
 import { AdminPanel, DENSE_TABLE, formatDateTime } from '../shell/admin-ui'
 
@@ -25,6 +40,9 @@ const usdPrice = new Intl.NumberFormat('pt-BR', {
   currency: 'USD',
   maximumFractionDigits: 4,
 })
+
+/** Select value for "no platform default" (null). */
+const PLATFORM_DEFAULT = 'platform-default'
 
 /** "1,3" or "1.3" → 1.3; NaN when it is not a number. */
 function parseMargin(value: string): number {
@@ -69,6 +87,32 @@ export function AdminAiSettingsPanel({
           notify.error(error, 'Não foi possível salvar a busca semântica'),
       },
     )
+  }
+
+  function saveRouting(
+    patch: {
+      taskModels?: Partial<Record<AiTaskClass, string | null>>
+      failoverEnabled?: boolean
+    },
+    message: string,
+  ) {
+    update.mutate(
+      { costMargin: settings.costMargin, ...patch },
+      {
+        onSuccess: (saved) => {
+          setSettings(saved)
+          notify.success(message)
+        },
+        onError: (error) =>
+          notify.error(error, 'Não foi possível salvar o modelo por tarefa'),
+      },
+    )
+  }
+
+  const defaultLabel = (taskClass: AiTaskClass) => {
+    if (taskClass === 'AGENT') return 'Mesmo do assistente'
+    const model = settings.models.find((m) => m.key === DEFAULT_AI_MODEL_KEY)
+    return `Padrão da plataforma (${model?.label ?? DEFAULT_AI_MODEL_KEY})`
   }
 
   function handleSubmit(event: FormEvent) {
@@ -196,6 +240,91 @@ export function AdminAiSettingsPanel({
             funcionando só por texto. Ligar de novo gera os embeddings que
             faltam na próxima reindexação (todo dia às 02:45).
           </p>
+        </div>
+      </AdminPanel>
+
+      <AdminPanel
+        title='Modelo por tipo de tarefa'
+        description='Modelo inicial de cada tipo de tarefa para os workspaces que ainda não escolheram o seu em Ajustes › Steel IA. Classificar pede um modelo barato; o assistente e os agentes, um modelo forte.'
+      >
+        <div className='grid max-w-2xl gap-3'>
+          {AI_TASK_CLASSES.map((taskClass) => (
+            <div
+              key={taskClass}
+              className='grid gap-1.5 sm:grid-cols-[1fr_16rem] sm:items-center'
+            >
+              <Label className='font-normal'>
+                {AI_TASK_CLASS_LABELS[taskClass]}
+              </Label>
+              <Select
+                value={settings.taskModels[taskClass] ?? PLATFORM_DEFAULT}
+                disabled={update.isPending}
+                onValueChange={(value) => {
+                  if (typeof value !== 'string') return
+                  saveRouting(
+                    {
+                      taskModels: {
+                        [taskClass]: value === PLATFORM_DEFAULT ? null : value,
+                      },
+                    },
+                    'Modelo por tarefa salvo',
+                  )
+                }}
+              >
+                <SelectTrigger
+                  aria-label={AI_TASK_CLASS_LABELS[taskClass]}
+                  className='w-full'
+                >
+                  <SelectValue>
+                    {(value: string) =>
+                      value === PLATFORM_DEFAULT
+                        ? defaultLabel(taskClass)
+                        : (settings.models.find((m) => m.key === value)
+                            ?.label ?? value)
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    <SelectItem value={PLATFORM_DEFAULT}>
+                      {defaultLabel(taskClass)}
+                    </SelectItem>
+                    {settings.models.map((model) => (
+                      <SelectItem key={model.key} value={model.key}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+          <div className='flex items-center justify-between gap-3 border-t pt-3'>
+            <div className='min-w-0'>
+              <Label htmlFor='ai-failover-enabled' className='font-medium'>
+                Contingência automática entre provedores
+              </Label>
+              <p className='text-muted-foreground text-xs'>
+                Se um provedor falhar ou demorar, a chamada vai para outro
+                modelo habilitado no workspace. Após 5 falhas em 1 minuto, o
+                provedor fica 1 minuto fora (circuit breaker compartilhado entre
+                as réplicas). Cada workspace também pode desligar.
+              </p>
+            </div>
+            <Switch
+              id='ai-failover-enabled'
+              checked={settings.failoverEnabled}
+              disabled={update.isPending}
+              onCheckedChange={(checked) =>
+                saveRouting(
+                  { failoverEnabled: checked === true },
+                  checked
+                    ? 'Contingência automática ligada'
+                    : 'Contingência automática desligada',
+                )
+              }
+            />
+          </div>
         </div>
       </AdminPanel>
 

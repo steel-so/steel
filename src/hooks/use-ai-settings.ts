@@ -18,6 +18,8 @@ export interface UpdateAiSettingsInput {
   autopilotEnabled?: boolean
   usageWeeklyEmailEnabled?: boolean
   mcpWriteEnabled?: boolean
+  agentModel?: string | null
+  failoverEnabled?: boolean
 }
 
 export function useAiSettings(workspaceId: string) {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { UpdateWorkspaceAiGuardrailsSchema } from '@/src/schemas/ai-guardrails.schema'
 import {
   SetUserAiPreferenceSchema,
   UpdateWorkspaceAiSettingsSchema,
@@ -94,6 +95,7 @@ import {
   TotpStatusDTO,
   UserDTO,
   UserPreferenceDTO,
+  WorkspaceAiGuardrailsDTO,
   WorkspaceAiSettingsDTO,
   WorkspaceConnectionDTO,
   WorkspaceDeletionDTO,
@@ -892,6 +894,37 @@ const workspaces: RouteConfig[] = [
       'AI_MODEL_NOT_ENABLED',
       'AI_PROVIDER_UNAVAILABLE',
     ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/ai-guardrails',
+    tags: ['Configurações do workspace'],
+    summary: 'Proteções da IA',
+    description:
+      'Política de mascaramento de dados pessoais, classificador de prompt injection e limites da resposta automática (assuntos proibidos e alçada) — ADR 0041. Qualquer membro lê; `canManage` indica se pode alterar.',
+    responses: {
+      200: {
+        description: 'Proteções em vigor.',
+        schema: WorkspaceAiGuardrailsDTO,
+      },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/ai-guardrails',
+    tags: ['Configurações do workspace'],
+    summary: 'Atualizar proteções da IA',
+    description:
+      'PATCH parcial, só OWNER/ADMIN. `null` remove um limite de alçada. Auditado (sem os textos dos assuntos).',
+    body: UpdateWorkspaceAiGuardrailsSchema,
+    responses: {
+      200: {
+        description: 'Proteções atualizadas.',
+        schema: WorkspaceAiGuardrailsDTO,
+      },
+    },
+    errors: WORKSPACE_PRIVILEGED_ERRORS,
   },
   {
     method: 'get',

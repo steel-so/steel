@@ -405,5 +405,20 @@ export const PlatformAiSettingsDTO = dto(
         description:
           'Estado da busca de conhecimento neste ambiente: chave do provedor de embeddings, pgvector instalado e o modo que uma busca usa agora.',
       }),
+    taskModels: z
+      .object({
+        CLASSIFICATION: z.string().nullable(),
+        CONVERSATION: z.string().nullable(),
+        ASSISTANT: z.string().nullable(),
+        AGENT: z.string().nullable(),
+      })
+      .meta({
+        description:
+          'Modelo padrão de cada classe de tarefa (ADR 0042) para workspaces que não escolheram. `null` = padrão da plataforma (agentes: o do assistente).',
+      }),
+    failoverEnabled: z.boolean().meta({
+      description:
+        'Contingência automática de provedor (ADR 0042) em toda a plataforma.',
+    }),
   }),
 )

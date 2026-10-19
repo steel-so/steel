@@ -588,6 +588,91 @@
                     "description": "Embeddings da busca de conhecimento (OpenAI). Desligado = busca só por texto.",
                     "type": "boolean"
                   },
+                  "taskModels": {
+                    "type": "object",
+                    "properties": {
+                      "CLASSIFICATION": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "openai:gpt-4o-mini",
+                              "openai:gpt-4.1-mini",
+                              "openai:gpt-5-mini",
+                              "openai:gpt-5",
+                              "anthropic:claude-haiku-4-5",
+                              "anthropic:claude-sonnet-5",
+                              "anthropic:claude-opus-5"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "CONVERSATION": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "openai:gpt-4o-mini",
+                              "openai:gpt-4.1-mini",
+                              "openai:gpt-5-mini",
+                              "openai:gpt-5",
+                              "anthropic:claude-haiku-4-5",
+                              "anthropic:claude-sonnet-5",
+                              "anthropic:claude-opus-5"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "ASSISTANT": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "openai:gpt-4o-mini",
+                              "openai:gpt-4.1-mini",
+                              "openai:gpt-5-mini",
+                              "openai:gpt-5",
+                              "anthropic:claude-haiku-4-5",
+                              "anthropic:claude-sonnet-5",
+                              "anthropic:claude-opus-5"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "AGENT": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "openai:gpt-4o-mini",
+                              "openai:gpt-4.1-mini",
+                              "openai:gpt-5-mini",
+                              "openai:gpt-5",
+                              "anthropic:claude-haiku-4-5",
+                              "anthropic:claude-sonnet-5",
+                              "anthropic:claude-opus-5"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "failoverEnabled": {
+                    "description": "Contingência automática de provedor. Desligado = nenhuma chamada troca de modelo.",
+                    "type": "boolean"
+                  },
                   "reason": {
                     "type": "string",
                     "maxLength": 500
@@ -13402,6 +13487,174 @@
         ]
       }
     },
+    "/workspaces/{id}/ai-guardrails": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Proteções da IA",
+        "operationId": "getWorkspacesByIdAiGuardrails",
+        "description": "Política de mascaramento de dados pessoais, classificador de prompt injection e limites da resposta automática (assuntos proibidos e alçada) — ADR 0041. Qualquer membro lê; `canManage` indica se pode alterar.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proteções em vigor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WorkspaceAiGuardrails"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Atualizar proteções da IA",
+        "operationId": "patchWorkspacesByIdAiGuardrails",
+        "description": "PATCH parcial, só OWNER/ADMIN. `null` remove um limite de alçada. Auditado (sem os textos dos assuntos).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "piiMaskingPolicy": {
+                    "type": "string",
+                    "enum": ["OFF", "AUTO_REPLIES", "EVERYWHERE"]
+                  },
+                  "injectionClassifierEnabled": {
+                    "type": "boolean"
+                  },
+                  "forbiddenTopics": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 80
+                    }
+                  },
+                  "maxDiscountPercent": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxRefundAmount": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1000000,
+                        "multipleOf": 0.01
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxDeadlineDays": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3650
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proteções atualizadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WorkspaceAiGuardrails"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/ai-settings": {
       "get": {
         "tags": ["Configurações do workspace"],
@@ -13546,6 +13799,28 @@
                     "type": "boolean"
                   },
                   "mcpWriteEnabled": {
+                    "type": "boolean"
+                  },
+                  "agentModel": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "openai:gpt-4o-mini",
+                          "openai:gpt-4.1-mini",
+                          "openai:gpt-5-mini",
+                          "openai:gpt-5",
+                          "anthropic:claude-haiku-4-5",
+                          "anthropic:claude-sonnet-5",
+                          "anthropic:claude-opus-5"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "failoverEnabled": {
                     "type": "boolean"
                   }
                 }
@@ -163920,9 +164195,68 @@
             },
             "required": ["providerConfigured", "vectorIndexReady", "mode"],
             "description": "Estado da busca de conhecimento neste ambiente: chave do provedor de embeddings, pgvector instalado e o modo que uma busca usa agora."
+          },
+          "taskModels": {
+            "type": "object",
+            "properties": {
+              "CLASSIFICATION": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "CONVERSATION": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ASSISTANT": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "AGENT": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["CLASSIFICATION", "CONVERSATION", "ASSISTANT", "AGENT"],
+            "description": "Modelo padrão de cada classe de tarefa (ADR 0042) para workspaces que não escolheram. `null` = padrão da plataforma (agentes: o do assistente)."
+          },
+          "failoverEnabled": {
+            "type": "boolean",
+            "description": "Contingência automática de provedor (ADR 0042) em toda a plataforma."
           }
         },
-        "required": ["costMargin", "updatedAt", "models", "embeddingsEnabled", "knowledgeSearch"]
+        "required": [
+          "costMargin",
+          "updatedAt",
+          "models",
+          "embeddingsEnabled",
+          "knowledgeSearch",
+          "taskModels",
+          "failoverEnabled"
+        ]
       },
       "Profile": {
         "type": "object",
@@ -187471,11 +187805,18 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["CLOSED", "REOPENED", "SENTIMENT_ALERT", "ASSIGNED", "TEAM_CHANGED"]
+            "enum": [
+              "CLOSED",
+              "REOPENED",
+              "SENTIMENT_ALERT",
+              "ASSIGNED",
+              "TEAM_CHANGED",
+              "AI_GUARDRAIL_HANDOFF"
+            ]
           },
           "source": {
             "type": "string",
-            "enum": ["AGENT", "CONTACT", "INACTIVITY", "SENTIMENT"]
+            "enum": ["AGENT", "CONTACT", "INACTIVITY", "SENTIMENT", "AI_GUARDRAIL"]
           },
           "actorUserId": {
             "anyOf": [
@@ -189800,6 +190141,93 @@
           "updatedAt"
         ]
       },
+      "WorkspaceAiGuardrails": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string"
+          },
+          "piiMaskingPolicy": {
+            "type": "string",
+            "enum": ["OFF", "AUTO_REPLIES", "EVERYWHERE"],
+            "description": "O que é mascarado antes de ir ao provedor de IA (CPF, CNPJ, cartão, telefone, e-mail). `AUTO_REPLIES` = só respostas automáticas (WhatsApp e pré-atendimento). Padrão `AUTO_REPLIES`."
+          },
+          "injectionClassifierEnabled": {
+            "type": "boolean",
+            "description": "Textos de terceiros ambíguos passam também por um modelo classificador (custo contado na cota). Desligado por padrão."
+          },
+          "forbiddenTopics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Assuntos que a resposta automática não trata: o atendimento passa a um humano."
+          },
+          "maxDiscountPercent": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Desconto máximo que a IA pode prometer (`0` = nenhum, `null` = sem limite)."
+          },
+          "maxRefundAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reembolso máximo (R$) que a IA pode prometer (`0` = nenhum, `null` = sem limite)."
+          },
+          "maxDeadlineDays": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Prazo máximo (dias) que a IA pode prometer (`null` = sem limite)."
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canManage": {
+            "type": "boolean",
+            "description": "O usuário pode alterar (OWNER/ADMIN)."
+          }
+        },
+        "required": [
+          "workspaceId",
+          "piiMaskingPolicy",
+          "injectionClassifierEnabled",
+          "forbiddenTopics",
+          "maxDiscountPercent",
+          "maxRefundAmount",
+          "maxDeadlineDays",
+          "updatedAt",
+          "canManage"
+        ]
+      },
       "WorkspaceAiSettings": {
         "type": "object",
         "properties": {
@@ -189917,6 +190345,21 @@
             "type": "boolean",
             "description": "Clientes de IA conectados por MCP com o escopo `mcp:write` podem criar, editar e executar ações (exclusões nunca são expostas). Desligado por padrão."
           },
+          "agentModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Modelo da classe de tarefa dos Steel Agents (ADR 0042). `null` = padrão da plataforma para agentes, senão o do assistente."
+          },
+          "failoverEnabled": {
+            "type": "boolean",
+            "description": "Contingência automática: se o modelo escolhido falhar ou demorar, a chamada vai para outro provedor/modelo habilitado. Ligado por padrão."
+          },
           "usage": {
             "type": "object",
             "properties": {
@@ -189979,6 +190422,8 @@
           "autopilotEnabled",
           "usageWeeklyEmailEnabled",
           "mcpWriteEnabled",
+          "agentModel",
+          "failoverEnabled",
           "usage",
           "userPreference",
           "canManage"

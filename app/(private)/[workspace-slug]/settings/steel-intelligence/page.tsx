@@ -6,6 +6,7 @@ import {
   HeaderBreadcrumbList,
 } from '@/app/_components/header/breadcrumb-page'
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
+import { AiGuardrailsSection } from '@/app/_components/settings/ai-guardrails-section'
 import { AiSettingsSection } from '@/app/_components/settings/ai-settings-section'
 import { SteelIcon } from '@/components/icon/icon'
 import { H3 } from '@/components/typography/heading/h3'
@@ -53,11 +54,22 @@ export default async function SettingsSteelIntelligencePage({
           <H3>Steel IA</H3>
           <Muted>
             Escolha quais provedores (OpenAI e Anthropic/Claude) e modelos o
-            workspace pode usar, o modelo padrão de cada funcionalidade e a cota
-            mensal de consumo.
+            workspace pode usar, o modelo de cada tipo de tarefa, a contingência
+            entre provedores e a cota mensal de consumo.
           </Muted>
         </div>
         <AiSettingsSection workspaceId={membership.value.workspaceId} />
+        <div className='max-w-4xl space-y-6 pt-4'>
+          <div>
+            <H3>Proteções e LGPD</H3>
+            <Muted>
+              Mascaramento de dados pessoais, defesa contra textos que tentam
+              dar ordens à IA e limites do que a resposta automática pode
+              prometer.
+            </Muted>
+          </div>
+          <AiGuardrailsSection workspaceId={membership.value.workspaceId} />
+        </div>
       </div>
     </div>
   )
