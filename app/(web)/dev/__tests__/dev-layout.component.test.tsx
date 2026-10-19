@@ -116,12 +116,21 @@ describe('<ErrorCodeTable />', () => {
 
     const total = Object.keys(ERROR_CODES).length
     expect(screen.getByText(new RegExp(`^${total} códigos em`))).toBeTruthy()
+    // One pass over the DOM: a getByText per code rescans the whole table
+    // each time and grows quadratically with the registry.
+    const statusByCode = new Map<string, string | null>()
+    for (const details of container.querySelectorAll('details')) {
+      for (const el of details.querySelectorAll('*')) {
+        if (el.children.length === 0 && el.textContent) {
+          statusByCode.set(
+            el.textContent.trim(),
+            details.getAttribute('data-status'),
+          )
+        }
+      }
+    }
     for (const [code, { status }] of Object.entries(ERROR_CODES)) {
-      const cell = within(container).getByText(code)
-      expect(cell.closest('details')).toHaveAttribute(
-        'data-status',
-        String(status),
-      )
+      expect(statusByCode.get(code), code).toBe(String(status))
     }
     expect(
       container.querySelector('details[data-status="429"] summary')
