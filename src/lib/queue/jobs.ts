@@ -68,6 +68,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.CleanupWebhookDeliveries]: Record<string, never>
   [DataRetentionJob.CleanupApiTokens]: Record<string, never>
   [DataRetentionJob.PruneDeadIntegrationGrants]: Record<string, never>
+  [DataRetentionJob.PurgeCallRecordings]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {

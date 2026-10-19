@@ -77,7 +77,11 @@ async function seedCall(
 function upload(token: string, bytes: Uint8Array = WAV) {
   const form = new FormData()
   form.set('token', token)
-  form.set('file', new Blob([bytes], { type: 'audio/wav' }), 'call.wav')
+  form.set(
+    'file',
+    new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'audio/wav' }),
+    'call.wav',
+  )
   return fetch(`${BASE_URL}/api/pabx/calls/webhook/recording`, {
     method: 'POST',
     headers: { Origin: defaultHeaders.Origin },
