@@ -14,6 +14,7 @@ confirmar que deu certo.
 | Wiki não sincroniza / instalar o realtime no nginx | [Servidor realtime da Wiki](./realtime-wiki.md) |
 | Claude/ChatGPT/Cursor não conectam ao Steel / instalar o MCP no proxy | [Proxy de borda do servidor MCP](./mcp-edge-proxy.md) |
 | Um cliente de IA (MCP) abusando, errando em série ou com token vazado | [Cliente MCP com mau comportamento](./mcp-incident.md) |
+| Ligar a busca semântica do Steel AI (instalar o pgvector no `steel-db`) | [pgvector no Postgres](./postgres-pgvector.md) |
 
 ## Referência rápida do servidor
 

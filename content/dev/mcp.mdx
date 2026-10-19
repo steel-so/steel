@@ -236,6 +236,28 @@ inválido) volta como resultado com `isError: true` e a mensagem em português,
 para o modelo explicar ao usuário. A resposta traz os dados em
 `structuredContent` e um resumo em texto, com tamanho máximo por chamada.
 
+### Busca de conhecimento (`steel_search`)
+
+`steel_search` responde perguntas com a documentação do workspace: artigos da
+base de conhecimento, páginas da Wiki, chamados resolvidos (título e
+solução), documentos da IA do WhatsApp e notas e propostas do CRM. Busca por
+palavras (português, sem acento, com radical) e, quando o servidor tem o
+índice semântico ligado, também pelo sentido da pergunta.
+
+| Argumento | Tipo | Descrição |
+| --- | --- | --- |
+| `query` | string (2–500) | A pergunta em linguagem natural |
+| `sources` | array (opcional) | `sd-kb-article`, `wiki-page`, `sd-ticket`, `zap-knowledge-doc`, `crm-note`, `crm-proposal` |
+| `limit` | inteiro 1–20 (opcional) | Quantidade de fontes (padrão 8) |
+
+O resultado traz `mode` (`hybrid` ou `text`) e `results`, cada um com `ref`,
+`sourceType`, `source` (rótulo), `title`, `snippet`, `href` (caminho no app,
+com o slug do workspace) e `updatedAt`. Cada fonte segue a regra de acesso do
+próprio módulo para o usuário da conexão. Peça ao modelo para citar as
+fontes que usou pelo `title`, com o link `href` prefixado pelo domínio do
+Steel. O mesmo resultado está em
+`GET /api/workspaces/{id}/ai/knowledge/search?q=`.
+
 ### Quando há muitas ferramentas
 
 Se o acesso concedido expõe mais de 40 ferramentas, o `tools/list` vem enxuto:

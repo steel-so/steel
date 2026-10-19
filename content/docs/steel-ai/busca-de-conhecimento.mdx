@@ -1,0 +1,77 @@
+---
+title: Busca na base de conhecimento
+description: Como a Steel AI responde com a documentação do seu workspace, de onde vêm as fontes, quem vê o quê e como conferir cada resposta.
+section: steel-ai
+order: 10
+---
+
+Pergunte à Steel AI como fazer algo e ela procura a resposta na documentação
+do seu workspace, não na internet. Toda resposta mostra de onde veio, com
+link para você abrir e conferir.
+
+## O que entra na busca
+
+| Fonte | O que é lido |
+| --- | --- |
+| **Base de conhecimento do ServiceDesk** | Artigos publicados (internos e do portal) |
+| **Wiki** | Páginas que não estão arquivadas |
+| **Chamados resolvidos** | Título, descrição e a solução registrada |
+| **Documentos da IA do WhatsApp** | Os arquivos enviados em **Comunicação › Configurações** |
+| **CRM** | Notas e propostas |
+
+Rascunhos, artigos e páginas arquivados, chamados sem solução e registros
+excluídos ficam de fora.
+
+## Como perguntar
+
+Escreva a pergunta como falaria com um colega:
+
+- "Como trocar a senha do Wi-Fi da filial?"
+- "Já resolvemos algum chamado de VPN que não conecta depois da atualização?"
+- "O que combinamos de desconto com a Agropecuária Boa Vista?"
+
+A Steel AI busca pelas palavras e também pelo sentido da pergunta: ela
+encontra o artigo "Alterar a credencial da rede sem fio" mesmo que você
+escreva "trocar a senha do Wi-Fi".
+
+## As fontes da resposta
+
+Abaixo de cada resposta que usou a base aparece **Fontes**, com a lista do
+que foi consultado. Cada item abre o registro: o artigo, a página da Wiki, o
+chamado, a proposta ou o cliente da nota.
+
+Se nada relevante for encontrado, a Steel AI diz isso em vez de inventar.
+Vale publicar o artigo que faltou: ele entra na busca em até um minuto.
+
+## Quem vê o quê
+
+A busca mostra a cada pessoa só o que ela já pode abrir no Steel:
+
+- módulos desligados no workspace não entram;
+- o seu perfil de acesso precisa permitir ver o tipo de registro (por
+  exemplo, notas do CRM);
+- quem abre chamados pelo portal só vê os artigos do portal e os próprios
+  chamados;
+- documentos da IA do WhatsApp aparecem só para administradores;
+- a Wiki precisa estar ligada em **Ajustes › Wiki**.
+
+## Atualização
+
+Um registro criado ou alterado entra na busca em até um minuto. Um registro
+excluído sai na hora. Todo dia de madrugada a base é conferida inteira.
+
+## Privacidade e custo
+
+- Se o administrador desligar a Steel AI em **Ajustes › Steel IA**, o índice
+  do workspace é apagado e nada mais é processado. Ao religar, ele é
+  reconstruído sozinho.
+- A busca pelo sentido usa um serviço de IA da plataforma. O consumo aparece
+  em **Steel AI › Análises** como "Busca de conhecimento" e conta na cota
+  mensal, como as outras funções de IA. Com a cota esgotada, a busca
+  continua só pelas palavras.
+
+## Pelo Claude, ChatGPT ou Cursor
+
+A mesma busca está disponível como a ferramenta `steel_search` para quem
+conecta um cliente de IA ao Steel. Veja
+[Conectar Claude, ChatGPT e Cursor](/docs/steel-ai/conectar-claude-chatgpt-cursor).

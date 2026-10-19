@@ -165,3 +165,36 @@ Pedido do product owner (08/10/2026): "Steel AI com modelos prontos com foco nos
 Modelos de skill: `/saude-workspace`, `/membros`, `/consumo-ia`, `/auditoria`, `/sla-equipe`, `/fila-equipe`, `/pipeline-time`, `/atendimento-whatsapp` (nenhum colide com as embutidas).
 
 O resultado de um agente de relatório fica no resumo da execução, na tela do agente. Contratos: `types/ai-template.d.ts`, `AiTemplateService` (`src/services/ai-template.service.ts`), mapper `src/mappers/ai-template.mapper.ts`, hook `src/hooks/use-ai-templates.ts`, telas `app/_components/steel-ai-templates/**`.
+
+## Busca de conhecimento — `steel_search` (frente 1, 18/10/2026)
+
+Decisão: [ADR 0037](../adr/0037-unified-knowledge-search-hybrid-pgvector.md).
+Operação: [runbook do pgvector](../runbooks/postgres-pgvector.md).
+
+- **O que busca**: artigos publicados da base de conhecimento, páginas da
+  Wiki, chamados resolvidos com solução, documentos da IA do WhatsApp, notas
+  e propostas do CRM. Catálogo em `src/lib/ai/knowledge/sources.ts`.
+- **Como**: texto em português (`ai_knowledge_chunks.search_vector`, OR dos
+  termos) + similaridade de embeddings (`ai_vector.ai_knowledge_embeddings`,
+  pgvector HNSW), fundidos por RRF; uma entrada por fonte. Sem pgvector, sem
+  chave da OpenAI, com a chave desligada no admin ou com a cota esgotada:
+  só texto (`mode: "text"`).
+- **Permissões**: as de cada service (módulo, RBAC `VIEW`, Wiki ligada,
+  documentos do WhatsApp só OWNER/ADMIN, solicitante do ServiceDesk só vê
+  artigos do portal e os próprios chamados), aplicadas no SQL.
+- **Ferramenta** `steel_search` (READ, plataforma) em
+  `src/lib/ai/tools/knowledge.ts`: assistente, Steel Agents e MCP. O
+  resultado traz `ref`, `source`, `title`, `snippet`, `href`; o prompt manda
+  citar com link. O chat mostra as fontes em **Fontes**
+  (`app/_components/steel-ai/steel-ai-citations.tsx`,
+  `AiToolCallDTO.citations`).
+- **API**: `GET /api/workspaces/[id]/ai/knowledge/search?q=&sources=&limit=`
+  → `AiKnowledgeSearchResponseDTO` (`types/ai-knowledge.d.ts`).
+- **Indexação**: fila `ai-index` (`refresh` com debounce de 30 s por fonte,
+  `reindex-workspace`, `reindex-all` às 02:45); ganchos em
+  `src/lib/ai/knowledge/index-hooks.ts`; backfill `pnpm ai:index
+  [workspace]`. Exclusão apaga os trechos na hora; Steel AI desligado apaga o
+  índice do workspace.
+- **Custo**: embeddings `text-embedding-3-small` no razão `AiUsage` como
+  `KNOWLEDGE_SEARCH` (preço × margem, conta na cota).
+
