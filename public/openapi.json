@@ -4326,6 +4326,154 @@
         ]
       }
     },
+    "/crm/apollo/webhook/{token}": {
+      "post": {
+        "tags": ["CRM · Leads"],
+        "summary": "Webhook de telefones revelados (Apollo)",
+        "operationId": "postCrmApolloWebhookByToken",
+        "description": "Chamado pela Apollo minutos depois de uma importação com `revealPhones`: traz os telefones das pessoas enriquecidas. Público — o `token` secreto da URL (derivado da importação; só o hash é guardado) autentica a chamada. Os números são normalizados e acrescentados aos leads da Apollo (ou criam o lead de quem não tinha e-mail). Reentregas não têm efeito.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token secreto da importação.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  "webhook_status": {
+                    "type": "string"
+                  },
+                  "request_type": {
+                    "type": "string"
+                  },
+                  "webhook_result": {
+                    "type": "object",
+                    "properties": {
+                      "credits_consumed": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "people": {
+                        "default": [],
+                        "maxItems": 200,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            },
+                            "phone_numbers": {
+                              "default": [],
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "sanitized_number": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 40
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "raw_number": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 40
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "status_cd": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 40
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "required": ["id"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recebido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ApolloPhoneWebhookAck"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_APOLLO_IMPORT_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
     "/crm/campaigns/c/{token}": {
       "get": {
         "tags": ["CRM público · Campanhas"],
@@ -19043,7 +19191,7 @@
         "tags": ["CRM · Leads"],
         "summary": "Importar pessoas da Apollo como leads",
         "operationId": "postWorkspacesByIdCrmApolloImports",
-        "description": "Cria a importação e a enfileira (`202`): o worker enriquece as pessoas em lotes de 10 (~1 crédito por pessoa; contatos de lista salva custam 0), ignora quem não tem e-mail verificado, quem se descadastrou e quem já foi importado, e cria os leads (origem `Apollo`, sem aviso por lead). Ao final, uma notificação com o resumo. Nunca revela e-mail pessoal nem telefone. Leads da Apollo ficam fora do WhatsApp das campanhas; o e-mail segue.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `leads` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Cria a importação e a enfileira (`202`): o worker enriquece as pessoas em lotes de 10 (~1 crédito por pessoa; contatos de lista salva custam 0), ignora quem não tem e-mail verificado, quem se descadastrou e quem já foi importado, e cria os leads (origem `Apollo`, sem aviso por lead). Ao final, uma notificação com o resumo. Nunca revela e-mail pessoal. Com `revealPhones`, pede também os telefones (até +8 créditos por pessoa), que chegam depois pelo webhook `/crm/apollo/webhook/{token}`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `leads` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "name": "id",
@@ -128755,6 +128903,29 @@
           }
         }
       },
+      "404_CRM_APOLLO_IMPORT_NOT_FOUND_2": {
+        "description": "Não encontrado: `CRM_APOLLO_IMPORT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_APOLLO_IMPORT_NOT_FOUND": {
+                "summary": "CRM_APOLLO_IMPORT_NOT_FOUND — Token desconhecido ou expirado",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Importação da Apollo não encontrada",
+                  "error": {
+                    "code": "CRM_APOLLO_IMPORT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_CRM_CAMPAIGN_LINK_INVALID": {
         "description": "Não encontrado: `CRM_CAMPAIGN_LINK_INVALID`",
         "content": {
@@ -150768,6 +150939,15 @@
           "week",
           "canViewWorkspace"
         ]
+      },
+      "ApolloPhoneWebhookAck": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean"
+          }
+        },
+        "required": ["received"]
       },
       "AuthSession": {
         "type": "object",
