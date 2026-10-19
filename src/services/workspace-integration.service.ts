@@ -27,6 +27,7 @@ import {
   normalizeGitlabBaseUrl,
   parseGitlabProject,
 } from '@/src/lib/integrations/gitlab'
+import { ApolloClient } from '@/src/lib/integrations/apollo-client'
 import { GitlabClient } from '@/src/lib/integrations/gitlab-client'
 import { err, ok, type Result } from '@/src/lib/result'
 import { GithubClient } from '@/src/lib/servicedesk/github-client'
@@ -160,6 +161,11 @@ async function probe(
     if (!result.ok) return result
     return ok(`Acesso confirmado a ${result.value.fullName}`)
   }
+  if (integration.kind === 'APOLLO') {
+    const result = await ApolloClient.health(token)
+    if (!result.ok) return result
+    return ok('Chave válida: a Apollo respondeu normalmente')
+  }
   const result = await GitlabClient.checkProject(
     integration.baseUrl ?? normalizeGitlabBaseUrl(null) ?? '',
     token,
@@ -196,6 +202,15 @@ export const WorkspaceIntegrationService = {
             available: slackReady,
             unavailableReason: slackReady ? null : SLACK_UNAVAILABLE_REASON,
             webhookUrl: slackReady ? absolute(SLACK_EVENTS_PATH) : null,
+            connection,
+          }
+        }
+        if (kind === 'APOLLO') {
+          return {
+            kind,
+            available: true,
+            unavailableReason: null,
+            webhookUrl: null,
             connection,
           }
         }
@@ -588,6 +603,7 @@ export const WorkspaceIntegrationService = {
     if (
       outcome.ok &&
       kind !== 'SLACK' &&
+      kind !== 'APOLLO' &&
       !integration.value.encryptedSigningSecret
     ) {
       outcome = err(

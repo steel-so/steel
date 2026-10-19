@@ -184,6 +184,28 @@ export function notifyCrmProposalAccepted(input: {
   })
 }
 
+/** Apollo import finished: one summary for the person who started it. */
+export function notifyCrmApolloImportDone(input: {
+  workspaceId: string
+  importId: string
+  recipientId: string
+  created: number
+  skipped: number
+  failed: number
+}): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.recipientId],
+    kind: 'CRM_APOLLO_IMPORT_DONE',
+    title: `Importação da Apollo concluída: ${input.created} ${
+      input.created === 1 ? 'lead criado' : 'leads criados'
+    }`,
+    body: `${input.skipped} ignorados (sem e-mail, descadastrados ou já existentes) e ${input.failed} com falha.`,
+    path: '/crm/leads/apollo',
+    dedupeKey: `crm-apollo-import:${input.importId}`,
+  })
+}
+
 export function notifyCrmProposalExpired(input: {
   workspaceId: string
   proposal: ProposalRef
