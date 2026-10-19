@@ -761,6 +761,40 @@ export const crmCompetitorIdeasFailed = (): AppError =>
     'A IA não conseguiu gerar ideias agora — tente de novo em instantes',
   )
 
+export const crmApolloNotConnected = (): AppError =>
+  appError(
+    'CRM_APOLLO_NOT_CONNECTED',
+    'A Apollo não está conectada — cadastre a chave de API em Ajustes > Integrações',
+  )
+
+export const crmApolloInvalidKey = (): AppError =>
+  appError(
+    'CRM_APOLLO_INVALID_KEY',
+    'A Apollo recusou a chave de API (inválida ou revogada)',
+  )
+
+export const crmApolloForbidden = (message?: string): AppError =>
+  appError(
+    'CRM_APOLLO_FORBIDDEN',
+    message ?? 'A chave da Apollo não tem permissão para esta operação',
+  )
+
+export const crmApolloRateLimited = (retryAfterSeconds?: number): AppError =>
+  appError(
+    'CRM_APOLLO_RATE_LIMITED',
+    'A Apollo limitou as chamadas do seu plano — aguarde um pouco e tente de novo',
+    retryAfterSeconds ? { retryAfterSeconds } : undefined,
+  )
+
+export const crmApolloRequestFailed = (message?: string): AppError =>
+  appError(
+    'CRM_APOLLO_REQUEST_FAILED',
+    message ?? 'A Apollo não respondeu — tente de novo em instantes',
+  )
+
+export const crmApolloImportNotFound = (): AppError =>
+  appError('CRM_APOLLO_IMPORT_NOT_FOUND', 'Importação da Apollo não encontrada')
+
 export const crmScheduledPostNotFound = (): AppError =>
   appError('CRM_SCHEDULED_POST_NOT_FOUND', 'Post agendado não encontrado')
 

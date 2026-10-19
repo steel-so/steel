@@ -505,6 +505,7 @@ export const NotificationListDTO = dto(
           'CRM_TASK_DUE',
           'CRM_PROPOSAL_VIEWED',
           'CRM_PROPOSAL_ACCEPTED',
+          'CRM_APOLLO_IMPORT_DONE',
           'CRM_PROPOSAL_EXPIRED',
           'CRM_FORM_SUBMITTED',
           'CRM_CAMPAIGN_FINISHED',
