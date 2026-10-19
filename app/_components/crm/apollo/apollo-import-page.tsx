@@ -81,6 +81,7 @@ export function ApolloImportPage({
           <ApolloSearchTab
             workspaceId={workspaceId}
             defaultMailingListId={defaultList}
+            phoneRevealAvailable={connection.data.phoneRevealAvailable}
             onImported={() => setTab('history')}
           />
         </TabsContent>
@@ -88,6 +89,7 @@ export function ApolloImportPage({
           <ApolloListsTab
             workspaceId={workspaceId}
             defaultMailingListId={defaultList}
+            phoneRevealAvailable={connection.data.phoneRevealAvailable}
             onImported={() => setTab('history')}
           />
         </TabsContent>
