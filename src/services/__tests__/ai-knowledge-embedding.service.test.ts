@@ -170,6 +170,16 @@ describe('AiKnowledgeEmbeddingService.embedPending', () => {
     expect(usage.record).not.toHaveBeenCalled()
   })
 
+  it('should stop exactly at the cap after full pages', async () => {
+    chunks.listToEmbed.mockResolvedValue(ok(toEmbed(EMBED_PAGE_SIZE)))
+    expect(
+      expectOk(
+        await AiKnowledgeEmbeddingService.embedPending(WS, EMBED_PAGE_SIZE),
+      ).embedded,
+    ).toBe(EMBED_PAGE_SIZE)
+    expect(chunks.listToEmbed).toHaveBeenCalledTimes(1)
+  })
+
   it('should skip when unavailable, over quota or with Steel AI off', async () => {
     platform.getEmbeddingsEnabled.mockResolvedValueOnce(false)
     expect(

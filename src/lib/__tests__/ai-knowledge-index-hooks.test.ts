@@ -120,6 +120,12 @@ describe('knowledge index hooks', () => {
       }),
     )
     add.mockRejectedValueOnce(new Error('down'))
+    await scheduleKnowledgeReindex('ws1')
+    expect(logger.warn).toHaveBeenLastCalledWith(
+      'ai.knowledge.hook_failed',
+      expect.not.objectContaining({ sourceType: expect.anything() }),
+    )
+    add.mockRejectedValueOnce(new Error('down'))
     await scheduleKnowledgeReindex('ws1', ['crm-note'])
     expect(logger.warn).toHaveBeenCalledWith(
       'ai.knowledge.hook_failed',
@@ -232,5 +238,8 @@ describe('processAiIndex', () => {
 
   it('should reject an unknown job name', async () => {
     await expect(processAiIndex(job('nope', {}))).rejects.toThrow('nope')
+    await expect(
+      processAiIndex({ name: 'nope', data: {} } as Job),
+    ).rejects.toThrow('id=unknown')
   })
 })

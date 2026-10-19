@@ -67,6 +67,13 @@ describe('chunkKnowledgeText', () => {
     ).toHaveLength(2)
   })
 
+  it('should skip a whitespace-only window', () => {
+    // The overlap lands the next window on blanks only.
+    expect(
+      chunkKnowledgeText('abcd\n\n\n\nefgh', { target: 6, overlap: 0 }),
+    ).toEqual(['abcd', 'efgh'])
+  })
+
   it('should prefer sentence ends when there is no line break', () => {
     const text = `${'a'.repeat(30)}. ${'b'.repeat(30)}. ${'c'.repeat(30)}.`
     const chunks = chunkKnowledgeText(text, { target: 70, overlap: 0 })
@@ -152,6 +159,13 @@ describe('snippetAround', () => {
     expect(snippet.startsWith('…')).toBe(true)
     expect(snippet.endsWith('…')).toBe(true)
     expect(snippet).toContain('Configuração da VPN')
+  })
+
+  it('should end without an ellipsis when the window reaches the end', () => {
+    const text = `${'a '.repeat(100)}final VPN`
+    const snippet = snippetAround(text, ['vpn'], 60)
+    expect(snippet.startsWith('…')).toBe(true)
+    expect(snippet.endsWith('VPN')).toBe(true)
   })
 
   it('should start at the beginning when no word matches', () => {
