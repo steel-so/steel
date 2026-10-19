@@ -219,9 +219,13 @@ describe('PhoneCallAiService.process()', () => {
     expectOk(await PhoneCallAiService.process('call1'))
 
     const request = chat.mock.calls[0][0]
-    expect(request.messages[0].content).toHaveLength(
+    // The speech goes fenced as third-party content (ADR 0041).
+    const content = request.messages[0].content as string
+    expect(content).toMatch(/^<untrusted_content source="phone_call">\n/)
+    expect(content.match(/a{100,}/)?.[0]).toHaveLength(
       SUMMARY_TRANSCRIPT_CHAR_BUDGET,
     )
+    expect(request.system).toContain('untrusted_content')
     expect(request.jsonSchema.name).toBe('call_summary')
     // No duration from Whisper: the PABX talk time prices the minute.
     expect(usageRepo.record).toHaveBeenCalledWith(

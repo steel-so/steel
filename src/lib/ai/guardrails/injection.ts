@@ -23,6 +23,8 @@ export type UntrustedSource =
   | 'knowledge_document'
   | 'portal_message'
   | 'tool_result'
+  // PABX call transcript (ADR 0043): the contact's speech.
+  | 'phone_call'
 
 const TAG_PATTERN = new RegExp(`<\\/?\\s*${UNTRUSTED_TAG}[^>]*>`, 'gi')
 

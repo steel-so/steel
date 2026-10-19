@@ -6,6 +6,10 @@ import type {
 import { logger } from '@/lib/axiom/logger'
 import { getOpenAiClient } from '@/src/lib/ai'
 import {
+  UNTRUSTED_CONTENT_POLICY,
+  wrapUntrusted,
+} from '@/src/lib/ai/guardrails/injection'
+import {
   priceTranscription,
   TRANSCRIPTION_MODEL,
   transcribeAudio,
@@ -196,11 +200,14 @@ async function summarize(
   try {
     const response = await prepared.provider.chat({
       model: prepared.model.model,
-      system: SUMMARY_SYSTEM_PROMPT,
+      system: `${SUMMARY_SYSTEM_PROMPT}\n\n${UNTRUSTED_CONTENT_POLICY}`,
       messages: [
         {
           role: 'user',
-          content: transcript.slice(0, SUMMARY_TRANSCRIPT_CHAR_BUDGET),
+          content: wrapUntrusted(
+            transcript.slice(0, SUMMARY_TRANSCRIPT_CHAR_BUDGET),
+            'phone_call',
+          ),
         },
       ],
       jsonSchema: { name: 'call_summary', schema: SUMMARY_JSON_SCHEMA },
@@ -355,9 +362,8 @@ export const PhoneCallAiService = {
       return ok({ status: 'skipped', reason: 'empty_transcript' })
     }
 
-    // TODO(ai-guardrails, ADR 0041, #138): once on main, masking runs inside
-    // AiUsageService.prepare; also wrap the transcript (third-party speech)
-    // with wrapUntrusted(transcript, 'phone_call') before the summary.
+    // PII masking and provider failover run inside the guarded provider
+    // from AiUsageService.prepare (ADR 0041/0042); the speech is fenced.
     const summary = await summarize(call, prepared, transcription.text)
     const links = await resolveLinks(call)
 
