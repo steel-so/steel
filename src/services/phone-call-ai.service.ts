@@ -355,9 +355,9 @@ export const PhoneCallAiService = {
       return ok({ status: 'skipped', reason: 'empty_transcript' })
     }
 
-    // TODO(ai-guardrails, ADR 0041): mask CPF/CNPJ/card/phone/e-mail in the
-    // transcript before it goes to the summary provider, once the masking
-    // helper is on main; unmask the summary for the user.
+    // TODO(ai-guardrails, ADR 0041, #138): once on main, masking runs inside
+    // AiUsageService.prepare; also wrap the transcript (third-party speech)
+    // with wrapUntrusted(transcript, 'phone_call') before the summary.
     const summary = await summarize(call, prepared, transcription.text)
     const links = await resolveLinks(call)
 

@@ -163,7 +163,7 @@ describe('POST /api/pabx/calls/webhook/recording', () => {
       headers: { Origin: defaultHeaders.Origin },
       body: new FormData(),
     })
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
   })
 })
 
