@@ -30,6 +30,10 @@ function settings(
     sentimentAlertRecipientIds: [],
     sentimentAlertAssignToId: null,
     sentimentAlertCooldownHours: 6,
+    callRecordingEnabled: false,
+    callRecordingNotice: 'Avise o contato.',
+    callRecordingRetentionDays: 90,
+    callTranscriptionEnabled: true,
     ...overrides,
   }
 }

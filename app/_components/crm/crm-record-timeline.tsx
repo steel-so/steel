@@ -6,6 +6,7 @@ import {
   PencilEdit02Icon,
   PlusSignIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import { PhoneCallList } from '@/app/_components/phone-calls/phone-call-list'
 import { SteelIcon } from '@/components/icon/icon'
 import { useCrmTimeline } from '@/src/hooks/use-crm-timeline'
 import type { CrmActivityDTO } from '@/types/crm-activity'
@@ -56,8 +57,27 @@ export function CrmRecordTimeline({
     opportunityId,
   })
 
+  // Calls (ADR 0043) live on people and opportunities, not on companies.
+  const callSource = opportunityId
+    ? ({ kind: 'crm-opportunity', id: opportunityId } as const)
+    : personId
+      ? ({ kind: 'crm-person', id: personId } as const)
+      : null
+
   return (
     <div className='flex flex-col gap-3'>
+      {callSource ? (
+        <PhoneCallList
+          workspaceId={workspaceId}
+          source={callSource}
+          hideWhenEmpty
+          taskTarget={(call) => ({
+            kind: 'crm',
+            personId: personId ?? call.crmPersonId,
+            opportunityId: opportunityId ?? call.crmOpportunityId,
+          })}
+        />
+      ) : null}
       <div className='flex items-center gap-2'>
         <SteelIcon
           icon={Activity01Icon}

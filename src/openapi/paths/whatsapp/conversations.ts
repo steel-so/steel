@@ -19,6 +19,7 @@ import {
   WhatsAppConversationEventDTO,
   WhatsAppMessageDTO,
 } from '../../schemas/whatsapp'
+import { WhatsAppPhoneCallFields } from './phone-calls'
 import {
   CONVERSATION_PARAM,
   PROVIDER_ERRORS,
@@ -101,6 +102,9 @@ const WhatsAppPhoneCallDTO = z.object({
   endedAt: z.string().nullable(),
   durationSeconds: z.number().int().nullable(),
   createdAt: z.string(),
+  recordingNotice: WhatsAppPhoneCallFields.recordingNotice,
+  hasRecording: WhatsAppPhoneCallFields.hasRecording,
+  aiStatus: WhatsAppPhoneCallFields.aiStatus,
 })
 
 const PHONE_CALL_REALTIME =
@@ -196,7 +200,7 @@ export const conversationRoutes: RouteConfig[] = [
     path: `${BASE}/call`,
     tags: [TAG],
     summary: 'Ligar para o contato',
-    description: `Click-to-call pelo PABX do device do usuário (ramal e device no perfil; endereço e token do PABX vêm do \`steel.device\`): toca o ramal e liga para o número do contato. O dialplan informa cada passo em \`POST /pabx/calls/webhook\`. ${PHONE_CALL_REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
+    description: `Click-to-call pelo PABX do device do usuário (ramal e device no perfil; endereço e token do PABX vêm do \`steel.device\`): toca o ramal e liga para o número do contato. O dialplan informa cada passo em \`POST /pabx/calls/webhook\`. Com a gravação ligada em Configurações (\`callRecordingEnabled\`), pede \`gravar=1\` ao PABX e guarda o aviso mostrado em \`recordingNotice\`; a gravação chega em \`POST /pabx/calls/webhook/recording\`. ${PHONE_CALL_REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
     params: PARAMS,
     responses: {
       201: {

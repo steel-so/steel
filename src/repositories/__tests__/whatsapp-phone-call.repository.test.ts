@@ -143,4 +143,146 @@ describe('WhatsAppPhoneCallRepository', () => {
       'DATABASE_ERROR',
     )
   })
+
+  it('lists the calls of a record with the names, newest first', async () => {
+    const ctx = await seedConversation()
+    const older = expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'l1'),
+        createdAt: new Date('2026-10-01T10:00:00Z'),
+      }),
+    )
+    const newer = expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'l2'),
+        createdAt: new Date('2026-10-02T10:00:00Z'),
+      }),
+    )
+
+    const list = expectOk(
+      await WhatsAppPhoneCallRepository.listBySource(ctx.workspace.id, {
+        conversationId: ctx.conversation.id,
+      }),
+    )
+    expect(list.map((c) => c.id)).toEqual([newer.id, older.id])
+    expect(list[0].conversation.contact.name).toBe('Maria')
+    expect(list[0].user?.name).toBe(ctx.user.name)
+
+    // Another workspace never sees them.
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.listBySource('other-ws', {
+          conversationId: ctx.conversation.id,
+        }),
+      ),
+    ).toEqual([])
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.findWithNames(newer.id, 'other-ws'),
+      ),
+    ).toBeNull()
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.findWithNames(
+          newer.id,
+          ctx.workspace.id,
+        ),
+      )?.id,
+    ).toBe(newer.id)
+    expect(
+      expectOk(await WhatsAppPhoneCallRepository.findById(newer.id))?.id,
+    ).toBe(newer.id)
+  })
+
+  it('lists expired recordings, knows the live keys and clears the audio', async () => {
+    const ctx = await seedConversation()
+    const now = new Date('2026-10-18T03:00:00Z')
+    const expired = expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'r1'),
+        recordingKey: `${ctx.workspace.id}/r1.wav`,
+        recordingMimeType: 'audio/wav',
+        recordingSizeBytes: 10,
+        recordingExpiresAt: new Date('2026-10-17T03:00:00Z'),
+      }),
+    )
+    await WhatsAppPhoneCallRepository.create({
+      ...callData(ctx, 'r2'),
+      recordingKey: `${ctx.workspace.id}/r2.wav`,
+      recordingExpiresAt: new Date('2026-10-19T03:00:00Z'),
+    })
+
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.listExpiredRecordings(now, 10),
+      ),
+    ).toEqual([
+      {
+        id: expired.id,
+        workspaceId: ctx.workspace.id,
+        recordingKey: `${ctx.workspace.id}/r1.wav`,
+      },
+    ])
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.findExistingRecordingKeys([
+          `${ctx.workspace.id}/r1.wav`,
+          `${ctx.workspace.id}/gone.wav`,
+        ]),
+      ),
+    ).toEqual(new Set([`${ctx.workspace.id}/r1.wav`]))
+    expect(
+      expectOk(await WhatsAppPhoneCallRepository.findExistingRecordingKeys([])),
+    ).toEqual(new Set())
+
+    const cleared = expectOk(
+      await WhatsAppPhoneCallRepository.clearRecording(expired.id),
+    )
+    expect(cleared).toMatchObject({
+      recordingKey: null,
+      recordingMimeType: null,
+      recordingSizeBytes: null,
+      recordingExpiresAt: null,
+    })
+  })
+
+  it('returns DATABASE_ERROR from the timeline and retention queries', async () => {
+    const boom = () => Promise.reject(new Error('boom'))
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findUnique').mockImplementationOnce(
+      boom as never,
+    )
+    expectErr(await WhatsAppPhoneCallRepository.findById('x'), 'DATABASE_ERROR')
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findFirst').mockImplementationOnce(
+      boom as never,
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.findWithNames('x', 'w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findMany').mockImplementationOnce(
+      boom as never,
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.listBySource('w', { sdTicketId: 't' }),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findMany').mockImplementationOnce(
+      boom as never,
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.listExpiredRecordings(new Date(), 1),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findMany').mockImplementationOnce(
+      boom as never,
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.findExistingRecordingKeys(['k']),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.clearRecording('missing'),
+      'DATABASE_ERROR',
+    )
+  })
 })

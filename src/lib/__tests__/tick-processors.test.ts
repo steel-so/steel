@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   notifyCampaignFinished: vi.fn(),
   notifyTrialEnded: vi.fn(),
   pruneWithoutLiveTokens: vi.fn(),
+  purgeExpiredRecordings: vi.fn(),
+  sweepOrphanRecordings: vi.fn(),
   prisma: {
     session: { deleteMany: vi.fn() },
     verification: { deleteMany: vi.fn() },
@@ -48,6 +50,12 @@ vi.mock('@/src/lib/prisma', () => ({ prisma: mocks.prisma }))
 vi.mock('@/src/services/integration-grant-lifecycle.service', () => ({
   IntegrationGrantLifecycleService: {
     pruneWithoutLiveTokens: mocks.pruneWithoutLiveTokens,
+  },
+}))
+vi.mock('@/src/services/phone-call-recording.service', () => ({
+  PhoneCallRecordingService: {
+    purgeExpired: mocks.purgeExpiredRecordings,
+    sweepOrphans: mocks.sweepOrphanRecordings,
   },
 }))
 vi.mock('@/src/services/crm-notifications', () => ({
@@ -323,6 +331,43 @@ describe('processDataRetention', () => {
         fakeJob(DataRetentionJob.PruneDeadIntegrationGrants),
       ),
     ).rejects.toThrow('db down')
+  })
+
+  it('purges expired and orphan call recordings', async () => {
+    mocks.purgeExpiredRecordings.mockResolvedValue({ ok: true, value: 4 })
+    mocks.sweepOrphanRecordings.mockResolvedValue({ ok: true, value: 1 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.PurgeCallRecordings),
+    )
+
+    expect(result).toMatchObject({ deleted: 4, orphans: 1 })
+    expect(mocks.purgeExpiredRecordings).toHaveBeenCalledWith(
+      new Date(result.cutoff),
+    )
+    expect(mocks.loggerMock.info).toHaveBeenCalledWith(
+      'queue.data_retention.call_recordings_purged',
+      expect.objectContaining({ deleted: 4, orphans: 1 }),
+    )
+  })
+
+  it('throws so BullMQ retries when purging call recordings fails', async () => {
+    mocks.purgeExpiredRecordings.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'db down' },
+    })
+    await expect(
+      processDataRetention(fakeJob(DataRetentionJob.PurgeCallRecordings)),
+    ).rejects.toThrow('db down')
+
+    mocks.purgeExpiredRecordings.mockResolvedValueOnce({ ok: true, value: 0 })
+    mocks.sweepOrphanRecordings.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'STORAGE_ERROR', message: 's3 down' },
+    })
+    await expect(
+      processDataRetention(fakeJob(DataRetentionJob.PurgeCallRecordings)),
+    ).rejects.toThrow('s3 down')
   })
 
   it('throws on an unknown job name', async () => {

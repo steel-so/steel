@@ -18,6 +18,7 @@ export const AI_USAGE_FEATURE_KEYS = [
   'KNOWLEDGE_SEARCH',
   'AI_EVAL',
   'AI_GUARDRAIL',
+  'PHONE_CALL_AI',
 ] as const
 export type AiUsageFeatureKey = (typeof AI_USAGE_FEATURE_KEYS)[number]
 
@@ -34,6 +35,7 @@ export const AI_USAGE_FEATURE_LABELS: Record<AiUsageFeatureKey, string> = {
   KNOWLEDGE_SEARCH: 'Busca de conhecimento',
   AI_EVAL: 'Avaliações do Steel AI',
   AI_GUARDRAIL: 'Proteções da IA (classificador)',
+  PHONE_CALL_AI: 'Ligações (transcrição e resumo)',
 }
 
 /** `PLATFORM` = no module (platform tools, or a call that used no tool). */
@@ -73,6 +75,7 @@ const FEATURE_MODULE: Record<
   KNOWLEDGE_SEARCH: null,
   AI_EVAL: null,
   AI_GUARDRAIL: null,
+  PHONE_CALL_AI: 'COMMUNICATION',
 }
 
 /** Scope of a ledger row: its module, else the feature's, else platform. */

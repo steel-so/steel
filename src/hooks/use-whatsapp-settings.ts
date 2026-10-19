@@ -6,8 +6,11 @@ const SETTINGS_KEY = (workspaceId: string) =>
   ['whatsapp-settings', workspaceId] as const
 
 export type UpdateWhatsAppSettingsInput = Partial<
-  Omit<WhatsAppSettingsDTO, 'workspaceId'>
->
+  Omit<WhatsAppSettingsDTO, 'workspaceId' | 'callRecordingNotice'>
+> & {
+  /** `null` (or empty) goes back to the default notice. */
+  callRecordingNotice?: string | null
+}
 
 export function useWhatsAppSettings(workspaceId: string, enabled = true) {
   return useQuery({

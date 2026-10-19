@@ -77,6 +77,9 @@ export const AI_TASK_CLASS_BY_FEATURE: Record<AiUsageFeature, AiTaskClass> = {
   // Eval runs (ADR 0039) run as the assistant; a run may pin a model.
   AI_EVAL: 'ASSISTANT',
   AI_GUARDRAIL: 'CLASSIFICATION',
+  // Call summaries (ADR 0043) read a customer conversation like the
+  // WhatsApp auto-reply; the transcription itself is Whisper.
+  PHONE_CALL_AI: 'CONVERSATION',
 }
 
 /** Workspace model of a task class, most specific first. */

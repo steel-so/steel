@@ -2,6 +2,7 @@ import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { prisma } from '@/src/lib/prisma'
 import { IntegrationGrantLifecycleService } from '@/src/services/integration-grant-lifecycle.service'
+import { PhoneCallRecordingService } from '@/src/services/phone-call-recording.service'
 import { DataRetentionJob } from '../jobs'
 import { RetentionWindowMs } from '../retention'
 
@@ -74,6 +75,25 @@ async function pruneDeadIntegrationGrants(): Promise<CleanupResult> {
   return { deleted: retired.value, cutoff: now.toISOString() }
 }
 
+/**
+ * PABX call recordings (ADR 0043): audio past its retention date, then
+ * objects whose call is gone (deleted with its conversation or contact).
+ */
+async function purgeCallRecordings(): Promise<
+  CleanupResult & { orphans: number }
+> {
+  const now = new Date()
+  const expired = await PhoneCallRecordingService.purgeExpired(now)
+  if (!expired.ok) throw new Error(expired.error.message)
+  const orphans = await PhoneCallRecordingService.sweepOrphans(now)
+  if (!orphans.ok) throw new Error(orphans.error.message)
+  return {
+    deleted: expired.value,
+    orphans: orphans.value,
+    cutoff: now.toISOString(),
+  }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -132,6 +152,17 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
         component: 'Worker',
         jobId: job.id,
         retired: result.deleted,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.PurgeCallRecordings: {
+      const result = await purgeCallRecordings()
+      logger.info('queue.data_retention.call_recordings_purged', {
+        component: 'Worker',
+        jobId: job.id,
+        deleted: result.deleted,
+        orphans: result.orphans,
         cutoff: result.cutoff,
       })
       return result

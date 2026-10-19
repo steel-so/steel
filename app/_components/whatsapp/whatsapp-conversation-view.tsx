@@ -12,6 +12,7 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { PhoneCallCard } from '@/app/_components/phone-calls/phone-call-card'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
@@ -37,6 +38,10 @@ import {
 } from '@/components/ui/popover'
 import { notify } from '@/lib/notify'
 import { feedbackKey, useMyAiFeedback } from '@/src/hooks/use-ai-feedback'
+import {
+  type PhoneCallTaskTarget,
+  usePhoneCalls,
+} from '@/src/hooks/use-phone-calls'
 import { useUser } from '@/src/hooks/use-user'
 import { useFindOrCreateWhatsAppContact } from '@/src/hooks/use-whatsapp-contacts'
 import {
@@ -68,6 +73,7 @@ import type {
   WhatsAppConversationEventDTO,
 } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
+import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
 import { WhatsappAiBanner } from './whatsapp-ai-banner'
 import { WhatsappCloseConversationDialog } from './whatsapp-close-conversation-dialog'
 import {
@@ -94,12 +100,18 @@ const STATUS_LABEL: Record<WhatsAppConversationDTO['status'], string> = {
 type TimelineItem =
   | { kind: 'message'; at: string; message: WhatsAppMessageDTO }
   | { kind: 'event'; at: string; event: WhatsAppConversationEventDTO }
+  | { kind: 'call'; at: string; call: PhoneCallRecordDTO }
 
-/** Mensagens + eventos (fechada/reaberta) em ordem cronológica. Eventos
- * anteriores à mensagem mais antiga carregada ficam de fora (paginação). */
+/** Live call states stay in the header banner, not in the timeline. */
+const LIVE_CALL_STATUSES = new Set(['QUEUED', 'DIALING', 'IN_PROGRESS'])
+
+/** Mensagens + eventos (fechada/reaberta) + ligações encerradas em ordem
+ * cronológica. Eventos e ligações anteriores à mensagem mais antiga
+ * carregada ficam de fora (paginação). */
 function buildTimeline(
   messages: WhatsAppMessageDTO[],
   events: WhatsAppConversationEventDTO[],
+  calls: PhoneCallRecordDTO[] = [],
 ): TimelineItem[] {
   const oldest = messages[0]?.createdAt
   const items: TimelineItem[] = [
@@ -111,8 +123,27 @@ function buildTimeline(
     ...events
       .filter((event) => !oldest || event.createdAt >= oldest)
       .map((event) => ({ kind: 'event' as const, at: event.createdAt, event })),
+    ...calls
+      .filter(
+        (call) =>
+          !LIVE_CALL_STATUSES.has(call.status) &&
+          (!oldest || call.createdAt >= oldest),
+      )
+      .map((call) => ({ kind: 'call' as const, at: call.createdAt, call })),
   ]
   return items.sort((a, b) => a.at.localeCompare(b.at))
+}
+
+/** "Criar tarefa" from a call: CRM task on the person, else ticket task. */
+function callTaskTarget(call: PhoneCallRecordDTO): PhoneCallTaskTarget | null {
+  if (call.crmPersonId || call.crmOpportunityId)
+    return {
+      kind: 'crm',
+      personId: call.crmPersonId,
+      opportunityId: call.crmOpportunityId,
+    }
+  if (call.sdTicketId) return { kind: 'ticket', ticketRef: call.sdTicketId }
+  return null
 }
 
 export function WhatsappConversationView({
@@ -143,6 +174,10 @@ export function WhatsappConversationView({
   const canEdit = useCan('conversations', 'EDIT')
   const startPhoneCall = useStartWhatsAppPhoneCall(workspaceId)
   const phoneCall = useWhatsAppPhoneCall(workspaceId, conversation.id)
+  const calls = usePhoneCalls(workspaceId, {
+    kind: 'conversation',
+    id: conversation.id,
+  })
   const hasPabx = Boolean(
     currentUser.data?.pabxExtension && currentUser.data?.pabxDeviceId,
   )
@@ -241,8 +276,13 @@ export function WhatsappConversationView({
   }
 
   const timeline = useMemo(
-    () => buildTimeline(messages.data ?? [], events.data ?? []),
-    [messages.data, events.data],
+    () =>
+      buildTimeline(
+        messages.data ?? [],
+        events.data ?? [],
+        Array.isArray(calls.data) ? calls.data : [],
+      ),
+    [messages.data, events.data, calls.data],
   )
 
   function handleClose(reason: string | undefined) {
@@ -582,6 +622,14 @@ export function WhatsappConversationView({
             <WhatsappConversationEventChip
               key={`event-${item.event.id}`}
               event={item.event}
+            />
+          ) : item.kind === 'call' ? (
+            <PhoneCallCard
+              key={`call-${item.call.id}`}
+              workspaceId={workspaceId}
+              call={item.call}
+              taskTarget={callTaskTarget(item.call)}
+              className='mx-auto max-w-xl'
             />
           ) : (
             <Fragment key={item.message.id}>

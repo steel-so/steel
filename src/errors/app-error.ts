@@ -307,6 +307,31 @@ export const pabxCallFailed = (
   message = 'Não foi possível iniciar a ligação',
 ): AppError => appError('PABX_CALL_FAILED', message)
 
+export const pabxRecordingNotAccepted = (
+  message = 'Esta ligação não aceita gravação',
+): AppError => appError('PABX_RECORDING_NOT_ACCEPTED', message)
+
+export const pabxRecordingDuplicate = (): AppError =>
+  appError('PABX_RECORDING_DUPLICATE', 'Esta ligação já tem gravação')
+
+export const pabxRecordingTooLarge = (maxBytes: number): AppError =>
+  appError(
+    'PABX_RECORDING_TOO_LARGE',
+    `A gravação passa do limite de ${Math.round(maxBytes / (1024 * 1024))} MB`,
+  )
+
+export const pabxRecordingUnsupported = (): AppError =>
+  appError(
+    'PABX_RECORDING_UNSUPPORTED',
+    'Formato de gravação não suportado (use WAV, MP3 ou OGG)',
+  )
+
+export const phoneCallNotFound = (): AppError =>
+  appError('PHONE_CALL_NOT_FOUND', 'Ligação não encontrada')
+
+export const phoneCallRecordingNotFound = (): AppError =>
+  appError('PHONE_CALL_RECORDING_NOT_FOUND', 'Gravação não encontrada')
+
 export const whatsappWebhookUnauthorized = (): AppError =>
   appError('WHATSAPP_WEBHOOK_UNAUTHORIZED', 'Assinatura do webhook inválida')
 

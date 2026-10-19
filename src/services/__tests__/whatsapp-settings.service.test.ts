@@ -276,4 +276,116 @@ describe('WhatsAppSettingsService failure paths and alert rule', () => {
       'DATABASE_ERROR',
     )
   })
+
+  describe('call recording settings', () => {
+    it('should default to recording off with the standard notice', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
+
+      expect(
+        expectOk(await WhatsAppSettingsService.get('u1', 'ws1')),
+      ).toMatchObject({
+        callRecordingEnabled: false,
+        callRecordingNotice: expect.stringContaining('gravada'),
+        callRecordingRetentionDays: 90,
+        callTranscriptionEnabled: true,
+      })
+    })
+
+    it('should save the recording settings and audit the switch', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+      mockedSettingsRepo.upsert.mockResolvedValue(
+        ok(
+          row({
+            callRecordingEnabled: true,
+            callRecordingNotice: 'Avise o contato.',
+            callRecordingRetentionDays: 30,
+          }),
+        ),
+      )
+
+      const dto = expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          callRecordingEnabled: true,
+          callRecordingNotice: 'Avise o contato.',
+          callRecordingRetentionDays: 30,
+        }),
+      )
+
+      expect(dto.callRecordingNotice).toBe('Avise o contato.')
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          callRecordingEnabled: true,
+          callRecordingNotice: 'Avise o contato.',
+          callRecordingRetentionDays: 30,
+          callTranscriptionEnabled: true,
+        }),
+      )
+      expect(auditMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meta: expect.objectContaining({
+            callRecordingEnabled: true,
+            callRecordingRetentionDays: 30,
+          }),
+        }),
+      )
+    })
+
+    it('should keep a saved notice when the field is not sent', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+        ok(row({ callRecordingNotice: 'Meu aviso' })),
+      )
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          callTranscriptionEnabled: false,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          callRecordingNotice: 'Meu aviso',
+          callTranscriptionEnabled: false,
+        }),
+      )
+    })
+
+    it('should store null (the default notice) for an empty notice', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+        ok(row({ callRecordingNotice: 'Meu aviso' })),
+      )
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          callRecordingNotice: '',
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ callRecordingNotice: null }),
+      )
+    })
+
+    it('should store null for a notice sent on a fresh workspace', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          autoCloseAfterHours: 4,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ callRecordingNotice: null }),
+      )
+    })
+  })
 })

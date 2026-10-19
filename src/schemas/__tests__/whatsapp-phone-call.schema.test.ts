@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { PabxCallWebhookSchema } from '@/src/schemas/whatsapp-phone-call.schema'
+import {
+  PabxCallWebhookSchema,
+  PabxRecordingUploadSchema,
+} from '@/src/schemas/whatsapp-phone-call.schema'
 
 const TOKEN = 'abcdefghijklmnopqrstuvwxyz012345'
 
@@ -43,5 +46,16 @@ describe('PabxCallWebhookSchema', () => {
       PabxCallWebhookSchema.safeParse({ token: 'short', event: 'HANGUP' })
         .success,
     ).toBe(false)
+  })
+})
+
+describe('PabxRecordingUploadSchema', () => {
+  it('should require the per-call token', () => {
+    expect(
+      PabxRecordingUploadSchema.safeParse({ token: 'a'.repeat(32) }).success,
+    ).toBe(true)
+    for (const token of [undefined, 'short', 'a'.repeat(129)]) {
+      expect(PabxRecordingUploadSchema.safeParse({ token }).success).toBe(false)
+    }
   })
 })

@@ -37,6 +37,8 @@ import {
   type DataRetentionJobPayload,
   type NotificationsJob,
   type NotificationsJobPayload,
+  type PhoneCallAiJob,
+  type PhoneCallAiJobPayload,
   QueueName,
   type SearchReindexJob,
   type SearchReindexJobPayload,
@@ -141,6 +143,7 @@ let workspaceIntegrationsQueue: Queue | null = null
 let webhooksDeliveryQueue: Queue | null = null
 let aiIndexQueue: Queue | null = null
 let aiEvalQueue: Queue | null = null
+let phoneCallAiQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 
@@ -1131,6 +1134,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WebhooksDelivery]: getWebhooksDeliveryQueue,
   [QueueName.AiIndex]: getAiIndexQueue,
   [QueueName.AiEval]: getAiEvalQueue,
+  [QueueName.PhoneCallAi]: getPhoneCallAiQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1161,5 +1165,24 @@ export function getAiIndexQueue(): Queue<
     AiIndexJobPayload[AiIndexJob],
     unknown,
     AiIndexJob
+  >
+}
+
+/** PABX call recordings: transcription + summary (ADR 0043). */
+export function getPhoneCallAiQueue(): Queue<
+  PhoneCallAiJobPayload[PhoneCallAiJob],
+  unknown,
+  PhoneCallAiJob
+> {
+  if (!phoneCallAiQueue) {
+    phoneCallAiQueue = new Queue(QueueName.PhoneCallAi, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return phoneCallAiQueue as Queue<
+    PhoneCallAiJobPayload[PhoneCallAiJob],
+    unknown,
+    PhoneCallAiJob
   >
 }

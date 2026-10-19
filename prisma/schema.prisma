@@ -1281,13 +1281,64 @@ model WhatsAppPhoneCall {
   createdAt         DateTime                @default(now()) @map("created_at")
   updatedAt         DateTime                @updatedAt @map("updated_at")
 
-  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Recording asked to the PABX when the call was placed (workspace
+  /// setting at that moment) and the notice the agent was shown to read to
+  /// the contact — kept as evidence of the consent notice (LGPD, ADR 0043).
+  recordingRequested Boolean                   @default(false) @map("recording_requested")
+  recordingNotice    String?                   @map("recording_notice") @db.VarChar(500)
+  /// MinIO object (`phone-call-recordings`, `<workspaceId>/<callId>.<ext>`).
+  recordingKey       String?                   @map("recording_key") @db.VarChar(255)
+  recordingMimeType  String?                   @map("recording_mime_type") @db.VarChar(40)
+  recordingSizeBytes Int?                      @map("recording_size_bytes")
+  recordedAt         DateTime?                 @map("recorded_at")
+  /// The retention job deletes the audio after this (workspace retention
+  /// days frozen at upload). Transcript and summary stay with the call.
+  recordingExpiresAt DateTime?                 @map("recording_expires_at")
+  aiStatus           WhatsAppPhoneCallAiStatus @default(NONE) @map("ai_status")
+  /// Why the AI step did not run or failed (machine code, not user text).
+  aiSkipReason       String?                   @map("ai_skip_reason") @db.VarChar(60)
+  transcript         String?
+  summary            String?
+  sentiment          WhatsAppSentiment?
+  sentimentScore     Float?                    @map("sentiment_score")
+  nextSteps          String[]                  @default([]) @map("next_steps")
+  /// Catalog key of the model that wrote the summary.
+  aiModel            String?                   @map("ai_model") @db.VarChar(80)
+  aiProcessedAt      DateTime?                 @map("ai_processed_at")
+  /// Records the call is attached to besides the conversation, resolved
+  /// when the recording is processed (open ticket of the conversation, CRM
+  /// person with the same phone and their open opportunity).
+  sdTicketId         String?                   @map("sd_ticket_id")
+  crmPersonId        String?                   @map("crm_person_id")
+  crmOpportunityId   String?                   @map("crm_opportunity_id")
+
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sdTicket       SdTicket?            @relation(fields: [sdTicketId], references: [id], onDelete: SetNull)
+  crmPerson      CrmPerson?           @relation(fields: [crmPersonId], references: [id], onDelete: SetNull)
+  crmOpportunity CrmOpportunity?      @relation(fields: [crmOpportunityId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt])
   @@index([workspaceId])
+  @@index([sdTicketId])
+  @@index([crmPersonId])
+  @@index([crmOpportunityId])
+  @@index([recordingExpiresAt])
   @@map("whatsapp_phone_calls")
+}
+
+/// Transcription + summary of a call recording (ADR 0043).
+enum WhatsAppPhoneCallAiStatus {
+  /// No recording (yet).
+  NONE
+  /// Recording stored, waiting for the worker.
+  PENDING
+  PROCESSING
+  DONE
+  /// Not processed: transcription off, Steel AI off, quota, no provider.
+  SKIPPED
+  FAILED
 }
 
 enum WhatsAppConversationEventKind {
@@ -1381,6 +1432,14 @@ model WhatsAppSettings {
   /// keeps flowing. Set by OWNER/ADMIN in Ajustes › Comunicação.
   monthlyConversationLimit    Int?     @map("monthly_conversation_limit")
   monthlyMessageLimit         Int?     @map("monthly_message_limit")
+  /// Click-to-call recording (ADR 0043): off by default. When on, the PABX
+  /// records the call and the agent sees `callRecordingNotice` to read to
+  /// the contact; audio is deleted after `callRecordingRetentionDays`.
+  callRecordingEnabled        Boolean  @default(false) @map("call_recording_enabled")
+  callRecordingNotice         String?  @map("call_recording_notice") @db.VarChar(500)
+  callRecordingRetentionDays  Int      @default(90) @map("call_recording_retention_days")
+  /// Transcribe and summarize recorded calls with Steel AI.
+  callTranscriptionEnabled    Boolean  @default(true) @map("call_transcription_enabled")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -1866,14 +1925,15 @@ model CrmPerson {
   createdBy User        @relation("CrmPersonCreatedBy", fields: [createdById], references: [id])
   updatedBy User?       @relation("CrmPersonUpdatedBy", fields: [updatedById], references: [id])
 
-  opportunitiesAsPointOfContact CrmOpportunity[]   @relation("CrmOpportunityPointOfContact")
+  opportunitiesAsPointOfContact CrmOpportunity[]    @relation("CrmOpportunityPointOfContact")
   convertedFromLeads            CrmLead[]
-  leadMeetings                  CrmLeadMeeting[]   @relation("CrmLeadMeetingContactPerson")
+  leadMeetings                  CrmLeadMeeting[]    @relation("CrmLeadMeetingContactPerson")
   tasks                         CrmTask[]
   notes                         CrmNote[]
   emailMessages                 CrmEmailMessage[]
   calendarEvents                CrmCalendarEvent[]
-  proposalsAsContact            CrmProposal[]      @relation("CrmProposalContact")
+  proposalsAsContact            CrmProposal[]       @relation("CrmProposalContact")
+  phoneCalls                    WhatsAppPhoneCall[]
 
   @@index([workspaceId])
   @@index([companyId])
@@ -2013,6 +2073,7 @@ model CrmOpportunity {
   emailMessages  CrmEmailMessage[]
   calendarEvents CrmCalendarEvent[]
   proposals      CrmProposal[]
+  phoneCalls     WhatsAppPhoneCall[]
 
   @@index([workspaceId])
   @@index([pipelineId])
@@ -4290,6 +4351,8 @@ enum AiUsageFeature {
   AI_EVAL
   /// Prompt-injection classifier of the guardrails (ADR 0041).
   AI_GUARDRAIL
+  /// Call recordings: transcription (per minute) and summary (ADR 0043).
+  PHONE_CALL_AI
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -5985,6 +6048,7 @@ model SdTicket {
   riskPrediction         SdTicketRiskPrediction?
   integrationLinks       SdIntegrationLink[]
   kbArticlesOriginated   SdKbArticle[]           @relation("SdKbArticleSourceTicket")
+  phoneCalls             WhatsAppPhoneCall[]
 
   @@unique([workspaceId, number])
   @@index([workspaceId, type, phaseId])

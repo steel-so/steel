@@ -17,6 +17,9 @@ function call(overrides: Partial<WhatsAppPhoneCallDTO>): WhatsAppPhoneCallDTO {
     endedAt: null,
     durationSeconds: null,
     createdAt: NOW.toISOString(),
+    recordingNotice: null,
+    hasRecording: false,
+    aiStatus: 'NONE',
     ...overrides,
   }
 }
@@ -100,5 +103,33 @@ describe('<WhatsappPhoneCallBanner />', () => {
       />,
     )
     expect(container.innerHTML).toBe('')
+  })
+
+  it('shows the recording notice to read while a recorded call is live', () => {
+    const { rerender } = render(
+      <WhatsappPhoneCallBanner
+        call={call({
+          status: 'IN_PROGRESS',
+          answeredAt: ago(1000),
+          recordingNotice: 'Avise o contato que a ligação é gravada.',
+        })}
+      />,
+    )
+    expect(screen.getByText('Ligação gravada.')).toBeTruthy()
+    expect(
+      screen.getByText(/Avise o contato que a ligação é gravada\./),
+    ).toBeTruthy()
+
+    rerender(
+      <WhatsappPhoneCallBanner
+        call={call({
+          status: 'COMPLETED',
+          endedAt: ago(1000),
+          durationSeconds: 30,
+          recordingNotice: 'Avise o contato que a ligação é gravada.',
+        })}
+      />,
+    )
+    expect(screen.queryByText('Ligação gravada.')).toBeNull()
   })
 })

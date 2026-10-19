@@ -30,3 +30,16 @@ export const PabxCallWebhookSchema = z.object({
 })
 
 export type PabxCallWebhookDTO = z.infer<typeof PabxCallWebhookSchema>
+
+/** Largest recording the PABX may upload (what `proxy.ts` buffers whole). */
+export const PABX_RECORDING_MAX_BYTES = 10 * 1024 * 1024
+
+/** Hours after the call was placed during which its recording is accepted. */
+export const PABX_RECORDING_UPLOAD_WINDOW_HOURS = 24
+
+/** Text fields of the multipart recording upload (`file` is read apart). */
+export const PabxRecordingUploadSchema = z.object({
+  token: z.string().min(16).max(128),
+})
+
+export type PabxRecordingUploadDTO = z.infer<typeof PabxRecordingUploadSchema>
