@@ -17,6 +17,7 @@ export const AI_USAGE_FEATURE_KEYS = [
   'WIKI_ASSISTANT',
   'KNOWLEDGE_SEARCH',
   'AI_EVAL',
+  'AI_GUARDRAIL',
 ] as const
 export type AiUsageFeatureKey = (typeof AI_USAGE_FEATURE_KEYS)[number]
 
@@ -32,6 +33,7 @@ export const AI_USAGE_FEATURE_LABELS: Record<AiUsageFeatureKey, string> = {
   WIKI_ASSISTANT: 'IA da Wiki',
   KNOWLEDGE_SEARCH: 'Busca de conhecimento',
   AI_EVAL: 'Avaliações do Steel AI',
+  AI_GUARDRAIL: 'Proteções da IA (classificador)',
 }
 
 /** `PLATFORM` = no module (platform tools, or a call that used no tool). */
@@ -70,6 +72,7 @@ const FEATURE_MODULE: Record<
   WIKI_ASSISTANT: null,
   KNOWLEDGE_SEARCH: null,
   AI_EVAL: null,
+  AI_GUARDRAIL: null,
 }
 
 /** Scope of a ledger row: its module, else the feature's, else platform. */

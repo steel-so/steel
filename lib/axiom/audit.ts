@@ -214,6 +214,10 @@ export type AuditEntity =
   | 'ai_eval_case'
   | 'ai_eval_run'
   | 'ai_quality'
+  // Steel AI guardrails (ADR 0041): the workspace settings, and what the
+  // guardrails did on a call (masked counts, injection alerts, handoffs).
+  | 'workspace_ai_guardrails'
+  | 'ai_guardrail'
 
 export type AuditAction =
   | 'create'
@@ -286,6 +290,8 @@ export type AuditAction =
   | 'reveal'
   | 'retry'
   | 'disable'
+  // Steel AI guardrails: personal data masked before a provider call.
+  | 'mask'
 
 type AuditOutcome = 'success' | 'failure'
 

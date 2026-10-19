@@ -199,3 +199,56 @@ export function aiModelPricing(model: {
     FALLBACK_AI_MODEL_PRICING
   )
 }
+
+/*
+ * Task classes (ADR 0042): every AI feature belongs to one, and each class
+ * has its own model — cheap and fast for classification, strong for the
+ * assistant and the agents. The workspace picks the model of each class;
+ * the global admin sets the defaults for workspaces that did not.
+ */
+export const AI_TASK_CLASSES = [
+  'CLASSIFICATION',
+  'CONVERSATION',
+  'ASSISTANT',
+  'AGENT',
+] as const
+export type AiTaskClass = (typeof AI_TASK_CLASSES)[number]
+
+export const AI_TASK_CLASS_LABELS: Record<AiTaskClass, string> = {
+  CLASSIFICATION: 'Classificação (sentimento, triagem, proteções)',
+  CONVERSATION: 'Atendimento automático (WhatsApp e pré-atendimento)',
+  ASSISTANT: 'Assistente (Steel AI, copiloto, Wiki, CRM)',
+  AGENT: 'Steel Agents',
+}
+
+export type AiModelTier = 'fast' | 'strong'
+
+/** Tier of each catalog model: the failover prefers one of the same tier. */
+export const AI_MODEL_TIER: Record<AiModelKey, AiModelTier> = {
+  'openai:gpt-4o-mini': 'fast',
+  'openai:gpt-4.1-mini': 'fast',
+  'openai:gpt-5-mini': 'fast',
+  'openai:gpt-5': 'strong',
+  'anthropic:claude-haiku-4-5': 'fast',
+  'anthropic:claude-sonnet-5': 'strong',
+  'anthropic:claude-opus-5': 'strong',
+}
+
+export const AI_TASK_CLASS_TIER: Record<AiTaskClass, AiModelTier> = {
+  CLASSIFICATION: 'fast',
+  CONVERSATION: 'fast',
+  ASSISTANT: 'strong',
+  AGENT: 'strong',
+}
+
+/**
+ * How long one provider call of each class may take before it counts as a
+ * failure and the failover tries the next model. For a streamed answer it
+ * bounds the wait for the first chunk.
+ */
+export const AI_TASK_TIMEOUT_MS: Record<AiTaskClass, number> = {
+  CLASSIFICATION: 30_000,
+  CONVERSATION: 60_000,
+  ASSISTANT: 120_000,
+  AGENT: 120_000,
+}

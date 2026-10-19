@@ -479,6 +479,7 @@ model Workspace {
   crmAiConversations        CrmAiConversation[]
   crmAiUsage                CrmAiUsage[]
   aiSettings                WorkspaceAiSettings?
+  aiGuardrails              WorkspaceAiGuardrails?
   aiUserPreferences         UserAiPreference[]
   aiUsage                   AiUsage[]
   aiConversations           AiConversation[]
@@ -1298,6 +1299,9 @@ enum WhatsAppConversationEventKind {
   /// Ações automáticas do botão (atribuir, equipe, status...).
   ASSIGNED
   TEAM_CHANGED
+  /// The auto-reply hit a guardrail (forbidden topic, authority limit,
+  /// prompt injection) and handed off; `reason` carries the note.
+  AI_GUARDRAIL_HANDOFF
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1309,6 +1313,8 @@ enum WhatsAppConversationEventSource {
   SENTIMENT
   /// Ação configurada num botão de template/mensagem pronta.
   BUTTON_ACTION
+  /// Steel AI guardrails (ADR 0041).
+  AI_GUARDRAIL
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -4202,12 +4208,53 @@ model WorkspaceAiSettings {
   /// External AI clients connected over MCP with `mcp:write` may create,
   /// update and run actions (DELETE is never exposed). Off by default.
   mcpWriteEnabled         Boolean  @default(false) @map("mcp_write_enabled")
+  /// Model of the AGENT task class (Steel Agents, ADR 0042). Null = the
+  /// platform default for agents, else the assistant model.
+  agentModel              String?  @map("agent_model")
+  /// Automatic failover to another provider/model when the chosen one fails
+  /// or times out (ADR 0042). On by default.
+  failoverEnabled         Boolean  @default(true) @map("failover_enabled")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("workspace_ai_settings")
+}
+
+/// What the AI masks before a call leaves for the provider (ADR 0041).
+enum AiPiiMaskingPolicy {
+  OFF
+  /// Only unattended replies to third parties: WhatsApp auto-reply and the
+  /// ServiceDesk pre-service.
+  AUTO_REPLIES
+  EVERYWHERE
+}
+
+/// Steel AI guardrails of a workspace (ADR 0041). No row = defaults (mask in
+/// auto-replies, no classifier, no topic or authority limit).
+model WorkspaceAiGuardrails {
+  id                         String             @id @default(cuid())
+  workspaceId                String             @unique @map("workspace_id")
+  piiMaskingPolicy           AiPiiMaskingPolicy @default(AUTO_REPLIES) @map("pii_masking_policy")
+  /// Ambiguous third-party text goes to a cheap model that tells whether it
+  /// is an instruction to the AI (cost counted as AI_GUARDRAIL).
+  injectionClassifierEnabled Boolean            @default(false) @map("injection_classifier_enabled")
+  /// Auto-replies hand off to a human when the customer or the draft
+  /// touches one of these topics.
+  forbiddenTopics            String[]           @default([]) @map("forbidden_topics")
+  /// Authority limits of the auto-replies. Null = no limit configured;
+  /// 0 = never promise it.
+  maxDiscountPercent         Int?               @map("max_discount_percent")
+  maxRefundAmount            Decimal?           @map("max_refund_amount") @db.Decimal(12, 2)
+  maxDeadlineDays            Int?               @map("max_deadline_days")
+  updatedById                String?            @map("updated_by_id")
+  createdAt                  DateTime           @default(now()) @map("created_at")
+  updatedAt                  DateTime           @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_ai_guardrails")
 }
 
 /// Modelo de IA escolhido pelo usuário dentro de um workspace (assistente do
@@ -4241,6 +4288,8 @@ enum AiUsageFeature {
   KNOWLEDGE_SEARCH
   /// Eval runs (ADR 0039): the evaluated answer and the LLM judge.
   AI_EVAL
+  /// Prompt-injection classifier of the guardrails (ADR 0041).
+  AI_GUARDRAIL
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -4460,6 +4509,14 @@ model PlatformAiSettings {
   /// Semantic half of the Steel AI knowledge search (ADR 0037). Off = the
   /// index is text-only and nothing is sent to the embedding provider.
   embeddingsEnabled Boolean @default(true) @map("embeddings_enabled")
+  /// Default model of each task class (ADR 0042) for workspaces that did
+  /// not choose one. Null = the platform default model.
+  classificationModel String? @map("classification_model")
+  conversationModel   String? @map("conversation_model")
+  assistantModel      String? @map("assistant_model")
+  agentModel          String? @map("agent_model")
+  /// Platform-wide switch of the provider failover (ADR 0042).
+  failoverEnabled     Boolean @default(true) @map("failover_enabled")
   updatedById String?  @map("updated_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
