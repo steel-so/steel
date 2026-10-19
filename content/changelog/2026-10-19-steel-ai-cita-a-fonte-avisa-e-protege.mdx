@@ -1,0 +1,109 @@
+---
+title: Steel AI que cita a fonte, avisa antes e protege os dados
+slug: steel-ai-cita-a-fonte-avisa-e-protege
+date: 2026-10-19
+summary: A Steel AI agora responde com a documentação do seu workspace e mostra as fontes, levanta alertas sozinha, recebe 👍/👎 com painel de qualidade, mascara dados pessoais antes de falar com o provedor e transcreve e resume as ligações do PABX.
+tags: [IA, SERVICEDESK, CRM, COMUNICACAO, PLATAFORMA]
+cover: /changelog/2026-10-19/capa-steel-ai.jpg
+---
+
+## Respostas com a documentação do workspace, e com a fonte
+
+Pergunte à Steel AI como fazer algo e ela procura a resposta no que a sua
+equipe já escreveu: artigos da base de conhecimento, páginas da Wiki, chamados
+resolvidos, documentos da IA do WhatsApp e notas e propostas do CRM. Ela busca
+pelas palavras **e pelo sentido**, então acha "Alterar a credencial da rede sem
+fio" mesmo que você escreva "trocar a senha do Wi-Fi".
+
+![Chat da Steel AI respondendo como trocar a senha do Wi-Fi da filial, com a lista Fontes apontando para a página da Wiki e os botões de avaliação](/changelog/2026-10-19/steel-ai-fontes.webp)
+
+Toda resposta que usou a base mostra **Fontes**, com link para abrir e conferir.
+Cada pessoa só recebe o que já poderia abrir no Steel. Se nada relevante for
+encontrado, a Steel AI diz isso em vez de inventar. A mesma busca está no
+servidor MCP, como a ferramenta `steel_search`.
+
+## Alertas antes de virar problema
+
+A cada 15 minutos o Steel olha os dados do workspace e avisa a pessoa certa:
+
+- o chamado que deve **estourar o SLA** nas próximas horas;
+- as **oportunidades sem contato** há 10 dias ou mais e a etapa do funil que
+  travou;
+- a **previsão de vendas abaixo da meta** do mês;
+- as **conversas do WhatsApp esperando** há mais de 30 minutos e o
+  **sentimento em queda** de um cliente.
+
+Os alertas aparecem na página inicial, em **Para sua atenção**, na tela da
+Steel AI e no filtro **Alertas da IA** da caixa de entrada. Cada um diz por que
+apareceu, com os números. Os números vêm de regras sobre os dados; a IA não
+inventa nenhum. Dá para abrir o registro, **perguntar à Steel AI** com a pergunta
+já escrita, adiar ou dispensar. Às 08:00 do seu fuso chega um **resumo
+diário** dos alertas ativos na caixa de entrada e por e-mail; dia sem alerta não
+tem resumo, e cada pessoa escolhe os canais em **Ajustes › Notificações**.
+
+## A IA está acertando? Agora dá para medir
+
+Toda resposta de IA ganhou **👍** e **👎**: no chat, nos Steel Agents, no
+copiloto, na triagem e no rascunho de artigo do ServiceDesk e nas mensagens que
+a IA mandou no WhatsApp. O 👎 pede o motivo.
+
+![Aba Qualidade em Steel AI › Análises, com a aprovação, as avaliações por dia e a aprovação por superfície e por modelo](/changelog/2026-10-19/qualidade.webp)
+
+Em **Steel AI › Análises › Qualidade** ficam a aprovação por dia, por
+superfície e por modelo e a lista das piores respostas. E, antes de trocar o
+modelo, o prompt ou uma skill, o administrador pode montar um **conjunto de
+teste** em **Steel AI › Avaliações** e rodar com a configuração nova para
+comparar.
+
+## Proteções e LGPD
+
+Em **Ajustes › Steel IA › Proteções e LGPD**:
+
+- **Dados pessoais:** CPF, CNPJ, cartão, telefone e e-mail viram marcadores
+  como `[CPF_1]` antes de o texto ir ao provedor de IA, e voltam com o valor
+  real para quem lê. Por padrão, isso vale nas respostas automáticas, onde
+  ninguém revisa antes do cliente receber; dá para estender a toda a IA.
+- **Textos de terceiros:** mensagens de clientes, e-mails e documentos são
+  tratados como dados, nunca como ordens. Se um deles tentar instruir a IA, a
+  tentativa fica registrada, toda alteração passa a pedir confirmação e a
+  resposta automática transfere para um atendente.
+- **Limites da resposta automática:** assuntos proibidos e tetos de desconto,
+  reembolso e prazo. Se a IA for prometer além disso, a resposta não sai e um
+  atendente assume, vendo o motivo.
+
+![Seção Proteções e LGPD com as opções de mascaramento de dados pessoais, o conteúdo de terceiros e os limites da resposta automática](/changelog/2026-10-19/protecoes-lgpd.webp)
+
+## O modelo certo para cada tarefa
+
+Cada uso da IA agora tem um tipo: **assistente**, **atendimento automático**,
+**classificação** e **Steel Agents**. Escolha um modelo barato para classificar
+sentimento e triagem e um modelo forte para conversar e agir. Se um provedor
+cair ou demorar demais, a chamada vai sozinha para outro modelo habilitado, de
+preferência do outro provedor, e o consumo registra o modelo que respondeu.
+
+![Cartão Modelo por tipo de tarefa nos ajustes da Steel IA, com o modelo de cada tipo e o atalho para criar um conjunto de avaliação](/changelog/2026-10-19/modelo-por-tarefa.webp)
+
+## Ligações gravadas, transcritas e resumidas
+
+O botão **Ligar** da conversa do WhatsApp agora pode gravar a ligação. Ao
+desligar, a Steel AI transcreve o áudio e escreve o resumo, o humor do cliente
+e os próximos passos, cada um com **Criar tarefa**. O cartão da ligação aparece
+na conversa, na nova aba **Ligações** do chamado e na atividade da pessoa e da
+oportunidade no CRM.
+
+![Configurações do WhatsApp com Gravar ligações ligado, o aviso de gravação, os dias de guarda do áudio e a opção Transcrever e resumir](/changelog/2026-10-19/gravar-ligacoes.webp)
+
+A gravação vem **desligada**. Quem liga em **WhatsApp › Configurações ›
+Atendimento** define o aviso que o atendente lê ao contato, que fica registrado
+em cada ligação, e por quantos dias o áudio é guardado. Depois disso o áudio é
+apagado; a transcrição e o resumo continuam.
+
+<Callout>
+  Os alertas, a busca, as avaliações e as ligações respeitam as permissões de
+  cada pessoa e contam na cota mensal da Steel AI. O passo a passo está no
+  manual: [Busca de conhecimento](/docs/steel-ai/busca-de-conhecimento),
+  [IA proativa](/docs/steel-ai/ia-proativa),
+  [Qualidade e avaliações](/docs/steel-ai/qualidade-e-avaliacoes),
+  [Proteções e modelo por tarefa](/docs/steel-ai/protecoes) e
+  [Ligações, gravação e resumo](/docs/comunicacao/ligacoes).
+</Callout>
