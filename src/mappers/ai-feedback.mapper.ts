@@ -9,7 +9,7 @@ export function toAiFeedbackDTO(row: AiFeedback): AiFeedbackDTO {
     targetId: row.targetId,
     variant: row.variant,
     rating: row.rating,
-    reason: (row.reason as AiFeedbackReason | null) ?? null,
+    reason: row.reason as AiFeedbackReason | null,
     comment: row.comment,
     modelKey: row.modelKey,
     createdAt: row.createdAt.toISOString(),

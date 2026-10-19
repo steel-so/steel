@@ -136,7 +136,7 @@ export function toAiQualityWorstItemDTO(
     surface: row.surface,
     surfaceLabel: AI_FEEDBACK_SURFACE_LABELS[row.surface],
     variant: row.variant,
-    reason: (row.reason as AiFeedbackReason | null) ?? null,
+    reason: row.reason as AiFeedbackReason | null,
     reasonLabel: reasonLabel(row.reason),
     comment: row.comment,
     modelKey: row.modelKey,
@@ -176,9 +176,8 @@ export function toAiQualityDTO(input: {
     if (row.rating === 'UP') up += row.count
     else down += row.count
   }
-  const surfaceOrder = new Map<string, number>(
-    AI_FEEDBACK_SURFACES.map((surface, index) => [surface, index]),
-  )
+  const order = (key: string) =>
+    AI_FEEDBACK_SURFACES.indexOf(key as AiFeedbackSurface)
   return {
     scope: input.query.scope,
     period: input.query.period,
@@ -190,11 +189,7 @@ export function toAiQualityDTO(input: {
       input.groups,
       (row) => row.surface,
       (key) => AI_FEEDBACK_SURFACE_LABELS[key as AiFeedbackSurface],
-    ).sort(
-      (a, b) =>
-        b.total - a.total ||
-        (surfaceOrder.get(a.key) ?? 0) - (surfaceOrder.get(b.key) ?? 0),
-    ),
+    ).sort((a, b) => b.total - a.total || order(a.key) - order(b.key)),
     byModel: breakdown(
       input.groups,
       (row) => row.modelKey ?? '',
