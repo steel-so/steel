@@ -1,6 +1,10 @@
 import type { WhatsAppSettings } from '@prisma/client'
 import type { WhatsAppSettingsDTO } from '@/types/whatsapp-settings'
 
+/** Aviso de gravação quando o workspace não escreveu o próprio. */
+export const DEFAULT_CALL_RECORDING_NOTICE =
+  'Avise o contato: "Esta ligação está sendo gravada para registro e qualidade do atendimento."'
+
 /** Padrões quando o workspace ainda não salvou configurações. */
 export const WHATSAPP_SETTINGS_DEFAULTS = {
   autoCloseAfterHours: 24,
@@ -11,6 +15,10 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   sentimentAlertRecipientIds: [] as string[],
   sentimentAlertAssignToId: null as string | null,
   sentimentAlertCooldownHours: 6,
+  callRecordingEnabled: false,
+  callRecordingNotice: null as string | null,
+  callRecordingRetentionDays: 90,
+  callTranscriptionEnabled: true,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -22,6 +30,7 @@ export function toWhatsAppSettingsDTO(
       workspaceId,
       ...WHATSAPP_SETTINGS_DEFAULTS,
       sentimentAlertRecipientIds: [],
+      callRecordingNotice: DEFAULT_CALL_RECORDING_NOTICE,
     }
   }
   return {
@@ -34,5 +43,10 @@ export function toWhatsAppSettingsDTO(
     sentimentAlertRecipientIds: settings.sentimentAlertRecipientIds,
     sentimentAlertAssignToId: settings.sentimentAlertAssignToId,
     sentimentAlertCooldownHours: settings.sentimentAlertCooldownHours,
+    callRecordingEnabled: settings.callRecordingEnabled,
+    callRecordingNotice:
+      settings.callRecordingNotice?.trim() || DEFAULT_CALL_RECORDING_NOTICE,
+    callRecordingRetentionDays: settings.callRecordingRetentionDays,
+    callTranscriptionEnabled: settings.callTranscriptionEnabled,
   }
 }

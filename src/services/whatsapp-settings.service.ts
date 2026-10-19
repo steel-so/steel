@@ -86,6 +86,17 @@ export const WhatsAppSettingsService = {
           : dto.sentimentAlertAssignToId,
       sentimentAlertCooldownHours:
         dto.sentimentAlertCooldownHours ?? current.sentimentAlertCooldownHours,
+      callRecordingEnabled:
+        dto.callRecordingEnabled ?? current.callRecordingEnabled,
+      // Stored only when the admin wrote one; the mapper fills the default.
+      callRecordingNotice:
+        dto.callRecordingNotice === undefined
+          ? (existing.value?.callRecordingNotice ?? null)
+          : dto.callRecordingNotice || null,
+      callRecordingRetentionDays:
+        dto.callRecordingRetentionDays ?? current.callRecordingRetentionDays,
+      callTranscriptionEnabled:
+        dto.callTranscriptionEnabled ?? current.callTranscriptionEnabled,
     })
     if (!saved.ok) return saved
 
@@ -100,6 +111,9 @@ export const WhatsAppSettingsService = {
         sentimentAlertEnabled: saved.value.sentimentAlertEnabled,
         sentimentAlertNotifyEmail: saved.value.sentimentAlertNotifyEmail,
         sentimentAlertRecipients: saved.value.sentimentAlertRecipientIds.length,
+        callRecordingEnabled: saved.value.callRecordingEnabled,
+        callRecordingRetentionDays: saved.value.callRecordingRetentionDays,
+        callTranscriptionEnabled: saved.value.callTranscriptionEnabled,
       },
     })
 

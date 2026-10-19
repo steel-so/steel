@@ -166,6 +166,27 @@ export const ERROR_CODES = {
   PABX_CALLBACK_INVALID: { code: 'PABX_CALLBACK_INVALID', status: 401 },
   // Click-to-call: the PABX dialer refused or did not answer.
   PABX_CALL_FAILED: { code: 'PABX_CALL_FAILED', status: 502 },
+  // Call recording upload (ADR 0043): the call did not ask for a recording,
+  // was not answered, or its upload window is over.
+  PABX_RECORDING_NOT_ACCEPTED: {
+    code: 'PABX_RECORDING_NOT_ACCEPTED',
+    status: 409,
+  },
+  // Call recording upload: the call already has its recording.
+  PABX_RECORDING_DUPLICATE: { code: 'PABX_RECORDING_DUPLICATE', status: 409 },
+  // Call recording upload: over the size limit.
+  PABX_RECORDING_TOO_LARGE: { code: 'PABX_RECORDING_TOO_LARGE', status: 413 },
+  // Call recording upload: not a WAV, MP3 or OGG file (checked by bytes).
+  PABX_RECORDING_UNSUPPORTED: {
+    code: 'PABX_RECORDING_UNSUPPORTED',
+    status: 415,
+  },
+  // Phone call (or its recording) not found or not visible to the actor.
+  PHONE_CALL_NOT_FOUND: { code: 'PHONE_CALL_NOT_FOUND', status: 404 },
+  PHONE_CALL_RECORDING_NOT_FOUND: {
+    code: 'PHONE_CALL_RECORDING_NOT_FOUND',
+    status: 404,
+  },
   WHATSAPP_WEBHOOK_UNAUTHORIZED: {
     code: 'WHATSAPP_WEBHOOK_UNAUTHORIZED',
     status: 401,

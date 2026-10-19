@@ -1,5 +1,4 @@
 import type { WhatsAppMessage } from '@prisma/client'
-import { toFile } from 'openai'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import {
@@ -14,6 +13,7 @@ import {
   type AutoReplyLimitHit,
   autoReplyLimitsInstruction,
 } from '@/src/lib/ai/guardrails/limits'
+import { transcribeAudio } from '@/src/lib/ai/transcription'
 import { ok, type Result } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
@@ -40,7 +40,6 @@ import {
 } from './whatsapp-notify'
 
 const HISTORY_LIMIT = 20
-const TRANSCRIPTION_MODEL = 'whisper-1'
 
 // Injeção direta no prompt (sem embeddings/busca — decisão registrada no
 // plano: poucos documentos por workspace no caso de uso real). Limite de
@@ -179,19 +178,15 @@ function previewForNonText(type: string): string {
 
 // Transcrição usa o Whisper da OpenAI independentemente do provedor do chat
 // (o Claude não transcreve áudio). Sem chave da OpenAI, cai no placeholder.
-async function transcribeAudio(mediaUrl: string): Promise<string | null> {
+async function transcribeMediaUrl(mediaUrl: string): Promise<string | null> {
   const client = getOpenAiClient()
   if (!client) return null
   try {
     const response = await fetch(mediaUrl)
     if (!response.ok) return null
     const buffer = Buffer.from(await response.arrayBuffer())
-    const file = await toFile(buffer, 'audio.ogg')
-    const transcription = await client.audio.transcriptions.create({
-      file,
-      model: TRANSCRIPTION_MODEL,
-    })
-    return transcription.text?.trim() || null
+    const transcription = await transcribeAudio(client, buffer, 'audio.ogg')
+    return transcription?.text ?? null
   } catch (error) {
     logger.error('queue.whatsapp_ai_reply.transcription_failed', {
       component: 'WhatsappAiReply',
@@ -242,7 +237,7 @@ async function describeMessageContent(
   }
 
   if (message.type === 'AUDIO') {
-    const transcribed = await transcribeAudio(message.mediaUrl)
+    const transcribed = await transcribeMediaUrl(message.mediaUrl)
     return transcribed
       ? `[áudio transcrito] ${transcribed}`
       : previewForNonText(message.type)

@@ -17,6 +17,7 @@ vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/user.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-phone-call.repository')
+vi.mock('@/src/repositories/whatsapp-settings.repository')
 vi.mock('@/src/lib/pabx/click-to-call', () => ({ placePabxCall: vi.fn() }))
 vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
@@ -28,6 +29,7 @@ import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppPhoneCallRepository } from '@/src/repositories/whatsapp-phone-call.repository'
+import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import { WhatsAppPhoneCallService } from '../whatsapp-phone-call.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
@@ -36,6 +38,7 @@ const mockedConversationRepo = vi.mocked(WhatsAppConversationRepository)
 const mockedCallRepo = vi.mocked(WhatsAppPhoneCallRepository)
 const mockedPlaceCall = vi.mocked(placePabxCall)
 const mockedPublish = vi.mocked(publishWhatsAppEvent)
+const mockedSettingsRepo = vi.mocked(WhatsAppSettingsRepository)
 
 const TOKEN = 'abcdefghijklmnopqrstuvwxyz012345'
 
@@ -73,11 +76,53 @@ describe('WhatsAppPhoneCallService.start()', () => {
     mockedUserRepo.findById.mockResolvedValue(
       ok(createFakeUser({ pabxExtension: '200', pabxDeviceId: '123' })),
     )
+    mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
     mockedCallRepo.create.mockResolvedValue(ok(created))
     echoUpdates(created)
     mockedPlaceCall.mockResolvedValue(
       ok({ destination: '11999999999', job: 'steel_api_123_abc' }),
     )
+  })
+
+  it('does not ask the PABX to record while recording is off', async () => {
+    expectOk(await WhatsAppPhoneCallService.start('u1', 'ws1', 'conv1'))
+
+    expect(mockedCallRepo.create.mock.calls[0][0]).toMatchObject({
+      recordingRequested: false,
+      recordingNotice: null,
+    })
+    expect(mockedPlaceCall.mock.calls[0][0]).toMatchObject({ record: false })
+  })
+
+  it('asks for the recording and freezes the notice when it is on', async () => {
+    mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+      ok({
+        callRecordingEnabled: true,
+        callRecordingNotice: 'Avise: ligação gravada.',
+        callRecordingRetentionDays: 30,
+        callTranscriptionEnabled: true,
+      } as never),
+    )
+
+    expectOk(await WhatsAppPhoneCallService.start('u1', 'ws1', 'conv1'))
+
+    expect(mockedCallRepo.create.mock.calls[0][0]).toMatchObject({
+      recordingRequested: true,
+      recordingNotice: 'Avise: ligação gravada.',
+    })
+    expect(mockedPlaceCall.mock.calls[0][0]).toMatchObject({ record: true })
+  })
+
+  it('propagates a failure reading the recording settings', async () => {
+    mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+      err(databaseError('db down')),
+    )
+
+    expectErr(
+      await WhatsAppPhoneCallService.start('u1', 'ws1', 'conv1'),
+      'DATABASE_ERROR',
+    )
+    expect(mockedCallRepo.create).not.toHaveBeenCalled()
   })
 
   it("queues the call on the actor's PABX and publishes it", async () => {

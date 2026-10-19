@@ -174,6 +174,36 @@ export async function getObjectStream(input: GetObjectInput): Promise<{
   }
 }
 
+export interface ObjectRangeInput extends GetObjectInput {
+  /** HTTP `Range` header value (`bytes=0-1023`), passed through to S3. */
+  range?: string
+}
+
+/**
+ * Stream of an object or of one byte range of it — audio served to an
+ * `<audio>` element, which seeks with `Range` requests.
+ */
+export async function getObjectRangeStream(input: ObjectRangeInput): Promise<{
+  body: ReadableStream<Uint8Array>
+  contentLength: number | undefined
+  contentRange: string | undefined
+}> {
+  const s3 = getS3Client()
+  const result = await s3.send(
+    new GetObjectCommand({
+      Bucket: input.bucket,
+      Key: input.key,
+      ...(input.range && { Range: input.range }),
+    }),
+  )
+  if (!result.Body) throw new Error(`Empty object: ${input.key}`)
+  return {
+    body: result.Body.transformToWebStream() as ReadableStream<Uint8Array>,
+    contentLength: result.ContentLength,
+    contentRange: result.ContentRange,
+  }
+}
+
 function isMissingBucket(error: unknown): boolean {
   const name = (error as { name?: string; Code?: string } | null)?.name
   return name === 'NoSuchBucket' || name === 'NotFound'

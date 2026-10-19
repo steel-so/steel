@@ -43,6 +43,7 @@ export const QueueName = {
   WebhooksDelivery: 'webhooks-delivery',
   AiIndex: 'ai-index',
   AiEval: 'ai-eval',
+  PhoneCallAi: 'phone-call-ai',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -54,6 +55,7 @@ export const DataRetentionJob = {
   CleanupWebhookDeliveries: 'cleanup-webhook-deliveries',
   CleanupApiTokens: 'cleanup-api-tokens',
   PruneDeadIntegrationGrants: 'prune-dead-integration-grants',
+  PurgeCallRecordings: 'purge-call-recordings',
 } as const
 
 export type DataRetentionJob =
@@ -853,4 +855,19 @@ export type AiEvalJob = (typeof AiEvalJob)[keyof typeof AiEvalJob]
 
 export type AiEvalJobPayload = {
   [AiEvalJob.Run]: { runId: string }
+}
+
+/**
+ * PABX call recordings (ADR 0043): `process-recording` transcribes one
+ * uploaded recording, summarizes it and attaches the call to its records.
+ */
+export const PhoneCallAiJob = {
+  ProcessRecording: 'process-recording',
+} as const
+
+export type PhoneCallAiJob =
+  (typeof PhoneCallAiJob)[keyof typeof PhoneCallAiJob]
+
+export type PhoneCallAiJobPayload = {
+  [PhoneCallAiJob.ProcessRecording]: { callId: string }
 }

@@ -101,6 +101,12 @@ export const WORKSPACE_BUCKETS: readonly WorkspaceBucket[] = [
     public: true,
     writtenBy: 'src/services/site-media.service.ts',
   },
+  {
+    // PABX call recordings (private, ADR 0043): `<ws>/<callId>.<ext>`.
+    name: 'phone-call-recordings',
+    public: false,
+    writtenBy: 'src/services/phone-call-recording.service.ts',
+  },
 ] as const
 
 export const WORKSPACE_PREFIXED_BUCKETS = WORKSPACE_BUCKETS.map((b) => b.name)

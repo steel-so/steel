@@ -18,6 +18,12 @@ export interface PabxCallInput {
   callbackUrl: string
   /** Per-call secret echoed back by the dialplan on every report. */
   callbackToken: string
+  /**
+   * Ask the PABX to record the call (`gravar=1`) and upload it at hangup to
+   * `<callbackUrl>/recording` (ADR 0043). Not sent when off, so a PABX
+   * without the recording snippet keeps working as before.
+   */
+  record?: boolean
 }
 
 export interface PabxCallQueued {
@@ -61,6 +67,7 @@ export async function placePabxCall(
     callback_url: input.callbackUrl,
     callback_token: input.callbackToken,
   })
+  if (input.record) body.set('gravar', '1')
 
   let response: Response
   try {

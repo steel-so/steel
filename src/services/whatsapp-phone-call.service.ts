@@ -8,8 +8,10 @@ import { placePabxCall } from '@/src/lib/pabx/click-to-call'
 import { err, ok, type Result } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { toWhatsAppPhoneCallDTO } from '@/src/mappers/whatsapp-phone-call.mapper'
+import { toWhatsAppSettingsDTO } from '@/src/mappers/whatsapp-settings.mapper'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WhatsAppPhoneCallRepository } from '@/src/repositories/whatsapp-phone-call.repository'
+import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import type { PabxCallWebhookDTO } from '@/src/schemas/whatsapp-phone-call.schema'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
 import { assertModuleMember } from './authz'
@@ -115,6 +117,14 @@ export const WhatsAppPhoneCallService = {
     const { pabxExtension, pabxDeviceId } = actor.value
     if (!pabxExtension || !pabxDeviceId) return err(pabxExtensionRequired())
 
+    // Recording (ADR 0043): the workspace setting at dial time, and the
+    // notice the agent is shown, frozen on the call as evidence.
+    const settingsRow =
+      await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
+    if (!settingsRow.ok) return settingsRow
+    const settings = toWhatsAppSettingsDTO(workspaceId, settingsRow.value)
+    const record = settings.callRecordingEnabled
+
     const callbackToken = randomBytes(24).toString('base64url')
     const created = await WhatsAppPhoneCallRepository.create({
       workspaceId,
@@ -124,6 +134,8 @@ export const WhatsAppPhoneCallService = {
       extension: pabxExtension,
       destination: contact.waId,
       callbackTokenHash: hashToken(callbackToken),
+      recordingRequested: record,
+      recordingNotice: record ? settings.callRecordingNotice : null,
     })
     if (!created.ok) return created
 
@@ -133,6 +145,7 @@ export const WhatsAppPhoneCallService = {
       destination: contact.waId,
       callbackUrl: callbackUrl(),
       callbackToken,
+      record,
     })
 
     auditMutation({
@@ -142,7 +155,12 @@ export const WhatsAppPhoneCallService = {
       targetId: created.value.id,
       outcome: queued.ok ? 'success' : 'failure',
       reason: queued.ok ? undefined : queued.error.code,
-      meta: { workspaceId, conversationId, deviceId: pabxDeviceId },
+      meta: {
+        workspaceId,
+        conversationId,
+        deviceId: pabxDeviceId,
+        recordingRequested: record,
+      },
     })
 
     if (!queued.ok) {

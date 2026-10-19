@@ -4,6 +4,10 @@ import { z } from 'zod'
 export const WHATSAPP_AUTO_CLOSE_MAX_HOURS = 720
 /** Intervalo mínimo entre alertas de sentimento da mesma conversa. */
 export const WHATSAPP_SENTIMENT_ALERT_MAX_COOLDOWN_HOURS = 168
+/** Retenção do áudio das ligações gravadas: de 1 dia a 5 anos. */
+export const CALL_RECORDING_MIN_RETENTION_DAYS = 1
+export const CALL_RECORDING_MAX_RETENTION_DAYS = 1825
+export const CALL_RECORDING_NOTICE_MAX = 500
 
 export const UpdateWhatsAppSettingsSchema = z.object({
   autoCloseAfterHours: z
@@ -40,6 +44,32 @@ export const UpdateWhatsAppSettingsSchema = z.object({
       `Máximo de ${WHATSAPP_SENTIMENT_ALERT_MAX_COOLDOWN_HOURS} horas (7 dias)`,
     )
     .optional(),
+
+  /** Gravação das ligações do "Ligar" (ADR 0043). */
+  callRecordingEnabled: z.boolean().optional(),
+  /** Aviso que o atendente lê ao contato; vazio/nulo = texto padrão. */
+  callRecordingNotice: z
+    .string()
+    .trim()
+    .max(
+      CALL_RECORDING_NOTICE_MAX,
+      `O aviso pode ter até ${CALL_RECORDING_NOTICE_MAX} caracteres`,
+    )
+    .nullable()
+    .optional(),
+  callRecordingRetentionDays: z
+    .number()
+    .int('Informe um número inteiro de dias')
+    .min(
+      CALL_RECORDING_MIN_RETENTION_DAYS,
+      'Guarde o áudio por pelo menos 1 dia',
+    )
+    .max(
+      CALL_RECORDING_MAX_RETENTION_DAYS,
+      `Máximo de ${CALL_RECORDING_MAX_RETENTION_DAYS} dias (5 anos)`,
+    )
+    .optional(),
+  callTranscriptionEnabled: z.boolean().optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

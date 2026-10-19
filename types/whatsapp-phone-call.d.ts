@@ -20,4 +20,44 @@ export interface WhatsAppPhoneCallDTO {
   endedAt: string | null
   durationSeconds: number | null
   createdAt: string
+  /** Notice the agent reads to the contact; set only on recorded calls. */
+  recordingNotice: string | null
+  hasRecording: boolean
+  aiStatus: WhatsAppPhoneCallAiStatusDTO
+}
+
+/** Transcription + summary of a call recording (ADR 0043). */
+export type WhatsAppPhoneCallAiStatusDTO =
+  | 'NONE'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'DONE'
+  | 'SKIPPED'
+  | 'FAILED'
+
+/**
+ * A call as the timelines show it (conversation, ticket, CRM record): the
+ * live fields plus the recording, transcript, summary and record links.
+ */
+export interface PhoneCallRecordDTO extends WhatsAppPhoneCallDTO {
+  userName: string | null
+  contactName: string | null
+  recording: {
+    mimeType: string
+    sizeBytes: number
+    /** The retention job deletes the audio after this. */
+    expiresAt: string | null
+  } | null
+  transcript: string | null
+  summary: string | null
+  sentiment: 'NEGATIVE' | 'NEUTRAL' | 'POSITIVE' | null
+  sentimentScore: number | null
+  nextSteps: string[]
+  aiModel: string | null
+  /** Machine code of why the AI step was skipped or failed. */
+  aiSkipReason: string | null
+  aiProcessedAt: string | null
+  sdTicketId: string | null
+  crmPersonId: string | null
+  crmOpportunityId: string | null
 }

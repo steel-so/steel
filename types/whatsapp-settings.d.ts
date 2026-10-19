@@ -11,4 +11,10 @@ export interface WhatsAppSettingsDTO {
   sentimentAlertRecipientIds: string[]
   sentimentAlertAssignToId: string | null
   sentimentAlertCooldownHours: number
+  /** Gravação das ligações do "Ligar" (desligada por padrão). */
+  callRecordingEnabled: boolean
+  /** Aviso efetivo (o salvo ou o padrão) que o atendente lê ao contato. */
+  callRecordingNotice: string
+  callRecordingRetentionDays: number
+  callTranscriptionEnabled: boolean
 }

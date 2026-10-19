@@ -143,6 +143,11 @@ export async function scheduleDataRetentionJobs(): Promise<void> {
     { name: DataRetentionJob.PruneDeadIntegrationGrants, data: {} },
   )
 
+  await queue.upsertJobScheduler(DataRetentionJob.PurgeCallRecordings, repeat, {
+    name: DataRetentionJob.PurgeCallRecordings,
+    data: {},
+  })
+
   logger.info('queue.scheduler.data_retention_registered', {
     component: 'Worker',
     pattern: RetentionCron.dataRetention,
@@ -154,6 +159,7 @@ export async function scheduleDataRetentionJobs(): Promise<void> {
       DataRetentionJob.CleanupWebhookDeliveries,
       DataRetentionJob.CleanupApiTokens,
       DataRetentionJob.PruneDeadIntegrationGrants,
+      DataRetentionJob.PurgeCallRecordings,
     ],
   })
 }
