@@ -47,11 +47,16 @@ vi.mock('@/src/lib/servicedesk/slack-client', () => ({
 vi.mock('@/src/lib/servicedesk/github-client', () => ({
   GithubClient: { checkRepo: vi.fn() },
 }))
+vi.mock('@/src/lib/integrations/apollo-client', () => ({
+  ApolloClient: { health: vi.fn() },
+}))
 vi.mock('@/src/lib/integrations/gitlab-client', () => ({
   GitlabClient: { checkProject: vi.fn() },
 }))
 
 import { auditAuth, auditMutation } from '@/lib/axiom/audit'
+import { createFakeApolloIntegration } from '@/src/__tests__/factories/crm-apollo.factory'
+import { ApolloClient } from '@/src/lib/integrations/apollo-client'
 import { GitlabClient } from '@/src/lib/integrations/gitlab-client'
 import { GithubClient } from '@/src/lib/servicedesk/github-client'
 import {
@@ -169,8 +174,10 @@ describe('WorkspaceIntegrationService.overview', () => {
       'SLACK',
       'GITHUB',
       'GITLAB',
+      'APOLLO',
     ])
-    const [slackP, githubP, gitlabP] = view.providers
+    const [slackP, githubP, gitlabP, apolloP] = view.providers
+    expect(apolloP).toMatchObject({ available: true, webhookUrl: null })
     expect(slackP.available).toBe(true)
     expect(slackP.webhookUrl).toMatch(
       /\/api\/servicedesk\/integrations\/slack$/,
@@ -782,6 +789,33 @@ describe('WorkspaceIntegrationService.test', () => {
       await WorkspaceIntegrationService.test('u1', WS, 'SLACK'),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('WorkspaceIntegrationService.test — Apollo', () => {
+  it('validates the key without needing a webhook secret', async () => {
+    repo.requireByKind.mockResolvedValue(
+      ok(createFakeApolloIntegration({ encryptedSigningSecret: null })),
+    )
+    vi.mocked(ApolloClient.health).mockResolvedValue(
+      ok({ data: { healthy: true }, rateLimit: {} as never }),
+    )
+    const result = expectOk(
+      await WorkspaceIntegrationService.test('u1', WS, 'APOLLO'),
+    )
+    expect(result.ok).toBe(true)
+    expect(result.message).toContain('Apollo')
+  })
+
+  it('reports a rejected key as a failed test', async () => {
+    repo.requireByKind.mockResolvedValue(ok(createFakeApolloIntegration()))
+    vi.mocked(ApolloClient.health).mockResolvedValue(
+      err({ code: 'CRM_APOLLO_INVALID_KEY', message: 'chave recusada' }),
+    )
+    const result = expectOk(
+      await WorkspaceIntegrationService.test('u1', WS, 'APOLLO'),
+    )
+    expect(result).toMatchObject({ ok: false, message: 'chave recusada' })
   })
 })
 

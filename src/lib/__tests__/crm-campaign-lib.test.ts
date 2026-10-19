@@ -233,6 +233,25 @@ describe('audience snapshot', () => {
     expect(counts.whatsapp).toEqual({ reachable: 2, optedOut: 1, missing: 0 })
   })
 
+  it('should never send WhatsApp to blocked (Apollo) leads but keep e-mail', () => {
+    const { rows } = buildCampaignAudience(
+      [
+        {
+          leadId: 'l1',
+          name: 'Cold',
+          email: 'cold@x.com',
+          phone: '11999990001',
+          whatsappBlocked: true,
+        },
+      ],
+      none,
+      { whatsappEnabled: true },
+    )
+    expect(rows[0].waId).toBeNull()
+    expect(rows[0].whatsappState).toEqual({ status: 'NONE', skipReason: null })
+    expect(rows[0].emailState.status).toBe('PENDING')
+  })
+
   it('should leave WhatsApp off when disabled', () => {
     const { rows, counts } = buildCampaignAudience(
       [{ personId: 'p1', name: 'A', email: 'a@x.com', phone: '11999990001' }],

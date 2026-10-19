@@ -341,3 +341,34 @@ describe('CRM notifications', () => {
     )
   })
 })
+
+describe('notifyCrmApolloImportDone', () => {
+  it('sends one summary to the creator with a per-import dedupe key', async () => {
+    const { notifyCrmApolloImportDone } = await import('../crm-notifications')
+    await notifyCrmApolloImportDone({
+      workspaceId: 'ws1',
+      importId: 'i1',
+      recipientId: 'u1',
+      created: 1,
+      skipped: 2,
+      failed: 0,
+    })
+    expect(lastCall()).toEqual(
+      expect.objectContaining({
+        kind: 'CRM_APOLLO_IMPORT_DONE',
+        recipients: ['u1'],
+        dedupeKey: 'crm-apollo-import:i1',
+        title: 'Importação da Apollo concluída: 1 lead criado',
+      }),
+    )
+    await notifyCrmApolloImportDone({
+      workspaceId: 'ws1',
+      importId: 'i2',
+      recipientId: 'u1',
+      created: 3,
+      skipped: 0,
+      failed: 0,
+    })
+    expect(lastCall()?.title).toContain('3 leads criados')
+  })
+})

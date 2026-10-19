@@ -12,11 +12,12 @@ import {
 const TOKEN = 'github_pat_11ABCDEFG0123456789'
 
 describe('WorkspaceIntegrationKindEnum', () => {
-  it('has the three providers', () => {
+  it('has the four providers', () => {
     expect(WorkspaceIntegrationKindEnum.options).toEqual([
       'SLACK',
       'GITHUB',
       'GITLAB',
+      'APOLLO',
     ])
   })
 })
