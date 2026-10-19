@@ -1,6 +1,7 @@
 'use client'
 
 import { type FormEvent, useEffect, useState } from 'react'
+import { AiEvalGuard } from '@/app/_components/steel-ai-evals/ai-eval-guard'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -88,6 +89,16 @@ export function WhatsappSettingsAi({ workspaceId }: { workspaceId: string }) {
           onChange={(event) => setSystemPrompt(event.target.value)}
         />
       </div>
+
+      <AiEvalGuard
+        workspaceId={workspaceId}
+        target='WHATSAPP_REPLY'
+        candidate={{ promptOverride: systemPrompt }}
+        reason='prompt_change'
+        changed={
+          aiConfig.data ? systemPrompt !== aiConfig.data.systemPrompt : false
+        }
+      />
 
       <Button type='submit' disabled={saveAiConfig.isPending}>
         {saveAiConfig.isPending ? 'Salvando...' : 'Salvar configuração'}

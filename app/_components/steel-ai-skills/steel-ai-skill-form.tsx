@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { AiEvalGuard } from '@/app/_components/steel-ai-evals/ai-eval-guard'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -88,6 +89,7 @@ export function validateSkillForm(state: FormState): Errors {
  * a workspace skill a member cannot change).
  */
 export function SteelAiSkillForm({
+  workspaceId,
   skill,
   initial,
   canManageWorkspace,
@@ -98,6 +100,8 @@ export function SteelAiSkillForm({
   onSubmit,
   onCancel,
 }: {
+  /** Enables "rodar avaliação antes de alterar" on an existing skill. */
+  workspaceId?: string
   skill?: AiSkillDTO
   /** New skill only: pre-filled values. */
   initial?: SteelAiSkillFormInitial
@@ -254,6 +258,15 @@ export function SteelAiSkillForm({
           />
           <FieldError>{errors.instructions}</FieldError>
         </Field>
+        {workspaceId && skill && skill.kind !== 'BUILT_IN' && !readOnly ? (
+          <AiEvalGuard
+            workspaceId={workspaceId}
+            target='STEEL_ASSISTANT'
+            candidate={{ skillId: skill.id }}
+            reason='skill_change'
+            changed={state.instructions.trim() !== skill.instructions.trim()}
+          />
+        ) : null}
         <Field>
           <FieldLabel>Modo ao usar</FieldLabel>
           <Select

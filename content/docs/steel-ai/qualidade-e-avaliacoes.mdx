@@ -1,0 +1,116 @@
+---
+title: Qualidade e avaliações
+description: Como avaliar as respostas da IA com 👍/👎, o painel de qualidade em Análises e os conjuntos de teste para rodar antes de trocar o modelo, o prompt ou uma skill.
+section: steel-ai
+order: 7
+---
+
+A IA do Steel responde em muitos lugares: o chat do Steel AI, os Steel Agents,
+o copiloto, a triagem e o rascunho de artigo do ServiceDesk e a resposta
+automática do WhatsApp. Esta página mostra como saber se ela está acertando.
+
+## Avaliar uma resposta
+
+Abaixo de cada resposta da IA aparecem dois botões:
+
+- **👍 Resposta útil**: um clique registra; outro clique desfaz.
+- **👎 Resposta não ajudou**: abre um quadro com o motivo (informação errada,
+  incompleta, não respondeu o que pedi, tom inadequado, expôs dado ou fez algo
+  indevido, outro) e um comentário opcional. Clique em **Enviar**.
+
+Cada pessoa tem uma avaliação por resposta: avaliar de novo substitui a
+anterior. Onde os botões aparecem:
+
+| Onde | O que você avalia |
+| --- | --- |
+| Chat do Steel AI | Cada resposta da conversa |
+| Steel Agents | A execução, na tela da execução |
+| Copiloto do ServiceDesk | O resumo, a sugestão de resposta, o rascunho da solução, a classificação e cada resposta do chat do copiloto |
+| Triagem do ServiceDesk | A triagem automática feita na abertura do chamado |
+| Rascunho de artigo (KCS) | O rascunho que a IA escreveu a partir do chamado, no painel **Revisão e detalhes** do artigo |
+| WhatsApp | Cada mensagem enviada pela IA na conversa |
+
+<Callout type='aviso'>
+  Evite colocar dados pessoais de clientes no comentário. Quem administra o
+  workspace vê as avaliações para melhorar a IA. As avaliações saem junto com a
+  conta de quem avaliou.
+</Callout>
+
+## Painel de qualidade
+
+Em **Steel AI › Análises**, escolha a aba **Qualidade**. Com o mesmo filtro de
+período das análises de gasto, você vê:
+
+- a **aprovação**: a parcela de 👍 entre as avaliações;
+- a aprovação **por dia**, **por superfície** (chat, agentes, ServiceDesk,
+  WhatsApp) e **por modelo**;
+- as **piores respostas**: os 👎 mais recentes, com motivo, comentário e o link
+  para a resposta quando ela pode ser aberta.
+
+Qualquer membro vê as próprias avaliações. Na visão **Espaço de trabalho**
+(dono e administradores) aparecem também quem avaliou e:
+
+- **Resolvidas sem humano**: no WhatsApp, as conversas fechadas em que só a IA
+  respondeu; no ServiceDesk, os pré-atendimentos que a base de conhecimento
+  resolveu.
+- **Custo por resolução**: o gasto da funcionalidade no período dividido pelas
+  resoluções.
+
+O botão **Exportar CSV** baixa as avaliações linha a linha ou os totais por
+superfície e por modelo.
+
+## Conjuntos de teste
+
+<Callout type='admin'>
+  Só o dono e os administradores criam e rodam conjuntos de teste. Cada
+  execução gasta a cota de IA do workspace.
+</Callout>
+
+Um **conjunto de teste** é uma lista de perguntas com a resposta que você
+espera. Em **Steel AI › Avaliações**, clique em **Novo conjunto** e escolha o
+que avaliar:
+
+- **Steel AI (assistente)**: responde com as instruções do Steel AI e, se você
+  quiser, com uma skill. Nesta avaliação a IA não consulta dados do workspace:
+  ela mede o conhecimento, o tom e o seguimento das instruções.
+- **Resposta automática do WhatsApp**: responde com o prompt e os documentos
+  de conhecimento da IA do WhatsApp.
+
+Depois, adicione os casos. Cada caso tem a **pergunta** e pelo menos uma forma
+de correção:
+
+- **Resposta esperada**: o conteúdo de uma boa resposta (não precisa ser
+  literal);
+- **Critérios**: o que a resposta precisa ou não pode fazer;
+- **Deve conter** e **Não pode conter**: textos que a resposta precisa ter ou
+  não pode ter, um por linha, sem diferenciar maiúsculas e acentos.
+
+Com resposta esperada ou critério, um modelo juiz dá uma nota de 0 a 1. O caso
+**passa** com nota 0,7 ou mais e todas as verificações de texto. Um conjunto
+tem até 50 casos; o workspace, até 20 conjuntos.
+
+Para aproveitar uma conversa real, use o botão **Salvar como caso de teste**
+abaixo de uma resposta do chat: a pergunta anterior vira o caso e a resposta, a
+esperada. Revise a resposta esperada antes de rodar.
+
+### Rodar uma avaliação
+
+Na tela do conjunto, clique em **Rodar avaliação** e escolha o modelo (o padrão
+atual ou outro habilitado). A avaliação roda em segundo plano e a tela atualiza
+sozinha. Em cada execução você vê quantos casos passaram, a nota média, o
+custo e, caso a caso, a resposta, as verificações que falharam e a
+justificativa do juiz.
+
+### Antes de trocar
+
+Três telas mostram o último resultado e o botão **Rodar avaliação antes de
+trocar**:
+
+- **Ajustes › Steel IA**, no modelo padrão do Steel AI e da resposta automática
+  do WhatsApp: roda com o modelo escolhido, antes de salvar;
+- **WhatsApp › Configurações › IA**, nas instruções da IA: roda com o texto
+  ainda não salvo;
+- **Skills**, ao editar uma skill: roda os conjuntos do Steel AI com a skill.
+
+Compare o resultado com a execução anterior em **Steel AI › Avaliações** e só
+então salve a troca.

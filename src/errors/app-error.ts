@@ -1577,3 +1577,37 @@ export const webhookEventUnknown = (
 export const aiKnowledgeEmbeddingFailed = (
   message = 'Falha ao gerar os embeddings da busca de conhecimento.',
 ): AppError => appError('AI_KNOWLEDGE_EMBEDDING_FAILED', message)
+
+// Steel AI quality (ADR 0039).
+export const aiFeedbackNotFound = (): AppError =>
+  appError('AI_FEEDBACK_NOT_FOUND', 'Avaliação não encontrada')
+
+export const aiFeedbackTargetNotFound = (): AppError =>
+  appError(
+    'AI_FEEDBACK_TARGET_NOT_FOUND',
+    'Resposta da IA não encontrada ou fora do seu acesso',
+  )
+
+export const aiEvalSetNotFound = (): AppError =>
+  appError('AI_EVAL_SET_NOT_FOUND', 'Conjunto de teste não encontrado')
+
+export const aiEvalCaseNotFound = (): AppError =>
+  appError('AI_EVAL_CASE_NOT_FOUND', 'Caso de teste não encontrado')
+
+export const aiEvalRunNotFound = (): AppError =>
+  appError('AI_EVAL_RUN_NOT_FOUND', 'Execução da avaliação não encontrada')
+
+export const aiEvalLimitReached = (message: string): AppError =>
+  appError('AI_EVAL_LIMIT_REACHED', message)
+
+export const aiEvalSetEmpty = (): AppError =>
+  appError(
+    'AI_EVAL_SET_EMPTY',
+    'Adicione pelo menos um caso de teste antes de rodar a avaliação',
+  )
+
+export const aiEvalRunInProgress = (): AppError =>
+  appError(
+    'AI_EVAL_RUN_IN_PROGRESS',
+    'Já existe uma avaliação deste conjunto em andamento. Aguarde terminar.',
+  )

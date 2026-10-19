@@ -17,6 +17,7 @@ import { registerSettingsExportsWorklogsPaths } from './paths/settings-exports-w
 import { registerSteelAgentsPaths } from './paths/steel-agents'
 import { registerSteelAiPaths } from './paths/steel-ai'
 import { registerSteelAiKnowledgePaths } from './paths/steel-ai-knowledge'
+import { registerSteelAiQualityPaths } from './paths/steel-ai-quality'
 import { registerSteelAiSkillsPaths } from './paths/steel-ai-skills'
 import { registerSteelAiTemplatesPaths } from './paths/steel-ai-templates'
 import { registerSteelAiUsagePaths } from './paths/steel-ai-usage'
@@ -42,6 +43,7 @@ export function createRegistry(): OpenApiRegistry {
   registerSteelAiPaths(registry)
   registerSteelAiKnowledgePaths(registry)
   registerSteelAiUsagePaths(registry)
+  registerSteelAiQualityPaths(registry)
   registerSteelAiSkillsPaths(registry)
   registerSteelAiTemplatesPaths(registry)
   registerSteelAgentsPaths(registry)

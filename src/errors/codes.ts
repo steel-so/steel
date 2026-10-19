@@ -570,6 +570,18 @@ export const ERROR_CODES = {
   },
   STEEL_AGENT_INVALID_OWNER: { code: 'STEEL_AGENT_INVALID_OWNER', status: 422 },
   STEEL_AGENT_DISABLED: { code: 'STEEL_AGENT_DISABLED', status: 409 },
+  // Steel AI quality (ADR 0039): feedback on AI answers and eval sets.
+  AI_FEEDBACK_NOT_FOUND: { code: 'AI_FEEDBACK_NOT_FOUND', status: 404 },
+  AI_FEEDBACK_TARGET_NOT_FOUND: {
+    code: 'AI_FEEDBACK_TARGET_NOT_FOUND',
+    status: 404,
+  },
+  AI_EVAL_SET_NOT_FOUND: { code: 'AI_EVAL_SET_NOT_FOUND', status: 404 },
+  AI_EVAL_CASE_NOT_FOUND: { code: 'AI_EVAL_CASE_NOT_FOUND', status: 404 },
+  AI_EVAL_RUN_NOT_FOUND: { code: 'AI_EVAL_RUN_NOT_FOUND', status: 404 },
+  AI_EVAL_LIMIT_REACHED: { code: 'AI_EVAL_LIMIT_REACHED', status: 409 },
+  AI_EVAL_SET_EMPTY: { code: 'AI_EVAL_SET_EMPTY', status: 422 },
+  AI_EVAL_RUN_IN_PROGRESS: { code: 'AI_EVAL_RUN_IN_PROGRESS', status: 409 },
 
   // ServiceDesk (ITIL)
   SD_TICKET_NOT_FOUND: { code: 'SD_TICKET_NOT_FOUND', status: 404 },

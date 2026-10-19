@@ -111,6 +111,21 @@ async function buildKnowledgeBaseSection(workspaceId: string): Promise<string> {
   return `\n\nBase de conhecimento (use como referência para responder; não mencione que são "documentos anexados"):\n${sections.join('\n\n')}`
 }
 
+/**
+ * Auto-reply system prompt without the per-message parts (button
+ * instruction, tools) — what the eval runner answers with (ADR 0039).
+ */
+export async function buildWhatsAppAiReplySystem(
+  workspaceId: string,
+  systemPrompt: string,
+): Promise<string> {
+  return (
+    systemPrompt +
+    HANDOFF_SYSTEM_INSTRUCTION +
+    (await buildKnowledgeBaseSection(workspaceId))
+  )
+}
+
 async function lookupUpcomingAppointment(
   contactId: string,
 ): Promise<AppointmentToolResult> {

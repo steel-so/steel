@@ -13,6 +13,7 @@ import { SteelAiProvider } from '@/app/_components/steel-ai/steel-ai-context'
 import { SteelAiHistory } from '@/app/_components/steel-ai/steel-ai-history'
 import { SteelIcon } from '@/components/icon/icon'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { isPrivilegedRole } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
@@ -41,7 +42,12 @@ export default async function AiLayout({
 
   return (
     <SteelAiProvider
-      value={{ workspaceId: membership.value.workspaceId, slug, firstName }}
+      value={{
+        workspaceId: membership.value.workspaceId,
+        slug,
+        firstName,
+        isAdmin: isPrivilegedRole(membership.value.role),
+      }}
     >
       <div className='hidden h-full shrink-0 md:block'>
         <ContextSidebar>

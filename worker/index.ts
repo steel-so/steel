@@ -9,6 +9,7 @@ import {
 } from '../src/lib/queue/failure-listener'
 import { QueueName } from '../src/lib/queue/jobs'
 import { processAccountLifecycle } from '../src/lib/queue/processors/account-lifecycle'
+import { processAiEval } from '../src/lib/queue/processors/ai-eval'
 import { processAiIndex } from '../src/lib/queue/processors/ai-index'
 import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-weekly-email'
 import { processChangelog } from '../src/lib/queue/processors/changelog'
@@ -263,6 +264,7 @@ async function main(): Promise<void> {
       concurrency: 10,
     }),
   )
+  workers.push(registerWorker(QueueName.AiEval, processAiEval))
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),

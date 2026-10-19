@@ -1,9 +1,13 @@
 'use client'
 
 import { AiMagicIcon } from '@hugeicons-pro/core-stroke-rounded'
+import type { ReactNode } from 'react'
+import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
+import { SaveAsEvalCaseButton } from '@/app/_components/steel-ai-quality/save-as-eval-case'
 import { SteelIcon } from '@/components/icon/icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { feedbackKey, useMyAiFeedback } from '@/src/hooks/use-ai-feedback'
 import type { SteelAiLiveMessage } from '@/src/lib/steel-ai-stream'
 import type {
   AiAttachmentDTO,
@@ -13,6 +17,7 @@ import type {
 } from '@/types/steel-ai'
 import { SteelAiMessageAttachments } from './steel-ai-attachments'
 import { citationsOf, SteelAiCitations } from './steel-ai-citations'
+import { useOptionalSteelAiWorkspace } from './steel-ai-context'
 import { SteelAiExecutedActionCard } from './steel-ai-executed-action-card'
 import { SteelAiMarkdown } from './steel-ai-markdown'
 import { SteelAiMemoryChip } from './steel-ai-memory-chip'
@@ -73,6 +78,7 @@ function AssistantBlock({
   streaming,
   footer,
   runForReal,
+  actions,
 }: {
   workspaceId: string
   content: string
@@ -81,6 +87,8 @@ function AssistantBlock({
   streaming?: boolean
   footer?: string | null
   runForReal?: SteelAiRunForReal
+  /** Feedback row of a persisted answer. */
+  actions?: ReactNode
 }) {
   const thinking = streaming && !content && toolCalls.length === 0
   const simulated = toolCalls.filter(
@@ -168,6 +176,7 @@ function AssistantBlock({
         {footer ? (
           <p className='text-muted-foreground text-xs italic'>{footer}</p>
         ) : null}
+        {actions}
       </div>
     </div>
   )
@@ -209,6 +218,11 @@ export function SteelAiTranscript({
   runForReal?: SteelAiRunForReal
 }) {
   const lastId = live ? null : messages.at(-1)?.id
+  const isAdmin = useOptionalSteelAiWorkspace()?.isAdmin ?? false
+  const rated = messages
+    .filter((m) => m.role === 'ASSISTANT' && m.content.trim())
+    .map((m) => m.id)
+  const feedback = useMyAiFeedback(workspaceId, 'STEEL_AI_MESSAGE', rated)
   return (
     <div className='space-y-6 sm:space-y-8'>
       {messages.map((message) =>
@@ -226,6 +240,30 @@ export function SteelAiTranscript({
             toolCalls={message.toolCalls}
             pendingActions={message.pendingActions}
             runForReal={message.id === lastId ? runForReal : undefined}
+            actions={
+              message.content.trim() ? (
+                <div className='flex flex-wrap items-center gap-1'>
+                  <AiFeedbackButtons
+                    workspaceId={workspaceId}
+                    surface='STEEL_AI_MESSAGE'
+                    targetId={message.id}
+                    feedback={
+                      feedback.data
+                        ? (feedback.data.get(feedbackKey(message.id)) ?? null)
+                        : feedback.isError
+                          ? null
+                          : undefined
+                    }
+                  />
+                  {isAdmin ? (
+                    <SaveAsEvalCaseButton
+                      workspaceId={workspaceId}
+                      messageId={message.id}
+                    />
+                  ) : null}
+                </div>
+              ) : null
+            }
           />
         ),
       )}

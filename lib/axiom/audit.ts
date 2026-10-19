@@ -208,6 +208,12 @@ export type AuditEntity =
   // Outbound webhooks (ADR 0036): endpoints and manual re-deliveries
   | 'webhook_endpoint'
   | 'webhook_delivery'
+  // Steel AI quality (ADR 0039): feedback, eval sets/cases/runs, CSV
+  | 'ai_feedback'
+  | 'ai_eval_set'
+  | 'ai_eval_case'
+  | 'ai_eval_run'
+  | 'ai_quality'
 
 export type AuditAction =
   | 'create'

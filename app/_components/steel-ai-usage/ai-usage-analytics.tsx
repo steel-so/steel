@@ -3,6 +3,7 @@
 import { Download01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
 import { SteelAiTopBar } from '@/app/_components/steel-ai/steel-ai-top-bar'
+import { AiQualityBody } from '@/app/_components/steel-ai-quality/ai-quality-panel'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +33,11 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import {
+  type AiQualityExportView,
+  aiQualityExportUrl,
+  useAiQuality,
+} from '@/src/hooks/use-ai-feedback'
 import {
   type AiUsageExportView,
   type AiUsageFilter,
@@ -82,6 +88,14 @@ const EXPORTS: {
   { view: 'user', label: 'Totais por usuário', workspaceOnly: true },
 ]
 
+const QUALITY_EXPORTS: { view: AiQualityExportView; label: string }[] = [
+  { view: 'feedback', label: 'Todas as avaliações (linha a linha)' },
+  { view: 'surface', label: 'Aprovação por superfície' },
+  { view: 'model', label: 'Aprovação por modelo' },
+]
+
+type AnalyticsView = 'spend' | 'quality'
+
 function isDay(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value)
 }
@@ -95,6 +109,7 @@ export function AiUsageAnalytics({
   /** OWNER/ADMIN (resolved on the server): may open the workspace view. */
   canViewWorkspace: boolean
 }) {
+  const [view, setView] = useState<AnalyticsView>('spend')
   const [scope, setScope] = useState<AiUsageScope>('personal')
   const [period, setPeriod] = useState<AiUsagePeriodPreset>('this_month')
   const [from, setFrom] = useState('')
@@ -102,11 +117,27 @@ export function AiUsageAnalytics({
   const customReady = isDay(from) && isDay(to) && from <= to
   const filter: AiUsageFilter =
     period === 'custom' ? { scope, period, from, to } : { scope, period }
+  const ready = period !== 'custom' || customReady
   const analytics = useAiUsageAnalytics(
     workspaceId,
     filter,
-    period !== 'custom' || customReady,
+    ready && view === 'spend',
   )
+  const quality = useAiQuality(workspaceId, filter, ready && view === 'quality')
+  const exports =
+    view === 'spend'
+      ? EXPORTS.filter((e) => !e.workspaceOnly || scope === 'workspace').map(
+          (e) => ({
+            key: e.view,
+            label: e.label,
+            url: aiUsageExportUrl(workspaceId, filter, e.view),
+          }),
+        )
+      : QUALITY_EXPORTS.map((e) => ({
+          key: e.view,
+          label: e.label,
+          url: aiQualityExportUrl(workspaceId, filter, e.view),
+        }))
 
   return (
     <div className={cn('flex h-full min-h-0 w-full flex-col', VIZ_VARS)}>
@@ -116,11 +147,23 @@ export function AiUsageAnalytics({
           <header className='space-y-1'>
             <h1 className='font-semibold text-lg'>Análises</h1>
             <p className='max-w-prose text-muted-foreground text-sm'>
-              Para onde vai o gasto com IA: por modelo, recurso, escopo e — para
-              administradores — por pessoa. Valores em US$ pelo preço real; dias
-              em UTC.
+              {view === 'spend'
+                ? 'Para onde vai o gasto com IA: por modelo, recurso, escopo e — para administradores — por pessoa. Valores em US$ pelo preço real; dias em UTC.'
+                : 'Se a IA acerta: aprovação das respostas (👍/👎) por superfície e modelo, resolução sem humano, custo por resolução e as piores respostas. Dias em UTC.'}
             </p>
           </header>
+
+          <Tabs
+            value={view}
+            onValueChange={(value) =>
+              setView(value === 'quality' ? 'quality' : 'spend')
+            }
+          >
+            <TabsList aria-label='Análise'>
+              <TabsTrigger value='spend'>Gasto</TabsTrigger>
+              <TabsTrigger value='quality'>Qualidade</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div className='flex flex-wrap items-end gap-3'>
             {canViewWorkspace ? (
@@ -212,19 +255,15 @@ export function AiUsageAnalytics({
                     <DropdownMenuLabel>
                       {scope === 'workspace'
                         ? 'Espaço de trabalho'
-                        : 'Só o seu consumo'}{' '}
+                        : view === 'spend'
+                          ? 'Só o seu consumo'
+                          : 'Só as suas avaliações'}{' '}
                       · {PERIOD_LABELS[period].toLowerCase()}
                     </DropdownMenuLabel>
-                    {EXPORTS.filter(
-                      (e) => !e.workspaceOnly || scope === 'workspace',
-                    ).map((e) => (
+                    {exports.map((e) => (
                       <DropdownMenuItem
-                        key={e.view}
-                        onClick={() =>
-                          window.location.assign(
-                            aiUsageExportUrl(workspaceId, filter, e.view),
-                          )
-                        }
+                        key={e.key}
+                        onClick={() => window.location.assign(e.url)}
                       >
                         {e.label}
                       </DropdownMenuItem>
@@ -239,6 +278,25 @@ export function AiUsageAnalytics({
             <EmptyState>
               Escolha o início e o fim do período (até 366 dias).
             </EmptyState>
+          ) : view === 'quality' ? (
+            quality.isLoading ? (
+              <AnalyticsSkeleton />
+            ) : quality.data ? (
+              <div
+                className={cn(
+                  'transition-opacity',
+                  quality.isPlaceholderData && 'opacity-60',
+                )}
+              >
+                <AiQualityBody data={quality.data} />
+              </div>
+            ) : (
+              <p className='text-destructive text-sm'>
+                {quality.error instanceof Error
+                  ? quality.error.message
+                  : 'Não foi possível carregar a qualidade da IA.'}
+              </p>
+            )
           ) : analytics.isLoading ? (
             <AnalyticsSkeleton />
           ) : analytics.data ? (

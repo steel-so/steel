@@ -133,6 +133,9 @@ model User {
   steelAgentsOwned                   SteelAgent[]                  @relation("SteelAgentOwner")
   steelAgentsCreated                 SteelAgent[]                  @relation("SteelAgentCreatedBy")
   steelAgentRunsStarted              SteelAgentRun[]               @relation("SteelAgentRunStartedBy")
+  aiFeedback                         AiFeedback[]                  @relation("AiFeedbackUser")
+  aiEvalSetsCreated                  AiEvalSet[]                   @relation("AiEvalSetCreatedBy")
+  aiEvalRunsStarted                  AiEvalRun[]                   @relation("AiEvalRunStartedBy")
   crmIntegrationApiKeysCreated       CrmIntegrationApiKey[]        @relation("CrmIntegrationApiKeyCreatedBy")
   crmEmailTemplatesCreated           CrmEmailTemplate[]            @relation("CrmEmailTemplateCreatedBy")
   crmEmailTemplatesUpdated           CrmEmailTemplate[]            @relation("CrmEmailTemplateUpdatedBy")
@@ -483,6 +486,9 @@ model Workspace {
   aiActionLogs              AiActionLog[]
   aiSkills                  AiSkill[]
   aiMemories                AiMemory[]
+  aiFeedback                AiFeedback[]
+  aiEvalSets                AiEvalSet[]
+  aiEvalRuns                AiEvalRun[]
   steelAgents               SteelAgent[]
   steelAgentRuns            SteelAgentRun[]
   crmIntegrationApiKeys     CrmIntegrationApiKey[]
@@ -4233,6 +4239,8 @@ enum AiUsageFeature {
   WIKI_ASSISTANT
   /// Embeddings of the Steel AI knowledge index (indexing and queries).
   KNOWLEDGE_SEARCH
+  /// Eval runs (ADR 0039): the evaluated answer and the LLM judge.
+  AI_EVAL
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -4552,6 +4560,178 @@ model AiMemory {
   @@index([workspaceId, scope])
   @@index([workspaceId, userId])
   @@map("ai_memories")
+}
+
+// ─── Steel AI — avaliação e feedback (ADR 0039) ──────────────────────────────
+
+/// Where an AI answer was shown. `targetId` points at a different record
+/// per surface: AiMessage (STEEL_AI_MESSAGE), SteelAgentRun
+/// (STEEL_AGENT_RUN), SdTicket (SD_COPILOT, SD_TRIAGE), SdKbArticle
+/// (SD_KCS_DRAFT), WhatsAppMessage sent by the AI (WHATSAPP_AUTO_REPLY).
+enum AiFeedbackSurface {
+  STEEL_AI_MESSAGE
+  STEEL_AGENT_RUN
+  SD_COPILOT
+  SD_TRIAGE
+  SD_KCS_DRAFT
+  WHATSAPP_AUTO_REPLY
+}
+
+enum AiFeedbackRating {
+  UP
+  DOWN
+}
+
+/// One person's thumbs up/down on one AI answer (one row per user, surface,
+/// target and variant; rating again replaces it). `reason`/`comment` may
+/// carry personal data: the rows go with the user (cascade).
+model AiFeedback {
+  id          String            @id @default(cuid())
+  workspaceId String            @map("workspace_id")
+  userId      String            @map("user_id")
+  surface     AiFeedbackSurface
+  targetId    String            @map("target_id")
+  /// Sub-answer of the target (copilot `summary` | `reply` | `solution` |
+  /// `classification`); empty when the target has a single answer.
+  variant     String            @default("")
+  rating      AiFeedbackRating
+  /// Preset reason code (see AI_FEEDBACK_REASONS), optional.
+  reason      String?
+  comment     String?           @db.Text
+  /// "<provider>:<model>" that produced the answer, resolved by the server.
+  modelKey    String?           @map("model_key")
+  module      ModuleKind?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation("AiFeedbackUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, surface, targetId, variant])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, surface, targetId])
+  @@map("ai_feedback")
+}
+
+/// What an eval set exercises: the Steel AI assistant (optionally with a
+/// skill) or the WhatsApp auto-reply prompt + knowledge documents.
+enum AiEvalTarget {
+  STEEL_ASSISTANT
+  WHATSAPP_REPLY
+}
+
+/// A workspace's test set: questions with the expected answer/criteria.
+model AiEvalSet {
+  id          String       @id @default(cuid())
+  workspaceId String       @map("workspace_id")
+  name        String
+  description String?
+  target      AiEvalTarget
+  /// STEEL_ASSISTANT only: skill applied to every case (null = none).
+  skillId     String?      @map("skill_id")
+  createdById String?      @map("created_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation("AiEvalSetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  cases     AiEvalCase[]
+  runs      AiEvalRun[]
+
+  @@index([workspaceId, target])
+  @@map("ai_eval_sets")
+}
+
+/// One test case: the question and how to grade the answer (expected
+/// answer and/or criteria for the LLM judge, plus simple text checks).
+model AiEvalCase {
+  id              String   @id @default(cuid())
+  setId           String   @map("set_id")
+  input           String   @db.Text
+  expected        String?  @db.Text
+  criteria        String?  @db.Text
+  mustContain     String[] @map("must_contain")
+  mustNotContain  String[] @map("must_not_contain")
+  /// Steel AI message the case was saved from ("salvar como caso de teste").
+  sourceMessageId String?  @map("source_message_id")
+  position        Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  set AiEvalSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@index([setId, position])
+  @@map("ai_eval_cases")
+}
+
+enum AiEvalRunStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+/// One execution of a set against a model (and, optionally, a draft prompt
+/// or skill) — run before changing the model, the prompt or a skill.
+model AiEvalRun {
+  id             String          @id @default(cuid())
+  workspaceId    String          @map("workspace_id")
+  setId          String          @map("set_id")
+  status         AiEvalRunStatus @default(QUEUED)
+  /// Model evaluated ("<provider>:<model>"); null = the current default.
+  modelKey       String?         @map("model_key")
+  judgeModelKey  String?         @map("judge_model_key")
+  /// Draft overrides tried before saving them (null = current settings).
+  skillId        String?         @map("skill_id")
+  promptOverride String?         @map("prompt_override") @db.Text
+  /// Why it ran (`manual` | `model_change` | `prompt_change` | `skill_change`).
+  reason         String          @default("manual")
+  startedById    String?         @map("started_by_id")
+  caseCount      Int             @default(0) @map("case_count")
+  passedCount    Int             @default(0) @map("passed_count")
+  failedCount    Int             @default(0) @map("failed_count")
+  avgScore       Float?          @map("avg_score")
+  costUsd        Decimal         @default(0) @map("cost_usd") @db.Decimal(14, 6)
+  error          String?         @db.Text
+  startedAt      DateTime?       @map("started_at")
+  finishedAt     DateTime?       @map("finished_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  set       AiEvalSet      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  startedBy User?          @relation("AiEvalRunStartedBy", fields: [startedById], references: [id], onDelete: SetNull)
+  results   AiEvalResult[]
+
+  @@index([setId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("ai_eval_runs")
+}
+
+/// Grade of one case in one run. The question is snapshotted: editing or
+/// deleting the case later does not rewrite past runs.
+model AiEvalResult {
+  id             String   @id @default(cuid())
+  runId          String   @map("run_id")
+  caseId         String?  @map("case_id")
+  input          String   @db.Text
+  output         String   @db.Text
+  passed         Boolean
+  checksPassed   Boolean  @map("checks_passed")
+  failedChecks   String[] @map("failed_checks")
+  judgeScore     Float?   @map("judge_score")
+  judgePassed    Boolean? @map("judge_passed")
+  judgeRationale String?  @map("judge_rationale") @db.Text
+  inputTokens    Int      @default(0) @map("input_tokens")
+  outputTokens   Int      @default(0) @map("output_tokens")
+  costUsd        Decimal  @default(0) @map("cost_usd") @db.Decimal(14, 6)
+  error          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  run AiEvalRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@map("ai_eval_results")
 }
 
 // ─── Notificações no app ─────────────────────────────────────────────────────

@@ -431,6 +431,7 @@ export function SteelAiSkillsPage({
           </DialogHeader>
           {editing ? (
             <SteelAiSkillForm
+              workspaceId={workspaceId}
               key={
                 dialogSkill?.id ??
                 (editing.kind === 'create' ? editing.template : null) ??
