@@ -117,6 +117,43 @@ export const CrmLeadRepository = {
     }
   },
 
+  /**
+   * Appends phones to the lead imported from an external system, skipping
+   * numbers it already has (compared by digits). No intake, no notifications.
+   * `found=false` = no such lead; `added` = numbers actually appended.
+   */
+  async appendPhonesByExternalId(
+    workspaceId: string,
+    source: string,
+    externalId: string,
+    phones: string[],
+  ): Promise<Result<{ found: boolean; added: number }>> {
+    try {
+      const lead = await prisma.crmLead.findFirst({
+        where: { workspaceId, externalSource: source, externalId },
+        select: { id: true, phones: true },
+      })
+      if (!lead) return ok({ found: false, added: 0 })
+      const digits = (value: string) => value.replace(/\D/g, '')
+      const known = new Set(lead.phones.map(digits))
+      const fresh: string[] = []
+      for (const phone of phones) {
+        const key = digits(phone)
+        if (!key || known.has(key)) continue
+        known.add(key)
+        fresh.push(phone)
+      }
+      if (fresh.length === 0) return ok({ found: true, added: 0 })
+      await prisma.crmLead.update({
+        where: { id: lead.id },
+        data: { phones: { push: fresh } },
+      })
+      return ok({ found: true, added: fresh.length })
+    } catch (error) {
+      return err(dbError('Failed to append phones to CRM lead', error))
+    }
+  },
+
   async create(data: {
     workspaceId: string
     createdById: string

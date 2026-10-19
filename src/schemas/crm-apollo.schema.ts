@@ -107,6 +107,8 @@ export type ApolloImportContactDTO = z.infer<typeof ApolloImportContactSchema>
 
 const importBase = {
   mailingListId: z.string().min(1).max(64).nullish(),
+  /** Ask Apollo for phone numbers too (they arrive later, +8 credits each). */
+  revealPhones: z.boolean().default(false),
 }
 
 export const CreateApolloImportSchema = z.discriminatedUnion('source', [
@@ -147,3 +149,37 @@ export const ListApolloImportsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })
 export type ListApolloImportsDTO = z.infer<typeof ListApolloImportsSchema>
+
+/**
+ * Body Apollo posts to the phone-reveal webhook (`request_type: "phone"`).
+ * Lenient on purpose: only what we use is required, the rest is ignored, and
+ * a person without numbers is simply skipped.
+ */
+export const ApolloPhoneWebhookSchema = z.object({
+  request_id: z.union([z.string(), z.number()]).optional(),
+  webhook_status: z.string().optional(),
+  request_type: z.string().optional(),
+  webhook_result: z
+    .object({
+      credits_consumed: z.number().nonnegative().optional(),
+      people: z
+        .array(
+          z.object({
+            id: z.string().min(1).max(64),
+            phone_numbers: z
+              .array(
+                z.object({
+                  sanitized_number: z.string().max(40).nullish(),
+                  raw_number: z.string().max(40).nullish(),
+                  status_cd: z.string().max(40).nullish(),
+                }),
+              )
+              .default([]),
+          }),
+        )
+        .max(200)
+        .default([]),
+    })
+    .optional(),
+})
+export type ApolloPhoneWebhookDTO = z.infer<typeof ApolloPhoneWebhookSchema>

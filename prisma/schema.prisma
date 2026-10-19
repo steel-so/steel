@@ -8844,6 +8844,15 @@ model CrmApolloImport {
   /// Next index of `apolloIds` to process (resume after a rate-limit pause).
   cursor          Int                   @default(0)
   creditsConsumed Int                   @default(0) @map("credits_consumed")
+  /// "Revelar telefones": Apollo delivers the numbers later, to the webhook.
+  revealPhones    Boolean               @default(false) @map("reveal_phones")
+  /// SHA-256 of the webhook token (the token itself is derived, never stored).
+  webhookTokenHash String?              @unique @map("webhook_token_hash")
+  phonesRequested Int                   @default(0) @map("phones_requested")
+  phonesReceived  Int                   @default(0) @map("phones_received")
+  /// People without an importable e-mail whose phone was requested: the lead
+  /// is only created when the webhook brings a number.
+  phoneOnlyPeople Json?                 @map("phone_only_people")
   error           String?
   startedAt       DateTime?             @map("started_at")
   finishedAt      DateTime?             @map("finished_at")

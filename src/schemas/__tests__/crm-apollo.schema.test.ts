@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ApolloListContactsSchema,
+  ApolloPhoneWebhookSchema,
   ApolloSearchFiltersSchema,
   ApolloSearchSchema,
   ConnectApolloSchema,
@@ -180,6 +181,52 @@ describe('CreateApolloImportSchema', () => {
     expect(
       CreateApolloImportSchema.safeParse({ source: 'CSV', apolloIds: ['a'] })
         .success,
+    ).toBe(false)
+  })
+})
+
+describe('revealPhones and the phone webhook', () => {
+  it('defaults revealPhones to false and accepts true', () => {
+    const base = { source: 'SEARCH', filters: {}, apolloIds: ['a'] }
+    expect(CreateApolloImportSchema.parse(base).revealPhones).toBe(false)
+    expect(
+      CreateApolloImportSchema.parse({ ...base, revealPhones: true })
+        .revealPhones,
+    ).toBe(true)
+    expect(
+      CreateApolloImportSchema.safeParse({ ...base, revealPhones: 'yes' })
+        .success,
+    ).toBe(false)
+  })
+
+  it('parses the documented phone payload and ignores extra fields', () => {
+    const parsed = ApolloPhoneWebhookSchema.parse({
+      request_id: '1039995589705121900',
+      webhook_status: 'success',
+      request_type: 'phone',
+      webhook_result: {
+        credits_consumed: 1,
+        people: [
+          {
+            id: '587cf802f65125cad923a266',
+            status: 'success',
+            phone_numbers: [
+              { sanitized_number: '+15555550164', type_cd: 'other' },
+            ],
+          },
+          { id: 'no-phones' },
+        ],
+      },
+    })
+    expect(parsed.webhook_result?.people[0].phone_numbers[0]).toMatchObject({
+      sanitized_number: '+15555550164',
+    })
+    expect(parsed.webhook_result?.people[1].phone_numbers).toEqual([])
+    expect(ApolloPhoneWebhookSchema.safeParse({}).success).toBe(true)
+    expect(
+      ApolloPhoneWebhookSchema.safeParse({
+        webhook_result: { people: [{ id: '' }] },
+      }).success,
     ).toBe(false)
   })
 })

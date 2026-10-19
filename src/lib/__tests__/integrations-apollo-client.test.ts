@@ -235,10 +235,37 @@ describe('ApolloClient.bulkMatch', () => {
     })
   })
 
+  it('asks for phones only with a webhook url and keeps the request id', async () => {
+    fetchMock.mockResolvedValue(reply({ request_id: -123, matches: [] }))
+    const result = expectOk(
+      await ApolloClient.bulkMatch(KEY, ['p1'], {
+        webhookUrl: 'https://steel.test/api/crm/apollo/webhook/tok?x=1',
+      }),
+    )
+    const url = new URL(fetchMock.mock.calls[0][0])
+    expect(url.searchParams.get('reveal_phone_number')).toBe('true')
+    expect(url.searchParams.get('reveal_personal_emails')).toBe('false')
+    expect(url.searchParams.get('webhook_url')).toBe(
+      'https://steel.test/api/crm/apollo/webhook/tok?x=1',
+    )
+    expect(result.data.requestId).toBe('-123')
+  })
+
+  it('does not send phone parameters without a webhook url', async () => {
+    fetchMock.mockResolvedValue(reply({ request_id: 'abc', matches: [] }))
+    const result = expectOk(await ApolloClient.bulkMatch(KEY, ['p1']))
+    expect(fetchMock.mock.calls[0][0]).not.toContain('reveal_phone_number')
+    expect(result.data.requestId).toBe('abc')
+  })
+
   it('tolerates a body without matches', async () => {
     fetchMock.mockResolvedValue(reply({}))
     const result = expectOk(await ApolloClient.bulkMatch(KEY, ['p1']))
-    expect(result.data).toEqual({ matches: [], creditsConsumed: 0 })
+    expect(result.data).toEqual({
+      matches: [],
+      creditsConsumed: 0,
+      requestId: null,
+    })
   })
 
   it('propagates a rate limit', async () => {

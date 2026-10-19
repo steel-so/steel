@@ -101,3 +101,36 @@ export interface ApolloRateLimit {
   hourLeft: number | null
   dayLeft: number | null
 }
+
+/**
+ * Phones from the webhook, as `+<digits>` (E.164 shape), deduplicated. Numbers
+ * Apollo itself marks invalid and anything outside 8-15 digits are dropped.
+ */
+export function sanitizeApolloPhones(
+  numbers: Array<{
+    sanitized_number?: string | null
+    raw_number?: string | null
+    status_cd?: string | null
+  }>,
+): string[] {
+  const out = new Set<string>()
+  for (const entry of numbers) {
+    if (entry.status_cd === 'invalid_number') continue
+    const digits = (entry.sanitized_number ?? entry.raw_number ?? '').replace(
+      /\D/g,
+      '',
+    )
+    if (digits.length >= 8 && digits.length <= 15) out.add(`+${digits}`)
+  }
+  return [...out]
+}
+
+/** A person without an importable e-mail whose phone was requested. */
+export interface ApolloPhoneOnlyPerson {
+  id: string
+  name: string
+  title?: string | null
+  company?: string | null
+  city?: string | null
+  linkedin?: string | null
+}

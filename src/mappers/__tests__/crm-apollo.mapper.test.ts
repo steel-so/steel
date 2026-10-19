@@ -39,7 +39,9 @@ describe('toCrmApolloConnectionDTO', () => {
       keyHint: null,
       lastCheckedAt: null,
       defaultMailingListId: null,
+      phoneRevealAvailable: false,
     })
+    expect(toCrmApolloConnectionDTO(null, true).phoneRevealAvailable).toBe(true)
   })
 
   it('exposes only the key hint, never the encrypted key', () => {

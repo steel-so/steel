@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { seedCrmApolloImport } from '@/src/__tests__/factories/crm-apollo.factory'
 import {
   seedCrmMailingList,
@@ -188,5 +188,137 @@ describe('CrmMailingListMemberRepository.addMany', () => {
       ]),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('Apollo phone reveal persistence', () => {
+  it('stores the token hash and finds the run by it', async () => {
+    const [ws, user] = await Promise.all([seedWorkspace(), seedUser()])
+    const created = expectOk(
+      await CrmApolloImportRepository.create({
+        id: 'imp-phones',
+        workspaceId: ws.id,
+        createdById: user.id,
+        source: 'SEARCH',
+        filters: {},
+        apolloIds: ['a1'],
+        requestedCount: 1,
+        revealPhones: true,
+        webhookTokenHash: 'hash-1',
+      }),
+    )
+    expect(created).toMatchObject({ id: 'imp-phones', revealPhones: true })
+    expect(
+      expectOk(await CrmApolloImportRepository.findByWebhookTokenHash('hash-1'))
+        .id,
+    ).toBe('imp-phones')
+    expectErr(
+      await CrmApolloImportRepository.findByWebhookTokenHash('other'),
+      'CRM_APOLLO_IMPORT_NOT_FOUND',
+    )
+  })
+
+  it('records requested phones, the phone-only people and webhook progress', async () => {
+    const [ws, user] = await Promise.all([seedWorkspace(), seedUser()])
+    const row = await seedCrmApolloImport(ws.id, user.id)
+    const progress = expectOk(
+      await CrmApolloImportRepository.addProgress(row.id, {
+        created: 0,
+        skipped: 1,
+        failed: 0,
+        credits: 1,
+        cursor: 1,
+        phonesRequested: 3,
+        phoneOnlyPeople: [{ id: 'p2', name: 'Sem Email' }],
+      }),
+    )
+    expect(progress.phonesRequested).toBe(3)
+    expect(progress.phoneOnlyPeople).toEqual([{ id: 'p2', name: 'Sem Email' }])
+    const after = expectOk(
+      await CrmApolloImportRepository.addPhoneProgress(row.id, {
+        received: 2,
+        created: 1,
+        credits: 16,
+      }),
+    )
+    expect(after).toMatchObject({
+      phonesReceived: 2,
+      createdCount: 1,
+      creditsConsumed: 17,
+    })
+    expectErr(
+      await CrmApolloImportRepository.addPhoneProgress('nope', {
+        received: 0,
+        created: 0,
+        credits: 0,
+      }),
+      'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('CrmLeadRepository.appendPhonesByExternalId', () => {
+  it('appends new numbers, skipping ones the lead already has', async () => {
+    const [ws, other, user] = await Promise.all([
+      seedWorkspace(),
+      seedWorkspace(),
+      seedUser(),
+    ])
+    const lead = await seedCrmLead(ws.id, user.id, {
+      externalSource: 'apollo',
+      externalId: 'p1',
+      phones: ['+55 (81) 99999-0000'],
+    })
+    const first = expectOk(
+      await CrmLeadRepository.appendPhonesByExternalId(ws.id, 'apollo', 'p1', [
+        '+5581999990000',
+        '+5581988887777',
+        '+5581988887777',
+        '',
+      ]),
+    )
+    expect(first).toEqual({ found: true, added: 1 })
+    const again = expectOk(
+      await CrmLeadRepository.appendPhonesByExternalId(ws.id, 'apollo', 'p1', [
+        '+5581988887777',
+      ]),
+    )
+    expect(again).toEqual({ found: true, added: 0 })
+    const row = await prisma.crmLead.findUniqueOrThrow({
+      where: { id: lead.id },
+    })
+    expect(row.phones).toEqual(['+55 (81) 99999-0000', '+5581988887777'])
+
+    // Scoped to the workspace and to the origin system.
+    expect(
+      expectOk(
+        await CrmLeadRepository.appendPhonesByExternalId(
+          other.id,
+          'apollo',
+          'p1',
+          ['+5581977776666'],
+        ),
+      ),
+    ).toEqual({ found: false, added: 0 })
+    expect(
+      expectOk(
+        await CrmLeadRepository.appendPhonesByExternalId(ws.id, 'x', 'p1', [
+          '+5581977776666',
+        ]),
+      ).found,
+    ).toBe(false)
+  })
+
+  it('returns a database error when Prisma fails', async () => {
+    const spy = vi
+      .spyOn(prisma.crmLead, 'findFirst')
+      .mockRejectedValueOnce(new Error('down'))
+    expectErr(
+      await CrmLeadRepository.appendPhonesByExternalId('w', 'apollo', 'p', [
+        '+5581999990000',
+      ]),
+      'DATABASE_ERROR',
+    )
+    spy.mockRestore()
   })
 })

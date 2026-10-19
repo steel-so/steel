@@ -4,6 +4,7 @@ import {
   buildApolloSearchBody,
   isImportableEmailStatus,
   maskApolloKey,
+  sanitizeApolloPhones,
 } from '../integrations/apollo'
 
 const EMPTY: ApolloSearchFilters = {
@@ -75,5 +76,21 @@ describe('isImportableEmailStatus', () => {
     expect(isImportableEmailStatus('likely to engage')).toBe(true)
     expect(isImportableEmailStatus('unverified')).toBe(false)
     expect(isImportableEmailStatus(null)).toBe(false)
+  })
+})
+
+describe('sanitizeApolloPhones', () => {
+  it('keeps +digits, dedupes, drops invalid and out-of-range numbers', () => {
+    expect(
+      sanitizeApolloPhones([
+        { sanitized_number: '+5581999990000' },
+        { raw_number: '+55 (81) 99999-0000' },
+        { sanitized_number: '+5581888880000', status_cd: 'invalid_number' },
+        { sanitized_number: '12345' },
+        { sanitized_number: '+1234567890123456' },
+        { sanitized_number: null, raw_number: null },
+        { sanitized_number: '08000000000' },
+      ]),
+    ).toEqual(['+5581999990000', '+08000000000'])
   })
 })
