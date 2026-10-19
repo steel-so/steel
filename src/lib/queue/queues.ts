@@ -1140,9 +1140,6 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.AiIndex]: getAiIndexQueue,
   [QueueName.AiEval]: getAiEvalQueue,
   [QueueName.PhoneCallAi]: getPhoneCallAiQueue,
-  >
-}
-
   [QueueName.AiProactive]: getAiProactiveQueue,
 }
 
