@@ -6,6 +6,7 @@ import {
   BrainIcon,
   ChartLineData01Icon,
   MagicWand01Icon,
+  TestTube01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -23,11 +24,12 @@ export const STEEL_AI_AREA_LINKS: {
   { segment: 'agents', label: 'Agentes', icon: AiBrain01Icon },
   { segment: 'usage', label: 'Uso', icon: ChartLineData01Icon },
   { segment: 'analytics', label: 'Análises', icon: Analytics01Icon },
+  { segment: 'evals', label: 'Avaliações', icon: TestTube01Icon },
   { segment: 'memory', label: 'Memória', icon: BrainIcon },
 ]
 
 /**
- * Areas of Steel AI (Skills, Agentes, Uso, Análises, Memória), shown above
+ * Areas of Steel AI (Skills, Agentes, Uso, Análises, Avaliações, Memória), shown above
  * the chat history in the context sidebar — and, through it, in the mobile
  * navigation drawer.
  */

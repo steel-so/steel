@@ -1,6 +1,7 @@
 'use client'
 
 import { type FormEvent, useEffect, useState } from 'react'
+import { AiEvalGuard } from '@/app/_components/steel-ai-evals/ai-eval-guard'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,7 @@ import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { useAiSettings, useUpdateAiSettings } from '@/src/hooks/use-ai-settings'
+import type { AiEvalTargetKey } from '@/src/lib/ai/quality-labels'
 import type { WorkspaceAiSettingsDTO } from '@/types/ai-settings'
 import { useIsWorkspaceAdmin } from '../workspace/workspace-permissions'
 import { AiModelPreferenceSelect } from './ai-model-preference-select'
@@ -64,6 +66,12 @@ const FEATURES: { field: FeatureField; label: string; hint: string }[] = [
     hint: 'Classifica as mensagens recebidas (em segundo plano).',
   },
 ]
+
+/** Features whose model change can be checked against an eval set. */
+const EVAL_TARGET_BY_FIELD: Partial<Record<FeatureField, AiEvalTargetKey>> = {
+  crmAssistantModel: 'STEEL_ASSISTANT',
+  whatsappReplyModel: 'WHATSAPP_REPLY',
+}
 
 interface FormState {
   enabledModels: string[]
@@ -452,6 +460,18 @@ function AdminForm({
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              {EVAL_TARGET_BY_FIELD[feature.field] ? (
+                <AiEvalGuard
+                  className='md:col-span-2'
+                  workspaceId={workspaceId}
+                  target={
+                    EVAL_TARGET_BY_FIELD[feature.field] as AiEvalTargetKey
+                  }
+                  candidate={{ modelKey: form[feature.field] }}
+                  reason='model_change'
+                  changed={form[feature.field] !== settings[feature.field]}
+                />
+              ) : null}
             </div>
           ))}
         </CardContent>
