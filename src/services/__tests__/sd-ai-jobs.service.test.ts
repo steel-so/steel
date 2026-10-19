@@ -53,6 +53,7 @@ vi.mock('../sd-whatsapp-inbound.service', () => ({
   sendSdWhatsappText: vi.fn(),
 }))
 
+import { wrapUntrusted } from '@/src/lib/ai/guardrails/injection'
 import { SdAiRepository } from '@/src/repositories/sd-ai.repository'
 import { SdKbArticleRepository } from '@/src/repositories/sd-kb-article.repository'
 import { SdTicketRepository } from '@/src/repositories/sd-ticket.repository'
@@ -851,7 +852,10 @@ describe('whatsappReply — resposta automática no chamado aberto', () => {
     )
     // Sem histórico anterior: manda a própria mensagem como único turno.
     expect(chat.mock.calls[0]?.[0].messages).toEqual([
-      { role: 'user', content: 'a internet caiu' },
+      {
+        role: 'user',
+        content: wrapUntrusted('a internet caiu', 'whatsapp_message'),
+      },
     ])
     expect(chat.mock.calls[0]?.[0].system).toContain(
       'já tem o chamado INC-000005',
@@ -887,7 +891,10 @@ describe('whatsappReply — resposta automática no chamado aberto', () => {
       }),
     )
     expect(chat.mock.calls[0]?.[0].messages).toEqual([
-      { role: 'user', content: 'continua caindo' },
+      {
+        role: 'user',
+        content: wrapUntrusted('continua caindo', 'whatsapp_message'),
+      },
       { role: 'assistant', content: 'já estamos vendo' },
     ])
   })
@@ -1048,6 +1055,111 @@ describe('whatsappReply — resposta automática no chamado aberto', () => {
         messageId: 'msg1',
       }),
       'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('whatsappReply — proteções da resposta automática (ADR 0041)', () => {
+  const guarded = () => ({
+    ...preparedCall(),
+    feature: 'SERVICEDESK_PRE_SERVICE' as const,
+    guardrails: {
+      piiMaskingPolicy: 'AUTO_REPLIES' as const,
+      injectionClassifierEnabled: false,
+      limits: {
+        forbiddenTopics: [],
+        maxDiscountPercent: 0,
+        maxRefundAmount: null,
+        maxDeadlineDays: null,
+      },
+    },
+  })
+  const aiConversation = createFakeSdAiConversation({
+    id: 'ai1',
+    workspaceId: WS,
+    whatsappConversationId: 'conv1',
+  })
+
+  beforeEach(() => {
+    prepare.mockResolvedValue(ok(guarded()))
+    waRepo.findConversationUnscoped.mockResolvedValue(ok(waConversation()))
+    messages.findById.mockResolvedValue(ok(inbound))
+    conversations.update.mockResolvedValue(ok(createFakeWhatsAppConversation()))
+    chat.mockResolvedValue(
+      turnOutput({ reply: 'Posso te dar um desconto de 20%!' }),
+    )
+    sendText.mockResolvedValue(
+      ok(createFakeWhatsAppMessage({ id: 'out1', direction: 'OUT' })),
+    )
+  })
+
+  it('abre o chamado com a nota em vez de mandar o rascunho no pré-atendimento', async () => {
+    waRepo.findOpenTicket.mockResolvedValue(ok(null))
+    aiRepo.findActiveWhatsappConversation.mockResolvedValue(ok(null))
+    aiRepo.createConversation.mockResolvedValue(ok(aiConversation))
+    aiRepo.updateConversation.mockImplementation(async (_id, data) =>
+      ok({
+        ...aiConversation,
+        ...data,
+        messages: (data.messages ?? []) as Prisma.JsonValue,
+      }),
+    )
+    openFromWhatsapp.mockResolvedValue(ok(openTicket))
+
+    const outcome = expectOk(
+      await SdAiService.whatsappReply({
+        conversationId: 'conv1',
+        messageId: 'msg1',
+      }),
+    )
+    expect(chat.mock.calls[0]?.[0].system).toContain(
+      'Nunca ofereça nem prometa descontos.',
+    )
+    expect(outcome).toMatchObject({
+      status: 'ticket_opened',
+      reason: 'guardrail_discount',
+    })
+    expect(sendText).not.toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Posso te dar um desconto de 20%!' }),
+    )
+    expect(recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'ai.pre_service',
+        meta: expect.objectContaining({
+          reason: 'guardrail_discount',
+          note: expect.stringContaining('desconto'),
+        }),
+      }),
+    )
+  })
+
+  it('transborda com a nota no chamado aberto', async () => {
+    waRepo.findOpenTicket.mockResolvedValue(
+      ok({ id: 't1', number: 5, type: 'INCIDENT' }),
+    )
+    tickets.findById.mockResolvedValue(ok(openTicket))
+    messages.listLatestByConversation.mockResolvedValue(ok([]))
+
+    const outcome = expectOk(
+      await SdAiService.whatsappReply({
+        conversationId: 'conv1',
+        messageId: 'msg1',
+      }),
+    )
+    expect(outcome).toEqual({ status: 'handoff' })
+    expect(sendText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('precisa de um atendente'),
+      }),
+    )
+    expect(recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'ai.handoff',
+        meta: expect.objectContaining({
+          trigger: 'guardrail',
+          guardrail: 'discount',
+        }),
+      }),
     )
   })
 })

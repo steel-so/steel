@@ -16,6 +16,7 @@ vi.mock('@/src/repositories/whatsapp-broadcast.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-message.repository')
+vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
 vi.mock('@/src/services/ai-usage.service')
 vi.mock('@/src/lib/whatsapp/send', () => ({
   WhatsAppSend: { text: vi.fn() },
@@ -42,6 +43,7 @@ import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-confi
 import { WhatsAppAiKnowledgeDocumentRepository } from '@/src/repositories/whatsapp-ai-knowledge-document.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import {
@@ -495,5 +497,149 @@ describe('WhatsAppAiReplyService · handoff notice', () => {
       }),
     )
     expect(notify).not.toHaveBeenCalled()
+  })
+})
+
+describe('WhatsAppAiReplyService.generateReply() — guardrails (ADR 0041)', () => {
+  const events = vi.mocked(WhatsAppConversationEventRepository)
+  const limits = {
+    forbiddenTopics: ['processo judicial'],
+    maxDiscountPercent: 10,
+    maxRefundAmount: null,
+    maxDeadlineDays: null,
+  }
+  function guardedCall(
+    chat: AiProvider['chat'],
+    tainted = false,
+  ): PreparedAiCall {
+    return {
+      ...preparedCall(chat),
+      guardrails: {
+        piiMaskingPolicy: 'AUTO_REPLIES',
+        injectionClassifierEnabled: false,
+        limits,
+      },
+      guard: {
+        report: {
+          piiCounts: { EMAIL: 0, CNPJ: 0, CPF: 0, CARD: 0, PHONE: 0 },
+          injection: { detected: tainted, signals: [], sources: [] },
+          failovers: [],
+        },
+        tainted: () => tainted,
+      },
+    }
+  }
+
+  it('should tell the model the limits and drop a draft beyond them', async () => {
+    arrange()
+    events.create.mockResolvedValue(ok({} as never))
+    const chat = vi.fn<AiProvider['chat']>(async () =>
+      response('Te dou 30% de desconto!'),
+    )
+    mockedAiUsage.prepare.mockResolvedValue(ok(guardedCall(chat)))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+
+    expect(chat.mock.calls[0][0].system).toContain('Limites de alçada')
+    expect(outcome).toEqual(
+      expect.objectContaining({
+        status: 'sent',
+        handoff: true,
+        guardrail: 'discount',
+      }),
+    )
+    // The customer never sees the draft.
+    expect(mockedSend.text).toHaveBeenCalledWith(expect.anything(), {
+      to: '5511988887777',
+      text: 'Vou te transferir para um de nossos atendentes, só um momento.',
+    })
+    expect(events.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'AI_GUARDRAIL_HANDOFF',
+        source: 'AI_GUARDRAIL',
+        reason: expect.stringContaining('10%'),
+      }),
+    )
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'ai_guardrail',
+        action: 'escalate',
+        meta: expect.objectContaining({ kind: 'discount' }),
+      }),
+    )
+    expect(
+      vi.mocked(notifyWhatsAppUsers).mock.calls.at(-1)?.[0].body,
+    ).toContain('10%')
+  })
+
+  it('should hand off when the customer touches a forbidden topic, even if the event write fails', async () => {
+    arrange()
+    mockedMessageRepo.listLatestByConversation.mockResolvedValue(
+      ok([
+        createFakeWhatsAppMessage({
+          id: 'm1',
+          conversationId: CONV,
+          text: 'Vou abrir um processo judicial',
+        }),
+      ]),
+    )
+    events.create.mockResolvedValue(err(databaseError()))
+    mockedAiUsage.prepare.mockResolvedValue(
+      ok(guardedCall(vi.fn(async () => response('Entendo, posso ajudar.')))),
+    )
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+    expect(outcome).toMatchObject({ guardrail: 'forbidden_topic' })
+    expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+      CONV,
+      expect.objectContaining({ aiHandoff: true }),
+    )
+  })
+
+  it('should hand off when the call saw a prompt injection', async () => {
+    arrange()
+    events.create.mockResolvedValue(ok({} as never))
+    mockedAiUsage.prepare.mockResolvedValue(
+      ok(
+        guardedCall(
+          vi.fn(async () => response('Tudo liberado!')),
+          true,
+        ),
+      ),
+    )
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+    expect(outcome).toMatchObject({ guardrail: 'prompt_injection' })
+  })
+
+  it('should send a draft within the limits as usual', async () => {
+    arrange()
+    mockedAiUsage.prepare.mockResolvedValue(
+      ok(guardedCall(vi.fn(async () => response('Consigo 5% de desconto.')))),
+    )
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+    expect(outcome).toEqual({
+      status: 'sent',
+      messageId: 'out1',
+      handoff: false,
+    })
   })
 })

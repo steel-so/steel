@@ -9,6 +9,11 @@ import {
   type AiUsageTokens,
   getOpenAiClient,
 } from '@/src/lib/ai'
+import { wrapUntrusted } from '@/src/lib/ai/guardrails/injection'
+import {
+  type AutoReplyLimitHit,
+  autoReplyLimitsInstruction,
+} from '@/src/lib/ai/guardrails/limits'
 import { ok, type Result } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
@@ -19,7 +24,12 @@ import { WhatsAppAiKnowledgeDocumentRepository } from '@/src/repositories/whatsa
 import { WhatsAppBroadcastRepository } from '@/src/repositories/whatsapp-broadcast.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import {
+  checkAutoReplyGuardrails,
+  reportAutoReplyGuardrailHit,
+} from './ai-guardrails.service'
 import { AiUsageService } from './ai-usage.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import { whatsAppTeamMemberIds } from './whatsapp-conversation-scope.service'
@@ -84,7 +94,13 @@ export type WhatsAppAiReplyOutcome =
       provider?: string
       model?: string
     }
-  | { status: 'sent'; messageId: string; handoff: boolean }
+  | {
+      status: 'sent'
+      messageId: string
+      handoff: boolean
+      /** The draft hit a guardrail and was replaced by the handoff (ADR 0041). */
+      guardrail?: AutoReplyLimitHit['kind']
+    }
 
 interface AppointmentToolResult {
   hasAppointment: boolean
@@ -104,7 +120,10 @@ async function buildKnowledgeBaseSection(workspaceId: string): Promise<string> {
   for (const doc of documents.value) {
     if (remaining <= 0) break
     const text = doc.extractedText.slice(0, remaining)
-    sections.push(`### ${doc.filename}\n${text}`)
+    // Uploaded documents are third-party content (ADR 0041): fenced as data.
+    sections.push(
+      `### ${doc.filename}\n${wrapUntrusted(text, 'knowledge_document')}`,
+    )
     remaining -= text.length
   }
 
@@ -180,6 +199,20 @@ async function transcribeAudio(mediaUrl: string): Promise<string | null> {
     })
     return null
   }
+}
+
+/** Customer text is third-party content (ADR 0041): fenced as data. */
+function fenceCustomerContent(
+  content: string | AiContentPart[],
+): string | AiContentPart[] {
+  if (typeof content === 'string') {
+    return wrapUntrusted(content, 'whatsapp_message')
+  }
+  return content.map((part) =>
+    part.type === 'text'
+      ? { ...part, text: wrapUntrusted(part.text, 'whatsapp_message') }
+      : part,
+  )
 }
 
 // Only the message that triggered this reply gets the full (costly) media
@@ -302,7 +335,7 @@ export const WhatsAppAiReplyService = {
         // describeMessageContent), so the 'assistant' branch is always a
         // plain string at runtime.
         return message.direction === 'IN'
-          ? { role: 'user', content }
+          ? { role: 'user', content: fenceCustomerContent(content) }
           : { role: 'assistant', content: content as string }
       }),
     )
@@ -310,6 +343,9 @@ export const WhatsAppAiReplyService = {
     const system =
       config.systemPrompt +
       HANDOFF_SYSTEM_INSTRUCTION +
+      (call.guardrails
+        ? autoReplyLimitsInstruction(call.guardrails.limits)
+        : '') +
       knowledgeBaseSection +
       (instruction
         ? `\n\nInstrução para esta resposta (o cliente clicou num botão): ${instruction}`
@@ -372,11 +408,22 @@ export const WhatsAppAiReplyService = {
       return ok({ status: 'skipped', reason: 'empty_completion' })
     }
 
-    const shouldHandoff = replyText.includes(WHATSAPP_AI_HANDOFF_MARKER)
-    const textToSend = shouldHandoff
-      ? replyText.replaceAll(WHATSAPP_AI_HANDOFF_MARKER, '').trim() ||
-        HANDOFF_FALLBACK_MESSAGE
-      : replyText
+    // Last check before the customer sees it (ADR 0041): prompt injection,
+    // forbidden topic, or a promise beyond the authority limits → the draft
+    // is dropped and a human takes over with the note.
+    const inbound = orderedHistory.find((m) => m.id === messageId)?.text ?? ''
+    const guardrail = checkAutoReplyGuardrails(call, {
+      inbound,
+      reply: replyText.replaceAll(WHATSAPP_AI_HANDOFF_MARKER, ''),
+    })
+    const shouldHandoff =
+      Boolean(guardrail) || replyText.includes(WHATSAPP_AI_HANDOFF_MARKER)
+    const textToSend = guardrail
+      ? HANDOFF_FALLBACK_MESSAGE
+      : shouldHandoff
+        ? replyText.replaceAll(WHATSAPP_AI_HANDOFF_MARKER, '').trim() ||
+          HANDOFF_FALLBACK_MESSAGE
+        : replyText
 
     const contact = await WhatsAppContactRepository.findById(
       conversation.contactId,
@@ -422,13 +469,45 @@ export const WhatsAppAiReplyService = {
     )
     if (!updated.ok) return updated
 
+    if (guardrail) {
+      reportAutoReplyGuardrailHit({
+        workspaceId,
+        feature: 'WHATSAPP_REPLY',
+        kind: guardrail.kind,
+        targetType: 'whatsapp_conversation',
+        targetId: conversationId,
+      })
+      // Timeline note for whoever takes over (never sent to the contact).
+      const event = await WhatsAppConversationEventRepository.create({
+        workspaceId,
+        conversationId,
+        kind: 'AI_GUARDRAIL_HANDOFF',
+        source: 'AI_GUARDRAIL',
+        actorUserId: null,
+        reason: guardrail.note,
+      })
+      if (!event.ok) {
+        logger.error('queue.whatsapp_ai_reply.guardrail_event_failed', {
+          component: 'WhatsappAiReply',
+          workspaceId,
+          conversationId,
+          message: event.error.message,
+        })
+      }
+    }
+
     if (shouldHandoff) {
       auditMutation({
         entity: 'whatsapp_conversation',
         action: 'update',
         actorId: null,
         targetId: conversationId,
-        meta: { aiHandoff: true, trigger: 'ai', actor: 'system' },
+        meta: {
+          aiHandoff: true,
+          trigger: guardrail ? 'guardrail' : 'ai',
+          ...(guardrail && { guardrail: guardrail.kind }),
+          actor: 'system',
+        },
       })
       // A human must take over: the assignee, else the conversation's team
       // (Equipes), else the module admins (capped) — never every member
@@ -443,7 +522,9 @@ export const WhatsAppAiReplyService = {
             ? await whatsAppTeamMemberIds(workspaceId, conversation.teamId)
             : await whatsAppAdminIds(workspaceId),
         title: 'A IA transferiu uma conversa para você',
-        body: `${label} precisa de um atendente.`,
+        body: guardrail
+          ? `${label} precisa de um atendente. ${guardrail.note}`
+          : `${label} precisa de um atendente.`,
         path: whatsAppConversationPath(conversationId),
         meta: { conversationId },
       })
@@ -473,6 +554,7 @@ export const WhatsAppAiReplyService = {
       status: 'sent',
       messageId: message.value.id,
       handoff: shouldHandoff,
+      ...(guardrail && { guardrail: guardrail.kind }),
     })
   },
 }

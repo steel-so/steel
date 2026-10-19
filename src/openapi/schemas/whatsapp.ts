@@ -150,8 +150,15 @@ export const WhatsAppConversationEventDTO = dto(
         'SENTIMENT_ALERT',
         'ASSIGNED',
         'TEAM_CHANGED',
+        'AI_GUARDRAIL_HANDOFF',
       ]),
-      source: z.enum(['AGENT', 'CONTACT', 'INACTIVITY', 'SENTIMENT']),
+      source: z.enum([
+        'AGENT',
+        'CONTACT',
+        'INACTIVITY',
+        'SENTIMENT',
+        'AI_GUARDRAIL',
+      ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
       }),

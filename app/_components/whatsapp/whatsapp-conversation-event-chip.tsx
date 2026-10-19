@@ -15,6 +15,8 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
   switch (event.kind) {
     case 'SENTIMENT_ALERT':
       return 'Sentimento negativo: supervisores avisados'
+    case 'AI_GUARDRAIL_HANDOFF':
+      return 'A IA parou de responder e transferiu para um atendente'
     case 'BUTTON_CLICKED':
       return event.reason
         ? `O contato clicou em “${event.reason}”`
@@ -47,6 +49,8 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   // The click's label is already in the headline.
   if (event.kind === 'BUTTON_CLICKED') return null
   if (event.kind === 'SENTIMENT_ALERT') return event.reason
+  // The guardrail note says why the AI stopped.
+  if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason
   // The assignee / team name is already in the headline.
   if (event.kind === 'ASSIGNED' || event.kind === 'TEAM_CHANGED') return null
   return `Motivo: ${event.reason}`

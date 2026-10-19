@@ -70,7 +70,18 @@ vi.mock('@/src/lib/ai/context/memory', () => ({
 }))
 vi.mock('@/src/services/ai-memory.service')
 vi.mock('@/src/services/platform-ai-settings.service', () => ({
-  PlatformAiSettingsService: { getCostMargin: vi.fn(async () => 2) },
+  PlatformAiSettingsService: {
+    getCostMargin: vi.fn(async () => 2),
+    getRoutingDefaults: vi.fn(async () => ({
+      taskModels: {
+        CLASSIFICATION: null,
+        CONVERSATION: null,
+        ASSISTANT: null,
+        AGENT: null,
+      },
+      failoverEnabled: true,
+    })),
+  },
 }))
 vi.mock('@/src/services/ai-settings.service', async (importOriginal) => ({
   ...(await importOriginal<
@@ -949,6 +960,8 @@ describe('SteelAiChatService.capabilities()', () => {
           autopilotEnabled: false,
           usageWeeklyEmailEnabled: true,
           mcpWriteEnabled: false,
+          agentModel: null,
+          failoverEnabled: true,
         },
         model: {
           key: 'openai:gpt-4o-mini',
@@ -1534,6 +1547,8 @@ describe('SteelAiChatService.capabilities() — switches', () => {
           autopilotEnabled: false,
           usageWeeklyEmailEnabled: true,
           mcpWriteEnabled: false,
+          agentModel: null,
+          failoverEnabled: true,
         },
         model: null,
       }),
@@ -1812,5 +1827,47 @@ describe('SteelAiChatService.sendMessage() — TEST (Teste) mode', () => {
     expect(end?.call.status).toBe('error')
     expect(end?.call.summary).toBe('Título obrigatório')
     expect(actionLogs.create).not.toHaveBeenCalled()
+  })
+})
+
+describe('SteelAiChatService.sendMessage() — prompt injection (ADR 0041)', () => {
+  it('should ask for confirmation in AUTOPILOT once third-party content tried to instruct the model', async () => {
+    const fake = setup({
+      rounds: [
+        {
+          response: {
+            toolCalls: [
+              call('c1', 'sd_create_ticket', { title: 'Impressora' }),
+            ],
+          },
+        },
+        { deltas: ['Confirme, por favor.'], response: { text: 'Confirme.' } },
+      ],
+      conversationOverrides: { mode: 'AUTOPILOT', title: 'x' },
+    })
+    mockedAccess.mockResolvedValue(ok({ ...ACCESS, autopilotEnabled: true }))
+    aiUsage.prepare.mockResolvedValue(
+      ok({
+        ...prepared(fake.provider),
+        guard: {
+          report: {
+            piiCounts: { EMAIL: 0, CNPJ: 0, CPF: 0, CARD: 0, PHONE: 0 },
+            injection: {
+              detected: true,
+              signals: ['ignore_instructions'],
+              sources: ['tool_result'],
+            },
+            failovers: [],
+          },
+          tainted: () => true,
+        },
+      }),
+    )
+
+    const events = await send({ content: 'Abra um chamado' })
+
+    expect(types(events)).toContain('action.pending')
+    expect(types(events)).not.toContain('action.executed')
+    expect(writeTool.execute).not.toHaveBeenCalled()
   })
 })
