@@ -1,6 +1,10 @@
 'use client'
 
-import { PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
+import {
+  Download01Icon,
+  PlusSignIcon,
+} from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   LEAD_STAGES,
@@ -13,7 +17,7 @@ import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-bu
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -138,7 +142,7 @@ function InterestThermometer({
 
 export function CrmLeadsBoard({
   workspaceId,
-  slug: _slug,
+  slug,
 }: {
   workspaceId: string
   slug: string
@@ -189,10 +193,19 @@ export function CrmLeadsBoard({
         <p className='text-muted-foreground text-sm'>
           {leads.length} lead{leads.length === 1 ? '' : 's'} no funil
         </p>
-        <Button size='sm' onClick={() => setCreateOpen(true)}>
-          <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-          Novo lead
-        </Button>
+        <div className='flex items-center gap-2'>
+          <Link
+            href={`/${slug}/crm/leads/apollo`}
+            className={buttonVariants({ size: 'sm', variant: 'outline' })}
+          >
+            <SteelIcon icon={Download01Icon} strokeWidth={2} />
+            Importar da Apollo
+          </Link>
+          <Button size='sm' onClick={() => setCreateOpen(true)}>
+            <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+            Novo lead
+          </Button>
+        </div>
       </div>
 
       <div
