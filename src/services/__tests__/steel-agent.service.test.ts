@@ -211,6 +211,8 @@ describe('SteelAgentService — read', () => {
     expect(catalog.events.map((e) => e.key)).toEqual([
       'sd.ticket.created',
       'crm.lead.created',
+      'sd.insight.detected',
+      'crm.insight.detected',
     ])
     expect(catalog.agentModeEnabled).toBe(true)
     expect(catalog.canManage).toBe(true)
