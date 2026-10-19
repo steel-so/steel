@@ -27,11 +27,13 @@ export function advertisePublicRevocation(
 }
 
 /**
- * The same metadata response with `none` added. Anything that is not a
- * successful JSON object is passed through untouched.
+ * The same metadata response with `none` added, plus `extraHeaders` (the
+ * CORS headers, where the provider answers without them). Anything that is
+ * not a successful JSON object is passed through untouched.
  */
 export async function patchAuthServerMetadataResponse(
   response: Response,
+  extraHeaders: Record<string, string> = {},
 ): Promise<Response> {
   if (!response.ok) return response
   let body: unknown
@@ -45,6 +47,9 @@ export async function patchAuthServerMetadataResponse(
   }
   const headers = new Headers(response.headers)
   headers.delete('content-length')
+  for (const [name, value] of Object.entries(extraHeaders)) {
+    headers.set(name, value)
+  }
   return new Response(
     JSON.stringify(advertisePublicRevocation(body as Record<string, unknown>)),
     { status: response.status, headers },

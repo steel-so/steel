@@ -5,6 +5,7 @@ import {
   ISSUER_METADATA_PATH,
   patchAuthServerMetadataResponse,
 } from '@/src/lib/mcp/auth-server-metadata'
+import { METADATA_CORS_HEADERS } from '@/src/lib/mcp/oauth-config'
 import { withGrantLifecycle } from '@/src/lib/mcp/token-lifecycle'
 import {
   authLimiter,
@@ -81,7 +82,7 @@ export const GET = withAxiom(async (request: Request) => {
 
   const response = await handler.GET(request)
   return pathname === ISSUER_METADATA_PATH
-    ? patchAuthServerMetadataResponse(response)
+    ? patchAuthServerMetadataResponse(response, METADATA_CORS_HEADERS)
     : response
 })
 

@@ -49,11 +49,16 @@ describe('patchAuthServerMetadataResponse', () => {
         },
       },
     )
-    const patched = await patchAuthServerMetadataResponse(original)
+    const patched = await patchAuthServerMetadataResponse(original, {
+      'access-control-allow-methods': 'GET, OPTIONS',
+    })
     expect(patched.status).toBe(200)
     expect(patched.headers.get('cache-control')).toBe('public, max-age=15')
     expect(patched.headers.get('access-control-allow-origin')).toBe('*')
     expect(patched.headers.get('content-length')).toBeNull()
+    expect(patched.headers.get('access-control-allow-methods')).toBe(
+      'GET, OPTIONS',
+    )
     expect(await patched.json()).toEqual({
       [METHODS]: ['none', 'client_secret_basic'],
     })
