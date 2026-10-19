@@ -14,6 +14,7 @@ confirmar que deu certo.
 | Wiki não sincroniza / instalar o realtime no nginx | [Servidor realtime da Wiki](./realtime-wiki.md) |
 | Claude/ChatGPT/Cursor não conectam ao Steel / instalar o MCP no proxy | [Proxy de borda do servidor MCP](./mcp-edge-proxy.md) |
 | Um cliente de IA (MCP) abusando, errando em série ou com token vazado | [Cliente MCP com mau comportamento](./mcp-incident.md) |
+| Réplicas do app: instalar o upstream do nginx, réplica `unhealthy`, PgBouncer, teste de capacidade | [Réplicas do app](./app-replicas.md) |
 
 ## Referência rápida do servidor
 
@@ -21,7 +22,7 @@ confirmar que deu certo.
 | ----- | ---- |
 | Diretório da aplicação | `/var/www/steel` (`docker-compose.yml` + `.env`) |
 | Infra (banco, Redis, MinIO) | `docker-compose.infra.yml` (containers `steel-db`, `steel-redis`, `steel-minio`) |
-| App / worker | containers `nextjs-app` (porta 3000) e `steel-worker` |
+| App / worker | réplicas `nextjs-app` (3000), `steel-app-2` (127.0.0.1:3001) e `steel-app-3` (127.0.0.1:3002) atrás do upstream `steel_app` do nginx; `steel-worker` — ver [réplicas](./app-replicas.md) |
 | Rede Docker | `steel_default` |
 | Status público | `https://<domínio>/status` |
 | Painel das filas | `https://<domínio>/jobs` (usuário/senha `WORKBENCH_USER`/`WORKBENCH_PASS` do `.env`) |

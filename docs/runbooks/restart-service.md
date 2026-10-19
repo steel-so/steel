@@ -18,7 +18,7 @@ mas travado.
 
 | Serviço | Container | Reiniciar | Impacto |
 | ------- | --------- | --------- | ------- |
-| App (Next) | `nextjs-app` | `cd /var/www/steel && docker compose restart steel-app` | site fora por ~10–30 s |
+| App (Next) | `nextjs-app`, `steel-app-2`, `steel-app-3` | uma réplica: `cd /var/www/steel && docker compose restart steel-app-2` (serviços `steel-app`, `steel-app-2`, `steel-app-3`) | nenhum com o upstream instalado: as outras réplicas seguem servindo ([réplicas](./app-replicas.md)); reinicie uma por vez |
 | Worker | `steel-worker` | `cd /var/www/steel && docker compose restart steel-worker` | jobs pausam; retomam sozinhos |
 | Banco | `steel-db` | `docker restart steel-db` | **app e worker falham** até voltar |
 | Redis | `steel-redis` | `docker restart steel-redis` | sessões/cache/filas indisponíveis por segundos |

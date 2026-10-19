@@ -1502,6 +1502,21 @@ const platform: RouteConfig[] = [
   },
   {
     method: 'get',
+    path: '/status/live',
+    tags: ['Status'],
+    summary: 'Liveness do processo do app',
+    description:
+      'Responde assim que o processo atende requisições, sem consultar banco nem Redis. Usada pelo healthcheck dos containers e pelo deploy em rolagem das réplicas (ADR 0038). Pública, sem cache (`Cache-Control: no-store`) e sem limite de taxa.',
+    auth: 'public',
+    responses: {
+      200: {
+        description: 'Processo vivo.',
+        schema: z.object({ status: z.literal('ok') }),
+      },
+    },
+  },
+  {
+    method: 'get',
     path: '/status/history',
     tags: ['Status'],
     summary: 'Histórico diário de um componente',

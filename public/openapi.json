@@ -8567,6 +8567,46 @@
         "security": []
       }
     },
+    "/status/live": {
+      "get": {
+        "tags": ["Status"],
+        "summary": "Liveness do processo do app",
+        "operationId": "getStatusLive",
+        "description": "Responde assim que o processo atende requisições, sem consultar banco nem Redis. Usada pelo healthcheck dos containers e pelo deploy em rolagem das réplicas (ADR 0038). Pública, sem cache (`Cache-Control: no-store`) e sem limite de taxa.",
+        "responses": {
+          "200": {
+            "description": "Processo vivo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "const": "ok"
+                            }
+                          },
+                          "required": ["status"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/sticky-notes": {
       "get": {
         "tags": ["Sticky Notes"],

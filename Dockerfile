@@ -72,6 +72,16 @@ ENV SENTRY_ORG=$SENTRY_ORG
 ARG SENTRY_PROJECT
 ENV SENTRY_PROJECT=$SENTRY_PROJECT
 
+# Version skew protection for the rolling deploy across replicas (ADR 0038,
+# same fix as Nexo): a tab left open across a deploy posts a Server Action id
+# the new build no longer knows ("Failed to find Server Action"). With a
+# deployment id the client sees the mismatch in the response header and does
+# a full reload instead. Build time only: `next build` bakes it into the
+# standalone server config. Letters, digits, `-` and `_` only (the CD passes
+# the commit SHA; CalVer has dots, which Next rejects).
+ARG NEXT_DEPLOYMENT_ID
+ENV NEXT_DEPLOYMENT_ID=$NEXT_DEPLOYMENT_ID
+
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV SKIP_ENV_VALIDATION="true"
 
@@ -88,10 +98,18 @@ ENV NODE_OPTIONS="--max-old-space-size=${NODE_BUILD_MEMORY}"
 ARG NEXT_BUILD_LOW_MEMORY=true
 ENV NEXT_BUILD_LOW_MEMORY=$NEXT_BUILD_LOW_MEMORY
 
+# Server Actions encryption key (ADR 0038): one key for every build, so the
+# replicas of a deploy and the deploys after it decrypt the same closures.
+# Secret mount, not a build-arg, so it never lands in the image history. No
+# secret = Next generates a key per build, as before.
 RUN --mount=type=secret,id=sentry_auth_token \
+    --mount=type=secret,id=server_actions_encryption_key \
     corepack enable pnpm && \
     if [ -f /run/secrets/sentry_auth_token ]; then \
       export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)"; \
+    fi && \
+    if [ -s /run/secrets/server_actions_encryption_key ]; then \
+      export NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$(cat /run/secrets/server_actions_encryption_key)"; \
     fi && \
     pnpm prisma:generate && \
     pnpm build && \

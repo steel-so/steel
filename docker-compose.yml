@@ -3,22 +3,63 @@
 # nem volte para :latest (sem tag não há rollback determinístico).
 x-steel-image: &steel-image ghcr.io/steel-so/steel:${STEEL_IMAGE_TAG:?STEEL_IMAGE_TAG não definido; use scripts/deploy.sh <tag>}
 
+# The web app runs as identical replicas behind nginx's `steel_app` upstream
+# (least_conn, infra/nginx/steel-upstream.conf) — ADR 0038. One Node process
+# saturates a single core, and nothing in a request depends on which replica
+# serves it: sessions live in Postgres; rate limits, SSE fan-out (Redis
+# pub/sub) and the 'use cache' tag state (lib/next-cache) in Redis. Each
+# replica settles around 1 GB of RSS under load; three fit the homologação
+# host (10 vCPU / 7.7 GB) next to Postgres, Redis and MinIO.
+#
+# To add a replica: copy steel-app-3 with the next name and loopback port,
+# add the port to the upstream and reload nginx. scripts/deploy.sh rolls every
+# service named steel-app or steel-app-<n>, one at a time.
+x-steel-app: &steel-app
+  image: *steel-image
+  restart: unless-stopped
+  env_file:
+    - .env
+  volumes:
+    - ./redis-tls/ca.crt:/etc/redis-tls/ca.crt:ro
+  dns:
+    - 8.8.8.8
+    - 8.8.4.4
+  networks:
+    - app-network
+  # Next finishes in-flight requests on SIGTERM; open SSE streams are cut and
+  # the browsers' EventSource reconnects to another replica.
+  stop_grace_period: 30s
+  # The rolling deploy waits for this before replacing the next replica, and
+  # nginx takes a failing replica out of the upstream (max_fails).
+  healthcheck:
+    test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/status/live"]
+    interval: 10s
+    timeout: 3s
+    retries: 3
+    start_period: 30s
+
 services:
+  # Replica 1 keeps the service, container name and port of the single app it
+  # replaces (`nextjs-app` on 3000), so the worker's status probe, the
+  # runbooks and an nginx still pointing at :3000 keep working.
   steel-app:
-    image: *steel-image
+    <<: *steel-app
     container_name: nextjs-app
-    restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file:
-      - .env
-    volumes:
-      - ./redis-tls/ca.crt:/etc/redis-tls/ca.crt:ro
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-    networks:
-      - app-network
+
+  # Loopback only: nginx is the entry point.
+  steel-app-2:
+    <<: *steel-app
+    container_name: steel-app-2
+    ports:
+      - "127.0.0.1:3001:3000"
+
+  steel-app-3:
+    <<: *steel-app
+    container_name: steel-app-3
+    ports:
+      - "127.0.0.1:3002:3000"
 
   steel-worker:
     image: *steel-image
@@ -60,6 +101,38 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    networks:
+      - app-network
+
+  # PgBouncer in transaction mode in front of steel-db (ADR 0038). Opt-in per
+  # environment: it only starts with `COMPOSE_PROFILES=pooler` in the .env,
+  # and the app only uses it once DATABASE_URL_POOLED points at
+  # steel-pgbouncer:5432. Migrations, backups and restores keep DATABASE_URL
+  # (DDL and session state do not survive transaction pooling). No published
+  # port: the containers reach it over the Docker network.
+  steel-pgbouncer:
+    image: edoburu/pgbouncer:v1.25.2-p0
+    container_name: steel-pgbouncer
+    restart: unless-stopped
+    profiles:
+      - pooler
+    environment:
+      DB_HOST: steel-db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-}
+      DB_NAME: ${POSTGRES_DB:-}
+      POOL_MODE: transaction
+      # Three replicas x DB_POOL_MAX (20 with the pooler) + worker + realtime.
+      MAX_CLIENT_CONN: 300
+      # Server connections per user/database pair, shared by every client:
+      # 40 + 5 reserve stays well under Postgres' default 100.
+      DEFAULT_POOL_SIZE: 40
+      RESERVE_POOL_SIZE: 5
+      AUTH_TYPE: scram-sha-256
+      # Lets the same application user read SHOW POOLS (cl_waiting) from the
+      # `pgbouncer` console database — see docs/runbooks/app-replicas.md.
+      ADMIN_USERS: ${POSTGRES_USER:-}
     networks:
       - app-network
 

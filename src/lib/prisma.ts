@@ -1,6 +1,11 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { DATABASE_URL } from '@/lib/env/_server'
+import {
+  DATABASE_URL,
+  DATABASE_URL_POOLED,
+  DB_POOL_MAX,
+} from '@/lib/env/_server'
+import { resolvePoolMax, resolveRuntimeDatabaseUrl } from '@/src/lib/db-pool'
 
 export function createPrismaClient(
   connectionString: string,
@@ -14,4 +19,9 @@ export function createPrismaClient(
   return new PrismaClient({ adapter })
 }
 
-export const prisma = createPrismaClient(DATABASE_URL)
+// Through PgBouncer when DATABASE_URL_POOLED is set (ADR 0038). Migrations
+// (prisma.config.ts) and pg_dump/pg_restore keep the direct DATABASE_URL.
+export const prisma = createPrismaClient(
+  resolveRuntimeDatabaseUrl(DATABASE_URL, DATABASE_URL_POOLED),
+  { max: resolvePoolMax(DB_POOL_MAX) },
+)

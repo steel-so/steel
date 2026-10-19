@@ -119,6 +119,11 @@ const nextConfig: NextConfig = {
   ],
   poweredByHeader: false,
   output: 'standalone',
+  // The proxy in front compresses instead (Apache on homologação,
+  // infra/nginx/steel-gzip.conf elsewhere): gzipping every response in the
+  // Node process cost Nexo more CPU than rendering a prerendered page, and
+  // with several replicas CPU is the budget that matters (ADR 0038).
+  compress: false,
   // O Turbopack não emite source map de navegador sem pedido, e o plugin do
   // Sentry não pede por nós: sem isto ele criaria o release e não teria nada
   // para subir, deixando todo stack trace de cliente minificado. Amarrado às
@@ -164,6 +169,13 @@ const nextConfig: NextConfig = {
     ],
   },
   cacheComponents: true,
+  // `'use cache'` keeps Next's in-memory LRU per replica, but revalidateTag()
+  // on one replica must expire the entry on all of them: the handler shares
+  // the tag state through Redis (lib/next-cache, ADR 0038). Loaded at runtime
+  // without bundling, so it is plain CommonJS.
+  cacheHandlers: {
+    default: createRequire(__filename).resolve('./lib/next-cache/handler.cjs'),
+  },
   turbopack: {
     rules: {
       // Aponta o fallback fixo do esm.sh nas fontes do Excalidraw para a cópia
