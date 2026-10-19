@@ -90,6 +90,33 @@ export const CrmLeadRepository = {
     }
   },
 
+  /**
+   * Which of these external ids were already imported from `source`. Deleted
+   * leads count on purpose (the unique key still holds them, and a lead the
+   * team removed must not come back with the next import).
+   */
+  async findExistingExternalIds(
+    workspaceId: string,
+    source: string,
+    externalIds: string[],
+  ): Promise<Result<Set<string>>> {
+    try {
+      const rows = await prisma.crmLead.findMany({
+        where: {
+          workspaceId,
+          externalSource: source,
+          externalId: { in: externalIds },
+        },
+        select: { externalId: true },
+      })
+      return ok(
+        new Set(rows.flatMap((r) => (r.externalId ? [r.externalId] : []))),
+      )
+    } catch (error) {
+      return err(dbError('Failed to find imported CRM leads', error))
+    }
+  },
+
   async create(data: {
     workspaceId: string
     createdById: string
@@ -104,6 +131,8 @@ export const CrmLeadRepository = {
     channel?: string
     score: number
     ownerId?: string | null
+    externalSource?: string
+    externalId?: string
   }): Promise<Result<CrmLead>> {
     try {
       const position = await prisma.crmLead.count({

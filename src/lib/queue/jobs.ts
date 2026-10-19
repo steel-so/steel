@@ -14,6 +14,7 @@ export const QueueName = {
   CrmCompetitorSync: 'crm-competitor-sync',
   CrmSocialPostsTick: 'crm-social-posts-tick',
   CrmSocialPublish: 'crm-social-publish',
+  CrmApolloImport: 'crm-apollo-import',
   CrmProposalExpiry: 'crm-proposal-expiry',
   Changelog: 'changelog',
   DatabaseBackup: 'database-backup',
@@ -246,6 +247,22 @@ export type CrmProposalExpiryJob =
 
 export type CrmProposalExpiryJobPayload = {
   [CrmProposalExpiryJob.RunTick]: Record<string, never>
+}
+
+/**
+ * On-demand Apollo.io lead import (enqueued by the API, never scheduled).
+ * One job per import run; a rate-limit pause re-enqueues the same payload
+ * delayed by Apollo's `retry-after`.
+ */
+export const CrmApolloImportJob = {
+  Run: 'run-import',
+} as const
+
+export type CrmApolloImportJob =
+  (typeof CrmApolloImportJob)[keyof typeof CrmApolloImportJob]
+
+export type CrmApolloImportJobPayload = {
+  [CrmApolloImportJob.Run]: { importId: string }
 }
 
 export const CrmCompetitorSyncJob = {

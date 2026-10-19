@@ -106,6 +106,23 @@ export const CrmMailingListMemberRepository = {
     }
   },
 
+  /** Bulk add (imports): existing addresses are skipped, not an error. */
+  async addMany(
+    mailingListId: string,
+    members: Array<{ email: string; name?: string }>,
+  ): Promise<Result<number>> {
+    if (members.length === 0) return ok(0)
+    try {
+      const result = await prisma.crmMailingListMember.createMany({
+        data: members.map((m) => ({ mailingListId, ...m })),
+        skipDuplicates: true,
+      })
+      return ok(result.count)
+    } catch (error) {
+      return err(dbError('Failed to add CRM mailing list members', error))
+    }
+  },
+
   async remove(id: string): Promise<Result<void>> {
     try {
       await prisma.crmMailingListMember.delete({ where: { id } })

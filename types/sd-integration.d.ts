@@ -5,7 +5,7 @@
  * and webhook secret **never** appear in a DTO.
  */
 
-export type SdIntegrationKindDTO = 'SLACK' | 'GITHUB' | 'GITLAB'
+export type SdIntegrationKindDTO = 'SLACK' | 'GITHUB' | 'GITLAB' | 'APOLLO'
 export type SdIntegrationStatusDTO = 'ACTIVE' | 'ERROR' | 'DISCONNECTED'
 export type SdIntegrationLinkKindDTO =
   | 'SLACK_THREAD'

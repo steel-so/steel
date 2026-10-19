@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ConnectApolloDTO } from '@/src/schemas/crm-apollo.schema'
 import type {
   ConnectGithubDTO,
   ConnectGitlabDTO,
@@ -123,6 +124,18 @@ export function useWorkspaceIntegrationMutations(workspaceId: string) {
       ),
     onSuccess: invalidate,
   })
+  const connectApollo = useMutation({
+    mutationFn: (data: ConnectApolloDTO) =>
+      apiFetch<WorkspaceIntegrationDTO>(
+        `${url}/apollo`,
+        json('POST', data),
+        'Erro ao conectar a Apollo',
+      ),
+    onSuccess: async () => {
+      await invalidate()
+      await queryClient.invalidateQueries({ queryKey: ['crm-apollo'] })
+    },
+  })
   const updateCredentials = useMutation({
     mutationFn: ({
       kind,
@@ -158,6 +171,7 @@ export function useWorkspaceIntegrationMutations(workspaceId: string) {
     updateSlack,
     connectGithub,
     connectGitlab,
+    connectApollo,
     updateCredentials,
     test,
     disconnect,

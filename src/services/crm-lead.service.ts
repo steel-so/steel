@@ -83,9 +83,21 @@ export type CrmLeadIntakeActor =
   | {
       kind: 'system'
       createdById: string
-      via: 'integration_api_key' | 'form'
+      via: 'integration_api_key' | 'form' | 'apollo'
       refId: string
     }
+
+/** Extras of the trusted internal channels (never accepted from the public). */
+export interface CrmLeadIntakeOptions {
+  /**
+   * Bulk mode (imports): keeps scoring, routing, workflows and the search
+   * index but skips the per-lead Slack message, outbound webhook and owner
+   * notification — the importer sends one summary at the end.
+   */
+  quiet?: boolean
+  /** Origin system and id, unique per workspace (`CrmLead.externalSource`). */
+  external?: { source: string; id: string }
+}
 
 export interface CrmLeadIntakeResult {
   lead: CrmLeadDTO
@@ -256,6 +268,7 @@ export const CrmLeadService = {
     workspaceId: string,
     actor: CrmLeadIntakeActor,
     input: CrmLeadIntakeInput,
+    options: CrmLeadIntakeOptions = {},
   ): Promise<Result<CrmLeadIntakeResult>> {
     const parsed = CreateCrmLeadSchema.safeParse(input)
     if (!parsed.success) {
@@ -325,6 +338,8 @@ export const CrmLeadService = {
       channel: dto.channel,
       score,
       ownerId,
+      externalSource: options.external?.source,
+      externalId: options.external?.id,
     })
 
     if (!result.ok) {
@@ -359,11 +374,13 @@ export const CrmLeadService = {
       leadId: lead.id,
       name: lead.name,
     })
-    void notifyCrmLeadCreated({ workspaceId, lead })
-    void emitWebhookEvent(workspaceId, 'crm.lead.created', () =>
-      crmLeadCreatedData(lead),
-    )
-    if (ownerId) {
+    if (!options.quiet) {
+      void notifyCrmLeadCreated({ workspaceId, lead })
+      void emitWebhookEvent(workspaceId, 'crm.lead.created', () =>
+        crmLeadCreatedData(lead),
+      )
+    }
+    if (ownerId && !options.quiet) {
       void notifyCrmLeadAssigned({
         workspaceId,
         lead: result.value,

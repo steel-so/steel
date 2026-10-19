@@ -12,6 +12,11 @@ export interface CampaignCandidate {
   name: string
   email?: string | null
   phone?: string | null
+  /**
+   * Cold contacts (Apollo imports) never get WhatsApp: Meta requires a prior
+   * opt-in. They stay reachable by e-mail (legitimate interest + unsubscribe).
+   */
+  whatsappBlocked?: boolean
 }
 
 export interface CampaignOptOutIndex {
@@ -78,7 +83,9 @@ export function buildCampaignAudience(
     seen.add(key)
     if (email) seenEmails.add(email)
 
-    const waId = toCampaignWaId(candidate.phone)
+    const waId = candidate.whatsappBlocked
+      ? null
+      : toCampaignWaId(candidate.phone)
     const emailOptedOut =
       (email !== null && optOuts.emails.has(email)) ||
       (candidate.personId ? optOuts.personIds.has(candidate.personId) : false)
@@ -94,13 +101,14 @@ export function buildCampaignAudience(
         : emailOptedOut
           ? { status: 'SKIPPED', skipReason: 'opted_out' }
           : { status: 'PENDING', skipReason: null },
-      whatsappState: !options.whatsappEnabled
-        ? { status: 'NONE', skipReason: null }
-        : !waId
-          ? { status: 'NONE', skipReason: 'missing' }
-          : optOuts.waIds.has(waId)
-            ? { status: 'SKIPPED', skipReason: 'opted_out' }
-            : { status: 'PENDING', skipReason: null },
+      whatsappState:
+        !options.whatsappEnabled || candidate.whatsappBlocked
+          ? { status: 'NONE', skipReason: null }
+          : !waId
+            ? { status: 'NONE', skipReason: 'missing' }
+            : optOuts.waIds.has(waId)
+              ? { status: 'SKIPPED', skipReason: 'opted_out' }
+              : { status: 'PENDING', skipReason: null },
     })
   }
 

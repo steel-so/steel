@@ -4,7 +4,7 @@
  * the page only knows whether a secret exists (`hasWebhookSecret`).
  */
 
-export type WorkspaceIntegrationKindDTO = 'SLACK' | 'GITHUB' | 'GITLAB'
+export type WorkspaceIntegrationKindDTO = 'SLACK' | 'GITHUB' | 'GITLAB' | 'APOLLO'
 export type WorkspaceIntegrationStatusDTO = 'ACTIVE' | 'ERROR' | 'DISCONNECTED'
 export type IntegrationModuleDTO = 'SERVICE_DESK' | 'CRM' | 'COMMUNICATION'
 

@@ -5,6 +5,7 @@ import {
   GitlabIcon,
   RefreshIcon,
   SlackIcon,
+  UserSearch01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useEffect, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
@@ -30,6 +31,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { notify } from '@/lib/notify'
 import {
+  useCrmApolloConnection,
+  useCrmApolloMailingLists,
+  useUpdateCrmApolloSettings,
+} from '@/src/hooks/use-crm-apollo'
+import {
   useWorkspaceIntegrationMutations,
   useWorkspaceIntegrations,
   workspaceSlackConnectUrl,
@@ -43,6 +49,7 @@ import {
   CopyField,
   Field,
   IntegrationStatusBadge,
+  PlainSelect,
 } from './integration-kit'
 import { SlackRules } from './slack-rules'
 
@@ -73,6 +80,12 @@ const PROVIDER_COPY: Record<
     description:
       'Os mesmos recursos do GitHub com issues e merge requests, no gitlab.com ou numa instância própria (self-managed).',
     icon: GitlabIcon,
+  },
+  APOLLO: {
+    title: 'Apollo.io',
+    description:
+      'Busque pessoas na base da Apollo com a chave da sua própria conta e importe como leads do CRM. A busca não gasta créditos; a importação consome os créditos da sua conta Apollo.',
+    icon: UserSearch01Icon,
   },
 }
 
@@ -120,9 +133,9 @@ function CardActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Desconectar o {copy.title}?</AlertDialogTitle>
             <AlertDialogDescription>
-              O token é apagado e as atualizações param na hora, em todos os
-              módulos. Os vínculos já registrados ficam no histórico dos
-              chamados.
+              {provider.kind === 'APOLLO'
+                ? 'A chave é apagada e as novas buscas e importações param na hora. Os leads já importados continuam no CRM.'
+                : 'O token é apagado e as atualizações param na hora, em todos os módulos. Os vínculos já registrados ficam no histórico dos chamados.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -249,6 +262,117 @@ function SlackCard({
           settings={connection.slack}
           enabledModules={enabledModules}
         />
+      ) : null}
+    </ProviderCard>
+  )
+}
+
+/* --------------------------------- Apollo --------------------------------- */
+
+const APOLLO_KEY_URL = 'https://app.apollo.io/#/settings/integrations/api'
+const NO_LIST = '__none__'
+
+function ApolloCard({
+  workspaceId,
+  provider,
+  crmEnabled,
+}: {
+  workspaceId: string
+  provider: WorkspaceIntegrationProviderDTO
+  crmEnabled: boolean
+}) {
+  const { connectApollo } = useWorkspaceIntegrationMutations(workspaceId)
+  const [apiKey, setApiKey] = useState('')
+  const connection = provider.connection
+  const settings = useCrmApolloConnection(workspaceId)
+  const lists = useCrmApolloMailingLists(workspaceId)
+  const updateSettings = useUpdateCrmApolloSettings(workspaceId)
+  const showDefaultList = crmEnabled && !!connection
+
+  return (
+    <ProviderCard workspaceId={workspaceId} provider={provider}>
+      {connection ? (
+        <p className='text-muted-foreground text-sm'>
+          Chave em uso: <code>{connection.externalName ?? '••••'}</code>
+        </p>
+      ) : null}
+      <form
+        className='flex min-w-0 flex-col gap-3'
+        onSubmit={(event) => {
+          event.preventDefault()
+          connectApollo.mutate(
+            { apiKey: apiKey.trim() },
+            {
+              onSuccess: () => {
+                setApiKey('')
+                notify.success(
+                  connection ? 'Chave da Apollo trocada' : 'Apollo conectada',
+                )
+              },
+              onError: (error) => notify.error(error.message),
+            },
+          )
+        }}
+      >
+        <Field
+          id='apollo-api-key'
+          label={connection ? 'Trocar a chave de API' : 'Chave de API'}
+          hint='Só administradores veem esta tela. A chave é guardada cifrada e nunca é exibida de novo.'
+        >
+          <div className='flex min-w-0 items-center gap-2'>
+            <Input
+              id='apollo-api-key'
+              type='password'
+              autoComplete='off'
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              className='min-w-0'
+            />
+            <Button
+              type='submit'
+              disabled={connectApollo.isPending || apiKey.trim().length < 10}
+            >
+              {connection ? 'Salvar' : 'Conectar a Apollo'}
+            </Button>
+          </div>
+        </Field>
+        <a
+          href={APOLLO_KEY_URL}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='w-fit text-primary text-sm underline-offset-4 hover:underline'
+        >
+          Onde encontro minha chave? Apollo › Settings › Integrations › API
+        </a>
+      </form>
+      {showDefaultList ? (
+        <Field
+          id='apollo-default-list'
+          label='Lista de e-mail padrão das importações'
+          hint='Sugerida ao importar; dá para trocar a cada importação.'
+        >
+          <PlainSelect
+            ariaLabel='Lista de e-mail padrão'
+            value={settings.data?.defaultMailingListId ?? NO_LIST}
+            disabled={updateSettings.isPending || !lists.data}
+            options={[
+              { value: NO_LIST, label: 'Nenhuma' },
+              ...(lists.data ?? []).map((list) => ({
+                value: list.id,
+                label: list.name,
+              })),
+            ]}
+            onChange={(value) =>
+              updateSettings.mutate(
+                { defaultMailingListId: value === NO_LIST ? null : value },
+                {
+                  onSuccess: () => notify.success('Lista padrão salva'),
+                  onError: (error) => notify.error(error.message),
+                },
+              )
+            }
+          />
+        </Field>
       ) : null}
     </ProviderCard>
   )
@@ -552,6 +676,13 @@ export function IntegrationsManager({
             workspaceId={workspaceId}
             provider={provider}
             enabledModules={data.enabledModules}
+          />
+        ) : provider.kind === 'APOLLO' ? (
+          <ApolloCard
+            key={provider.kind}
+            workspaceId={workspaceId}
+            provider={provider}
+            crmEnabled={data.enabledModules.includes('CRM')}
           />
         ) : (
           <RepoCard

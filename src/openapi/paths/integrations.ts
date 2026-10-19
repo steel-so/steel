@@ -28,7 +28,7 @@ const SECRECY =
 const PRIVILEGED = 'Acesso: sessão + **OWNER/ADMIN** do workspace.'
 
 const dateTime = () => z.iso.datetime()
-const Kind = z.enum(['SLACK', 'GITHUB', 'GITLAB'])
+const Kind = z.enum(['SLACK', 'GITHUB', 'GITLAB', 'APOLLO'])
 
 const SlackRoute = z.object({
   event: z.string().meta({

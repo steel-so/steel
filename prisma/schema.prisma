@@ -226,6 +226,7 @@ model User {
   webhookEndpointsCreated   WebhookEndpoint[]          @relation("WebhookEndpointCreatedBy")
   aiInsights                AiInsight[]
   aiDigestSettings          AiDigestSetting[]
+  crmApolloImports          CrmApolloImport[]          @relation("CrmApolloImportCreatedBy")
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -587,6 +588,7 @@ model Workspace {
   webhookDeliveries         WebhookDelivery[]
   aiInsights                AiInsight[]
   aiDigestSettings          AiDigestSetting[]
+  crmApolloImports          CrmApolloImport[]
 
   @@index([status])
   @@map("workspaces")
@@ -2211,6 +2213,12 @@ model CrmLead {
   lostNote         String?             @map("lost_note")
   retryAt          DateTime?           @map("retry_at")
 
+  /// Origin system of an imported lead (`apollo`) and its id there; the pair
+  /// is unique per workspace so a re-import never duplicates (deleted rows
+  /// keep their key on purpose: a removed lead is not re-imported).
+  externalSource String? @map("external_source")
+  externalId     String? @map("external_id")
+
   createdById String    @map("created_by_id")
   updatedById String?   @map("updated_by_id")
   position    Int       @default(0)
@@ -2233,6 +2241,7 @@ model CrmLead {
   reopenings            CrmLeadReopening[]
   notes                 CrmNote[]
 
+  @@unique([workspaceId, externalSource, externalId])
   @@index([workspaceId])
   @@index([ownerId])
   @@index([stage])
@@ -4903,6 +4912,8 @@ enum NotificationKind {
   CRM_PROPOSAL_VIEWED
   /// CRM: proposal accepted by the client.
   CRM_PROPOSAL_ACCEPTED
+  /// CRM: Apollo.io lead import finished (summary for the creator).
+  CRM_APOLLO_IMPORT_DONE
   /// CRM: proposal expired without an answer.
   CRM_PROPOSAL_EXPIRED
   /// CRM: public form submitted.
@@ -7455,6 +7466,7 @@ enum WorkspaceIntegrationKind {
   SLACK
   GITHUB
   GITLAB
+  APOLLO
 
   @@map("workspace_integration_kind")
 }
@@ -8787,4 +8799,61 @@ model AiDigestSetting {
 
   @@unique([userId, workspaceId])
   @@map("ai_digest_settings")
+}
+
+// ─── CRM: Apollo.io lead import ──────────────────────────────────────────────
+
+enum CrmApolloImportStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+  PAUSED_RATE_LIMIT
+
+  @@map("crm_apollo_import_status")
+}
+
+enum CrmApolloImportSource {
+  SEARCH
+  LIST
+
+  @@map("crm_apollo_import_source")
+}
+
+/// One run of "Importar da Apollo": the people picked in the preview
+/// (`apolloIds`) are enriched in batches of 10 by the `crm-apollo-import`
+/// worker and become CRM leads. The API key never lives here (it is the
+/// workspace's `APOLLO` integration).
+model CrmApolloImport {
+  id              String                @id @default(cuid())
+  workspaceId     String                @map("workspace_id")
+  createdById     String                @map("created_by_id")
+  status          CrmApolloImportStatus @default(QUEUED)
+  source          CrmApolloImportSource
+  /// Filters of the search (or `{ labelId }` for a saved list) for the history.
+  filters         Json                  @default("{}")
+  /// Apollo person ids (SEARCH) or contact ids (LIST) to import.
+  apolloIds       String[]              @default([]) @map("apollo_ids")
+  /// LIST imports carry the already-saved contacts (no enrichment, 0 credits).
+  contacts        Json?
+  mailingListId   String?               @map("mailing_list_id")
+  requestedCount  Int                   @default(0) @map("requested_count")
+  createdCount    Int                   @default(0) @map("created_count")
+  skippedCount    Int                   @default(0) @map("skipped_count")
+  failedCount     Int                   @default(0) @map("failed_count")
+  /// Next index of `apolloIds` to process (resume after a rate-limit pause).
+  cursor          Int                   @default(0)
+  creditsConsumed Int                   @default(0) @map("credits_consumed")
+  error           String?
+  startedAt       DateTime?             @map("started_at")
+  finishedAt      DateTime?             @map("finished_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("CrmApolloImportCreatedBy", fields: [createdById], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([status])
+  @@map("crm_apollo_imports")
 }

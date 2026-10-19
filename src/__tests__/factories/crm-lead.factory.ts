@@ -44,6 +44,8 @@ export function createFakeCrmLead(overrides?: Partial<CrmLead>): CrmLead {
     lostReason: null,
     lostNote: null,
     retryAt: null,
+    externalSource: null,
+    externalId: null,
     createdById: createId(),
     updatedById: null,
     position: 0,
@@ -112,6 +114,8 @@ export async function seedCrmLead(
       | 'lostReason'
       | 'lostNote'
       | 'retryAt'
+      | 'externalSource'
+      | 'externalId'
     >
   >,
 ) {

@@ -14,6 +14,7 @@ export const WORKSPACE_INTEGRATION_KINDS = [
   'SLACK',
   'GITHUB',
   'GITLAB',
+  'APOLLO',
 ] as const
 export type WorkspaceIntegrationKindValue =
   (typeof WORKSPACE_INTEGRATION_KINDS)[number]
@@ -35,6 +36,7 @@ export const INTEGRATION_PROVIDER_LABEL: Record<
   SLACK: 'Slack',
   GITHUB: 'GitHub',
   GITLAB: 'GitLab',
+  APOLLO: 'Apollo.io',
 }
 
 /** Module a notification event belongs to (Steel Agents is not a module). */

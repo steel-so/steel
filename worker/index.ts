@@ -15,6 +15,7 @@ import { processAiProactive } from '../src/lib/queue/processors/ai-proactive'
 import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-weekly-email'
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
+import { processCrmApolloImport } from '../src/lib/queue/processors/crm-apollo-import'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
 import { processCrmProposalExpiry } from '../src/lib/queue/processors/crm-proposal-expiry'
 import { processCrmScheduledSend } from '../src/lib/queue/processors/crm-scheduled-send'
@@ -212,6 +213,9 @@ async function main(): Promise<void> {
   )
   workers.push(
     registerWorker(QueueName.CrmCompetitorSync, processCrmCompetitorSync),
+  )
+  workers.push(
+    registerWorker(QueueName.CrmApolloImport, processCrmApolloImport),
   )
   workers.push(
     registerWorker(QueueName.CrmProposalExpiry, processCrmProposalExpiry),

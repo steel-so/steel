@@ -257,6 +257,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'proposal',
     color: 'sky',
   },
+  CRM_APOLLO_IMPORT_DONE: {
+    module: 'CRM',
+    label: 'Importação da Apollo concluída',
+    icon: 'assign',
+    color: 'violet',
+  },
   CRM_PROPOSAL_ACCEPTED: {
     module: 'CRM',
     label: 'Proposta aceita',

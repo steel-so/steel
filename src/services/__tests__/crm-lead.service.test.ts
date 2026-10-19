@@ -33,6 +33,7 @@ import { CrmProposalRepository } from '@/src/repositories/crm-proposal.repositor
 import { CrmSettingsRepository } from '@/src/repositories/crm-settings.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import { notifyCrmLeadCreated } from '@/src/services/crm-notifications'
 import { CrmLeadService } from '../crm-lead.service'
 import { dispatchCrmWorkflowRecordEvent } from '../crm-workflow-dispatcher'
 
@@ -232,6 +233,29 @@ describe('CrmLeadService', () => {
         phones: ['81999990000'],
       })
       expect(mockedMembershipRepo.findByUserAndWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('should record the external key and stay quiet in bulk mode', async () => {
+      mockedLeadRepo.findOpenByContacts.mockResolvedValue(ok(null))
+      mockedScoringRepo.listActiveByWorkspace.mockResolvedValue(ok([]))
+      mockedRoutingRepo.listActiveByWorkspace.mockResolvedValue(ok([]))
+      mockedLeadRepo.create.mockResolvedValue(
+        ok(createFakeCrmLead({ id: 'l9' })),
+      )
+      vi.mocked(notifyCrmLeadCreated).mockClear()
+
+      expectOk(
+        await CrmLeadService.intake(
+          'ws1',
+          { ...system, via: 'apollo' },
+          { name: 'Ana', emails: ['ana@acme.com'], source: 'Apollo' },
+          { quiet: true, external: { source: 'apollo', id: 'p1' } },
+        ),
+      )
+      expect(mockedLeadRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ externalSource: 'apollo', externalId: 'p1' }),
+      )
+      expect(notifyCrmLeadCreated).not.toHaveBeenCalled()
     })
 
     it('should return the existing open lead instead of duplicating', async () => {
