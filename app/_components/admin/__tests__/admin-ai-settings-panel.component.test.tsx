@@ -31,6 +31,12 @@ const SETTINGS: PlatformAiSettingsDTO = {
       chargedOutputUsdPer1M: 0.6,
     },
   ],
+  embeddingsEnabled: true,
+  knowledgeSearch: {
+    providerConfigured: true,
+    vectorIndexReady: false,
+    mode: 'text',
+  },
 }
 
 describe('<AdminAiSettingsPanel />', () => {
@@ -96,5 +102,33 @@ describe('<AdminAiSettingsPanel />', () => {
     )
     expect(notify.error).toHaveBeenCalled()
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('shows the knowledge search state and switches embeddings off', async () => {
+    const spy = mockFetch([
+      {
+        method: 'PATCH',
+        match: '/api/admin/ai',
+        data: { ...SETTINGS, embeddingsEnabled: false },
+      },
+    ])
+    renderWithQuery(<AdminAiSettingsPanel initial={SETTINGS} />)
+    expect(screen.getByText('Chave da OpenAI configurada')).toBeTruthy()
+    expect(screen.getByText('pgvector não instalado')).toBeTruthy()
+    expect(screen.getByText('Modo: só texto')).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Busca semântica (embeddings)' }),
+    )
+
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith(
+        'Busca semântica desligada: a busca segue só por texto',
+      ),
+    )
+    expect(fetchBody(spy, '/api/admin/ai', 'PATCH')).toEqual({
+      costMargin: 1,
+      embeddingsEnabled: false,
+    })
   })
 })
