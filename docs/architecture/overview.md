@@ -392,6 +392,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 | `crm-workflow-schedule` | workflows `on-a-schedule` | a cada 1 min |
 | `crm-workflow-delay` | etapa **Atraso** dos workflows: o run fica `WAITING` com escopo e etapas pendentes em `run.state`; o job atrasado (`resume`) retoma do passo seguinte quando o prazo vence (se disparar antes, reagenda o restante) | sob demanda (job atrasado) |
 | `crm-competitor-sync` | métricas e posts públicos de concorrentes (e da conta própria) para a análise comparativa | cron 04:00 |
+| `crm-apollo-import` | importação de leads da Apollo.io sob demanda: enriquece em lotes de 10 (`bulk_match`), cria leads em modo silencioso e avisa o criador ao final; `attempts: 1` (nunca repete lote que gastou créditos) e, em 429, se reagenda com atraso e fica `PAUSED_RATE_LIMIT` | sob demanda |
 | `crm-proposal-expiry` | expira propostas com validade vencida e avisa o responsável | cron 00:05 |
 | `crm-task-reminders` | avisa na caixa de entrada o responsável por tarefas do CRM que vencem em até 1 h ou acabaram de atrasar (uma vez cada, por `dedupeKey`) | cron a cada 15 min |
 | `crm-social-posts-tick` | publica posts sociais vencidos | a cada 1 min |
