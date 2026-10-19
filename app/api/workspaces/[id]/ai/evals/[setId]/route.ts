@@ -86,5 +86,5 @@ export const DELETE = withAxiom(async (_request: NextRequest, ctx: Params) => {
   const result = await AiEvalService.deleteSet(auth.value.user.id, id, setId)
   if (!result.ok) return handleError(result.error)
 
-  return successResponse(result.value)
+  return successResponse({ id: setId })
 })

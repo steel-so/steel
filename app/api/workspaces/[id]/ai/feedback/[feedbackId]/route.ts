@@ -30,5 +30,5 @@ export const DELETE = withAxiom(async (_request: NextRequest, ctx: Params) => {
   )
   if (!result.ok) return handleError(result.error)
 
-  return successResponse(result.value)
+  return successResponse({ id: feedbackId })
 })
