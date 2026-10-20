@@ -5,6 +5,8 @@ export interface WhatsAppAutoOutreachDTO {
   status: WhatsAppAutoOutreachStatusDTO
   connectionId: string | null
   templateId: string | null
+  /** Nível de agressividade: segundos entre dois envios (20 a 60). */
+  intervalSeconds: number
   /** Contagem da fila por situação. */
   pending: number
   sent: number

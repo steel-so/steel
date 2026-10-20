@@ -54,7 +54,11 @@ const json = (body: unknown): RequestInit => ({
 export function useConfigureWhatsAppAutoOutreach(workspaceId: string) {
   return useOutreachMutation(
     workspaceId,
-    (input: { connectionId: string; templateId: string }) => ({
+    (input: {
+      connectionId?: string
+      templateId?: string
+      intervalSeconds?: number
+    }) => ({
       path: '',
       init: { ...json(input), method: 'PATCH' },
     }),

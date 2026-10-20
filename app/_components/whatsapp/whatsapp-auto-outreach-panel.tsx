@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
 import { notify } from '@/lib/notify'
 import {
   useClearWhatsAppAutoOutreach,
@@ -27,6 +28,16 @@ import {
 import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import { useWhatsAppTemplates } from '@/src/hooks/use-whatsapp-templates'
 import type { WhatsAppAutoOutreachStatusDTO } from '@/types/whatsapp-auto-outreach'
+
+const MIN_INTERVAL = 20
+const MAX_INTERVAL = 60
+
+/** Shorter interval = more aggressive. */
+function aggressivenessLabel(seconds: number): string {
+  if (seconds <= 25) return 'Agressivo'
+  if (seconds <= 45) return 'Moderado'
+  return 'Cauteloso'
+}
 
 const STATUS_LABEL: Record<WhatsAppAutoOutreachStatusDTO, string> = {
   IDLE: 'Parado',
@@ -62,11 +73,13 @@ export function WhatsappAutoOutreachPanel({
 
   const [connectionId, setConnectionId] = useState('')
   const [templateId, setTemplateId] = useState('')
+  const [intervalSeconds, setIntervalSeconds] = useState(30)
 
   useEffect(() => {
     if (!outreach.data) return
     setConnectionId(outreach.data.connectionId ?? '')
     setTemplateId(outreach.data.templateId ?? '')
+    setIntervalSeconds(outreach.data.intervalSeconds)
   }, [outreach.data])
 
   if (!canView) return null
@@ -99,6 +112,21 @@ export function WhatsappAutoOutreachPanel({
       {
         onSuccess: () => notify.success('Disparo automático salvo'),
         onError: (error) => notify.error(error, 'Não foi possível salvar'),
+      },
+    )
+  }
+
+  function handleIntervalCommit(seconds: number) {
+    if (seconds === data?.intervalSeconds) return
+    configure.mutate(
+      { intervalSeconds: seconds },
+      {
+        onSuccess: () =>
+          notify.success(`Intervalo entre envios: ${seconds} segundos`),
+        onError: (error) => {
+          setIntervalSeconds(data?.intervalSeconds ?? 30)
+          notify.error(error, 'Não foi possível salvar o intervalo')
+        },
       },
     )
   }
@@ -238,6 +266,35 @@ export function WhatsappAutoOutreachPanel({
           </Button>
         </div>
       ) : null}
+
+      <div className='max-w-md space-y-2'>
+        <div className='flex items-center justify-between text-sm'>
+          <Label htmlFor='autoOutreachInterval'>Nível de agressividade</Label>
+          <span className='text-muted-foreground text-xs'>
+            {aggressivenessLabel(intervalSeconds)} · um envio a cada{' '}
+            {intervalSeconds}s
+          </span>
+        </div>
+        <Slider
+          id='autoOutreachInterval'
+          aria-label='Segundos entre envios'
+          min={MIN_INTERVAL}
+          max={MAX_INTERVAL}
+          step={1}
+          value={[intervalSeconds]}
+          disabled={!canEdit || configure.isPending}
+          onValueChange={(value) =>
+            setIntervalSeconds(Array.isArray(value) ? value[0] : value)
+          }
+          onValueCommitted={(value) =>
+            handleIntervalCommit(Array.isArray(value) ? value[0] : value)
+          }
+        />
+        <div className='flex justify-between text-muted-foreground text-xs'>
+          <span>{MIN_INTERVAL}s (mais agressivo)</span>
+          <span>{MAX_INTERVAL}s (mais cauteloso)</span>
+        </div>
+      </div>
 
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <p className='text-muted-foreground text-xs'>

@@ -8,6 +8,9 @@ import {
 
 /** Pause between two automatic sends until the workspace picks its own. */
 export const WHATSAPP_AUTO_OUTREACH_DEFAULT_INTERVAL_SECONDS = 30
+/** Aggressiveness range: most aggressive 20 s, most cautious 60 s. */
+export const WHATSAPP_AUTO_OUTREACH_MIN_INTERVAL_SECONDS = 20
+export const WHATSAPP_AUTO_OUTREACH_MAX_INTERVAL_SECONDS = 60
 /** Skipped contacts (opt-out, already in service) move on almost at once. */
 export const WHATSAPP_AUTO_OUTREACH_SKIP_DELAY_MS = 1000
 /** Contacts added in one call (the whole contact list at most). */

@@ -78,6 +78,7 @@ async function toDTO(
       status: 'IDLE',
       connectionId: null,
       templateId: null,
+      intervalSeconds: WHATSAPP_AUTO_OUTREACH_DEFAULT_INTERVAL_SECONDS,
       pending: 0,
       sent: 0,
       failed: 0,
@@ -94,6 +95,7 @@ async function toDTO(
     status: outreach.status,
     connectionId: outreach.connectionId,
     templateId: outreach.templateId,
+    intervalSeconds: outreach.intervalSeconds,
     pending: counts.value.PENDING,
     sent: counts.value.SENT,
     failed: counts.value.FAILED,
@@ -251,7 +253,11 @@ export const WhatsAppAutoOutreachService = {
     return toDTO(outreach.value)
   },
 
-  /** Picks the connection and the approved template (paused/idle only). */
+  /**
+   * Picks the connection and the approved template (stopped only) and/or
+   * the aggressiveness (interval between sends), which the next step of a
+   * running outreach already uses.
+   */
   async configure(
     actorId: string,
     workspaceId: string,
@@ -263,22 +269,32 @@ export const WhatsAppAutoOutreachService = {
     const existing =
       await WhatsAppAutoOutreachRepository.findByWorkspace(workspaceId)
     if (!existing.ok) return existing
-    if (existing.value?.status === 'RUNNING') {
-      return err(whatsappAutoOutreachRunning())
+
+    const changesTemplate = dto.connectionId !== undefined
+    if (changesTemplate) {
+      if (existing.value?.status === 'RUNNING') {
+        return err(whatsappAutoOutreachRunning())
+      }
+      const sendable = await loadSendable(
+        workspaceId,
+        dto.connectionId ?? null,
+        dto.templateId ?? null,
+      )
+      if (!sendable.ok) return sendable
     }
 
-    const sendable = await loadSendable(
-      workspaceId,
-      dto.connectionId,
-      dto.templateId,
-    )
-    if (!sendable.ok) return sendable
-
     const saved = await WhatsAppAutoOutreachRepository.upsert(workspaceId, {
-      connectionId: dto.connectionId,
-      templateId: dto.templateId,
+      ...(changesTemplate
+        ? {
+            connectionId: dto.connectionId,
+            templateId: dto.templateId,
+            lastError: null,
+          }
+        : {}),
+      ...(dto.intervalSeconds !== undefined
+        ? { intervalSeconds: dto.intervalSeconds }
+        : {}),
       updatedById: actorId,
-      lastError: null,
     })
     if (!saved.ok) return saved
 
@@ -287,7 +303,11 @@ export const WhatsAppAutoOutreachService = {
       action: 'update',
       actorId,
       targetId: saved.value.id,
-      meta: { workspaceId, templateId: dto.templateId },
+      meta: {
+        workspaceId,
+        templateId: dto.templateId,
+        intervalSeconds: dto.intervalSeconds,
+      },
     })
     return toDTO(saved.value)
   },
@@ -514,7 +534,7 @@ export const WhatsAppAutoOutreachService = {
     const recipient = next.value
     if (!recipient) return stop('DONE', null)
 
-    const interval = WHATSAPP_AUTO_OUTREACH_DEFAULT_INTERVAL_SECONDS * 1000
+    const interval = outreach.intervalSeconds * 1000
     const skip = async (
       reason: string,
     ): Promise<Result<WhatsAppAutoOutreachStepOutcome>> => {

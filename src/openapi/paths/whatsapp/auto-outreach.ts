@@ -30,8 +30,8 @@ export const autoOutreachRoutes: RouteConfig[] = [
     method: 'patch',
     path: BASE,
     tags: [TAG],
-    summary: 'Escolher conexão e template',
-    description: `Define a conexão (API oficial da Meta, módulo Comunicação) e o template **aprovado** que a IA envia. Variáveis de texto (\`{{n}}\`) recebem o primeiro nome do contato; templates com botão de link dinâmico são recusados. Só com o disparo parado. Auditado. ${perm('broadcasts', 'EDIT')}`,
+    summary: 'Configurar disparo (template e agressividade)',
+    description: `Define a conexão (API oficial da Meta, módulo Comunicação) e o template **aprovado** que a IA envia — os dois juntos, só com o disparo parado — e/ou o nível de agressividade \`intervalSeconds\` (segundos entre dois envios, de 20 a 60), que vale já no próximo envio, mesmo rodando. Variáveis de texto (\`{{n}}\`) recebem o primeiro nome do contato; templates com botão de link dinâmico são recusados. Auditado. ${perm('broadcasts', 'EDIT')}`,
     body: ConfigureWhatsAppAutoOutreachSchema,
     responses: {
       200: {
@@ -41,7 +41,7 @@ export const autoOutreachRoutes: RouteConfig[] = [
     },
     errors: [
       ...permErrors('broadcasts', 'EDIT'),
-      RUNNING,
+      { ...RUNNING, when: 'Troca de template com o disparo rodando' },
       'WHATSAPP_CONNECTION_NOT_FOUND',
       'WHATSAPP_TEMPLATE_NOT_FOUND',
       {

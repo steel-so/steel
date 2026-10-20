@@ -88,6 +88,7 @@ function outreach(
     connectionId: 'c1',
     templateId: 't1',
     status: 'RUNNING',
+    intervalSeconds: 30,
     runToken: 'tok',
     lastSentAt: null,
     lastError: null,
@@ -216,7 +217,56 @@ describe('WhatsAppAutoOutreachService.configure()', () => {
   })
 })
 
+describe('WhatsAppAutoOutreachService.configure() — aggressiveness', () => {
+  it('should change the interval while running', async () => {
+    asRole('ADMIN')
+    repo.findByWorkspace.mockResolvedValue(ok(outreach()))
+    repo.upsert.mockResolvedValue(ok(outreach({ intervalSeconds: 20 })))
+
+    const dto = expectOk(
+      await WhatsAppAutoOutreachService.configure('u1', 'ws1', {
+        intervalSeconds: 20,
+      }),
+    )
+
+    expect(dto.intervalSeconds).toBe(20)
+    expect(repo.upsert).toHaveBeenCalledWith('ws1', {
+      intervalSeconds: 20,
+      updatedById: 'u1',
+    })
+  })
+})
+
 describe('WhatsAppAutoOutreachService.sendNext()', () => {
+  it('should chain the next step after the workspace interval', async () => {
+    repo.findByWorkspace.mockResolvedValue(
+      ok(outreach({ intervalSeconds: 55 })),
+    )
+    repo.findNextPending.mockResolvedValue(
+      ok({
+        id: 'r1',
+        outreachId: 'o1',
+        contactId: 'ct1',
+        status: 'PENDING',
+        providerMessageId: null,
+        errorMessage: null,
+        sentAt: null,
+        createdAt: new Date(),
+        contact,
+      }),
+    )
+    send.template.mockResolvedValue(ok({ providerMessageId: 'wamid.2' }))
+
+    expect(
+      expectOk(await WhatsAppAutoOutreachService.sendNext('ws1', 'tok')),
+    ).toEqual({ status: 'sent', nextDelayMs: 55_000 })
+    expect(queueAdd).toHaveBeenCalledWith(
+      'send-auto-outreach-next',
+      expect.anything(),
+      expect.objectContaining({ delay: 55_000 }),
+    )
+  })
+
   it('should stop silently on a stale run token', async () => {
     repo.findByWorkspace.mockResolvedValue(ok(outreach({ runToken: 'other' })))
 

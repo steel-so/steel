@@ -23,6 +23,7 @@ function state(
     status: 'PAUSED',
     connectionId: 'c1',
     templateId: 't1',
+    intervalSeconds: 30,
     pending: 3,
     sent: 5,
     failed: 1,
@@ -102,6 +103,18 @@ describe('<WhatsappAutoOutreachPanel />', () => {
     expect(fetchBody(fetchSpy, `${API}/auto-outreach/recipients`)).toEqual({
       contactIds: ['ct1', 'ct2'],
     })
+  })
+
+  it('shows the aggressiveness of the saved interval', async () => {
+    setup(state({ intervalSeconds: 20 }))
+    renderWithQuery(
+      <WhatsappAutoOutreachPanel workspaceId='ws_1' selectedContactIds={[]} />,
+    )
+
+    expect(
+      await screen.findByText('Agressivo · um envio a cada 20s'),
+    ).toBeTruthy()
+    expect(screen.getByText('Nível de agressividade')).toBeTruthy()
   })
 
   it('shows why the run paused itself', async () => {

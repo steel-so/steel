@@ -1698,18 +1698,20 @@ enum WhatsAppAutoOutreachStatus {
 /// Play/pause na página de contatos. `runToken` identifica a cadeia de jobs
 /// atual — um play novo invalida a anterior (sem envios em dobro).
 model WhatsAppAutoOutreach {
-  id           String                     @id @default(cuid())
-  workspaceId  String                     @unique @map("workspace_id")
-  connectionId String?                    @map("connection_id")
-  templateId   String?                    @map("template_id")
-  status       WhatsAppAutoOutreachStatus @default(IDLE)
-  runToken     String?                    @map("run_token")
-  lastSentAt   DateTime?                  @map("last_sent_at")
+  id              String                     @id @default(cuid())
+  workspaceId     String                     @unique @map("workspace_id")
+  connectionId    String?                    @map("connection_id")
+  templateId      String?                    @map("template_id")
+  status          WhatsAppAutoOutreachStatus @default(IDLE)
+  /// Nível de agressividade: segundos entre dois envios (20 a 60).
+  intervalSeconds Int                        @default(30) @map("interval_seconds")
+  runToken        String?                    @map("run_token")
+  lastSentAt      DateTime?                  @map("last_sent_at")
   /// Motivo da última pausa automática (limite mensal, template removido...).
-  lastError    String?                    @map("last_error")
-  updatedById  String?                    @map("updated_by_id")
-  createdAt    DateTime                   @default(now()) @map("created_at")
-  updatedAt    DateTime                   @updatedAt @map("updated_at")
+  lastError       String?                    @map("last_error")
+  updatedById     String?                    @map("updated_by_id")
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  updatedAt       DateTime                   @updatedAt @map("updated_at")
 
   workspace  Workspace                       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   connection WhatsAppConnection?             @relation(fields: [connectionId], references: [id], onDelete: SetNull)

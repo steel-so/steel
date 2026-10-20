@@ -102377,9 +102377,9 @@
       },
       "patch": {
         "tags": ["Comunicação · Disparo automático"],
-        "summary": "Escolher conexão e template",
+        "summary": "Configurar disparo (template e agressividade)",
         "operationId": "patchWorkspacesByIdWhatsappAutoOutreach",
-        "description": "Define a conexão (API oficial da Meta, módulo Comunicação) e o template **aprovado** que a IA envia. Variáveis de texto (`{{n}}`) recebem o primeiro nome do contato; templates com botão de link dinâmico são recusados. Só com o disparo parado. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Define a conexão (API oficial da Meta, módulo Comunicação) e o template **aprovado** que a IA envia — os dois juntos, só com o disparo parado — e/ou o nível de agressividade `intervalSeconds` (segundos entre dois envios, de 20 a 60), que vale já no próximo envio, mesmo rodando. Variáveis de texto (`{{n}}`) recebem o primeiro nome do contato; templates com botão de link dinâmico são recusados. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -102399,9 +102399,13 @@
                   "templateId": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "intervalSeconds": {
+                    "type": "integer",
+                    "minimum": 20,
+                    "maximum": 60
                   }
-                },
-                "required": ["connectionId", "templateId"]
+                }
               }
             }
           }
@@ -102439,7 +102443,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_TEMPLATE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_AUTO_OUTREACH_RUNNING"
+            "$ref": "#/components/responses/409_WHATSAPP_AUTO_OUTREACH_RUNNING_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_AUTO_OUTREACH_NOT_READY"
@@ -139170,6 +139174,29 @@
             "examples": {
               "WHATSAPP_AUTO_OUTREACH_RUNNING": {
                 "summary": "WHATSAPP_AUTO_OUTREACH_RUNNING — O disparo está rodando — pause antes",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Pause o disparo automático antes de trocar a conexão ou o template",
+                  "error": {
+                    "code": "WHATSAPP_AUTO_OUTREACH_RUNNING"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_AUTO_OUTREACH_RUNNING_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_AUTO_OUTREACH_RUNNING`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_AUTO_OUTREACH_RUNNING": {
+                "summary": "WHATSAPP_AUTO_OUTREACH_RUNNING — Troca de template com o disparo rodando",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -192879,6 +192906,12 @@
               }
             ]
           },
+          "intervalSeconds": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Nível de agressividade: segundos entre dois envios (20 a 60; padrão 30)."
+          },
           "pending": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -192933,6 +192966,7 @@
           "status",
           "connectionId",
           "templateId",
+          "intervalSeconds",
           "pending",
           "sent",
           "failed",

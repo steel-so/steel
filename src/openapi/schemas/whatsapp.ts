@@ -537,6 +537,10 @@ export const WhatsAppAutoOutreachDTO = dto(
       status: z.enum(['IDLE', 'RUNNING', 'PAUSED', 'DONE']),
       connectionId: z.string().nullable(),
       templateId: z.string().nullable(),
+      intervalSeconds: z.number().int().meta({
+        description:
+          'Nível de agressividade: segundos entre dois envios (20 a 60; padrão 30).',
+      }),
       pending: z.number().int(),
       sent: z.number().int(),
       failed: z.number().int(),
