@@ -321,6 +321,41 @@ export function CrmLeadsBoard({
 }
 
 /** `U` inside the lead sheet closes it (the sheet traps other keys). */
+function LeadContacts({ lead }: { lead: CrmLeadDTO }) {
+  return (
+    <dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm'>
+      <dt className='text-muted-foreground'>E-mail</dt>
+      <dd className='min-w-0 break-words'>
+        {lead.emails.length === 0
+          ? '—'
+          : lead.emails.map((email) => (
+              <a
+                key={email}
+                href={`mailto:${email}`}
+                className='block hover:underline'
+              >
+                {email}
+              </a>
+            ))}
+      </dd>
+      <dt className='text-muted-foreground'>Telefone</dt>
+      <dd className='min-w-0'>
+        {lead.phones.length === 0
+          ? '—'
+          : lead.phones.map((phone) => (
+              <a
+                key={phone}
+                href={`tel:${phone}`}
+                className='block hover:underline'
+              >
+                {phone}
+              </a>
+            ))}
+      </dd>
+    </dl>
+  )
+}
+
 function LeadPanelShortcuts({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLSpanElement | null>(null)
   useShortcut('crm.record.back', onClose, { ref })
@@ -362,6 +397,8 @@ function LeadStagePanel({
       </SheetHeader>
 
       <div className='flex flex-col gap-6 px-4'>
+        <LeadContacts lead={lead} />
+
         {lead.stage === 'RECEIVED' || lead.stage === 'IN_CONTACT' ? (
           <ContactAttemptForm
             workspaceId={workspaceId}

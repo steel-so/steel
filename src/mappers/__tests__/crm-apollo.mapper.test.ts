@@ -69,7 +69,7 @@ describe('toCrmApolloPersonDTO', () => {
     lastNameObfuscated: 'Si***a',
     title: 'CTO',
     hasEmail: true,
-    hasDirectPhone: true,
+    directPhone: 'YES',
     organizationName: 'Acme',
   }
 
@@ -80,6 +80,7 @@ describe('toCrmApolloPersonDTO', () => {
       title: 'CTO',
       organizationName: 'Acme',
       hasEmail: true,
+      directPhone: 'YES',
     })
   })
 

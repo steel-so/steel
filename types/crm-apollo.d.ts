@@ -37,6 +37,8 @@ export interface CrmApolloPersonDTO {
   title: string | null
   organizationName: string | null
   hasEmail: boolean
+  /** `MAYBE`: Apollo only confirms after enrichment. */
+  directPhone: 'YES' | 'MAYBE' | 'NO'
 }
 
 export interface CrmApolloSearchResultDTO {

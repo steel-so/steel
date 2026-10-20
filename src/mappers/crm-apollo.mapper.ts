@@ -54,6 +54,7 @@ export function toCrmApolloPersonDTO(
     title: person.title,
     organizationName: person.organizationName,
     hasEmail: person.hasEmail,
+    directPhone: person.directPhone,
   }
 }
 

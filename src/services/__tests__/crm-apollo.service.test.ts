@@ -320,7 +320,7 @@ describe('search', () => {
               lastNameObfuscated: 'Si***a',
               title: 'CTO',
               hasEmail: true,
-              hasDirectPhone: false,
+              directPhone: 'NO',
               organizationName: 'Acme',
             },
           ],

@@ -6,7 +6,11 @@ vi.mock('@/lib/axiom/logger', () => ({
 }))
 
 import { logger } from '@/lib/axiom/logger'
-import { ApolloClient, readRateLimit } from '../integrations/apollo-client'
+import {
+  ApolloClient,
+  directPhoneAvailability,
+  readRateLimit,
+} from '../integrations/apollo-client'
 
 const fetchMock = vi.fn()
 const KEY = 'apollo-key-super-secreta-123'
@@ -135,7 +139,8 @@ describe('ApolloClient.searchPeople', () => {
             last_name_obfuscated: 'Si***a',
             title: 'CTO',
             has_email: true,
-            has_direct_phone: false,
+            has_direct_phone:
+              'Maybe: please request direct dial via people/bulk_match',
             organization: { name: 'Acme' },
           },
           { id: 'p2' },
@@ -152,7 +157,7 @@ describe('ApolloClient.searchPeople', () => {
       lastNameObfuscated: 'Si***a',
       title: 'CTO',
       hasEmail: true,
-      hasDirectPhone: false,
+      directPhone: 'MAYBE',
       organizationName: 'Acme',
     })
     expect(result.data.people[1].hasEmail).toBe(false)
@@ -339,5 +344,18 @@ describe('ApolloClient.searchContacts', () => {
       totalEntries: 0,
       totalPages: 0,
     })
+  })
+})
+
+describe('directPhoneAvailability', () => {
+  it.each([
+    ['Yes', 'YES'],
+    [true, 'YES'],
+    ['Maybe: please request direct dial via people/bulk_match', 'MAYBE'],
+    ['No', 'NO'],
+    [false, 'NO'],
+    [undefined, 'NO'],
+  ])('maps %j to %s', (raw, expected) => {
+    expect(directPhoneAvailability(raw)).toBe(expected)
   })
 })

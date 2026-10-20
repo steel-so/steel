@@ -33,6 +33,12 @@ const PER_PAGE = 25
 const BULK_PER_PAGE = 100
 
 /** "Buscar na Apollo": filters → preview (0 credits) → select → import. */
+const PHONE_LABEL = {
+  YES: 'Sim',
+  MAYBE: 'Talvez',
+  NO: 'Não',
+} as const
+
 export function ApolloSearchTab({
   workspaceId,
   defaultMailingListId,
@@ -238,6 +244,7 @@ export function ApolloSearchTab({
                     <TableHead>Cargo</TableHead>
                     <TableHead>Empresa</TableHead>
                     <TableHead>E-mail</TableHead>
+                    <TableHead>Telefone</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -268,6 +275,9 @@ export function ApolloSearchTab({
                       </TableCell>
                       <TableCell className='text-muted-foreground'>
                         {person.hasEmail ? 'Sim' : 'Não'}
+                      </TableCell>
+                      <TableCell className='text-muted-foreground'>
+                        {PHONE_LABEL[person.directPhone]}
                       </TableCell>
                     </TableRow>
                   ))}

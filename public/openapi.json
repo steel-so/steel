@@ -151936,9 +151936,14 @@
                 },
                 "hasEmail": {
                   "type": "boolean"
+                },
+                "directPhone": {
+                  "type": "string",
+                  "enum": ["YES", "MAYBE", "NO"],
+                  "description": "Telefone direto: `MAYBE` só se confirma ao enriquecer."
                 }
               },
-              "required": ["id", "name", "title", "organizationName", "hasEmail"]
+              "required": ["id", "name", "title", "organizationName", "hasEmail", "directPhone"]
             }
           },
           "rateLimit": {

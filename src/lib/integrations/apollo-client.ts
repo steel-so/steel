@@ -31,13 +31,22 @@ export interface ApolloReply<T> {
   rateLimit: ApolloRateLimit
 }
 
+export function directPhoneAvailability(raw: unknown): 'YES' | 'MAYBE' | 'NO' {
+  if (raw === true) return 'YES'
+  if (typeof raw !== 'string') return 'NO'
+  const value = raw.trim().toLowerCase()
+  if (value === 'yes') return 'YES'
+  return value.startsWith('maybe') ? 'MAYBE' : 'NO'
+}
+
 export interface ApolloPersonPreview {
   id: string
   firstName: string | null
   lastNameObfuscated: string | null
   title: string | null
   hasEmail: boolean
-  hasDirectPhone: boolean
+  /** Apollo answers `Yes`, `Maybe: …` (needs enrichment) or `No`. */
+  directPhone: 'YES' | 'MAYBE' | 'NO'
   organizationName: string | null
 }
 
@@ -213,7 +222,7 @@ export const ApolloClient = {
           lastNameObfuscated: str(p.last_name_obfuscated),
           title: str(p.title),
           hasEmail: p.has_email === true,
-          hasDirectPhone: p.has_direct_phone === true,
+          directPhone: directPhoneAvailability(p.has_direct_phone),
           organizationName: str(rec(p.organization).name),
         })),
       },

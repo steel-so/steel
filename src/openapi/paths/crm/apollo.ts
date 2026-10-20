@@ -60,6 +60,9 @@ const Person = z.object({
   title: z.string().nullable(),
   organizationName: z.string().nullable(),
   hasEmail: z.boolean(),
+  directPhone: z.enum(['YES', 'MAYBE', 'NO']).meta({
+    description: 'Telefone direto: `MAYBE` só se confirma ao enriquecer.',
+  }),
 })
 
 const SearchResult = dto(
