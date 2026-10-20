@@ -166,6 +166,8 @@ export type WhatsappSentimentJobPayload = {
 export const WhatsappBroadcastJob = {
   SendBroadcastMessage: 'send-broadcast-message',
   RunScheduleTick: 'run-schedule-tick',
+  /** Auto outreach: sends the next queued contact, then chains itself. */
+  SendAutoOutreachNext: 'send-auto-outreach-next',
 } as const
 
 export type WhatsappBroadcastJob =
@@ -177,6 +179,10 @@ export type WhatsappBroadcastJobPayload = {
     recipientId: string
   }
   [WhatsappBroadcastJob.RunScheduleTick]: Record<string, never>
+  [WhatsappBroadcastJob.SendAutoOutreachNext]: {
+    workspaceId: string
+    runToken: string
+  }
 }
 
 export const WhatsappConversationLifecycleJob = {

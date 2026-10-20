@@ -1,9 +1,10 @@
 import type { Job } from 'bullmq'
 import { describe, expect, it, vi } from 'vitest'
 
-const { sendMock, tickMock, loggerMock } = vi.hoisted(() => ({
+const { sendMock, tickMock, outreachMock, loggerMock } = vi.hoisted(() => ({
   sendMock: vi.fn(),
   tickMock: vi.fn(),
+  outreachMock: vi.fn(),
   loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
@@ -12,6 +13,9 @@ vi.mock('@/src/services/whatsapp-broadcast.service', () => ({
     sendToRecipient: sendMock,
     enqueueDueScheduledRecipients: tickMock,
   },
+}))
+vi.mock('@/src/services/whatsapp-auto-outreach.service', () => ({
+  WhatsAppAutoOutreachService: { sendNext: outreachMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -148,5 +152,53 @@ describe('processWhatsappBroadcast', () => {
     await expect(
       processWhatsappBroadcast({ name: 'nope' } as unknown as Job),
     ).rejects.toThrow('Unknown whatsapp-broadcast job: nope (id=unknown)')
+  })
+})
+
+describe('processWhatsappBroadcast — auto outreach', () => {
+  const job = {
+    id: 'job-2',
+    name: 'send-auto-outreach-next',
+    data: { workspaceId: 'ws1', runToken: 'tok' },
+  } as unknown as Job
+
+  it('runs one auto outreach step', async () => {
+    outreachMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'sent', nextDelayMs: 30_000 },
+    })
+
+    await processWhatsappBroadcast(job)
+
+    expect(outreachMock).toHaveBeenCalledWith('ws1', 'tok')
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.whatsapp_auto_outreach.step',
+      expect.objectContaining({ outcome: 'sent' }),
+    )
+  })
+
+  it('warns when the run paused itself', async () => {
+    outreachMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'paused', reason: 'Limite atingido' },
+    })
+
+    await processWhatsappBroadcast(job)
+
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      'queue.whatsapp_auto_outreach.paused',
+      expect.objectContaining({ reason: 'Limite atingido' }),
+    )
+  })
+
+  it('throws on a database failure so BullMQ retries', async () => {
+    outreachMock.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'x' },
+    })
+
+    await expect(processWhatsappBroadcast(job)).rejects.toThrow(
+      'DATABASE_ERROR',
+    )
   })
 })

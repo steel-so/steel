@@ -168,6 +168,7 @@ export const WhatsAppConversationEventDTO = dto(
         'INACTIVITY',
         'SENTIMENT',
         'AI_GUARDRAIL',
+        'AUTO_OUTREACH',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -527,6 +528,30 @@ export const WhatsAppSettingsDTO = dto(
         'Máximo de status de fechamento escolhidos ao fechar (1 a 10; padrão 1).',
     }),
   }),
+)
+
+export const WhatsAppAutoOutreachDTO = dto(
+  'WhatsAppAutoOutreach',
+  z
+    .object({
+      status: z.enum(['IDLE', 'RUNNING', 'PAUSED', 'DONE']),
+      connectionId: z.string().nullable(),
+      templateId: z.string().nullable(),
+      pending: z.number().int(),
+      sent: z.number().int(),
+      failed: z.number().int(),
+      skipped: z.number().int().meta({
+        description: 'Descadastrados ou já em atendimento.',
+      }),
+      lastSentAt: nullableDateTime(),
+      lastError: z.string().nullable().meta({
+        description: 'Motivo da última pausa automática.',
+      }),
+      added: z.number().int().optional().meta({
+        description: 'Só ao adicionar contatos: quantos entraram na fila.',
+      }),
+    })
+    .meta({ description: 'Disparo automático de template pela IA.' }),
 )
 
 export const WhatsAppCloseStatusDTO = dto(

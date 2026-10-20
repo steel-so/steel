@@ -455,6 +455,7 @@ model Workspace {
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
   whatsappCloseStatuses        WhatsAppCloseStatus[]
+  whatsappAutoOutreach         WhatsAppAutoOutreach?
   whatsappUsage                WhatsAppUsageMonthly[]
   whatsappConversationEvents   WhatsAppConversationEvent[]
   notifications                Notification[]
@@ -1157,6 +1158,7 @@ model WhatsAppConnection {
   broadcastLists WhatsAppBroadcastList[]
   templates      WhatsAppTemplate[]
   groups         WhatsAppGroup[]
+  autoOutreaches WhatsAppAutoOutreach[]
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
@@ -1181,9 +1183,10 @@ model WhatsAppContact {
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
 
-  workspace           Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  conversations       WhatsAppConversation[]
-  broadcastRecipients WhatsAppBroadcastRecipient[]
+  workspace              Workspace                       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversations          WhatsAppConversation[]
+  broadcastRecipients    WhatsAppBroadcastRecipient[]
+  autoOutreachRecipients WhatsAppAutoOutreachRecipient[]
 
   @@unique([workspaceId, waId])
   @@index([workspaceId])
@@ -1410,6 +1413,8 @@ enum WhatsAppConversationEventSource {
   BUTTON_ACTION
   /// Steel AI guardrails (ADR 0041).
   AI_GUARDRAIL
+  /// Disparo automático de template pela IA (página de contatos).
+  AUTO_OUTREACH
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -1679,6 +1684,68 @@ model WhatsAppBroadcastRecipient {
   @@map("whatsapp_broadcast_recipients")
 }
 
+enum WhatsAppAutoOutreachStatus {
+  /// Nunca iniciado (ou fila vazia sem disparo em andamento).
+  IDLE
+  RUNNING
+  PAUSED
+  /// Fila esvaziou com o disparo ligado.
+  DONE
+}
+
+/// Disparo automático (um por workspace): a IA envia um template aprovado
+/// da Meta para os contatos da fila, um por vez, e assume as respostas.
+/// Play/pause na página de contatos. `runToken` identifica a cadeia de jobs
+/// atual — um play novo invalida a anterior (sem envios em dobro).
+model WhatsAppAutoOutreach {
+  id           String                     @id @default(cuid())
+  workspaceId  String                     @unique @map("workspace_id")
+  connectionId String?                    @map("connection_id")
+  templateId   String?                    @map("template_id")
+  status       WhatsAppAutoOutreachStatus @default(IDLE)
+  runToken     String?                    @map("run_token")
+  lastSentAt   DateTime?                  @map("last_sent_at")
+  /// Motivo da última pausa automática (limite mensal, template removido...).
+  lastError    String?                    @map("last_error")
+  updatedById  String?                    @map("updated_by_id")
+  createdAt    DateTime                   @default(now()) @map("created_at")
+  updatedAt    DateTime                   @updatedAt @map("updated_at")
+
+  workspace  Workspace                       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection WhatsAppConnection?             @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  template   WhatsAppTemplate?               @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipients WhatsAppAutoOutreachRecipient[]
+
+  @@map("whatsapp_auto_outreaches")
+}
+
+enum WhatsAppAutoOutreachRecipientStatus {
+  PENDING
+  SENT
+  FAILED
+  /// Não enviado: descadastrado (opt-out) ou já em atendimento.
+  SKIPPED
+}
+
+model WhatsAppAutoOutreachRecipient {
+  id                String                              @id @default(cuid())
+  outreachId        String                              @map("outreach_id")
+  contactId         String                              @map("contact_id")
+  status            WhatsAppAutoOutreachRecipientStatus @default(PENDING)
+  providerMessageId String?                             @map("provider_message_id")
+  errorMessage      String?                             @map("error_message")
+  sentAt            DateTime?                           @map("sent_at")
+  createdAt         DateTime                            @default(now()) @map("created_at")
+
+  outreach WhatsAppAutoOutreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+  contact  WhatsAppContact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([outreachId, contactId])
+  @@index([outreachId, status, createdAt])
+  @@index([contactId])
+  @@map("whatsapp_auto_outreach_recipients")
+}
+
 enum WhatsAppTemplateStatus {
   APPROVED
   PENDING
@@ -1729,6 +1796,7 @@ model WhatsAppTemplate {
   workspace      Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   connection     WhatsAppConnection      @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   broadcastLists WhatsAppBroadcastList[]
+  autoOutreaches WhatsAppAutoOutreach[]
 
   @@unique([connectionId, name, language])
   @@index([workspaceId])

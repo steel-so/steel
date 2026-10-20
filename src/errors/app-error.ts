@@ -197,6 +197,17 @@ export const whatsappCloseStatusSelectionInvalid = (
   message = 'Seleção de status de fechamento inválida',
 ): AppError => appError('WHATSAPP_CLOSE_STATUS_SELECTION_INVALID', message)
 
+/** Auto outreach cannot start/change: missing connection, template or queue. */
+export const whatsappAutoOutreachNotReady = (
+  message = 'Configure a conexão, o template e os contatos do disparo automático',
+): AppError => appError('WHATSAPP_AUTO_OUTREACH_NOT_READY', message)
+
+export const whatsappAutoOutreachRunning = (): AppError =>
+  appError(
+    'WHATSAPP_AUTO_OUTREACH_RUNNING',
+    'Pause o disparo automático antes de trocar a conexão ou o template',
+  )
+
 export const whatsappConversationNotClosed = (): AppError =>
   appError('WHATSAPP_CONVERSATION_NOT_CLOSED', 'Esta conversa não está fechada')
 

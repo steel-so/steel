@@ -290,6 +290,8 @@ export {
   whatsappAiConfigNotFound,
   whatsappAiKnowledgeDocumentNotFound,
   whatsappAiKnowledgeDocumentUnsupportedType,
+  whatsappAutoOutreachNotReady,
+  whatsappAutoOutreachRunning,
   whatsappBroadcastLocked,
   whatsappBroadcastMediaInvalid,
   whatsappBroadcastNoRecipients,

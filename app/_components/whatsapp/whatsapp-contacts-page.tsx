@@ -52,6 +52,7 @@ import {
   useWhatsAppContacts,
 } from '@/src/hooks/use-whatsapp-contacts'
 import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
+import { WhatsappAutoOutreachPanel } from './whatsapp-auto-outreach-panel'
 import { WhatsAppContactImportDialog } from './whatsapp-contact-import-dialog'
 
 interface ContactFormState {
@@ -379,9 +380,41 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
   // Opt-out de transmissões é só OWNER/ADMIN (assertModulePrivileged).
   const canManageOptOut = useIsPrivileged()
   const syncAvatar = useSyncWhatsAppContactAvatar(workspaceId)
+  // Selection feeds the auto outreach queue ("Adicionar selecionados").
+  const canQueue = useCan('broadcasts', 'EDIT')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const visibleIds = (contacts.data ?? []).map((contact) => contact.id)
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
+
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAllVisible() {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      for (const id of visibleIds) {
+        if (allVisibleSelected) next.delete(id)
+        else next.add(id)
+      }
+      return next
+    })
+  }
 
   return (
     <div className='space-y-4'>
+      <WhatsappAutoOutreachPanel
+        workspaceId={workspaceId}
+        selectedContactIds={Array.from(selectedIds)}
+        onQueued={() => setSelectedIds(new Set())}
+      />
+
       <div className='flex items-center justify-between gap-3'>
         <Input
           placeholder='Buscar contato'
@@ -412,6 +445,15 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
         <Table containerClassName='overflow-x-visible'>
           <TableHeader className='sticky top-0 z-10 bg-card/85 backdrop-blur-md'>
             <TableRow>
+              {canQueue ? (
+                <TableHead className='w-8'>
+                  <Checkbox
+                    aria-label='Selecionar todos os contatos'
+                    checked={allVisibleSelected}
+                    onCheckedChange={toggleAllVisible}
+                  />
+                </TableHead>
+              ) : null}
               <TableHead className='w-10' />
               <TableHead>Nome</TableHead>
               <TableHead>Número</TableHead>
@@ -425,6 +467,15 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
           <TableBody>
             {(contacts.data ?? []).map((contact) => (
               <TableRow key={contact.id}>
+                {canQueue ? (
+                  <TableCell>
+                    <Checkbox
+                      aria-label={`Selecionar ${contact.name ?? contact.waId}`}
+                      checked={selectedIds.has(contact.id)}
+                      onCheckedChange={() => toggleSelected(contact.id)}
+                    />
+                  </TableCell>
+                ) : null}
                 <TableCell>
                   <div className='group relative w-fit'>
                     <Avatar className='size-8'>
@@ -514,7 +565,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
             {contacts.data?.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={canQueue ? 9 : 8}
                   className='text-muted-foreground text-sm'
                 >
                   Nenhum contato cadastrado.

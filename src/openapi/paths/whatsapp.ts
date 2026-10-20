@@ -1,5 +1,6 @@
 import type { OpenApiRegistry, RouteConfig } from '../registry'
 import { aiRoutes } from './whatsapp/ai'
+import { autoOutreachRoutes } from './whatsapp/auto-outreach'
 import { broadcastRoutes } from './whatsapp/broadcasts'
 import { buttonRoutes } from './whatsapp/buttons'
 import { connectionRoutes } from './whatsapp/connections'
@@ -26,6 +27,7 @@ const routes: RouteConfig[] = [
   ...contactRoutes,
   ...groupRoutes,
   ...broadcastRoutes,
+  ...autoOutreachRoutes,
   ...templateRoutes,
   ...buttonRoutes,
   ...aiRoutes,

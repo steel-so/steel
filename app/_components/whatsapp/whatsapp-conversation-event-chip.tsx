@@ -49,6 +49,9 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       if (event.source === 'CONTACT') {
         return 'Conversa reaberta: o contato enviou uma nova mensagem'
       }
+      if (event.source === 'AUTO_OUTREACH') {
+        return 'Conversa reaberta pelo disparo automático da IA'
+      }
       return `Conversa reaberta${byActor(event)}`
   }
 }
