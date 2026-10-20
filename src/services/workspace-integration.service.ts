@@ -14,6 +14,7 @@ import {
 } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
 import { encryptConnectionSecret } from '@/src/lib/crypto'
+import { ApolloClient } from '@/src/lib/integrations/apollo-client'
 import {
   type RepoIntegrationKind,
   WORKSPACE_INTEGRATION_KINDS,
@@ -27,7 +28,6 @@ import {
   normalizeGitlabBaseUrl,
   parseGitlabProject,
 } from '@/src/lib/integrations/gitlab'
-import { ApolloClient } from '@/src/lib/integrations/apollo-client'
 import { GitlabClient } from '@/src/lib/integrations/gitlab-client'
 import { err, ok, type Result } from '@/src/lib/result'
 import { GithubClient } from '@/src/lib/servicedesk/github-client'

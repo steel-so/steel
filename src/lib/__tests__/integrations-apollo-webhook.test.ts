@@ -31,6 +31,8 @@ describe('apollo webhook helpers', () => {
     expect(buildApolloWebhookUrl('tok', 'https://steel.example.com/')).toBe(
       'https://steel.example.com/api/crm/apollo/webhook/tok',
     )
-    expect(buildApolloWebhookUrl('tok')).toContain('/api/crm/apollo/webhook/tok')
+    expect(buildApolloWebhookUrl('tok')).toContain(
+      '/api/crm/apollo/webhook/tok',
+    )
   })
 })

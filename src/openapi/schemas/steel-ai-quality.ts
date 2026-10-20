@@ -27,12 +27,9 @@ export const AiFeedbackDTO = dto(
     rating: z.enum(AI_FEEDBACK_RATINGS),
     reason: z.enum(AI_FEEDBACK_REASONS).nullable(),
     comment: z.string().nullable(),
-    modelKey: z
-      .string()
-      .nullable()
-      .meta({
-        description: 'Modelo que deu a resposta (`<provedor>:<modelo>`).',
-      }),
+    modelKey: z.string().nullable().meta({
+      description: 'Modelo que deu a resposta (`<provedor>:<modelo>`).',
+    }),
     createdAt: dateTime(),
     updatedAt: dateTime(),
   }),

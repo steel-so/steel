@@ -149,8 +149,8 @@ export function WorkspaceApiTokensPanel({
         <CardHeader>
           <CardTitle>Nenhum token de API</CardTitle>
           <CardDescription>
-            Quando um membro criar um token em Configurações › Segurança ou entrar
-            pelo Steel CLI, ele aparece aqui.
+            Quando um membro criar um token em Configurações › Segurança ou
+            entrar pelo Steel CLI, ele aparece aqui.
           </CardDescription>
         </CardHeader>
       </Card>

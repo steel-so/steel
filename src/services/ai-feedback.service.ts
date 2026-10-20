@@ -140,10 +140,7 @@ async function resolveTarget(
         workspaceId,
       )
       if (!message.ok) return message
-      if (
-        !message.value?.sentByAi ||
-        message.value.direction !== 'OUT'
-      ) {
+      if (!message.value?.sentByAi || message.value.direction !== 'OUT') {
         return err(aiFeedbackTargetNotFound())
       }
       // Same visibility as the conversation (module, team, assignee).

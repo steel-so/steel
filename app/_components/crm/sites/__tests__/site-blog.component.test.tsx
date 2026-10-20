@@ -491,9 +491,7 @@ describe('<PostEditor />', () => {
     )
     render()
     expect(
-      (await screen.findByLabelText('Ver no site')).getAttribute(
-        'href',
-      ),
+      (await screen.findByLabelText('Ver no site')).getAttribute('href'),
     ).toBe('https://clinica.sites.example.com/blog/primeiro-post')
     fireEvent.click(screen.getByRole('button', { name: 'Publicado' }))
     expect(
