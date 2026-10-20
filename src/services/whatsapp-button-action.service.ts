@@ -320,6 +320,9 @@ async function runAiInstruction(
     instruction,
   })
   if (!result.ok) return result
+  if (result.value.status === 'deferred') {
+    return err(badRequest('ai_outside_business_hours'))
+  }
   if (result.value.status !== 'sent') {
     return err(badRequest(`ai_${result.value.reason}`))
   }

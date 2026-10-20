@@ -12,6 +12,16 @@ import { err, ok } from '@/src/lib/result'
 
 const { queueAdd } = vi.hoisted(() => ({ queueAdd: vi.fn() }))
 
+// Business hours: open unless a test says otherwise.
+vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
+  WhatsAppBusinessHoursService: {
+    assertOpen: vi.fn(async () => ({ ok: true, value: undefined })),
+    check: vi.fn(async () => ({
+      ok: true,
+      value: { open: true, nextOpeningAt: null, hours: {} },
+    })),
+  },
+}))
 vi.mock('@/src/lib/queue/queues', () => ({
   getWhatsappBroadcastQueue: () => ({ add: queueAdd }),
 }))
@@ -47,6 +57,7 @@ import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connec
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WhatsAppTemplateRepository } from '@/src/repositories/whatsapp-template.repository'
+import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
 import { WhatsAppAutoOutreachService } from '../whatsapp-auto-outreach.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 
@@ -355,6 +366,29 @@ describe('WhatsAppAutoOutreachService.sendNext()', () => {
     expect(repo.updateRecipient).toHaveBeenCalledWith(
       'r1',
       expect.objectContaining({ status: 'SKIPPED' }),
+    )
+  })
+
+  it('should sleep until the opening outside business hours', async () => {
+    repo.findByWorkspace.mockResolvedValue(ok(outreach()))
+    const resumeAt = new Date(Date.now() + 2 * 60 * 60 * 1000)
+    vi.mocked(WhatsAppBusinessHoursService.check).mockResolvedValueOnce(
+      ok({
+        open: false,
+        nextOpeningAt: resumeAt,
+        hours: { enabled: true, start: '08:00', end: '18:00', days: [1] },
+      }),
+    )
+
+    expect(
+      expectOk(await WhatsAppAutoOutreachService.sendNext('ws1', 'tok')),
+    ).toEqual({ status: 'waiting', resumeAt })
+    expect(send.template).not.toHaveBeenCalled()
+    expect(repo.findNextPending).not.toHaveBeenCalled()
+    expect(queueAdd).toHaveBeenCalledWith(
+      'send-auto-outreach-next',
+      { workspaceId: 'ws1', runToken: 'tok' },
+      expect.objectContaining({ delay: expect.any(Number) }),
     )
   })
 

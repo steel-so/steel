@@ -21,6 +21,10 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   callTranscriptionEnabled: true,
   closeStatusMinSelections: 0,
   closeStatusMaxSelections: 1,
+  businessHoursEnabled: false,
+  businessHoursStart: '08:00',
+  businessHoursEnd: '18:00',
+  businessHoursDays: [1, 2, 3, 4, 5] as number[],
 }
 
 export function toWhatsAppSettingsDTO(
@@ -32,6 +36,7 @@ export function toWhatsAppSettingsDTO(
       workspaceId,
       ...WHATSAPP_SETTINGS_DEFAULTS,
       sentimentAlertRecipientIds: [],
+      businessHoursDays: [...WHATSAPP_SETTINGS_DEFAULTS.businessHoursDays],
       callRecordingNotice: DEFAULT_CALL_RECORDING_NOTICE,
     }
   }
@@ -52,5 +57,9 @@ export function toWhatsAppSettingsDTO(
     callTranscriptionEnabled: settings.callTranscriptionEnabled,
     closeStatusMinSelections: settings.closeStatusMinSelections,
     closeStatusMaxSelections: settings.closeStatusMaxSelections,
+    businessHoursEnabled: settings.businessHoursEnabled,
+    businessHoursStart: settings.businessHoursStart,
+    businessHoursEnd: settings.businessHoursEnd,
+    businessHoursDays: settings.businessHoursDays,
   }
 }

@@ -10,6 +10,16 @@ import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-me
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { err, ok } from '@/src/lib/result'
 
+// Business hours: open unless a test says otherwise.
+vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
+  WhatsAppBusinessHoursService: {
+    assertOpen: vi.fn(async () => ({ ok: true, value: undefined })),
+    check: vi.fn(async () => ({
+      ok: true,
+      value: { open: true, nextOpeningAt: null, hours: {} },
+    })),
+  },
+}))
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
 vi.mock('@/src/repositories/whatsapp-ai-knowledge-document.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')
@@ -50,6 +60,7 @@ import {
   AiUsageService,
   type PreparedAiCall,
 } from '@/src/services/ai-usage.service'
+import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
 import { WhatsAppAiReplyService } from '../whatsapp-ai-reply.service'
 import { notifyWhatsAppUsers, whatsAppAdminIds } from '../whatsapp-notify'
 
@@ -190,6 +201,28 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
       status: 'skipped',
       reason: 'conversation_closed',
     })
+    expect(mockedAiUsage.prepare).not.toHaveBeenCalled()
+    expect(mockedSend.text).not.toHaveBeenCalled()
+  })
+
+  it('should defer the answer to the opening outside business hours', async () => {
+    arrange({})
+    const opening = new Date('2026-10-21T11:00:00Z')
+    vi.mocked(WhatsAppBusinessHoursService.check).mockResolvedValueOnce(
+      ok({
+        open: false,
+        nextOpeningAt: opening,
+        hours: { enabled: true, start: '08:00', end: '18:00', days: [1] },
+      }),
+    )
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+    expect(outcome).toEqual({ status: 'deferred', retryAt: opening })
     expect(mockedAiUsage.prepare).not.toHaveBeenCalled()
     expect(mockedSend.text).not.toHaveBeenCalled()
   })

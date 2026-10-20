@@ -2,6 +2,7 @@ import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { WhatsAppAiReplyService } from '@/src/services/whatsapp-ai-reply.service'
 import { WhatsappAiReplyJob, type WhatsappAiReplyJobPayload } from '../jobs'
+import { getWhatsappAiReplyQueue } from '../queues'
 
 // Motivos de "pulei" que indicam falta de recurso (cota/provedor) — sobem
 // como warn para aparecerem nos alertas; o resto é fluxo normal (info).
@@ -28,6 +29,24 @@ async function processGenerateAiReply(
 
   const outcome = result.value
   switch (outcome.status) {
+    case 'deferred': {
+      // One deferred answer per conversation and opening: the reply reads
+      // the latest history anyway, so later messages ride the same job.
+      const delay = Math.max(0, outcome.retryAt.getTime() - Date.now())
+      await getWhatsappAiReplyQueue().add(
+        WhatsappAiReplyJob.GenerateAiReply,
+        job.data,
+        {
+          delay,
+          jobId: `ai-reply-deferred-${conversationId}-${outcome.retryAt.getTime()}`,
+        },
+      )
+      logger.info('queue.whatsapp_ai_reply.deferred', {
+        ...base,
+        retryAt: outcome.retryAt.toISOString(),
+      })
+      return
+    }
     case 'skipped':
       if (outcome.reason === 'empty_completion') {
         logger.warn('queue.whatsapp_ai_reply.empty_completion', base)

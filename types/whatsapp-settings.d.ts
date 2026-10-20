@@ -20,4 +20,11 @@ export interface WhatsAppSettingsDTO {
   /** Status de fechamento escolhidos ao fechar: mínimo (0 = opcional) e máximo. */
   closeStatusMinSelections: number
   closeStatusMaxSelections: number
+  /** Horário de atendimento (America/Sao_Paulo); fora dele envios travam. */
+  businessHoursEnabled: boolean
+  /** `HH:mm`. */
+  businessHoursStart: string
+  businessHoursEnd: string
+  /** 0 = domingo … 6 = sábado. */
+  businessHoursDays: number[]
 }

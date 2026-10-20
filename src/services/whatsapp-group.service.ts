@@ -38,6 +38,7 @@ import type {
 import type { WhatsAppGroupDTO } from '@/types/whatsapp-group'
 import type { WhatsAppGroupMessageDTO } from '@/types/whatsapp-group-message'
 import { assertModuleMember } from './authz'
+import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 
 async function resolveZapiConnection(
   workspaceId: string,
@@ -505,6 +506,9 @@ export const WhatsAppGroupService = {
       { resource: 'groups', action: 'CREATE' },
     )
     if (!membership.ok) return membership
+
+    const open = await WhatsAppBusinessHoursService.assertOpen(workspaceId)
+    if (!open.ok) return open
 
     const loaded = await loadGroupWithZapi(workspaceId, groupId)
     if (!loaded.ok) return loaded

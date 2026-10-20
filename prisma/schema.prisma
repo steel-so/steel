@@ -1496,6 +1496,13 @@ model WhatsAppSettings {
   /// mínimo (0 = opcional) e máximo. Só valem com status cadastrados.
   closeStatusMinSelections    Int      @default(0) @map("close_status_min_selections")
   closeStatusMaxSelections    Int      @default(1) @map("close_status_max_selections")
+  /// Horário de atendimento (America/Sao_Paulo): fora dele os envios de
+  /// atendentes, da IA e do disparo automático ficam travados. `HH:mm`;
+  /// fim antes do início = janela que vira a noite. Dias: 0 = domingo.
+  businessHoursEnabled        Boolean  @default(false) @map("business_hours_enabled")
+  businessHoursStart          String   @default("08:00") @map("business_hours_start") @db.VarChar(5)
+  businessHoursEnd            String   @default("18:00") @map("business_hours_end") @db.VarChar(5)
+  businessHoursDays           Int[]    @default([1, 2, 3, 4, 5]) @map("business_hours_days")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 

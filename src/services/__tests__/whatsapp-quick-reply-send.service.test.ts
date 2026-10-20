@@ -12,6 +12,16 @@ import { databaseError, whatsappProviderError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 import type { WhatsAppButtonDTO } from '@/types/whatsapp-button'
 
+// Business hours: open unless a test says otherwise.
+vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
+  WhatsAppBusinessHoursService: {
+    assertOpen: vi.fn(async () => ({ ok: true, value: undefined })),
+    check: vi.fn(async () => ({
+      ok: true,
+      value: { open: true, nextOpeningAt: null, hours: {} },
+    })),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-quick-reply.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')

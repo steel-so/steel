@@ -10,6 +10,16 @@ import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-me
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { err, ok } from '@/src/lib/result'
 
+// Business hours: open unless a test says otherwise.
+vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
+  WhatsAppBusinessHoursService: {
+    assertOpen: vi.fn(async () => ({ ok: true, value: undefined })),
+    check: vi.fn(async () => ({
+      ok: true,
+      value: { open: true, nextOpeningAt: null, hours: {} },
+    })),
+  },
+}))
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
 vi.mock('@/src/repositories/whatsapp-ai-knowledge-document.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')

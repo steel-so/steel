@@ -5,8 +5,18 @@ import { createFakeWhatsAppContact } from '@/src/__tests__/factories/whatsapp-co
 import { createFakeWhatsAppConversationWithPreview } from '@/src/__tests__/factories/whatsapp-conversation.factory'
 import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-message.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { ok } from '@/src/lib/result'
+import { err, ok } from '@/src/lib/result'
 
+// Business hours: open unless a test says otherwise.
+vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
+  WhatsAppBusinessHoursService: {
+    assertOpen: vi.fn(async () => ({ ok: true, value: undefined })),
+    check: vi.fn(async () => ({
+      ok: true,
+      value: { open: true, nextOpeningAt: null, hours: {} },
+    })),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
@@ -37,12 +47,14 @@ vi.mock('@/src/lib/whatsapp/send', () => ({
   },
 }))
 
+import { whatsappOutsideBusinessHours } from '@/src/errors'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
 import { WhatsAppMessageService } from '../whatsapp-message.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
@@ -118,6 +130,21 @@ describe('WhatsAppMessageService', () => {
       expectErr(result, 'WHATSAPP_CONVERSATION_AI_HANDLING')
       expect(mockedSend.text).not.toHaveBeenCalled()
       expect(mockedMessageRepo.create).not.toHaveBeenCalled()
+    })
+
+    it('should lock the agent send outside business hours', async () => {
+      mockSendableConversation()
+      vi.mocked(WhatsAppBusinessHoursService.assertOpen).mockResolvedValueOnce(
+        err(whatsappOutsideBusinessHours()),
+      )
+
+      expectErr(
+        await WhatsAppMessageService.sendText('u1', 'ws1', 'conv1', {
+          text: 'Olá!',
+        }),
+        'WHATSAPP_OUTSIDE_BUSINESS_HOURS',
+      )
+      expect(mockedSend.text).not.toHaveBeenCalled()
     })
 
     it('should not persist a message when the provider send fails', async () => {

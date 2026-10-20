@@ -36,6 +36,10 @@ function settings(
     callTranscriptionEnabled: true,
     closeStatusMinSelections: 0,
     closeStatusMaxSelections: 1,
+    businessHoursEnabled: false,
+    businessHoursStart: '08:00',
+    businessHoursEnd: '18:00',
+    businessHoursDays: [1, 2, 3, 4, 5],
     ...overrides,
   }
 }

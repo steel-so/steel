@@ -32,6 +32,7 @@ import {
 } from './ai-guardrails.service'
 import { AiUsageService } from './ai-usage.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import { whatsAppTeamMemberIds } from './whatsapp-conversation-scope.service'
 import {
   notifyWhatsAppUsers,
@@ -85,6 +86,12 @@ export type WhatsAppAiReplyOutcome =
         | 'ai_prepare_failed'
         | 'empty_completion'
         | 'contact_not_found'
+        | 'outside_business_hours'
+    }
+  | {
+      /** Outside the WhatsApp business hours: answer at `retryAt`. */
+      status: 'deferred'
+      retryAt: Date
     }
   | {
       status: 'failed'
@@ -298,6 +305,20 @@ export const WhatsAppAiReplyService = {
     const config = {
       systemPrompt: aiConfig.value?.systemPrompt ?? '',
       readMedia: aiConfig.value?.readMedia ?? false,
+    }
+
+    // Business hours lock the AI too: the answer waits for the opening (a
+    // window with no weekday never opens — the AI stays quiet).
+    if (conversation.connection.module === 'COMMUNICATION') {
+      const hours = await WhatsAppBusinessHoursService.check(workspaceId)
+      if (!hours.ok) return hours
+      if (!hours.value.open) {
+        return ok(
+          hours.value.nextOpeningAt
+            ? { status: 'deferred', retryAt: hours.value.nextOpeningAt }
+            : { status: 'skipped', reason: 'outside_business_hours' },
+        )
+      }
     }
 
     // Provedor/modelo = padrão do workspace para a resposta automática (job

@@ -314,6 +314,7 @@ export {
   whatsappGroupProviderUnsupported,
   whatsappMessageLimitReached,
   whatsappMessageNotFound,
+  whatsappOutsideBusinessHours,
   whatsappProviderError,
   whatsappQuickReplyConflict,
   whatsappQuickReplyNotFound,

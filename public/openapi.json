@@ -103095,6 +103095,57 @@
         ]
       }
     },
+    "/workspaces/{id}/whatsapp/business-hours": {
+      "get": {
+        "tags": ["Comunicação · Configurações"],
+        "summary": "Horário de atendimento",
+        "operationId": "getWorkspacesByIdWhatsappBusinessHours",
+        "description": "Janela de atendimento e se os envios estão liberados agora (`open`), com a próxima abertura — base do aviso na conversa. Fora do horário, envios de atendentes respondem `WHATSAPP_OUTSIDE_BUSINESS_HOURS`, a resposta da IA espera a abertura e o disparo automático dorme até lá. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Horário de atendimento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppBusinessHoursStatus"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/whatsapp/close-statuses": {
       "get": {
         "tags": ["Comunicação · Configurações"],
@@ -106221,7 +106272,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Enviar texto",
         "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessages",
-        "description": "Envia uma mensagem de texto; `replyToMessageId` (id de uma mensagem desta conversa) cita a mensagem original. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia uma mensagem de texto; `replyToMessageId` (id de uma mensagem desta conversa) cita a mensagem original. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -106293,7 +106344,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -106317,7 +106368,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Enviar cartão de contato",
         "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessagesContact",
-        "description": "Compartilha um contato do workspace (nome + número) como cartão de contato. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Compartilha um contato do workspace (nome + número) como cartão de contato. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -106385,7 +106436,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -106409,7 +106460,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Enviar mídia",
         "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessagesMedia",
-        "description": "Envia imagem, áudio, vídeo ou documento a partir de uma URL pública (use `POST /workspaces/{id}/whatsapp/media/upload` para hospedar o arquivo). `caption` vira a legenda. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia imagem, áudio, vídeo ou documento a partir de uma URL pública (use `POST /workspaces/{id}/whatsapp/media/upload` para hospedar o arquivo). `caption` vira a legenda. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -106492,7 +106543,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -106516,7 +106567,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Enviar mensagem pronta",
         "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessagesQuickReply",
-        "description": "Envia uma mensagem pronta com corpo, mídia e botões. As variáveis `{nome_cliente}`, `{nome_usuario}` e `{workspace}` são resolvidas no servidor; `variables` sobrescreve qualquer `{token}`. Botões: na **Z-API** saem como botões de ação (`/send-button-actions`, resposta + link) ou lista de botões (`/send-button-list`, só resposta) — dependem do suporte do WhatsApp a APIs não oficiais e podem não aparecer em alguns aparelhos; na **Meta** saem como mensagem interativa (só dentro da janela de 24 h): até 2 botões de resposta, ou um link (`cta_url`); um link junto de resposta vai no fim do texto. Mídia que o provedor não aceita junto dos botões (áudio; vídeo/documento na Z-API) sai antes, como mensagem própria. Os botões de resposta levam o payload `stl:q:<quickReplyId>:<botão>`, então o clique dispara as ações configuradas. Bloqueado enquanto a IA atende a conversa. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Devolve a última mensagem criada (com `buttons`); todas são publicadas no SSE (`message.created` + `conversation.updated`). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia uma mensagem pronta com corpo, mídia e botões. As variáveis `{nome_cliente}`, `{nome_usuario}` e `{workspace}` são resolvidas no servidor; `variables` sobrescreve qualquer `{token}`. Botões: na **Z-API** saem como botões de ação (`/send-button-actions`, resposta + link) ou lista de botões (`/send-button-list`, só resposta) — dependem do suporte do WhatsApp a APIs não oficiais e podem não aparecer em alguns aparelhos; na **Meta** saem como mensagem interativa (só dentro da janela de 24 h): até 2 botões de resposta, ou um link (`cta_url`); um link junto de resposta vai no fim do texto. Mídia que o provedor não aceita junto dos botões (áudio; vídeo/documento na Z-API) sai antes, como mensagem própria. Os botões de resposta levam o payload `stl:q:<quickReplyId>:<botão>`, então o clique dispara as ações configuradas. Bloqueado enquanto a IA atende a conversa. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Devolve a última mensagem criada (com `buttons`); todas são publicadas no SSE (`message.created` + `conversation.updated`). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -106595,7 +106646,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_QUICK_REPLY_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_BUTTONS_UNSUPPORTED"
@@ -106619,7 +106670,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Enviar template",
         "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessagesTemplate",
-        "description": "Envia um template aprovado pela Meta (obrigatório para iniciar contato fora da janela de 24 h). `components` segue o formato da Graph API (parâmetros de header/body/botões). **Só conexões Meta** — na Z-API o provedor recusa e a rota responde `502 WHATSAPP_PROVIDER_ERROR`. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia um template aprovado pela Meta (obrigatório para iniciar contato fora da janela de 24 h). `components` segue o formato da Graph API (parâmetros de header/body/botões). **Só conexões Meta** — na Z-API o provedor recusa e a rota responde `502 WHATSAPP_PROVIDER_ERROR`. O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Bloqueado enquanto a IA atende a conversa (remova-a com `PATCH .../ai`). A mensagem criada (status `SENT`) é publicada no SSE `GET /whatsapp/events` (`message.created` + `conversation.updated`) e a conversa passa a `IN_PROGRESS`. Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -106696,7 +106747,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -106792,7 +106843,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Reagir a uma mensagem",
         "operationId": "postWorkspacesByIdWhatsappConversationsByConversationIdMessagesByMessageIdReact",
-        "description": "Envia uma reação (emoji) à mensagem pelo provedor; `emoji` vazio remove a reação. A mensagem atualizada é publicada no SSE (`message.updated`). O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Bloqueado enquanto a IA atende a conversa. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia uma reação (emoji) à mensagem pelo provedor; `emoji` vazio remove a reação. A mensagem atualizada é publicada no SSE (`message.updated`). O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Bloqueado enquanto a IA atende a conversa. Módulo **Comunicação** habilitado e permissão `conversations` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -109111,7 +109162,7 @@
         "tags": ["Comunicação · Grupos"],
         "summary": "Enviar mensagem no grupo",
         "operationId": "postWorkspacesByIdWhatsappGroupsByGroupIdMessages",
-        "description": "Envia texto no grupo, com menções opcionais (`mentionedWaIds`). O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Grupos só existem em conexões **Z-API** — a Meta Cloud API não expõe grupos. Auditado. Módulo **Comunicação** habilitado e permissão `groups` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Envia texto no grupo, com menções opcionais (`mentionedWaIds`). O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado. Grupos só existem em conexões **Z-API** — a Meta Cloud API não expõe grupos. Auditado. Módulo **Comunicação** habilitado e permissão `groups` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -109187,6 +109238,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_GROUP_PROVIDER_UNSUPPORTED_2"
@@ -111535,6 +111589,26 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 10
+                  },
+                  "businessHoursEnabled": {
+                    "type": "boolean"
+                  },
+                  "businessHoursStart": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "businessHoursEnd": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "businessHoursDays": {
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    }
                   }
                 }
               }
@@ -139370,6 +139444,63 @@
           }
         }
       },
+      "409_WHATSAPP_OUTSIDE_BUSINESS_HOURS": {
+        "description": "Conflito com o estado atual: `WHATSAPP_OUTSIDE_BUSINESS_HOURS`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_OUTSIDE_BUSINESS_HOURS": {
+                "summary": "WHATSAPP_OUTSIDE_BUSINESS_HOURS — Fora do horário de atendimento configurado (a mensagem diz quando abre)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Fora do horário de atendimento: os envios estão travados",
+                  "error": {
+                    "code": "WHATSAPP_OUTSIDE_BUSINESS_HOURS"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING": {
+        "description": "Conflito com o estado atual: `WHATSAPP_OUTSIDE_BUSINESS_HOURS`, `WHATSAPP_CONVERSATION_AI_HANDLING`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_CONVERSATION_AI_HANDLING": {
+                "summary": "WHATSAPP_CONVERSATION_AI_HANDLING — A IA está atendendo a conversa (`aiActive`)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "A IA está atendendo esta conversa. Remova-a do atendimento da IA para enviar mensagens.",
+                  "error": {
+                    "code": "WHATSAPP_CONVERSATION_AI_HANDLING"
+                  }
+                }
+              },
+              "WHATSAPP_OUTSIDE_BUSINESS_HOURS": {
+                "summary": "WHATSAPP_OUTSIDE_BUSINESS_HOURS — Fora do horário de atendimento configurado (a mensagem diz quando abre)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Fora do horário de atendimento: os envios estão travados",
+                  "error": {
+                    "code": "WHATSAPP_OUTSIDE_BUSINESS_HOURS"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "409_WHATSAPP_QUICK_REPLY_CONFLICT": {
         "description": "Conflito com o estado atual: `WHATSAPP_QUICK_REPLY_CONFLICT`",
         "content": {
@@ -140713,6 +140844,28 @@
                   "success": false,
                   "statusCode": 422,
                   "message": "O mínimo de status de fechamento não pode ser maior que o máximo",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_4": {
+                "summary": "VALIDATION_ERROR — `businessHoursStart` igual a `businessHoursEnd`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "O início e o fim do horário de atendimento devem ser diferentes",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_5": {
+                "summary": "VALIDATION_ERROR — Horário ligado sem nenhum dia em `businessHoursDays`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Escolha ao menos um dia de atendimento",
                   "error": {
                     "code": "VALIDATION_ERROR"
                   }
@@ -169070,6 +169223,7 @@
           "WHATSAPP_CLOSE_STATUS_SELECTION_INVALID",
           "WHATSAPP_AUTO_OUTREACH_NOT_READY",
           "WHATSAPP_AUTO_OUTREACH_RUNNING",
+          "WHATSAPP_OUTSIDE_BUSINESS_HOURS",
           "WHATSAPP_CONVERSATION_AI_HANDLING",
           "WHATSAPP_QUICK_REPLY_NOT_FOUND",
           "WHATSAPP_QUICK_REPLY_CONFLICT",
@@ -169455,7 +169609,7 @@
           "BACKUP_FAILED",
           "BILLING_DISABLED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_AUTO_OUTREACH_NOT_READY` | 422 |\n| `WHATSAPP_AUTO_OUTREACH_RUNNING` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_AUTO_OUTREACH_NOT_READY` | 422 |\n| `WHATSAPP_AUTO_OUTREACH_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -193311,6 +193465,47 @@
         },
         "required": ["broadcastList", "createdCount", "rejectedRows"]
       },
+      "WhatsAppBusinessHoursStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "example": "08:00"
+          },
+          "end": {
+            "type": "string",
+            "example": "18:00"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "open": {
+            "type": "boolean",
+            "description": "Envios liberados agora."
+          },
+          "nextOpeningAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Próxima abertura quando fechado."
+          }
+        },
+        "required": ["enabled", "start", "end", "days", "open", "nextOpeningAt"]
+      },
       "WhatsAppButton": {
         "oneOf": [
           {
@@ -195068,6 +195263,29 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991,
             "description": "Máximo de status de fechamento escolhidos ao fechar (1 a 10; padrão 1)."
+          },
+          "businessHoursEnabled": {
+            "type": "boolean",
+            "description": "Horário de atendimento ligado: fora dele os envios de atendentes, da IA e do disparo automático ficam travados (padrão: desligado)."
+          },
+          "businessHoursStart": {
+            "type": "string",
+            "description": "Início, `HH:mm` em America/Sao_Paulo (padrão 08:00).",
+            "example": "08:00"
+          },
+          "businessHoursEnd": {
+            "type": "string",
+            "description": "Fim (exclusivo), `HH:mm`; antes do início = janela que vira a noite (padrão 18:00).",
+            "example": "18:00"
+          },
+          "businessHoursDays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "description": "Dias de atendimento, 0 = domingo … 6 = sábado (padrão seg–sex)."
           }
         },
         "required": [
@@ -195085,7 +195303,11 @@
           "callRecordingRetentionDays",
           "callTranscriptionEnabled",
           "closeStatusMinSelections",
-          "closeStatusMaxSelections"
+          "closeStatusMaxSelections",
+          "businessHoursEnabled",
+          "businessHoursStart",
+          "businessHoursEnd",
+          "businessHoursDays"
         ]
       },
       "WhatsAppTeam": {

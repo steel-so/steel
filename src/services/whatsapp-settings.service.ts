@@ -78,6 +78,25 @@ export const WhatsAppSettingsService = {
       )
     }
 
+    const businessHoursStart =
+      dto.businessHoursStart ?? current.businessHoursStart
+    const businessHoursEnd = dto.businessHoursEnd ?? current.businessHoursEnd
+    const businessHoursDays = dto.businessHoursDays
+      ? Array.from(new Set(dto.businessHoursDays)).sort((a, b) => a - b)
+      : current.businessHoursDays
+    const businessHoursEnabled =
+      dto.businessHoursEnabled ?? current.businessHoursEnabled
+    if (businessHoursStart === businessHoursEnd) {
+      return err(
+        validationError(
+          'O início e o fim do horário de atendimento devem ser diferentes',
+        ),
+      )
+    }
+    if (businessHoursEnabled && businessHoursDays.length === 0) {
+      return err(validationError('Escolha ao menos um dia de atendimento'))
+    }
+
     const saved = await WhatsAppSettingsRepository.upsert(workspaceId, {
       autoCloseAfterHours:
         dto.autoCloseAfterHours ?? current.autoCloseAfterHours,
@@ -111,6 +130,10 @@ export const WhatsAppSettingsService = {
         dto.callTranscriptionEnabled ?? current.callTranscriptionEnabled,
       closeStatusMinSelections,
       closeStatusMaxSelections,
+      businessHoursEnabled,
+      businessHoursStart,
+      businessHoursEnd,
+      businessHoursDays,
     })
     if (!saved.ok) return saved
 
@@ -130,6 +153,9 @@ export const WhatsAppSettingsService = {
         callTranscriptionEnabled: saved.value.callTranscriptionEnabled,
         closeStatusMinSelections: saved.value.closeStatusMinSelections,
         closeStatusMaxSelections: saved.value.closeStatusMaxSelections,
+        businessHoursEnabled: saved.value.businessHoursEnabled,
+        businessHoursStart: saved.value.businessHoursStart,
+        businessHoursEnd: saved.value.businessHoursEnd,
       },
     })
 

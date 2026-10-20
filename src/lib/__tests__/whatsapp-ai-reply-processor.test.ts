@@ -1,8 +1,9 @@
 import type { Job } from 'bullmq'
 import { describe, expect, it, vi } from 'vitest'
 
-const { generateReplyMock, loggerMock } = vi.hoisted(() => ({
+const { generateReplyMock, loggerMock, queueAdd } = vi.hoisted(() => ({
   generateReplyMock: vi.fn(),
+  queueAdd: vi.fn(),
   loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
@@ -10,6 +11,9 @@ vi.mock('@/src/services/whatsapp-ai-reply.service', () => ({
   WhatsAppAiReplyService: { generateReply: generateReplyMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
+vi.mock('@/src/lib/queue/queues', () => ({
+  getWhatsappAiReplyQueue: () => ({ add: queueAdd }),
+}))
 
 import { processWhatsappAiReply } from '@/src/lib/queue/processors/whatsapp-ai-reply'
 
@@ -149,5 +153,32 @@ describe('processWhatsappAiReply', () => {
     await expect(
       processWhatsappAiReply({ name: 'nope', data: {} } as unknown as Job),
     ).rejects.toThrow('Unknown whatsapp-ai-reply job: nope (id=unknown)')
+  })
+})
+
+describe('processWhatsappAiReply — business hours', () => {
+  it('re-enqueues the answer for the opening, once per conversation', async () => {
+    const retryAt = new Date(Date.now() + 60 * 60 * 1000)
+    generateReplyMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'deferred', retryAt },
+    })
+
+    await processWhatsappAiReply(fakeJob())
+
+    expect(queueAdd).toHaveBeenCalledWith(
+      'generate-ai-reply',
+      { conversationId: 'conv1', messageId: 'm1' },
+      {
+        delay: expect.any(Number),
+        jobId: `ai-reply-deferred-conv1-${retryAt.getTime()}`,
+      },
+    )
+    const delay = queueAdd.mock.calls[0][2].delay
+    expect(delay).toBeGreaterThan(59 * 60 * 1000)
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.whatsapp_ai_reply.deferred',
+      expect.objectContaining({ retryAt: retryAt.toISOString() }),
+    )
   })
 })

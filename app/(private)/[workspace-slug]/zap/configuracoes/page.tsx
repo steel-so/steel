@@ -8,6 +8,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { WhatsappSettingsAi } from '@/app/_components/whatsapp/settings/whatsapp-settings-ai'
 import { WhatsappSettingsAiKnowledge } from '@/app/_components/whatsapp/settings/whatsapp-settings-ai-knowledge'
+import { WhatsappSettingsBusinessHours } from '@/app/_components/whatsapp/settings/whatsapp-settings-business-hours'
 import { WhatsappSettingsCallRecording } from '@/app/_components/whatsapp/settings/whatsapp-settings-call-recording'
 import { WhatsappSettingsCloseStatuses } from '@/app/_components/whatsapp/settings/whatsapp-settings-close-statuses'
 import { WhatsappSettingsConnections } from '@/app/_components/whatsapp/settings/whatsapp-settings-connections'
@@ -69,6 +70,7 @@ export default async function ZapSettingsPage({
           </TabsContent>
           <TabsContent value='service' className='space-y-6 pt-4'>
             <WhatsappSettingsService workspaceId={workspaceId} />
+            <WhatsappSettingsBusinessHours workspaceId={workspaceId} />
             <WhatsappSettingsCloseStatuses workspaceId={workspaceId} />
             <WhatsappSettingsCallRecording workspaceId={workspaceId} />
           </TabsContent>

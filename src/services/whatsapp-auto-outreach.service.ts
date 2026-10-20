@@ -44,6 +44,7 @@ import type {
 } from '@/src/schemas/whatsapp-auto-outreach.schema'
 import type { WhatsAppAutoOutreachDTO } from '@/types/whatsapp-auto-outreach'
 import { assertModuleMember } from './authz'
+import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
@@ -57,6 +58,8 @@ export type WhatsAppAutoOutreachStepOutcome =
   | { status: 'stopped' }
   | { status: 'done' }
   | { status: 'paused'; reason: string }
+  /** Outside business hours: the chain sleeps until the opening. */
+  | { status: 'waiting'; resumeAt: Date }
   | { status: 'sent' | 'failed' | 'skipped' | 'retry'; nextDelayMs: number }
 
 async function authorize(
@@ -514,6 +517,22 @@ export const WhatsAppAutoOutreachService = {
       if (!stopped.ok) return stopped
       if (status === 'DONE') return ok({ status: 'done' })
       return ok({ status: 'paused', reason: reason ?? '' })
+    }
+
+    // Business hours lock automatic sends too: sleep until the opening.
+    const hours = await WhatsAppBusinessHoursService.check(workspaceId)
+    if (!hours.ok) return hours
+    if (!hours.value.open) {
+      const resumeAt = hours.value.nextOpeningAt
+      if (!resumeAt) {
+        return stop('PAUSED', 'O horário de atendimento não tem dias liberados')
+      }
+      await enqueueNext(
+        workspaceId,
+        runToken,
+        Math.max(0, resumeAt.getTime() - Date.now()),
+      )
+      return ok({ status: 'waiting', resumeAt })
     }
 
     const sendable = await loadSendable(

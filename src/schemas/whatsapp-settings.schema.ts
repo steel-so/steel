@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { BUSINESS_HOURS_TIME_PATTERN } from '@/src/lib/whatsapp/business-hours'
 import { WHATSAPP_CLOSE_STATUS_MAX_SELECTIONS } from './whatsapp-close-status.schema'
 
 /** Limite de 30 dias para o fechamento automático por inatividade. */
@@ -85,6 +86,18 @@ export const UpdateWhatsAppSettingsSchema = z.object({
     .min(1, 'O máximo vai de 1 a 10')
     .max(WHATSAPP_CLOSE_STATUS_MAX_SELECTIONS, 'O máximo vai de 1 a 10')
     .optional(),
+
+  /** Horário de atendimento: fora dele os envios ficam travados. */
+  businessHoursEnabled: z.boolean().optional(),
+  businessHoursStart: z
+    .string()
+    .regex(BUSINESS_HOURS_TIME_PATTERN, 'Use o formato HH:mm (ex.: 08:00)')
+    .optional(),
+  businessHoursEnd: z
+    .string()
+    .regex(BUSINESS_HOURS_TIME_PATTERN, 'Use o formato HH:mm (ex.: 18:00)')
+    .optional(),
+  businessHoursDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

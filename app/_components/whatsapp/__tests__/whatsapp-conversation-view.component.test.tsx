@@ -214,6 +214,36 @@ describe('<WhatsappConversationView />', () => {
     ).toEqual({ reason: 'Resolvido', statusIds: [] })
   })
 
+  it('locks the composer outside business hours and says when it opens', async () => {
+    setup([
+      {
+        match: `${API}/business-hours`,
+        data: {
+          enabled: true,
+          start: '08:00',
+          end: '18:00',
+          days: [1, 2, 3, 4, 5],
+          open: false,
+          nextOpeningAt: '2026-10-21T11:00:00.000Z',
+        },
+      },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+        onSelectConversation={vi.fn()}
+      />,
+    )
+
+    expect(
+      await screen.findByText(/Fora do horário de atendimento/),
+    ).toBeTruthy()
+    await waitFor(() =>
+      expect(screen.getByTestId('composer').dataset.disabled).toBe('true'),
+    )
+  })
+
   it('requires the close statuses the workspace asks for', async () => {
     const onSelectConversation = vi.fn()
     const fetchSpy = setup([

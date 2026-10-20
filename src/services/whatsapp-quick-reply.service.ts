@@ -46,6 +46,7 @@ import type {
 } from '@/types/whatsapp-message'
 import type { WhatsAppQuickReplyDTO } from '@/types/whatsapp-quick-reply'
 import { assertModuleMember } from './authz'
+import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import { loadConversationForViewer } from './whatsapp-conversation-scope.service'
 
 const TOKEN_PATTERN = /\{(\w+)\}/g
@@ -377,6 +378,8 @@ export const WhatsAppQuickReplyService = {
     if (conversation.value.aiActive) {
       return err(whatsappConversationAiHandling())
     }
+    const open = await WhatsAppBusinessHoursService.assertOpen(workspaceId)
+    if (!open.ok) return open
 
     const quickReply = await WhatsAppQuickReplyRepository.findById(
       dto.quickReplyId,

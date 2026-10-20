@@ -208,6 +208,11 @@ export const whatsappAutoOutreachRunning = (): AppError =>
     'Pause o disparo automático antes de trocar a conexão ou o template',
   )
 
+/** Sending is locked outside the workspace's WhatsApp business hours. */
+export const whatsappOutsideBusinessHours = (
+  message = 'Fora do horário de atendimento: os envios estão travados',
+): AppError => appError('WHATSAPP_OUTSIDE_BUSINESS_HOURS', message)
+
 export const whatsappConversationNotClosed = (): AppError =>
   appError('WHATSAPP_CONVERSATION_NOT_CLOSED', 'Esta conversa não está fechada')
 

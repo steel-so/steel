@@ -45,6 +45,7 @@ import {
   usePhoneCalls,
 } from '@/src/hooks/use-phone-calls'
 import { useUser } from '@/src/hooks/use-user'
+import { useWhatsAppBusinessHours } from '@/src/hooks/use-whatsapp-business-hours'
 import { useFindOrCreateWhatsAppContact } from '@/src/hooks/use-whatsapp-contacts'
 import {
   useAssignWhatsAppConversation,
@@ -186,6 +187,8 @@ export function WhatsappConversationView({
     currentUser.data?.pabxExtension && currentUser.data?.pabxDeviceId,
   )
   const isClosed = conversation.status === 'CLOSED'
+  const businessHours = useWhatsAppBusinessHours(workspaceId)
+  const outsideHours = businessHours.data?.open === false
 
   // Conversation shortcuts (registry `zap.*`).
   useShortcut('zap.reply', () => {
@@ -677,6 +680,21 @@ export function WhatsappConversationView({
         </div>
       )}
 
+      {outsideHours && !isClosed && (
+        <div className='border-b bg-muted px-4 py-2 text-muted-foreground text-sm'>
+          Fora do horário de atendimento ({businessHours.data?.start}–
+          {businessHours.data?.end}): os envios estão travados
+          {businessHours.data?.nextOpeningAt
+            ? ` até ${format(
+                new Date(businessHours.data.nextOpeningAt),
+                "EEEE, dd/MM 'às' HH:mm",
+                { locale: ptBR },
+              )}`
+            : ''}
+          .
+        </div>
+      )}
+
       <WhatsappPhoneCallBanner call={phoneCall.data} />
 
       {!isClosed && conversation.aiActive && (
@@ -719,7 +737,7 @@ export function WhatsappConversationView({
         workspaceId={workspaceId}
         conversationId={conversation.id}
         contactName={conversation.contactName ?? conversation.contactWaId}
-        disabled={conversation.aiActive || isClosed}
+        disabled={conversation.aiActive || isClosed || outsideHours}
         replyTarget={replyTarget}
         onClearReply={() => setReplyTarget(null)}
       />

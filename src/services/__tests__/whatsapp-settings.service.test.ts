@@ -141,6 +141,56 @@ describe('WhatsAppSettingsService', () => {
       )
     })
 
+    it('should save the business hours with the days sorted and deduped', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          businessHoursEnabled: true,
+          businessHoursStart: '09:00',
+          businessHoursEnd: '17:30',
+          businessHoursDays: [5, 1, 1, 3],
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          businessHoursEnabled: true,
+          businessHoursStart: '09:00',
+          businessHoursEnd: '17:30',
+          businessHoursDays: [1, 3, 5],
+        }),
+      )
+    })
+
+    it('should reject business hours that start and end at the same time', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+
+      expectErr(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          businessHoursStart: '18:00',
+        }),
+        'VALIDATION_ERROR',
+      )
+    })
+
+    it('should reject business hours turned on without weekdays', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+
+      expectErr(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          businessHoursEnabled: true,
+          businessHoursDays: [],
+        }),
+        'VALIDATION_ERROR',
+      )
+      expect(mockedSettingsRepo.upsert).not.toHaveBeenCalled()
+    })
+
     it('should reject a close status minimum above the maximum', async () => {
       asRole('ADMIN')
       mockedSettingsRepo.findByWorkspace.mockResolvedValue(

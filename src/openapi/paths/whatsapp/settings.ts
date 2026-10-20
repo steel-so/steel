@@ -9,6 +9,7 @@ import type { RouteConfig } from '../../registry'
 import { MediaUrlDTO } from '../../schemas/core'
 import {
   WhatsAppAssignableMemberDTO,
+  WhatsAppBusinessHoursStatusDTO,
   WhatsAppCloseStatusDTO,
   WhatsAppCloseStatusOptionsDTO,
   WhatsAppSettingsDTO,
@@ -88,7 +89,32 @@ export const settingsRoutes: RouteConfig[] = [
           'O mínimo de status de fechamento não pode ser maior que o máximo',
         when: '`closeStatusMinSelections` acima de `closeStatusMaxSelections`',
       },
+      {
+        code: 'VALIDATION_ERROR',
+        message:
+          'O início e o fim do horário de atendimento devem ser diferentes',
+        when: '`businessHoursStart` igual a `businessHoursEnd`',
+      },
+      {
+        code: 'VALIDATION_ERROR',
+        message: 'Escolha ao menos um dia de atendimento',
+        when: 'Horário ligado sem nenhum dia em `businessHoursDays`',
+      },
     ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/business-hours',
+    tags: [TAG],
+    summary: 'Horário de atendimento',
+    description: `Janela de atendimento e se os envios estão liberados agora (\`open\`), com a próxima abertura — base do aviso na conversa. Fora do horário, envios de atendentes respondem \`WHATSAPP_OUTSIDE_BUSINESS_HOURS\`, a resposta da IA espera a abertura e o disparo automático dorme até lá. ${perm('conversations', 'VIEW')}`,
+    responses: {
+      200: {
+        description: 'Horário de atendimento.',
+        schema: WhatsAppBusinessHoursStatusDTO,
+      },
+    },
+    errors: permErrors('conversations', 'VIEW'),
   },
   {
     method: 'get',

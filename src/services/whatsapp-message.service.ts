@@ -36,6 +36,7 @@ import type {
   WhatsAppMessageTypeDTO,
 } from '@/types/whatsapp-message'
 import { assertModuleMember } from './authz'
+import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import {
   loadVisibleConversation,
   resolveConversationScope,
@@ -72,6 +73,9 @@ async function loadSendableConversation(
   )
   if (!conversation.ok) return conversation
   if (conversation.value.aiActive) return err(whatsappConversationAiHandling())
+
+  const open = await WhatsAppBusinessHoursService.assertOpen(workspaceId)
+  if (!open.ok) return open
 
   const connection = await WhatsAppConnectionRepository.findById(
     conversation.value.connectionId,

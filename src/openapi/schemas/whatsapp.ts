@@ -527,6 +527,37 @@ export const WhatsAppSettingsDTO = dto(
       description:
         'Máximo de status de fechamento escolhidos ao fechar (1 a 10; padrão 1).',
     }),
+    businessHoursEnabled: z.boolean().meta({
+      description:
+        'Horário de atendimento ligado: fora dele os envios de atendentes, da IA e do disparo automático ficam travados (padrão: desligado).',
+    }),
+    businessHoursStart: z.string().meta({
+      description: 'Início, `HH:mm` em America/Sao_Paulo (padrão 08:00).',
+      example: '08:00',
+    }),
+    businessHoursEnd: z.string().meta({
+      description:
+        'Fim (exclusivo), `HH:mm`; antes do início = janela que vira a noite (padrão 18:00).',
+      example: '18:00',
+    }),
+    businessHoursDays: z.array(z.number().int()).meta({
+      description:
+        'Dias de atendimento, 0 = domingo … 6 = sábado (padrão seg–sex).',
+    }),
+  }),
+)
+
+export const WhatsAppBusinessHoursStatusDTO = dto(
+  'WhatsAppBusinessHoursStatus',
+  z.object({
+    enabled: z.boolean(),
+    start: z.string().meta({ example: '08:00' }),
+    end: z.string().meta({ example: '18:00' }),
+    days: z.array(z.number().int()),
+    open: z.boolean().meta({ description: 'Envios liberados agora.' }),
+    nextOpeningAt: nullableDateTime().meta({
+      description: 'Próxima abertura quando fechado.',
+    }),
   }),
 )
 

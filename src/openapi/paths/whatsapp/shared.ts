@@ -73,10 +73,14 @@ export const SEND_ERRORS: ErrorEntry[] = [
     code: 'WHATSAPP_MESSAGE_LIMIT_REACHED',
     when: 'O limite mensal de mensagens do workspace foi atingido (Ajustes › Comunicação)',
   },
+  {
+    code: 'WHATSAPP_OUTSIDE_BUSINESS_HOURS',
+    when: 'Fora do horário de atendimento configurado (a mensagem diz quando abre)',
+  },
 ]
 
 export const SEND_NOTE =
-  'O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min).'
+  'O envio passa pelo provedor da conexão (Z-API ou Meta Cloud API) e consome também o limite de envio **por conexão** (20 mensagens/min). Fora do horário de atendimento (`businessHours*` em `PATCH .../whatsapp/settings`) o envio é recusado.'
 
 export const CONVERSATION_PARAM = 'Id da conversa.'
 export const CONNECTION_PARAM = 'Id da conexão do WhatsApp.'
