@@ -5,6 +5,7 @@ import {
   Call02Icon,
   CheckmarkCircle02Icon,
   ComputerVideoCallIcon,
+  Download01Icon,
   RefreshIcon,
   UserGroup03Icon,
   UserSwitchIcon,
@@ -302,6 +303,17 @@ export function WhatsappConversationView({
     )
   }
 
+  // Plain navigation to the attachment route: the browser keeps the page and
+  // saves the file (Content-Disposition), with the session cookie attached.
+  function handleDownload(format: 'txt' | 'csv') {
+    const link = document.createElement('a')
+    link.href = `/api/workspaces/${workspaceId}/whatsapp/conversations/${conversation.id}/export?format=${format}`
+    link.download = ''
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
   function handleReopen() {
     reopenConversation.mutate(conversation.id, {
       onSuccess: (updated) => {
@@ -574,6 +586,31 @@ export function WhatsappConversationView({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant='ghost'
+                  size='icon-sm'
+                  aria-label='Baixar conversa'
+                  title='Baixar conversa'
+                >
+                  <SteelIcon icon={Download01Icon} size={18} />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align='end'>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Baixar conversa</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleDownload('txt')}>
+                  Texto (.txt)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownload('csv')}>
+                  Planilha (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu open={transferOpen} onOpenChange={setTransferOpen}>
             <DropdownMenuTrigger
               render={

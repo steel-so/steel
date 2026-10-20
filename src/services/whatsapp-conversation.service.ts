@@ -19,6 +19,12 @@ import type { PermissionAction } from '@/src/lib/permissions'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import {
+  buildWhatsAppConversationExport,
+  WHATSAPP_CONVERSATION_EXPORT_MAX_MESSAGES,
+  type WhatsAppConversationExportFile,
+  type WhatsAppConversationExportFormat,
+} from '@/src/lib/whatsapp/conversation-export'
+import {
   canAssignConversation,
   canChangeConversationTeam,
   canSeeConversation,
@@ -38,6 +44,7 @@ import {
   type WhatsAppConversationWithPreview,
 } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
+import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import type {
   CloseWhatsAppConversationDTO,
@@ -915,6 +922,54 @@ export const WhatsAppConversationService = {
     )
     if (!events.ok) return events
     return ok(events.value.map(toWhatsAppConversationEventDTO))
+  },
+
+  /**
+   * Downloadable transcript of the conversation (TXT or CSV), from the last
+   * "clear" on. Audited — it takes personal data out of the platform (LGPD).
+   */
+  async exportTranscript(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+    format: WhatsAppConversationExportFormat,
+  ): Promise<Result<WhatsAppConversationExportFile>> {
+    const access = await authorizeConversation(actorId, workspaceId, id, 'VIEW')
+    if (!access.ok) return access
+    const conversation = access.value.conversation
+    if (conversation.deletedAt) return err(whatsappConversationNotFound())
+
+    const messages = await WhatsAppMessageRepository.listForExport(id, {
+      limit: WHATSAPP_CONVERSATION_EXPORT_MAX_MESSAGES,
+      after: conversation.clearedAt,
+    })
+    if (!messages.ok) return messages
+
+    const file = buildWhatsAppConversationExport(
+      {
+        contactName: conversation.contact.name,
+        contactWaId: conversation.contact.waId,
+        messages: messages.value.map((message) => ({
+          direction: message.direction,
+          type: message.type,
+          text: message.text,
+          mediaUrl: message.mediaUrl,
+          sentByAi: message.sentByAi,
+          senderName: message.senderUser?.name ?? null,
+          createdAt: message.createdAt,
+        })),
+      },
+      format,
+    )
+
+    auditMutation({
+      entity: 'whatsapp_conversation',
+      action: 'download',
+      actorId,
+      targetId: id,
+      meta: { workspaceId, format, messages: messages.value.length },
+    })
+    return ok(file)
   },
 
   /**

@@ -25,6 +25,31 @@ export const WhatsAppMessageRepository = {
     }
   },
 
+  /** Every non-deleted message of the conversation, oldest first, with the
+   * sender's name (conversation download). */
+  async listForExport(
+    conversationId: string,
+    options: { limit: number; after?: Date | null },
+  ): Promise<
+    Result<(WhatsAppMessage & { senderUser: { name: string } | null })[]>
+  > {
+    try {
+      const messages = await prisma.whatsAppMessage.findMany({
+        where: {
+          conversationId,
+          deletedAt: null,
+          ...(options.after ? { createdAt: { gt: options.after } } : {}),
+        },
+        orderBy: { createdAt: 'asc' },
+        take: options.limit,
+        include: { senderUser: { select: { name: true } } },
+      })
+      return ok(messages)
+    } catch (error) {
+      return err(dbError('Failed to list whatsapp messages for export', error))
+    }
+  },
+
   /** Últimas `limit` mensagens da conversa, da mais nova para a mais antiga
    * (contexto da resposta automática da IA). */
   async listLatestByConversation(

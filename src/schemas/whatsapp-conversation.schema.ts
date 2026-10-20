@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { WHATSAPP_CONVERSATION_EXPORT_FORMATS } from '@/src/lib/whatsapp/conversation-export'
 
 export const StartWhatsAppConversationSchema = z.object({
   contactId: z.string().min(1, 'Contato é obrigatório'),
@@ -20,4 +21,16 @@ export const CloseWhatsAppConversationSchema = z.object({
 
 export type CloseWhatsAppConversationDTO = z.input<
   typeof CloseWhatsAppConversationSchema
+>
+
+export const ExportWhatsAppConversationSchema = z.object({
+  format: z
+    .enum(WHATSAPP_CONVERSATION_EXPORT_FORMATS, {
+      message: 'Formato deve ser txt ou csv',
+    })
+    .default('txt'),
+})
+
+export type ExportWhatsAppConversationDTO = z.infer<
+  typeof ExportWhatsAppConversationSchema
 >

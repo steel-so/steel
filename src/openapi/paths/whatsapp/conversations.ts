@@ -414,6 +414,50 @@ export const conversationRoutes: RouteConfig[] = [
     errors: permErrors('conversations', 'VIEW'),
   },
   {
+    method: 'get',
+    path: `${BASE}/export`,
+    tags: [TAG],
+    summary: 'Baixar conversa',
+    description: `Devolve a transcrição da conversa para download (fora do envelope JSON), desde a última limpeza, em horário de Brasília. \`format=txt\` (padrão) gera o texto no estilo do WhatsApp (\`[dd/mm/aaaa hh:mm] Nome: mensagem\`); \`format=csv\` gera uma linha por mensagem. Mídias aparecem como marcador + URL. Até 20.000 mensagens. Erros continuam no envelope JSON. Auditado (LGPD). ${perm('conversations', 'VIEW')}`,
+    params: PARAMS,
+    query: {
+      type: 'object',
+      properties: {
+        format: {
+          type: 'string',
+          enum: ['txt', 'csv'],
+          description: 'Formato do arquivo (padrão txt).',
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          'Arquivo de texto (`text/plain`) ou CSV (`text/csv`), com `Content-Disposition: attachment`.',
+        envelope: false,
+        contentType: 'text/plain',
+        schema: { type: 'string' },
+        example: '[20/10/2026 09:00] Maria: Bom dia\n',
+        headers: {
+          'Content-Disposition': {
+            description: '`attachment; filename="conversa-<contato>.txt"`.',
+          },
+        },
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'VIEW'),
+      {
+        code: 'VALIDATION_ERROR',
+        when: 'Formato diferente de txt ou csv',
+      },
+      {
+        code: 'WHATSAPP_CONVERSATION_NOT_FOUND',
+        when: 'Conversa inexistente, apagada ou fora do seu escopo',
+      },
+    ],
+  },
+  {
     method: 'patch',
     path: `${BASE}/ai`,
     tags: [TAG],
