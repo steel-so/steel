@@ -220,6 +220,8 @@ describe('WebPhoneClient', () => {
       expect(options).toMatchObject({
         authorizationUsername: '1122S',
         authorizationPassword: 'sip-secret',
+        // The PABX outbound route only accepts user agents on its allow-list.
+        userAgentString: 'steelphone',
         transportOptions: expect.objectContaining({
           server: 'wss://sbc.stratustelecom.com.br:8089/ws',
         }),

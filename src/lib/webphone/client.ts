@@ -44,6 +44,15 @@ export const ENDED_VISIBLE_MS = 4000
 
 const MEDIA = { constraints: { audio: true, video: false } }
 
+/**
+ * User-Agent the PABX knows this phone by. The tenant outbound routes only
+ * let a call out when `CHANNEL(useragent)` is in the PABX `useragent` table;
+ * `steelphone` is the Steel WebPhone's entry there. SIP.js would otherwise
+ * announce itself as `SIP.js/<version>`, which the route answers with
+ * "acesso negado".
+ */
+export const WEBPHONE_USER_AGENT = 'steelphone'
+
 function describeMediaError(error: unknown): string {
   if (error instanceof DOMException && error.name === 'NotAllowedError')
     return 'Permita o microfone no navegador para ligar.'
@@ -83,6 +92,7 @@ export class WebPhoneClient {
       authorizationUsername: extension,
       authorizationPassword: password,
       displayName: extension,
+      userAgentString: WEBPHONE_USER_AGENT,
       transportOptions: {
         server: wssUrl,
         keepAliveInterval: 20,
