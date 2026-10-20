@@ -23,6 +23,7 @@ describe('toUserDTO()', () => {
         coverImage: null,
         pabxExtension: '200',
         pabxDeviceId: '123',
+        pabxWebphoneEnabled: true,
       }),
       [
         {
@@ -66,6 +67,7 @@ describe('toUserDTO()', () => {
       coverImage: null,
       pabxExtension: '200',
       pabxDeviceId: '123',
+      pabxWebphoneEnabled: true,
       createdAt: user.createdAt.toISOString(),
       deletionScheduledAt: null,
       acceptedTermsAt: null,

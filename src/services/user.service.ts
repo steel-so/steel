@@ -116,7 +116,22 @@ export const UserService = {
       }
     }
 
-    const updateResult = await UserRepository.update(actorId, dto)
+    // The web phone hands the extension's SIP secret to the browser, so an
+    // administrator approves a given extension/device pair. Changing either
+    // one drops the approval until it is granted again.
+    const changes: Parameters<typeof UserRepository.update>[1] = { ...dto }
+    if (dto.pabxExtension !== undefined || dto.pabxDeviceId !== undefined) {
+      const current = await UserRepository.findById(actorId)
+      if (!current.ok) return current
+      const changedBinding =
+        (dto.pabxExtension !== undefined &&
+          dto.pabxExtension !== current.value.pabxExtension) ||
+        (dto.pabxDeviceId !== undefined &&
+          dto.pabxDeviceId !== current.value.pabxDeviceId)
+      if (changedBinding) changes.pabxWebphoneEnabled = false
+    }
+
+    const updateResult = await UserRepository.update(actorId, changes)
     if (!updateResult.ok) {
       auditMutation({
         entity: 'user',

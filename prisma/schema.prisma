@@ -28,6 +28,10 @@ model User {
   pabxExtension        String?              @map("pabx_extension") @db.VarChar(20)
   /// PABX device (`iddevice` of the dialer endpoint) bound to the extension.
   pabxDeviceId         String?              @map("pabx_device_id") @db.VarChar(20)
+  /// Browser calling (WebRTC) is allowed for this extension/device. Only an
+  /// administrator sets it (SQL/admin); editing the extension or the device
+  /// resets it, because the call hands the extension's SIP secret to the browser.
+  pabxWebphoneEnabled  Boolean              @default(false) @map("pabx_webphone_enabled")
   deletionScheduledAt  DateTime?            @map("deletion_scheduled_at")
   acceptedTermsAt      DateTime?            @map("accepted_terms_at")
   acceptedPrivacyAt    DateTime?            @map("accepted_privacy_at")

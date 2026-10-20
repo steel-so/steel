@@ -33,6 +33,7 @@ export interface UserDTO {
   coverImage: string | null
   pabxExtension: string | null
   pabxDeviceId: string | null
+  pabxWebphoneEnabled: boolean
   createdAt: string
   deletionScheduledAt: string | null
   acceptedTermsAt: string | null

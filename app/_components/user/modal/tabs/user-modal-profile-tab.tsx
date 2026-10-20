@@ -177,11 +177,10 @@ export function UserModalProfileTab({ tab }: { tab: string }) {
             <Field>
               <FieldLabel>Ramal</FieldLabel>
               <Input
-                inputMode='numeric'
-                placeholder='Ex.: 200'
+                placeholder='Ex.: 200 ou 1122S'
                 value={pabxExtension}
                 onChange={(e) =>
-                  setPabxExtension(e.target.value.replace(/\D/g, ''))
+                  setPabxExtension(e.target.value.replace(/[^A-Za-z0-9]/g, ''))
                 }
               />
               <FieldDescription>

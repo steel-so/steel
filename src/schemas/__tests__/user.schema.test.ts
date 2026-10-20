@@ -19,11 +19,25 @@ describe('UpdateUserSchema', () => {
     expect(result.data).toEqual({ pabxExtension: null, pabxDeviceId: null })
   })
 
-  it('should reject a non-numeric PABX extension', () => {
-    const result = UpdateUserSchema.safeParse({ pabxExtension: '20a' })
+  it('should accept an extension with letters, like 1122S', () => {
+    const result = UpdateUserSchema.safeParse({ pabxExtension: '1122S' })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ pabxExtension: '1122S' })
+  })
+
+  it('should reject an extension with symbols', () => {
+    const result = UpdateUserSchema.safeParse({ pabxExtension: '20-a' })
     expect(result.success).toBe(false)
     expect(result.error?.issues[0].message).toBe(
-      'Ramal deve conter apenas números',
+      'Ramal deve conter apenas letras e números',
+    )
+  })
+
+  it('should reject a non-numeric PABX device', () => {
+    const result = UpdateUserSchema.safeParse({ pabxDeviceId: '12a' })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0].message).toBe(
+      'Device deve conter apenas números',
     )
   })
 

@@ -127,6 +127,87 @@ describe('UserService', () => {
       )
     })
 
+    describe('web phone approval', () => {
+      function arrangeUpdate(current: ReturnType<typeof createFakeUser>) {
+        const updated = createFakeUser({ id: 'user-1' })
+        mockedUser.findById.mockResolvedValue(ok(current))
+        mockedUser.update.mockResolvedValue(ok(updated))
+        mockedUser.findByIdWithMemberships.mockResolvedValue(
+          ok(withMemberships(updated)),
+        )
+        mockedUserCache.invalidate.mockResolvedValue(undefined)
+        mockedUserCache.set.mockResolvedValue(undefined)
+      }
+
+      const approved = () =>
+        createFakeUser({
+          id: 'user-1',
+          pabxExtension: '1122S',
+          pabxDeviceId: '0',
+          pabxWebphoneEnabled: true,
+        })
+
+      it('drops the approval when the extension changes', async () => {
+        arrangeUpdate(approved())
+
+        expectOk(
+          await UserService.updateProfile('user-1', { pabxExtension: '200' }),
+        )
+
+        expect(mockedUser.update).toHaveBeenCalledWith('user-1', {
+          pabxExtension: '200',
+          pabxWebphoneEnabled: false,
+        })
+      })
+
+      it('drops the approval when the device changes', async () => {
+        arrangeUpdate(approved())
+
+        expectOk(
+          await UserService.updateProfile('user-1', { pabxDeviceId: '191' }),
+        )
+
+        expect(mockedUser.update).toHaveBeenCalledWith('user-1', {
+          pabxDeviceId: '191',
+          pabxWebphoneEnabled: false,
+        })
+      })
+
+      it('keeps the approval when the same extension and device are saved again', async () => {
+        arrangeUpdate(approved())
+
+        expectOk(
+          await UserService.updateProfile('user-1', {
+            pabxExtension: '1122S',
+            pabxDeviceId: '0',
+          }),
+        )
+
+        expect(mockedUser.update).toHaveBeenCalledWith('user-1', {
+          pabxExtension: '1122S',
+          pabxDeviceId: '0',
+        })
+      })
+
+      it('does not look at the binding when the profile edit has no PABX fields', async () => {
+        arrangeUpdate(approved())
+
+        expectOk(await UserService.updateProfile('user-1', { name: 'Novo' }))
+
+        expect(mockedUser.findById).not.toHaveBeenCalled()
+      })
+
+      it('propagates a failure to load the current binding', async () => {
+        mockedUser.findById.mockResolvedValue(err(databaseError('db down')))
+
+        expectErr(
+          await UserService.updateProfile('user-1', { pabxExtension: '200' }),
+          'DATABASE_ERROR',
+        )
+        expect(mockedUser.update).not.toHaveBeenCalled()
+      })
+    })
+
     it('should return conflict when email belongs to another user', async () => {
       const existingUser = createFakeUser({
         id: 'other-user',

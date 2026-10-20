@@ -126,6 +126,7 @@ export const UserRepository = {
       coverImage?: string
       pabxExtension?: string | null
       pabxDeviceId?: string | null
+      pabxWebphoneEnabled?: boolean
     },
   ): Promise<Result<User>> {
     try {
