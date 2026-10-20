@@ -464,7 +464,7 @@ export const WhatsAppAutoOutreachService = {
     const existing =
       await WhatsAppAutoOutreachRepository.findByWorkspace(workspaceId)
     if (!existing.ok) return existing
-    if (!existing.value || existing.value.status !== 'RUNNING') {
+    if (existing.value?.status !== 'RUNNING') {
       return toDTO(existing.value)
     }
 
@@ -497,11 +497,7 @@ export const WhatsAppAutoOutreachService = {
       await WhatsAppAutoOutreachRepository.findByWorkspace(workspaceId)
     if (!found.ok) return found
     const outreach = found.value
-    if (
-      !outreach ||
-      outreach.status !== 'RUNNING' ||
-      outreach.runToken !== runToken
-    ) {
+    if (outreach?.status !== 'RUNNING' || outreach.runToken !== runToken) {
       return ok({ status: 'stopped' })
     }
 

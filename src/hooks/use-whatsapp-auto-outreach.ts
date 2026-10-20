@@ -91,7 +91,7 @@ export function useClearWhatsAppAutoOutreach(workspaceId: string) {
 export function usePlayWhatsAppAutoOutreach(workspaceId: string) {
   return useOutreachMutation(
     workspaceId,
-    (_input: void) => ({ path: '/play', init: { method: 'POST' } }),
+    (_input: undefined) => ({ path: '/play', init: { method: 'POST' } }),
     'Erro ao iniciar o disparo',
   )
 }
@@ -99,7 +99,7 @@ export function usePlayWhatsAppAutoOutreach(workspaceId: string) {
 export function usePauseWhatsAppAutoOutreach(workspaceId: string) {
   return useOutreachMutation(
     workspaceId,
-    (_input: void) => ({ path: '/pause', init: { method: 'POST' } }),
+    (_input: undefined) => ({ path: '/pause', init: { method: 'POST' } }),
     'Erro ao pausar o disparo',
   )
 }
