@@ -334,6 +334,8 @@ describe('WhatsApp mappers — relation counts and actors', () => {
       source: 'AGENT' as const,
       actorUserId: 'u1',
       reason: 'resolvido',
+      closeOutcome: null,
+      closeStatusLabels: [],
       createdAt: AT,
     }
 

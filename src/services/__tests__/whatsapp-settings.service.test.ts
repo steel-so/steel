@@ -121,6 +121,41 @@ describe('WhatsAppSettingsService', () => {
       )
     })
 
+    it('should save the close status rules', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          closeStatusMinSelections: 1,
+          closeStatusMaxSelections: 3,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          closeStatusMinSelections: 1,
+          closeStatusMaxSelections: 3,
+        }),
+      )
+    })
+
+    it('should reject a close status minimum above the maximum', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+        ok(row({ closeStatusMaxSelections: 1 })),
+      )
+
+      expectErr(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          closeStatusMinSelections: 2,
+        }),
+        'VALIDATION_ERROR',
+      )
+      expect(mockedSettingsRepo.upsert).not.toHaveBeenCalled()
+    })
+
     it('should forbid a MEMBER', async () => {
       asRole('MEMBER')
       expectErr(

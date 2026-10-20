@@ -1,10 +1,16 @@
 import { z } from 'zod'
+import {
+  CreateWhatsAppCloseStatusSchema,
+  UpdateWhatsAppCloseStatusSchema,
+} from '@/src/schemas/whatsapp-close-status.schema'
 import { UpdateWhatsAppSettingsSchema } from '@/src/schemas/whatsapp-settings.schema'
 import { UpdateWhatsAppUsageLimitsSchema } from '@/src/schemas/whatsapp-usage.schema'
 import type { RouteConfig } from '../../registry'
 import { MediaUrlDTO } from '../../schemas/core'
 import {
   WhatsAppAssignableMemberDTO,
+  WhatsAppCloseStatusDTO,
+  WhatsAppCloseStatusOptionsDTO,
   WhatsAppSettingsDTO,
   WhatsAppUsageDTO,
 } from '../../schemas/whatsapp'
@@ -75,6 +81,87 @@ export const settingsRoutes: RouteConfig[] = [
         message:
           'Selecione apenas membros deste workspace para o alerta de sentimento',
         when: 'Destinatário ou supervisor não é membro do workspace',
+      },
+      {
+        code: 'VALIDATION_ERROR',
+        message:
+          'O mínimo de status de fechamento não pode ser maior que o máximo',
+        when: '`closeStatusMinSelections` acima de `closeStatusMaxSelections`',
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/close-statuses',
+    tags: [TAG],
+    summary: 'Status de fechamento',
+    description: `Opções de classificação oferecidas ao fechar uma conversa (só as ativas, na ordem de exibição) e quantas o atendente escolhe (\`minSelections\`/\`maxSelections\`, de \`PATCH .../whatsapp/settings\`). ${perm('conversations', 'VIEW')}`,
+    responses: {
+      200: {
+        description: 'Opções e regras.',
+        schema: WhatsAppCloseStatusOptionsDTO,
+      },
+    },
+    errors: permErrors('conversations', 'VIEW'),
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/close-statuses',
+    tags: [TAG],
+    summary: 'Criar status de fechamento',
+    description: `Cria uma opção de classificação (ex.: "Venda realizada" = \`SUCCESS\`, "Sem interesse" = \`FAILURE\`), no fim da lista. Até 50 ativos por workspace. Auditado. ${PRIVILEGED}`,
+    body: CreateWhatsAppCloseStatusSchema,
+    responses: {
+      201: { description: 'Status criado.', schema: WhatsAppCloseStatusDTO },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      {
+        code: 'WHATSAPP_CLOSE_STATUS_LIMIT_REACHED',
+        when: 'Já há 50 status ativos',
+      },
+    ],
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/whatsapp/close-statuses/{statusId}',
+    tags: [TAG],
+    summary: 'Atualizar status de fechamento',
+    description: `Renomeia, troca o resultado ou a posição. Conversas já fechadas guardam o rótulo antigo. Auditado. ${PRIVILEGED}`,
+    params: { statusId: 'Id do status de fechamento.' },
+    body: UpdateWhatsAppCloseStatusSchema,
+    responses: {
+      200: {
+        description: 'Status atualizado.',
+        schema: WhatsAppCloseStatusDTO,
+      },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      {
+        code: 'WHATSAPP_CLOSE_STATUS_NOT_FOUND',
+        when: 'Status inexistente, arquivado ou de outro workspace',
+      },
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/whatsapp/close-statuses/{statusId}',
+    tags: [TAG],
+    summary: 'Remover status de fechamento',
+    description: `Arquiva o status: sai do diálogo de fechamento, mas o histórico das conversas continua legível. Auditado. ${PRIVILEGED}`,
+    params: { statusId: 'Id do status de fechamento.' },
+    responses: {
+      200: {
+        description: 'Status arquivado.',
+        schema: z.object({ id: z.string() }),
+      },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      {
+        code: 'WHATSAPP_CLOSE_STATUS_NOT_FOUND',
+        when: 'Status inexistente, arquivado ou de outro workspace',
       },
     ],
   },

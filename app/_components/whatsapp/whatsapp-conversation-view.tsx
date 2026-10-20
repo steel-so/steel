@@ -78,6 +78,7 @@ import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
 import { WhatsappAiBanner } from './whatsapp-ai-banner'
 import { WhatsappCloseConversationDialog } from './whatsapp-close-conversation-dialog'
+import { CLOSE_OUTCOME_LABEL } from './whatsapp-close-outcome-badge'
 import {
   WHATSAPP_COMPOSER_INPUT_ID,
   WhatsappComposer,
@@ -288,9 +289,9 @@ export function WhatsappConversationView({
     [messages.data, events.data, calls.data],
   )
 
-  function handleClose(reason: string | undefined) {
+  function handleClose(reason: string | undefined, statusIds: string[]) {
     closeConversation.mutate(
-      { conversationId: conversation.id, reason },
+      { conversationId: conversation.id, reason, statusIds },
       {
         onSuccess: (updated) => {
           setCloseOpen(false)
@@ -664,6 +665,13 @@ export function WhatsappConversationView({
       {isClosed && (
         <div className='border-b bg-muted px-4 py-2 text-muted-foreground text-sm'>
           Conversa fechada
+          {conversation.closeOutcome
+            ? ` (${CLOSE_OUTCOME_LABEL[conversation.closeOutcome].toLowerCase()}${
+                conversation.closeStatusLabels.length
+                  ? `: ${conversation.closeStatusLabels.join(', ')}`
+                  : ''
+              })`
+            : ''}
           {conversation.closeReason ? ` — ${conversation.closeReason}` : ''}. A
           IA não responde até a conversa ser reaberta.
         </div>
@@ -716,6 +724,7 @@ export function WhatsappConversationView({
         onClearReply={() => setReplyTarget(null)}
       />
       <WhatsappCloseConversationDialog
+        workspaceId={workspaceId}
         open={closeOpen}
         onOpenChange={setCloseOpen}
         onConfirm={handleClose}

@@ -32,6 +32,7 @@ export type AuditEntity =
   | 'whatsapp_phone_call_recording'
   | 'whatsapp_message'
   | 'whatsapp_quick_reply'
+  | 'whatsapp_close_status'
   | 'whatsapp_team'
   | 'whatsapp_broadcast_list'
   | 'whatsapp_template'

@@ -8169,6 +8169,32 @@
               }
             ]
           },
+          "closeOutcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["SUCCESS", "FAILURE"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resultado do fechamento: `FAILURE` se algum status escolhido é de insucesso; `null` se aberta ou fechada sem status."
+          },
+          "closeStatusIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Status de fechamento escolhidos (vazio se nenhum)."
+          },
+          "closeStatusLabels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Rótulos dos status escolhidos, copiados no fechamento."
+          },
           "contactSince": {
             "type": "string",
             "format": "date-time"
@@ -8204,6 +8230,9 @@
           "archived",
           "closedAt",
           "closeReason",
+          "closeOutcome",
+          "closeStatusIds",
+          "closeStatusLabels",
           "contactSince",
           "createdAt",
           "updatedAt"

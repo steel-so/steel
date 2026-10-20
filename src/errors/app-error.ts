@@ -181,6 +181,22 @@ export const whatsappConversationAlreadyClosed = (): AppError =>
     'Esta conversa já está fechada',
   )
 
+export const whatsappCloseStatusNotFound = (): AppError =>
+  appError(
+    'WHATSAPP_CLOSE_STATUS_NOT_FOUND',
+    'Status de fechamento não encontrado',
+  )
+
+export const whatsappCloseStatusLimitReached = (max: number): AppError =>
+  appError(
+    'WHATSAPP_CLOSE_STATUS_LIMIT_REACHED',
+    `Limite de ${max} status de fechamento atingido`,
+  )
+
+export const whatsappCloseStatusSelectionInvalid = (
+  message = 'Seleção de status de fechamento inválida',
+): AppError => appError('WHATSAPP_CLOSE_STATUS_SELECTION_INVALID', message)
+
 export const whatsappConversationNotClosed = (): AppError =>
   appError('WHATSAPP_CONVERSATION_NOT_CLOSED', 'Esta conversa não está fechada')
 

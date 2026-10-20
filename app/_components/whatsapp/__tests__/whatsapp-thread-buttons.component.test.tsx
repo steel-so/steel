@@ -39,6 +39,8 @@ function event(
     actorUserId: null,
     actorName: null,
     reason: null,
+    closeOutcome: null,
+    closeStatusLabels: [],
     createdAt: '2026-01-01T12:00:00.000Z',
     ...overrides,
   }

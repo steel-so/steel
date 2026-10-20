@@ -142,6 +142,8 @@ beforeEach(() => {
       source: 'AGENT',
       actorUserId: 'x',
       reason: null,
+      closeOutcome: null,
+      closeStatusLabels: [],
       createdAt: new Date(),
     }),
   )

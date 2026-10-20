@@ -3,12 +3,22 @@
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { WhatsAppConversationEventDTO } from '@/types/whatsapp-conversation'
+import { CLOSE_OUTCOME_LABEL } from './whatsapp-close-outcome-badge'
 
 const BY_BUTTON = 'pela ação de um botão'
 
 function byActor(event: WhatsAppConversationEventDTO): string {
   if (event.source === 'BUTTON_ACTION') return ` ${BY_BUTTON}`
   return event.actorName ? ` por ${event.actorName}` : ''
+}
+
+/** " — deu certo: Venda realizada" for a classified close. */
+function closeClassification(event: WhatsAppConversationEventDTO): string {
+  if (!event.closeOutcome) return ''
+  const labels = event.closeStatusLabels.length
+    ? `: ${event.closeStatusLabels.join(', ')}`
+    : ''
+  return ` — ${CLOSE_OUTCOME_LABEL[event.closeOutcome].toLowerCase()}${labels}`
 }
 
 function describeEvent(event: WhatsAppConversationEventDTO): string {
@@ -34,7 +44,7 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       if (event.source === 'INACTIVITY') {
         return 'Conversa fechada automaticamente por inatividade'
       }
-      return `Conversa fechada${byActor(event)}`
+      return `Conversa fechada${byActor(event)}${closeClassification(event)}`
     case 'REOPENED':
       if (event.source === 'CONTACT') {
         return 'Conversa reaberta: o contato enviou uma nova mensagem'

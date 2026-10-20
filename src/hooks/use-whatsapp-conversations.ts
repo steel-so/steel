@@ -279,13 +279,20 @@ export function useCloseWhatsAppConversation(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { conversationId: string; reason?: string }) =>
+    mutationFn: (data: {
+      conversationId: string
+      reason?: string
+      statusIds?: string[]
+    }) =>
       apiFetch<WhatsAppConversationDTO>(
         `/api/workspaces/${workspaceId}/whatsapp/conversations/${data.conversationId}/close`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: data.reason }),
+          body: JSON.stringify({
+            reason: data.reason,
+            statusIds: data.statusIds,
+          }),
         },
         'Erro ao fechar a conversa',
       ),

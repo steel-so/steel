@@ -66,6 +66,18 @@ export const WhatsAppSettingsService = {
       }
     }
 
+    const closeStatusMinSelections =
+      dto.closeStatusMinSelections ?? current.closeStatusMinSelections
+    const closeStatusMaxSelections =
+      dto.closeStatusMaxSelections ?? current.closeStatusMaxSelections
+    if (closeStatusMinSelections > closeStatusMaxSelections) {
+      return err(
+        validationError(
+          'O mínimo de status de fechamento não pode ser maior que o máximo',
+        ),
+      )
+    }
+
     const saved = await WhatsAppSettingsRepository.upsert(workspaceId, {
       autoCloseAfterHours:
         dto.autoCloseAfterHours ?? current.autoCloseAfterHours,
@@ -97,6 +109,8 @@ export const WhatsAppSettingsService = {
         dto.callRecordingRetentionDays ?? current.callRecordingRetentionDays,
       callTranscriptionEnabled:
         dto.callTranscriptionEnabled ?? current.callTranscriptionEnabled,
+      closeStatusMinSelections,
+      closeStatusMaxSelections,
     })
     if (!saved.ok) return saved
 
@@ -114,6 +128,8 @@ export const WhatsAppSettingsService = {
         callRecordingEnabled: saved.value.callRecordingEnabled,
         callRecordingRetentionDays: saved.value.callRecordingRetentionDays,
         callTranscriptionEnabled: saved.value.callTranscriptionEnabled,
+        closeStatusMinSelections: saved.value.closeStatusMinSelections,
+        closeStatusMaxSelections: saved.value.closeStatusMaxSelections,
       },
     })
 

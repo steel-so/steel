@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
+import { createFakeWhatsAppCloseStatus } from '@/src/__tests__/factories/whatsapp-close-status.factory'
 import {
   createFakeWhatsAppConversation,
   createFakeWhatsAppConversationWithPreview,
@@ -18,6 +19,11 @@ vi.mock('@/src/services/whatsapp-usage.service', () => ({
     record: vi.fn(async () => undefined),
   },
 }))
+vi.mock('@/src/repositories/whatsapp-close-status.repository', () => ({
+  WhatsAppCloseStatusRepository: {
+    listActive: vi.fn(async () => ({ ok: true, value: [] })),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
@@ -33,6 +39,7 @@ import { whatsappConversationLimitReached } from '@/src/errors'
 import { err } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { WhatsAppCloseStatusRepository } from '@/src/repositories/whatsapp-close-status.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
@@ -57,6 +64,8 @@ function fakeEvent(
     source: 'AGENT',
     actorUserId: 'u1',
     reason: null,
+    closeOutcome: null,
+    closeStatusLabels: [],
     createdAt: new Date('2026-09-18T12:00:00Z'),
     ...overrides,
   }
@@ -97,6 +106,9 @@ describe('WhatsAppConversationService.close()', () => {
       status: 'CLOSED',
       closedAt: expect.any(Date),
       closeReason: 'Resolvido',
+      closeOutcome: null,
+      closeStatusIds: [],
+      closeStatusLabels: [],
     })
     expect(mockedEventRepo.create).toHaveBeenCalledWith({
       workspaceId: 'ws1',
@@ -105,6 +117,8 @@ describe('WhatsAppConversationService.close()', () => {
       source: 'AGENT',
       actorUserId: 'u1',
       reason: 'Resolvido',
+      closeOutcome: null,
+      closeStatusLabels: [],
     })
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -160,6 +174,65 @@ describe('WhatsAppConversationService.close()', () => {
   })
 })
 
+describe('WhatsAppConversationService.close() with close statuses', () => {
+  it('should store the classification on the conversation and the timeline', async () => {
+    asRole('MEMBER')
+    arrangeConversation({ status: 'IN_PROGRESS' })
+    vi.mocked(WhatsAppCloseStatusRepository.listActive).mockResolvedValueOnce(
+      ok([
+        createFakeWhatsAppCloseStatus({
+          id: 's1',
+          label: 'Sem interesse',
+          outcome: 'FAILURE',
+        }),
+      ]),
+    )
+    mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+      ok(createFakeWhatsAppSettings({ closeStatusMinSelections: 1 })),
+    )
+
+    expectOk(
+      await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {
+        statusIds: ['s1'],
+      }),
+    )
+
+    expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+      'conv1',
+      expect.objectContaining({
+        status: 'CLOSED',
+        closeOutcome: 'FAILURE',
+        closeStatusIds: ['s1'],
+        closeStatusLabels: ['Sem interesse'],
+      }),
+    )
+    expect(mockedEventRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'CLOSED',
+        closeOutcome: 'FAILURE',
+        closeStatusLabels: ['Sem interesse'],
+      }),
+    )
+  })
+
+  it('should refuse to close without the required statuses', async () => {
+    asRole('MEMBER')
+    arrangeConversation({ status: 'IN_PROGRESS' })
+    vi.mocked(WhatsAppCloseStatusRepository.listActive).mockResolvedValueOnce(
+      ok([createFakeWhatsAppCloseStatus({ id: 's1' })]),
+    )
+    mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+      ok(createFakeWhatsAppSettings({ closeStatusMinSelections: 1 })),
+    )
+
+    expectErr(
+      await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {}),
+      'WHATSAPP_CLOSE_STATUS_SELECTION_INVALID',
+    )
+    expect(mockedConversationRepo.update).not.toHaveBeenCalled()
+  })
+})
+
 describe('WhatsAppConversationService.reopen()', () => {
   it('should reopen as IN_PROGRESS when the conversation has an assignee', async () => {
     asRole('MEMBER')
@@ -172,6 +245,9 @@ describe('WhatsAppConversationService.reopen()', () => {
       status: 'IN_PROGRESS',
       closedAt: null,
       closeReason: null,
+      closeOutcome: null,
+      closeStatusIds: [],
+      closeStatusLabels: [],
     })
     expect(mockedEventRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -265,6 +341,8 @@ describe('WhatsAppConversationService.listEvents()', () => {
         actorUserId: 'u1',
         actorName: 'Ana',
         reason: 'Sem retorno',
+        closeOutcome: null,
+        closeStatusLabels: [],
         createdAt: '2026-09-18T12:00:00.000Z',
       },
     ])

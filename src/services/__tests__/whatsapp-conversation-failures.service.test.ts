@@ -23,6 +23,11 @@ vi.mock('@/src/services/whatsapp-usage.service', () => ({
     record: vi.fn(async () => undefined),
   },
 }))
+vi.mock('@/src/repositories/whatsapp-close-status.repository', () => ({
+  WhatsAppCloseStatusRepository: {
+    listActive: vi.fn(async () => ({ ok: true, value: [] })),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
@@ -67,6 +72,8 @@ function fakeEvent(): WhatsAppConversationEvent {
     source: 'AGENT',
     actorUserId: 'u1',
     reason: null,
+    closeOutcome: null,
+    closeStatusLabels: [],
     createdAt: new Date('2026-09-18T12:00:00Z'),
   }
 }
@@ -575,6 +582,9 @@ describe('reopenWhatsAppConversation()', () => {
       status: 'IN_PROGRESS',
       closedAt: null,
       closeReason: null,
+      closeOutcome: null,
+      closeStatusIds: [],
+      closeStatusLabels: [],
     })
   })
 })

@@ -22,6 +22,8 @@ export function createFakeWhatsAppSettings(
     callRecordingNotice: null,
     callRecordingRetentionDays: 90,
     callTranscriptionEnabled: true,
+    closeStatusMinSelections: 0,
+    closeStatusMaxSelections: 1,
     createdAt: now,
     updatedAt: now,
     ...overrides,

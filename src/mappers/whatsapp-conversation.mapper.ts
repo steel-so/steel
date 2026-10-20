@@ -59,6 +59,9 @@ export function toWhatsAppConversationDTO(
       ? conversation.closedAt.toISOString()
       : null,
     closeReason: conversation.closeReason,
+    closeOutcome: conversation.closeOutcome,
+    closeStatusIds: conversation.closeStatusIds,
+    closeStatusLabels: conversation.closeStatusLabels,
     contactSince: conversation.contact.createdAt.toISOString(),
     createdAt: conversation.createdAt.toISOString(),
     updatedAt: conversation.updatedAt.toISOString(),

@@ -141,6 +141,8 @@ describe('WhatsAppWebhookService', () => {
           source: 'CONTACT',
           actorUserId: null,
           reason: null,
+          closeOutcome: null,
+          closeStatusLabels: [],
           createdAt: new Date(),
         }),
       )

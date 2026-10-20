@@ -1,3 +1,5 @@
+import type { WhatsAppCloseOutcomeDTO } from './whatsapp-close-status'
+
 export type WhatsAppConversationStatusDTO = 'NEW' | 'IN_PROGRESS' | 'CLOSED'
 
 export interface WhatsAppConversationDTO {
@@ -22,6 +24,10 @@ export interface WhatsAppConversationDTO {
   archived: boolean
   closedAt: string | null
   closeReason: string | null
+  /** Classificação do fechamento (nula se aberta ou fechada sem status). */
+  closeOutcome: WhatsAppCloseOutcomeDTO | null
+  closeStatusIds: string[]
+  closeStatusLabels: string[]
   contactSince: string
   createdAt: string
   updatedAt: string
@@ -58,5 +64,8 @@ export interface WhatsAppConversationEventDTO {
   actorUserId: string | null
   actorName: string | null
   reason: string | null
+  /** Só em CLOSED: classificação escolhida no fechamento. */
+  closeOutcome: WhatsAppCloseOutcomeDTO | null
+  closeStatusLabels: string[]
   createdAt: string
 }

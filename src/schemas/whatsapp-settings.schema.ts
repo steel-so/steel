@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { WHATSAPP_CLOSE_STATUS_MAX_SELECTIONS } from './whatsapp-close-status.schema'
 
 /** Limite de 30 dias para o fechamento automático por inatividade. */
 export const WHATSAPP_AUTO_CLOSE_MAX_HOURS = 720
@@ -70,6 +71,20 @@ export const UpdateWhatsAppSettingsSchema = z.object({
     )
     .optional(),
   callTranscriptionEnabled: z.boolean().optional(),
+
+  /** Quantos status de fechamento o atendente escolhe (mínimo 0 = opcional). */
+  closeStatusMinSelections: z
+    .number()
+    .int('Informe um número inteiro')
+    .min(0, 'O mínimo vai de 0 (opcional) a 10')
+    .max(WHATSAPP_CLOSE_STATUS_MAX_SELECTIONS, 'O mínimo vai de 0 a 10')
+    .optional(),
+  closeStatusMaxSelections: z
+    .number()
+    .int('Informe um número inteiro')
+    .min(1, 'O máximo vai de 1 a 10')
+    .max(WHATSAPP_CLOSE_STATUS_MAX_SELECTIONS, 'O máximo vai de 1 a 10')
+    .optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

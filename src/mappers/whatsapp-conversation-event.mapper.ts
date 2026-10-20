@@ -12,6 +12,8 @@ export function toWhatsAppConversationEventDTO(
     actorUserId: event.actorUserId,
     actorName: event.actorUser?.name ?? null,
     reason: event.reason,
+    closeOutcome: event.closeOutcome,
+    closeStatusLabels: event.closeStatusLabels,
     createdAt: event.createdAt.toISOString(),
   }
 }

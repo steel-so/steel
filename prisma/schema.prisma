@@ -454,6 +454,7 @@ model Workspace {
   whatsappTemplates            WhatsAppTemplate[]
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
+  whatsappCloseStatuses        WhatsAppCloseStatus[]
   whatsappUsage                WhatsAppUsageMonthly[]
   whatsappConversationEvents   WhatsAppConversationEvent[]
   notifications                Notification[]
@@ -1225,6 +1226,13 @@ model WhatsAppConversation {
   /// informado pelo atendente. Limpos ao reabrir.
   closedAt           DateTime?                  @map("closed_at")
   closeReason        String?                    @map("close_reason")
+  /// Classificação do fechamento: status escolhidos pelo atendente
+  /// (`WhatsAppCloseStatus`), com cópia dos rótulos para o histórico, e o
+  /// resultado (FAILURE se algum status escolhido é de insucesso). Limpos ao
+  /// reabrir.
+  closeOutcome       WhatsAppCloseOutcome?      @map("close_outcome")
+  closeStatusIds     String[]                   @default([]) @map("close_status_ids")
+  closeStatusLabels  String[]                   @default([]) @map("close_status_labels")
   /// Último alerta de sentimento negativo enviado aos supervisores — base do
   /// intervalo mínimo entre alertas da mesma conversa (anti-spam).
   sentimentAlertedAt DateTime?                  @map("sentiment_alerted_at")
@@ -1247,7 +1255,33 @@ model WhatsAppConversation {
   @@index([contactId])
   @@index([assignedUserId])
   @@index([teamId])
+  @@index([workspaceId, closeOutcome])
   @@map("whatsapp_conversations")
+}
+
+/// Resultado de uma conversa fechada: deu certo (SUCCESS) ou não (FAILURE).
+enum WhatsAppCloseOutcome {
+  SUCCESS
+  FAILURE
+}
+
+/// Opção de classificação oferecida ao fechar uma conversa (ex.: "Venda
+/// realizada", "Sem interesse"). Configurada por OWNER/ADMIN; removida =
+/// arquivada (`archivedAt`), para o histórico continuar legível.
+model WhatsAppCloseStatus {
+  id          String               @id @default(cuid())
+  workspaceId String               @map("workspace_id")
+  label       String               @db.VarChar(80)
+  outcome     WhatsAppCloseOutcome
+  position    Int                  @default(0)
+  archivedAt  DateTime?            @map("archived_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, archivedAt, position])
+  @@map("whatsapp_close_statuses")
 }
 
 /// Lifecycle of a click-to-call placed through the user's PABX device.
@@ -1381,14 +1415,17 @@ enum WhatsAppConversationEventSource {
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
 /// mensagens. Não é mensagem do WhatsApp — nunca vai para o contato.
 model WhatsAppConversationEvent {
-  id             String                          @id @default(cuid())
-  workspaceId    String                          @map("workspace_id")
-  conversationId String                          @map("conversation_id")
-  kind           WhatsAppConversationEventKind
-  source         WhatsAppConversationEventSource
-  actorUserId    String?                         @map("actor_user_id")
-  reason         String?
-  createdAt      DateTime                        @default(now()) @map("created_at")
+  id                String                          @id @default(cuid())
+  workspaceId       String                          @map("workspace_id")
+  conversationId    String                          @map("conversation_id")
+  kind              WhatsAppConversationEventKind
+  source            WhatsAppConversationEventSource
+  actorUserId       String?                         @map("actor_user_id")
+  reason            String?
+  /// Só em CLOSED: classificação escolhida no fechamento (cópia).
+  closeOutcome      WhatsAppCloseOutcome?           @map("close_outcome")
+  closeStatusLabels String[]                        @default([]) @map("close_status_labels")
+  createdAt         DateTime                        @default(now()) @map("created_at")
 
   workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -1450,6 +1487,10 @@ model WhatsAppSettings {
   callRecordingRetentionDays  Int      @default(90) @map("call_recording_retention_days")
   /// Transcribe and summarize recorded calls with Steel AI.
   callTranscriptionEnabled    Boolean  @default(true) @map("call_transcription_enabled")
+  /// Quantos status de fechamento o atendente escolhe ao fechar a conversa:
+  /// mínimo (0 = opcional) e máximo. Só valem com status cadastrados.
+  closeStatusMinSelections    Int      @default(0) @map("close_status_min_selections")
+  closeStatusMaxSelections    Int      @default(1) @map("close_status_max_selections")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -4588,22 +4629,22 @@ model AiActionLog {
 /// provider price of every AI call before it is frozen in `AiUsage.costUsd`
 /// (ADR 0019).
 model PlatformAiSettings {
-  id          String   @id @default("default")
-  costMargin  Decimal  @default(1) @map("cost_margin") @db.Decimal(8, 4)
+  id                  String   @id @default("default")
+  costMargin          Decimal  @default(1) @map("cost_margin") @db.Decimal(8, 4)
   /// Semantic half of the Steel AI knowledge search (ADR 0037). Off = the
   /// index is text-only and nothing is sent to the embedding provider.
-  embeddingsEnabled Boolean @default(true) @map("embeddings_enabled")
+  embeddingsEnabled   Boolean  @default(true) @map("embeddings_enabled")
   /// Default model of each task class (ADR 0042) for workspaces that did
   /// not choose one. Null = the platform default model.
-  classificationModel String? @map("classification_model")
-  conversationModel   String? @map("conversation_model")
-  assistantModel      String? @map("assistant_model")
-  agentModel          String? @map("agent_model")
+  classificationModel String?  @map("classification_model")
+  conversationModel   String?  @map("conversation_model")
+  assistantModel      String?  @map("assistant_model")
+  agentModel          String?  @map("agent_model")
   /// Platform-wide switch of the provider failover (ADR 0042).
-  failoverEnabled     Boolean @default(true) @map("failover_enabled")
-  updatedById String?  @map("updated_by_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  failoverEnabled     Boolean  @default(true) @map("failover_enabled")
+  updatedById         String?  @map("updated_by_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("platform_ai_settings")
 }
@@ -8829,41 +8870,41 @@ enum CrmApolloImportSource {
 /// worker and become CRM leads. The API key never lives here (it is the
 /// workspace's `APOLLO` integration).
 model CrmApolloImport {
-  id              String                @id @default(cuid())
-  workspaceId     String                @map("workspace_id")
-  createdById     String                @map("created_by_id")
-  status          CrmApolloImportStatus @default(QUEUED)
-  source          CrmApolloImportSource
+  id               String                @id @default(cuid())
+  workspaceId      String                @map("workspace_id")
+  createdById      String                @map("created_by_id")
+  status           CrmApolloImportStatus @default(QUEUED)
+  source           CrmApolloImportSource
   /// Filters of the search (or `{ labelId }` for a saved list) for the history.
-  filters         Json                  @default("{}")
+  filters          Json                  @default("{}")
   /// Apollo person ids (SEARCH) or contact ids (LIST) to import.
-  apolloIds       String[]              @default([]) @map("apollo_ids")
+  apolloIds        String[]              @default([]) @map("apollo_ids")
   /// LIST imports carry the already-saved contacts (no enrichment, 0 credits).
-  contacts        Json?
-  mailingListId   String?               @map("mailing_list_id")
-  requestedCount  Int                   @default(0) @map("requested_count")
-  createdCount    Int                   @default(0) @map("created_count")
-  skippedCount    Int                   @default(0) @map("skipped_count")
-  failedCount     Int                   @default(0) @map("failed_count")
+  contacts         Json?
+  mailingListId    String?               @map("mailing_list_id")
+  requestedCount   Int                   @default(0) @map("requested_count")
+  createdCount     Int                   @default(0) @map("created_count")
+  skippedCount     Int                   @default(0) @map("skipped_count")
+  failedCount      Int                   @default(0) @map("failed_count")
   /// Next index of `apolloIds` to process (resume after a rate-limit pause).
-  cursor          Int                   @default(0)
-  creditsConsumed Int                   @default(0) @map("credits_consumed")
+  cursor           Int                   @default(0)
+  creditsConsumed  Int                   @default(0) @map("credits_consumed")
   /// "Revelar telefones": Apollo delivers the numbers later, to the webhook.
-  revealPhones    Boolean               @default(false) @map("reveal_phones")
+  revealPhones     Boolean               @default(false) @map("reveal_phones")
   /// SHA-256 of the webhook token (the token itself is derived, never stored).
-  webhookTokenHash String?              @unique @map("webhook_token_hash")
-  phonesRequested Int                   @default(0) @map("phones_requested")
-  phonesReceived  Int                   @default(0) @map("phones_received")
+  webhookTokenHash String?               @unique @map("webhook_token_hash")
+  phonesRequested  Int                   @default(0) @map("phones_requested")
+  phonesReceived   Int                   @default(0) @map("phones_received")
   /// People without an importable e-mail whose phone was requested: the lead
   /// is only created when the webhook brings a number.
-  phoneOnlyPeople Json?                 @map("phone_only_people")
+  phoneOnlyPeople  Json?                 @map("phone_only_people")
   /// Why people were skipped: counts by reason (`no_email`, `opted_out`...).
-  skipReasons     Json?                 @map("skip_reasons")
-  error           String?
-  startedAt       DateTime?             @map("started_at")
-  finishedAt      DateTime?             @map("finished_at")
-  createdAt       DateTime              @default(now()) @map("created_at")
-  updatedAt       DateTime              @updatedAt @map("updated_at")
+  skipReasons      Json?                 @map("skip_reasons")
+  error            String?
+  startedAt        DateTime?             @map("started_at")
+  finishedAt       DateTime?             @map("finished_at")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy User      @relation("CrmApolloImportCreatedBy", fields: [createdById], references: [id])

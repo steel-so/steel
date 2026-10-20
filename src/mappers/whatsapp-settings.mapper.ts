@@ -19,6 +19,8 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   callRecordingNotice: null as string | null,
   callRecordingRetentionDays: 90,
   callTranscriptionEnabled: true,
+  closeStatusMinSelections: 0,
+  closeStatusMaxSelections: 1,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -48,5 +50,7 @@ export function toWhatsAppSettingsDTO(
       settings.callRecordingNotice?.trim() || DEFAULT_CALL_RECORDING_NOTICE,
     callRecordingRetentionDays: settings.callRecordingRetentionDays,
     callTranscriptionEnabled: settings.callTranscriptionEnabled,
+    closeStatusMinSelections: settings.closeStatusMinSelections,
+    closeStatusMaxSelections: settings.closeStatusMaxSelections,
   }
 }

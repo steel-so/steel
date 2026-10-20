@@ -62,6 +62,10 @@ import {
 } from './authz'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import {
+  type WhatsAppCloseClassification,
+  WhatsAppCloseStatusService,
+} from './whatsapp-close-status.service'
+import {
   loadVisibleConversation,
   resolveConversationScope,
   whatsAppTeamMemberIds,
@@ -156,12 +160,17 @@ async function applyClose(
     actorUserId: string | null
     source: WhatsAppConversationEventSource
     reason?: string
+    classification?: WhatsAppCloseClassification | null
   },
 ): Promise<Result<void>> {
+  const classification = input.classification ?? null
   const updated = await WhatsAppConversationRepository.update(conversation.id, {
     status: 'CLOSED',
     closedAt: new Date(),
     closeReason: input.reason ?? null,
+    closeOutcome: classification?.outcome ?? null,
+    closeStatusIds: classification?.statusIds ?? [],
+    closeStatusLabels: classification?.labels ?? [],
   })
   if (!updated.ok) return updated
 
@@ -172,6 +181,8 @@ async function applyClose(
     source: input.source,
     actorUserId: input.actorUserId,
     reason: input.reason ?? null,
+    closeOutcome: classification?.outcome ?? null,
+    closeStatusLabels: classification?.labels ?? [],
   })
   if (!event.ok) return event
 
@@ -184,6 +195,8 @@ async function applyClose(
       workspaceId: conversation.workspaceId,
       source: input.source,
       hasReason: Boolean(input.reason),
+      outcome: classification?.outcome ?? null,
+      statuses: classification?.statusIds.length ?? 0,
       ...(input.actorUserId ? {} : { actor: 'system' }),
     },
   })
@@ -208,6 +221,9 @@ export async function reopenWhatsAppConversation(
     status: conversation.assignedUserId ? 'IN_PROGRESS' : 'NEW',
     closedAt: null,
     closeReason: null,
+    closeOutcome: null,
+    closeStatusIds: [],
+    closeStatusLabels: [],
   })
   if (!updated.ok) return updated
 
@@ -856,10 +872,18 @@ export const WhatsAppConversationService = {
       return err(whatsappConversationAlreadyClosed())
     }
 
+    const classification =
+      await WhatsAppCloseStatusService.resolveClassification(
+        workspaceId,
+        dto.statusIds ?? [],
+      )
+    if (!classification.ok) return classification
+
     const closed = await applyClose(existing, {
       actorUserId: actorId,
       source: 'AGENT',
       reason: dto.reason,
+      classification: classification.value,
     })
     if (!closed.ok) return closed
 

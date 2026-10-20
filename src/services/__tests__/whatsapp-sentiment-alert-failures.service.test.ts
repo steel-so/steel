@@ -122,6 +122,8 @@ function arrange(options?: {
       source: 'SENTIMENT',
       actorUserId: null,
       reason: null,
+      closeOutcome: null,
+      closeStatusLabels: [],
       createdAt: NOW,
     }),
   )

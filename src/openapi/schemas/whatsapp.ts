@@ -132,6 +132,16 @@ export const WhatsAppConversationDTO = dto(
     archived: z.boolean(),
     closedAt: nullableDateTime(),
     closeReason: z.string().nullable(),
+    closeOutcome: z.enum(['SUCCESS', 'FAILURE']).nullable().meta({
+      description:
+        'Resultado do fechamento: `FAILURE` se algum status escolhido é de insucesso; `null` se aberta ou fechada sem status.',
+    }),
+    closeStatusIds: z.array(z.string()).meta({
+      description: 'Status de fechamento escolhidos (vazio se nenhum).',
+    }),
+    closeStatusLabels: z.array(z.string()).meta({
+      description: 'Rótulos dos status escolhidos, copiados no fechamento.',
+    }),
     contactSince: dateTime(),
     createdAt: dateTime(),
     updatedAt: dateTime(),
@@ -164,6 +174,12 @@ export const WhatsAppConversationEventDTO = dto(
       }),
       actorName: z.string().nullable(),
       reason: z.string().nullable(),
+      closeOutcome: z.enum(['SUCCESS', 'FAILURE']).nullable().meta({
+        description: 'Só em `CLOSED`: resultado da classificação.',
+      }),
+      closeStatusLabels: z.array(z.string()).meta({
+        description: 'Só em `CLOSED`: status escolhidos no fechamento.',
+      }),
       createdAt: dateTime(),
     })
     .meta({ description: 'Evento da linha do tempo da conversa.' }),
@@ -502,6 +518,40 @@ export const WhatsAppSettingsDTO = dto(
       description:
         'Transcrever e resumir as gravações com o Steel AI (padrão: ligado).',
     }),
+    closeStatusMinSelections: z.number().int().meta({
+      description:
+        'Mínimo de status de fechamento escolhidos ao fechar (0 = opcional; padrão 0).',
+    }),
+    closeStatusMaxSelections: z.number().int().meta({
+      description:
+        'Máximo de status de fechamento escolhidos ao fechar (1 a 10; padrão 1).',
+    }),
+  }),
+)
+
+export const WhatsAppCloseStatusDTO = dto(
+  'WhatsAppCloseStatus',
+  z
+    .object({
+      id: z.string(),
+      label: z.string().meta({ example: 'Venda realizada' }),
+      outcome: z.enum(['SUCCESS', 'FAILURE']).meta({
+        description: 'Se o status conta como sucesso ou insucesso.',
+      }),
+      position: z.number().int(),
+    })
+    .meta({ description: 'Opção de classificação do fechamento.' }),
+)
+
+export const WhatsAppCloseStatusOptionsDTO = dto(
+  'WhatsAppCloseStatusOptions',
+  z.object({
+    statuses: z.array(WhatsAppCloseStatusDTO),
+    minSelections: z.number().int().meta({
+      description:
+        '0 = classificação opcional. Ignorado sem status cadastrados.',
+    }),
+    maxSelections: z.number().int(),
   }),
 )
 

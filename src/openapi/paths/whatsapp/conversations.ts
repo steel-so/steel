@@ -356,12 +356,13 @@ export const conversationRoutes: RouteConfig[] = [
     path: `${BASE}/close`,
     tags: [TAG],
     summary: 'Fechar conversa',
-    description: `Fecha a conversa (\`CLOSED\`), com motivo opcional, e registra o evento \`CLOSED\` (origem \`AGENT\`) na linha do tempo. Uma nova mensagem do contato reabre a conversa automaticamente. Conversas sem mensagem também são fechadas pelo worker após \`autoCloseAfterHours\` (configurações). ${REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
+    description: `Fecha a conversa (\`CLOSED\`), com motivo opcional e os status de fechamento escolhidos (\`statusIds\`, de \`GET .../whatsapp/close-statuses\`: a quantidade respeita \`minSelections\`/\`maxSelections\` e o resultado vira \`closeOutcome\` — \`FAILURE\` se algum status é de insucesso), e registra o evento \`CLOSED\` (origem \`AGENT\`) na linha do tempo. Uma nova mensagem do contato reabre a conversa automaticamente. Conversas sem mensagem também são fechadas pelo worker após \`autoCloseAfterHours\` (configurações). ${REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
     params: PARAMS,
     body: {
       schema: CloseWhatsAppConversationSchema,
       required: false,
-      description: 'Opcional; `reason` vazio é ignorado.',
+      description:
+        'Opcional; `reason` vazio é ignorado. `statusIds` é obrigatório quando o workspace exige status (`minSelections` > 0).',
     },
     responses: {
       200: {
@@ -373,6 +374,10 @@ export const conversationRoutes: RouteConfig[] = [
       ...permErrors('conversations', 'EDIT'),
       'WHATSAPP_CONVERSATION_NOT_FOUND',
       'WHATSAPP_CONVERSATION_ALREADY_CLOSED',
+      {
+        code: 'WHATSAPP_CLOSE_STATUS_SELECTION_INVALID',
+        when: 'Status a menos ou a mais que as regras do workspace, ou status inexistente/arquivado',
+      },
     ],
   },
   {

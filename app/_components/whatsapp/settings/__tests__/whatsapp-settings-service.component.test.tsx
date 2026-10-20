@@ -34,6 +34,8 @@ function settings(
     callRecordingNotice: 'Avise o contato.',
     callRecordingRetentionDays: 90,
     callTranscriptionEnabled: true,
+    closeStatusMinSelections: 0,
+    closeStatusMaxSelections: 1,
     ...overrides,
   }
 }

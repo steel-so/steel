@@ -17,4 +17,7 @@ export interface WhatsAppSettingsDTO {
   callRecordingNotice: string
   callRecordingRetentionDays: number
   callTranscriptionEnabled: boolean
+  /** Status de fechamento escolhidos ao fechar: mínimo (0 = opcional) e máximo. */
+  closeStatusMinSelections: number
+  closeStatusMaxSelections: number
 }

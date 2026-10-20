@@ -33,6 +33,8 @@ function settings(
     callRecordingNotice: 'Avise o contato: ligação gravada.',
     callRecordingRetentionDays: 90,
     callTranscriptionEnabled: true,
+    closeStatusMinSelections: 0,
+    closeStatusMaxSelections: 1,
     ...overrides,
   }
 }

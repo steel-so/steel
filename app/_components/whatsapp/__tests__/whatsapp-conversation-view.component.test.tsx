@@ -74,6 +74,9 @@ function conversation(
     archived: false,
     closedAt: null,
     closeReason: null,
+    closeOutcome: null,
+    closeStatusIds: [],
+    closeStatusLabels: [],
     contactSince: '2025-03-10T12:00:00.000Z',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -139,6 +142,10 @@ function setup(extra: FetchRoute[] = [], messages = thread) {
     { match: MESSAGES, data: messages },
     { match: `${API}/conversations/cv_1/events`, data: [] },
     { match: `${API}/assignable-members`, data: members },
+    {
+      match: `${API}/close-statuses`,
+      data: { statuses: [], minSelections: 0, maxSelections: 1 },
+    },
     { match: '/api/users/me', data: { id: 'u_1', name: 'Eu Mesmo' } },
   ])
 }
@@ -204,7 +211,64 @@ describe('<WhatsappConversationView />', () => {
     )
     expect(
       fetchBody(fetchSpy, `${API}/conversations/cv_1/close`, 'POST'),
-    ).toEqual({ reason: 'Resolvido' })
+    ).toEqual({ reason: 'Resolvido', statusIds: [] })
+  })
+
+  it('requires the close statuses the workspace asks for', async () => {
+    const onSelectConversation = vi.fn()
+    const fetchSpy = setup([
+      {
+        match: `${API}/close-statuses`,
+        data: {
+          statuses: [
+            {
+              id: 'st_1',
+              label: 'Venda realizada',
+              outcome: 'SUCCESS',
+              position: 0,
+            },
+            {
+              id: 'st_2',
+              label: 'Sem interesse',
+              outcome: 'FAILURE',
+              position: 1,
+            },
+          ],
+          minSelections: 1,
+          maxSelections: 1,
+        },
+      },
+      {
+        method: 'POST',
+        match: `${API}/conversations/cv_1/close`,
+        data: conversation({ status: 'CLOSED', closeOutcome: 'FAILURE' }),
+      },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+        onSelectConversation={onSelectConversation}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    const submit = await screen.findByRole('button', {
+      name: 'Fechar conversa',
+    })
+    await screen.findByText('Sem interesse')
+    expect((submit as HTMLButtonElement).disabled).toBe(true)
+
+    // Single choice: the second pick replaces the first.
+    fireEvent.click(screen.getByRole('checkbox', { name: /Venda realizada/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sem interesse/ }))
+    expect((submit as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(submit)
+
+    await waitFor(() => expect(onSelectConversation).toHaveBeenCalled())
+    expect(
+      fetchBody(fetchSpy, `${API}/conversations/cv_1/close`, 'POST'),
+    ).toEqual({ statusIds: ['st_2'] })
   })
 
   it('shows a closed conversation with its timeline and lets the agent reopen it', async () => {
