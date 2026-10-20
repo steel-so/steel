@@ -1,6 +1,10 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  type WebPhoneApi,
+  WebPhoneContext,
+} from '@/app/_components/webphone/webphone-context'
+import {
   type FetchRoute,
   fetchBody,
   mockFetch,
@@ -732,6 +736,147 @@ describe('<WhatsappConversationView />', () => {
         'O PABX recusou a ligação: Token ou dispositivo inválido.',
       ),
     )
+  })
+
+  describe('browser phone', () => {
+    const webPhone = (overrides: Partial<WebPhoneApi> = {}): WebPhoneApi => ({
+      enabled: true,
+      status: 'online',
+      error: null,
+      call: null,
+      dial: vi.fn(async () => undefined),
+      answer: vi.fn(async () => undefined),
+      hangup: vi.fn(async () => undefined),
+      toggleMute: vi.fn(),
+      sendDtmf: vi.fn(),
+      reconnect: vi.fn(),
+      ...overrides,
+    })
+
+    function renderWith(phone: WebPhoneApi) {
+      const fetchSpy = setup([
+        {
+          match: '/api/users/me',
+          data: {
+            id: 'u_1',
+            name: 'Eu',
+            pabxExtension: '1122S',
+            pabxDeviceId: '0',
+            pabxWebphoneEnabled: true,
+          },
+        },
+        { match: `${API}/conversations/cv_1/call`, data: null },
+      ])
+      renderWithQuery(
+        <WebPhoneContext.Provider value={phone}>
+          <WhatsappConversationView
+            workspaceId='ws_1'
+            conversation={conversation()}
+          />
+        </WebPhoneContext.Provider>,
+      )
+      return fetchSpy
+    }
+
+    it('calls from the browser instead of asking the PABX to ring the extension', async () => {
+      const phone = webPhone()
+      const fetchSpy = renderWith(phone)
+
+      const call = screen.getByRole('button', { name: 'Ligar para o contato' })
+      await waitFor(() =>
+        expect(call.getAttribute('title')).toBe(
+          'Ligar pelo telefone web (ramal 1122S)',
+        ),
+      )
+      fireEvent.click(call)
+
+      await waitFor(() => expect(phone.dial).toHaveBeenCalledTimes(1))
+      expect(phone.dial).toHaveBeenCalledWith(
+        expect.stringMatching(/^\d+$/),
+        expect.anything(),
+      )
+      expect(
+        fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
+      ).toBe(false)
+    })
+
+    it.each([
+      [
+        'is open in another tab',
+        { status: 'other-tab' as const },
+        'O telefone web está aberto em outra aba.',
+      ],
+      [
+        'is still connecting',
+        { status: 'connecting' as const },
+        'O telefone web ainda está conectando. Tente em instantes.',
+      ],
+      [
+        'lost the connection',
+        { status: 'error' as const, error: 'Conexão perdida' },
+        'Conexão perdida',
+      ],
+      [
+        'lost the connection without a detail',
+        { status: 'offline' as const },
+        'O telefone web está sem conexão.',
+      ],
+    ])('explains when the phone %s', async (_label, patch, message) => {
+      const phone = webPhone(patch)
+      renderWith(phone)
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Ligar para o contato' }),
+      )
+
+      await waitFor(() => expect(notify.error).toHaveBeenCalledWith(message))
+      expect(phone.dial).not.toHaveBeenCalled()
+    })
+
+    it('does not start a second call', async () => {
+      const phone = webPhone({
+        call: {
+          direction: 'out',
+          number: '1',
+          name: null,
+          state: 'in-call',
+          answeredAt: Date.now(),
+          muted: false,
+          endReason: null,
+        },
+      })
+      renderWith(phone)
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Ligar para o contato' }),
+      )
+
+      await waitFor(() =>
+        expect(notify.error).toHaveBeenCalledWith(
+          'Já existe uma ligação em andamento.',
+        ),
+      )
+      expect(phone.dial).not.toHaveBeenCalled()
+    })
+
+    it('reports a dial failure', async () => {
+      const phone = webPhone({
+        dial: vi.fn(async () => {
+          throw new Error('Permita o microfone no navegador para ligar.')
+        }),
+      })
+      renderWith(phone)
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Ligar para o contato' }),
+      )
+
+      await waitFor(() =>
+        expect(notify.error).toHaveBeenCalledWith(
+          'Permita o microfone no navegador para ligar.',
+        ),
+      )
+    })
   })
 
   it('sets the reply target from the message context menu', async () => {

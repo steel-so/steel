@@ -193,6 +193,14 @@ function realtimeConnectSrc(): string {
   return NEXT_PUBLIC_REALTIME_URL ? ` ${new URL(NEXT_PUBLIC_REALTIME_URL).origin}` : ''
 }
 
+/**
+ * WebSocket seguro dos PABX (telefone web): cada device tem o seu, sempre num
+ * nome sob o domínio da empresa (o certificado é curinga), porta 8089.
+ */
+function pabxConnectSrc(): string {
+  return ' wss://*.stratustelecom.com.br:8089'
+}
+
 function buildCspHeader(nonce: string): string {
   const ga = googleAnalyticsSrc()
   const fb = embeddedSignupSrc()
@@ -203,7 +211,7 @@ function buildCspHeader(nonce: string): string {
     img-src 'self' blob: data: https:;
     media-src 'self' blob: https:;
     font-src 'self';
-    connect-src 'self' blob: data: https://*.axiom.co https://cdn.jsdelivr.net${realtimeConnectSrc()}${sentryConnectSrc()}${ga.connect}${fb.connect}${NODE_ENV === 'development' ? ' ws://localhost:4444' : ''};
+    connect-src 'self' blob: data: https://*.axiom.co https://cdn.jsdelivr.net${realtimeConnectSrc()}${pabxConnectSrc()}${sentryConnectSrc()}${ga.connect}${fb.connect}${NODE_ENV === 'development' ? ' ws://localhost:4444' : ''};
     frame-src https://www.figma.com https://www.loom.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com https://www.google.com${fb.frame};
     frame-ancestors 'none';
     form-action 'self';

@@ -16,6 +16,7 @@ import { PhoneCallCard } from '@/app/_components/phone-calls/phone-call-card'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
+import { useWebPhone } from '@/app/_components/webphone/webphone-context'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -174,6 +175,7 @@ export function WhatsappConversationView({
   const canEdit = useCan('conversations', 'EDIT')
   const startPhoneCall = useStartWhatsAppPhoneCall(workspaceId)
   const phoneCall = useWhatsAppPhoneCall(workspaceId, conversation.id)
+  const webPhone = useWebPhone()
   const calls = usePhoneCalls(workspaceId, {
     kind: 'conversation',
     id: conversation.id,
@@ -337,6 +339,34 @@ export function WhatsappConversationView({
   }, [conversation.id])
 
   async function handlePhoneCall() {
+    // Browser phone first: the call leaves from this tab's microphone.
+    if (webPhone.enabled) {
+      if (webPhone.call && webPhone.call.state !== 'ended') {
+        notify.error('Já existe uma ligação em andamento.')
+        return
+      }
+      if (webPhone.status !== 'online') {
+        notify.error(
+          webPhone.status === 'other-tab'
+            ? 'O telefone web está aberto em outra aba.'
+            : webPhone.status === 'connecting'
+              ? 'O telefone web ainda está conectando. Tente em instantes.'
+              : (webPhone.error ?? 'O telefone web está sem conexão.'),
+        )
+        return
+      }
+      try {
+        await webPhone.dial(
+          conversation.contactWaId,
+          conversation.contactName ?? null,
+        )
+      } catch (error) {
+        notify.error(
+          error instanceof Error ? error.message : 'Erro ao iniciar a ligação',
+        )
+      }
+      return
+    }
     if (!hasPabx) {
       notify.error('Configure seu ramal e device no perfil para ligar.')
       return
@@ -480,9 +510,11 @@ export function WhatsappConversationView({
               size='icon-sm'
               aria-label='Ligar para o contato'
               title={
-                hasPabx
-                  ? `Ligar pelo ramal ${currentUser.data?.pabxExtension}`
-                  : 'Configure seu ramal e device no perfil para ligar'
+                webPhone.enabled
+                  ? `Ligar pelo telefone web (ramal ${currentUser.data?.pabxExtension})`
+                  : hasPabx
+                    ? `Ligar pelo ramal ${currentUser.data?.pabxExtension}`
+                    : 'Configure seu ramal e device no perfil para ligar'
               }
               disabled={startPhoneCall.isPending}
               onClick={handlePhoneCall}

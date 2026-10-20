@@ -6,6 +6,7 @@ import { HeaderPromotionBanner } from '@/app/_components/header/header-promotion
 import { MobileNavProvider } from '@/app/_components/navigation/mobile-nav/mobile-nav-context'
 import { GlobalSidebarNavigation } from '@/app/_components/navigation/sidebar-global'
 import { WorkspaceShortcuts } from '@/app/_components/shortcuts/workspace-shortcuts'
+import { WebPhoneProvider } from '@/app/_components/webphone/webphone-provider'
 import { WorkspaceBlockedScreen } from '@/app/_components/workspace/workspace-blocked-screen'
 import { WorkspacePermissionsProvider } from '@/app/_components/workspace/workspace-permissions'
 import { TRIAL_BANNER_DAYS } from '@/src/config/trial'
@@ -152,7 +153,7 @@ export default async function WorkspaceLayout({
             />
             <div className='flex-1 w-full min-h-0 min-w-0 flex items-start bg-primary-foreground rounded-lg border border-border overflow-hidden [&>*]:min-h-0 [&>*]:min-w-0 [&>*:has(>[data-slot=context-sidebar])]:shrink-0'>
               <WorkspacePermissionsProvider value={permissions}>
-                {children}
+                <WebPhoneProvider>{children}</WebPhoneProvider>
               </WorkspacePermissionsProvider>
             </div>
           </div>
