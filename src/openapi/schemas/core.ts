@@ -56,6 +56,10 @@ export const UserDTO = dto(
         description: 'Device do PABX ligado ao ramal.',
         example: '123',
       }),
+      pabxWebphoneEnabled: z.boolean().meta({
+        description:
+          'Telefone web (ligar e atender pelo navegador) liberado para o ramal/device. Só um administrador liga; trocar o ramal ou o device no perfil desliga.',
+      }),
       createdAt: dateTime(),
       deletionScheduledAt: nullableDateTime().meta({
         description: 'Preenchido quando a exclusão da conta está agendada.',

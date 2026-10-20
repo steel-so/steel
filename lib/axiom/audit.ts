@@ -28,6 +28,7 @@ export type AuditEntity =
   | 'whatsapp_contact'
   | 'whatsapp_conversation'
   | 'whatsapp_phone_call'
+  | 'pabx_webphone'
   | 'whatsapp_phone_call_recording'
   | 'whatsapp_message'
   | 'whatsapp_quick_reply'

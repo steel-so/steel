@@ -5,6 +5,7 @@ import { PABX_ENDPOINT_TEMPLATE } from '@/lib/env/server'
 import type { AppError } from '@/src/errors/app-error'
 import { pabxCallFailed, pabxDeviceNotFound } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
+import { toPabxDestination } from './destination'
 import { findPabxDevice } from './device-directory'
 
 const TIMEOUT_MS = 10_000
@@ -32,17 +33,7 @@ export interface PabxCallQueued {
   job: string | null
 }
 
-/**
- * The dialer expects the national number (area code + subscriber), the same
- * way an extension dials out. WhatsApp ids carry the Brazilian country code,
- * so `55` is dropped from 12/13-digit numbers; anything else is sent as is.
- */
-export function toPabxDestination(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13))
-    return digits.slice(2)
-  return digits
-}
+export { toPabxDestination }
 
 /**
  * Asks the device's PABX to ring the extension and bridge it to the

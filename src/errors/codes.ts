@@ -157,6 +157,9 @@ export const ERROR_CODES = {
   },
   // Click-to-call: the actor has no PABX extension/device in the profile.
   PABX_EXTENSION_REQUIRED: { code: 'PABX_EXTENSION_REQUIRED', status: 422 },
+  // Browser calling: the extension/device of the profile was not approved by an
+  // administrator for the web phone (the call hands the SIP secret to the browser).
+  PABX_WEBPHONE_NOT_ENABLED: { code: 'PABX_WEBPHONE_NOT_ENABLED', status: 403 },
   // Click-to-call: PABX_DEVICE_DB_URL is not set on the server.
   PABX_NOT_CONFIGURED: { code: 'PABX_NOT_CONFIGURED', status: 503 },
   // Click-to-call: the profile device is missing, inactive or has no PABX

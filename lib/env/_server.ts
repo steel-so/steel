@@ -38,6 +38,7 @@ const serverEnv = {
   JITSI_DOMAIN: process.env.JITSI_DOMAIN,
   PABX_DEVICE_DB_URL: process.env.PABX_DEVICE_DB_URL,
   PABX_ENDPOINT_TEMPLATE: process.env.PABX_ENDPOINT_TEMPLATE,
+  PABX_WEBPHONE_ENDPOINT_TEMPLATE: process.env.PABX_WEBPHONE_ENDPOINT_TEMPLATE,
   PABX_CALLBACK_URL: process.env.PABX_CALLBACK_URL,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
@@ -247,6 +248,12 @@ export const serverEnvSchema = z.object({
     .string()
     .includes('{host}')
     .default('http://{host}:4561/steel_call_endpoint.php'),
+  // Browser-calling provisioning endpoint on each PABX; `{host}` is the device
+  // `ip1ext`. It hands out the extension's SIP credentials to the Steel backend.
+  PABX_WEBPHONE_ENDPOINT_TEMPLATE: z
+    .string()
+    .includes('{host}')
+    .default('http://{host}:4561/steel_webphone_endpoint.php'),
   // Where the PABX dialplan reports the call status. Defaults to
   // `${BETTER_AUTH_URL}/api/pabx/calls/webhook`.
   PABX_CALLBACK_URL: z.preprocess(
@@ -482,6 +489,7 @@ export const {
   JITSI_DOMAIN,
   PABX_DEVICE_DB_URL,
   PABX_ENDPOINT_TEMPLATE,
+  PABX_WEBPHONE_ENDPOINT_TEMPLATE,
   PABX_CALLBACK_URL,
   OPENAI_API_KEY,
   OPENAI_MODEL,

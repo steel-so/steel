@@ -1,0 +1,14 @@
+<?php
+declare(strict_types=1);
+
+/*
+ * Telefone web do Steel. Instalar em /etc/asterisk/steel_webphone_api.php
+ * (modo 640, dono root:www-data) e trocar a senha pela do usuário MySQL
+ * `steel_webphone` (ver docs/runbooks/pabx-webphone.md).
+ */
+const STEEL_WEBPHONE_DB_USER = 'steel_webphone';
+const STEEL_WEBPHONE_DB_PASS = 'TROCAR';
+// Domínio SIP do ramal (o mesmo do `sip_domain` do softphone: IP público do PABX).
+const STEEL_WEBPHONE_SIP_DOMAIN = '177.136.201.206';
+// WebSocket seguro do PABX: o nome precisa estar no certificado (*.stratustelecom.com.br).
+const STEEL_WEBPHONE_WSS_URL = 'wss://sbc.stratustelecom.com.br:8089/ws';

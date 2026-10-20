@@ -17,6 +17,7 @@ confirmar que deu certo.
 | Réplicas do app: instalar o upstream do nginx, réplica `unhealthy`, PgBouncer, teste de capacidade | [Réplicas do app](./app-replicas.md) |
 | Ligar a busca semântica do Steel AI (instalar o pgvector no `steel-db`) | [pgvector no Postgres](./postgres-pgvector.md) |
 | Ligar a gravação, transcrição e resumo das ligações num PABX | [Gravação das ligações no PABX](./pabx-call-recording.md) |
+| Liberar o telefone web (ligar e atender pelo navegador) ou instalá-lo num PABX | [Telefone web](./pabx-webphone.md) |
 
 ## Referência rápida do servidor
 

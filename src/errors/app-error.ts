@@ -300,6 +300,12 @@ export const pabxDeviceNotFound = (): AppError =>
     'Device do PABX não encontrado ou inativo. Confira o device no seu perfil.',
   )
 
+export const pabxWebphoneNotEnabled = (): AppError =>
+  appError(
+    'PABX_WEBPHONE_NOT_ENABLED',
+    'O telefone web ainda não foi liberado para o seu ramal. Fale com um administrador.',
+  )
+
 export const pabxCallbackInvalid = (): AppError =>
   appError('PABX_CALLBACK_INVALID', 'Callback de ligação inválido')
 

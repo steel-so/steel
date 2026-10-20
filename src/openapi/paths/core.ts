@@ -333,6 +333,48 @@ const user: RouteConfig[] = [
   },
   {
     method: 'get',
+    path: '/users/me/webphone',
+    tags: ['Usuário'],
+    summary: 'Credenciais do telefone web',
+    description:
+      'Credenciais SIP/WebRTC do **próprio** ramal do usuário, para o navegador registrar no PABX e ligar/atender. O segredo SIP sai do PABX do device (nunca fica gravado no Steel) e só é entregue quando um administrador liberou o par ramal/device (`pabxWebphoneEnabled`). Sem cache (`Cache-Control: no-store`) e auditado.',
+    responses: {
+      200: {
+        description: 'Credenciais do ramal.',
+        schema: z.object({
+          extension: z.string().meta({ example: '1122S' }),
+          password: z
+            .string()
+            .meta({ description: 'Segredo SIP. Não registre nem guarde.' }),
+          domain: z.string().meta({ example: '177.136.201.206' }),
+          wssUrl: z.string().meta({
+            example: 'wss://sbc.stratustelecom.com.br:8089/ws',
+          }),
+          iceServers: z.array(z.object({ urls: z.array(z.string()) })),
+        }),
+      },
+    },
+    errors: [
+      {
+        code: 'PABX_EXTENSION_REQUIRED',
+        when: 'O perfil não tem ramal e device',
+      },
+      {
+        code: 'PABX_WEBPHONE_NOT_ENABLED',
+        when: 'Um administrador ainda não liberou o telefone web para o ramal',
+      },
+      {
+        code: 'PABX_DEVICE_NOT_FOUND',
+        when: 'O device não existe, está inativo ou não tem endereço de PABX',
+      },
+      {
+        code: 'PABX_CALL_FAILED',
+        when: 'O PABX recusou (ramal sem WebRTC) ou não respondeu',
+      },
+    ],
+  },
+  {
+    method: 'get',
     path: '/users/me/preferences',
     tags: ['Usuário'],
     summary: 'Preferências',

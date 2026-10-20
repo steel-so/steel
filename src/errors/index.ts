@@ -154,6 +154,7 @@ export {
   pabxRecordingNotAccepted,
   pabxRecordingTooLarge,
   pabxRecordingUnsupported,
+  pabxWebphoneNotEnabled,
   paymentError,
   phoneCallNotFound,
   phoneCallRecordingNotFound,
