@@ -424,7 +424,7 @@ export function WhatsappAiCampaignDetail({
 }) {
   const query = useWhatsAppAiCampaign(workspaceId, campaignId)
 
-  if (query.isLoading) return <Skeleton className='h-96 rounded-xl' />
+  if (query.isLoading) return <Skeleton className='h-96 rounded-lg' />
   if (!query.data) {
     return (
       <p className='text-muted-foreground text-sm'>Campanha não encontrada.</p>
@@ -450,7 +450,7 @@ export function WhatsappAiCampaignDetail({
           </Button>
           <div>
             <div className='flex items-center gap-2'>
-              <h1 className='font-semibold text-xl'>{campaign.name}</h1>
+              <h3 className='font-medium text-sm'>{campaign.name}</h3>
               <AiCampaignStatusBadge status={campaign.status} />
             </div>
             {campaign.objective ? (
@@ -479,7 +479,7 @@ export function WhatsappAiCampaignDetail({
         </div>
       ) : null}
 
-      <section className='space-y-2 rounded-xl border bg-card p-4'>
+      <section className='space-y-2 rounded-lg border border-border bg-card p-4'>
         <div className='flex items-center justify-between text-sm'>
           <span className='font-medium'>Progresso dos envios</span>
           <span className='text-muted-foreground text-xs tabular-nums'>
@@ -523,16 +523,20 @@ export function WhatsappAiCampaignDetail({
         <StatTile
           label='Falhas / pulados'
           value={stats.failed + stats.skipped}
-          hint={`${stats.open} conversa(s) aberta(s)`}
+          hint={
+            stats.failed + stats.skipped > 0
+              ? 'Veja o motivo na aba de contatos'
+              : `${stats.open} conversa(s) aberta(s)`
+          }
         />
       </div>
 
       <div className='grid gap-4 lg:grid-cols-3'>
-        <section className='space-y-3 rounded-xl border bg-card p-4 lg:col-span-2'>
+        <section className='space-y-3 rounded-lg border border-border bg-card p-4 lg:col-span-2'>
           <h2 className='font-medium text-sm'>Funil</h2>
           <AiCampaignFunnel stats={stats} />
         </section>
-        <section className='space-y-2 rounded-xl border bg-card p-4 text-sm'>
+        <section className='space-y-2 rounded-lg border border-border bg-card p-4 text-sm'>
           <h2 className='font-medium'>Configuração</h2>
           <dl className='space-y-1.5'>
             <div className='flex justify-between gap-2'>

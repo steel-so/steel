@@ -94,7 +94,7 @@ export function StatTile({
       <p className='text-muted-foreground text-xs'>{label}</p>
       <p
         className={cn(
-          'mt-1 font-semibold text-2xl tabular-nums',
+          'mt-1 font-semibold text-xl tabular-nums',
           tone === 'positive' && 'text-primary',
           tone === 'negative' && 'text-destructive',
         )}

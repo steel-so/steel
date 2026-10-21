@@ -403,7 +403,7 @@ export function WhatsappAiCampaignWizard({
   const [step, setStep] = useState<StepKey>('basics')
 
   if (campaign.isLoading) {
-    return <Skeleton className='h-96 rounded-xl' />
+    return <Skeleton className='h-96 rounded-lg' />
   }
   if (!campaign.data) {
     return (
@@ -428,7 +428,7 @@ export function WhatsappAiCampaignWizard({
           >
             <SteelIcon icon={ArrowLeft01Icon} size={16} />
           </Button>
-          <h1 className='font-semibold text-lg'>{data.name}</h1>
+          <h3 className='font-medium text-sm'>{data.name}</h3>
           <AiCampaignStatusBadge status={data.status} />
         </div>
       </div>
@@ -474,7 +474,7 @@ export function WhatsappAiCampaignWizard({
         })}
       </ol>
 
-      <section className='rounded-xl border bg-card p-5'>
+      <section className='rounded-lg border border-border bg-card p-5'>
         {step === 'basics' ? (
           <StepBasics workspaceId={workspaceId} campaign={data} onDone={next} />
         ) : step === 'contacts' ? (
