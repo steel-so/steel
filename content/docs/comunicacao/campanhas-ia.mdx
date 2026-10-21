@@ -1,0 +1,69 @@
+---
+title: Campanhas de IA
+description: Envie um template aprovado para um grupo de contatos e deixe a IA conversar com quem responder, transferindo, fechando ou avisando outros sistemas.
+section: comunicacao
+order: 7
+---
+
+Uma **campanha de IA** envia um template aprovado da Meta para um grupo de
+contatos, no ritmo que você escolher. Quando o contato responde, a IA conversa
+seguindo as instruções da campanha e executa as **ações** que você liberou —
+transferir para alguém, fechar com o status certo, descadastrar e outras.
+
+<Callout type='admin'>
+  Criar, editar e iniciar campanhas segue a mesma permissão de
+  **Transmissões**. Campanhas usam a conexão da **Meta** (API oficial), porque
+  só ela tem templates aprovados.
+</Callout>
+
+## Criar uma campanha
+
+Em **Campanhas de IA**, clique em **Nova campanha**, dê um nome e escolha um
+modelo (Cobrança, Agendamento / Clínica, Vendas, Pesquisa de satisfação,
+Reativação, Confirmação de presença) ou comece **do zero**. A configuração
+segue em cinco passos, que você pode visitar em qualquer ordem:
+
+1. **Básico**: nome, objetivo e a conexão que envia.
+2. **Contatos**: escolha na agenda, adicione todos ou **importe uma planilha
+   (CSV)**. As colunas da planilha podem preencher as variáveis do template.
+3. **Mensagem**: o template e o valor de cada variável — um **texto fixo**, um
+   **campo do contato** (primeiro nome, nome, telefone) ou uma **coluna da
+   planilha**, com valor reserva. A prévia mostra como fica para o primeiro
+   contato.
+4. **IA**: liga ou desliga as respostas da IA, as instruções da campanha e as
+   ações.
+5. **Revisão**: o que falta, a duração estimada e o **nível de agressividade**
+   (um envio a cada 20 a 60 segundos). Clique em **Iniciar campanha**.
+
+## Ações da IA
+
+Cada ação tem um nome, a regra de **quando usar** (em português) e o destino,
+que **você** escolhe. A IA só decide se e quando usar.
+
+| Ação | O que faz |
+| --- | --- |
+| Transferir para atendente | Passa a conversa para a pessoa escolhida |
+| Transferir para equipe | Passa para a fila de uma equipe |
+| Fechar conversa | Fecha com um dos status de fechamento escolhidos |
+| Descadastrar | Registra o pedido de não receber mais mensagens (LGPD) |
+| Anotar no contato | Guarda uma observação na descrição do contato |
+| Retomar depois | Volta a falar com o contato depois de N horas, se ele não respondeu |
+| Workflow do CRM | Dispara um workflow ativo do CRM |
+| Webhook | Envia os dados combinados para um endereço HTTPS seu (assinado) |
+
+Por resposta, a IA usa no máximo três ações e só uma que encerre a conversa
+(transferir ou fechar). Tudo fica em **Ações da IA**, na página da campanha,
+com o motivo que a IA deu.
+
+## Acompanhar
+
+A página da campanha mostra o progresso, o funil (enviados, responderam, deu
+certo, não deu certo) e a lista de contatos com o link para cada conversa.
+Pause e continue quando quiser; quem já tem conversa aberta recebe o template
+de novo, e quem não responde é fechado pelo **fechamento automático** por
+inatividade.
+
+<Callout type='nota'>
+  Com o **horário de atendimento** ligado (Configurações › Atendimento), a
+  campanha só envia dentro dele e continua sozinha na abertura seguinte.
+</Callout>
