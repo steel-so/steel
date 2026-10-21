@@ -38,6 +38,7 @@ export const AdminWorkspaceDetailDTO = dto(
     trialEndsAt: nullableDateTime(),
     suspendedAt: nullableDateTime(),
     suspendedReason: z.string().nullable(),
+    allowedIps: z.array(z.string()),
     updatedAt: dateTime(),
   }),
 )

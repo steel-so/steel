@@ -5,6 +5,7 @@ import {
   ConfirmedWorkspaceActionSchema,
   DeleteWorkspaceSchema,
   ListBackupsQuerySchema,
+  SetWorkspaceAllowedIpsSchema,
   SetWorkspaceStatusSchema,
   TriggerBackupSchema,
 } from '@/src/schemas/admin.schema'
@@ -283,6 +284,29 @@ const routes: RouteConfig[] = [
     responses: {
       200: {
         description: 'Workspace com o novo plano.',
+        schema: AdminWorkspaceDetailDTO,
+      },
+    },
+    errors: [WORKSPACE_NOT_FOUND, 'WORKSPACE_STATUS_CONFLICT'],
+  }),
+  admin({
+    method: 'patch',
+    path: '/admin/workspaces/{id}/allowed-ips',
+    tags: ['Admin · Workspaces'],
+    summary: 'Definir IPs permitidos do workspace',
+    description:
+      'Allowlist de IPs/CIDRs de origem. Fora dela, app e API respondem `WORKSPACE_IP_NOT_ALLOWED`; lista vazia libera qualquer rede. Motivo obrigatório (auditoria).',
+    consent: true,
+    body: {
+      schema: SetWorkspaceAllowedIpsSchema,
+      example: {
+        allowedIps: ['200.1.2.3', '200.1.2.0/24'],
+        reason: 'Cliente bancário: acesso só pelas redes internas',
+      },
+    },
+    responses: {
+      200: {
+        description: 'Workspace com a allowlist atualizada.',
         schema: AdminWorkspaceDetailDTO,
       },
     },
