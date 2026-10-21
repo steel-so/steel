@@ -127,6 +127,8 @@ export type WhatsappAiReplyJobPayload = {
   [WhatsappAiReplyJob.GenerateAiReply]: {
     conversationId: string
     messageId: string
+    /** Extra instruction for this answer (e.g. a campaign follow-up). */
+    instruction?: string
   }
 }
 
@@ -166,8 +168,14 @@ export type WhatsappSentimentJobPayload = {
 export const WhatsappBroadcastJob = {
   SendBroadcastMessage: 'send-broadcast-message',
   RunScheduleTick: 'run-schedule-tick',
-  /** Auto outreach: sends the next queued contact, then chains itself. */
+  /** Legacy auto outreach chain (replaced by AI campaigns): dropped. */
   SendAutoOutreachNext: 'send-auto-outreach-next',
+  /** AI campaign: sends the next queued contact, then chains itself. */
+  SendAiCampaignNext: 'send-ai-campaign-next',
+  /** AI campaign action FOLLOW_UP: the AI writes again if no reply came. */
+  AiCampaignFollowUp: 'ai-campaign-follow-up',
+  /** AI campaign action WEBHOOK: POST to the workspace endpoint. */
+  AiCampaignWebhook: 'ai-campaign-webhook',
 } as const
 
 export type WhatsappBroadcastJob =
@@ -179,9 +187,22 @@ export type WhatsappBroadcastJobPayload = {
     recipientId: string
   }
   [WhatsappBroadcastJob.RunScheduleTick]: Record<string, never>
-  [WhatsappBroadcastJob.SendAutoOutreachNext]: {
-    workspaceId: string
+  [WhatsappBroadcastJob.SendAutoOutreachNext]: Record<string, unknown>
+  [WhatsappBroadcastJob.SendAiCampaignNext]: {
+    campaignId: string
     runToken: string
+  }
+  [WhatsappBroadcastJob.AiCampaignFollowUp]: {
+    workspaceId: string
+    campaignId: string
+    conversationId: string
+    actionId: string
+    reason: string
+    /** ISO — a contact message after this cancels the follow-up. */
+    scheduledAt: string
+  }
+  [WhatsappBroadcastJob.AiCampaignWebhook]: {
+    runId: string
   }
 }
 

@@ -33,7 +33,7 @@ export type AuditEntity =
   | 'whatsapp_message'
   | 'whatsapp_quick_reply'
   | 'whatsapp_close_status'
-  | 'whatsapp_auto_outreach'
+  | 'whatsapp_ai_campaign'
   | 'whatsapp_team'
   | 'whatsapp_broadcast_list'
   | 'whatsapp_template'

@@ -27,6 +27,9 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       return 'Sentimento negativo: supervisores avisados'
     case 'AI_GUARDRAIL_HANDOFF':
       return 'A IA parou de responder e transferiu para um atendente'
+    // `reason` = "action label: why the AI ran it".
+    case 'AI_ACTION':
+      return 'A IA da campanha executou uma ação'
     case 'BUTTON_CLICKED':
       return event.reason
         ? `O contato clicou em “${event.reason}”`
@@ -49,8 +52,8 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       if (event.source === 'CONTACT') {
         return 'Conversa reaberta: o contato enviou uma nova mensagem'
       }
-      if (event.source === 'AUTO_OUTREACH') {
-        return 'Conversa reaberta pelo disparo automático da IA'
+      if (event.source === 'AUTO_OUTREACH' || event.source === 'AI_CAMPAIGN') {
+        return 'Conversa reaberta por uma campanha de IA'
       }
       return `Conversa reaberta${byActor(event)}`
   }
@@ -64,6 +67,7 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   if (event.kind === 'SENTIMENT_ALERT') return event.reason
   // The guardrail note says why the AI stopped.
   if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason
+  if (event.kind === 'AI_ACTION') return event.reason
   // The assignee / team name is already in the headline.
   if (event.kind === 'ASSIGNED' || event.kind === 'TEAM_CHANGED') return null
   return `Motivo: ${event.reason}`

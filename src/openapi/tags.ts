@@ -204,9 +204,9 @@ export const TAG_GROUPS = [
         description: 'Transmissões (broadcasts) e importação de destinatários.',
       },
       {
-        name: 'Comunicação · Disparo automático',
+        name: 'Comunicação · Campanhas de IA',
         description:
-          'A IA envia um template aprovado da Meta aos contatos da fila, com play/pause.',
+          'Campanhas em que a IA envia um template da Meta a um grupo de contatos e responde executando as ações habilitadas.',
       },
       {
         name: 'Comunicação · Templates e respostas rápidas',

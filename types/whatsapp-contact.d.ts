@@ -7,7 +7,7 @@ export interface WhatsAppContactDTO {
   description: string | null
   /** Opt-out LGPD de transmissões — ISO quando descadastrado, senão null. */
   broadcastOptedOutAt: string | null
-  broadcastOptOutSource: 'KEYWORD' | 'ADMIN' | null
+  broadcastOptOutSource: 'KEYWORD' | 'ADMIN' | 'AI' | null
   conversationCount: number
   createdAt: string
   updatedAt: string

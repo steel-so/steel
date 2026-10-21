@@ -161,6 +161,7 @@ export const WhatsAppConversationEventDTO = dto(
         'ASSIGNED',
         'TEAM_CHANGED',
         'AI_GUARDRAIL_HANDOFF',
+        'AI_ACTION',
       ]),
       source: z.enum([
         'AGENT',
@@ -169,6 +170,7 @@ export const WhatsAppConversationEventDTO = dto(
         'SENTIMENT',
         'AI_GUARDRAIL',
         'AUTO_OUTREACH',
+        'AI_CAMPAIGN',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -269,9 +271,9 @@ export const WhatsAppContactDTO = dto(
       description:
         'Opt-out LGPD de transmissões: data do descadastro, `null` se inscrito.',
     }),
-    broadcastOptOutSource: z.enum(['KEYWORD', 'ADMIN']).nullable().meta({
+    broadcastOptOutSource: z.enum(['KEYWORD', 'ADMIN', 'AI']).nullable().meta({
       description:
-        '`KEYWORD` = o contato respondeu uma palavra de descadastro; `ADMIN` = marcado no cadastro.',
+        '`KEYWORD` = o contato respondeu uma palavra de descadastro; `ADMIN` = marcado no cadastro; `AI` = registrado pela IA de uma campanha de IA.',
     }),
     conversationCount: z.number().int(),
     createdAt: dateTime(),
@@ -559,34 +561,6 @@ export const WhatsAppBusinessHoursStatusDTO = dto(
       description: 'Próxima abertura quando fechado.',
     }),
   }),
-)
-
-export const WhatsAppAutoOutreachDTO = dto(
-  'WhatsAppAutoOutreach',
-  z
-    .object({
-      status: z.enum(['IDLE', 'RUNNING', 'PAUSED', 'DONE']),
-      connectionId: z.string().nullable(),
-      templateId: z.string().nullable(),
-      intervalSeconds: z.number().int().meta({
-        description:
-          'Nível de agressividade: segundos entre dois envios (20 a 60; padrão 30).',
-      }),
-      pending: z.number().int(),
-      sent: z.number().int(),
-      failed: z.number().int(),
-      skipped: z.number().int().meta({
-        description: 'Descadastrados ou já em atendimento.',
-      }),
-      lastSentAt: nullableDateTime(),
-      lastError: z.string().nullable().meta({
-        description: 'Motivo da última pausa automática.',
-      }),
-      added: z.number().int().optional().meta({
-        description: 'Só ao adicionar contatos: quantos entraram na fila.',
-      }),
-    })
-    .meta({ description: 'Disparo automático de template pela IA.' }),
 )
 
 export const WhatsAppCloseStatusDTO = dto(

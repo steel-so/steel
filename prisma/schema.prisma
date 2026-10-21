@@ -455,7 +455,8 @@ model Workspace {
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
   whatsappCloseStatuses        WhatsAppCloseStatus[]
-  whatsappAutoOutreach         WhatsAppAutoOutreach?
+  whatsappAiCampaigns          WhatsAppAiCampaign[]
+  whatsappAiCampaignRuns       WhatsAppAiCampaignActionRun[]
   whatsappUsage                WhatsAppUsageMonthly[]
   whatsappConversationEvents   WhatsAppConversationEvent[]
   notifications                Notification[]
@@ -1158,7 +1159,7 @@ model WhatsAppConnection {
   broadcastLists WhatsAppBroadcastList[]
   templates      WhatsAppTemplate[]
   groups         WhatsAppGroup[]
-  autoOutreaches WhatsAppAutoOutreach[]
+  aiCampaigns    WhatsAppAiCampaign[]
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
@@ -1183,10 +1184,10 @@ model WhatsAppContact {
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
 
-  workspace              Workspace                       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  conversations          WhatsAppConversation[]
-  broadcastRecipients    WhatsAppBroadcastRecipient[]
-  autoOutreachRecipients WhatsAppAutoOutreachRecipient[]
+  workspace            Workspace                     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversations        WhatsAppConversation[]
+  broadcastRecipients  WhatsAppBroadcastRecipient[]
+  aiCampaignRecipients WhatsAppAiCampaignRecipient[]
 
   @@unique([workspaceId, waId])
   @@index([workspaceId])
@@ -1196,6 +1197,8 @@ model WhatsAppContact {
 enum WhatsAppOptOutSource {
   KEYWORD
   ADMIN
+  /// A IA de uma campanha registrou o pedido do contato.
+  AI
 }
 
 enum WhatsAppConversationStatus {
@@ -1239,6 +1242,9 @@ model WhatsAppConversation {
   /// Último alerta de sentimento negativo enviado aos supervisores — base do
   /// intervalo mínimo entre alertas da mesma conversa (anti-spam).
   sentimentAlertedAt DateTime?                  @map("sentiment_alerted_at")
+  /// Campanha de IA que abriu (ou reenviou para) esta conversa: a IA segue
+  /// as instruções e ações dela ao responder.
+  aiCampaignId       String?                    @map("ai_campaign_id")
   createdAt          DateTime                   @default(now()) @map("created_at")
   updatedAt          DateTime                   @updatedAt @map("updated_at")
 
@@ -1247,6 +1253,7 @@ model WhatsAppConversation {
   contact      WhatsAppContact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
   assignedUser User?                       @relation("WhatsAppConversationAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
   team         WhatsAppTeam?               @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  aiCampaign   WhatsAppAiCampaign?         @relation(fields: [aiCampaignId], references: [id], onDelete: SetNull)
   messages     WhatsAppMessage[]
   events       WhatsAppConversationEvent[]
   phoneCalls   WhatsAppPhoneCall[]
@@ -1259,6 +1266,7 @@ model WhatsAppConversation {
   @@index([assignedUserId])
   @@index([teamId])
   @@index([workspaceId, closeOutcome])
+  @@index([aiCampaignId])
   @@map("whatsapp_conversations")
 }
 
@@ -1400,6 +1408,8 @@ enum WhatsAppConversationEventKind {
   /// The auto-reply hit a guardrail (forbidden topic, authority limit,
   /// prompt injection) and handed off; `reason` carries the note.
   AI_GUARDRAIL_HANDOFF
+  /// A IA da campanha executou uma ação; `reason` = "rótulo: motivo".
+  AI_ACTION
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1413,8 +1423,10 @@ enum WhatsAppConversationEventSource {
   BUTTON_ACTION
   /// Steel AI guardrails (ADR 0041).
   AI_GUARDRAIL
-  /// Disparo automático de template pela IA (página de contatos).
+  /// Legado: disparo automático (substituído pelas campanhas de IA).
   AUTO_OUTREACH
+  /// Campanha de IA (envio do template ou ação da IA).
+  AI_CAMPAIGN
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -1691,68 +1703,126 @@ model WhatsAppBroadcastRecipient {
   @@map("whatsapp_broadcast_recipients")
 }
 
-enum WhatsAppAutoOutreachStatus {
-  /// Nunca iniciado (ou fila vazia sem disparo em andamento).
-  IDLE
+/// Campanha de IA: a IA envia um template aprovado da Meta a um grupo de
+/// contatos, com as variáveis preenchidas pela campanha, no ritmo escolhido
+/// (`intervalSeconds`), e responde quem voltar a escrever seguindo as
+/// instruções da campanha — podendo executar as ações que o admin habilitou
+/// (`actions`). `runToken` identifica a cadeia de jobs do envio: um play novo
+/// invalida a anterior (sem envio em dobro).
+model WhatsAppAiCampaign {
+  id              String                   @id @default(cuid())
+  workspaceId     String                   @map("workspace_id")
+  name            String                   @db.VarChar(120)
+  objective       String?                  @db.VarChar(500)
+  connectionId    String?                  @map("connection_id")
+  templateId      String?                  @map("template_id")
+  /// De onde vem cada variável do template (`AiCampaignVariables`).
+  variables       Json                     @default("{}")
+  /// Mídia do cabeçalho só desta campanha (nulo = a do template).
+  headerMediaUrl  String?                  @map("header_media_url")
+  /// Instruções da IA para as respostas desta campanha.
+  instructions    String                   @default("")
+  /// Ações que a IA pode executar (`AiCampaignAction[]`).
+  actions         Json                     @default("[]")
+  /// Nível de agressividade: segundos entre dois envios (20 a 60).
+  intervalSeconds Int                      @default(30) @map("interval_seconds")
+  /// A IA responde quem voltar a escrever (desligado = só envia).
+  aiReplies       Boolean                  @default(true) @map("ai_replies")
+  status          WhatsAppAiCampaignStatus @default(DRAFT)
+  runToken        String?                  @map("run_token")
+  lastSentAt      DateTime?                @map("last_sent_at")
+  /// Motivo da última pausa automática (limite mensal, template removido...).
+  lastError       String?                  @map("last_error")
+  startedAt       DateTime?                @map("started_at")
+  finishedAt      DateTime?                @map("finished_at")
+  createdById     String?                  @map("created_by_id")
+  updatedById     String?                  @map("updated_by_id")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+
+  workspace     Workspace                     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection    WhatsAppConnection?           @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  template      WhatsAppTemplate?             @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipients    WhatsAppAiCampaignRecipient[]
+  actionRuns    WhatsAppAiCampaignActionRun[]
+  conversations WhatsAppConversation[]
+
+  @@index([workspaceId, status])
+  @@map("whatsapp_ai_campaigns")
+}
+
+enum WhatsAppAiCampaignStatus {
+  DRAFT
   RUNNING
   PAUSED
-  /// Fila esvaziou com o disparo ligado.
+  /// Fila esvaziou com a campanha ligada.
   DONE
+  /// Removida pelo admin (fica para o histórico das conversas).
+  ARCHIVED
 }
 
-/// Disparo automático (um por workspace): a IA envia um template aprovado
-/// da Meta para os contatos da fila, um por vez, e assume as respostas.
-/// Play/pause na página de contatos. `runToken` identifica a cadeia de jobs
-/// atual — um play novo invalida a anterior (sem envios em dobro).
-model WhatsAppAutoOutreach {
-  id              String                     @id @default(cuid())
-  workspaceId     String                     @unique @map("workspace_id")
-  connectionId    String?                    @map("connection_id")
-  templateId      String?                    @map("template_id")
-  status          WhatsAppAutoOutreachStatus @default(IDLE)
-  /// Nível de agressividade: segundos entre dois envios (20 a 60).
-  intervalSeconds Int                        @default(30) @map("interval_seconds")
-  runToken        String?                    @map("run_token")
-  lastSentAt      DateTime?                  @map("last_sent_at")
-  /// Motivo da última pausa automática (limite mensal, template removido...).
-  lastError       String?                    @map("last_error")
-  updatedById     String?                    @map("updated_by_id")
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  updatedAt       DateTime                   @updatedAt @map("updated_at")
-
-  workspace  Workspace                       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  connection WhatsAppConnection?             @relation(fields: [connectionId], references: [id], onDelete: SetNull)
-  template   WhatsAppTemplate?               @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  recipients WhatsAppAutoOutreachRecipient[]
-
-  @@map("whatsapp_auto_outreaches")
-}
-
-enum WhatsAppAutoOutreachRecipientStatus {
+enum WhatsAppAiCampaignRecipientStatus {
   PENDING
   SENT
   FAILED
-  /// Não enviado: descadastrado (opt-out) ou já em atendimento.
+  /// Não enviado: descadastrado (opt-out) ou sem valor para uma variável.
   SKIPPED
 }
 
-model WhatsAppAutoOutreachRecipient {
-  id                String                              @id @default(cuid())
-  outreachId        String                              @map("outreach_id")
-  contactId         String                              @map("contact_id")
-  status            WhatsAppAutoOutreachRecipientStatus @default(PENDING)
-  providerMessageId String?                             @map("provider_message_id")
-  errorMessage      String?                             @map("error_message")
-  sentAt            DateTime?                           @map("sent_at")
-  createdAt         DateTime                            @default(now()) @map("created_at")
+model WhatsAppAiCampaignRecipient {
+  id                String                            @id @default(cuid())
+  campaignId        String                            @map("campaign_id")
+  contactId         String                            @map("contact_id")
+  status            WhatsAppAiCampaignRecipientStatus @default(PENDING)
+  /// Valores da planilha importada (coluna → valor), para as variáveis.
+  values            Json?
+  conversationId    String?                           @map("conversation_id")
+  providerMessageId String?                           @map("provider_message_id")
+  errorMessage      String?                           @map("error_message")
+  sentAt            DateTime?                         @map("sent_at")
+  /// Primeira resposta do contato depois do envio.
+  repliedAt         DateTime?                         @map("replied_at")
+  createdAt         DateTime                          @default(now()) @map("created_at")
 
-  outreach WhatsAppAutoOutreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
-  contact  WhatsAppContact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaign WhatsAppAiCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  WhatsAppContact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  @@unique([outreachId, contactId])
-  @@index([outreachId, status, createdAt])
+  @@unique([campaignId, contactId])
+  @@index([campaignId, status, createdAt])
+  @@index([conversationId])
   @@index([contactId])
-  @@map("whatsapp_auto_outreach_recipients")
+  @@map("whatsapp_ai_campaign_recipients")
+}
+
+enum WhatsAppAiCampaignActionRunStatus {
+  SUCCESS
+  FAILED
+}
+
+/// Ação executada pela IA numa conversa da campanha (histórico + auditoria).
+model WhatsAppAiCampaignActionRun {
+  id             String                            @id @default(cuid())
+  workspaceId    String                            @map("workspace_id")
+  campaignId     String                            @map("campaign_id")
+  conversationId String?                           @map("conversation_id")
+  contactId      String?                           @map("contact_id")
+  /// `AiCampaignAction.id` + cópia do tipo/rótulo no momento da execução.
+  actionId       String                            @map("action_id")
+  kind           String
+  label          String
+  /// Por que a IA executou (escrito por ela).
+  reason         String?
+  payload        Json?
+  status         WhatsAppAiCampaignActionRunStatus
+  error          String?
+  createdAt      DateTime                          @default(now()) @map("created_at")
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaign  WhatsAppAiCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+  @@index([workspaceId])
+  @@map("whatsapp_ai_campaign_action_runs")
 }
 
 enum WhatsAppTemplateStatus {
@@ -1805,7 +1875,7 @@ model WhatsAppTemplate {
   workspace      Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   connection     WhatsAppConnection      @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   broadcastLists WhatsAppBroadcastList[]
-  autoOutreaches WhatsAppAutoOutreach[]
+  aiCampaigns    WhatsAppAiCampaign[]
 
   @@unique([connectionId, name, language])
   @@index([workspaceId])

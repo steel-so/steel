@@ -197,16 +197,17 @@ export const whatsappCloseStatusSelectionInvalid = (
   message = 'Seleção de status de fechamento inválida',
 ): AppError => appError('WHATSAPP_CLOSE_STATUS_SELECTION_INVALID', message)
 
-/** Auto outreach cannot start/change: missing connection, template or queue. */
-export const whatsappAutoOutreachNotReady = (
-  message = 'Configure a conexão, o template e os contatos do disparo automático',
-): AppError => appError('WHATSAPP_AUTO_OUTREACH_NOT_READY', message)
+export const whatsappAiCampaignNotFound = (): AppError =>
+  appError('WHATSAPP_AI_CAMPAIGN_NOT_FOUND', 'Campanha de IA não encontrada')
 
-export const whatsappAutoOutreachRunning = (): AppError =>
-  appError(
-    'WHATSAPP_AUTO_OUTREACH_RUNNING',
-    'Pause o disparo automático antes de trocar a conexão ou o template',
-  )
+/** The campaign cannot start: connection, template, variables or contacts. */
+export const whatsappAiCampaignNotReady = (
+  message = 'Configure a conexão, o template, as variáveis e os contatos da campanha',
+): AppError => appError('WHATSAPP_AI_CAMPAIGN_NOT_READY', message)
+
+export const whatsappAiCampaignRunning = (
+  message = 'Pause a campanha antes de trocar a conexão, o template ou as variáveis',
+): AppError => appError('WHATSAPP_AI_CAMPAIGN_RUNNING', message)
 
 /** Sending is locked outside the workspace's WhatsApp business hours. */
 export const whatsappOutsideBusinessHours = (

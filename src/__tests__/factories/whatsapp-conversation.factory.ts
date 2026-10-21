@@ -31,6 +31,7 @@ export function createFakeWhatsAppConversation(
     closeStatusIds: [],
     closeStatusLabels: [],
     sentimentAlertedAt: null,
+    aiCampaignId: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
