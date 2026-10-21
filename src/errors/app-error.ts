@@ -1041,6 +1041,11 @@ export const workspaceSuspended = (
   message = 'Este workspace está suspenso. Fale com o suporte da Stratus Telecom.',
 ): AppError => appError('WORKSPACE_SUSPENDED', message)
 
+/** IP de origem fora da allowlist de rede do workspace. */
+export const workspaceIpNotAllowed = (
+  message = 'Este workspace só pode ser acessado a partir da rede autorizada pela sua empresa.',
+): AppError => appError('WORKSPACE_IP_NOT_ALLOWED', message)
+
 /** Suspender o que já está suspenso, reativar o que está ativo etc. */
 export const workspaceStatusConflict = (message: string): AppError =>
   appError('WORKSPACE_STATUS_CONFLICT', message)

@@ -21,6 +21,7 @@ import { notify } from '@/lib/notify'
 import {
   useChangeWorkspacePlan,
   useDeleteWorkspace,
+  useSetWorkspaceAllowedIps,
   useSetWorkspaceStatus,
 } from '@/src/hooks/use-admin'
 import type { AdminWorkspaceDetailDTO } from '@/types/admin-workspace'
@@ -28,7 +29,7 @@ import { PLAN_LABEL } from '../shell/admin-labels'
 import { AdminPanel } from '../shell/admin-ui'
 import { ConfirmActionDialog } from '../shell/confirm-action-dialog'
 
-type DialogKind = 'suspend' | 'reactivate' | 'plan' | 'delete' | null
+type DialogKind = 'suspend' | 'reactivate' | 'plan' | 'ips' | 'delete' | null
 
 const PLANS = ['FREE', 'PRO', 'BUSINESS', 'ENTERPRISE'] as const
 
@@ -69,6 +70,8 @@ export function WorkspaceLifecyclePanel({
   const forceCancelId = useId()
   const setStatus = useSetWorkspaceStatus(workspace.id)
   const changePlan = useChangeWorkspacePlan(workspace.id)
+  const setIps = useSetWorkspaceAllowedIps(workspace.id)
+  const [ipsText, setIpsText] = useState(workspace.allowedIps.join('\n'))
   const remove = useDeleteWorkspace(workspace.id)
 
   const deleting = workspace.status === 'DELETING'
@@ -77,6 +80,7 @@ export function WorkspaceLifecyclePanel({
   function close() {
     setDialog(null)
     setPlan(workspace.activePlan)
+    setIpsText(workspace.allowedIps.join('\n'))
     setForceCancel(false)
   }
 
@@ -131,6 +135,24 @@ export function WorkspaceLifecyclePanel({
               onClick={() => setDialog('plan')}
             >
               Alterar plano
+            </Button>
+          }
+        />
+        <ActionRow
+          title='Rede permitida (IPs)'
+          description={
+            workspace.allowedIps.length > 0
+              ? `${workspace.allowedIps.length} entrada(s): ${workspace.allowedIps.join(', ')}. Fora delas o acesso é bloqueado.`
+              : 'Sem restrição: o workspace abre de qualquer rede.'
+          }
+          action={
+            <Button
+              size='sm'
+              variant='outline'
+              disabled={deleting}
+              onClick={() => setDialog('ips')}
+            >
+              Editar IPs
             </Button>
           }
         />
@@ -213,6 +235,40 @@ export function WorkspaceLifecyclePanel({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </ConfirmActionDialog>
+
+      <ConfirmActionDialog
+        open={dialog === 'ips'}
+        onOpenChange={(open) => !open && close()}
+        title='Rede permitida do workspace'
+        description='Informe os IPs públicos de saída (um por linha; aceita CIDR, ex.: 200.1.2.0/24). Fora deles, app e API respondem bloqueio. Deixe vazio para liberar qualquer rede. Inclua também o IP de saída da VPN.'
+        confirmLabel='Salvar'
+        pending={setIps.isPending}
+        onConfirm={({ reason }) =>
+          run(
+            () =>
+              setIps.mutateAsync({
+                allowedIps: ipsText
+                  .split(/[\s,;]+/)
+                  .map((entry) => entry.trim())
+                  .filter(Boolean),
+                reason,
+              }),
+            'IPs permitidos atualizados',
+          )
+        }
+      >
+        <div className='space-y-1.5'>
+          <Label>IPs / CIDRs</Label>
+          <textarea
+            value={ipsText}
+            onChange={(event) => setIpsText(event.target.value)}
+            rows={5}
+            spellCheck={false}
+            placeholder={'200.1.2.3\n200.1.2.0/24'}
+            className='w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring'
+          />
         </div>
       </ConfirmActionDialog>
 

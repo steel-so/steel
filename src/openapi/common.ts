@@ -9,6 +9,7 @@ import type { ErrorEntry } from './registry'
 export const WORKSPACE_MEMBER_ERRORS: ErrorEntry[] = [
   { code: 'FORBIDDEN', when: 'Usuário não é membro do workspace' },
   'WORKSPACE_SUSPENDED',
+  'WORKSPACE_IP_NOT_ALLOWED',
 ]
 
 /** Ações restritas a OWNER/ADMIN do workspace. */

@@ -426,6 +426,9 @@ model Workspace {
   /// Logo público (bucket `workspace-logos`, chave `<id>/logo-<uuid>.<ext>`),
   /// editado em Ajustes > Geral. `null` = sem logo (a UI mostra a inicial).
   logoUrl           String?               @map("logo_url")
+  /// Allowlist de IPs/CIDRs de origem, definida pelo admin global. Vazio = acesso
+  /// liberado de qualquer rede.
+  allowedIps        String[]              @default([]) @map("allowed_ips")
   /// Faixa de tamanho da empresa, informada em Ajustes > Geral.
   companySize       WorkspaceCompanySize? @map("company_size")
   createdAt         DateTime              @default(now()) @map("created_at")

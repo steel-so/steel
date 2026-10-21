@@ -350,6 +350,7 @@ export {
   workspaceExportLogsUnavailable,
   workspaceExportNotFound,
   workspaceExportNotReady,
+  workspaceIpNotAllowed,
   workspaceOperationInProgress,
   workspaceStatusConflict,
   workspaceSuspended,

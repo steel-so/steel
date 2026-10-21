@@ -137,6 +137,21 @@ export const WorkspaceRepository = {
   },
 
   /** Ciclo de vida controlado pelo admin global (suspender/reativar/excluir). */
+  async setAllowedIps(
+    id: string,
+    allowedIps: string[],
+  ): Promise<Result<Workspace>> {
+    try {
+      const workspace = await prisma.workspace.update({
+        where: { id },
+        data: { allowedIps },
+      })
+      return ok(workspace)
+    } catch (error) {
+      return err(dbError('Failed to set workspace allowed IPs', error))
+    }
+  },
+
   async setStatus(
     id: string,
     data: {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidIpEntry } from '@/src/lib/ip-allowlist'
 
 /** Motivo obrigatório das ações destrutivas do admin (vai para a auditoria). */
 export const AdminReasonSchema = z
@@ -18,6 +19,26 @@ export const ChangeWorkspacePlanSchema = z.object({
   reason: AdminReasonSchema,
 })
 export type ChangeWorkspacePlanInput = z.infer<typeof ChangeWorkspacePlanSchema>
+
+/** Allowlist de rede do workspace; lista vazia = acesso de qualquer lugar. */
+export const SetWorkspaceAllowedIpsSchema = z.object({
+  allowedIps: z
+    .array(
+      z
+        .string()
+        .trim()
+        .refine(
+          isValidIpEntry,
+          'IP ou CIDR inválido (ex.: 200.1.2.3 ou 200.1.2.0/24)',
+        ),
+    )
+    .max(50, 'Máximo de 50 entradas')
+    .transform((list) => [...new Set(list)]),
+  reason: AdminReasonSchema,
+})
+export type SetWorkspaceAllowedIpsInput = z.infer<
+  typeof SetWorkspaceAllowedIpsSchema
+>
 
 /** Exclusão definitiva e restore: o admin digita o slug para confirmar. */
 export const ConfirmedWorkspaceActionSchema = z.object({

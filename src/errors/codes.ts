@@ -13,6 +13,8 @@ export const ERROR_CODES = {
   MODULE_DISABLED: { code: 'MODULE_DISABLED', status: 403 },
   // Workspace suspenso (ou em exclusão) pelo admin global: bloqueia membros.
   WORKSPACE_SUSPENDED: { code: 'WORKSPACE_SUSPENDED', status: 403 },
+  // IP de origem fora da allowlist do workspace (definida pelo admin global).
+  WORKSPACE_IP_NOT_ALLOWED: { code: 'WORKSPACE_IP_NOT_ALLOWED', status: 403 },
   BACKUP_DOWNLOAD_LINK_INVALID: {
     code: 'BACKUP_DOWNLOAD_LINK_INVALID',
     status: 403,

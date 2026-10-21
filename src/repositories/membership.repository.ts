@@ -7,7 +7,7 @@ export type MembershipWithWorkspace = Membership & { workspace: Workspace }
 export type MembershipWithProfile = Membership & {
   profile: Profile | null
   /** Status do workspace, para o gate de suspensão (`assertMember`). */
-  workspace?: Pick<Workspace, 'status'>
+  workspace?: Pick<Workspace, 'status' | 'allowedIps'>
 }
 
 /** Membership with the user fields the member directory shows. */
@@ -33,7 +33,10 @@ export const MembershipRepository = {
     try {
       const membership = await prisma.membership.findUnique({
         where: { userId_workspaceId: { userId, workspaceId } },
-        include: { profile: true, workspace: { select: { status: true } } },
+        include: {
+          profile: true,
+          workspace: { select: { status: true, allowedIps: true } },
+        },
       })
       return ok(membership)
     } catch (error) {

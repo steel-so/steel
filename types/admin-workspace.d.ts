@@ -24,6 +24,7 @@ export interface AdminWorkspaceDetailDTO extends AdminWorkspaceSummaryDTO {
   trialEndsAt: string | null
   suspendedAt: string | null
   suspendedReason: string | null
+  allowedIps: string[]
   updatedAt: string
 }
 

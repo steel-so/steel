@@ -166,6 +166,19 @@ export function useChangeWorkspacePlan(workspaceId: string) {
   })
 }
 
+export function useSetWorkspaceAllowedIps(workspaceId: string) {
+  const invalidate = useInvalidateAdmin()
+  return useMutation({
+    mutationFn: (input: { allowedIps: string[]; reason: string }) =>
+      apiFetch<AdminWorkspaceDetailDTO>(
+        `/api/admin/workspaces/${workspaceId}/allowed-ips`,
+        { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(input) },
+        'Não foi possível salvar os IPs permitidos',
+      ),
+    onSuccess: invalidate,
+  })
+}
+
 export function useDeleteWorkspace(workspaceId: string) {
   const invalidate = useInvalidateAdmin()
   return useMutation({

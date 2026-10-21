@@ -18,6 +18,7 @@ import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type {
   ChangeWorkspacePlanInput,
   DeleteWorkspaceInput,
+  SetWorkspaceAllowedIpsInput,
 } from '@/src/schemas/admin.schema'
 import type {
   AdminAuditEntryDTO,
@@ -144,6 +145,53 @@ export const AdminWorkspaceLifecycleService = {
       meta: { suspendedReason: workspace.value.suspendedReason },
     })
     logger.info('admin.workspace.reactivated', { actorId, workspaceId })
+
+    return ok(
+      toAdminWorkspaceDetailDTO({
+        ...updated.value,
+        memberCount: workspace.value.memberCount,
+      }),
+    )
+  },
+
+  /**
+   * Allowlist de rede do workspace (cliente que só aceita acesso de IPs
+   * conhecidos). Lista vazia remove a restrição.
+   */
+  async setAllowedIps(
+    actorId: string,
+    workspaceId: string,
+    input: SetWorkspaceAllowedIpsInput,
+  ): Promise<Result<AdminWorkspaceDetailDTO>> {
+    const admin = await assertPlatformAdmin(actorId)
+    if (!admin.ok) return admin
+
+    const workspace = await loadWorkspace(workspaceId)
+    if (!workspace.ok) return workspace
+    if (workspace.value.status === 'DELETING') {
+      return err(workspaceStatusConflict('O workspace está sendo excluído'))
+    }
+
+    const updated = await WorkspaceRepository.setAllowedIps(
+      workspaceId,
+      input.allowedIps,
+    )
+    if (!updated.ok) return updated
+    await invalidateWorkspaceCaches(workspaceId)
+
+    await recordAdminAction({
+      actor: actorOf(admin.value),
+      action: 'workspace.allowed_ips_change',
+      audit: { entity: 'workspace', action: 'update' },
+      targetType: 'workspace',
+      targetId: workspaceId,
+      targetLabel: workspace.value.slug,
+      reason: input.reason,
+      meta: {
+        from: workspace.value.allowedIps,
+        to: input.allowedIps,
+      },
+    })
 
     return ok(
       toAdminWorkspaceDetailDTO({

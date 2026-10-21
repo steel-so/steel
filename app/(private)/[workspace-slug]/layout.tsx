@@ -12,7 +12,7 @@ import { WorkspacePermissionsProvider } from '@/app/_components/workspace/worksp
 import { TRIAL_BANNER_DAYS } from '@/src/config/trial'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { isBillingEnabled } from '@/src/lib/billing'
-import { assertMember } from '@/src/services/authz'
+import { assertIpAllowed, assertMember } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
 import { SubscriptionService } from '@/src/services/subscription.service'
 import { UserService } from '@/src/services/user.service'
@@ -67,6 +67,23 @@ export default async function WorkspaceLayout({
   }
 
   const workspace = membership.value.workspace
+
+  // Allowlist de rede definida pelo admin global (a API responde
+  // WORKSPACE_IP_NOT_ALLOWED via `assertMember`).
+  const network = await assertIpAllowed(
+    workspace.id,
+    workspace.allowedIps,
+    session.value.user.id,
+  )
+  if (!network.ok) {
+    return (
+      <WorkspaceBlockedScreen
+        workspaceName={workspace.name}
+        status='IP_RESTRICTED'
+        otherWorkspaces={[]}
+      />
+    )
+  }
 
   // Suspenso/em exclusão pelo admin global: tela de bloqueio no lugar do app
   // (a API já responde WORKSPACE_SUSPENDED via `assertMember`).

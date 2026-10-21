@@ -12,27 +12,36 @@ export function WorkspaceBlockedScreen({
   otherWorkspaces,
 }: {
   workspaceName: string
-  status: 'SUSPENDED' | 'DELETING'
+  status: 'SUSPENDED' | 'DELETING' | 'IP_RESTRICTED'
   otherWorkspaces: { slug: string; name: string }[]
 }) {
   const deleting = status === 'DELETING'
+  const restricted = status === 'IP_RESTRICTED'
 
   return (
     <main className='flex min-h-dvh items-center justify-center bg-background px-4 py-10'>
       <div className='w-full max-w-md space-y-5 rounded-xl border border-border bg-card p-6 shadow-xs'>
         <div className='space-y-2'>
           <span className='inline-flex h-5 items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 font-medium text-[11px] text-amber-700 dark:text-amber-400'>
-            {deleting ? 'Em exclusão' : 'Acesso suspenso'}
+            {deleting
+              ? 'Em exclusão'
+              : restricted
+                ? 'Rede não autorizada'
+                : 'Acesso suspenso'}
           </span>
           <h1 className='wrap-break-word font-semibold text-xl tracking-tight'>
             {deleting
               ? `${workspaceName} está sendo excluído`
-              : `${workspaceName} está suspenso`}
+              : restricted
+                ? `${workspaceName} não é acessível desta rede`
+                : `${workspaceName} está suspenso`}
           </h1>
           <p className='text-muted-foreground text-sm'>
-            {deleting
-              ? 'Este workspace foi encerrado e os dados estão sendo removidos. Se isso não era esperado, fale com o suporte da Stratus Telecom imediatamente.'
-              : 'O acesso a este workspace foi temporariamente bloqueado pela Stratus Telecom. Seus dados continuam guardados. Fale com o suporte ou com o responsável pelo contrato para regularizar.'}
+            {restricted
+              ? 'Este workspace só pode ser acessado a partir das redes autorizadas pela sua empresa. Conecte-se à rede ou à VPN corporativa e tente novamente.'
+              : deleting
+                ? 'Este workspace foi encerrado e os dados estão sendo removidos. Se isso não era esperado, fale com o suporte da Stratus Telecom imediatamente.'
+                : 'O acesso a este workspace foi temporariamente bloqueado pela Stratus Telecom. Seus dados continuam guardados. Fale com o suporte ou com o responsável pelo contrato para regularizar.'}
           </p>
         </div>
 

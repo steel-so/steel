@@ -37,6 +37,7 @@ export function toAdminWorkspaceDetailDTO(
     trialEndsAt: iso(workspace.trialEndsAt),
     suspendedAt: iso(workspace.suspendedAt),
     suspendedReason: workspace.suspendedReason,
+    allowedIps: workspace.allowedIps,
     updatedAt: workspace.updatedAt.toISOString(),
   }
 }

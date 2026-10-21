@@ -25,7 +25,7 @@ export function createFakeMembership(
     updatedAt: now,
     ...membershipOverrides,
     profile,
-    workspace: { status: workspaceStatus },
+    workspace: { status: workspaceStatus, allowedIps: [] },
   }
 }
 

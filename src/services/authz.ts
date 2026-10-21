@@ -1,6 +1,15 @@
 import type { ModuleKind, Profile, Role, WorkspaceStatus } from '@prisma/client'
-import { forbidden, moduleDisabled, workspaceSuspended } from '../errors'
+import { headers } from 'next/headers'
+import { logger } from '@/lib/axiom/logger'
+import {
+  forbidden,
+  moduleDisabled,
+  workspaceIpNotAllowed,
+  workspaceSuspended,
+} from '../errors'
+import { clientIpFrom } from '../lib/analytics/geoip'
 import { annotateRequest } from '../lib/analytics/request-context'
+import { isIpAllowed } from '../lib/ip-allowlist'
 import {
   can,
   type PermissionAction,
@@ -78,6 +87,32 @@ export function assertWorkspaceActive(
 }
 
 /**
+ * Allowlist de rede do workspace. Lista vazia/ausente libera tudo; preenchida,
+ * nega quando o IP é desconhecido (fail-closed). Fora de uma requisição
+ * (worker, scripts) não há IP a avaliar e a checagem é ignorada.
+ */
+export async function assertIpAllowed(
+  workspaceId: string,
+  allowedIps: string[] | null | undefined,
+  actorId: string,
+): Promise<Result<true>> {
+  if (!allowedIps || allowedIps.length === 0) return ok(true)
+
+  let reqHeaders: Headers
+  try {
+    reqHeaders = await headers()
+  } catch {
+    return ok(true)
+  }
+
+  const ip = clientIpFrom(reqHeaders)
+  if (isIpAllowed(ip, allowedIps)) return ok(true)
+
+  logger.warn('workspace.ip_blocked', { workspaceId, actorId, ip })
+  return err(workspaceIpNotAllowed())
+}
+
+/**
  * Verifica associação ao workspace e, opcionalmente, uma permissão específica
  * (recurso × ação). Sem `require`, só confirma associação. Com `require`, a
  * regra é **negação por padrão**: se a matriz efetiva não conceder a ação
@@ -99,6 +134,12 @@ export async function assertMember(
   // Depois da associação: não revela a um não-membro que o workspace existe.
   const active = assertWorkspaceActive(membership.value.workspace?.status)
   if (!active.ok) return active
+  const network = await assertIpAllowed(
+    workspaceId,
+    membership.value.workspace?.allowedIps,
+    actorId,
+  )
+  if (!network.ok) return network
   // Workspaces únicos do painel Analytics (no-op fora de uma rota de API).
   annotateRequest({ workspaceId })
 

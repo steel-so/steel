@@ -38,6 +38,7 @@ function workspace(
     trialEndsAt: null,
     suspendedAt: null,
     suspendedReason: null,
+    allowedIps: [],
     ...overrides,
   }
 }
