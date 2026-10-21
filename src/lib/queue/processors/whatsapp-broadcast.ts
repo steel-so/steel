@@ -1,5 +1,6 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
+import { WhatsAppAiCampaignService } from '@/src/services/whatsapp-ai-campaign.service'
 import { WhatsAppBroadcastService } from '@/src/services/whatsapp-broadcast.service'
 import { WhatsappBroadcastJob, type WhatsappBroadcastJobPayload } from '../jobs'
 
@@ -52,6 +53,31 @@ async function processRunScheduleTick(job: Job): Promise<void> {
   })
 }
 
+async function processSendAiCampaignNext(
+  job: Job<WhatsappBroadcastJobPayload['send-ai-campaign-next']>,
+): Promise<void> {
+  const { campaignId, runToken } = job.data
+  const result = await WhatsAppAiCampaignService.sendNext(campaignId, runToken)
+  // Database failure: throw so BullMQ retries the step (nothing was sent).
+  if (!result.ok) {
+    throw new Error(`Failed to run the AI campaign step: ${result.error.code}`)
+  }
+
+  const outcome = result.value
+  const base = { component: 'WhatsappAiCampaign', jobId: job.id, campaignId }
+  if (outcome.status === 'paused') {
+    logger.warn('queue.whatsapp_ai_campaign.paused', {
+      ...base,
+      reason: outcome.reason,
+    })
+    return
+  }
+  logger.info('queue.whatsapp_ai_campaign.step', {
+    ...base,
+    outcome: outcome.status,
+  })
+}
+
 export async function processWhatsappBroadcast(job: Job): Promise<void> {
   switch (job.name) {
     case WhatsappBroadcastJob.SendBroadcastMessage:
@@ -60,6 +86,10 @@ export async function processWhatsappBroadcast(job: Job): Promise<void> {
       )
     case WhatsappBroadcastJob.RunScheduleTick:
       return processRunScheduleTick(job)
+    case WhatsappBroadcastJob.SendAiCampaignNext:
+      return processSendAiCampaignNext(
+        job as Job<WhatsappBroadcastJobPayload['send-ai-campaign-next']>,
+      )
     case WhatsappBroadcastJob.SendAutoOutreachNext:
       // Chains of the removed auto outreach still queued at deploy time:
       // the outreach became a paused AI campaign, nothing to send.

@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+  AiCampaignActionSchema,
+  AiCampaignVariablesSchema,
+} from '@/src/schemas/whatsapp-ai-campaign.schema'
 import { WhatsAppButtonSchema } from '@/src/schemas/whatsapp-button.schema'
 import { dto } from '../common'
 
@@ -560,6 +564,141 @@ export const WhatsAppBusinessHoursStatusDTO = dto(
     nextOpeningAt: nullableDateTime().meta({
       description: 'Próxima abertura quando fechado.',
     }),
+  }),
+)
+
+const AiCampaignStatus = z.enum([
+  'DRAFT',
+  'RUNNING',
+  'PAUSED',
+  'DONE',
+  'ARCHIVED',
+])
+const AiCampaignRecipientStatus = z.enum([
+  'PENDING',
+  'SENT',
+  'FAILED',
+  'SKIPPED',
+])
+
+export const WhatsAppAiCampaignStatsDTO = dto(
+  'WhatsAppAiCampaignStats',
+  z
+    .object({
+      total: z.number().int(),
+      pending: z.number().int(),
+      sent: z.number().int(),
+      failed: z.number().int(),
+      skipped: z.number().int().meta({
+        description: 'Descadastrados ou sem valor para alguma variável.',
+      }),
+      replied: z
+        .number()
+        .int()
+        .meta({ description: 'Enviados que responderam.' }),
+      success: z.number().int().meta({
+        description: 'Conversas da campanha fechadas como "deu certo".',
+      }),
+      failure: z.number().int().meta({
+        description: 'Conversas da campanha fechadas como "não deu certo".',
+      }),
+      closedWithoutOutcome: z.number().int().meta({
+        description:
+          'Fechadas sem classificação (ex.: inatividade = sem resposta).',
+      }),
+      open: z.number().int().meta({ description: 'Conversas ainda abertas.' }),
+    })
+    .meta({ description: 'Funil da campanha.' }),
+)
+
+export const WhatsAppAiCampaignDTO = dto(
+  'WhatsAppAiCampaign',
+  z
+    .object({
+      id: z.string(),
+      name: z.string().meta({ example: 'Cobrança outubro' }),
+      objective: z.string().nullable(),
+      connectionId: z.string().nullable(),
+      templateId: z.string().nullable(),
+      template: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          language: z.string(),
+          status: z.string(),
+        })
+        .nullable(),
+      variables: AiCampaignVariablesSchema.meta({
+        description:
+          'De onde vem cada variável: `header`/`body` pelo número (`{{1}}` = "1"), `buttons` pelo índice do botão de link dinâmico.',
+      }),
+      headerMediaUrl: z.string().nullable(),
+      instructions: z.string(),
+      actions: z.array(AiCampaignActionSchema),
+      intervalSeconds: z.number().int().meta({
+        description:
+          'Nível de agressividade: segundos entre dois envios (20 a 60).',
+      }),
+      aiReplies: z.boolean().meta({
+        description: 'A IA responde quem voltar a escrever.',
+      }),
+      status: AiCampaignStatus,
+      lastSentAt: nullableDateTime(),
+      lastError: z.string().nullable().meta({
+        description: 'Motivo da última pausa automática.',
+      }),
+      startedAt: nullableDateTime(),
+      finishedAt: nullableDateTime(),
+      createdAt: dateTime(),
+      updatedAt: dateTime(),
+      stats: WhatsAppAiCampaignStatsDTO,
+      problems: z.array(z.string()).meta({
+        description: 'O que falta para iniciar (vazio = pronta).',
+      }),
+    })
+    .meta({ description: 'Campanha de IA.' }),
+)
+
+export const WhatsAppAiCampaignRecipientPageDTO = dto(
+  'WhatsAppAiCampaignRecipientPage',
+  z.object({
+    items: z.array(
+      z.object({
+        id: z.string(),
+        contactId: z.string(),
+        contactName: z.string().nullable(),
+        waId: waId(),
+        status: AiCampaignRecipientStatus,
+        errorMessage: z.string().nullable(),
+        values: z.record(z.string(), z.string()).meta({
+          description: 'Colunas da planilha importada.',
+        }),
+        sentAt: nullableDateTime(),
+        repliedAt: nullableDateTime(),
+        conversationId: z.string().nullable(),
+        conversationStatus: z.enum(['NEW', 'IN_PROGRESS', 'CLOSED']).nullable(),
+        closeOutcome: z.enum(['SUCCESS', 'FAILURE']).nullable(),
+      }),
+    ),
+    nextCursor: z.string().nullable(),
+  }),
+)
+
+export const WhatsAppAiCampaignActionRunDTO = dto(
+  'WhatsAppAiCampaignActionRun',
+  z.object({
+    id: z.string(),
+    conversationId: z.string().nullable(),
+    contactName: z.string().nullable(),
+    actionId: z.string(),
+    kind: z.string(),
+    label: z.string(),
+    reason: z.string().nullable().meta({
+      description: 'Por que a IA executou (escrito por ela).',
+    }),
+    status: z.enum(['SUCCESS', 'FAILED']),
+    error: z.string().nullable(),
+    createdAt: dateTime(),
   }),
 )
 
