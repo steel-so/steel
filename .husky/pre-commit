@@ -5,13 +5,13 @@ pnpm check:staged
 git update-index --again
 
 # The default V8 heap (~4 GB) is too small for this project's type graph and
-# the check dies with "JavaScript heap out of memory"; CI already uses 6 GB.
-# When several worktrees commit at once on the same machine, each 6 GB check
+# the check dies with "JavaScript heap out of memory"; CI uses 8 GB.
+# When several worktrees commit at once on the same machine, each 8 GB check
 # would run in parallel and exhaust RAM, so serialize them through the shared
 # lock file when it exists (no-op elsewhere).
 LOCK="$HOME/.cache/steel-agents/heavy.lock"
 if command -v flock >/dev/null 2>&1 && [ -f "$LOCK" ]; then
-  NODE_OPTIONS=--max-old-space-size=6144 flock "$LOCK" pnpm tsc --noEmit
+  NODE_OPTIONS=--max-old-space-size=8192 flock "$LOCK" pnpm tsc --noEmit
 else
-  NODE_OPTIONS=--max-old-space-size=6144 pnpm tsc --noEmit
+  NODE_OPTIONS=--max-old-space-size=8192 pnpm tsc --noEmit
 fi
