@@ -140,6 +140,21 @@ export function resolveTemplateValues(
   return { ok: true, values }
 }
 
+/** Values for the preview: a missing value shows as `[slot label]`. */
+export function previewTemplateValues(
+  fields: TemplateFillableFields,
+  variables: AiCampaignVariables,
+  context: AiCampaignRecipientContext,
+): AiCampaignTemplateValues {
+  const values: AiCampaignTemplateValues = { header: {}, body: {}, buttons: {} }
+  for (const slot of templateVariableSlots(fields)) {
+    const source = variables[slot.group]?.[slot.key]
+    const value = source ? sourceValue(source, context) : ''
+    values[slot.group][Number(slot.key)] = value || `[${slot.label}]`
+  }
+  return values
+}
+
 /** Meta `components` for the send and the body as the contact reads it. */
 export function buildAiCampaignMessage(
   fields: TemplateFillableFields,

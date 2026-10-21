@@ -5,6 +5,7 @@ import {
   estimateAiCampaignDuration,
   formatDuration,
   missingVariableSlots,
+  previewTemplateValues,
   resolveTemplateValues,
   templateFields,
   templateVariableSlots,
@@ -119,6 +120,26 @@ describe('resolveTemplateValues()', () => {
       }).map((slot) => slot.label),
     ).toEqual(['Cabeçalho {{1}}', 'Link do botão "Pagar"'])
     expect(variableColumns(variables)).toEqual(['valor', 'codigo'])
+  })
+})
+
+describe('previewTemplateValues()', () => {
+  it('should show the slot label where a value is missing', () => {
+    expect(
+      previewTemplateValues(
+        fields,
+        {
+          header: {},
+          body: { '1': { source: 'FIXED', value: 'Oi' } },
+          buttons: {},
+        },
+        context,
+      ),
+    ).toEqual({
+      header: { 1: '[Cabeçalho {{1}}]' },
+      body: { 1: 'Oi', 2: '[Variável {{2}}]', 3: '[Variável {{3}}]' },
+      buttons: { 1: '[Link do botão "Pagar"]' },
+    })
   })
 })
 
