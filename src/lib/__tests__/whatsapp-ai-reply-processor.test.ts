@@ -182,3 +182,24 @@ describe('processWhatsappAiReply — business hours', () => {
     )
   })
 })
+
+describe('processWhatsappAiReply — instruction', () => {
+  it('passes the job instruction (campaign follow-up) to the reply', async () => {
+    generateReplyMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'sent', messageId: 'out1', handoff: false },
+    })
+
+    await processWhatsappAiReply({
+      id: 'job-9',
+      name: 'generate-ai-reply',
+      data: { conversationId: 'conv1', messageId: 'm1', instruction: 'Retome' },
+    } as unknown as Job)
+
+    expect(generateReplyMock).toHaveBeenCalledWith({
+      conversationId: 'conv1',
+      messageId: 'm1',
+      instruction: 'Retome',
+    })
+  })
+})

@@ -13,6 +13,11 @@ import { expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { ok } from '@/src/lib/result'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/repositories/whatsapp-ai-campaign.repository', () => ({
+  WhatsAppAiCampaignRepository: {
+    markReplied: vi.fn(async () => ({ ok: true, value: 0 })),
+  },
+}))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))
@@ -53,6 +58,7 @@ vi.mock('@/src/lib/queue/queues', () => ({
 }))
 
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
+import { WhatsAppAiCampaignRepository } from '@/src/repositories/whatsapp-ai-campaign.repository'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
@@ -230,6 +236,35 @@ describe('WhatsAppWebhookService', () => {
         expect.objectContaining({ aiActive: false }),
       )
       expect(aiReplyAdd).not.toHaveBeenCalled()
+    })
+
+    it('should keep the AI on when reopening a campaign conversation and mark the reply', async () => {
+      arrangeClosed({ aiConfigActive: false })
+      const closed = createFakeWhatsAppConversation({
+        id: 'closed1',
+        workspaceId: 'ws1',
+        contactId: 'contact1',
+        status: 'CLOSED',
+        aiCampaignId: 'cp1',
+      })
+      mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
+        ok(closed),
+      )
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'closed1',
+        expect.objectContaining({ aiActive: true }),
+      )
+      expect(aiReplyAdd).toHaveBeenCalledWith(
+        'generate-ai-reply',
+        expect.objectContaining({ conversationId: 'closed1' }),
+      )
+      expect(WhatsAppAiCampaignRepository.markReplied).toHaveBeenCalledWith(
+        'closed1',
+        expect.any(Date),
+      )
     })
 
     it('should reopen a closed conversation when the agent writes from the phone', async () => {

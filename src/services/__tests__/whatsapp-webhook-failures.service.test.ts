@@ -13,6 +13,11 @@ import type { AppError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/repositories/whatsapp-ai-campaign.repository', () => ({
+  WhatsAppAiCampaignRepository: {
+    markReplied: vi.fn(async () => ({ ok: true, value: 0 })),
+  },
+}))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))

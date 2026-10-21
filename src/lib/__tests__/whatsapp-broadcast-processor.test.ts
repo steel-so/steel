@@ -1,12 +1,14 @@
 import type { Job } from 'bullmq'
 import { describe, expect, it, vi } from 'vitest'
 
-const { sendMock, tickMock, campaignMock, loggerMock } = vi.hoisted(() => ({
-  sendMock: vi.fn(),
-  tickMock: vi.fn(),
-  campaignMock: vi.fn(),
-  loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
+const { sendMock, tickMock, campaignMock, followUpMock, loggerMock } =
+  vi.hoisted(() => ({
+    sendMock: vi.fn(),
+    tickMock: vi.fn(),
+    campaignMock: vi.fn(),
+    followUpMock: vi.fn(),
+    loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  }))
 
 vi.mock('@/src/services/whatsapp-broadcast.service', () => ({
   WhatsAppBroadcastService: {
@@ -16,6 +18,9 @@ vi.mock('@/src/services/whatsapp-broadcast.service', () => ({
 }))
 vi.mock('@/src/services/whatsapp-ai-campaign.service', () => ({
   WhatsAppAiCampaignService: { sendNext: campaignMock },
+}))
+vi.mock('@/src/services/whatsapp-ai-campaign-action.service', () => ({
+  WhatsAppAiCampaignActionService: { followUp: followUpMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -213,5 +218,53 @@ describe('processWhatsappBroadcast — AI campaigns', () => {
       'queue.whatsapp_broadcast.legacy_auto_outreach_dropped',
       expect.objectContaining({ jobId: 'job-3' }),
     )
+  })
+})
+
+describe('processWhatsappBroadcast — AI campaign follow-up', () => {
+  const data = {
+    workspaceId: 'ws1',
+    campaignId: 'cp1',
+    conversationId: 'conv1',
+    actionId: 'a1',
+    reason: 'lembrar amanhã',
+    scheduledAt: '2026-10-20T12:00:00.000Z',
+  }
+
+  it('runs the follow-up and logs the outcome', async () => {
+    followUpMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'skipped', reason: 'contact_replied' },
+    })
+
+    await processWhatsappBroadcast({
+      id: 'job-4',
+      name: 'ai-campaign-follow-up',
+      data,
+    } as unknown as Job)
+
+    expect(followUpMock).toHaveBeenCalledWith(data)
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.whatsapp_ai_campaign.follow_up',
+      expect.objectContaining({
+        outcome: 'skipped',
+        reason: 'contact_replied',
+      }),
+    )
+  })
+
+  it('throws on a database failure so BullMQ retries', async () => {
+    followUpMock.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'x' },
+    })
+
+    await expect(
+      processWhatsappBroadcast({
+        id: 'job-5',
+        name: 'ai-campaign-follow-up',
+        data,
+      } as unknown as Job),
+    ).rejects.toThrow('DATABASE_ERROR')
   })
 })

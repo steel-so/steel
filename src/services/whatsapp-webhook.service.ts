@@ -32,6 +32,7 @@ import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppMessageDTO } from '@/src/mappers/whatsapp-message.mapper'
+import { WhatsAppAiCampaignRepository } from '@/src/repositories/whatsapp-ai-campaign.repository'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import {
@@ -263,19 +264,22 @@ export const WhatsAppWebhookService = {
       if (!closed.ok) return closed
 
       if (closed.value) {
+        // A campaign conversation keeps its AI (the campaign decides
+        // whether it still answers).
+        const reopenAi = aiConfigActive || closed.value.aiCampaignId !== null
         const reopened = await reopenWhatsAppConversation(closed.value, {
           actorUserId: null,
           source: 'CONTACT',
           extra: {
             unreadCount: { increment: 1 },
             lastMessageAt: new Date(),
-            aiActive: aiConfigActive,
+            aiActive: reopenAi,
             aiHandoff: false,
           },
         })
         if (!reopened.ok) return reopened
         conversationId = reopened.value.id
-        aiActive = aiConfigActive
+        aiActive = reopenAi
         if (!closed.value.assignedUserId) {
           waiting = { conversation: reopened.value, reason: 'reopened' }
         }
@@ -324,6 +328,21 @@ export const WhatsAppWebhookService = {
     if (!message.ok) return message
     void indexSearchDocument('zap-conversation', workspaceId, conversationId)
     void indexSearchDocument('zap-contact', workspaceId, contact.value.id)
+    // AI campaign funnel: the first answer after the template counts as a
+    // reply (no-op for conversations outside a campaign).
+    if (!serviceDesk) {
+      const replied = await WhatsAppAiCampaignRepository.markReplied(
+        conversationId,
+        new Date(),
+      )
+      if (!replied.ok) {
+        logger.warn('whatsapp.webhook.ai_campaign_reply_mark_failed', {
+          component: 'WhatsAppWebhookService',
+          conversationId,
+          reason: replied.error.code,
+        })
+      }
+    }
 
     if (input.rawMediaUrl) {
       await getWhatsappMediaQueue().add(WhatsappMediaJob.DownloadInboundMedia, {

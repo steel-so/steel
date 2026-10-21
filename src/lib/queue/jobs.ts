@@ -174,8 +174,6 @@ export const WhatsappBroadcastJob = {
   SendAiCampaignNext: 'send-ai-campaign-next',
   /** AI campaign action FOLLOW_UP: the AI writes again if no reply came. */
   AiCampaignFollowUp: 'ai-campaign-follow-up',
-  /** AI campaign action WEBHOOK: POST to the workspace endpoint. */
-  AiCampaignWebhook: 'ai-campaign-webhook',
 } as const
 
 export type WhatsappBroadcastJob =
@@ -200,9 +198,6 @@ export type WhatsappBroadcastJobPayload = {
     reason: string
     /** ISO — a contact message after this cancels the follow-up. */
     scheduledAt: string
-  }
-  [WhatsappBroadcastJob.AiCampaignWebhook]: {
-    runId: string
   }
 }
 

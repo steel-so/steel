@@ -15,6 +15,13 @@ import {
 } from '@/src/lib/ai/guardrails/limits'
 import { transcribeAudio } from '@/src/lib/ai/transcription'
 import { ok, type Result } from '@/src/lib/result'
+import {
+  type AiCampaignActionRequest,
+  buildAiCampaignActionTools,
+  buildAiCampaignSystemSection,
+  parseAiCampaignActionCall,
+  selectAiCampaignActionRequests,
+} from '@/src/lib/whatsapp/ai-campaign-actions'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
@@ -32,6 +39,8 @@ import {
 } from './ai-guardrails.service'
 import { AiUsageService } from './ai-usage.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import { WhatsAppAiCampaignService } from './whatsapp-ai-campaign.service'
+import { WhatsAppAiCampaignActionService } from './whatsapp-ai-campaign-action.service'
 import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import { whatsAppTeamMemberIds } from './whatsapp-conversation-scope.service'
 import {
@@ -104,6 +113,8 @@ export type WhatsAppAiReplyOutcome =
       status: 'sent'
       messageId: string
       handoff: boolean
+      /** AI campaign actions run after the reply. */
+      actions?: number
       /** The draft hit a guardrail and was replaced by the handoff (ADR 0041). */
       guardrail?: AutoReplyLimitHit['kind']
     }
@@ -299,7 +310,14 @@ export const WhatsAppAiReplyService = {
     const aiConfig =
       await WhatsAppAiConfigRepository.findByWorkspace(workspaceId)
     if (!aiConfig.ok) return aiConfig
-    if (!aiConfig.value?.active && !instruction) {
+    // An AI campaign answers its own conversations even with the
+    // workspace's automatic AI off (it has its own instructions/actions).
+    const campaign = conversation.aiCampaignId
+      ? await WhatsAppAiCampaignService.findForReply(conversation.aiCampaignId)
+      : null
+    if (campaign && !campaign.ok) return campaign
+    const campaignContext = campaign?.ok ? campaign.value : null
+    if (!aiConfig.value?.active && !instruction && !campaignContext) {
       return ok({ status: 'skipped', reason: 'ai_config_inactive' })
     }
     const config = {
@@ -363,10 +381,24 @@ export const WhatsAppAiReplyService = {
         ? autoReplyLimitsInstruction(call.guardrails.limits)
         : '') +
       knowledgeBaseSection +
+      (campaignContext
+        ? buildAiCampaignSystemSection({
+            name: campaignContext.campaign.name,
+            objective: campaignContext.campaign.objective,
+            instructions: campaignContext.campaign.instructions,
+            actions: campaignContext.actions,
+          })
+        : '') +
       (instruction
         ? `\n\nInstrução para esta resposta (o cliente clicou num botão): ${instruction}`
         : '')
 
+    const campaignActions = campaignContext?.actions ?? []
+    const tools = [
+      CHECK_APPOINTMENT_TOOL,
+      ...buildAiCampaignActionTools(campaignActions),
+    ]
+    const actionRequests: AiCampaignActionRequest[] = []
     let replyText: string
     const usage: AiUsageTokens = { inputTokens: 0, outputTokens: 0 }
     try {
@@ -374,7 +406,7 @@ export const WhatsAppAiReplyService = {
         model: call.model.model,
         system,
         messages,
-        tools: [CHECK_APPOINTMENT_TOOL],
+        tools,
       })
       usage.inputTokens += response.usage.inputTokens
       usage.outputTokens += response.usage.outputTokens
@@ -382,10 +414,21 @@ export const WhatsAppAiReplyService = {
       if (response.stopReason === 'tool_use') {
         messages.push(response.message)
         for (const toolCall of response.toolCalls) {
+          const actionRequest = parseAiCampaignActionCall(
+            campaignActions,
+            toolCall,
+          )
+          if (actionRequest) actionRequests.push(actionRequest)
           const toolResult =
             toolCall.name === CHECK_APPOINTMENT_TOOL_NAME
               ? await lookupUpcomingAppointment(conversation.contactId)
-              : { error: `Ferramenta desconhecida: ${toolCall.name}` }
+              : actionRequest
+                ? {
+                    ok: true,
+                    mensagem:
+                      'Ação registrada: será executada assim que sua resposta for enviada. Responda ao cliente agora.',
+                  }
+                : { error: `Ferramenta desconhecida: ${toolCall.name}` }
           messages.push({
             role: 'tool',
             toolCallId: toolCall.id,
@@ -400,7 +443,7 @@ export const WhatsAppAiReplyService = {
           model: call.model.model,
           system,
           messages,
-          tools: [CHECK_APPOINTMENT_TOOL],
+          tools,
           toolChoice: 'none',
         })
         usage.inputTokens += response.usage.inputTokens
@@ -420,7 +463,32 @@ export const WhatsAppAiReplyService = {
       await AiUsageService.record(call, { workspaceId, userId: null, usage })
     }
 
+    const contact = await WhatsAppContactRepository.findById(
+      conversation.contactId,
+      workspaceId,
+    )
+    if (!contact.ok) return contact
+    if (!contact.value) {
+      return ok({ status: 'skipped', reason: 'contact_not_found' })
+    }
+
+    const runCampaignActions = async (): Promise<number> => {
+      const selected = selectAiCampaignActionRequests(actionRequests)
+      if (!campaignContext || selected.length === 0 || !contact.value) return 0
+      await WhatsAppAiCampaignActionService.run(
+        {
+          campaign: campaignContext.campaign,
+          conversation,
+          contact: contact.value,
+        },
+        selected,
+      )
+      return selected.length
+    }
+
     if (!replyText) {
+      // The AI may act without writing (e.g. close a finished conversation).
+      await runCampaignActions()
       return ok({ status: 'skipped', reason: 'empty_completion' })
     }
 
@@ -440,15 +508,6 @@ export const WhatsAppAiReplyService = {
         ? replyText.replaceAll(WHATSAPP_AI_HANDOFF_MARKER, '').trim() ||
           HANDOFF_FALLBACK_MESSAGE
         : replyText
-
-    const contact = await WhatsAppContactRepository.findById(
-      conversation.contactId,
-      workspaceId,
-    )
-    if (!contact.ok) return contact
-    if (!contact.value) {
-      return ok({ status: 'skipped', reason: 'contact_not_found' })
-    }
 
     const sendResult = await WhatsAppSend.text(conversation.connection, {
       to: contact.value.waId,
@@ -566,10 +625,14 @@ export const WhatsAppAiReplyService = {
       })
     }
 
+    // Guardrail hit: the draft was dropped, so are its actions.
+    const actions = guardrail ? 0 : await runCampaignActions()
+
     return ok({
       status: 'sent',
       messageId: message.value.id,
       handoff: shouldHandoff,
+      ...(actions > 0 && { actions }),
       ...(guardrail && { guardrail: guardrail.kind }),
     })
   },

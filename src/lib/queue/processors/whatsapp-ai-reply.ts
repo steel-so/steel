@@ -15,12 +15,13 @@ const WARN_SKIP_REASONS = new Set([
 async function processGenerateAiReply(
   job: Job<WhatsappAiReplyJobPayload['generate-ai-reply']>,
 ): Promise<void> {
-  const { conversationId, messageId } = job.data
+  const { conversationId, messageId, instruction } = job.data
   const base = { component: 'WhatsappAiReply', jobId: job.id, conversationId }
 
   const result = await WhatsAppAiReplyService.generateReply({
     conversationId,
     messageId,
+    ...(instruction ? { instruction } : {}),
   })
   // Falha de banco: lança para o BullMQ tentar de novo (backoff padrão).
   if (!result.ok) {

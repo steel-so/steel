@@ -204,6 +204,41 @@ async function applyClose(
 }
 
 /**
+ * Closes a conversation on behalf of the system (an AI campaign action),
+ * with an optional classification, and publishes it.
+ */
+export async function closeWhatsAppConversationBySystem(
+  conversation: WhatsAppConversation,
+  input: {
+    source: WhatsAppConversationEventSource
+    reason?: string
+    classification?: WhatsAppCloseClassification | null
+  },
+): Promise<Result<void>> {
+  if (conversation.status === 'CLOSED') {
+    return err(whatsappConversationAlreadyClosed())
+  }
+  const closed = await applyClose(conversation, {
+    actorUserId: null,
+    source: input.source,
+    reason: input.reason,
+    classification: input.classification,
+  })
+  if (!closed.ok) return closed
+  void indexSearchDocument(
+    'zap-conversation',
+    conversation.workspaceId,
+    conversation.id,
+  )
+  const published = await publishConversation(
+    conversation.workspaceId,
+    conversation.id,
+  )
+  if (!published.ok) return published
+  return ok(undefined)
+}
+
+/**
  * Reabre uma conversa fechada. Volta para IN_PROGRESS se já tem atendente,
  * senão NEW; `extra` permite ajustar outros campos na mesma escrita (ex.: o
  * webhook reativa a IA e soma a mensagem não lida).
