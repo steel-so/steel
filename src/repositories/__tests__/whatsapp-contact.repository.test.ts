@@ -407,3 +407,68 @@ describe('WhatsAppContactRepository', () => {
     })
   })
 })
+
+describe('WhatsAppContactRepository BSUID identity', () => {
+  it('should create a BSUID-only contact keyed by the BSUID', async () => {
+    const workspace = await seedWorkspace()
+
+    const contact = expectOk(
+      await WhatsAppContactRepository.upsertByWaId({
+        workspaceId: workspace.id,
+        waId: 'BR.111',
+        bsuid: 'BR.111',
+        username: 'maria',
+      }),
+    )
+
+    expect(contact).toMatchObject({
+      waId: 'BR.111',
+      bsuid: 'BR.111',
+      username: 'maria',
+    })
+  })
+
+  it('should adopt the phone when it shows up for a known BSUID', async () => {
+    const workspace = await seedWorkspace()
+    const first = expectOk(
+      await WhatsAppContactRepository.upsertByWaId({
+        workspaceId: workspace.id,
+        waId: 'BR.111',
+        bsuid: 'BR.111',
+      }),
+    )
+
+    const second = expectOk(
+      await WhatsAppContactRepository.upsertByWaId({
+        workspaceId: workspace.id,
+        waId: '5513991374570',
+        bsuid: 'BR.111',
+      }),
+    )
+
+    expect(second.id).toBe(first.id)
+    expect(second.waId).toBe('5513991374570')
+  })
+
+  it('should follow a BSUID change reported by Meta', async () => {
+    const workspace = await seedWorkspace()
+    const contact = expectOk(
+      await WhatsAppContactRepository.upsertByWaId({
+        workspaceId: workspace.id,
+        waId: '5513991374570',
+        bsuid: 'BR.111',
+      }),
+    )
+
+    const changed = expectOk(
+      await WhatsAppContactRepository.applyIdentityChange({
+        workspaceId: workspace.id,
+        previousBsuid: 'BR.111',
+        bsuid: 'BR.222',
+      }),
+    )
+
+    expect(changed?.id).toBe(contact.id)
+    expect(changed?.bsuid).toBe('BR.222')
+  })
+})

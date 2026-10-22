@@ -35,7 +35,18 @@ function verifyMetaSignature(
 
 interface MetaMessage {
   id?: string
+  // Absent when the sender has a username and the phone is not shareable.
   from?: string
+  // Business-scoped user ID — always present since 2026-04.
+  from_user_id?: string
+  // `user_changed_number` / `user_changed_user_id`: the BSUID of a contact
+  // changed (new phone number).
+  system?: {
+    type?: string
+    user_id?: string
+    previous_user_id?: string
+    wa_id?: string
+  }
   type?: string
   text?: { body?: string }
   image?: { id?: string; caption?: string }
@@ -68,7 +79,11 @@ interface MetaWebhookValue {
   message_template_name?: string
   message_template_language?: string
   metadata?: { phone_number_id?: string }
-  contacts?: { wa_id?: string; profile?: { name?: string } }[]
+  contacts?: {
+    wa_id?: string
+    user_id?: string
+    profile?: { name?: string; username?: string }
+  }[]
   messages?: MetaMessage[]
   statuses?: {
     id?: string
@@ -288,7 +303,27 @@ export const POST = withAxiom(async (request: NextRequest) => {
   }
 
   const message = value.messages?.[0]
-  if (!message?.id || !message.from) {
+  const phone = (message?.from ?? value.contacts?.[0]?.wa_id)?.replace(
+    /\D/g,
+    '',
+  )
+  const bsuid = message?.from_user_id ?? value.contacts?.[0]?.user_id
+  // Since usernames the phone may be missing: the BSUID then identifies the
+  // contact. A message with neither cannot be attributed.
+  if (message?.type === 'system') {
+    if (message?.system?.user_id) {
+      await WhatsAppWebhookService.ingestIdentityChange({
+        workspaceId: connection.workspaceId,
+        previousBsuid: message?.system.previous_user_id,
+        bsuid: message?.system.user_id,
+        waId: message?.system.wa_id?.replace(/\D/g, '') || undefined,
+      })
+    }
+    return new Response('SYSTEM_RECEIVED', { status: 200 })
+  }
+
+  const identity = phone || bsuid
+  if (!message?.id || !identity) {
     return new Response('SEM_MENSAGEM', { status: 200 })
   }
 
@@ -303,13 +338,14 @@ export const POST = withAxiom(async (request: NextRequest) => {
     return new Response('REACTION_RECEIVED', { status: 200 })
   }
 
-  const waId = message.from.replace(/\D/g, '')
   const contactName = value.contacts?.[0]?.profile?.name
   const content = extractMessageContent(message)
 
   const result = await WhatsAppWebhookService.ingestInboundMessage({
     connection,
-    waId,
+    waId: identity,
+    bsuid,
+    username: value.contacts?.[0]?.profile?.username,
     contactName,
     providerMessageId: message.id,
     quotedProviderMessageId: message.context?.id,

@@ -134,3 +134,31 @@ describe('Z-API sendMedia()', () => {
     expect(audio.body.caption).toBeUndefined()
   })
 })
+
+describe('Meta Cloud API recipient (BSUID)', () => {
+  const client = createMetaClient({
+    phoneNumberId: 'phone',
+    wabaId: 'waba',
+    accessToken: 'token',
+  })
+
+  it('should address a phone number in `to`', async () => {
+    const spy = stubFetch({ messages: [{ id: 'wamid.1' }] })
+
+    await client.sendText({ to: '5513991374570', text: 'oi' })
+
+    const { body } = lastCall(spy)
+    expect(body.to).toBe('5513991374570')
+    expect(body).not.toHaveProperty('recipient')
+  })
+
+  it('should address a BSUID in `recipient`, never in `to`', async () => {
+    const spy = stubFetch({ messages: [{ id: 'wamid.2' }] })
+
+    await client.sendText({ to: 'BR.13491208655302741918', text: 'oi' })
+
+    const { body } = lastCall(spy)
+    expect(body.recipient).toBe('BR.13491208655302741918')
+    expect(body).not.toHaveProperty('to')
+  })
+})

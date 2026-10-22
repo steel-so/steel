@@ -178,6 +178,19 @@ export function buildMetaInteractive(input: WhatsAppOutboundButtons): {
   return { interactive, body }
 }
 
+const PHONE_DIGITS = /^\d+$/
+
+/**
+ * Cloud API addressee: a phone number goes in `to`; anything else is a
+ * business-scoped user ID (`BR.123…`, the contact has no phone for us) and
+ * goes in `recipient`. Both can never be sent together (`to` would win).
+ */
+export function metaRecipient(
+  address: string,
+): { to: string } | { recipient: string } {
+  return PHONE_DIGITS.test(address) ? { to: address } : { recipient: address }
+}
+
 export function createMetaClient(
   credentials: MetaCredentials,
 ): WhatsAppProviderClient {
@@ -196,7 +209,7 @@ export function createMetaClient(
           method: 'POST',
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to,
+            ...metaRecipient(to),
             type: 'text',
             text: { body: text },
             ...(quotedProviderMessageId
@@ -229,7 +242,7 @@ export function createMetaClient(
           method: 'POST',
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to,
+            ...metaRecipient(to),
             type,
             [type]: media,
             ...(quotedProviderMessageId
@@ -254,7 +267,7 @@ export function createMetaClient(
           method: 'POST',
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to,
+            ...metaRecipient(to),
             type: 'template',
             template: {
               name: templateName,
@@ -279,7 +292,7 @@ export function createMetaClient(
           method: 'POST',
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to,
+            ...metaRecipient(to),
             type: 'contacts',
             contacts: [
               {
@@ -309,7 +322,7 @@ export function createMetaClient(
           method: 'POST',
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to: input.to,
+            ...metaRecipient(input.to),
             type: 'interactive',
             interactive,
           }),
@@ -327,7 +340,7 @@ export function createMetaClient(
         method: 'POST',
         body: JSON.stringify({
           messaging_product: 'whatsapp',
-          to,
+          ...metaRecipient(to),
           type: 'reaction',
           reaction: { message_id: providerMessageId, emoji },
         }),

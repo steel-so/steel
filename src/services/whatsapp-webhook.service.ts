@@ -54,7 +54,10 @@ import { WhatsAppUsageService } from './whatsapp-usage.service'
 
 export interface InboundWhatsAppMessage {
   connection: WhatsAppConnection
+  /** Identity key: the phone, or the BSUID when Meta sent no phone. */
   waId: string
+  bsuid?: string
+  username?: string
   contactName?: string
   contactAvatarUrl?: string
   providerMessageId: string
@@ -186,6 +189,18 @@ async function handleOptOutKeyword(input: {
 }
 
 export const WhatsAppWebhookService = {
+  /** `user_changed_number` / `user_changed_user_id` system webhook. */
+  async ingestIdentityChange(input: {
+    workspaceId: string
+    bsuid: string
+    previousBsuid?: string
+    waId?: string
+  }): Promise<Result<void>> {
+    const applied = await WhatsAppContactRepository.applyIdentityChange(input)
+    if (!applied.ok) return applied
+    return ok(undefined)
+  },
+
   async ingestInboundMessage(
     input: InboundWhatsAppMessage,
   ): Promise<Result<void>> {
@@ -201,6 +216,8 @@ export const WhatsAppWebhookService = {
     const contact = await WhatsAppContactRepository.upsertByWaId({
       workspaceId,
       waId: input.waId,
+      bsuid: input.bsuid,
+      username: input.username,
       name: input.contactName,
       avatarUrl: input.contactAvatarUrl,
     })
