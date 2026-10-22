@@ -188,6 +188,9 @@ async function runAssignUser(
   const updated = await WhatsAppConversationRepository.update(conversationId, {
     assignedUserId: userId,
     status: 'IN_PROGRESS',
+    // A person took over: the AI stops answering this conversation.
+    aiActive: false,
+    aiHandoff: true,
   })
   if (!updated.ok) return updated
 

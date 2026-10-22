@@ -558,6 +558,36 @@ describe('WhatsAppWebhookService', () => {
       expect(aiReplyAdd).not.toHaveBeenCalled()
     })
 
+    it('should NOT re-activate the AI on a conversation assigned to a person', async () => {
+      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+      mockedContactRepo.upsertByWaId.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1' })),
+      )
+      mockedAiConfigRepo.findByWorkspace.mockResolvedValue(
+        ok(createFakeWhatsAppAiConfig({ active: true })),
+      )
+      const existing = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        aiActive: false,
+        aiHandoff: false,
+        assignedUserId: 'user1',
+      })
+      mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(existing))
+      mockedConversationRepo.update.mockResolvedValue(ok(existing))
+      mockedConversationRepo.findById.mockResolvedValue(ok(existing))
+      mockedMessageRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppMessage()),
+      )
+
+      await WhatsAppWebhookService.ingestInboundMessage(baseInbound())
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'conv1',
+        expect.objectContaining({ aiActive: false }),
+      )
+      expect(aiReplyAdd).not.toHaveBeenCalled()
+    })
+
     it('should enqueue a media download job for messages with a raw media reference', async () => {
       mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
       mockedContactRepo.upsertByWaId.mockResolvedValue(

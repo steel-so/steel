@@ -356,6 +356,8 @@ describe('runActions', () => {
     expect(conversationRepo.update).toHaveBeenCalledWith('c1', {
       assignedUserId: 'u2',
       status: 'IN_PROGRESS',
+      aiActive: false,
+      aiHandoff: true,
     })
     expect(eventRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({

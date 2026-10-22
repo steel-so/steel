@@ -237,7 +237,14 @@ export const WhatsAppWebhookService = {
       // No ServiceDesk a IA do zap nunca responde (o pré-atendimento é do
       // ServiceDesk e usa as próprias colunas `aiActive`/`aiHandoff`).
       aiActive = serviceDesk ? false : conversation.aiActive
-      if (!aiActive && !conversation.aiHandoff && aiConfigActive) {
+      // A conversation already assigned to a person is never switched back
+      // to the AI by a new inbound message.
+      if (
+        !aiActive &&
+        !conversation.aiHandoff &&
+        !conversation.assignedUserId &&
+        aiConfigActive
+      ) {
         aiActive = true
       }
 
