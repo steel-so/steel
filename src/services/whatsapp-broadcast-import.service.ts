@@ -23,6 +23,7 @@ import type { CreateWhatsAppBroadcastImportDTO } from '@/src/schemas/whatsapp-br
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
 import { assertModuleMember } from './authz'
 import { assertFeature } from './feature-flag.service'
+import { WhatsAppContactValidationService } from './whatsapp-contact-validation.service'
 
 export const WhatsAppBroadcastImportService = {
   async import(
@@ -116,6 +117,7 @@ export const WhatsAppBroadcastImportService = {
         templateId: dto.templateId,
         name: dto.name,
         messageBody: template.value.name,
+        skipNoWhatsapp: dto.skipNoWhatsapp ?? false,
         createdById: actorId,
       },
       recipients,
@@ -134,10 +136,29 @@ export const WhatsAppBroadcastImportService = {
       },
     })
 
-    return ok({
+    const result: WhatsAppBroadcastImportResultDTO = {
       broadcastList: toWhatsAppBroadcastListDTO(created.value),
       createdCount: recipients.length,
       rejectedRows,
-    })
+    }
+    // Optional "validar se tem WhatsApp" step. A refusal (no Z-API, run
+    // already in progress...) never undoes the import: it is reported.
+    if (dto.validateWhatsapp) {
+      const validation = await WhatsAppContactValidationService.startInternal(
+        actorId,
+        workspaceId,
+        {
+          scope: 'BROADCAST',
+          scopeId: created.value.id,
+          contactIds: recipients.map((recipient) => recipient.contactId),
+        },
+      )
+      result.validation = validation.ok ? validation.value : null
+      result.validationUnavailable = validation.ok
+        ? null
+        : validation.error.message
+    }
+
+    return ok(result)
   },
 }

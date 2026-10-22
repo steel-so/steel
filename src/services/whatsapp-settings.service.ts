@@ -150,6 +150,8 @@ export const WhatsAppSettingsService = {
       distributionRespectBusinessHours:
         dto.distributionRespectBusinessHours ??
         current.distributionRespectBusinessHours,
+      whatsappCheckTtlDays:
+        dto.whatsappCheckTtlDays ?? current.whatsappCheckTtlDays,
     })
     if (!saved.ok) return saved
 
@@ -178,6 +180,7 @@ export const WhatsAppSettingsService = {
         distributionOnlyAvailable: saved.value.distributionOnlyAvailable,
         distributionRespectBusinessHours:
           saved.value.distributionRespectBusinessHours,
+        whatsappCheckTtlDays: saved.value.whatsappCheckTtlDays,
       },
     })
 

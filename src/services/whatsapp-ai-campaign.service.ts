@@ -536,6 +536,9 @@ export const WhatsAppAiCampaignService = {
         ? { intervalSeconds: dto.intervalSeconds }
         : {}),
       ...(dto.aiReplies !== undefined ? { aiReplies: dto.aiReplies } : {}),
+      ...(dto.skipNoWhatsapp !== undefined
+        ? { skipNoWhatsapp: dto.skipNoWhatsapp }
+        : {}),
       updatedById: actorId,
     })
     if (!saved.ok) return saved
@@ -905,6 +908,11 @@ export const WhatsAppAiCampaignService = {
 
     if (recipient.contact.broadcastOptedOutAt) {
       return skip('Contato descadastrado das mensagens automáticas')
+    }
+    // "Tem zap?": only a contact already checked and found without WhatsApp
+    // is skipped; unknown (never checked) keeps being sent.
+    if (campaign.skipNoWhatsapp && recipient.contact.hasWhatsapp === false) {
+      return skip('Número sem WhatsApp')
     }
     const resolved = resolveTemplateValues(fields, variables, {
       contactName: recipient.contact.name,

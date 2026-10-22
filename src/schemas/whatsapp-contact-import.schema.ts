@@ -9,6 +9,8 @@ export const ImportWhatsAppContactsSchema = z.object({
       CONTACT_IMPORT_MAX_CSV_CHARS,
       'A planilha é grande demais (máx. 1 MB)',
     ),
+  /** Depois de importar, checa se os números têm WhatsApp (só com Z-API). */
+  validateWhatsapp: z.boolean().optional(),
 })
 
 export type ImportWhatsAppContactsDTO = z.infer<

@@ -39,12 +39,14 @@ function stats(list: WhatsAppBroadcastListDTO) {
     sent: list.sentCount,
     failed: list.failedCount,
     skippedOptOut: list.skippedCount,
+    skippedNoWhatsapp: list.noWhatsappCount,
     pending: Math.max(
       0,
       list.recipientCount -
         list.sentCount -
         list.failedCount -
-        list.skippedCount,
+        list.skippedCount -
+        list.noWhatsappCount,
     ),
   }
 }

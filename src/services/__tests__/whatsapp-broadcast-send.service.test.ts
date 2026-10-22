@@ -75,7 +75,7 @@ function arrangeRecipient(options?: {
   mockedBroadcastRepo.markRecipientsSkipped.mockResolvedValue(ok(1))
   mockedBroadcastRepo.countPendingRecipients.mockResolvedValue(ok(0))
   mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-    ok({ PENDING: 0, SENT: 1, FAILED: 0, SKIPPED: 0 }),
+    ok({ PENDING: 0, SENT: 1, FAILED: 0, SKIPPED: 0, SKIPPED_NO_WHATSAPP: 0 }),
   )
   mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
     ok(createFakeWhatsAppBroadcastList({ id: 'list1' })),
@@ -98,6 +98,88 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     ).toEqual({ status: 'skipped', reason: 'not_pending' })
     expect(mockedSend.text).not.toHaveBeenCalled()
   })
+
+  it('should skip a contact without WhatsApp when the list skips them', async () => {
+    arrangeRecipient({ list: { skipNoWhatsapp: true } })
+    mockedBroadcastRepo.findRecipientById.mockResolvedValue(
+      ok({
+        ...createFakeWhatsAppBroadcastRecipient({
+          id: 'r1',
+          broadcastListId: 'list1',
+        }),
+        contact: createFakeWhatsAppContact({ hasWhatsapp: false }),
+        broadcastList: createFakeWhatsAppBroadcastList({
+          id: 'list1',
+          workspaceId: 'ws1',
+          skipNoWhatsapp: true,
+        }),
+      }),
+    )
+    mockedBroadcastRepo.markRecipientNoWhatsapp.mockResolvedValue(ok(1))
+
+    const outcome = expectOk(
+      await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+    )
+
+    expect(outcome).toEqual({ status: 'skipped', reason: 'no_whatsapp' })
+    expect(mockedBroadcastRepo.markRecipientNoWhatsapp).toHaveBeenCalledWith(
+      'r1',
+    )
+    expect(mockedSend.text).not.toHaveBeenCalled()
+    expect(mockedBroadcastRepo.closeIfRunning).toHaveBeenCalled()
+  })
+
+  it('should propagate a failure marking the recipient without WhatsApp', async () => {
+    arrangeRecipient()
+    mockedBroadcastRepo.findRecipientById.mockResolvedValue(
+      ok({
+        ...createFakeWhatsAppBroadcastRecipient({ id: 'r1' }),
+        contact: createFakeWhatsAppContact({ hasWhatsapp: false }),
+        broadcastList: createFakeWhatsAppBroadcastList({
+          id: 'list1',
+          skipNoWhatsapp: true,
+        }),
+      }),
+    )
+    mockedBroadcastRepo.markRecipientNoWhatsapp.mockResolvedValue(
+      err(databaseError('x')),
+    )
+
+    expectErr(
+      await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it.each([
+    ['the list does not skip', false, false],
+    ['the contact was never checked', true, null],
+    ['the contact has WhatsApp', true, true],
+  ])(
+    'should still send when %s',
+    async (_name, skipNoWhatsapp, hasWhatsapp) => {
+      arrangeRecipient({ list: { skipNoWhatsapp } })
+      mockedBroadcastRepo.findRecipientById.mockResolvedValue(
+        ok({
+          ...createFakeWhatsAppBroadcastRecipient({ id: 'r1' }),
+          contact: createFakeWhatsAppContact({ hasWhatsapp }),
+          broadcastList: createFakeWhatsAppBroadcastList({
+            id: 'list1',
+            workspaceId: 'ws1',
+            connectionId: 'conn1',
+            skipNoWhatsapp,
+          }),
+        }),
+      )
+      mockedSend.text.mockResolvedValue(ok({ providerMessageId: 'wamid.1' }))
+
+      const outcome = expectOk(
+        await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+      )
+
+      expect(outcome.status).toBe('sent')
+    },
+  )
 
   it('should mark an opted-out contact as SKIPPED without sending (LGPD)', async () => {
     arrangeRecipient({ optedOut: true })
@@ -311,7 +393,7 @@ describe('WhatsAppBroadcastService.enqueueDueScheduledRecipients()', () => {
             id: 'r1',
             broadcastListId: 'list1',
           }),
-          contact: { waId: '1', broadcastOptedOutAt: null },
+          contact: { waId: '1', broadcastOptedOutAt: null, hasWhatsapp: null },
           broadcastList: list,
         },
       ]),
@@ -348,7 +430,13 @@ describe('WhatsAppBroadcastService · finished notice', () => {
     arrangeRecipient()
     mockedSend.text.mockResolvedValue(ok({ providerMessageId: 'wamid-1' }))
     mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-      ok({ PENDING: 0, SENT: 8, FAILED: 2, SKIPPED: 1 }),
+      ok({
+        PENDING: 0,
+        SENT: 8,
+        FAILED: 2,
+        SKIPPED: 1,
+        SKIPPED_NO_WHATSAPP: 0,
+      }),
     )
     mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
       ok(
@@ -384,7 +472,13 @@ describe('WhatsAppBroadcastService · finished notice', () => {
       err(whatsappProviderError('Número inválido')),
     )
     mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-      ok({ PENDING: 0, SENT: 0, FAILED: 3, SKIPPED: 0 }),
+      ok({
+        PENDING: 0,
+        SENT: 0,
+        FAILED: 3,
+        SKIPPED: 0,
+        SKIPPED_NO_WHATSAPP: 0,
+      }),
     )
     mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
       ok(createFakeWhatsAppBroadcastList({ id: 'list1', name: 'Aviso' })),

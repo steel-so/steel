@@ -456,7 +456,13 @@ describe('WhatsAppBroadcastRepository', () => {
         expectOk(
           await WhatsAppBroadcastRepository.countRecipientsByStatus(list.id),
         ),
-      ).toEqual({ PENDING: 1, SENT: 0, FAILED: 1, SKIPPED: 0 })
+      ).toEqual({
+        PENDING: 1,
+        SENT: 0,
+        FAILED: 1,
+        SKIPPED: 0,
+        SKIPPED_NO_WHATSAPP: 0,
+      })
     })
 
     it('should close a sending list only once', async () => {

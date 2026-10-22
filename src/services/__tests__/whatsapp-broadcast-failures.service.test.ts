@@ -280,7 +280,7 @@ describe('WhatsAppBroadcastService.start() failures', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'start',
-        meta: { recipients: 0, skipped: 2 },
+        meta: { recipients: 0, skipped: 2, skippedNoWhatsapp: 0 },
       }),
     )
   })
@@ -353,7 +353,13 @@ describe('WhatsAppBroadcastService.sendToRecipient() failures', () => {
     mockedBroadcastRepo.markRecipientsSkipped.mockResolvedValue(ok(1))
     mockedBroadcastRepo.countPendingRecipients.mockResolvedValue(ok(0))
     mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-      ok({ PENDING: 0, SENT: 1, FAILED: 0, SKIPPED: 0 }),
+      ok({
+        PENDING: 0,
+        SENT: 1,
+        FAILED: 0,
+        SKIPPED: 0,
+        SKIPPED_NO_WHATSAPP: 0,
+      }),
     )
     mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
       ok(createFakeWhatsAppBroadcastList({ id: 'list1' })),

@@ -36,6 +36,7 @@ export function createFakeWhatsAppSettings(
     distributionOnlyAvailable: true,
     distributionRespectBusinessHours: true,
     distributionLastAssignedUserId: null,
+    whatsappCheckTtlDays: 30,
     createdAt: now,
     updatedAt: now,
     ...overrides,

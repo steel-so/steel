@@ -13,6 +13,7 @@ import { WhatsappSettingsCallRecording } from '@/app/_components/whatsapp/settin
 import { WhatsappSettingsCloseStatuses } from '@/app/_components/whatsapp/settings/whatsapp-settings-close-statuses'
 import { WhatsappSettingsConnections } from '@/app/_components/whatsapp/settings/whatsapp-settings-connections'
 import { WhatsappSettingsDistribution } from '@/app/_components/whatsapp/settings/whatsapp-settings-distribution'
+import { WhatsappSettingsNumberCheck } from '@/app/_components/whatsapp/settings/whatsapp-settings-number-check'
 import { WhatsappSettingsService } from '@/app/_components/whatsapp/settings/whatsapp-settings-service'
 import { WhatsappSettingsSla } from '@/app/_components/whatsapp/settings/whatsapp-settings-sla'
 import { WhatsappSettingsVoiceAgent } from '@/app/_components/whatsapp/settings/whatsapp-settings-voice-agent'
@@ -79,6 +80,7 @@ export default async function ZapSettingsPage({
             <WhatsappSettingsCloseStatuses workspaceId={workspaceId} />
             <WhatsappSettingsSla workspaceId={workspaceId} />
             <WhatsappSettingsCallRecording workspaceId={workspaceId} />
+            <WhatsappSettingsNumberCheck workspaceId={workspaceId} />
           </TabsContent>
           <TabsContent value='voice' className='pt-4'>
             <WhatsappSettingsVoiceAgent workspaceId={workspaceId} />

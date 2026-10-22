@@ -11,6 +11,8 @@ export const CreateWhatsAppBroadcastSchema = z
     mediaMimeType: z.string().min(1).max(200).optional(),
     mediaFileName: z.string().trim().min(1).max(255).optional(),
     mediaSizeBytes: z.number().int().optional(),
+    /** Pula (SKIPPED_NO_WHATSAPP) quem a checagem "tem zap?" marcou sem WhatsApp. */
+    skipNoWhatsapp: z.boolean().optional(),
     contactIds: z
       .array(z.string().min(1))
       .min(1, 'Selecione ao menos um contato')

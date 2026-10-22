@@ -39,6 +39,22 @@ Para lembretes com data (consultas, vencimentos), use **Importar planilha
   variáveis do template). A coluna `nome` é opcional.
 - Linhas recusadas são listadas pelo número da linha.
 
+## Pular números sem WhatsApp
+
+Em uma lista com conexão **Z-API**, use **Validar base** (na linha da lista,
+enquanto for rascunho ou estiver na fila) para conferir quais números têm
+WhatsApp. Ligue **Pular números sem WhatsApp** ao criar ou importar a lista:
+
+- Quem a checagem marcou **sem WhatsApp** não recebe, e aparece no andamento
+  como "N sem WhatsApp".
+- Quem ainda **não foi verificado** recebe normalmente, então a lista nunca
+  perde contato por falta de checagem.
+- Na planilha (CSV), marque **Validar se tem WhatsApp depois de importar**
+  para conferir os números antes do envio agendado.
+
+O recurso depende da Z-API: a API oficial da Meta não tem essa consulta. Veja
+mais em [Contatos](/docs/comunicacao/contatos-e-grupos#tem-whatsapp-validar-a-base).
+
 ## Descadastro (LGPD)
 
 Um contato que responde **exatamente** `SAIR`, `PARAR`, `STOP` ou

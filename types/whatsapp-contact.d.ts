@@ -8,6 +8,9 @@ export interface WhatsAppContactDTO {
   /** Opt-out LGPD de transmissões — ISO quando descadastrado, senão null. */
   broadcastOptedOutAt: string | null
   broadcastOptOutSource: 'KEYWORD' | 'ADMIN' | 'AI' | null
+  /** "Tem zap?" (Z-API): true/false = resultado, null = não verificado. */
+  hasWhatsapp: boolean | null
+  whatsappCheckedAt: string | null
   conversationCount: number
   createdAt: string
   updatedAt: string

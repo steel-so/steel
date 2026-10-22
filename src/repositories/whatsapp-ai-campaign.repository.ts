@@ -221,6 +221,24 @@ export const WhatsAppAiCampaignRepository = {
     }
   },
 
+  /** Contact ids queued in the campaign (any status). */
+  async listRecipientContactIds(campaignId: string): Promise<Result<string[]>> {
+    try {
+      const rows = await prisma.whatsAppAiCampaignRecipient.findMany({
+        where: { campaignId },
+        select: { contactId: true },
+      })
+      return ok(rows.map((row) => row.contactId))
+    } catch (error) {
+      return err(
+        dbError(
+          'Failed to list whatsapp ai campaign recipient contacts',
+          error,
+        ),
+      )
+    }
+  },
+
   /** Workspace contacts (not opted out) among `contactIds`, or all of them. */
   async listQueueableContactIds(
     workspaceId: string,

@@ -58,7 +58,7 @@ interface TemplateVariableValues {
 export type WhatsAppBroadcastSendOutcome =
   | {
       status: 'skipped'
-      reason: 'recipient_missing' | 'not_pending' | 'opted_out'
+      reason: 'recipient_missing' | 'not_pending' | 'opted_out' | 'no_whatsapp'
     }
   | { status: 'failed'; reason: string }
   | { status: 'sent'; providerMessageId: string }
@@ -271,6 +271,7 @@ export const WhatsAppBroadcastService = {
         mediaType,
         mediaMimeType: dto.mediaUrl ? (dto.mediaMimeType ?? null) : null,
         mediaFileName: dto.mediaUrl ? (dto.mediaFileName ?? null) : null,
+        skipNoWhatsapp: dto.skipNoWhatsapp ?? false,
         createdById: actorId,
       },
       uniqueContactIds,
@@ -317,7 +318,10 @@ export const WhatsAppBroadcastService = {
       (recipient) => recipient.contact.broadcastOptedOutAt !== null,
     )
     const sendable = existing.value.recipients.filter(
-      (recipient) => recipient.contact.broadcastOptedOutAt === null,
+      (recipient) =>
+        recipient.contact.broadcastOptedOutAt === null &&
+        // Already skipped (e.g. no WhatsApp, marked by a "tem zap?" check).
+        recipient.status === 'PENDING',
     )
     if (optedOut.length > 0) {
       const skipped = await WhatsAppBroadcastRepository.markRecipientsSkipped(
@@ -326,9 +330,24 @@ export const WhatsAppBroadcastService = {
       if (!skipped.ok) return skipped
     }
 
+    // "Pular sem WhatsApp": only contacts already checked and found without
+    // WhatsApp are skipped; never-checked ones are still sent.
+    const noWhatsapp = existing.value.skipNoWhatsapp
+      ? sendable.filter((recipient) => recipient.contact.hasWhatsapp === false)
+      : []
+    if (noWhatsapp.length > 0) {
+      const skipped =
+        await WhatsAppBroadcastRepository.skipPendingWithoutWhatsapp(id)
+      if (!skipped.ok) return skipped
+    }
+    const noWhatsappIds = new Set(noWhatsapp.map((recipient) => recipient.id))
+    const toSend = sendable.filter(
+      (recipient) => !noWhatsappIds.has(recipient.id),
+    )
+
     const queue = getWhatsappBroadcastQueue()
     await queue.addBulk(
-      sendable.map((recipient, index) => ({
+      toSend.map((recipient, index) => ({
         name: WhatsappBroadcastJob.SendBroadcastMessage,
         data: { broadcastListId: id, recipientId: recipient.id },
         opts: { delay: index * STAGGER_DELAY_MS },
@@ -337,7 +356,7 @@ export const WhatsAppBroadcastService = {
 
     const updated = await WhatsAppBroadcastRepository.updateStatus(
       id,
-      sendable.length > 0 ? 'RUNNING' : 'DONE',
+      toSend.length > 0 ? 'RUNNING' : 'DONE',
     )
     if (!updated.ok) return updated
 
@@ -346,7 +365,11 @@ export const WhatsAppBroadcastService = {
       action: 'start',
       actorId,
       targetId: id,
-      meta: { recipients: sendable.length, skipped: optedOut.length },
+      meta: {
+        recipients: toSend.length,
+        skipped: optedOut.length,
+        skippedNoWhatsapp: noWhatsapp.length,
+      },
     })
 
     const fresh = await WhatsAppBroadcastRepository.findById(id, workspaceId)
@@ -388,6 +411,16 @@ export const WhatsAppBroadcastService = {
     }
 
     const list = recipient.broadcastList
+    // "Pular sem WhatsApp": revalidated at send time too (covers scheduled
+    // CSV lists and checks made after the list was queued).
+    if (list.skipNoWhatsapp && recipient.contact.hasWhatsapp === false) {
+      const skipped =
+        await WhatsAppBroadcastRepository.markRecipientNoWhatsapp(recipientId)
+      if (!skipped.ok) return skipped
+      await completeIfDrained(broadcastListId)
+      return ok({ status: 'skipped', reason: 'no_whatsapp' })
+    }
+
     const connection = await WhatsAppConnectionRepository.findById(
       list.connectionId,
       list.workspaceId,

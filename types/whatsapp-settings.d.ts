@@ -40,4 +40,6 @@ export interface WhatsAppSettingsDTO {
   distributionOnlyAvailable: boolean
   /** Fora do horário de atendimento a conversa espera na fila. */
   distributionRespectBusinessHours: boolean
+  /** Dias até a checagem "tem zap?" de um contato valer de novo. */
+  whatsappCheckTtlDays: number
 }

@@ -331,6 +331,8 @@ export {
   whatsappTeamNotFound,
   whatsappTemplateNotApproved,
   whatsappTemplateNotFound,
+  whatsappValidationNotFound,
+  whatsappValidationUnavailable,
   whatsappWebhookUnauthorized,
   whiteboardDisabled,
   whiteboardFileNotFound,

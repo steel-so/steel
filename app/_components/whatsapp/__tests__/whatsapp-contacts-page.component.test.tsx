@@ -29,6 +29,8 @@ function contact(overrides: Record<string, unknown> = {}) {
     conversationCount: 4,
     broadcastOptedOutAt: null,
     broadcastOptOutSource: null,
+    hasWhatsapp: null,
+    whatsappCheckedAt: null,
     createdAt: '2026-03-15T12:00:00.000Z',
     updatedAt: '2026-03-15T12:00:00.000Z',
     ...overrides,

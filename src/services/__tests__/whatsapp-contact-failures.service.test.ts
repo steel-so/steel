@@ -55,7 +55,11 @@ describe('WhatsAppContactService — list/create/findOrCreate failures', () => {
       await WhatsAppContactService.list('u1', 'ws1', { search: 'ana' }),
       'DATABASE_ERROR',
     )
-    expect(mockedContactRepo.listByWorkspace).toHaveBeenCalledWith('ws1', 'ana')
+    expect(mockedContactRepo.listByWorkspace).toHaveBeenCalledWith(
+      'ws1',
+      'ana',
+      undefined,
+    )
   })
 
   it('create() should return FORBIDDEN for a non-member', async () => {

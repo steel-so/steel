@@ -32,6 +32,7 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   distributionMaxOpenPerAgent: null as number | null,
   distributionOnlyAvailable: true,
   distributionRespectBusinessHours: true,
+  whatsappCheckTtlDays: 30,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -75,5 +76,6 @@ export function toWhatsAppSettingsDTO(
     distributionMaxOpenPerAgent: settings.distributionMaxOpenPerAgent,
     distributionOnlyAvailable: settings.distributionOnlyAvailable,
     distributionRespectBusinessHours: settings.distributionRespectBusinessHours,
+    whatsappCheckTtlDays: settings.whatsappCheckTtlDays,
   }
 }

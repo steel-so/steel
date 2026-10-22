@@ -7,6 +7,7 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
+vi.mock('../whatsapp-contact-validation.service')
 vi.mock('@/src/lib/search/index-hooks', () => ({
   indexSearchDocument: vi.fn(),
 }))
@@ -14,9 +15,11 @@ vi.mock('@/src/lib/search/index-hooks', () => ({
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppContactImportService } from '../whatsapp-contact-import.service'
+import { WhatsAppContactValidationService } from '../whatsapp-contact-validation.service'
 
 const membershipRepo = vi.mocked(MembershipRepository)
 const contactRepo = vi.mocked(WhatsAppContactRepository)
+const validation = vi.mocked(WhatsAppContactValidationService)
 
 function asMember() {
   membershipRepo.findByUserAndWorkspace.mockResolvedValue(
@@ -96,6 +99,69 @@ describe('WhatsAppContactImportService.import()', () => {
       created: 0,
       skipped: 1,
       rejected: [{ line: 2, message: 'Falha ao salvar o contato.' }],
+    })
+  })
+
+  describe('"validar se tem WhatsApp" step', () => {
+    function arrange() {
+      asMember()
+      contactRepo.findManyByWaIds.mockResolvedValue(ok([]))
+      contactRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'c9' })),
+      )
+    }
+
+    it('does not validate unless asked', async () => {
+      arrange()
+      const result = await WhatsAppContactImportService.import('u1', 'ws1', {
+        csv: 'Telefone\n5511999998888',
+      })
+      expect(validation.startInternal).not.toHaveBeenCalled()
+      expect(expectOk(result).validation).toBeUndefined()
+    })
+
+    it('validates the saved contacts when asked', async () => {
+      arrange()
+      validation.startInternal.mockResolvedValue(
+        ok({ id: 'run1', status: 'QUEUED' } as never),
+      )
+
+      const result = await WhatsAppContactImportService.import('u1', 'ws1', {
+        csv: 'Telefone\n5511999998888',
+        validateWhatsapp: true,
+      })
+
+      expect(validation.startInternal).toHaveBeenCalledWith('u1', 'ws1', {
+        scope: 'IMPORT',
+        scopeId: null,
+        contactIds: ['c9'],
+      })
+      expect(expectOk(result)).toMatchObject({
+        created: 1,
+        validation: { id: 'run1' },
+        validationUnavailable: null,
+      })
+    })
+
+    it('reports why the check did not run without undoing the import', async () => {
+      arrange()
+      validation.startInternal.mockResolvedValue(
+        err({
+          code: 'WHATSAPP_VALIDATION_UNAVAILABLE',
+          message: 'Sem Z-API',
+        } as never),
+      )
+
+      const result = await WhatsAppContactImportService.import('u1', 'ws1', {
+        csv: 'Telefone\n5511999998888',
+        validateWhatsapp: true,
+      })
+
+      expect(expectOk(result)).toMatchObject({
+        created: 1,
+        validation: null,
+        validationUnavailable: 'Sem Z-API',
+      })
     })
   })
 })

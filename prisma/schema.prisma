@@ -461,6 +461,7 @@ model Workspace {
   whatsappTemplates            WhatsAppTemplate[]
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
+  whatsappNumberValidations    WhatsAppNumberValidation[]
   whatsappCloseStatuses        WhatsAppCloseStatus[]
   whatsappSlaPolicies          WhatsAppSlaPolicy[]
   whatsappSlaCycles            WhatsAppSlaCycle[]
@@ -1191,6 +1192,12 @@ model WhatsAppContact {
   // registra o pedido; nulo = recebe transmissões.
   broadcastOptedOutAt   DateTime?             @map("broadcast_opted_out_at")
   broadcastOptOutSource WhatsAppOptOutSource? @map("broadcast_opt_out_source")
+  /// "Tem zap?" (Z-API): true/false = resultado da última checagem, nulo =
+  /// ainda não verificado. Só higiene de base — nunca bloqueia o envio manual.
+  hasWhatsapp           Boolean?              @map("has_whatsapp")
+  whatsappCheckedAt     DateTime?             @map("whatsapp_checked_at")
+  /// Identificador privado (LID) devolvido pela Z-API na checagem.
+  whatsappLid           String?               @map("whatsapp_lid")
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
 
@@ -1676,6 +1683,8 @@ model WhatsAppSettings {
   distributionRespectBusinessHours  Boolean                  @default(true) @map("distribution_respect_business_hours")
   /// Ponteiro do rodízio das conversas sem equipe.
   distributionLastAssignedUserId    String?                  @map("distribution_last_assigned_user_id")
+  /// Dias até uma checagem "tem zap?" valer de novo (cache do contato).
+  whatsappCheckTtlDays        Int      @default(30) @map("whatsapp_check_ttl_days")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -1808,6 +1817,8 @@ model WhatsAppBroadcastList {
   mediaFileName String?                     @map("media_file_name")
   status        WhatsAppBroadcastStatus     @default(DRAFT)
   scheduledAt   DateTime?                   @map("scheduled_at")
+  /// Pula (SKIPPED_NO_WHATSAPP) quem a checagem "tem zap?" marcou sem WhatsApp.
+  skipNoWhatsapp Boolean                    @default(false) @map("skip_no_whatsapp")
   createdById   String                      @map("created_by_id")
   createdAt     DateTime                    @default(now()) @map("created_at")
   updatedAt     DateTime                    @updatedAt @map("updated_at")
@@ -1829,6 +1840,8 @@ enum WhatsAppBroadcastRecipientStatus {
   FAILED
   // Contato descadastrado (opt-out LGPD) antes do disparo — não enviado.
   SKIPPED
+  // Número sem WhatsApp (checagem "tem zap?") com "pular sem WhatsApp" ligado.
+  SKIPPED_NO_WHATSAPP
 }
 
 model WhatsAppBroadcastRecipient {
@@ -1889,6 +1902,8 @@ model WhatsAppAiCampaign {
   intervalSeconds Int                      @default(30) @map("interval_seconds")
   /// A IA responde quem voltar a escrever (desligado = só envia).
   aiReplies       Boolean                  @default(true) @map("ai_replies")
+  /// Pula (SKIPPED) quem a checagem "tem zap?" marcou sem WhatsApp.
+  skipNoWhatsapp  Boolean                  @default(false) @map("skip_no_whatsapp")
   status          WhatsAppAiCampaignStatus @default(DRAFT)
   runToken        String?                  @map("run_token")
   lastSentAt      DateTime?                @map("last_sent_at")
@@ -9322,4 +9337,52 @@ model VoiceAgentRoute {
   @@unique([workspaceId, kind, value])
   @@index([workspaceId])
   @@map("voice_agent_routes")
+}
+
+enum WhatsAppNumberValidationStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum WhatsAppNumberValidationScope {
+  CONTACTS
+  BROADCAST
+  AI_CAMPAIGN
+  IMPORT
+}
+
+/// Execução de uma checagem em lote "tem zap?" (Z-API). O progresso fica aqui
+/// para a tela consultar por polling; os telefones nunca são guardados, só
+/// os ids dos contatos.
+model WhatsAppNumberValidation {
+  id              String                         @id @default(cuid())
+  workspaceId     String                         @map("workspace_id")
+  connectionId    String                         @map("connection_id")
+  requestedById   String?                        @map("requested_by_id")
+  scope           WhatsAppNumberValidationScope
+  /// Lista ou campanha de origem (nulo para contatos avulsos).
+  scopeId         String?                        @map("scope_id")
+  status          WhatsAppNumberValidationStatus @default(QUEUED)
+  contactIds      String[]                       @map("contact_ids")
+  /// Ignora o cache (TTL) e checa de novo todos os contatos.
+  force           Boolean                        @default(false)
+  total           Int                            @default(0)
+  processed       Int                            @default(0)
+  withWhatsapp    Int                            @default(0) @map("with_whatsapp")
+  withoutWhatsapp Int                            @default(0) @map("without_whatsapp")
+  /// Contatos não checados por falha do provedor (podem ser tentados de novo).
+  failed          Int                            @default(0)
+  /// Contatos que já tinham resultado válido dentro do TTL.
+  cached          Int                            @default(0)
+  errorMessage    String?                        @map("error_message")
+  startedAt       DateTime?                      @map("started_at")
+  finishedAt      DateTime?                      @map("finished_at")
+  createdAt       DateTime                       @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@map("whatsapp_number_validations")
 }

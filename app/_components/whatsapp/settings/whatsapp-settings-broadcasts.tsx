@@ -1,6 +1,7 @@
 'use client'
 
 import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
+import { WhatsappNumberValidationDialog } from '@/app/_components/whatsapp/number-validation/whatsapp-number-validation-dialog'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -51,6 +53,7 @@ import {
   validateBroadcastMedia,
 } from '@/src/lib/whatsapp/broadcast-media'
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
+import { WhatsappNumberValidationProgress } from '../number-validation/whatsapp-number-validation-dialog'
 import { TemplateNameWithQuality } from '../template-quality-badge'
 import { BroadcastMediaPreview } from './broadcast-media-preview'
 
@@ -60,6 +63,38 @@ const STATUS_LABEL: Record<string, string> = {
   RUNNING: 'Enviando',
   DONE: 'Concluída',
   FAILED: 'Falhou',
+}
+
+/** Interruptor "Pular números sem WhatsApp" (só faz sentido com Z-API). */
+function SkipNoWhatsappSwitch({
+  id,
+  checked,
+  onCheckedChange,
+  hasZapi,
+}: {
+  id: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  hasZapi: boolean
+}) {
+  return (
+    <div className='flex items-start justify-between gap-3 rounded-md border p-3'>
+      <div>
+        <Label htmlFor={id}>Pular números sem WhatsApp</Label>
+        <p className='text-muted-foreground text-xs'>
+          {hasZapi
+            ? 'Quem a checagem "Validar base" marcou sem WhatsApp não recebe e aparece nos contadores. Quem ainda não foi verificado recebe normalmente.'
+            : 'Disponível só com uma conexão Z-API (a API oficial da Meta não oferece a checagem "tem WhatsApp?").'}
+        </p>
+      </div>
+      <Switch
+        id={id}
+        checked={checked}
+        disabled={!hasZapi}
+        onCheckedChange={onCheckedChange}
+      />
+    </div>
+  )
 }
 
 interface StagedMedia {
@@ -74,11 +109,15 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const [name, setName] = useState('')
   const [connectionId, setConnectionId] = useState<string>()
   const [messageBody, setMessageBody] = useState('')
+  const [skipNoWhatsapp, setSkipNoWhatsapp] = useState(false)
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(
     new Set(),
   )
 
   const connections = useWhatsAppConnections(workspaceId)
+  const hasZapi = (connections.data ?? []).some(
+    (connection) => connection.provider === 'ZAPI',
+  )
   const contacts = useWhatsAppContacts(workspaceId)
   const createBroadcast = useCreateWhatsAppBroadcast(workspaceId)
   const uploadMedia = useUploadWhatsAppMedia(workspaceId)
@@ -158,6 +197,7 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               mediaSizeBytes: media.file.size,
             }
           : {}),
+        ...(skipNoWhatsapp ? { skipNoWhatsapp: true } : {}),
         contactIds: Array.from(selectedContactIds).filter(
           (id) => !optedOutIds.has(id),
         ),
@@ -167,6 +207,7 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
           notify.success('Lista de transmissão criada')
           setName('')
           setMessageBody('')
+          setSkipNoWhatsapp(false)
           setMedia(null)
           setSelectedContactIds(new Set())
           setOpen(false)
@@ -261,6 +302,13 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
             )}
           </div>
 
+          <SkipNoWhatsappSwitch
+            id='broadcastSkipNoWhatsapp'
+            checked={skipNoWhatsapp}
+            onCheckedChange={setSkipNoWhatsapp}
+            hasZapi={hasZapi}
+          />
+
           <div className='space-y-1.5'>
             <Label>Contatos ({selectedEligibleCount} selecionados)</Label>
             <div className='max-h-48 space-y-1 overflow-y-auto rounded-md border p-2'>
@@ -297,6 +345,8 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                       >
                         Descadastrado
                       </Badge>
+                    ) : contact.hasWhatsapp === false ? (
+                      <Badge variant='destructive'>Sem WhatsApp</Badge>
                     ) : null}
                   </label>
                 )
@@ -333,6 +383,8 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const [connectionId, setConnectionId] = useState<string>()
   const [templateId, setTemplateId] = useState<string>()
   const [sendOffsetHours, setSendOffsetHours] = useState(24)
+  const [validateWhatsapp, setValidateWhatsapp] = useState(false)
+  const [skipNoWhatsapp, setSkipNoWhatsapp] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<WhatsAppBroadcastImportResultDTO | null>(
     null,
@@ -344,8 +396,13 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
     (t) => t.status === 'APPROVED',
   )
   const importBroadcast = useImportWhatsAppBroadcast(workspaceId)
+  const importHasZapi = (connections.data ?? []).some(
+    (connection) => connection.provider === 'ZAPI',
+  )
 
   function resetAndClose() {
+    setValidateWhatsapp(false)
+    setSkipNoWhatsapp(false)
     setName('')
     setConnectionId(undefined)
     setTemplateId(undefined)
@@ -364,7 +421,15 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
 
     const csv = await file.text()
     importBroadcast.mutate(
-      { name, connectionId, templateId, sendOffsetHours, csv },
+      {
+        name,
+        connectionId,
+        templateId,
+        sendOffsetHours,
+        csv,
+        ...(validateWhatsapp ? { validateWhatsapp: true } : {}),
+        ...(skipNoWhatsapp ? { skipNoWhatsapp: true } : {}),
+      },
       {
         onSuccess: (data) => setResult(data),
         onError: (error) => notify.error(error, 'Não foi possível importar'),
@@ -403,6 +468,18 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                 ))}
               </div>
             )}
+            {result.validation ? (
+              <WhatsappNumberValidationProgress
+                workspaceId={workspaceId}
+                initial={result.validation}
+              />
+            ) : null}
+            {result.validationUnavailable ? (
+              <p className='rounded-lg border p-3 text-muted-foreground text-xs'>
+                A planilha foi importada, mas a checagem de WhatsApp não rodou:{' '}
+                {result.validationUnavailable}
+              </p>
+            ) : null}
             <DialogFooter>
               <Button onClick={resetAndClose}>Fechar</Button>
             </DialogFooter>
@@ -508,6 +585,32 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               />
             </div>
 
+            <label
+              htmlFor='importValidate'
+              className='flex items-start gap-2 text-sm'
+            >
+              <Checkbox
+                id='importValidate'
+                checked={validateWhatsapp}
+                disabled={!importHasZapi}
+                onCheckedChange={(checked) =>
+                  setValidateWhatsapp(checked === true)
+                }
+              />
+              <span>
+                Validar se tem WhatsApp depois de importar
+                <span className='block text-muted-foreground text-xs'>
+                  Usa a sua conexão Z-API e não consome o limite do plano.
+                </span>
+              </span>
+            </label>
+            <SkipNoWhatsappSwitch
+              id='importSkipNoWhatsapp'
+              checked={skipNoWhatsapp}
+              onCheckedChange={setSkipNoWhatsapp}
+              hasZapi={importHasZapi}
+            />
+
             <div className='space-y-1.5'>
               <Label htmlFor='importFile'>Arquivo CSV</Label>
               <Input
@@ -540,6 +643,8 @@ export function WhatsappSettingsBroadcasts({
   const startBroadcast = useStartWhatsAppBroadcast(workspaceId)
   // Criar, importar e disparar transmissões é restrito a admins.
   const canManage = useCan('broadcasts', 'CREATE')
+  const canValidate = useCan('contacts', 'EDIT')
+  const [validatingId, setValidatingId] = useState<string | null>(null)
 
   return (
     <div className='space-y-4'>
@@ -568,7 +673,7 @@ export function WhatsappSettingsBroadcasts({
               <TableHead>Nome</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Progresso</TableHead>
-              <TableHead className='w-28' />
+              <TableHead className='w-44' />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -595,8 +700,25 @@ export function WhatsappSettingsBroadcasts({
                   {broadcast.skippedCount > 0
                     ? ` · ${broadcast.skippedCount} descadastrados`
                     : ''}
+                  {broadcast.noWhatsappCount > 0
+                    ? ` · ${broadcast.noWhatsappCount} sem WhatsApp`
+                    : ''}
+                  {broadcast.skipNoWhatsapp ? (
+                    <span className='block'>Pula números sem WhatsApp</span>
+                  ) : null}
                 </TableCell>
-                <TableCell>
+                <TableCell className='space-x-1.5 whitespace-nowrap'>
+                  {canValidate &&
+                  (broadcast.status === 'DRAFT' ||
+                    broadcast.status === 'QUEUED') ? (
+                    <Button
+                      size='xs'
+                      variant='outline'
+                      onClick={() => setValidatingId(broadcast.id)}
+                    >
+                      Validar base
+                    </Button>
+                  ) : null}
                   {canManage && broadcast.status === 'DRAFT' && (
                     <Button
                       size='xs'
@@ -628,6 +750,19 @@ export function WhatsappSettingsBroadcasts({
           </TableBody>
         </Table>
       </div>
+
+      {validatingId ? (
+        <WhatsappNumberValidationDialog
+          workspaceId={workspaceId}
+          open
+          onOpenChange={(open) => {
+            if (!open) setValidatingId(null)
+          }}
+          source={{ scope: 'BROADCAST', broadcastId: validatingId }}
+          title='Validar base da lista'
+          subject='esta lista'
+        />
+      ) : null}
     </div>
   )
 }

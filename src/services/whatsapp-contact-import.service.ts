@@ -7,6 +7,7 @@ import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.r
 import type { ImportWhatsAppContactsDTO } from '@/src/schemas/whatsapp-contact-import.schema'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
 import { assertModuleMember } from './authz'
+import { WhatsAppContactValidationService } from './whatsapp-contact-validation.service'
 
 export const WhatsAppContactImportService = {
   async import(
@@ -35,6 +36,7 @@ export const WhatsAppContactImportService = {
 
     let created = 0
     let updated = 0
+    const savedIds: string[] = []
     for (const row of parsed.valid) {
       const current = existingByWaId.get(row.waId)
       // Blank cells never erase data already stored on the contact.
@@ -55,6 +57,7 @@ export const WhatsAppContactImportService = {
       }
       if (current) updated++
       else created++
+      savedIds.push(saved.value.id)
       void indexSearchDocument('zap-contact', workspaceId, saved.value.id)
     }
 
@@ -72,6 +75,26 @@ export const WhatsAppContactImportService = {
       },
     })
 
-    return ok({ created, updated, skipped: rejected.length, rejected })
+    const result: WhatsAppContactImportResultDTO = {
+      created,
+      updated,
+      skipped: rejected.length,
+      rejected,
+    }
+    // Optional "validar se tem WhatsApp" step. A refusal (no Z-API, run
+    // already in progress...) never undoes the import: it is reported.
+    if (dto.validateWhatsapp) {
+      const validation = await WhatsAppContactValidationService.startInternal(
+        actorId,
+        workspaceId,
+        { scope: 'IMPORT', scopeId: null, contactIds: savedIds },
+      )
+      result.validation = validation.ok ? validation.value : null
+      result.validationUnavailable = validation.ok
+        ? null
+        : validation.error.message
+    }
+
+    return ok(result)
   },
 }

@@ -34,6 +34,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,9 +58,21 @@ import {
   useSyncWhatsAppContactAvatar,
   useUpdateWhatsAppContact,
   useWhatsAppContacts,
+  type WhatsAppCheckFilter,
 } from '@/src/hooks/use-whatsapp-contacts'
 import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
+import { WhatsappNumberBadge } from './number-validation/whatsapp-number-badge'
+import { WhatsappNumberValidationDialog } from './number-validation/whatsapp-number-validation-dialog'
 import { WhatsAppContactImportDialog } from './whatsapp-contact-import-dialog'
+
+type CheckFilterValue = 'ALL' | WhatsAppCheckFilter
+
+const CHECK_FILTER_ITEMS: { value: CheckFilterValue; label: string }[] = [
+  { value: 'ALL', label: 'Todos os números' },
+  { value: 'yes', label: 'Tem WhatsApp' },
+  { value: 'no', label: 'Sem WhatsApp' },
+  { value: 'unknown', label: 'Não verificados' },
+]
 
 interface ContactFormState {
   waId: string
@@ -372,10 +392,19 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
   const [optOutContact, setOptOutContact] = useState<WhatsAppContactDTO | null>(
     null,
   )
-  const contacts = useWhatsAppContacts(workspaceId, search)
+  const [checkFilter, setCheckFilter] = useState<CheckFilterValue>('ALL')
+  const [validateOpen, setValidateOpen] = useState(false)
+  const contacts = useWhatsAppContacts(
+    workspaceId,
+    search,
+    checkFilter === 'ALL' ? undefined : checkFilter,
+  )
   const deleteContact = useDeleteWhatsAppContact(workspaceId)
   const canDelete = useCan('contacts', 'DELETE')
   const canCreate = useCan('contacts', 'CREATE')
+  const canEdit = useCan('contacts', 'EDIT')
+  // With a search or filter on, validate what is on screen; otherwise everyone.
+  const narrowed = search.trim() !== '' || checkFilter !== 'ALL'
   const [importOpen, setImportOpen] = useState(false)
   // Opt-out de transmissões é só OWNER/ADMIN (assertModulePrivileged).
   const canManageOptOut = useIsPrivileged()
@@ -390,7 +419,37 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
           onChange={(event) => setSearch(event.target.value)}
           className='max-w-xs'
         />
-        <div className='flex items-center gap-2'>
+        <Select
+          items={CHECK_FILTER_ITEMS}
+          value={checkFilter}
+          onValueChange={(value) =>
+            setCheckFilter((value as CheckFilterValue | null) ?? 'ALL')
+          }
+        >
+          <SelectTrigger aria-label='Filtrar por WhatsApp' className='w-48'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            <SelectGroup>
+              {CHECK_FILTER_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <div className='ml-auto flex items-center gap-2'>
+          {canEdit ? (
+            <Button
+              size='sm'
+              variant='outline'
+              disabled={narrowed && (contacts.data ?? []).length === 0}
+              onClick={() => setValidateOpen(true)}
+            >
+              Validar números
+            </Button>
+          ) : null}
           {canCreate ? (
             <Button
               size='sm'
@@ -407,6 +466,22 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
           open={importOpen}
           onOpenChange={setImportOpen}
         />
+        <WhatsappNumberValidationDialog
+          workspaceId={workspaceId}
+          open={validateOpen}
+          onOpenChange={setValidateOpen}
+          source={
+            narrowed
+              ? {
+                  scope: 'CONTACTS',
+                  contactIds: (contacts.data ?? []).map(
+                    (contact) => contact.id,
+                  ),
+                }
+              : { scope: 'CONTACTS', all: true }
+          }
+          subject={narrowed ? 'a lista filtrada' : 'todos os contatos'}
+        />
       </div>
 
       <div className='max-h-[calc(100vh-16rem)] overflow-auto rounded-lg border border-border'>
@@ -416,6 +491,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
               <TableHead className='w-10' />
               <TableHead>Nome</TableHead>
               <TableHead>Número</TableHead>
+              <TableHead>WhatsApp</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>Conversas</TableHead>
               <TableHead>Transmissões</TableHead>
@@ -462,6 +538,12 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
                 </TableCell>
                 <TableCell>{contact.name ?? '—'}</TableCell>
                 <TableCell>{contact.waId}</TableCell>
+                <TableCell>
+                  <WhatsappNumberBadge
+                    hasWhatsapp={contact.hasWhatsapp}
+                    checkedAt={contact.whatsappCheckedAt}
+                  />
+                </TableCell>
                 <TableCell
                   className='max-w-56 truncate text-muted-foreground'
                   title={contact.description ?? undefined}
@@ -515,7 +597,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
             {contacts.data?.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className='text-muted-foreground text-sm'
                 >
                   Nenhum contato cadastrado.

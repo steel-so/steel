@@ -8,6 +8,7 @@ import {
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { notify } from '@/lib/notify'
+import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import { useImportWhatsAppContacts } from '@/src/hooks/use-whatsapp-contacts'
 import {
   CONTACT_IMPORT_MAX_CSV_CHARS,
@@ -26,6 +28,7 @@ import {
   CONTACT_IMPORT_TEMPLATE_FILENAME,
 } from '@/src/lib/whatsapp/contact-import'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
+import { WhatsappNumberValidationProgress } from './number-validation/whatsapp-number-validation-dialog'
 
 function downloadTemplate() {
   const blob = new Blob([CONTACT_IMPORT_TEMPLATE_CSV], {
@@ -54,6 +57,11 @@ export function WhatsAppContactImportDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const importContacts = useImportWhatsAppContacts(workspaceId)
+  const connections = useWhatsAppConnections(workspaceId)
+  const hasZapi = (connections.data ?? []).some(
+    (connection) => connection.provider === 'ZAPI',
+  )
+  const [validateWhatsapp, setValidateWhatsapp] = useState(false)
   const [csv, setCsv] = useState<string | null>(null)
   const [fileName, setFileName] = useState('')
   const [result, setResult] = useState<WhatsAppContactImportResultDTO | null>(
@@ -64,6 +72,7 @@ export function WhatsAppContactImportDialog({
     setCsv(null)
     setFileName('')
     setResult(null)
+    setValidateWhatsapp(false)
   }
 
   async function handleFile(file: File | undefined) {
@@ -81,15 +90,18 @@ export function WhatsAppContactImportDialog({
 
   function submit() {
     if (!csv) return
-    importContacts.mutate(csv, {
-      onSuccess: (outcome) => {
-        setResult(outcome)
-        notify.success(
-          `${outcome.created} criado(s) e ${outcome.updated} atualizado(s).`,
-        )
+    importContacts.mutate(
+      { csv, ...(validateWhatsapp ? { validateWhatsapp: true } : {}) },
+      {
+        onSuccess: (outcome) => {
+          setResult(outcome)
+          notify.success(
+            `${outcome.created} criado(s) e ${outcome.updated} atualizado(s).`,
+          )
+        },
+        onError: (error) => notify.error(error, 'Não foi possível importar.'),
       },
-      onError: (error) => notify.error(error, 'Não foi possível importar.'),
-    })
+    )
   }
 
   return (
@@ -143,6 +155,30 @@ export function WhatsAppContactImportDialog({
           />
         </label>
 
+        {result ? null : (
+          <label
+            htmlFor='contact-import-validate'
+            className='flex items-start gap-2 text-sm'
+          >
+            <Checkbox
+              id='contact-import-validate'
+              checked={validateWhatsapp}
+              disabled={connections.data !== undefined && !hasZapi}
+              onCheckedChange={(checked) =>
+                setValidateWhatsapp(checked === true)
+              }
+            />
+            <span>
+              Validar se tem WhatsApp depois de importar
+              <span className='block text-muted-foreground text-xs'>
+                {connections.data !== undefined && !hasZapi
+                  ? 'Disponível só com uma conexão Z-API (a API oficial da Meta não oferece essa checagem).'
+                  : 'Usa a sua conexão Z-API e não consome o limite do plano.'}
+              </span>
+            </span>
+          </label>
+        )}
+
         {result ? (
           <div className='flex flex-col gap-2 text-sm'>
             <p className='flex items-center gap-2 font-medium'>
@@ -165,6 +201,18 @@ export function WhatsAppContactImportDialog({
                   </li>
                 ))}
               </ul>
+            ) : null}
+            {result.validation ? (
+              <WhatsappNumberValidationProgress
+                workspaceId={workspaceId}
+                initial={result.validation}
+              />
+            ) : null}
+            {result.validationUnavailable ? (
+              <p className='rounded-lg border p-3 text-muted-foreground text-xs'>
+                Os contatos foram importados, mas a checagem de WhatsApp não
+                rodou: {result.validationUnavailable}
+              </p>
             ) : null}
           </div>
         ) : null}

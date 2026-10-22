@@ -3,7 +3,7 @@ import { createFakeMembership } from '@/src/__tests__/factories/membership.facto
 import { createFakeWhatsAppBroadcastListWithRecipients } from '@/src/__tests__/factories/whatsapp-broadcast.factory'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { featureNotEnabled } from '@/src/errors'
+import { databaseError, featureNotEnabled } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
@@ -202,6 +202,34 @@ describe('WhatsAppBroadcastService', () => {
       )
     })
 
+    it('should store the "skip numbers without WhatsApp" choice', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      mockedConnectionRepo.findById.mockResolvedValue(
+        ok(createFakeWhatsAppConnection({ id: 'conn1' })),
+      )
+      mockedContactRepo.listBroadcastEligibleIds.mockResolvedValue(ok(['c1']))
+      mockedBroadcastRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppBroadcastListWithRecipients({ id: 'b1' }, 1)),
+      )
+
+      expectOk(
+        await WhatsAppBroadcastService.create('u1', 'ws1', {
+          connectionId: 'conn1',
+          name: 'X',
+          messageBody: 'Y',
+          skipNoWhatsapp: true,
+          contactIds: ['c1'],
+        }),
+      )
+
+      expect(mockedBroadcastRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ skipNoWhatsapp: true }),
+        ['c1'],
+      )
+    })
+
     it('should reject media whose type cannot be identified', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
         ok(createFakeMembership({ role: 'ADMIN' })),
@@ -282,6 +310,100 @@ describe('WhatsAppBroadcastService', () => {
         draft.recipients[0].id,
         draft.recipients[2].id,
       ])
+    })
+
+    it('should skip contacts without WhatsApp when the list asks for it', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const draft = createFakeWhatsAppBroadcastListWithRecipients(
+        { id: 'b1', status: 'DRAFT', skipNoWhatsapp: true },
+        3,
+      )
+      draft.recipients[0].contact.hasWhatsapp = false
+      draft.recipients[1].contact.hasWhatsapp = null // never checked: sent
+      draft.recipients[2].contact.hasWhatsapp = true
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(draft))
+      mockedBroadcastRepo.updateStatus.mockResolvedValue(ok(undefined))
+      mockedBroadcastRepo.skipPendingWithoutWhatsapp.mockResolvedValue(ok(1))
+
+      expectOk(await WhatsAppBroadcastService.start('u1', 'ws1', 'b1'))
+
+      expect(
+        mockedBroadcastRepo.skipPendingWithoutWhatsapp,
+      ).toHaveBeenCalledWith('b1')
+      const jobs = addBulk.mock.calls.at(-1)?.[0] as {
+        data: { recipientId: string }
+      }[]
+      expect(jobs.map((j) => j.data.recipientId)).toEqual([
+        draft.recipients[1].id,
+        draft.recipients[2].id,
+      ])
+    })
+
+    it('should send to contacts without WhatsApp when the list does not skip them', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const draft = createFakeWhatsAppBroadcastListWithRecipients(
+        { id: 'b1', status: 'DRAFT', skipNoWhatsapp: false },
+        2,
+      )
+      draft.recipients[0].contact.hasWhatsapp = false
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(draft))
+      mockedBroadcastRepo.updateStatus.mockResolvedValue(ok(undefined))
+      mockedBroadcastRepo.skipPendingWithoutWhatsapp.mockClear()
+
+      expectOk(await WhatsAppBroadcastService.start('u1', 'ws1', 'b1'))
+
+      expect(
+        mockedBroadcastRepo.skipPendingWithoutWhatsapp,
+      ).not.toHaveBeenCalled()
+      expect(addBulk.mock.calls.at(-1)?.[0]).toHaveLength(2)
+    })
+
+    it('should not queue recipients already skipped by a number check', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const draft = createFakeWhatsAppBroadcastListWithRecipients(
+        { id: 'b1', status: 'DRAFT', skipNoWhatsapp: true },
+        2,
+      )
+      draft.recipients[0].status = 'SKIPPED_NO_WHATSAPP'
+      draft.recipients[0].contact.hasWhatsapp = false
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(draft))
+      mockedBroadcastRepo.updateStatus.mockResolvedValue(ok(undefined))
+      mockedBroadcastRepo.skipPendingWithoutWhatsapp.mockResolvedValue(ok(0))
+
+      expectOk(await WhatsAppBroadcastService.start('u1', 'ws1', 'b1'))
+
+      const jobs = addBulk.mock.calls.at(-1)?.[0] as {
+        data: { recipientId: string }
+      }[]
+      expect(jobs.map((j) => j.data.recipientId)).toEqual([
+        draft.recipients[1].id,
+      ])
+    })
+
+    it('should propagate a failure skipping recipients without WhatsApp', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const draft = createFakeWhatsAppBroadcastListWithRecipients(
+        { id: 'b1', status: 'DRAFT', skipNoWhatsapp: true },
+        1,
+      )
+      draft.recipients[0].contact.hasWhatsapp = false
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(draft))
+      mockedBroadcastRepo.skipPendingWithoutWhatsapp.mockResolvedValue(
+        err(databaseError('x')),
+      )
+
+      expectErr(
+        await WhatsAppBroadcastService.start('u1', 'ws1', 'b1'),
+        'DATABASE_ERROR',
+      )
     })
 
     it('should reject starting a broadcast that already left DRAFT status', async () => {
