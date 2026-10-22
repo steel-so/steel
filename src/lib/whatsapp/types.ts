@@ -85,3 +85,25 @@ export interface WhatsAppProviderClient {
 export interface ZapiProviderClient extends WhatsAppProviderClient {
   getQrCode(): Promise<WhatsAppQrCode>
 }
+
+/**
+ * Why an outbound message was sent, for the cost analysis (ADR 0050). Passed
+ * as `options.cost` of `WhatsAppSend`; every field is optional context and a
+ * send without it is recorded as `OTHER`.
+ */
+export interface WhatsAppCostContext {
+  source?:
+    | 'BROADCAST'
+    | 'AI_CAMPAIGN'
+    | 'CRM_CAMPAIGN'
+    | 'AGENT'
+    | 'AI_REPLY'
+    | 'BUTTON'
+    | 'OTHER'
+  /** Meta category of the template (template sends only). */
+  templateCategory?: string | null
+  broadcastId?: string | null
+  aiCampaignId?: string | null
+  conversationId?: string | null
+  userId?: string | null
+}
