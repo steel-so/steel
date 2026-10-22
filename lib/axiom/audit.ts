@@ -230,6 +230,9 @@ export type AuditEntity =
   // IVR voice attendant (ADR 0046): workspace settings and PABX routes
   | 'voice_agent_settings'
   | 'voice_agent_route'
+  // Communication SLA (ADR 0048)
+  | 'whatsapp_sla_policy'
+  | 'whatsapp_sla_cycle'
 
 export type AuditAction =
   | 'create'

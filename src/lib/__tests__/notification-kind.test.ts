@@ -209,6 +209,7 @@ describe('isUrgentNotificationKind', () => {
     'SD_TICKET_ASSIGNED',
     'WHATSAPP_CONVERSATION_ASSIGNED',
     'AI_ACTION_EXPIRING',
+    'WHATSAPP_SLA_BREACHED',
   ])('should treat %s as urgent', (kind) => {
     expect(isUrgentNotificationKind(kind)).toBe(true)
   })

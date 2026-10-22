@@ -461,6 +461,8 @@ model Workspace {
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
   whatsappCloseStatuses        WhatsAppCloseStatus[]
+  whatsappSlaPolicies          WhatsAppSlaPolicy[]
+  whatsappSlaCycles            WhatsAppSlaCycle[]
   whatsappAiCampaigns          WhatsAppAiCampaign[]
   whatsappAiCampaignRuns       WhatsAppAiCampaignActionRun[]
   whatsappUsage                WhatsAppUsageMonthly[]
@@ -1251,6 +1253,10 @@ model WhatsAppConversation {
   /// Campanha de IA que abriu (ou reenviou para) esta conversa: a IA segue
   /// as instruções e ações dela ao responder.
   aiCampaignId       String?                    @map("ai_campaign_id")
+  /// SLA (ADR 0048): first inbound of the current attendance and the first
+  /// human answer after it. Reset when a new SLA cycle starts.
+  firstInboundAt     DateTime?                  @map("first_inbound_at")
+  firstResponseAt    DateTime?                  @map("first_response_at")
   createdAt          DateTime                   @default(now()) @map("created_at")
   updatedAt          DateTime                   @updatedAt @map("updated_at")
 
@@ -1264,6 +1270,7 @@ model WhatsAppConversation {
   events       WhatsAppConversationEvent[]
   phoneCalls   WhatsAppPhoneCall[]
   sdTickets    SdTicket[]
+  slaCycles    WhatsAppSlaCycle[]
 
   @@index([workspaceId, status, lastMessageAt])
   @@index([workspaceId, deletedAt, archivedAt, pinnedAt])
@@ -1453,6 +1460,8 @@ enum WhatsAppConversationEventKind {
   AI_GUARDRAIL_HANDOFF
   /// A IA da campanha executou uma ação; `reason` = "rótulo: motivo".
   AI_ACTION
+  /// SLA breached (ADR 0048); `reason` says which target.
+  SLA_BREACHED
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1470,6 +1479,8 @@ enum WhatsAppConversationEventSource {
   AUTO_OUTREACH
   /// Campanha de IA (envio do template ou ação da IA).
   AI_CAMPAIGN
+  /// SLA engine (ADR 0048).
+  SLA
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -1494,6 +1505,92 @@ model WhatsAppConversationEvent {
   @@index([conversationId, createdAt])
   @@index([workspaceId])
   @@map("whatsapp_conversation_events")
+}
+
+/// SLA policy of the Communication module (ADR 0048). One workspace default
+/// (`teamId` null) and at most one override per team; the team override wins.
+/// Off by default: a workspace without an enabled policy tracks nothing.
+/// Uniqueness of the default row is enforced by a partial unique index in the
+/// migration (Postgres treats NULLs as distinct in a plain unique).
+model WhatsAppSlaPolicy {
+  id                   String   @id @default(cuid())
+  workspaceId          String   @map("workspace_id")
+  teamId               String?  @map("team_id")
+  enabled              Boolean  @default(false)
+  /// Minutes from the contact's message to the first human answer.
+  firstResponseMinutes Int      @default(15) @map("first_response_minutes")
+  /// Minutes from the contact's message to closing. Null = not tracked.
+  resolutionMinutes    Int?     @map("resolution_minutes")
+  /// The clock only runs inside the workspace business hours. Has no effect
+  /// while the workspace business hours are disabled (the clock is 24/7).
+  businessHoursOnly    Boolean  @default(true) @map("business_hours_only")
+  /// Percentage of the target at which the at-risk notice goes out.
+  warnAtPercent        Int      @default(80) @map("warn_at_percent")
+  /// Count a Steel AI answer as the first response (default: no).
+  countAiAsResponse    Boolean  @default(false) @map("count_ai_as_response")
+  notifyAssignee       Boolean  @default(true) @map("notify_assignee")
+  notifyTeamLeaders    Boolean  @default(true) @map("notify_team_leaders")
+  notifySupervisors    Boolean  @default(true) @map("notify_supervisors")
+  /// Supervisors told; empty = every OWNER/ADMIN of the workspace.
+  supervisorIds        String[] @default([]) @map("supervisor_ids")
+  notifyInApp          Boolean  @default(true) @map("notify_in_app")
+  notifyEmail          Boolean  @default(false) @map("notify_email")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  team      WhatsAppTeam? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, teamId])
+  @@index([workspaceId])
+  @@map("whatsapp_sla_policies")
+}
+
+/// One SLA cycle of a conversation (ADR 0048): starts when a contact message
+/// arrives on a conversation with no open cycle (new or reopened) and ends
+/// when it is closed. Independent of any protocol number so a future
+/// per-attendance protocol can attach to it. Deadlines are computed once at
+/// the start (business hours applied), so the scan job is a plain indexed
+/// query. At most one open cycle (`resolved_at IS NULL`) per conversation —
+/// partial unique index in the migration.
+model WhatsAppSlaCycle {
+  id                      String    @id @default(cuid())
+  workspaceId             String    @map("workspace_id")
+  conversationId          String    @map("conversation_id")
+  /// Snapshot of the policy used (the row may change or disappear later).
+  policyId                String?   @map("policy_id")
+  teamId                  String?   @map("team_id")
+  /// Snapshot of who owned the attendance at the last milestone (first
+  /// response, breach, resolution) — base of the "by agent" report.
+  agentUserId             String?   @map("agent_user_id")
+  businessHoursOnly       Boolean   @default(false) @map("business_hours_only")
+  firstResponseMinutes    Int       @map("first_response_minutes")
+  resolutionMinutes       Int?      @map("resolution_minutes")
+  countAiAsResponse       Boolean   @default(false) @map("count_ai_as_response")
+  startedAt               DateTime  @map("started_at")
+  firstResponseDueAt      DateTime  @map("first_response_due_at")
+  firstResponseWarnAt     DateTime  @map("first_response_warn_at")
+  resolutionDueAt         DateTime? @map("resolution_due_at")
+  resolutionWarnAt        DateTime? @map("resolution_warn_at")
+  firstResponseAt         DateTime? @map("first_response_at")
+  /// Seconds counted until the first response (business time when the
+  /// cycle is business-hours-only).
+  firstResponseSeconds    Int?      @map("first_response_seconds")
+  resolvedAt              DateTime? @map("resolved_at")
+  firstResponseWarnedAt   DateTime? @map("first_response_warned_at")
+  firstResponseBreachedAt DateTime? @map("first_response_breached_at")
+  resolutionWarnedAt      DateTime? @map("resolution_warned_at")
+  resolutionBreachedAt    DateTime? @map("resolution_breached_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, startedAt])
+  @@index([workspaceId, startedAt])
+  @@index([workspaceId, resolvedAt, firstResponseAt])
+  @@map("whatsapp_sla_cycles")
 }
 
 /// Monthly Communication (WhatsApp) usage counters per workspace. A dedicated
@@ -1943,6 +2040,7 @@ model WhatsAppTeam {
   workspace     Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members       WhatsAppTeamMember[]
   conversations WhatsAppConversation[]
+  slaPolicies   WhatsAppSlaPolicy[]
 
   @@unique([workspaceId, name])
   @@index([workspaceId])
@@ -5216,6 +5314,10 @@ enum NotificationKind {
   WEBHOOK_ENDPOINT_DISABLED
   /// Proactive AI (ADR 0040): the user's daily digest of active insights.
   AI_DAILY_DIGEST
+  /// Communication SLA (ADR 0048): a conversation reached the warning point.
+  WHATSAPP_SLA_AT_RISK
+  /// Communication SLA (ADR 0048): a conversation breached its target.
+  WHATSAPP_SLA_BREACHED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).

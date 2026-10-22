@@ -443,6 +443,18 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'hourglass',
     color: 'rose',
   },
+  WHATSAPP_SLA_AT_RISK: {
+    module: 'COMMUNICATION',
+    label: 'SLA do WhatsApp em risco',
+    icon: 'alarm',
+    color: 'amber',
+  },
+  WHATSAPP_SLA_BREACHED: {
+    module: 'COMMUNICATION',
+    label: 'SLA do WhatsApp estourado',
+    icon: 'alarm',
+    color: 'rose',
+  },
   AGENT_APPROVAL_REQUESTED: {
     module: 'OTHER',
     label: 'Agente aguardando aprovação',
@@ -622,6 +634,7 @@ export const URGENT_NOTIFICATION_KINDS: readonly string[] = [
   'SD_TICKET_ASSIGNED',
   'WHATSAPP_CONVERSATION_ASSIGNED',
   'AI_ACTION_EXPIRING',
+  'WHATSAPP_SLA_BREACHED',
 ]
 
 export function isUrgentNotificationKind(kind: string): boolean {

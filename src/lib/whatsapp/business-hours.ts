@@ -40,7 +40,7 @@ const partsFormatter = new Intl.DateTimeFormat('en-US', {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 /** Weekday and minute of the day of `date` in the business time zone. */
-function localClock(date: Date): { weekday: number; minute: number } {
+export function localClock(date: Date): { weekday: number; minute: number } {
   const parts = Object.fromEntries(
     partsFormatter.formatToParts(date).map((part) => [part.type, part.value]),
   )

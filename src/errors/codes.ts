@@ -91,6 +91,10 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_CLOSE_STATUS_SELECTION_INVALID',
     status: 422,
   },
+  WHATSAPP_SLA_POLICY_NOT_FOUND: {
+    code: 'WHATSAPP_SLA_POLICY_NOT_FOUND',
+    status: 404,
+  },
   WHATSAPP_AI_CAMPAIGN_NOT_FOUND: {
     code: 'WHATSAPP_AI_CAMPAIGN_NOT_FOUND',
     status: 404,
