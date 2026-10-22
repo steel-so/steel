@@ -13,6 +13,7 @@ import { realtimeRoutes } from './whatsapp/realtime'
 import { settingsRoutes } from './whatsapp/settings'
 import { teamRoutes } from './whatsapp/teams'
 import { templateRoutes } from './whatsapp/templates'
+import { voiceAgentRoutes } from './whatsapp/voice-agent'
 
 /**
  * Comunicação (WhatsApp) — `app/api/workspaces/[id]/whatsapp/**` (sessão +
@@ -36,6 +37,7 @@ const routes: RouteConfig[] = [
   ...realtimeRoutes,
   ...teamRoutes,
   ...phoneCallRoutes,
+  ...voiceAgentRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

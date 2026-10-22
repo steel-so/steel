@@ -1336,6 +1336,10 @@ describe('<WhatsappConversationView /> · Equipes', () => {
         sdTicketId: null,
         crmPersonId: 'p1',
         crmOpportunityId: null,
+        voiceAgent: false,
+        voiceEndReason: null,
+        voiceTransferTarget: null,
+        voiceHandoff: null,
         ...overrides,
       }
     }

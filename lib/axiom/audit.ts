@@ -227,6 +227,9 @@ export type AuditEntity =
   // Proactive AI (ADR 0040): dismiss/snooze an insight, daily digest channels
   | 'ai_insight'
   | 'ai_digest_setting'
+  // IVR voice attendant (ADR 0046): workspace settings and PABX routes
+  | 'voice_agent_settings'
+  | 'voice_agent_route'
 
 export type AuditAction =
   | 'create'
@@ -301,6 +304,12 @@ export type AuditAction =
   | 'disable'
   // Steel AI guardrails: personal data masked before a provider call.
   | 'mask'
+  // IVR voice attendant (ADR 0046): a call answered by the AI, its hand-off
+  // to a person and the ticket it opened.
+  | 'voice_start'
+  | 'voice_end'
+  | 'voice_transfer'
+  | 'voice_ticket'
 
 type AuditOutcome = 'success' | 'failure'
 

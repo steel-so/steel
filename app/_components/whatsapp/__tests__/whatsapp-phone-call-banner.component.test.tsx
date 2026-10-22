@@ -22,6 +22,7 @@ function call(overrides: Partial<WhatsAppPhoneCallDTO>): WhatsAppPhoneCallDTO {
     recordingNotice: null,
     hasRecording: false,
     aiStatus: 'NONE',
+    voiceAgent: false,
     ...overrides,
   }
 }
@@ -133,5 +134,83 @@ describe('<WhatsappPhoneCallBanner />', () => {
       />,
     )
     expect(screen.queryByText('Ligação gravada.')).toBeNull()
+  })
+
+  describe('voice attendant calls (ADR 0046)', () => {
+    it('shows the attendant talking, ticking the time', () => {
+      render(
+        <WhatsappPhoneCallBanner
+          call={call({
+            voiceAgent: true,
+            status: 'IN_PROGRESS',
+            answeredAt: ago(65_000),
+          })}
+        />,
+      )
+      expect(
+        screen.getByText('Atendente de voz em ligação · 01:05'),
+      ).toBeTruthy()
+    })
+
+    it('does not say the extension is ringing before the attendant picks up', () => {
+      render(
+        <WhatsappPhoneCallBanner
+          call={call({ voiceAgent: true, status: 'QUEUED' })}
+        />,
+      )
+      expect(screen.getByText(/Atendente de voz em ligação/)).toBeTruthy()
+      expect(screen.queryByText(/Chamando seu ramal/)).toBeNull()
+    })
+
+    it('drops a session that never ended', () => {
+      const { container } = render(
+        <WhatsappPhoneCallBanner
+          call={call({
+            voiceAgent: true,
+            status: 'IN_PROGRESS',
+            createdAt: ago(60 * 60_000),
+          })}
+        />,
+      )
+      expect(container.innerHTML).toBe('')
+    })
+
+    it('shows the end for a minute, completed or failed', () => {
+      const { rerender, container } = render(
+        <WhatsappPhoneCallBanner
+          call={call({
+            voiceAgent: true,
+            status: 'COMPLETED',
+            durationSeconds: 42,
+            endedAt: ago(1_000),
+          })}
+        />,
+      )
+      expect(
+        screen.getByText('Atendimento de voz encerrado · 00:42'),
+      ).toBeTruthy()
+
+      rerender(
+        <WhatsappPhoneCallBanner
+          call={call({
+            voiceAgent: true,
+            status: 'FAILED',
+            endedAt: ago(1_000),
+          })}
+        />,
+      )
+      expect(screen.getByText('O atendimento de voz falhou')).toBeTruthy()
+
+      rerender(
+        <WhatsappPhoneCallBanner
+          call={call({
+            voiceAgent: true,
+            status: 'COMPLETED',
+            endedAt: ago(120_000),
+          })}
+        />,
+      )
+      expect(container.innerHTML).toBe('')
+    })
   })
 })

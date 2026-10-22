@@ -40,6 +40,9 @@ const serverEnv = {
   PABX_ENDPOINT_TEMPLATE: process.env.PABX_ENDPOINT_TEMPLATE,
   PABX_WEBPHONE_ENDPOINT_TEMPLATE: process.env.PABX_WEBPHONE_ENDPOINT_TEMPLATE,
   PABX_CALLBACK_URL: process.env.PABX_CALLBACK_URL,
+  VOICE_AGENT_AUDIOSOCKET_PORT: process.env.VOICE_AGENT_AUDIOSOCKET_PORT,
+  VOICE_AGENT_AUDIOSOCKET_HOST: process.env.VOICE_AGENT_AUDIOSOCKET_HOST,
+  VOICE_AGENT_REALTIME_MODEL: process.env.VOICE_AGENT_REALTIME_MODEL,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
@@ -259,6 +262,20 @@ export const serverEnvSchema = z.object({
   PABX_CALLBACK_URL: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z.url().optional(),
+  ),
+  // IVR voice attendant (ADR 0046): TCP port of the Asterisk AudioSocket
+  // server inside the worker. Unset = the attendant is not served.
+  VOICE_AGENT_AUDIOSOCKET_PORT: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.coerce.number().int().min(1).max(65535).optional(),
+  ),
+  // Interface the AudioSocket server binds to; restrict the port to the
+  // PABX address in the firewall (docs/runbooks/pabx-voice-agent.md).
+  VOICE_AGENT_AUDIOSOCKET_HOST: z.string().min(1).default('0.0.0.0'),
+  // Realtime model of the voice attendant (default: gpt-realtime).
+  VOICE_AGENT_REALTIME_MODEL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(1).optional(),
   ),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
@@ -491,6 +508,9 @@ export const {
   PABX_ENDPOINT_TEMPLATE,
   PABX_WEBPHONE_ENDPOINT_TEMPLATE,
   PABX_CALLBACK_URL,
+  VOICE_AGENT_AUDIOSOCKET_PORT,
+  VOICE_AGENT_AUDIOSOCKET_HOST,
+  VOICE_AGENT_REALTIME_MODEL,
   OPENAI_API_KEY,
   OPENAI_MODEL,
   ANTHROPIC_API_KEY,

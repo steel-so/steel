@@ -29,11 +29,37 @@ function formatDuration(seconds: number): string {
   return `${mm}:${ss}`
 }
 
+/** Calls answered by the IVR voice attendant (ADR 0046). */
+function describeVoiceAgent(
+  call: WhatsAppPhoneCallDTO,
+  now: number,
+  age: number,
+): { label: string; active: boolean } | null {
+  if (call.status === 'QUEUED' || call.status === 'IN_PROGRESS') {
+    if (age > STALE_RINGING_MS * 5) return null
+    const since = new Date(call.answeredAt ?? call.createdAt).getTime()
+    return {
+      label: `Atendente de voz em ligação · ${formatDuration((now - since) / 1000)}`,
+      active: true,
+    }
+  }
+  const ended = new Date(call.endedAt ?? call.createdAt).getTime()
+  if (now - ended > FINAL_VISIBLE_MS) return null
+  return {
+    label:
+      call.status === 'COMPLETED'
+        ? `Atendimento de voz encerrado · ${formatDuration(call.durationSeconds ?? 0)}`
+        : 'O atendimento de voz falhou',
+    active: false,
+  }
+}
+
 function describe(
   call: WhatsAppPhoneCallDTO,
   now: number,
 ): { label: string; active: boolean } | null {
   const age = now - new Date(call.createdAt).getTime()
+  if (call.voiceAgent) return describeVoiceAgent(call, now, age)
   switch (call.status) {
     case 'QUEUED':
       return age > STALE_RINGING_MS

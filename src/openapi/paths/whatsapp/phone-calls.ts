@@ -53,6 +53,10 @@ export const WhatsAppPhoneCallFields = {
       description:
         'Transcrição + resumo: `PENDING` (na fila) → `PROCESSING` → `DONE`; `SKIPPED`/`FAILED` com o motivo em `aiSkipReason`.',
     }),
+  voiceAgent: z.boolean().meta({
+    description:
+      'A ligação foi atendida pelo atendente de voz com IA (ADR 0046): não tem áudio, a transcrição vem da própria sessão.',
+  }),
 }
 
 const PhoneCallRecordDTO = z.object({
@@ -82,6 +86,17 @@ const PhoneCallRecordDTO = z.object({
   sdTicketId: z.string().nullable(),
   crmPersonId: z.string().nullable(),
   crmOpportunityId: z.string().nullable(),
+  voiceEndReason: z.string().nullable().meta({
+    description:
+      'Atendente de voz: `caller_hangup`, `transferred`, `silence`, `max_duration`, `provider_error`, ...',
+  }),
+  voiceTransferTarget: z.string().nullable().meta({
+    description: 'Ramal ou fila para onde a ligação foi passada.',
+  }),
+  voiceHandoff: z.string().nullable().meta({
+    description:
+      'Contexto que a pessoa recebeu ao atender: motivo, resumo e chamado.',
+  }),
 })
 
 const LIST_NOTE =

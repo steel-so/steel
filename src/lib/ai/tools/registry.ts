@@ -169,6 +169,7 @@ export function aiActionSource(
 ): AiActionSource {
   if (ctx.source === 'agent') return 'AGENT'
   if (ctx.source === 'mcp') return 'MCP'
+  if (ctx.source === 'voice') return 'VOICE'
   return 'ASSISTANT'
 }
 

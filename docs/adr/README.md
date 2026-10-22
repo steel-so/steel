@@ -62,3 +62,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0043 | [Voz no PABX, fase 1: gravação, transcrição e resumo da ligação](./0043-pabx-call-recording-transcription-and-summary.md) | Aceita | 2026-10-18 |
 | 0044 | [Telefone web: ligar e atender pelo navegador, direto no PABX](./0044-pabx-webphone-in-the-browser.md) | Aceita | 2026-10-20 |
 | 0045 | [Campanhas de IA agem só por ações liberadas pelo administrador](./0045-whatsapp-ai-campaigns-allowlisted-actions.md) | Aceita | 2026-10-21 |
+| 0046 | [Voz no PABX, fase 2: atendente de voz com IA na URA](./0046-pabx-voice-agent-ivr-realtime.md) | Aceita | 2026-10-22 |
