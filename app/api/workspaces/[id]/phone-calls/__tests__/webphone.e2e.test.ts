@@ -52,7 +52,7 @@ describe('browser phone call history', () => {
       { direction: 'sideways' },
       user.cookie,
     )
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
   })
 
   it('records an outbound call, then its end, and hides it from other users', async () => {
