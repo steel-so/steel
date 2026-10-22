@@ -450,6 +450,7 @@ describe('WhatsAppBroadcastService.sendToRecipient() failures', () => {
         type: 'image',
         caption: 'Aproveite nossas ofertas!',
       }),
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
     )
   })
 

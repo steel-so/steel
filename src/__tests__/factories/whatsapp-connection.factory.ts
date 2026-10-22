@@ -22,6 +22,7 @@ export function createFakeWhatsAppConnection(
     metaWabaId: null,
     encryptedMetaAccessToken: null,
     encryptedMetaPin: null,
+    monthlyFee: null,
     createdById: createId(),
     createdAt: now,
     updatedAt: now,

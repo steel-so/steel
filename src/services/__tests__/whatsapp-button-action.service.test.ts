@@ -306,10 +306,11 @@ describe('runActions', () => {
       status: 'ran',
       results: [{ kind: 'REPLY', ok: true }],
     })
-    expect(send.text).toHaveBeenCalledWith(connection, {
-      to: '5511999',
-      text: 'Obrigado!',
-    })
+    expect(send.text).toHaveBeenCalledWith(
+      connection,
+      { to: '5511999', text: 'Obrigado!' },
+      { cost: expect.objectContaining({ source: 'BUTTON' }) },
+    )
     expect(messageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         direction: 'OUT',

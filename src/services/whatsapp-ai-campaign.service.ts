@@ -933,13 +933,24 @@ export const WhatsAppAiCampaignService = {
     }
 
     const message = buildAiCampaignMessage(fields, resolved.values)
-    const sent = await WhatsAppSend.template(connection, {
-      to: recipient.contact.waId,
-      templateName: template.name,
-      language: template.language,
-      components: applyTemplateSendExtras(template, message.components)
-        .components,
-    })
+    const sent = await WhatsAppSend.template(
+      connection,
+      {
+        to: recipient.contact.waId,
+        templateName: template.name,
+        language: template.language,
+        components: applyTemplateSendExtras(template, message.components)
+          .components,
+      },
+      {
+        cost: {
+          source: 'AI_CAMPAIGN',
+          aiCampaignId: campaign.id,
+          conversationId: conversation.value.id,
+          templateCategory: template.category,
+        },
+      },
+    )
 
     if (!sent.ok) {
       if (PAUSING_ERRORS.has(sent.error.code)) {

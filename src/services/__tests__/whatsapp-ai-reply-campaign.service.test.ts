@@ -231,10 +231,14 @@ describe('WhatsAppAiReplyService.generateReply() — AI campaigns', () => {
     expect(outcome).toEqual(
       expect.objectContaining({ status: 'sent', actions: 1 }),
     )
-    expect(WhatsAppSend.text).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511988887777',
-      text: 'Perfeito, obrigado! Encerrando por aqui.',
-    })
+    expect(WhatsAppSend.text).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511988887777',
+        text: 'Perfeito, obrigado! Encerrando por aqui.',
+      },
+      { cost: expect.objectContaining({ source: 'AI_REPLY' }) },
+    )
     expect(WhatsAppAiCampaignActionService.run).toHaveBeenCalledWith(
       expect.objectContaining({ campaign }),
       [

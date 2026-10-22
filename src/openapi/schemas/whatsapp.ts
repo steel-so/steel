@@ -1144,3 +1144,131 @@ export const WhatsAppSlaReportDTO = dto(
     })
     .meta({ description: 'Relatório de SLA do período.' }),
 )
+
+// ─── Custos (ADR 0050) ───────────────────────────────────────────────────────
+
+const CostProviderEnum = z.enum(['META', 'ZAPI'])
+
+export const WhatsAppPriceDTO = dto(
+  'WhatsAppPrice',
+  z.object({
+    id: z.string(),
+    category: z.enum(['MARKETING', 'UTILITY', 'AUTHENTICATION']),
+    country: z
+      .string()
+      .meta({ description: 'País (ISO de 2 letras).', example: 'BR' }),
+    currency: z.string().meta({ example: 'BRL' }),
+    unitPrice: z.number().meta({
+      description: 'Preço por mensagem de template, na moeda.',
+      example: 0.3625,
+    }),
+    validFrom: z.string().meta({
+      description: 'Vale para envios a partir deste instante (ISO 8601).',
+    }),
+    reference: z.boolean().meta({
+      description:
+        'Valor de referência semeado pelo Steel — confira na sua conta Meta.',
+    }),
+  }),
+)
+
+export const WhatsAppCostSettingsDTO = dto(
+  'WhatsAppCostSettings',
+  z.object({
+    monthlyCostBudget: z.number().nullable().meta({
+      description:
+        'Orçamento mensal em R$; `null` = sem orçamento (sem alertas).',
+    }),
+    connections: z.array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        provider: CostProviderEnum,
+        monthlyFee: z.number().nullable().meta({
+          description:
+            'Mensalidade fixa da linha em R$ (ex.: instância Z-API).',
+        }),
+      }),
+    ),
+  }),
+)
+
+const CostBreakdownRow = z.object({
+  key: z.string(),
+  label: z.string(),
+  messages: z.number().int(),
+  cost: z.number().meta({ description: 'Custo estimado em R$.' }),
+})
+
+const CostConnectionRow = z.object({
+  connectionId: z.string(),
+  label: z.string(),
+  provider: CostProviderEnum,
+  messages: z.number().int(),
+  conversations: z.number().int(),
+  variableCost: z.number(),
+  fee: z.number().meta({ description: 'Mensalidade proporcional ao período.' }),
+  totalCost: z.number(),
+  costPerMessage: z.number(),
+  costPerConversation: z.number(),
+})
+
+export const WhatsAppCostReportDTO = dto(
+  'WhatsAppCostReport',
+  z.object({
+    workspaceId: z.string(),
+    currency: z.string().meta({ example: 'BRL' }),
+    from: z.string(),
+    to: z.string(),
+    connectionId: z.string().nullable(),
+    totals: z.object({
+      messages: z.number().int(),
+      templateMessages: z.number().int(),
+      serviceMessages: z.number().int(),
+      variableCost: z.number().meta({ description: 'Meta estimado.' }),
+      fees: z.number().meta({ description: 'Mensalidades proporcionais.' }),
+      totalCost: z.number(),
+      conversations: z.number().int(),
+      resolvedConversations: z.number().int(),
+      costPerConversation: z.number(),
+      costPerResolvedConversation: z.number(),
+    }),
+    trend: z.array(
+      z.object({
+        date: z.string(),
+        cost: z.number(),
+        messages: z.number().int(),
+      }),
+    ),
+    byConnection: z.array(CostConnectionRow),
+    byProvider: z.array(
+      CostConnectionRow.omit({ connectionId: true, label: true }).extend({
+        connections: z.number().int(),
+      }),
+    ),
+    byCategory: z.array(CostBreakdownRow),
+    byBroadcast: z.array(CostBreakdownRow),
+    byAiCampaign: z.array(CostBreakdownRow),
+    byAgent: z.array(CostBreakdownRow),
+    bySource: z.array(CostBreakdownRow),
+    projection: z.object({
+      period: z.string(),
+      monthCost: z.number().meta({
+        description:
+          'Custo variável do ritmo atual projetado para o mês + mensalidades.',
+      }),
+      variableToDate: z.number(),
+      fees: z.number(),
+      daysElapsed: z.number().int(),
+      daysInMonth: z.number().int(),
+    }),
+    budget: z.object({
+      monthlyCostBudget: z.number().nullable(),
+      spent: z
+        .number()
+        .meta({ description: 'Mês corrente: Meta estimado + mensalidades.' }),
+      percent: z.number().int().nullable(),
+      level: z.union([z.literal(80), z.literal(100)]).nullable(),
+    }),
+  }),
+)

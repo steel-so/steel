@@ -232,6 +232,7 @@ describe('WhatsAppMessageService', () => {
       expect(mockedSend.text).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ quotedProviderMessageId: 'pm-quoted' }),
+        { cost: expect.objectContaining({ source: 'AGENT' }) },
       )
       expect(mockedMessageRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ replyToMessageId: 'quoted1' }),
@@ -337,6 +338,7 @@ describe('WhatsAppMessageService', () => {
           name: 'João',
           waId: '5511977776666',
         }),
+        { cost: expect.objectContaining({ source: 'AGENT' }) },
       )
       expect(mockedMessageRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({

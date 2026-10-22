@@ -512,10 +512,14 @@ export const WhatsAppAiReplyService = {
           HANDOFF_FALLBACK_MESSAGE
         : replyText
 
-    const sendResult = await WhatsAppSend.text(conversation.connection, {
-      to: contact.value.waId,
-      text: textToSend,
-    })
+    const sendResult = await WhatsAppSend.text(
+      conversation.connection,
+      {
+        to: contact.value.waId,
+        text: textToSend,
+      },
+      { cost: { source: 'AI_REPLY', conversationId } },
+    )
     if (!sendResult.ok) {
       return ok({
         status: 'failed',

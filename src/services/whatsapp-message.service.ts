@@ -9,6 +9,7 @@ import type { PermissionAction } from '@/src/lib/permissions'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import type { WhatsAppConversationScope } from '@/src/lib/whatsapp/conversation-scope'
+import { agentCost } from '@/src/lib/whatsapp/cost'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
@@ -224,11 +225,15 @@ export const WhatsAppMessageService = {
       dto.replyToMessageId,
     )
 
-    const sendResult = await WhatsAppSend.text(loaded.value.connection, {
-      to: loaded.value.conversation.contact.waId,
-      text: dto.text,
-      quotedProviderMessageId,
-    })
+    const sendResult = await WhatsAppSend.text(
+      loaded.value.connection,
+      {
+        to: loaded.value.conversation.contact.waId,
+        text: dto.text,
+        quotedProviderMessageId,
+      },
+      { cost: agentCost(actorId, conversationId) },
+    )
     if (!sendResult.ok) return sendResult
 
     return finalizeOutboundMessage({
@@ -268,14 +273,18 @@ export const WhatsAppMessageService = {
       dto.replyToMessageId,
     )
 
-    const sendResult = await WhatsAppSend.media(loaded.value.connection, {
-      to: loaded.value.conversation.contact.waId,
-      mediaUrl: dto.mediaUrl,
-      type: mediaType,
-      caption: dto.caption,
-      fileName: dto.fileName,
-      quotedProviderMessageId,
-    })
+    const sendResult = await WhatsAppSend.media(
+      loaded.value.connection,
+      {
+        to: loaded.value.conversation.contact.waId,
+        mediaUrl: dto.mediaUrl,
+        type: mediaType,
+        caption: dto.caption,
+        fileName: dto.fileName,
+        quotedProviderMessageId,
+      },
+      { cost: agentCost(actorId, conversationId) },
+    )
     if (!sendResult.ok) return sendResult
 
     return finalizeOutboundMessage({
@@ -318,12 +327,21 @@ export const WhatsAppMessageService = {
         ? applyTemplateSendExtras(template.value, dto.components)
         : { components: dto.components, buttons: [] }
 
-    const sendResult = await WhatsAppSend.template(loaded.value.connection, {
-      to: loaded.value.conversation.contact.waId,
-      templateName: dto.templateName,
-      language: dto.language,
-      components: extras.components,
-    })
+    const sendResult = await WhatsAppSend.template(
+      loaded.value.connection,
+      {
+        to: loaded.value.conversation.contact.waId,
+        templateName: dto.templateName,
+        language: dto.language,
+        components: extras.components,
+      },
+      {
+        cost: {
+          ...agentCost(actorId, conversationId),
+          templateCategory: template.ok ? template.value?.category : null,
+        },
+      },
+    )
     if (!sendResult.ok) return sendResult
 
     return finalizeOutboundMessage({
@@ -365,11 +383,15 @@ export const WhatsAppMessageService = {
       waId: sharedContact.value.waId,
     }
 
-    const sendResult = await WhatsAppSend.contact(loaded.value.connection, {
-      to: loaded.value.conversation.contact.waId,
-      name: contactPayload.name,
-      waId: contactPayload.waId,
-    })
+    const sendResult = await WhatsAppSend.contact(
+      loaded.value.connection,
+      {
+        to: loaded.value.conversation.contact.waId,
+        name: contactPayload.name,
+        waId: contactPayload.waId,
+      },
+      { cost: agentCost(actorId, conversationId) },
+    )
     if (!sendResult.ok) return sendResult
 
     return finalizeOutboundMessage({

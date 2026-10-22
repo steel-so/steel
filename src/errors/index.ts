@@ -320,6 +320,7 @@ export {
   whatsappMessageLimitReached,
   whatsappMessageNotFound,
   whatsappOutsideBusinessHours,
+  whatsappPriceNotFound,
   whatsappProviderError,
   whatsappQuickReplyConflict,
   whatsappQuickReplyNotFound,

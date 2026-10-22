@@ -300,10 +300,11 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
       handoff: false,
     })
     expect(mockedAiUsage.prepare).toHaveBeenCalledWith(WS, 'WHATSAPP_REPLY')
-    expect(mockedSend.text).toHaveBeenCalledWith(connection, {
-      to: '5511988887777',
-      text: 'Olá! Como posso ajudar?',
-    })
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      connection,
+      { to: '5511988887777', text: 'Olá! Como posso ajudar?' },
+      { cost: { source: 'AI_REPLY', conversationId: CONV } },
+    )
     expect(mockedMessageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         direction: 'OUT',
@@ -383,10 +384,11 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     expect(outcome).toEqual(
       expect.objectContaining({ status: 'sent', handoff: true }),
     )
-    expect(mockedSend.text).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511988887777',
-      text: 'Um momento.',
-    })
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      expect.anything(),
+      { to: '5511988887777', text: 'Um momento.' },
+      { cost: { source: 'AI_REPLY', conversationId: CONV } },
+    )
     expect(mockedConversationRepo.update).toHaveBeenCalledWith(
       CONV,
       expect.objectContaining({
@@ -645,10 +647,14 @@ describe('WhatsAppAiReplyService.generateReply() — guardrails (ADR 0041)', () 
       }),
     )
     // The customer never sees the draft.
-    expect(mockedSend.text).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511988887777',
-      text: 'Vou te transferir para um de nossos atendentes, só um momento.',
-    })
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511988887777',
+        text: 'Vou te transferir para um de nossos atendentes, só um momento.',
+      },
+      { cost: { source: 'AI_REPLY', conversationId: CONV } },
+    )
     expect(events.create).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'AI_GUARDRAIL_HANDOFF',
