@@ -52,7 +52,7 @@ overrides:
   ip-address: '>=10.7.2 <11.0.0' # GHSA-mwp4-54f8-5fhr + 6
   qs: '>=6.16.0 <7.0.0' # GHSA-4mjr-xmp4-gh2g + GHSA-x5fp-wj9c-mxmx
   valibot: '>=1.5.0 <2.0.0' # GHSA-5qjj-4xww-7phc
-  dompurify: '>=3.4.16 <4.0.0' # GHSA-p98j-92pf-mc4p
+  dompurify: '>=3.4.17 <4.0.0' # GHSA-p98j-92pf-mc4p, GHSA-cg2g-xh64-v4q7
   proxy-addr: '>=2.0.8 <3.0.0' # o express@5.2.1 ainda pede 2.0.7
   # GHSA-ggr8-5vv4-36mx: a 7.x nunca foi corrigida, então aqui o major sobe de
   # propósito. O @prisma/config pede `^7`, mas a 8.0.2 já convivia na árvore.
