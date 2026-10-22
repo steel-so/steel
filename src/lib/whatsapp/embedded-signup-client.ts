@@ -185,7 +185,9 @@ export async function launchEmbeddedSignup(options: {
         config_id: options.configId,
         response_type: 'code',
         override_default_response_type: true,
-        extras: { setup: {}, sessionInfoVersion: '3' },
+        // v4: the products live in the Facebook Login for Business
+        // configuration (`config_id`); v2/v3 were retired on 2026-10-15.
+        extras: { setup: {} },
       },
     )
   })
