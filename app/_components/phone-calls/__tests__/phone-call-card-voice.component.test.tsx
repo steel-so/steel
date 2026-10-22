@@ -10,6 +10,8 @@ function voiceCall(
   return {
     id: 'call_1',
     conversationId: 'cv_1',
+    direction: 'INBOUND',
+    source: 'CLICK_TO_CALL',
     userId: null,
     extension: 'suporte',
     destination: '5511999998888',
@@ -101,7 +103,9 @@ describe('<PhoneCallCard /> — voice attendant calls', () => {
   })
 
   it('keeps the plain wording for ordinary calls', () => {
-    render(voiceCall({ voiceAgent: false, userName: 'Ana' }))
+    render(
+      voiceCall({ voiceAgent: false, direction: 'OUTBOUND', userName: 'Ana' }),
+    )
     expect(screen.getByText('Ligação · Ana → Maria')).toBeTruthy()
     expect(screen.queryByText('IA')).toBeNull()
   })
