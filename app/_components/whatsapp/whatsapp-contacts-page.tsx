@@ -5,6 +5,10 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { type FormEvent, useEffect, useState } from 'react'
 import {
+  contactRecordPhone,
+  contactRecordTitle,
+} from '@/app/_components/whatsapp/whatsapp-contact-label'
+import {
   useCan,
   useIsPrivileged,
 } from '@/app/_components/workspace/workspace-permissions'
@@ -271,7 +275,7 @@ function BroadcastOptOutDialog({
   const [contactRequested, setContactRequested] = useState(false)
   const setOptOut = useSetWhatsAppContactBroadcastOptOut(workspaceId)
   const resubscribe = Boolean(contact?.broadcastOptedOutAt)
-  const label = contact?.name ?? contact?.waId
+  const label = contact ? contactRecordTitle(contact) : undefined
 
   function close() {
     setContactRequested(false)
@@ -431,9 +435,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
                     <Avatar className='size-8'>
                       <AvatarImage src={contact.avatarUrl ?? undefined} />
                       <AvatarFallback className='text-xs'>
-                        {(contact.name ?? contact.waId)
-                          .slice(0, 2)
-                          .toUpperCase()}
+                        {contactRecordTitle(contact).slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <button
@@ -461,7 +463,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
                   </div>
                 </TableCell>
                 <TableCell>{contact.name ?? '—'}</TableCell>
-                <TableCell>{contact.waId}</TableCell>
+                <TableCell>{contactRecordPhone(contact)}</TableCell>
                 <TableCell
                   className='max-w-56 truncate text-muted-foreground'
                   title={contact.description ?? undefined}
@@ -553,8 +555,9 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover contato</AlertDialogTitle>
             <AlertDialogDescription>
-              {deletingContact?.name ?? deletingContact?.waId} será removido da
-              lista de contatos. Conversas já existentes não são afetadas.
+              {deletingContact ? contactRecordTitle(deletingContact) : ''} será
+              removido da lista de contatos. Conversas já existentes não são
+              afetadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

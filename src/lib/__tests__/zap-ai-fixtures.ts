@@ -90,6 +90,8 @@ export function contact(
     id: 'ct1',
     workspaceId: 'ws1',
     waId: '5511999990000',
+    username: null,
+    hasPhone: true,
     name: 'Maria',
     avatarUrl: null,
     description: null,

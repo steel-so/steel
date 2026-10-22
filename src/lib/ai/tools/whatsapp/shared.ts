@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { type AppError, validationError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
+import { formatWaId } from '@/src/lib/whatsapp/phone'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
@@ -130,8 +131,8 @@ export function contactLabel(conversation: {
   contactWaId: string
 }): string {
   return conversation.contactName
-    ? `${conversation.contactName} (+${conversation.contactWaId})`
-    : `+${conversation.contactWaId}`
+    ? `${conversation.contactName} (${formatWaId(conversation.contactWaId)})`
+    : formatWaId(conversation.contactWaId)
 }
 
 export function compactConversation(

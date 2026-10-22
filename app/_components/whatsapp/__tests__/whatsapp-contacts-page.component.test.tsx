@@ -23,6 +23,8 @@ function contact(overrides: Record<string, unknown> = {}) {
     id: 'c1',
     workspaceId: 'ws_1',
     waId: '5511911111111',
+    username: null,
+    hasPhone: true,
     name: 'Ana Souza',
     avatarUrl: null,
     description: 'Cliente VIP',

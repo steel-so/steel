@@ -43,6 +43,12 @@ async function metaRequest<T>(
       status: response.status,
       body,
     })
+    // 131062: this message type cannot go to a BSUID recipient.
+    if (body?.error?.code === 131062) {
+      throw new Error(
+        'Este tipo de mensagem não pode ser enviado a um contato sem telefone (usuário com username)',
+      )
+    }
     throw new Error(
       body?.error?.message ??
         `Falha na requisição Meta API (${response.status})`,

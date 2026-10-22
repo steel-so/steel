@@ -5,3 +5,8 @@
 export function isWhatsAppPhone(waId: string): boolean {
   return /^\d+$/.test(waId)
 }
+
+/** `+5511…` for a phone; a plain notice for a BSUID-only contact. */
+export function formatWaId(waId: string): string {
+  return isWhatsAppPhone(waId) ? `+${waId}` : 'sem telefone'
+}

@@ -20,6 +20,8 @@ describe('toWhatsAppContactDTO()', () => {
       id: 'ct1',
       workspaceId: contact.workspaceId,
       waId: '5511988887777',
+      username: null,
+      hasPhone: true,
       name: 'Maria Silva',
       avatarUrl: 'https://minio.internal/avatars/ct1.jpg',
       description: null,
@@ -29,6 +31,19 @@ describe('toWhatsAppContactDTO()', () => {
       createdAt: contact.createdAt.toISOString(),
       updatedAt: contact.updatedAt.toISOString(),
     })
+  })
+
+  it('should flag a BSUID-only contact as having no phone', () => {
+    const contact = createFakeWhatsAppContact({
+      waId: 'BR.13491208655302741918',
+      bsuid: 'BR.13491208655302741918',
+      username: 'maria',
+    })
+
+    const dto = toWhatsAppContactDTO(contact)
+
+    expect(dto.hasPhone).toBe(false)
+    expect(dto.username).toBe('maria')
   })
 
   it('should keep name and avatarUrl as null when unset', () => {

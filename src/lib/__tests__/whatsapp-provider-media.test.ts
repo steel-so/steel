@@ -162,3 +162,33 @@ describe('Meta Cloud API recipient (BSUID)', () => {
     expect(body).not.toHaveProperty('to')
   })
 })
+
+describe('Meta Cloud API BSUID errors', () => {
+  const client = createMetaClient({
+    phoneNumberId: 'phone',
+    wabaId: 'waba',
+    accessToken: 'token',
+  })
+
+  it('should explain error 131062 in plain Portuguese', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: 131062,
+                message: 'BSUID recipients are not supported',
+              },
+            }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    )
+
+    await expect(
+      client.sendText({ to: 'BR.13491208655302741918', text: 'oi' }),
+    ).rejects.toThrow('sem telefone')
+  })
+})

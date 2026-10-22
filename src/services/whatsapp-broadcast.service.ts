@@ -14,6 +14,7 @@ import {
   type BroadcastMediaKind,
   resolveBroadcastMediaKind,
 } from '@/src/lib/whatsapp/broadcast-media'
+import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import {
@@ -58,7 +59,7 @@ interface TemplateVariableValues {
 export type WhatsAppBroadcastSendOutcome =
   | {
       status: 'skipped'
-      reason: 'recipient_missing' | 'not_pending' | 'opted_out'
+      reason: 'recipient_missing' | 'not_pending' | 'opted_out' | 'no_phone'
     }
   | { status: 'failed'; reason: string }
   | { status: 'sent'; providerMessageId: string }
@@ -385,6 +386,18 @@ export const WhatsAppBroadcastService = {
       if (!skipped.ok) return skipped
       await completeIfDrained(broadcastListId)
       return ok({ status: 'skipped', reason: 'opted_out' })
+    }
+
+    // Contact known only by its BSUID (WhatsApp username): bulk sends go to
+    // phone numbers — the Marketing Messages API for BSUIDs is not wired.
+    if (!isWhatsAppPhone(recipient.contact.waId)) {
+      const skipped = await WhatsAppBroadcastRepository.updateRecipientStatus(
+        recipientId,
+        { status: 'SKIPPED', errorMessage: 'Contato sem telefone' },
+      )
+      if (!skipped.ok) return skipped
+      await completeIfDrained(broadcastListId)
+      return ok({ status: 'skipped', reason: 'no_phone' })
     }
 
     const list = recipient.broadcastList

@@ -4,6 +4,7 @@ import {
   whatsappConnectionNotFound,
 } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
+import { formatWaId } from '@/src/lib/whatsapp/phone'
 import { WhatsAppBroadcastService } from '@/src/services/whatsapp-broadcast.service'
 import { WhatsAppConnectionService } from '@/src/services/whatsapp-connection.service'
 import { WhatsAppContactService } from '@/src/services/whatsapp-contact.service'
@@ -168,7 +169,7 @@ export const zapBroadcastGetTool: SteelAiTool<GetArgs> = {
       .filter((r) => r.status === 'FAILED')
       .slice(0, MAX_FAILURES)
       .map((r) => ({
-        contact: r.contactName ?? `+${r.contactWaId}`,
+        contact: r.contactName ?? formatWaId(r.contactWaId),
         error: truncate(r.errorMessage, 200),
       }))
     const s = stats(detail.value)

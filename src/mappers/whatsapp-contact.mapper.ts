@@ -1,4 +1,5 @@
 import type { WhatsAppContact } from '@prisma/client'
+import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
 
 export function toWhatsAppContactDTO(
@@ -8,6 +9,8 @@ export function toWhatsAppContactDTO(
     id: contact.id,
     workspaceId: contact.workspaceId,
     waId: contact.waId,
+    username: contact.username,
+    hasPhone: isWhatsAppPhone(contact.waId),
     name: contact.name,
     avatarUrl: contact.avatarUrl,
     description: contact.description,

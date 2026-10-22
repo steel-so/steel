@@ -15,6 +15,10 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { useQuickSend } from '@/app/_components/shortcuts/use-quick-send'
+import {
+  contactRecordPhone,
+  contactRecordTitle,
+} from '@/app/_components/whatsapp/whatsapp-contact-label'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   Attachment,
@@ -823,10 +827,10 @@ export function WhatsappComposer({
                   }}
                 >
                   <span className='font-medium'>
-                    {contact.name ?? contact.waId}
+                    {contactRecordTitle(contact)}
                   </span>
                   <span className='text-muted-foreground text-xs'>
-                    {contact.waId}
+                    {contactRecordPhone(contact)}
                   </span>
                 </button>
               ))

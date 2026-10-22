@@ -11,7 +11,10 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
-import { contactTitle } from '@/app/_components/whatsapp/whatsapp-contact-label'
+import {
+  contactRecordTitle,
+  contactTitle,
+} from '@/app/_components/whatsapp/whatsapp-contact-label'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -203,7 +206,7 @@ function NewConversationDialog({
                 <SelectGroup>
                   {(contacts.data ?? []).map((contact) => (
                     <SelectItem key={contact.id} value={contact.id}>
-                      {contact.name ?? contact.waId}
+                      {contactRecordTitle(contact)}
                     </SelectItem>
                   ))}
                 </SelectGroup>

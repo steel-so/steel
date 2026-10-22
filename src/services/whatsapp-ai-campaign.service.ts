@@ -25,6 +25,7 @@ import {
   resolveTemplateValues,
   templateFields,
 } from '@/src/lib/whatsapp/ai-campaign'
+import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
@@ -905,6 +906,9 @@ export const WhatsAppAiCampaignService = {
 
     if (recipient.contact.broadcastOptedOutAt) {
       return skip('Contato descadastrado das mensagens automáticas')
+    }
+    if (!isWhatsAppPhone(recipient.contact.waId)) {
+      return skip('Contato sem telefone')
     }
     const resolved = resolveTemplateValues(fields, variables, {
       contactName: recipient.contact.name,

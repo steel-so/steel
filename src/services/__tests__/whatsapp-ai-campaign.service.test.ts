@@ -531,6 +531,25 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
     expect(send.template).not.toHaveBeenCalled()
   })
 
+  it('should skip a BSUID-only contact (no phone to send to)', async () => {
+    repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+    repo.findNextPending.mockResolvedValue(
+      ok({
+        ...pendingRecipient(),
+        contact: { ...contact, waId: 'BR.13491208655302741918' },
+      }),
+    )
+
+    expect(
+      expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok')),
+    ).toEqual({ status: 'skipped', nextDelayMs: 1000 })
+    expect(repo.updateRecipient).toHaveBeenCalledWith('r1', {
+      status: 'SKIPPED',
+      errorMessage: 'Contato sem telefone',
+    })
+    expect(send.template).not.toHaveBeenCalled()
+  })
+
   it('should finish when the queue is empty', async () => {
     repo.findByIdRaw.mockResolvedValue(ok(campaign()))
     repo.findNextPending.mockResolvedValue(ok(null))

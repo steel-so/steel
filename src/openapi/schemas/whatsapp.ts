@@ -273,6 +273,11 @@ export const WhatsAppContactDTO = dto(
     id: id('ckv9x2p0h0000ct7d3k1e5abc'),
     workspaceId: z.string(),
     waId: waId(),
+    username: z.string().nullable(),
+    hasPhone: z.boolean().meta({
+      description:
+        'Falso quando só o BSUID é conhecido (usuário com username): `waId` traz então o BSUID.',
+    }),
     name: z.string().nullable(),
     avatarUrl: z.string().nullable(),
     description: z.string().nullable(),
