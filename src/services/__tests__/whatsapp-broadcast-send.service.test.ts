@@ -393,7 +393,7 @@ describe('WhatsAppBroadcastService.enqueueDueScheduledRecipients()', () => {
             id: 'r1',
             broadcastListId: 'list1',
           }),
-          contact: { waId: '1', broadcastOptedOutAt: null },
+          contact: { waId: '1', broadcastOptedOutAt: null, hasWhatsapp: null },
           broadcastList: list,
         },
       ]),

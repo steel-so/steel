@@ -280,7 +280,7 @@ describe('WhatsAppBroadcastService.start() failures', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'start',
-        meta: { recipients: 0, skipped: 2 },
+        meta: { recipients: 0, skipped: 2, skippedNoWhatsapp: 0 },
       }),
     )
   })
