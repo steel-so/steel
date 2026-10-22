@@ -14,6 +14,7 @@ import {
   parseStoredButtons,
   toMessageButtons,
 } from '@/src/lib/whatsapp/buttons'
+import { agentCost } from '@/src/lib/whatsapp/cost'
 import {
   buildMetaInteractive,
   META_INTERACTIVE_BODY_MAX,
@@ -22,6 +23,7 @@ import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { renderQuickReplyBody } from '@/src/lib/whatsapp/template-variables'
 import type {
+  WhatsAppCostContext,
   WhatsAppOutboundButton,
   WhatsAppSendResult,
 } from '@/src/lib/whatsapp/types'
@@ -84,17 +86,17 @@ async function sendPlain(input: {
   text: string
   mediaUrl: string | null
   kind: MediaKind | null
+  cost?: WhatsAppCostContext
 }): Promise<Result<OutboundPart[]>> {
-  const { connection, to, text, mediaUrl, kind } = input
+  const { connection, to, text, mediaUrl, kind, cost } = input
   const parts: OutboundPart[] = []
   if (mediaUrl && kind) {
     const caption = kind === 'AUDIO' ? undefined : text
-    const media = await WhatsAppSend.media(connection, {
-      to,
-      mediaUrl,
-      type: providerType(kind),
-      caption,
-    })
+    const media = await WhatsAppSend.media(
+      connection,
+      { to, mediaUrl, type: providerType(kind), caption },
+      { cost },
+    )
     if (!media.ok) return media
     parts.push({
       type: kind,
@@ -104,10 +106,11 @@ async function sendPlain(input: {
     })
     if (caption) return ok(parts)
   }
-  const sent: Result<WhatsAppSendResult> = await WhatsAppSend.text(connection, {
-    to,
-    text,
-  })
+  const sent: Result<WhatsAppSendResult> = await WhatsAppSend.text(
+    connection,
+    { to, text },
+    { cost },
+  )
   if (!sent.ok) return sent
   parts.push({
     type: 'TEXT',
@@ -130,14 +133,15 @@ async function sendQuickReplyParts(input: {
   mediaUrl: string | null
   quickReplyId: string
   buttons: ReturnType<typeof parseStoredButtons>
+  cost?: WhatsAppCostContext
 }): Promise<Result<OutboundPart[]>> {
-  const { connection, to, text, mediaUrl } = input
+  const { connection, to, text, mediaUrl, cost } = input
   const kind: MediaKind | null = mediaUrl
     ? (resolveBroadcastMediaKind({ url: mediaUrl }) ?? 'IMAGE')
     : null
 
   if (input.buttons.length === 0) {
-    return sendPlain({ connection, to, text, mediaUrl, kind })
+    return sendPlain({ connection, to, text, mediaUrl, kind, cost })
   }
 
   const outbound: WhatsAppOutboundButton[] = input.buttons.map((button) =>
@@ -174,11 +178,11 @@ async function sendQuickReplyParts(input: {
   const parts: OutboundPart[] = []
 
   if (mediaUrl && kind && !inlineKind) {
-    const media = await WhatsAppSend.media(connection, {
-      to,
-      mediaUrl,
-      type: providerType(kind),
-    })
+    const media = await WhatsAppSend.media(
+      connection,
+      { to, mediaUrl, type: providerType(kind) },
+      { cost },
+    )
     if (!media.ok) return media
     parts.push({
       type: kind,
@@ -187,19 +191,23 @@ async function sendQuickReplyParts(input: {
     })
   }
 
-  const sent = await WhatsAppSend.buttons(connection, {
-    to,
-    text,
-    buttons: outbound,
-    ...(inlineKind && mediaUrl
-      ? {
-          media: {
-            url: mediaUrl,
-            type: providerType(inlineKind) as 'image' | 'video' | 'document',
-          },
-        }
-      : {}),
-  })
+  const sent = await WhatsAppSend.buttons(
+    connection,
+    {
+      to,
+      text,
+      buttons: outbound,
+      ...(inlineKind && mediaUrl
+        ? {
+            media: {
+              url: mediaUrl,
+              type: providerType(inlineKind) as 'image' | 'video' | 'document',
+            },
+          }
+        : {}),
+    },
+    { cost },
+  )
   if (!sent.ok) return sent
   parts.push({
     type: inlineKind ?? 'TEXT',
@@ -416,6 +424,7 @@ export const WhatsAppQuickReplyService = {
       mediaUrl: quickReply.value.mediaUrl,
       quickReplyId: quickReply.value.id,
       buttons,
+      cost: agentCost(actorId, conversationId),
     })
     if (!sent.ok) return sent
 

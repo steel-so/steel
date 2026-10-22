@@ -449,20 +449,29 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
     expect(
       expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok')),
     ).toEqual({ status: 'sent', nextDelayMs: 45_000 })
-    expect(send.template).toHaveBeenCalledWith(connection, {
-      to: '5511999990000',
-      templateName: 'cobranca',
-      language: 'pt_BR',
-      components: [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: 'Maria' },
-            { type: 'text', text: 'R$ 99' },
-          ],
-        },
-      ],
-    })
+    expect(send.template).toHaveBeenCalledWith(
+      connection,
+      {
+        to: '5511999990000',
+        templateName: 'cobranca',
+        language: 'pt_BR',
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: 'Maria' },
+              { type: 'text', text: 'R$ 99' },
+            ],
+          },
+        ],
+      },
+      {
+        cost: expect.objectContaining({
+          source: 'AI_CAMPAIGN',
+          aiCampaignId: 'cp1',
+        }),
+      },
+    )
     expect(conversationRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         contactId: 'ct1',

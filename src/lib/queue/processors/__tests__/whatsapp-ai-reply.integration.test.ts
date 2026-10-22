@@ -166,6 +166,7 @@ describe('processWhatsappAiReply() — tool calling', () => {
       expect.objectContaining({
         text: 'Sim! Você tem exame marcado para 15/08 às 09h.',
       }),
+      { cost: expect.objectContaining({ source: 'AI_REPLY' }) },
     )
 
     const sentMessage = await prisma.whatsAppMessage.findFirst({
@@ -206,6 +207,7 @@ describe('processWhatsappAiReply() — tool calling', () => {
     expect(mockedSend.text).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ text: 'Olá! Como posso ajudar?' }),
+      { cost: expect.objectContaining({ source: 'AI_REPLY' }) },
     )
   })
 })

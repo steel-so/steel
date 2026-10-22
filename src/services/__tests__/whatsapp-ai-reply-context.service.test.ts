@@ -693,10 +693,14 @@ describe('WhatsAppAiReplyService.generateReply() — delivery edge cases', () =>
     expect(expectOk(await generate())).toEqual(
       expect.objectContaining({ status: 'sent', handoff: true }),
     )
-    expect(mockedSend.text).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511988887777',
-      text: 'Vou te transferir para um de nossos atendentes, só um momento.',
-    })
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511988887777',
+        text: 'Vou te transferir para um de nossos atendentes, só um momento.',
+      },
+      { cost: expect.objectContaining({ source: 'AI_REPLY' }) },
+    )
   })
 
   it('should propagate a contact lookup failure', async () => {

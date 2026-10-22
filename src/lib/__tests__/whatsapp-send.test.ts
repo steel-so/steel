@@ -31,17 +31,24 @@ vi.mock('@/src/services/whatsapp-usage.service', () => ({
   WhatsAppUsageService: { assertCanSend: vi.fn(), record: vi.fn() },
 }))
 
+vi.mock('@/src/services/whatsapp-cost.service', () => ({
+  WhatsAppCostService: { record: vi.fn() },
+}))
+
 import { whatsappMessageLimitReached } from '@/src/errors'
+import { WhatsAppCostService } from '@/src/services/whatsapp-cost.service'
 import { WhatsAppUsageService } from '@/src/services/whatsapp-usage.service'
 import { WhatsAppSend } from '../whatsapp/send'
 
 const mockedUsage = vi.mocked(WhatsAppUsageService)
+const mockedCost = vi.mocked(WhatsAppCostService)
 const SENT = { providerMessageId: 'p1' }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockedUsage.assertCanSend.mockResolvedValue(ok(undefined))
   mockedUsage.record.mockResolvedValue(undefined)
+  mockedCost.record.mockResolvedValue(undefined)
   for (const fn of Object.values(client)) fn.mockResolvedValue(SENT)
 })
 
@@ -157,5 +164,55 @@ describe('WhatsAppSend — monthly Communication limits', () => {
     )
     expect(mockedUsage.assertCanSend).not.toHaveBeenCalled()
     expect(mockedUsage.record).not.toHaveBeenCalled()
+  })
+})
+
+describe('WhatsAppSend — cost ledger (ADR 0050)', () => {
+  it('records a template send with the caller context', async () => {
+    const cost = { source: 'BROADCAST' as const, broadcastId: 'b1' }
+    expectOk(
+      await WhatsAppSend.template(
+        communication,
+        { to: '5511999990000', templateName: 't', language: 'pt_BR' },
+        { cost },
+      ),
+    )
+    expect(mockedCost.record).toHaveBeenCalledWith({
+      connection: communication,
+      kind: 'TEMPLATE',
+      to: '5511999990000',
+      context: cost,
+    })
+  })
+
+  it.each([
+    ['text', () => WhatsAppSend.text(communication, { to: '55', text: 'oi' })],
+    [
+      'contact',
+      () =>
+        WhatsAppSend.contact(communication, {
+          to: '55',
+          name: 'Ana',
+          waId: '5511',
+        }),
+    ],
+  ])('records a %s send as service volume', async (_name, send) => {
+    expectOk(await send())
+    expect(mockedCost.record).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'SERVICE', to: '55' }),
+    )
+  })
+
+  it('records nothing for a failed send or a reaction', async () => {
+    client.sendText.mockRejectedValueOnce(new Error('down'))
+    expectErr(await WhatsAppSend.text(communication, { to: '55', text: 'x' }))
+    expectOk(
+      await WhatsAppSend.reaction(communication, {
+        to: '55',
+        providerMessageId: 'p',
+        emoji: '👍',
+      } as never),
+    )
+    expect(mockedCost.record).not.toHaveBeenCalled()
   })
 })

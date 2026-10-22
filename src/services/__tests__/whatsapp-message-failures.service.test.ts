@@ -243,12 +243,16 @@ describe('WhatsAppMessageService specifics', () => {
       }),
     )
 
-    expect(mockedSend.template).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511999990000',
-      templateName: 'boas_vindas',
-      language: 'pt_BR',
-      components: undefined,
-    })
+    expect(mockedSend.template).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511999990000',
+        templateName: 'boas_vindas',
+        language: 'pt_BR',
+        components: undefined,
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
     expect(mockedMessageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'TEMPLATE',
@@ -269,11 +273,15 @@ describe('WhatsAppMessageService specifics', () => {
       }),
     )
 
-    expect(mockedSend.text).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511999990000',
-      text: 'Oi',
-      quotedProviderMessageId: undefined,
-    })
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511999990000',
+        text: 'Oi',
+        quotedProviderMessageId: undefined,
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
   })
 
   it('sendText() should drop the quote when the quoted message was never delivered', async () => {
@@ -290,6 +298,7 @@ describe('WhatsAppMessageService specifics', () => {
     expect(mockedSend.text).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ quotedProviderMessageId: undefined }),
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
     )
     expect(mockedMessageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ replyToMessageId: 'gone' }),
@@ -320,11 +329,15 @@ describe('WhatsAppMessageService specifics', () => {
       }),
     )
 
-    expect(mockedSend.contact).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511999990000',
-      name: '551188',
-      waId: '551188',
-    })
+    expect(mockedSend.contact).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511999990000',
+        name: '551188',
+        waId: '551188',
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
   })
 
   it('list() should return FORBIDDEN for a non-member', async () => {

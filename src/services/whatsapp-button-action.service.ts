@@ -150,10 +150,11 @@ async function runReply(
   text: string,
 ): Promise<Result<void>> {
   const { workspaceId, conversationId } = ctx.job
-  const sent = await WhatsAppSend.text(ctx.conversation.connection, {
-    to: ctx.contact.waId,
-    text,
-  })
+  const sent = await WhatsAppSend.text(
+    ctx.conversation.connection,
+    { to: ctx.contact.waId, text },
+    { cost: { source: 'BUTTON', conversationId } },
+  )
   if (!sent.ok) return sent
   const message = await WhatsAppMessageRepository.create({
     workspaceId,

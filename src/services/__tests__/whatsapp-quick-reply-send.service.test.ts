@@ -141,10 +141,14 @@ describe('WhatsAppQuickReplyService.send()', () => {
   it('renders the variables and sends plain text without buttons', async () => {
     const dto = expectOk(await sendQuickReply({ codigo: '#42' }))
 
-    expect(send.text).toHaveBeenCalledWith(zapi, {
-      to: '5511',
-      text: 'Olá Ana, aqui é Bia da Stratus. #42',
-    })
+    expect(send.text).toHaveBeenCalledWith(
+      zapi,
+      {
+        to: '5511',
+        text: 'Olá Ana, aqui é Bia da Stratus. #42',
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
     expect(dto.id).toBe('m-p1')
     expect(conversationRepo.update).toHaveBeenCalledWith('c1', {
       lastMessageAt: expect.any(Date),
@@ -176,12 +180,16 @@ describe('WhatsAppQuickReplyService.send()', () => {
       ok(quickReply({ body: 'Veja', mediaUrl: 'https://m/a.png' })),
     )
     expectOk(await sendQuickReply())
-    expect(send.media).toHaveBeenCalledWith(zapi, {
-      to: '5511',
-      mediaUrl: 'https://m/a.png',
-      type: 'image',
-      caption: 'Veja',
-    })
+    expect(send.media).toHaveBeenCalledWith(
+      zapi,
+      {
+        to: '5511',
+        mediaUrl: 'https://m/a.png',
+        type: 'image',
+        caption: 'Veja',
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
     expect(send.text).not.toHaveBeenCalled()
   })
 
@@ -212,15 +220,19 @@ describe('WhatsAppQuickReplyService.send()', () => {
 
     const dto = expectOk(await sendQuickReply())
 
-    expect(send.buttons).toHaveBeenCalledWith(zapi, {
-      to: '5511',
-      text: 'Confirma?',
-      buttons: [
-        { type: 'REPLY', id: 'stl:q:qr1:b1', label: 'Sim' },
-        { type: 'URL', id: 'l1', label: 'Site', url: 'https://steel.app' },
-      ],
-      media: { url: 'https://m/a.png', type: 'image' },
-    })
+    expect(send.buttons).toHaveBeenCalledWith(
+      zapi,
+      {
+        to: '5511',
+        text: 'Confirma?',
+        buttons: [
+          { type: 'REPLY', id: 'stl:q:qr1:b1', label: 'Sim' },
+          { type: 'URL', id: 'l1', label: 'Site', url: 'https://steel.app' },
+        ],
+        media: { url: 'https://m/a.png', type: 'image' },
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
     expect(send.media).not.toHaveBeenCalled()
     expect(messageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -246,11 +258,15 @@ describe('WhatsAppQuickReplyService.send()', () => {
       ),
     )
     expectOk(await sendQuickReply())
-    expect(send.media).toHaveBeenCalledWith(zapi, {
-      to: '5511',
-      mediaUrl: 'https://m/b.pdf',
-      type: 'document',
-    })
+    expect(send.media).toHaveBeenCalledWith(
+      zapi,
+      {
+        to: '5511',
+        mediaUrl: 'https://m/b.pdf',
+        type: 'document',
+      },
+      { cost: expect.objectContaining({ source: 'AGENT' }) },
+    )
     expect(send.buttons.mock.calls[0][1].media).toBeUndefined()
     expect(messageRepo.create.mock.calls.map((c) => c[0].type)).toEqual([
       'DOCUMENT',

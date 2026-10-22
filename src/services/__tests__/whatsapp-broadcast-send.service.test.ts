@@ -127,10 +127,14 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     )
 
     expect(outcome).toEqual({ status: 'sent', providerMessageId: 'wamid-1' })
-    expect(mockedSend.text).toHaveBeenCalledWith(connection, {
-      to: '5511988887777',
-      text: 'Aproveite nossas ofertas!',
-    })
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      connection,
+      {
+        to: '5511988887777',
+        text: 'Aproveite nossas ofertas!',
+      },
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
+    )
     expect(mockedBroadcastRepo.updateRecipientStatus).toHaveBeenCalledWith(
       'r1',
       expect.objectContaining({ status: 'SENT', providerMessageId: 'wamid-1' }),
@@ -170,12 +174,16 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
 
     expectOk(await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'))
 
-    expect(mockedSend.media).toHaveBeenCalledWith(connection, {
-      to: '5511988887777',
-      mediaUrl: 'https://cdn/promo.mp4',
-      type: 'video',
-      caption: 'Aproveite nossas ofertas!',
-    })
+    expect(mockedSend.media).toHaveBeenCalledWith(
+      connection,
+      {
+        to: '5511988887777',
+        mediaUrl: 'https://cdn/promo.mp4',
+        type: 'video',
+        caption: 'Aproveite nossas ofertas!',
+      },
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
+    )
   })
 
   it('should send a document with its original file name', async () => {
@@ -194,6 +202,7 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     expect(mockedSend.media).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ type: 'document', fileName: 'catalogo.pdf' }),
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
     )
   })
 
@@ -209,15 +218,20 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     )
 
     expect(outcome).toEqual({ status: 'sent', providerMessageId: 'wamid-a' })
-    expect(mockedSend.media).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511988887777',
-      mediaUrl: 'https://cdn/a.ogg',
-      type: 'audio',
-    })
-    expect(mockedSend.text).toHaveBeenCalledWith(expect.anything(), {
-      to: '5511988887777',
-      text: 'Aproveite nossas ofertas!',
-    })
+    expect(mockedSend.media).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        to: '5511988887777',
+        mediaUrl: 'https://cdn/a.ogg',
+        type: 'audio',
+      },
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
+    )
+    expect(mockedSend.text).toHaveBeenCalledWith(
+      expect.anything(),
+      { to: '5511988887777', text: 'Aproveite nossas ofertas!' },
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
+    )
   })
 
   it('should infer the media type from the URL on legacy lists', async () => {
@@ -229,6 +243,7 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     expect(mockedSend.media).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ type: 'video' }),
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
     )
   })
 
@@ -245,6 +260,7 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     expect(mockedSend.template).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ templateName: 'lembrete', language: 'pt_BR' }),
+      { cost: expect.objectContaining({ source: 'BROADCAST' }) },
     )
   })
 

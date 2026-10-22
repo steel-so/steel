@@ -4,9 +4,11 @@ import { whatsappProviderError } from '@/src/errors'
 import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { consume, whatsappSendLimiter } from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
+import { WhatsAppCostService } from '@/src/services/whatsapp-cost.service'
 import { WhatsAppUsageService } from '@/src/services/whatsapp-usage.service'
 import { createMetaClient } from './meta-client'
 import type {
+  WhatsAppCostContext,
   WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
   WhatsAppOutboundMedia,
@@ -59,12 +61,23 @@ export interface WhatsAppSendOptions {
    * Only for compliance replies such as the LGPD opt-out confirmation.
    */
   unmetered?: boolean
+  /**
+   * Why the message is sent (broadcast, agent, AI reply...) for the cost
+   * analysis. Optional: a send without it is recorded as `OTHER`.
+   */
+  cost?: WhatsAppCostContext
 }
 
 async function withProvider<T>(
   connection: WhatsAppConnection,
   op: (client: WhatsAppProviderClient) => Promise<T>,
-  options: { metered: boolean },
+  options: {
+    metered: boolean
+    /** Billing kind to record; omitted = nothing recorded (reactions). */
+    costKind?: 'TEMPLATE' | 'SERVICE'
+    to?: string
+    cost?: WhatsAppCostContext
+  },
 ): Promise<Result<T>> {
   const limit = await consume(whatsappSendLimiter, connection.id)
   if (!limit.ok) return limit
@@ -86,6 +99,15 @@ async function withProvider<T>(
     if (metered) {
       await WhatsAppUsageService.record(connection.workspaceId, 'messages')
     }
+    if (options.costKind && options.to) {
+      // Never fails the send: the cost service swallows and logs its errors.
+      await WhatsAppCostService.record({
+        connection,
+        kind: options.costKind,
+        to: options.to,
+        context: options.cost,
+      })
+    }
     return ok(result)
   } catch (error) {
     return err(
@@ -104,6 +126,9 @@ export const WhatsAppSend = {
   ): Promise<Result<WhatsAppSendResult>> {
     return withProvider(connection, (client) => client.sendText(input), {
       metered: !options?.unmetered,
+      costKind: 'SERVICE',
+      to: input.to,
+      cost: options?.cost,
     })
   },
 
@@ -114,6 +139,9 @@ export const WhatsAppSend = {
   ): Promise<Result<WhatsAppSendResult>> {
     return withProvider(connection, (client) => client.sendMedia(input), {
       metered: !options?.unmetered,
+      costKind: 'SERVICE',
+      to: input.to,
+      cost: options?.cost,
     })
   },
 
@@ -124,6 +152,9 @@ export const WhatsAppSend = {
   ): Promise<Result<WhatsAppSendResult>> {
     return withProvider(connection, (client) => client.sendTemplate(input), {
       metered: !options?.unmetered,
+      costKind: 'TEMPLATE',
+      to: input.to,
+      cost: options?.cost,
     })
   },
 
@@ -134,6 +165,9 @@ export const WhatsAppSend = {
   ): Promise<Result<WhatsAppSendResult>> {
     return withProvider(connection, (client) => client.sendContact(input), {
       metered: !options?.unmetered,
+      costKind: 'SERVICE',
+      to: input.to,
+      cost: options?.cost,
     })
   },
 
@@ -144,6 +178,9 @@ export const WhatsAppSend = {
   ): Promise<Result<WhatsAppSendResult>> {
     return withProvider(connection, (client) => client.sendButtons(input), {
       metered: !options?.unmetered,
+      costKind: 'SERVICE',
+      to: input.to,
+      cost: options?.cost,
     })
   },
 

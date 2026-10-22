@@ -22,6 +22,7 @@ import {
   parseMetaTemplateComponents,
 } from '@/src/lib/whatsapp/template-variables'
 import type {
+  WhatsAppCostContext,
   WhatsAppOutboundMediaType,
   WhatsAppSendResult,
 } from '@/src/lib/whatsapp/types'
@@ -89,6 +90,7 @@ async function sendBroadcastMedia(
     mediaFileName: string | null
     messageBody: string
   },
+  cost?: WhatsAppCostContext,
 ): Promise<Result<WhatsAppSendResult>> {
   const kind =
     list.mediaType ??
@@ -100,21 +102,26 @@ async function sendBroadcastMedia(
     'IMAGE'
   const type = OUTBOUND_MEDIA_TYPE[kind]
 
-  const sent = await WhatsAppSend.media(connection, {
-    to,
-    mediaUrl: list.mediaUrl,
-    type,
-    ...(type === 'audio' ? {} : { caption: list.messageBody }),
-    ...(type === 'document' && list.mediaFileName
-      ? { fileName: list.mediaFileName }
-      : {}),
-  })
+  const sent = await WhatsAppSend.media(
+    connection,
+    {
+      to,
+      mediaUrl: list.mediaUrl,
+      type,
+      ...(type === 'audio' ? {} : { caption: list.messageBody }),
+      ...(type === 'document' && list.mediaFileName
+        ? { fileName: list.mediaFileName }
+        : {}),
+    },
+    { cost },
+  )
   if (!sent.ok || type !== 'audio' || !list.messageBody.trim()) return sent
 
-  const text = await WhatsAppSend.text(connection, {
-    to,
-    text: list.messageBody,
-  })
+  const text = await WhatsAppSend.text(
+    connection,
+    { to, text: list.messageBody },
+    { cost },
+  )
   if (!text.ok) {
     // O áudio já foi entregue: não marca o destinatário como falha.
     logger.warn('whatsapp.broadcast.audio_caption_failed', {
@@ -428,26 +435,46 @@ export const WhatsAppBroadcastService = {
         buttons: values.buttons ?? {},
       })
 
-      sendResult = await WhatsAppSend.template(connection.value, {
-        to: recipient.contact.waId,
-        templateName: template.value.name,
-        language: template.value.language,
-        components: applyTemplateSendExtras(template.value, components)
-          .components,
-      })
+      sendResult = await WhatsAppSend.template(
+        connection.value,
+        {
+          to: recipient.contact.waId,
+          templateName: template.value.name,
+          language: template.value.language,
+          components: applyTemplateSendExtras(template.value, components)
+            .components,
+        },
+        {
+          cost: {
+            source: 'BROADCAST',
+            broadcastId: list.id,
+            templateCategory: template.value.category,
+          },
+        },
+      )
     } else {
+      const cost: WhatsAppCostContext = {
+        source: 'BROADCAST',
+        broadcastId: list.id,
+      }
       sendResult = list.mediaUrl
-        ? await sendBroadcastMedia(connection.value, recipient.contact.waId, {
-            mediaUrl: list.mediaUrl,
-            mediaType: list.mediaType,
-            mediaMimeType: list.mediaMimeType,
-            mediaFileName: list.mediaFileName,
-            messageBody: list.messageBody,
-          })
-        : await WhatsAppSend.text(connection.value, {
-            to: recipient.contact.waId,
-            text: list.messageBody,
-          })
+        ? await sendBroadcastMedia(
+            connection.value,
+            recipient.contact.waId,
+            {
+              mediaUrl: list.mediaUrl,
+              mediaType: list.mediaType,
+              mediaMimeType: list.mediaMimeType,
+              mediaFileName: list.mediaFileName,
+              messageBody: list.messageBody,
+            },
+            cost,
+          )
+        : await WhatsAppSend.text(
+            connection.value,
+            { to: recipient.contact.waId, text: list.messageBody },
+            { cost },
+          )
     }
 
     const recorded = sendResult.ok

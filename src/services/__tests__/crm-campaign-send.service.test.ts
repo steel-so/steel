@@ -829,6 +829,7 @@ describe('sendCampaignWhatsApp() — Z-API quick reply', () => {
         type: 'document',
         mediaUrl: 'https://cdn.test/doc.pdf',
       }),
+      { cost: { source: 'CRM_CAMPAIGN' } },
     )
     expect(wa.buttons.mock.calls[1][1]).not.toHaveProperty('media')
 
@@ -855,6 +856,7 @@ describe('sendCampaignWhatsApp() — Z-API quick reply', () => {
         mediaUrl: 'https://cdn.test/a.png',
         caption: 'Oi Ana',
       }),
+      { cost: { source: 'CRM_CAMPAIGN' } },
     )
   })
 

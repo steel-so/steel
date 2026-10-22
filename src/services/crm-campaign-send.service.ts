@@ -42,7 +42,10 @@ import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import { buildMetaSendComponents } from '@/src/lib/whatsapp/template-variables'
-import type { WhatsAppSendResult } from '@/src/lib/whatsapp/types'
+import type {
+  WhatsAppCostContext,
+  WhatsAppSendResult,
+} from '@/src/lib/whatsapp/types'
 import {
   CrmCampaignRecipientRepository,
   CrmCampaignRepository,
@@ -209,6 +212,8 @@ export async function buildCampaignEmail(
   })
 }
 
+const CRM_CAMPAIGN_COST: WhatsAppCostContext = { source: 'CRM_CAMPAIGN' }
+
 /**
  * Z-API text + the quick reply's buttons: reply buttons carry the quick
  * reply payload (their configured actions run on click), URL buttons get
@@ -229,38 +234,46 @@ async function sendQuickReplyButtons(
     ? (resolveBroadcastMediaKind({ url: input.mediaUrl }) ?? 'IMAGE')
     : null
   if (input.mediaUrl && kind && kind !== 'IMAGE' && kind !== 'AUDIO') {
-    const media = await WhatsAppSend.media(connection, {
-      to: input.to.waId,
-      mediaUrl: input.mediaUrl,
-      type: kind.toLowerCase() as 'video' | 'document',
-    })
+    const media = await WhatsAppSend.media(
+      connection,
+      {
+        to: input.to.waId,
+        mediaUrl: input.mediaUrl,
+        type: kind.toLowerCase() as 'video' | 'document',
+      },
+      { cost: CRM_CAMPAIGN_COST },
+    )
     if (!media.ok) return media
   }
-  return WhatsAppSend.buttons(connection, {
-    to: input.to.waId,
-    text: input.text,
-    buttons: input.buttons.map((button) =>
-      button.type === 'URL'
-        ? {
-            type: 'URL' as const,
-            id: button.id,
-            label: button.label,
-            url: renderButtonUrl(button.url, input.to),
-          }
-        : {
-            type: 'REPLY' as const,
-            id: buildButtonPayload({
-              sourceType: 'QUICK_REPLY',
-              sourceId: input.quickReplyId,
-              buttonId: button.id,
-            }),
-            label: button.label,
-          },
-    ),
-    ...(input.mediaUrl && kind === 'IMAGE'
-      ? { media: { url: input.mediaUrl, type: 'image' as const } }
-      : {}),
-  })
+  return WhatsAppSend.buttons(
+    connection,
+    {
+      to: input.to.waId,
+      text: input.text,
+      buttons: input.buttons.map((button) =>
+        button.type === 'URL'
+          ? {
+              type: 'URL' as const,
+              id: button.id,
+              label: button.label,
+              url: renderButtonUrl(button.url, input.to),
+            }
+          : {
+              type: 'REPLY' as const,
+              id: buildButtonPayload({
+                sourceType: 'QUICK_REPLY',
+                sourceId: input.quickReplyId,
+                buttonId: button.id,
+              }),
+              label: button.label,
+            },
+      ),
+      ...(input.mediaUrl && kind === 'IMAGE'
+        ? { media: { url: input.mediaUrl, type: 'image' as const } }
+        : {}),
+    },
+    { cost: CRM_CAMPAIGN_COST },
+  )
 }
 
 /** Sends the campaign's WhatsApp message to one number, per provider. */
@@ -305,15 +318,24 @@ export async function sendCampaignWhatsApp(
         null,
       to,
     )
-    return WhatsAppSend.template(connection.value, {
-      to: to.waId,
-      templateName: template.value.name,
-      language: template.value.language,
-      components: applyTemplateSendExtras(
-        template.value,
-        buildMetaSendComponents(fields, values),
-      ).components,
-    })
+    return WhatsAppSend.template(
+      connection.value,
+      {
+        to: to.waId,
+        templateName: template.value.name,
+        language: template.value.language,
+        components: applyTemplateSendExtras(
+          template.value,
+          buildMetaSendComponents(fields, values),
+        ).components,
+      },
+      {
+        cost: {
+          source: 'CRM_CAMPAIGN',
+          templateCategory: template.value.category,
+        },
+      },
+    )
   }
 
   const text = renderZapiText(campaign.whatsappText ?? '', to)
@@ -345,15 +367,23 @@ export async function sendCampaignWhatsApp(
     const kind = resolveBroadcastMediaKind({ url: mediaUrl }) ?? 'IMAGE'
     const type = kind.toLowerCase() as 'image' | 'video' | 'audio' | 'document'
     if (type !== 'audio') {
-      return WhatsAppSend.media(connection.value, {
-        to: to.waId,
-        mediaUrl,
-        type,
-        caption: text,
-      })
+      return WhatsAppSend.media(
+        connection.value,
+        {
+          to: to.waId,
+          mediaUrl,
+          type,
+          caption: text,
+        },
+        { cost: CRM_CAMPAIGN_COST },
+      )
     }
   }
-  return WhatsAppSend.text(connection.value, { to: to.waId, text })
+  return WhatsAppSend.text(
+    connection.value,
+    { to: to.waId, text },
+    { cost: CRM_CAMPAIGN_COST },
+  )
 }
 
 async function sendEmailTo(
