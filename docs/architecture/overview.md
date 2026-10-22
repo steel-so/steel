@@ -419,6 +419,13 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 
 Dashboard das filas: `/jobs` (Workbench, basic auth `WORKBENCH_USER`/`WORKBENCH_PASS`).
 
+Fora do BullMQ, o worker também hospeda o **servidor TCP do `AudioSocket`** do
+atendente de voz com IA (`worker/voice-agent-server.ts`, [ADR 0046](../adr/0046-pabx-voice-agent-ivr-realtime.md)):
+uma conexão longa por ligação, ligada só com `VOICE_AGENT_AUDIOSOCKET_PORT`; a
+porta é publicada no compose apenas no IP privado definido por
+`VOICE_AGENT_AUDIOSOCKET_BIND` (padrão `127.0.0.1`). Um deploy do worker corta
+as ligações em curso — faça fora do horário de atendimento.
+
 ### Alertas no Slack (#alerts)
 
 O worker avisa o canal **#alerts** por um Incoming Webhook (`SLACK_ALERTS_WEBHOOK_URL`, que o deploy acrescenta ao `.env` a partir do secret do GitHub de mesmo nome). Sem a variável, os alertas viram só log (`alerts.slack.disabled`). O envio nunca derruba nada: POST simples com timeout de 3 s, e qualquer falha vira `alerts.slack.failed` no Axiom, sem a URL.
@@ -434,7 +441,7 @@ Avisos de CI/CD vão para outro canal (secret `SLACK_WEBHOOK_URL`). Queda do ser
 | ------- | --------- | ------------ | ---------- |
 | App Next | `nextjs-app`, `steel-app-2`, `steel-app-3` | 3000, 127.0.0.1:3001, 127.0.0.1:3002 | réplicas no `docker-compose.yml` atrás do upstream `steel_app` (`least_conn`) do nginx, deploy em rolagem; config do nginx em `infra/nginx/` — ADR 0038, `docs/runbooks/app-replicas.md` |
 | PgBouncer (opcional) | `steel-pgbouncer` | — | perfil `pooler` do compose, modo transaction; o app usa quando há `DATABASE_URL_POOLED` |
-| Worker | `steel-worker` | — | mesma imagem, `node dist/worker.cjs` |
+| Worker | `steel-worker` | — (opcional: AudioSocket em `VOICE_AGENT_AUDIOSOCKET_BIND`:8090) | mesma imagem, `node dist/worker.cjs` |
 | Realtime (Wiki) | `steel-realtime` | 127.0.0.1:1235 | mesma imagem, `node dist/realtime.cjs` (Hocuspocus); nginx `/realtime` — ver `docs/runbooks/realtime-wiki.md` |
 | PostgreSQL 17 | `steel-db` | 5433 → 5432 | `docker-compose.infra.yml`, volume `pgdata` |
 | Redis 8 (TLS) | `steel-redis` | 6380 → 6379 | bitnami fixado por digest; certificados em `redis-tls/`; URL `rediss://` |

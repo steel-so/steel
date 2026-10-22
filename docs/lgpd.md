@@ -132,3 +132,35 @@ resumidas pelo Steel AI ([ADR 0043](./adr/0043-pabx-call-recording-transcription
   workspace; nada sai com a transcrição desligada ou o Steel AI desligado. O
   mascaramento de dados pessoais antes do provedor entra com a frente de
   proteções (ADR 0041).
+
+## Atendente de voz com IA (URA)
+
+O atendente de voz atende ligações recebidas nas filas e números que o admin
+escolher ([ADR 0046](./adr/0046-pabx-voice-agent-ivr-realtime.md),
+[runbook](./runbooks/pabx-voice-agent.md)). A conversa por voz é tratamento de
+dado pessoal feito por uma IA de terceiro:
+
+- **Desligado por padrão**, por workspace e por fila/número. OWNER/ADMIN liga
+  em Comunicação › Configurações › Atendente de voz.
+- **Aviso obrigatório de atendimento automatizado.** É a primeira fala de toda
+  ligação, palavra por palavra, antes de qualquer outra coisa; nenhuma
+  ferramenta roda antes de ele terminar. O texto falado (o do workspace ou o
+  padrão da plataforma) fica registrado na ligação (`recording_notice`), como
+  prova. O cliente pode pedir uma pessoa a qualquer momento; erro, silêncio e
+  limite de tempo também passam a ligação para uma pessoa.
+- **Sem gravação de áudio.** Só a transcrição da própria conversa
+  (`transcript`) é guardada, com o resumo, e sai junto com a ligação (conversa,
+  contato ou workspace apagados). O áudio chega ao provedor (OpenAI Realtime) em
+  tempo real e não é possível mascará-lo antes; o aviso falado diz isso ao
+  cliente. O texto que vira resumo passa pelo mascaramento da ADR 0041.
+- **Mínimo necessário.** A IA só vê o nome do contato e, ao consultar chamado,
+  código, título, fase e prazo **de chamados do próprio telefone** de quem
+  ligou — nunca de outro número. Abre no máximo um chamado por ligação, só
+  depois da confirmação por voz, e não abre se a fala parecer tentativa de
+  injeção de prompt.
+- **Controle de custo e de abuso.** Duração máxima por ligação e teto mensal de
+  minutos por workspace; o consumo entra no uso de IA ("Atendente de voz").
+- **Auditoria.** `voice_agent_settings` e `voice_agent_route` (quem ligou,
+  desligou ou mudou), e por ligação `whatsapp_phone_call` com `voice_start`,
+  `voice_end`, `voice_transfer` e `voice_ticket`; escritas da IA também ficam
+  em `ai_action_logs` com a origem `VOICE`.
