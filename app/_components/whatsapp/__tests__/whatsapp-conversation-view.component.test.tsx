@@ -1303,6 +1303,8 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       return {
         id: 'call1',
         conversationId: 'cv_1',
+        direction: 'OUTBOUND',
+        source: 'CLICK_TO_CALL',
         userId: 'u_1',
         extension: '200',
         destination: '11999998888',

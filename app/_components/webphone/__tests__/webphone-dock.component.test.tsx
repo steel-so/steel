@@ -10,6 +10,7 @@ function api(overrides: Partial<WebPhoneApi> = {}): WebPhoneApi {
     status: 'online',
     error: null,
     call: null,
+    recordingNotice: null,
     dial: vi.fn(async () => undefined),
     answer: vi.fn(async () => undefined),
     hangup: vi.fn(async () => undefined),
@@ -201,6 +202,22 @@ describe('<WebPhoneDock />', () => {
         answeredAt: Date.now() - 65_000,
         ...overrides,
       })
+
+    it('shows the recording notice the agent reads to the contact', () => {
+      renderDock(
+        api({
+          call: answered({ direction: 'out' }),
+          recordingNotice: 'Esta ligação pode ser gravada.',
+        }),
+      )
+      expect(screen.getByText('Esta ligação pode ser gravada.')).toBeTruthy()
+      expect(screen.getByText(/Ligação gravada\./)).toBeTruthy()
+    })
+
+    it('shows no notice on a call that is not recorded', () => {
+      renderDock(api({ call: answered() }))
+      expect(screen.queryByText(/Ligação gravada\./)).toBeNull()
+    })
 
     it('ticks the talk time', () => {
       renderDock(api({ call: answered() }))

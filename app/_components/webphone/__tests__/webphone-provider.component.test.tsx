@@ -5,6 +5,7 @@ const h = vi.hoisted(() => {
   type Events = {
     onStatus: (status: string, detail?: string) => void
     onCall: (call: unknown) => void
+    onCallEvent?: (event: unknown) => void
   }
   const instances: FakeClient[] = []
   class FakeClient {
@@ -23,15 +24,36 @@ const h = vi.hoisted(() => {
       instances.push(this)
     }
   }
+  const tracker = {
+    ctor: vi.fn(),
+    prepareOutbound: vi.fn(async (_input: unknown) => ['X-Steel: 1']),
+    abandonPrepared: vi.fn(),
+    handle: vi.fn(),
+    onNotice: undefined as ((notice: string | null) => void) | undefined,
+  }
+  class FakeTracker {
+    constructor(workspaceId: string, onNotice: (n: string | null) => void) {
+      tracker.ctor(workspaceId)
+      tracker.onNotice = onNotice
+    }
+    prepareOutbound = tracker.prepareOutbound
+    abandonPrepared = tracker.abandonPrepared
+    handle = tracker.handle
+  }
   return {
     instances,
     FakeClient,
+    FakeTracker,
+    tracker,
     apiFetch: vi.fn(),
     user: undefined as Record<string, unknown> | undefined,
   }
 })
 
 vi.mock('@/src/lib/webphone/client', () => ({ WebPhoneClient: h.FakeClient }))
+vi.mock('@/src/lib/webphone/call-tracker', () => ({
+  WebPhoneCallTracker: h.FakeTracker,
+}))
 vi.mock('@/src/hooks/_fetch', () => ({ apiFetch: h.apiFetch }))
 vi.mock('@/src/hooks/use-user', () => ({
   useUser: () => ({ data: h.user }),
@@ -66,6 +88,7 @@ function Probe() {
         {phone.enabled ? 'enabled' : 'disabled'}|{phone.status}|
         {phone.error ?? '-'}|{phone.call?.state ?? '-'}
       </p>
+      <p data-testid='notice'>{phone.recordingNotice ?? '-'}</p>
       <button
         type='button'
         onClick={() => void phone.dial('5513996374317', 'Gusttavo')}
@@ -93,7 +116,7 @@ function Probe() {
 
 function mountProvider() {
   return render(
-    <WebPhoneProvider>
+    <WebPhoneProvider workspaceId='ws1'>
       <Probe />
     </WebPhoneProvider>,
   )
@@ -194,8 +217,59 @@ describe('<WebPhoneProvider />', () => {
     expect(client.setMuted).toHaveBeenCalledWith(true)
     expect(client.sendDtmf).toHaveBeenCalledWith('7')
     await waitFor(() =>
-      expect(client.dial).toHaveBeenCalledWith('5513996374317', 'Gusttavo'),
+      expect(client.dial).toHaveBeenCalledWith('5513996374317', 'Gusttavo', {
+        extraHeaders: ['X-Steel: 1'],
+      }),
     )
+    expect(h.tracker.prepareOutbound).toHaveBeenCalledWith({
+      number: '5513996374317',
+      name: 'Gusttavo',
+      conversationId: undefined,
+    })
+  })
+
+  it('reports the call events to the tracker of the workspace', async () => {
+    mountProvider()
+    await waitFor(() => expect(h.instances).toHaveLength(1))
+    expect(h.tracker.ctor).toHaveBeenCalledWith('ws1')
+
+    const event = { type: 'answered' }
+    act(() => h.instances[0].events.onCallEvent?.(event))
+    expect(h.tracker.handle).toHaveBeenCalledWith(event)
+
+    act(() => h.tracker.onNotice?.('Esta ligação será gravada.'))
+    expect(screen.getByTestId('notice').textContent).toBe(
+      'Esta ligação será gravada.',
+    )
+  })
+
+  it('closes the registered call when the phone refuses to dial', async () => {
+    const failed = vi.fn()
+    function DialProbe() {
+      const phone = useWebPhone()
+      return (
+        <button
+          type='button'
+          onClick={() => phone.dial('13996374317').catch(failed)}
+        >
+          try
+        </button>
+      )
+    }
+    render(
+      <WebPhoneProvider workspaceId='ws1'>
+        <DialProbe />
+      </WebPhoneProvider>,
+    )
+    await waitFor(() => expect(h.instances).toHaveLength(1))
+    h.instances[0].dial.mockRejectedValueOnce(new Error('ocupado'))
+
+    fireEvent.click(screen.getByText('try'))
+
+    await waitFor(() =>
+      expect(failed).toHaveBeenCalledWith(new Error('ocupado')),
+    )
+    expect(h.tracker.abandonPrepared).toHaveBeenCalled()
   })
 
   it('shows the connection error and boots again on reconnect', async () => {
@@ -248,7 +322,7 @@ describe('<WebPhoneProvider />', () => {
       )
     }
     render(
-      <WebPhoneProvider>
+      <WebPhoneProvider workspaceId='ws1'>
         <DialProbe />
       </WebPhoneProvider>,
     )

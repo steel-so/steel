@@ -166,6 +166,13 @@ export function WebPhoneDock() {
         </div>
       </div>
 
+      {phone.recordingNotice ? (
+        <p className='mt-3 rounded-md bg-muted p-2 text-muted-foreground text-xs'>
+          <span className='font-medium text-foreground'>Ligação gravada. </span>
+          {phone.recordingNotice}
+        </p>
+      ) : null}
+
       {keypad && call.state === 'in-call' ? (
         <div className='mt-3 grid grid-cols-3 gap-1.5'>
           {KEYS.map((key) => (

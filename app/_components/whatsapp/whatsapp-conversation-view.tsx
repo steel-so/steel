@@ -375,6 +375,7 @@ export function WhatsappConversationView({
         await webPhone.dial(
           conversation.contactWaId,
           conversation.contactName ?? null,
+          { conversationId: conversation.id },
         )
       } catch (error) {
         notify.error(
