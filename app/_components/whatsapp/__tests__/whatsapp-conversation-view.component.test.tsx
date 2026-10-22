@@ -889,6 +889,7 @@ describe('<WhatsappConversationView />', () => {
       expect(phone.dial).toHaveBeenCalledWith(
         expect.stringMatching(/^\d+$/),
         expect.anything(),
+        { conversationId: 'cv_1' },
       )
       expect(
         fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
