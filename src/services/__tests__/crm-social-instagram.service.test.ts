@@ -35,7 +35,7 @@ import {
   publishPost,
 } from '../crm-social-instagram.service'
 
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v26.0'
 const ALL_SCOPES =
   'instagram_basic,instagram_manage_insights,instagram_content_publish,instagram_manage_contents'
 const IG = 'ig-1'
@@ -67,7 +67,7 @@ function formBody(call: FetchCall): Record<string, string> {
 }
 
 function pathOf(url: string): string {
-  return new URL(url).pathname.replace('/v21.0', '')
+  return new URL(url).pathname.replace('/v26.0', '')
 }
 
 beforeEach(() => {

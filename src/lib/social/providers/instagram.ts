@@ -12,7 +12,7 @@ import type { SocialAccount, SocialProvider, TokenSet } from './types'
  * escopos só de Página; aqui pedimos os escopos IG explicitamente via
  * `scope=`.
  */
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v26.0'
 
 // `instagram_manage_contents` habilita excluir mídia via API. Ao adicionar
 // este escopo, contas já conectadas precisam reconectar para reconsentir —
@@ -43,7 +43,7 @@ export const instagramProvider: SocialProvider = {
       scope: SCOPE,
       state,
     })
-    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`
+    return `https://www.facebook.com/v26.0/dialog/oauth?${params.toString()}`
   },
 
   async exchangeCode({ code, redirectUri }): Promise<Result<TokenSet>> {

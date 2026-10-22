@@ -9,7 +9,7 @@ import { expiresInToDate, getJson } from './http'
 import type { SocialAccount, SocialProvider, TokenSet } from './types'
 
 /** Facebook Login (Graph API). */
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v26.0'
 
 /**
  * Escopos: identificar e listar Páginas (`pages_show_list`), ler conteúdo e
@@ -49,7 +49,7 @@ export const facebookProvider: SocialProvider = {
     } else {
       params.set('scope', SCOPE)
     }
-    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`
+    return `https://www.facebook.com/v26.0/dialog/oauth?${params.toString()}`
   },
 
   async exchangeCode({ code, redirectUri }): Promise<Result<TokenSet>> {

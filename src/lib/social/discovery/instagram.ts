@@ -6,7 +6,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { getJson } from '../providers/http'
 import type { DiscoveredPost, DiscoveredProfile, OwnMetrics } from './types'
 
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v26.0'
 
 function toInt(value: unknown): number {
   const n =

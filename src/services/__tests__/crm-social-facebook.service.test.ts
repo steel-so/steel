@@ -24,7 +24,7 @@ import {
 } from '../crm-social-facebook.service'
 import { getFreshAccessToken } from '../crm-social-token'
 
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v26.0'
 const PAGE = 'page-1'
 const ALL_SCOPES = 'pages_read_engagement,read_insights,pages_manage_posts'
 const NOW = new Date('2026-09-18T12:00:00.000Z')
@@ -204,7 +204,7 @@ describe('getInsights()', () => {
       ],
     )
     const params = new URL(calls[0].url).searchParams
-    expect(new URL(calls[0].url).pathname).toBe(`/v21.0/${PAGE}/insights`)
+    expect(new URL(calls[0].url).pathname).toBe(`/v26.0/${PAGE}/insights`)
     expect(params.get('period')).toBe('day')
     expect(params.get('since')).toBe('2026-08-21')
     expect(params.get('until')).toBe('2026-09-18')
@@ -276,7 +276,7 @@ describe('getRecentPosts()', () => {
       },
     ])
     const url = new URL(fetchMock.calls()[0].url)
-    expect(url.pathname).toBe(`/v21.0/${PAGE}/posts`)
+    expect(url.pathname).toBe(`/v26.0/${PAGE}/posts`)
     expect(url.searchParams.get('limit')).toBe('20')
   })
 

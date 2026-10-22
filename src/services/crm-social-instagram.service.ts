@@ -25,7 +25,7 @@ import { assertModuleMember } from './authz'
 import { getFreshAccessToken } from './crm-social-token'
 
 /** Graph API (Meta) — mesma versão usada no provider OAuth. */
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v26.0'
 
 /** Escopos exigidos por capacidade — detecta conexões antigas (sem reconsentir). */
 const REQUIRED_SCOPES = {
