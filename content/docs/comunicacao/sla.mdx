@@ -1,0 +1,78 @@
+---
+title: SLA do atendimento
+description: Prazo para a primeira resposta e para resolver a conversa, avisos antes de estourar, indicador na conversa e relatório de cumprimento.
+section: comunicacao
+order: 10
+---
+
+<Callout type='admin'>
+  A política de SLA fica em **Comunicação › Configurações › Atendimento** e é do
+  dono e dos administradores. O relatório é de administradores e líderes de
+  equipe.
+</Callout>
+
+O SLA define em quanto tempo o time deve **responder pela primeira vez** e,
+se você quiser, em quanto tempo deve **resolver** (fechar) a conversa. Quando o
+prazo está perto de acabar ou acaba, as pessoas certas são avisadas e a
+conversa mostra o tempo que sobra. Nada é medido até você ativar uma política.
+
+## Como o relógio corre
+
+- Um atendimento **começa** na mensagem do contato, quando a conversa é nova ou
+  foi reaberta.
+- A **primeira resposta** é a primeira mensagem enviada por uma pessoa depois
+  disso: pelo Steel ou pelo celular conectado. Respostas da IA **não contam**,
+  a não ser que você ligue essa opção na política.
+- O atendimento **termina** quando a conversa é fechada (por uma pessoa, por
+  inatividade ou por uma ação de botão). Uma nova mensagem do contato numa
+  conversa fechada começa outro atendimento.
+- O relógio **não pausa** enquanto se espera o cliente: ele só para quando a
+  primeira resposta acontece (e, para a resolução, quando a conversa fecha).
+
+## Política
+
+Em **Configurações › Atendimento › SLA do atendimento**:
+
+- **Primeira resposta (min)** e **Resolução (min)**. A resolução é opcional
+  (*Medir também a resolução*) e não pode ser menor que a primeira resposta.
+- **Avisar em (% do prazo)**: quando o aviso de risco sai (80% por padrão).
+- **Contar só o horário de atendimento**: o relógio só corre dentro do
+  [horário de atendimento](/docs/comunicacao/ia-e-atendimento) do workspace.
+  Um atendimento que começa fora dele começa a contar na abertura seguinte.
+  Com o horário de atendimento desligado, o relógio corre o tempo todo.
+- **Resposta da IA conta como primeira resposta**: desligado por padrão.
+- **Quem é avisado**: o responsável pela conversa, os líderes da equipe dela e
+  os supervisores (sem ninguém escolhido, os administradores). Cada pessoa só é
+  avisada de conversas que ela pode ver. Os avisos vão para o Steel e, se
+  marcado, por e-mail.
+
+Existe uma **política padrão** e, se precisar, uma **exceção por equipe**: a da
+equipe vale no lugar da padrão para as conversas dela. Os prazos de cada
+atendimento são fixados quando ele começa; mudar a política vale para os
+atendimentos seguintes.
+
+## O que as pessoas veem
+
+- Um indicador discreto no cabeçalho da conversa: *1ª resposta vence em 12 min*,
+  e *SLA estourado* depois do prazo. Depois da primeira resposta, passa a mostrar
+  a resolução, se ela for medida.
+- Cada aviso sai **uma única vez**: um de risco e um de estouro, por prazo.
+- Quando o prazo estoura, a linha do tempo da conversa registra *"SLA estourado:
+  responsáveis avisados"*.
+- Na lista de conversas, o filtro **SLA em risco ou estourado** (aparece quando
+  há atendimentos sendo medidos) separa o que precisa de atenção.
+
+## Relatório de SLA
+
+Em **Comunicação › Relatórios**, a seção **SLA do atendimento** mostra, para os
+atendimentos iniciados no período (horário de Brasília, últimos 30 dias por
+padrão):
+
+- **Primeira resposta no prazo** e **resolução no prazo**, em porcentagem;
+- **tempo médio** e **P90** da primeira resposta (9 de cada 10 respostas saem
+  em até esse tempo; com o horário de atendimento, conta só o tempo útil);
+- **estouros por atendente e por equipe**.
+
+Prazos que ainda estão em andamento não entram na conta, e atendimentos
+fechados antes do prazo sem resposta também não. Use **Exportar CSV** para levar
+os números para uma planilha. Líderes de equipe veem só as equipes que lideram.

@@ -63,3 +63,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0044 | [Telefone web: ligar e atender pelo navegador, direto no PABX](./0044-pabx-webphone-in-the-browser.md) | Aceita | 2026-10-20 |
 | 0045 | [Campanhas de IA agem só por ações liberadas pelo administrador](./0045-whatsapp-ai-campaigns-allowlisted-actions.md) | Aceita | 2026-10-21 |
 | 0046 | [Voz no PABX, fase 2: atendente de voz com IA na URA](./0046-pabx-voice-agent-ivr-realtime.md) | Aceita | 2026-10-22 |
+| 0048 | [SLA de primeira resposta e resolução no atendimento do WhatsApp](./0048-whatsapp-sla-first-response-and-resolution.md) | Aceita | 2026-10-22 |

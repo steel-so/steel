@@ -161,6 +161,11 @@ OWNER/ADMIN; `WhatsAppSettings`):
   caixa de entrada do app (`notifications`, `/[slug]/inbox`) e/ou por
   e-mail, e pode atribuir a conversa sem atendente a um supervisor. No máximo
   um alerta por conversa a cada N horas (padrão 6).
+- **SLA do atendimento** ([ADR 0048](../adr/0048-whatsapp-sla-first-response-and-resolution.md)).
+  Política por workspace (exceção por equipe), desligada por padrão: prazo de
+  primeira resposta e de resolução, avisos uma vez no risco e no estouro,
+  indicador na conversa e relatório em `zap/reports`. Ciclo por atendimento em
+  `whatsapp_sla_cycles`; o tick roda na fila `whatsapp-conversation-lifecycle`.
 - **Mídia em transmissões.** Imagem (JPG/PNG, 5 MB), vídeo (MP4/3GP), áudio
   (AAC/M4A/MP3/AMR/OGG) ou documento (PDF/Office/TXT) até 16 MB, enviados
   com o tipo certo na Meta e na Z-API (`src/lib/whatsapp/broadcast-media.ts`).
@@ -391,7 +396,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 | `whatsapp-ai-reply` | resposta automática por IA | por mensagem |
 | `whatsapp-sentiment` | análise de sentimento | por mensagem |
 | `whatsapp-broadcast` | envio de transmissões + tick de agendadas; também as **Campanhas de IA** — `send-ai-campaign-next` (um envio por vez, encadeado pelo intervalo da campanha e travado pelo `runToken`, espera o horário de atendimento) e `ai-campaign-follow-up` (ação "retomar depois" da IA) — ver [ADR 0045](../adr/0045-whatsapp-ai-campaigns-allowlisted-actions.md) | sob demanda + a cada 5 min |
-| `whatsapp-conversation-lifecycle` | fecha conversas inativas (janela por workspace, padrão 24h) | a cada 15 min |
+| `whatsapp-conversation-lifecycle` | fecha conversas inativas (janela por workspace, padrão 24h) em `auto-close-inactive`; e `sla-tick`, que avisa e marca estouros do SLA de primeira resposta/resolução do atendimento ([ADR 0048](../adr/0048-whatsapp-sla-first-response-and-resolution.md)) | a cada 15 min / a cada 1 min |
 | `crm-scheduled-send` | campanhas de e-mail agendadas | a cada 5 min |
 | `crm-campaigns` | campanhas multicanal ([ADR 0025](../adr/0025-crm-multichannel-campaign-execution.md)): `dispatch` (atrasado até o início do canal ou a abertura da janela de envio) enfileira lotes de `send` espaçados por canal/provedor; `send` reivindica o destinatário (`PENDING → SENDING`) e envia um e-mail ou WhatsApp; `tick` inicia agendadas, refaz o dispatch, libera linhas presas e fecha as concluídas | sob demanda + a cada 5 min |
 | `crm-workflow-schedule` | workflows `on-a-schedule` | a cada 1 min |
