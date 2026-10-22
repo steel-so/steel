@@ -8042,6 +8042,20 @@
             "description": "Número do WhatsApp só com dígitos (DDI + DDD + número).",
             "example": "5511987654321"
           },
+          "contactUsername": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactHasPhone": {
+            "type": "boolean",
+            "description": "Falso quando só o BSUID do contato é conhecido (usuário com username): `contactWaId` traz então o BSUID, sem ligação e sem telefone."
+          },
           "contactAvatarUrl": {
             "anyOf": [
               {
@@ -8215,6 +8229,8 @@
           "contactId",
           "contactName",
           "contactWaId",
+          "contactUsername",
+          "contactHasPhone",
           "contactAvatarUrl",
           "status",
           "assignedUserId",

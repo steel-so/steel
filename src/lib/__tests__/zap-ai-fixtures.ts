@@ -31,6 +31,8 @@ export function conversation(
     contactId: 'ct1',
     contactName: 'Maria',
     contactWaId: '5511999990000',
+    contactUsername: null,
+    contactHasPhone: true,
     contactAvatarUrl: null,
     status: 'IN_PROGRESS',
     assignedUserId: null,

@@ -32,6 +32,8 @@ function conversation(
     contactId: 'c1',
     contactName: 'Ana Souza',
     contactWaId: '5511911111111',
+    contactUsername: null,
+    contactHasPhone: true,
     contactAvatarUrl: null,
     status: 'IN_PROGRESS',
     assignedUserId: null,
@@ -82,6 +84,8 @@ const active = [
     contactId: 'c2',
     contactName: null,
     contactWaId: '5521988887777',
+    contactUsername: null,
+    contactHasPhone: true,
     lastMessagePreview: null,
   }),
 ]

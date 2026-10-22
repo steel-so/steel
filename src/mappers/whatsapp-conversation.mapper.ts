@@ -1,3 +1,4 @@
+import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import type { WhatsAppConversationWithPreview } from '@/src/repositories/whatsapp-conversation.repository'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 
@@ -36,6 +37,8 @@ export function toWhatsAppConversationDTO(
     contactId: conversation.contactId,
     contactName: conversation.contact.name,
     contactWaId: conversation.contact.waId,
+    contactUsername: conversation.contact.username,
+    contactHasPhone: isWhatsAppPhone(conversation.contact.waId),
     contactAvatarUrl: conversation.contact.avatarUrl,
     status: conversation.status,
     assignedUserId: conversation.assignedUserId,

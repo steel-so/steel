@@ -59,6 +59,8 @@ function conversation(
     contactId: 'c1',
     contactName: 'Ana Souza',
     contactWaId: '5511911111111',
+    contactUsername: null,
+    contactHasPhone: true,
     contactAvatarUrl: null,
     status: 'IN_PROGRESS',
     assignedUserId: 'u_2',
