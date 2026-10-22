@@ -3,15 +3,23 @@ import {
   CreateWhatsAppCloseStatusSchema,
   UpdateWhatsAppCloseStatusSchema,
 } from '@/src/schemas/whatsapp-close-status.schema'
+import {
+  CreateWhatsAppPriceSchema,
+  UpdateWhatsAppCostSettingsSchema,
+} from '@/src/schemas/whatsapp-cost.schema'
 import { UpdateWhatsAppSettingsSchema } from '@/src/schemas/whatsapp-settings.schema'
 import { UpdateWhatsAppUsageLimitsSchema } from '@/src/schemas/whatsapp-usage.schema'
 import type { RouteConfig } from '../../registry'
 import { MediaUrlDTO } from '../../schemas/core'
 import {
+  DeletedIdDTO,
   WhatsAppAssignableMemberDTO,
   WhatsAppBusinessHoursStatusDTO,
   WhatsAppCloseStatusDTO,
   WhatsAppCloseStatusOptionsDTO,
+  WhatsAppCostReportDTO,
+  WhatsAppCostSettingsDTO,
+  WhatsAppPriceDTO,
   WhatsAppSettingsDTO,
   WhatsAppUsageDTO,
 } from '../../schemas/whatsapp'
@@ -240,5 +248,116 @@ export const settingsRoutes: RouteConfig[] = [
       },
       { code: 'STORAGE_ERROR', when: 'Falha ao gravar no MinIO' },
     ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/costs',
+    tags: [TAG],
+    summary: 'Análise de custos',
+    description: `Custo estimado do WhatsApp no período (padrão: mês corrente, America/Sao_Paulo): totais, tendência diária, por conexão e provedor (Meta x Z-API lado a lado), categoria, origem, transmissão, campanha de IA e atendente, custo por conversa e por conversa resolvida, projeção do mês pelo ritmo atual e consumo do orçamento. Meta: valores **estimados** (categoria do template x tabela de preços do workspace no momento do envio); Z-API: mensalidade da conexão diluída no volume. O histórico começa no deploy do recurso. ${PRIVILEGED}`,
+    query: z.object({
+      from: z.string().optional().meta({
+        description: 'Início (AAAA-MM-DD, inclusivo).',
+        example: '2026-10-01',
+      }),
+      to: z.string().optional().meta({
+        description:
+          'Fim (AAAA-MM-DD, inclusivo). Máximo de 400 dias de intervalo.',
+        example: '2026-10-22',
+      }),
+      connectionId: z
+        .string()
+        .optional()
+        .meta({ description: 'Filtra uma conexão.' }),
+    }),
+    responses: {
+      200: {
+        description: 'Relatório de custos.',
+        schema: WhatsAppCostReportDTO,
+      },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/costs/export',
+    tags: [TAG],
+    summary: 'Exportar custos (CSV)',
+    description: `Mesmas seções da tela em CSV (separador \`;\`, decimais com vírgula, UTF-8 com BOM). Aceita os mesmos filtros de \`GET .../whatsapp/costs\`. ${PRIVILEGED}`,
+    query: z.object({
+      from: z.string().optional(),
+      to: z.string().optional(),
+      connectionId: z.string().optional(),
+    }),
+    responses: {
+      200: {
+        description: 'Arquivo CSV.',
+        envelope: false,
+        contentType: 'text/csv',
+        schema: { type: 'string' },
+      },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/costs/prices',
+    tags: [TAG],
+    summary: 'Tabela de preços da Meta',
+    description: `Preço por mensagem de template, por categoria e país, com vigência (\`validFrom\`). Na primeira consulta o workspace recebe valores de **referência** (marcados com \`reference: true\`) — a Meta muda os preços, então confira na sua conta Meta. ${PRIVILEGED}`,
+    responses: {
+      200: { description: 'Preços.', schema: z.array(WhatsAppPriceDTO) },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/costs/prices',
+    tags: [TAG],
+    summary: 'Definir preço',
+    description: `Cria um preço válido a partir de \`validFrom\` (padrão: agora); envios anteriores mantêm o valor gravado. Mesma categoria, país e instante substitui o valor. País sem preço usa o de BR. Auditado. ${PRIVILEGED}`,
+    body: CreateWhatsAppPriceSchema,
+    responses: {
+      201: { description: 'Preço salvo.', schema: WhatsAppPriceDTO },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/whatsapp/costs/prices/{priceId}',
+    tags: [TAG],
+    summary: 'Excluir preço',
+    description: `Remove uma linha da tabela (sem preço, o envio cai no valor de referência). Auditado. ${PRIVILEGED}`,
+    params: { priceId: 'Id do preço.' },
+    responses: {
+      200: { description: 'Preço excluído.', schema: DeletedIdDTO },
+    },
+    errors: [...PRIVILEGED_ERRORS, 'WHATSAPP_PRICE_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/costs/settings',
+    tags: [TAG],
+    summary: 'Orçamento e mensalidades',
+    description: `Orçamento mensal de custo e mensalidade fixa de cada conexão. ${PRIVILEGED}`,
+    responses: {
+      200: { description: 'Configurações.', schema: WhatsAppCostSettingsDTO },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/whatsapp/costs/settings',
+    tags: [TAG],
+    summary: 'Definir orçamento e mensalidades',
+    description: `Upsert parcial (omitido = mantém; \`null\` limpa). O orçamento só **avisa** OWNER/ADMIN no inbox ao chegar a 80% e a 100% do mês (uma vez por mês e nível) — nunca bloqueia envios (isso é o limite de mensagens em \`PATCH .../whatsapp/usage\`). Auditado. ${PRIVILEGED}`,
+    body: UpdateWhatsAppCostSettingsSchema,
+    responses: {
+      200: {
+        description: 'Configurações salvas.',
+        schema: WhatsAppCostSettingsDTO,
+      },
+    },
+    errors: [...PRIVILEGED_ERRORS, 'RESOURCE_NOT_FOUND'],
   },
 ]
