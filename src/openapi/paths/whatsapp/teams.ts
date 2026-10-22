@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { SetWhatsAppPresenceSchema } from '@/src/schemas/whatsapp-presence.schema'
 import {
   CreateWhatsAppTeamSchema,
   UpdateWhatsAppTeamSchema,
@@ -7,6 +8,7 @@ import type { RouteConfig } from '../../registry'
 import {
   DeletedIdDTO,
   WhatsAppConversationScopeDTO,
+  WhatsAppPresenceDTO,
   WhatsAppTeamDTO,
 } from '../../schemas/whatsapp'
 import { PRIVILEGED, PRIVILEGED_ERRORS, perm, permErrors } from './shared'
@@ -106,5 +108,50 @@ export const teamRoutes: RouteConfig[] = [
       200: { description: 'Equipe excluída.', schema: DeletedIdDTO },
     },
     errors: [...PRIVILEGED_ERRORS, 'WHATSAPP_TEAM_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/presence',
+    tags: [TAG],
+    summary: 'Presença dos membros das equipes',
+    description:
+      'Disponível ou Ausente de cada pessoa que está em alguma equipe (quem nunca mexeu conta como Disponível). OWNER/ADMIN veem todas as equipes; um líder vê só os membros das equipes que lidera. Só importa para a distribuição automática da fila (ADR 0047).',
+    responses: {
+      200: {
+        description: 'Presença dos membros.',
+        schema: z.array(WhatsAppPresenceDTO),
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'VIEW'),
+      {
+        code: 'FORBIDDEN',
+        message: 'Permissão insuficiente',
+        when: 'O membro não é OWNER/ADMIN nem líder de equipe',
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/presence/me',
+    tags: [TAG],
+    summary: 'Minha presença',
+    description: `Disponível ou Ausente do usuário (Disponível enquanto nunca alterou). ${perm('conversations', 'VIEW')}`,
+    responses: {
+      200: { description: 'Presença do usuário.', schema: WhatsAppPresenceDTO },
+    },
+    errors: permErrors('conversations', 'VIEW'),
+  },
+  {
+    method: 'put',
+    path: '/workspaces/{id}/whatsapp/presence/me',
+    tags: [TAG],
+    summary: 'Definir minha presença',
+    description: `O atendente marca-se Disponível ou Ausente; a troca é manual, nada a altera sozinho. Ausente é pulado pela distribuição automática da fila. Ao voltar a Disponível, a fila de espera é entregue (em segundo plano, em lote limitado). Auditado. ${perm('conversations', 'EDIT')}`,
+    body: SetWhatsAppPresenceSchema,
+    responses: {
+      200: { description: 'Presença salva.', schema: WhatsAppPresenceDTO },
+    },
+    errors: permErrors('conversations', 'EDIT'),
   },
 ]

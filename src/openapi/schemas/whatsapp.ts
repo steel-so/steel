@@ -175,6 +175,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_GUARDRAIL',
         'AUTO_OUTREACH',
         'AI_CAMPAIGN',
+        'DISTRIBUTION',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -550,6 +551,34 @@ export const WhatsAppSettingsDTO = dto(
       description:
         'Dias de atendimento, 0 = domingo … 6 = sábado (padrão seg–sex).',
     }),
+    unassignedAlertNotifyInApp: z.boolean().meta({
+      description:
+        'Avisar no app os supervisores quando uma conversa fica sem atendente (padrão: ligado; ADR 0047).',
+    }),
+    unassignedAlertNotifyEmail: z.boolean().meta({
+      description:
+        'Avisar os supervisores por e-mail quando uma conversa fica sem atendente (padrão: desligado).',
+    }),
+    unassignedReminderMinutes: z.number().int().meta({
+      description:
+        'Minutos sem atendente até um lembrete aos supervisores e líderes (0 = sem lembrete; padrão 10). Um lembrete por conversa a cada vez que ela volta a ficar sem atendente.',
+    }),
+    distributionMode: z.enum(['OFF', 'ROUND_ROBIN', 'LEAST_LOADED']).meta({
+      description:
+        'Distribuição automática da fila: `OFF` (manual, padrão), `ROUND_ROBIN` (rodízio) ou `LEAST_LOADED` (quem tem menos conversas abertas).',
+    }),
+    distributionMaxOpenPerAgent: z.number().int().nullable().meta({
+      description:
+        'Máximo de conversas abertas por atendente (1 a 500); `null` = sem limite.',
+    }),
+    distributionOnlyAvailable: z.boolean().meta({
+      description:
+        'Só distribui para atendentes com presença Disponível (padrão: ligado).',
+    }),
+    distributionRespectBusinessHours: z.boolean().meta({
+      description:
+        'Fora do horário de atendimento a conversa espera na fila (padrão: ligado).',
+    }),
   }),
 )
 
@@ -892,6 +921,20 @@ export const WhatsAppConversationScopeDTO = dto(
     }),
     leadsTeamIds: z.array(z.string()),
     memberTeamIds: z.array(z.string()),
+  }),
+)
+
+export const WhatsAppPresenceDTO = dto(
+  'WhatsAppPresence',
+  z.object({
+    userId: z.string(),
+    status: z.enum(['AVAILABLE', 'AWAY']).meta({
+      description:
+        '`AVAILABLE` (Disponível) recebe conversas da distribuição automática; `AWAY` (Ausente) é pulado.',
+    }),
+    updatedAt: dateTime().nullable().meta({
+      description: '`null` enquanto a pessoa nunca mexeu (vale Disponível).',
+    }),
   }),
 )
 

@@ -116,6 +116,10 @@ describe('<WhatsappConversationEventChip />', () => {
       'Conversa devolvida para a fila por Ana',
     ],
     [
+      event({ kind: 'ASSIGNED', source: 'DISTRIBUTION', reason: 'Bia' }),
+      'Conversa atribuída a Bia pela distribuição automática',
+    ],
+    [
       event({
         kind: 'TEAM_CHANGED',
         source: 'BUTTON_ACTION',

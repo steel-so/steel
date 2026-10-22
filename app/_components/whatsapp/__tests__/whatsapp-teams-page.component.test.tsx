@@ -52,6 +52,11 @@ function setup(teams: WhatsAppTeamDTO[], extra: FetchRoute[] = []) {
   return mockFetch([
     ...extra,
     { match: `${API}/assignable-members`, data: MEMBERS },
+    { match: `${API}/presence`, data: [] },
+    {
+      match: `${API}/teams/me`,
+      data: { mode: 'ALL', leadsTeamIds: [], memberTeamIds: [] },
+    },
     { match: `${API}/teams`, data: teams },
   ])
 }
@@ -67,6 +72,86 @@ async function pickRole(memberName: string, role: RegExp) {
   fireEvent.pointerDown(option)
   fireEvent.click(option)
 }
+
+describe('<WhatsappTeamsPage /> presence', () => {
+  it('marks who is away or available for who manages the teams', async () => {
+    setup(
+      [SALES],
+      [
+        {
+          match: `${API}/presence`,
+          data: [
+            { userId: 'u_1', status: 'AVAILABLE', updatedAt: null },
+            {
+              userId: 'u_2',
+              status: 'AWAY',
+              updatedAt: '2026-10-22T12:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    )
+    renderWithQuery(
+      <WorkspacePermissionsProvider
+        value={{ isPrivileged: true, permissions: null }}
+      >
+        <WhatsappTeamsPage workspaceId='ws_1' />
+      </WorkspacePermissionsProvider>,
+    )
+
+    await screen.findByText('Vendas')
+    await waitFor(() => expect(screen.getAllByRole('img').length).toBe(2))
+    const marks = screen.getAllByRole('img').map((mark) => mark.title)
+    expect(marks).toEqual(['Disponível', 'Ausente'])
+  })
+
+  it('shows presence to a team leader who is not an admin', async () => {
+    setup(
+      [SALES],
+      [
+        {
+          match: `${API}/teams/me`,
+          data: {
+            mode: 'SCOPED',
+            leadsTeamIds: ['tm_sales'],
+            memberTeamIds: [],
+          },
+        },
+        {
+          match: `${API}/presence`,
+          data: [{ userId: 'u_2', status: 'AWAY', updatedAt: null }],
+        },
+      ],
+    )
+    renderWithQuery(
+      <WorkspacePermissionsProvider
+        value={{ isPrivileged: false, permissions: null }}
+      >
+        <WhatsappTeamsPage workspaceId='ws_1' />
+      </WorkspacePermissionsProvider>,
+    )
+
+    await screen.findByText('Vendas')
+    await waitFor(() => expect(screen.getAllByRole('img').length).toBe(2))
+  })
+
+  it('shows no presence to a plain member', async () => {
+    const fetchSpy = setup([SALES])
+    renderWithQuery(
+      <WorkspacePermissionsProvider
+        value={{ isPrivileged: false, permissions: null }}
+      >
+        <WhatsappTeamsPage workspaceId='ws_1' />
+      </WorkspacePermissionsProvider>,
+    )
+
+    await screen.findByText('Vendas')
+    expect(screen.queryAllByRole('img')).toHaveLength(0)
+    expect(
+      fetchSpy.mock.calls.some(([url]) => String(url).includes('/presence')),
+    ).toBe(false)
+  })
+})
 
 describe('<WhatsappTeamsPage />', () => {
   it('lists the teams with leaders and agents', async () => {
