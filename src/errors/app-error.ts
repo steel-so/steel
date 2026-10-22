@@ -371,6 +371,24 @@ export const phoneCallNotFound = (): AppError =>
 export const phoneCallRecordingNotFound = (): AppError =>
   appError('PHONE_CALL_RECORDING_NOT_FOUND', 'Gravação não encontrada')
 
+export const voiceAgentSecretInvalid = (): AppError =>
+  appError('VOICE_AGENT_SECRET_INVALID', 'Segredo do atendente de voz inválido')
+
+export const voiceAgentNotReady = (message: string): AppError =>
+  appError('VOICE_AGENT_NOT_READY', message)
+
+export const voiceAgentRouteNotFound = (): AppError =>
+  appError(
+    'VOICE_AGENT_ROUTE_NOT_FOUND',
+    'Rota do atendente de voz não encontrada',
+  )
+
+export const voiceAgentRouteDuplicate = (): AppError =>
+  appError(
+    'VOICE_AGENT_ROUTE_DUPLICATE',
+    'Esta fila ou número já está ligado ao atendente de voz',
+  )
+
 export const whatsappWebhookUnauthorized = (): AppError =>
   appError('WHATSAPP_WEBHOOK_UNAUTHORIZED', 'Assinatura do webhook inválida')
 

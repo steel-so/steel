@@ -80,6 +80,7 @@ model User {
   whatsappAiKnowledgeDocumentsCreated WhatsAppAiKnowledgeDocument[] @relation("WhatsAppAiKnowledgeDocumentCreatedBy")
   whatsappConversationEventsActed     WhatsAppConversationEvent[]   @relation("WhatsAppConversationEventActor")
   whatsappPhoneCalls                  WhatsAppPhoneCall[]
+  voiceAgentRunAs                     VoiceAgentSettings[]
   notifications                       Notification[]
   notificationPreferences             NotificationPreference[]
   notificationDeliverySettings        NotificationDeliverySetting[]
@@ -450,6 +451,8 @@ model Workspace {
   whatsappContacts             WhatsAppContact[]
   whatsappConversations        WhatsAppConversation[]
   whatsappPhoneCalls           WhatsAppPhoneCall[]
+  voiceAgentSettings           VoiceAgentSettings?
+  voiceAgentRoutes             VoiceAgentRoute[]
   whatsappMessages             WhatsAppMessage[]
   whatsappQuickReplies         WhatsAppQuickReply[]
   whatsappTeams                WhatsAppTeam[]
@@ -1369,6 +1372,17 @@ model WhatsAppPhoneCall {
   sdTicketId         String?                   @map("sd_ticket_id")
   crmPersonId        String?                   @map("crm_person_id")
   crmOpportunityId   String?                   @map("crm_opportunity_id")
+
+  /// IVR voice attendant (ADR 0046): the call was answered by the AI. The
+  /// transcript comes from the realtime session (no audio is stored).
+  voiceAgent          Boolean @default(false) @map("voice_agent")
+  /// Why the attendant ended: caller_hangup, transferred, silence,
+  /// max_duration, provider_error, minutes_cap, ...
+  voiceEndReason      String? @map("voice_end_reason") @db.VarChar(40)
+  /// Extension/queue the call was handed to, and the context (summary +
+  /// ticket) the human receives.
+  voiceTransferTarget String? @map("voice_transfer_target") @db.VarChar(40)
+  voiceHandoff        String? @map("voice_handoff") @db.VarChar(2000)
 
   workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -4565,6 +4579,8 @@ enum AiUsageFeature {
   PHONE_CALL_AI
   /// Proactive AI (ADR 0040): phrasing of the daily digest intro.
   PROACTIVE_DIGEST
+  /// IVR voice attendant (ADR 0046): realtime audio tokens of the call.
+  VOICE_AGENT
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -4739,6 +4755,8 @@ enum AiActionSource {
   AGENT
   /// External AI client through the public MCP server (ADR 0032).
   MCP
+  /// IVR voice attendant, acting as the workspace's configured identity (ADR 0046).
+  VOICE
 }
 
 /// Durable trail of every write executed by AI (assistant or agent), on top
@@ -9062,4 +9080,62 @@ model CrmApolloImport {
   @@index([workspaceId, createdAt])
   @@index([status])
   @@map("crm_apollo_imports")
+}
+
+/// Where the IVR voice attendant listens: a PABX queue or a DID (ADR 0046).
+enum VoiceAgentRouteKind {
+  QUEUE
+  DID
+}
+
+/// IVR voice attendant of a workspace (ADR 0046). Off by default; the
+/// PABX dialplan authenticates with `pabxSecretHash` and the attendant acts
+/// as `runAsUser` (same RBAC as any Steel AI tool).
+model VoiceAgentSettings {
+  workspaceId           String   @id @map("workspace_id")
+  enabled               Boolean  @default(false)
+  /// Spoken verbatim at the start of every call; empty = platform default.
+  noticeText            String?  @map("notice_text") @db.VarChar(500)
+  /// Extra instructions of the company (tone, scope, FAQ).
+  instructions          String?  @db.VarChar(2000)
+  voice                 String   @default("alloy") @db.VarChar(20)
+  maxCallSeconds        Int      @default(300) @map("max_call_seconds")
+  /// Monthly cap of attendant minutes (cost control).
+  monthlyMinutesCap     Int      @default(300) @map("monthly_minutes_cap")
+  silenceTimeoutSeconds Int      @default(20) @map("silence_timeout_seconds")
+  runAsUserId           String?  @map("run_as_user_id")
+  canOpenTickets        Boolean  @default(true) @map("can_open_tickets")
+  canLookupTickets      Boolean  @default(true) @map("can_lookup_tickets")
+  /// Extension/queue that takes the call on error, silence or request.
+  fallbackTarget        String?  @map("fallback_target") @db.VarChar(40)
+  /// SHA-256 of the secret the dialplan sends; the secret is shown once.
+  pabxSecretHash        String?  @map("pabx_secret_hash") @db.Char(64)
+  pabxSecretHint        String?  @map("pabx_secret_hint") @db.VarChar(8)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  runAsUser User?     @relation(fields: [runAsUserId], references: [id], onDelete: SetNull)
+
+  @@map("voice_agent_settings")
+}
+
+model VoiceAgentRoute {
+  id             String              @id @default(cuid())
+  workspaceId    String              @map("workspace_id")
+  kind           VoiceAgentRouteKind
+  /// Queue name or DID number, as the dialplan reports it.
+  value          String              @db.VarChar(40)
+  label          String?             @db.VarChar(80)
+  enabled        Boolean             @default(true)
+  /// Human destination of this route; falls back to the workspace one.
+  transferTarget String?             @map("transfer_target") @db.VarChar(40)
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, kind, value])
+  @@index([workspaceId])
+  @@map("voice_agent_routes")
 }

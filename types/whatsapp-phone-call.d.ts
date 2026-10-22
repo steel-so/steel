@@ -24,6 +24,8 @@ export interface WhatsAppPhoneCallDTO {
   recordingNotice: string | null
   hasRecording: boolean
   aiStatus: WhatsAppPhoneCallAiStatusDTO
+  /** Answered by the IVR voice attendant (ADR 0046). */
+  voiceAgent: boolean
 }
 
 /** Transcription + summary of a call recording (ADR 0043). */
@@ -60,4 +62,10 @@ export interface PhoneCallRecordDTO extends WhatsAppPhoneCallDTO {
   sdTicketId: string | null
   crmPersonId: string | null
   crmOpportunityId: string | null
+  /** Voice attendant calls: why it ended (machine code). */
+  voiceEndReason: string | null
+  /** Extension/queue the call was handed to, when it was. */
+  voiceTransferTarget: string | null
+  /** Context the person who took the call received (summary + ticket). */
+  voiceHandoff: string | null
 }

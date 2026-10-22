@@ -35,6 +35,7 @@ describe('toWhatsAppPhoneCallDTO()', () => {
       recordingNotice: null,
       hasRecording: false,
       aiStatus: 'NONE',
+      voiceAgent: false,
     })
     expect(dto).not.toHaveProperty('callbackTokenHash')
   })
@@ -113,6 +114,34 @@ describe('toPhoneCallRecordDTO()', () => {
       sdTicketId: 't1',
       crmPersonId: 'p1',
       crmOpportunityId: 'o1',
+    })
+  })
+
+  it('carries the voice attendant fields (ADR 0046)', () => {
+    const dto = toPhoneCallRecordDTO(
+      createFakePhoneCallWithNames(
+        {
+          voiceAgent: true,
+          voiceEndReason: 'transferred',
+          voiceTransferTarget: '200',
+          voiceHandoff: 'Transferida: pediu uma pessoa. Chamado: INC-1.',
+        },
+        { userName: null, contactName: null },
+      ),
+    )
+    expect(dto).toMatchObject({
+      voiceAgent: true,
+      voiceEndReason: 'transferred',
+      voiceTransferTarget: '200',
+      voiceHandoff: 'Transferida: pediu uma pessoa. Chamado: INC-1.',
+    })
+    expect(
+      toPhoneCallRecordDTO(createFakePhoneCallWithNames({}, {})),
+    ).toMatchObject({
+      voiceAgent: false,
+      voiceEndReason: null,
+      voiceTransferTarget: null,
+      voiceHandoff: null,
     })
   })
 

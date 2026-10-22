@@ -21,6 +21,7 @@ export function toWhatsAppPhoneCallDTO(
     recordingNotice: call.recordingRequested ? call.recordingNotice : null,
     hasRecording: Boolean(call.recordingKey),
     aiStatus: call.aiStatus,
+    voiceAgent: call.voiceAgent,
   }
 }
 
@@ -56,5 +57,8 @@ export function toPhoneCallRecordDTO(
     sdTicketId: call.sdTicketId,
     crmPersonId: call.crmPersonId,
     crmOpportunityId: call.crmOpportunityId,
+    voiceEndReason: call.voiceEndReason,
+    voiceTransferTarget: call.voiceTransferTarget,
+    voiceHandoff: call.voiceHandoff,
   }
 }

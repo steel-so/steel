@@ -41,6 +41,10 @@ export function createFakeWhatsAppPhoneCall(
     sdTicketId: null,
     crmPersonId: null,
     crmOpportunityId: null,
+    voiceAgent: false,
+    voiceEndReason: null,
+    voiceTransferTarget: null,
+    voiceHandoff: null,
     ...overrides,
   }
 }
