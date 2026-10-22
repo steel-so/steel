@@ -88,6 +88,19 @@ const SKIP_LABEL: Record<string, string> = {
   summary_failed: 'A transcrição está pronta, mas o resumo falhou.',
 }
 
+/** pt-BR text of `voiceEndReason` (IVR voice attendant, ADR 0046). */
+const VOICE_END_LABEL: Record<string, string> = {
+  caller_hangup: 'O cliente desligou.',
+  transferred: 'Passada para uma pessoa.',
+  silence: 'Silêncio do cliente: passada para uma pessoa.',
+  max_duration: 'Tempo máximo do atendimento automático.',
+  provider_error: 'Falha no atendimento automático.',
+  disabled: 'O atendente de voz foi desligado durante a ligação.',
+  provider_unavailable: 'Atendimento automático indisponível.',
+  session_crashed: 'Falha no atendimento automático.',
+  worker_restart: 'O atendimento automático foi interrompido.',
+}
+
 const SENTIMENT: Record<
   NonNullable<PhoneCallRecordDTO['sentiment']>,
   { label: string; variant: 'secondary' | 'outline' | 'destructive' }
@@ -234,17 +247,44 @@ export function PhoneCallCard({
         </span>
         <div className='min-w-0 flex-1'>
           <p className='truncate font-medium'>
-            Ligação{who ? ` · ${who}` : ''}
+            {call.voiceAgent ? 'Atendente de voz' : 'Ligação'}
+            {who ? ` · ${who}` : ''}
           </p>
           <p className='text-muted-foreground text-xs'>
             {DATE_TIME.format(new Date(call.createdAt))}
             {answered ? ` · ${formatCallDuration(call.durationSeconds)}` : ''}
           </p>
         </div>
+        {call.voiceAgent ? <Badge variant='outline'>IA</Badge> : null}
         <Badge variant={answered ? 'secondary' : 'outline'}>
           {PHONE_CALL_STATUS_LABEL[call.status]}
         </Badge>
       </header>
+
+      {call.voiceAgent ? (
+        <section className='flex flex-col gap-1 text-xs'>
+          {call.voiceEndReason ? (
+            <p className='text-muted-foreground'>
+              {VOICE_END_LABEL[call.voiceEndReason] ?? 'Atendimento encerrado.'}
+            </p>
+          ) : null}
+          {call.voiceTransferTarget || call.voiceHandoff ? (
+            <div className='flex flex-col gap-0.5 rounded-md bg-muted p-2'>
+              <span className='font-medium'>
+                Passada para{' '}
+                {call.voiceTransferTarget
+                  ? `“${call.voiceTransferTarget}”`
+                  : 'uma pessoa'}
+              </span>
+              {call.voiceHandoff ? (
+                <span className='whitespace-pre-line break-words text-muted-foreground'>
+                  {call.voiceHandoff}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {call.recording ? (
         <div className='flex flex-col gap-1'>
