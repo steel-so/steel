@@ -1,0 +1,76 @@
+---
+title: Custos do WhatsApp
+description: Veja quanto o WhatsApp custa por conexão, categoria, transmissão, campanha de IA e atendente, compare Meta e Z-API e defina um orçamento mensal.
+section: comunicacao
+order: 10
+---
+
+A aba **Custos**, em **Relatórios**, mostra uma **estimativa** do que o
+WhatsApp custa para o seu workspace e avisa quando o mês se aproxima do
+orçamento que você definiu.
+
+<Callout type='admin'>
+  Valores em reais só aparecem para o dono e para os administradores. Membros e
+  visualizadores não veem a aba nem os números.
+</Callout>
+
+## Como o custo é calculado
+
+- **Meta (API oficial).** A Meta cobra por mensagem de **template**, de acordo
+  com a categoria do template (**Marketing**, **Utilidade** ou **Autenticação**)
+  e o país do contato. No momento do envio, o Steel grava a categoria e o preço
+  vigente da sua tabela. Mensagens livres dentro da janela de atendimento de
+  24 horas não têm custo na Meta, mas entram na contagem de volume.
+- **Z-API.** Não há preço por mensagem: você paga uma mensalidade fixa por
+  instância. O custo efetivo é a mensalidade dividida pelo volume do período,
+  então ele cai quanto mais você usa.
+
+<Callout type='aviso'>
+  É uma estimativa. Ela pode diferir da fatura da Meta, por exemplo quando um
+  template de utilidade é enviado dentro de uma janela de atendimento aberta
+  (a Meta pode não cobrar, e o Steel conta como utilidade). Confira sempre a
+  fatura. O histórico começa na data em que o recurso foi ativado no seu
+  workspace.
+</Callout>
+
+## Tabela de preços da Meta
+
+Na parte de baixo da aba, **Tabela de preços da Meta** guarda o preço por
+categoria e país. Os valores iniciais são de **referência**: confira na sua
+conta Meta e ajuste, porque a Meta reajusta os preços.
+
+1. Escolha a categoria, o país (duas letras, como `BR`) e o preço em reais.
+2. Informe a data em que o preço passa a valer (vazio = agora).
+3. Clique em **Salvar preço**.
+
+Os envios antigos mantêm o preço que valia na época. Um país sem preço próprio
+usa o do Brasil.
+
+## Orçamento e mensalidades
+
+Em **Orçamento e mensalidades**:
+
+- **Orçamento mensal (R$)**: quando o gasto do mês chega a **80%** e a
+  **100%**, os administradores recebem um aviso no Steel (uma vez por mês e por
+  nível). O orçamento **não bloqueia envios**. Para limitar envios, use o limite
+  mensal de mensagens em **Ajustes > Comunicação**.
+- **Mensalidade** de cada conexão: o valor fixo que você paga pela linha (a
+  instância da Z-API, por exemplo). Ela entra no gasto do mês e no custo por
+  mensagem.
+
+O gasto do mês é o custo estimado da Meta mais as mensalidades.
+
+## O que a aba mostra
+
+Use os botões de período, as datas e o filtro de conexão no topo.
+
+| Bloco | Para que serve |
+| --- | --- |
+| **Custo no período** | Total, separando Meta estimado e mensalidades |
+| **Custo por conversa** e **por conversa resolvida** | Resolvida é a conversa fechada que não foi marcada como insucesso |
+| **Mês corrente e orçamento** | Gasto até agora, projeção do mês pelo ritmo atual e consumo do orçamento |
+| **Tendência diária** | Custo da Meta por dia |
+| **Meta x Z-API** | As duas formas de cobrança lado a lado, com o custo por mensagem e por conversa |
+| **Por categoria, origem, transmissão, campanha de IA e atendente** | Onde o dinheiro foi |
+
+**Exportar CSV** baixa os mesmos blocos para o período escolhido.
