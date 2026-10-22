@@ -14,10 +14,7 @@ import {
   TRANSCRIPTION_MODEL,
   transcribeAudio,
 } from '@/src/lib/ai/transcription'
-import {
-  PHONE_CALL_RECORDINGS_BUCKET,
-  phoneMatchKey,
-} from '@/src/lib/pabx/recording'
+import { PHONE_CALL_RECORDINGS_BUCKET } from '@/src/lib/pabx/recording'
 import { ok, type Result } from '@/src/lib/result'
 import { getObject } from '@/src/lib/storage/s3'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
@@ -28,10 +25,10 @@ import {
   AiUsageRepository,
   WorkspaceAiSettingsRepository,
 } from '@/src/repositories/ai-settings.repository'
-import { PhoneCallLinkRepository } from '@/src/repositories/phone-call-link.repository'
 import { WhatsAppPhoneCallRepository } from '@/src/repositories/whatsapp-phone-call.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
+import { PhoneCallLinkService } from './phone-call-link.service'
 
 /** Transcript characters sent to the summary model at most (~40 min). */
 export const SUMMARY_TRANSCRIPT_CHAR_BUDGET = 60_000
@@ -240,55 +237,6 @@ async function summarize(
   }
 }
 
-/** A lookup that fails only loses that link; the summary still lands. */
-function linkOrNull(
-  result: Result<string | null>,
-  call: WhatsAppPhoneCall,
-  link: string,
-): string | null {
-  if (result.ok) return result.value
-  logger.warn('phone_call.link_lookup_failed', {
-    component: 'PhoneCallAiService',
-    workspaceId: call.workspaceId,
-    callId: call.id,
-    link,
-  })
-  return null
-}
-
-async function resolveLinks(call: WhatsAppPhoneCall) {
-  const sdTicketId = linkOrNull(
-    await PhoneCallLinkRepository.findTicketForConversation(
-      call.workspaceId,
-      call.conversationId,
-    ),
-    call,
-    'sd_ticket',
-  )
-  const key = phoneMatchKey(call.destination)
-  const crmPersonId = key
-    ? linkOrNull(
-        await PhoneCallLinkRepository.findPersonByPhoneKey(
-          call.workspaceId,
-          key,
-        ),
-        call,
-        'crm_person',
-      )
-    : null
-  const crmOpportunityId = crmPersonId
-    ? linkOrNull(
-        await PhoneCallLinkRepository.findOpenOpportunityForPerson(
-          call.workspaceId,
-          crmPersonId,
-        ),
-        call,
-        'crm_opportunity',
-      )
-    : null
-  return { sdTicketId, crmPersonId, crmOpportunityId }
-}
-
 /**
  * Turns an uploaded call recording into information (ADR 0043): Whisper
  * transcript, then summary, sentiment and next steps by the workspace model,
@@ -365,7 +313,7 @@ export const PhoneCallAiService = {
     // PII masking and provider failover run inside the guarded provider
     // from AiUsageService.prepare (ADR 0041/0042); the speech is fenced.
     const summary = await summarize(call, prepared, transcription.text)
-    const links = await resolveLinks(call)
+    const links = await PhoneCallLinkService.resolve(call)
 
     const updated = await WhatsAppPhoneCallRepository.update(call.id, {
       aiStatus: 'DONE',

@@ -56,6 +56,45 @@ export const WhatsAppPhoneCallRepository = {
     }
   },
 
+  async findByPabxUniqueId(
+    workspaceId: string,
+    pabxUniqueId: string,
+  ): Promise<Result<WhatsAppPhoneCall | null>> {
+    try {
+      return ok(
+        await prisma.whatsAppPhoneCall.findUnique({
+          where: { workspaceId_pabxUniqueId: { workspaceId, pabxUniqueId } },
+        }),
+      )
+    } catch (error) {
+      return err(dbError('Failed to find whatsapp phone call', error))
+    }
+  },
+
+  /** Calls of an extension still running since `since` (newest first). */
+  async listLiveByExtension(
+    workspaceId: string,
+    extension: string,
+    since: Date,
+  ): Promise<Result<WhatsAppPhoneCall[]>> {
+    try {
+      return ok(
+        await prisma.whatsAppPhoneCall.findMany({
+          where: {
+            workspaceId,
+            extension,
+            createdAt: { gte: since },
+            status: { in: ['QUEUED', 'DIALING', 'IN_PROGRESS'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+      )
+    } catch (error) {
+      return err(dbError('Failed to list live whatsapp phone calls', error))
+    }
+  },
+
   async findLatestByConversation(
     conversationId: string,
     workspaceId: string,
@@ -63,7 +102,9 @@ export const WhatsAppPhoneCallRepository = {
     try {
       return ok(
         await prisma.whatsAppPhoneCall.findFirst({
-          where: { conversationId, workspaceId },
+          // The header banner follows the PABX leg; browser phone calls
+          // live in the dock.
+          where: { conversationId, workspaceId, source: 'CLICK_TO_CALL' },
           orderBy: { createdAt: 'desc' },
         }),
       )
