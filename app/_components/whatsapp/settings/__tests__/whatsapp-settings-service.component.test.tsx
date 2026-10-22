@@ -40,6 +40,13 @@ function settings(
     businessHoursStart: '08:00',
     businessHoursEnd: '18:00',
     businessHoursDays: [1, 2, 3, 4, 5],
+    unassignedAlertNotifyInApp: true,
+    unassignedAlertNotifyEmail: false,
+    unassignedReminderMinutes: 10,
+    distributionMode: 'OFF',
+    distributionMaxOpenPerAgent: null,
+    distributionOnlyAvailable: true,
+    distributionRespectBusinessHours: true,
     whatsappCheckTtlDays: 30,
     ...overrides,
   }
