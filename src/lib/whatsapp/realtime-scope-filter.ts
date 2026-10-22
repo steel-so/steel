@@ -90,6 +90,9 @@ export function createRealtimeScopeFilter(deps: RealtimeScopeFilterDeps) {
         return (await visible(scope, event.conversationId)) ? event : null
       case 'phone-call.updated':
         if (scope.mode === 'ALL') return event
+        // A browser phone call with no conversation belongs to who made it.
+        if (!event.call.conversationId)
+          return event.call.userId === scope.userId ? event : null
         return (await visible(scope, event.call.conversationId)) ? event : null
       default:
         // Group messages are not conversations (no Equipes rule).

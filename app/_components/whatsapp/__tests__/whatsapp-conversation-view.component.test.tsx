@@ -838,6 +838,7 @@ describe('<WhatsappConversationView />', () => {
       status: 'online',
       error: null,
       call: null,
+      recordingNotice: null,
       dial: vi.fn(async () => undefined),
       answer: vi.fn(async () => undefined),
       hangup: vi.fn(async () => undefined),

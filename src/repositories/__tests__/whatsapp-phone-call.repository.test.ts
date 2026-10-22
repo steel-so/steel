@@ -296,7 +296,7 @@ describe('WhatsAppPhoneCallRepository', () => {
       }),
     )
     expect(list.map((c) => c.id)).toEqual([newer.id, older.id])
-    expect(list[0].conversation.contact.name).toBe('Maria')
+    expect(list[0].conversation?.contact.name).toBe('Maria')
     expect(list[0].user?.name).toBe(ctx.user.name)
 
     // Another workspace never sees them.
