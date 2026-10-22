@@ -22,6 +22,8 @@ export interface WhatsAppNotifyInput {
   body: string
   /** Path inside the workspace (the slug is prefixed by the emitter). */
   path: string
+  /** Idempotency key: the same key never notifies the same user twice. */
+  dedupeKey?: string
   /** Extra context for the log. */
   meta?: Record<string, unknown>
 }
@@ -38,6 +40,7 @@ export async function notifyWhatsAppUsers(
     title: input.title,
     body: input.body,
     path: input.path,
+    dedupeKey: input.dedupeKey,
   })
   logger.info('whatsapp.notify.delivered', {
     workspaceId: input.workspaceId,

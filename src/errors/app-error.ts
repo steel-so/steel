@@ -1735,3 +1735,6 @@ export const aiEvalRunInProgress = (): AppError =>
 export const aiInsightNotFound = (
   message = 'Alerta não encontrado',
 ): AppError => appError('AI_INSIGHT_NOT_FOUND', message)
+
+export const whatsappPriceNotFound = (): AppError =>
+  appError('WHATSAPP_PRICE_NOT_FOUND', 'Preço não encontrado')

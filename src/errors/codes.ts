@@ -1107,6 +1107,8 @@ export const ERROR_CODES = {
   // coupons and the payment webhook are unavailable, not broken. 503 because
   // it is a deliberate, temporary unavailability of the whole feature.
   BILLING_DISABLED: { code: 'BILLING_DISABLED', status: 503 },
+  // Cost analysis: the price row to delete does not exist in the workspace.
+  WHATSAPP_PRICE_NOT_FOUND: { code: 'WHATSAPP_PRICE_NOT_FOUND', status: 404 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

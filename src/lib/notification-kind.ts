@@ -443,6 +443,18 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'hourglass',
     color: 'rose',
   },
+  WHATSAPP_COST_BUDGET_WARNING: {
+    module: 'COMMUNICATION',
+    label: 'Custo do WhatsApp em 80% do orçamento',
+    icon: 'hourglass',
+    color: 'amber',
+  },
+  WHATSAPP_COST_BUDGET_REACHED: {
+    module: 'COMMUNICATION',
+    label: 'Orçamento de custo do WhatsApp atingido',
+    icon: 'hourglass',
+    color: 'rose',
+  },
   AGENT_APPROVAL_REQUESTED: {
     module: 'OTHER',
     label: 'Agente aguardando aprovação',

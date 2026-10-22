@@ -464,6 +464,8 @@ model Workspace {
   whatsappAiCampaigns          WhatsAppAiCampaign[]
   whatsappAiCampaignRuns       WhatsAppAiCampaignActionRun[]
   whatsappUsage                WhatsAppUsageMonthly[]
+  whatsappPrices               WhatsAppPrice[]
+  whatsappCostEntries          WhatsAppCostEntry[]
   whatsappConversationEvents   WhatsAppConversationEvent[]
   notifications                Notification[]
   notificationPreferences      NotificationPreference[]
@@ -1155,6 +1157,9 @@ model WhatsAppConnection {
   encryptedMetaAccessToken String?                  @map("encrypted_meta_access_token")
   /// PIN de 6 dígitos usado no registro Embedded Signup (cifrado), para o suporte.
   encryptedMetaPin         String?                  @map("encrypted_meta_pin")
+  /// Flat monthly fee of the line (BRL) — the Z-API instance subscription or
+  /// a BSP fee. Used only by the cost analysis (ADR 0050). Null = none.
+  monthlyFee               Decimal?                 @map("monthly_fee") @db.Decimal(12, 2)
   createdById              String                   @map("created_by_id")
   createdAt                DateTime                 @default(now()) @map("created_at")
   updatedAt                DateTime                 @updatedAt @map("updated_at")
@@ -1166,6 +1171,7 @@ model WhatsAppConnection {
   templates      WhatsAppTemplate[]
   groups         WhatsAppGroup[]
   aiCampaigns    WhatsAppAiCampaign[]
+  costEntries    WhatsAppCostEntry[]
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
@@ -1515,6 +1521,82 @@ model WhatsAppUsageMonthly {
   @@map("whatsapp_usage_monthly")
 }
 
+enum WhatsAppCostCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+  /// Free-form message inside the 24 h service window (no Meta charge).
+  SERVICE
+}
+
+enum WhatsAppCostKind {
+  TEMPLATE
+  SERVICE
+}
+
+enum WhatsAppCostSource {
+  BROADCAST
+  AI_CAMPAIGN
+  CRM_CAMPAIGN
+  AGENT
+  AI_REPLY
+  BUTTON
+  OTHER
+}
+
+/// Meta price per template message, per workspace (ADR 0050). Prices change
+/// over time, so rows are never hard-coded in the code path: each row is
+/// valid from `validFrom` until a later row of the same category/country
+/// replaces it. `reference` marks the editable default seeded on first use.
+model WhatsAppPrice {
+  id          String               @id @default(cuid())
+  workspaceId String               @map("workspace_id")
+  category    WhatsAppCostCategory
+  country     String               @default("BR") @db.VarChar(2)
+  currency    String               @default("BRL") @db.VarChar(3)
+  unitPrice   Decimal              @map("unit_price") @db.Decimal(12, 6)
+  validFrom   DateTime             @map("valid_from")
+  reference   Boolean              @default(false)
+  createdById String?              @map("created_by_id")
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, category, country, validFrom])
+  @@index([workspaceId])
+  @@map("whatsapp_prices")
+}
+
+/// One billable (or volume-only) outbound message, written at send time.
+/// `estimatedCost` is quantity x the unit price snapshot, in `currency`.
+/// Refs are plain ids (no FK) so history survives deletes.
+model WhatsAppCostEntry {
+  id             String               @id @default(cuid())
+  workspaceId    String               @map("workspace_id")
+  connectionId   String               @map("connection_id")
+  provider       WhatsAppProvider
+  occurredAt     DateTime             @default(now()) @map("occurred_at")
+  category       WhatsAppCostCategory
+  kind           WhatsAppCostKind
+  source         WhatsAppCostSource
+  country        String               @default("BR") @db.VarChar(2)
+  currency       String               @default("BRL") @db.VarChar(3)
+  broadcastId    String?              @map("broadcast_id")
+  aiCampaignId   String?              @map("ai_campaign_id")
+  conversationId String?              @map("conversation_id")
+  userId         String?              @map("user_id")
+  quantity       Int                  @default(1)
+  unitPrice      Decimal              @map("unit_price") @db.Decimal(12, 6)
+  estimatedCost  Decimal              @map("estimated_cost") @db.Decimal(14, 6)
+
+  workspace  Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, occurredAt])
+  @@index([connectionId, occurredAt])
+  @@map("whatsapp_cost_entries")
+}
+
 /// Configurações de atendimento do WhatsApp por workspace (admin).
 model WhatsAppSettings {
   id                  String @id @default(cuid())
@@ -1558,6 +1640,9 @@ model WhatsAppSettings {
   businessHoursStart          String   @default("08:00") @map("business_hours_start") @db.VarChar(5)
   businessHoursEnd            String   @default("18:00") @map("business_hours_end") @db.VarChar(5)
   businessHoursDays           Int[]    @default([1, 2, 3, 4, 5]) @map("business_hours_days")
+  /// Monthly cost budget (BRL) of the Comunicação module (ADR 0050). Only
+  /// warns admins at 80% and 100%; never blocks a send. Null = no budget.
+  monthlyCostBudget           Decimal? @map("monthly_cost_budget") @db.Decimal(12, 2)
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -5216,6 +5301,10 @@ enum NotificationKind {
   WEBHOOK_ENDPOINT_DISABLED
   /// Proactive AI (ADR 0040): the user's daily digest of active insights.
   AI_DAILY_DIGEST
+  /// Comunicação: monthly cost reached 80% of the budget (ADR 0050).
+  WHATSAPP_COST_BUDGET_WARNING
+  /// Comunicação: monthly cost reached the budget.
+  WHATSAPP_COST_BUDGET_REACHED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).

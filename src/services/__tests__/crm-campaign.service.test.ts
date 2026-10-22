@@ -86,6 +86,7 @@ function connection(
     metaWabaId: null,
     encryptedMetaAccessToken: null,
     encryptedMetaPin: null,
+    monthlyFee: null,
     createdById: ACTOR,
     createdAt: NOW,
     updatedAt: NOW,
