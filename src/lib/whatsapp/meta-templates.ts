@@ -1,6 +1,6 @@
 import 'server-only'
 
-const META_GRAPH_VERSION = 'v23.0'
+const META_GRAPH_VERSION = 'v26.0'
 
 export interface MetaTemplateRaw {
   id?: string
@@ -38,6 +38,34 @@ export async function fetchMetaTemplates(input: {
   return (body?.data ?? []) as MetaTemplateRaw[]
 }
 
+interface MetaGraphError {
+  message?: string
+  code?: number
+  error_subcode?: number
+  error_user_title?: string
+  error_user_msg?: string
+  fbtrace_id?: string
+}
+
+/** Meta's generic `message` ("Invalid parameter") alone is undiagnosable:
+ * the user-facing title/message and the codes say which field was refused. */
+function metaErrorDetail(error: MetaGraphError | undefined): string | null {
+  if (!error?.message) return null
+  const user = [error.error_user_title, error.error_user_msg]
+    .filter(Boolean)
+    .join(': ')
+  const codes = [
+    error.code !== undefined ? `code ${error.code}` : null,
+    error.error_subcode !== undefined ? `subcode ${error.error_subcode}` : null,
+    error.fbtrace_id ? `trace ${error.fbtrace_id}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ')
+  return [user || error.message, codes ? `(${codes})` : null]
+    .filter(Boolean)
+    .join(' ')
+}
+
 export interface CreateMetaTemplateInput {
   wabaId: string
   accessToken: string
@@ -61,7 +89,7 @@ export async function createMetaTemplate(
       name: input.name,
       language: input.language,
       category: input.category,
-      // Graph API v23.0 passou a exigir isso explicitamente — sem o campo,
+      // Graph API v23.0+ passou a exigir isso explicitamente — sem o campo,
       // templates com variáveis {{n}} no corpo são rejeitados com
       // INVALID_FORMAT mesmo com o `example` correto (confirmado contra
       // uma WABA real). Só usamos {{n}} posicional, nunca nomeado.
@@ -74,7 +102,8 @@ export async function createMetaTemplate(
 
   if (!response.ok) {
     throw new Error(
-      body?.error?.message ?? `Falha ao criar template (${response.status})`,
+      metaErrorDetail(body?.error) ??
+        `Falha ao criar template (${response.status})`,
     )
   }
 

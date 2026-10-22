@@ -22,7 +22,7 @@ export const PRICING_FAQ: PricingFaqItem[] = [
   {
     question: 'O que muda de um plano para outro?',
     answer:
-      'Hoje, o número de membros: até 12 no Free e no Business, ilimitados no Pro e no Enterprise. Os recursos dos módulos, da Steel AI e de segurança são os mesmos em todos os planos.',
+      'Hoje, o número de membros: até 12 no Free e no Pro, ilimitados no Business e no Enterprise. Os recursos dos módulos, da Steel AI e de segurança são os mesmos em todos os planos.',
   },
   {
     question: 'Como contrato um plano pago?',

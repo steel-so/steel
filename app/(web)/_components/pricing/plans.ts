@@ -78,11 +78,11 @@ export const PLANS: Record<PlanGrid, PlanCopy> = {
     ],
   },
   PRO: {
-    description: 'Para equipes que crescem sem limite de membros.',
+    description: 'Para equipes de até 12 pessoas que querem o Steel completo.',
     features: [
       {
-        title: 'Membros ilimitados',
-        description: 'Convide toda a empresa, sem teto de assentos.',
+        title: 'Até 12 membros',
+        description: 'Membros e convites pendentes contam como assentos.',
       },
       MODULES,
       STEEL_AI,
@@ -93,11 +93,11 @@ export const PLANS: Record<PlanGrid, PlanCopy> = {
   },
   BUSINESS: {
     description:
-      'O plano do período de teste: todo workspace novo começa com 14 dias de Business.',
+      'Para equipes que crescem sem limite de membros. É também o plano do período de teste: todo workspace novo começa com 14 dias de Business.',
     features: [
       {
-        title: 'Até 12 membros',
-        description: 'Membros e convites pendentes contam como assentos.',
+        title: 'Membros ilimitados',
+        description: 'Convide toda a empresa, sem teto de assentos.',
       },
       MODULES,
       STEEL_AI,

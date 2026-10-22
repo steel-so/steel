@@ -3,7 +3,7 @@
  * Pure functions are exported for unit tests; the SDK loader touches `window`.
  */
 
-export const META_GRAPH_VERSION = 'v23.0'
+export const META_GRAPH_VERSION = 'v26.0'
 
 export type EmbeddedSignupMessage =
   | { kind: 'finish'; phoneNumberId: string; wabaId: string }

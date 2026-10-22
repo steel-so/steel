@@ -76,8 +76,9 @@ describe('steelComparisonPlans', () => {
         kind: 'per-seat',
         cents: Math.round(PAID_PLAN_PRICES.PRO.yearly / 12),
       },
+      note: 'até 12 usuários',
     })
-    expect(plans[2].note).toBe('até 12 usuários')
+    expect(plans[2].note).toBeUndefined()
     expect(plans[3]).toEqual({ name: 'Enterprise', price: { kind: 'quote' } })
   })
 })

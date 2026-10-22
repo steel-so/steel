@@ -231,7 +231,7 @@ describe('<PricingCardPlan /> copy', () => {
       </NuqsTestingAdapter>,
     )
     expect(screen.getByText('Inclui')).toBeInTheDocument()
-    expect(screen.getByText('Membros ilimitados')).toBeInTheDocument()
+    expect(screen.getByText('Até 12 membros')).toBeInTheDocument()
     expect(
       screen.getByText('ServiceDesk, CRM e Comunicação'),
     ).toBeInTheDocument()

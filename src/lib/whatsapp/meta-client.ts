@@ -11,7 +11,7 @@ import type {
   WhatsAppSendResult,
 } from './types'
 
-const META_GRAPH_VERSION = 'v23.0'
+const META_GRAPH_VERSION = 'v26.0'
 export const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`
 
 export interface MetaCredentials {

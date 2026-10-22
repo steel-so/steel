@@ -9,7 +9,7 @@ import { getObjectWithContentType } from '@/src/lib/storage/s3'
 import { persistObject } from '@/src/services/media/_media'
 
 const BUCKET = 'whatsapp-media'
-const META_GRAPH_VERSION = 'v23.0'
+const META_GRAPH_VERSION = 'v26.0'
 
 const EXTENSION_BY_CONTENT_TYPE: Record<string, string> = {
   'image/jpeg': 'jpg',
