@@ -1,4 +1,4 @@
-# ADR 0046 — Identidade do contato WhatsApp: telefone ou BSUID
+# ADR 0047 — Identidade do contato WhatsApp: telefone ou BSUID
 
 - **Status:** aceito
 - **Data:** 2026-10-22

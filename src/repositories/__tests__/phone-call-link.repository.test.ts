@@ -204,6 +204,57 @@ describe('PhoneCallLinkRepository', () => {
     ).toBe(target.id)
   })
 
+  it('finds the latest live conversation of a contact by WhatsApp id', async () => {
+    const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
+    const conversation = await seedConversation(workspace.id, user.id)
+    const contact = await prisma.whatsAppContact.findUniqueOrThrow({
+      where: { id: conversation.contactId },
+    })
+    await prisma.whatsAppConversation.update({
+      where: { id: conversation.id },
+      data: { lastMessageAt: new Date('2026-10-01T10:00:00Z') },
+    })
+    const newer = await prisma.whatsAppConversation.create({
+      data: {
+        workspaceId: workspace.id,
+        connectionId: conversation.connectionId,
+        contactId: contact.id,
+        lastMessageAt: new Date('2026-10-02T10:00:00Z'),
+      },
+    })
+    await prisma.whatsAppConversation.create({
+      data: {
+        workspaceId: workspace.id,
+        connectionId: conversation.connectionId,
+        contactId: contact.id,
+        lastMessageAt: new Date('2026-10-03T10:00:00Z'),
+        deletedAt: new Date(),
+      },
+    })
+
+    expect(
+      expectOk(
+        await PhoneCallLinkRepository.findConversationByWaIds(workspace.id, [
+          'nope',
+          contact.waId,
+        ]),
+      ),
+    ).toBe(newer.id)
+    expect(
+      expectOk(
+        await PhoneCallLinkRepository.findConversationByWaIds(
+          'other-workspace',
+          [contact.waId],
+        ),
+      ),
+    ).toBeNull()
+    expect(
+      expectOk(
+        await PhoneCallLinkRepository.findConversationByWaIds(workspace.id, []),
+      ),
+    ).toBeNull()
+  })
+
   it('returns DATABASE_ERROR when a query fails', async () => {
     vi.spyOn(prisma.sdTicket, 'findFirst').mockRejectedValueOnce(new Error('x'))
     expectErr(
@@ -220,6 +271,13 @@ describe('PhoneCallLinkRepository', () => {
     )
     expectErr(
       await PhoneCallLinkRepository.findOpenOpportunityForPerson('w', 'p'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.whatsAppConversation, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await PhoneCallLinkRepository.findConversationByWaIds('w', ['x']),
       'DATABASE_ERROR',
     )
   })

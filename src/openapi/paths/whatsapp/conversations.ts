@@ -105,6 +105,7 @@ const WhatsAppPhoneCallDTO = z.object({
   recordingNotice: WhatsAppPhoneCallFields.recordingNotice,
   hasRecording: WhatsAppPhoneCallFields.hasRecording,
   aiStatus: WhatsAppPhoneCallFields.aiStatus,
+  voiceAgent: WhatsAppPhoneCallFields.voiceAgent,
 })
 
 const PHONE_CALL_REALTIME =

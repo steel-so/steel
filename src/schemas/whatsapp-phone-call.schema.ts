@@ -22,6 +22,8 @@ export const PabxCallWebhookSchema = z.object({
   token: z.string().min(16).max(128),
   event: z.enum(PABX_CALL_EVENTS),
   job: optionalText,
+  /** Asterisk `UNIQUEID` of the call, when the dialplan sends it. */
+  uniqueid: optionalText,
   dialstatus: optionalText,
   answeredtime: z.preprocess(
     (v) => (v === '' || v === null ? undefined : v),

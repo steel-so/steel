@@ -170,7 +170,9 @@ export default async function WorkspaceLayout({
             />
             <div className='flex-1 w-full min-h-0 min-w-0 flex items-start bg-primary-foreground rounded-lg border border-border overflow-hidden [&>*]:min-h-0 [&>*]:min-w-0 [&>*:has(>[data-slot=context-sidebar])]:shrink-0'>
               <WorkspacePermissionsProvider value={permissions}>
-                <WebPhoneProvider>{children}</WebPhoneProvider>
+                <WebPhoneProvider workspaceId={membership.value.workspaceId}>
+                  {children}
+                </WebPhoneProvider>
               </WorkspacePermissionsProvider>
             </div>
           </div>

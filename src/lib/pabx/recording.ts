@@ -66,3 +66,17 @@ export function phoneMatchKey(phone: string): string | null {
   if (national.length !== 10 && national.length !== 11) return null
   return national.slice(0, 2) + national.slice(-8)
 }
+
+/**
+ * WhatsApp ids (`waId`) a Brazilian phone may be stored as: with `55`, with
+ * and without the mobile ninth digit. Empty for anything that is not a
+ * 10/11-digit national number. Counterpart of {@link phoneMatchKey} for
+ * exact lookups on `whatsapp_contacts.wa_id`.
+ */
+export function waIdCandidates(phone: string): string[] {
+  const key = phoneMatchKey(phone)
+  if (!key) return []
+  const ddd = key.slice(0, 2)
+  const last8 = key.slice(2)
+  return [`55${ddd}${last8}`, `55${ddd}9${last8}`]
+}

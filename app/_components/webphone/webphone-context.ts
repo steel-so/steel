@@ -13,7 +13,13 @@ export interface WebPhoneApi {
   /** Last connection problem, in user-facing words. */
   error: string | null
   call: WebPhoneCall | null
-  dial: (phone: string, name?: string | null) => Promise<void>
+  /** Notice the agent reads to the contact on a call being recorded. */
+  recordingNotice: string | null
+  dial: (
+    phone: string,
+    name?: string | null,
+    options?: { conversationId?: string | null },
+  ) => Promise<void>
   answer: () => Promise<void>
   hangup: () => Promise<void>
   toggleMute: () => void
@@ -26,6 +32,7 @@ const idle: WebPhoneApi = {
   status: 'offline',
   error: null,
   call: null,
+  recordingNotice: null,
   dial: async () => undefined,
   answer: async () => undefined,
   hangup: async () => undefined,

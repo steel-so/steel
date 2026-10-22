@@ -89,12 +89,15 @@ import {
   scheduleWorkspaceIntegrationsJobs,
 } from '../src/lib/queue/scheduler'
 import { closeWorkerResources } from '../src/lib/queue/worker-shutdown'
+import { startVoiceAgentServer } from './voice-agent-server'
 
 const workers: Worker[] = []
 // One alarm shared by every Worker and the QueueEvents backstop, so its
 // dedup ledger sees both reports of the same death.
 const failureAlarm = createJobFailureAlarm()
 let failureListener: JobFailureListener | null = null
+// IVR voice attendant (ADR 0046): AudioSocket server, off without a port.
+let voiceAgentServer: Awaited<ReturnType<typeof startVoiceAgentServer>> = null
 
 type Processor = (job: Job) => Promise<unknown>
 
@@ -156,6 +159,9 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   })
 
   try {
+    // Stop taking new calls; ones in progress end with the process (the
+    // dialplan then sends the caller to a person).
+    voiceAgentServer?.close()
     await closeWorkerResources({ workers, failureListener, failureAlarm })
   } catch (err) {
     const e = err as Error
@@ -312,6 +318,7 @@ async function main(): Promise<void> {
   await scheduleWorkspaceIntegrationsJobs()
   await scheduleCrmCampaignsJobs()
   await scheduleSitePostsJobs()
+  voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {
     component: 'Worker',

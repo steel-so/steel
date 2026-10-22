@@ -10,6 +10,8 @@ export function toWhatsAppPhoneCallDTO(
   return {
     id: call.id,
     conversationId: call.conversationId,
+    direction: call.direction,
+    source: call.source,
     userId: call.userId,
     extension: call.extension,
     destination: call.destination,
@@ -21,13 +23,14 @@ export function toWhatsAppPhoneCallDTO(
     recordingNotice: call.recordingRequested ? call.recordingNotice : null,
     hasRecording: Boolean(call.recordingKey),
     aiStatus: call.aiStatus,
+    voiceAgent: call.voiceAgent,
   }
 }
 
 /** Call row with the names the timeline card shows. */
 export type PhoneCallWithNames = WhatsAppPhoneCall & {
   user: { name: string } | null
-  conversation: { contact: { name: string | null } }
+  conversation: { contact: { name: string | null } } | null
 }
 
 export function toPhoneCallRecordDTO(
@@ -36,7 +39,7 @@ export function toPhoneCallRecordDTO(
   return {
     ...toWhatsAppPhoneCallDTO(call),
     userName: call.user?.name ?? null,
-    contactName: call.conversation.contact.name,
+    contactName: call.conversation?.contact.name ?? call.remoteName,
     recording:
       call.recordingKey && call.recordingMimeType
         ? {
@@ -56,5 +59,8 @@ export function toPhoneCallRecordDTO(
     sdTicketId: call.sdTicketId,
     crmPersonId: call.crmPersonId,
     crmOpportunityId: call.crmOpportunityId,
+    voiceEndReason: call.voiceEndReason,
+    voiceTransferTarget: call.voiceTransferTarget,
+    voiceHandoff: call.voiceHandoff,
   }
 }

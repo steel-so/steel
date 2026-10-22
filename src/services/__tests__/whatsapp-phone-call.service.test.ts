@@ -282,6 +282,31 @@ describe('WhatsAppPhoneCallService.handleWebhook()', () => {
     )
   })
 
+  it('remembers the PABX unique id so a browser report finds the same call', async () => {
+    stored({ status: 'QUEUED' })
+
+    await WhatsAppPhoneCallService.handleWebhook({
+      token: TOKEN,
+      event: 'EXTENSION_ANSWERED',
+      uniqueid: '1729590000.42',
+    })
+    expect(mockedCallRepo.update).toHaveBeenCalledWith('call1', {
+      status: 'DIALING',
+      pabxUniqueId: '1729590000.42',
+    })
+
+    mockedCallRepo.update.mockClear()
+    stored({ status: 'QUEUED', pabxUniqueId: 'already' })
+    await WhatsAppPhoneCallService.handleWebhook({
+      token: TOKEN,
+      event: 'EXTENSION_ANSWERED',
+      uniqueid: 'other',
+    })
+    expect(mockedCallRepo.update).toHaveBeenCalledWith('call1', {
+      status: 'DIALING',
+    })
+  })
+
   it('rejects an unknown callback token', async () => {
     mockedCallRepo.findByCallbackTokenHash.mockResolvedValue(ok(null))
 

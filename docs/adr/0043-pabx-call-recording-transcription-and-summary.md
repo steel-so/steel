@@ -93,7 +93,7 @@ telefone. Tudo opt-in por workspace.
   do ServiceDesk; tarefa do CRM (pessoa/oportunidade) no CRM e na conversa
   quando há pessoa vinculada.
 
-### Fase 2 (planejada, não construída)
+### Fase 2 (planejada; construída na [ADR 0046](./0046-pabx-voice-agent-ivr-realtime.md), 22/10/2026)
 
 Atendente de voz com IA na URA: o PABX entrega a ligação recebida a um
 serviço de voz em tempo real (Asterisk `AudioSocket`/`ExternalMedia` para um

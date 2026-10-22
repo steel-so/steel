@@ -4,6 +4,7 @@ import {
   phoneMatchKey,
   recordingObjectKey,
   sniffRecordingFormat,
+  waIdCandidates,
 } from '../pabx/recording'
 
 const bytes = (...values: (number | string)[]) =>
@@ -63,5 +64,22 @@ describe('phoneMatchKey()', () => {
   it('returns null for something that is not a national number', () => {
     expect(phoneMatchKey('200')).toBeNull()
     expect(phoneMatchKey('+1 202 555 0123 99')).toBeNull()
+  })
+})
+
+describe('waIdCandidates()', () => {
+  it('lists the WhatsApp ids with and without the ninth digit', () => {
+    expect(waIdCandidates('(11) 99999-8888')).toEqual([
+      '551199998888',
+      '5511999998888',
+    ])
+    expect(waIdCandidates('5511999998888')).toEqual([
+      '551199998888',
+      '5511999998888',
+    ])
+  })
+
+  it('is empty for an extension or an international number', () => {
+    expect(waIdCandidates('200')).toEqual([])
   })
 })

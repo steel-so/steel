@@ -60,3 +60,30 @@ ServiceDesk no chamado e quem tem acesso a pessoas e oportunidades no CRM.
 Administradores apagam o áudio de uma ligação na hora pelo botão **Apagar
 áudio** do card (por exemplo, a pedido do contato). A transcrição e o resumo
 continuam, e a ação fica registrada.
+
+## Atendente de voz (URA)
+
+Um administrador pode ligar um **atendente de voz com IA** para as ligações
+que **chegam** numa fila ou num número do PABX, em **Comunicação ›
+Configurações › Atendente de voz**. Ele vem desligado.
+
+O que o atendente faz:
+
+- fala primeiro o **aviso de atendimento automatizado** (você edita o texto);
+- identifica quem está ligando pelo número;
+- abre um **chamado** depois que o cliente confirma por voz (no máximo um por
+  ligação) e informa a situação de chamados **do próprio telefone**;
+- **passa a ligação para uma pessoa** quando o cliente pede, quando há erro ou
+  silêncio, ou quando o tempo máximo acaba, levando o resumo e o chamado.
+
+Em **Atendente de voz** o administrador define em nome de quem a IA age (vale a
+permissão dessa pessoa), o aviso, a duração máxima, o **teto de minutos por
+mês**, o ramal que atende uma pessoa, e cadastra as **filas e números**
+atendidos. O **segredo do PABX** é mostrado uma única vez; a equipe de TI o usa
+no dialplan.
+
+Cada ligação aparece como as outras: um card na conversa do número, no chamado
+(aba **Ligações**) e no CRM, marcado como *Atendente de voz*, com a
+transcrição, o resumo e, quando passou para uma pessoa, para onde e com que
+contexto. Não há áudio guardado. O consumo aparece no uso de IA como
+**Atendente de voz (URA)** e conta na cota mensal.

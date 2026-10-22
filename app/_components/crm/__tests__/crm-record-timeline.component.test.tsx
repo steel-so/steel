@@ -118,6 +118,8 @@ describe('<CrmRecordTimeline />', () => {
           {
             id: 'call1',
             conversationId: 'conv1',
+            direction: 'OUTBOUND',
+            source: 'CLICK_TO_CALL',
             userId: 'u1',
             extension: '200',
             destination: '11999998888',
@@ -143,6 +145,10 @@ describe('<CrmRecordTimeline />', () => {
             sdTicketId: null,
             crmPersonId: 'p1',
             crmOpportunityId: null,
+            voiceAgent: false,
+            voiceEndReason: null,
+            voiceTransferTarget: null,
+            voiceHandoff: null,
           },
         ],
       },
@@ -153,6 +159,54 @@ describe('<CrmRecordTimeline />', () => {
     expect(await screen.findByText('Cliente pediu o boleto.')).toBeTruthy()
     expect(screen.getByText('Ligações')).toBeTruthy()
     expect(screen.getByText('Enviar o boleto')).toBeTruthy()
+  })
+
+  it('shows a missed browser phone call from a caller without a conversation', async () => {
+    mockFetch([
+      {
+        match: '/crm/people/p1/calls',
+        data: [
+          {
+            id: 'call2',
+            conversationId: null,
+            direction: 'INBOUND',
+            source: 'WEBPHONE',
+            userId: 'u1',
+            extension: '200',
+            destination: '11999998888',
+            status: 'NO_ANSWER',
+            answeredAt: null,
+            endedAt: '2026-10-18T15:00:20.000Z',
+            durationSeconds: null,
+            createdAt: '2026-10-18T15:00:00.000Z',
+            recordingNotice: null,
+            hasRecording: false,
+            aiStatus: 'NONE',
+            userName: 'Ana',
+            contactName: 'Maria da Silva',
+            recording: null,
+            transcript: null,
+            summary: null,
+            sentiment: null,
+            sentimentScore: null,
+            nextSteps: [],
+            aiModel: null,
+            aiSkipReason: null,
+            aiProcessedAt: null,
+            sdTicketId: null,
+            crmPersonId: 'p1',
+            crmOpportunityId: null,
+          },
+        ],
+      },
+      { match: '/crm/activities', data: [] },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' personId='p1' />)
+
+    expect(
+      await screen.findByText(/Ligação recebida · Maria da Silva → Ana/),
+    ).toBeTruthy()
+    expect(screen.getByText('Perdida')).toBeTruthy()
   })
 
   it('does not ask for calls on a company', async () => {

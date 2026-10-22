@@ -20,6 +20,7 @@ export const AI_USAGE_FEATURE_KEYS = [
   'AI_GUARDRAIL',
   'PHONE_CALL_AI',
   'PROACTIVE_DIGEST',
+  'VOICE_AGENT',
 ] as const
 export type AiUsageFeatureKey = (typeof AI_USAGE_FEATURE_KEYS)[number]
 
@@ -38,6 +39,7 @@ export const AI_USAGE_FEATURE_LABELS: Record<AiUsageFeatureKey, string> = {
   AI_GUARDRAIL: 'Proteções da IA (classificador)',
   PHONE_CALL_AI: 'Ligações (transcrição e resumo)',
   PROACTIVE_DIGEST: 'Resumo diário da IA',
+  VOICE_AGENT: 'Atendente de voz (URA)',
 }
 
 /** `PLATFORM` = no module (platform tools, or a call that used no tool). */
@@ -79,6 +81,7 @@ const FEATURE_MODULE: Record<
   AI_GUARDRAIL: null,
   PHONE_CALL_AI: 'COMMUNICATION',
   PROACTIVE_DIGEST: null,
+  VOICE_AGENT: 'COMMUNICATION',
 }
 
 /** Scope of a ledger row: its module, else the feature's, else platform. */

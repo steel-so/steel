@@ -1,0 +1,61 @@
+---
+title: Campanhas de IA no WhatsApp que conversam e agem
+slug: campanhas-de-ia-no-whatsapp
+date: 2026-10-21
+summary: Envie um template aprovado para um grupo de contatos e deixe a IA conversar com quem responder, transferindo, fechando ou avisando outro sistema apenas pelas ações que o administrador liberou.
+tags: [COMUNICACAO, IA]
+cover: /changelog/2026-10-21/capa-campanhas-ia.jpg
+---
+
+## Uma campanha, do envio à conversa
+
+A nova aba **Campanhas de IA** do WhatsApp envia um template aprovado da Meta
+para os seus contatos, no ritmo que você escolher. Quando o contato responde, a
+IA conversa seguindo as instruções da campanha. Ela substitui o antigo
+disparo automático da página de Contatos, e os disparos existentes foram
+copiados para campanhas.
+
+![Lista de campanhas de IA com o progresso de cada uma e o botão Nova campanha](/changelog/2026-10-21/campanhas-lista.webp)
+
+Comece de um modelo (Cobrança, Agendamento, Vendas, Pesquisa de satisfação,
+Reativação ou Confirmação de presença) ou do zero. A configuração tem cinco
+passos: **Básico**, **Contatos**, **Mensagem**, **IA** e **Revisão**. Os
+contatos vêm da agenda ou de uma **planilha CSV**, e as colunas dela podem
+preencher as variáveis do template, ao lado de texto fixo e campos do contato.
+A revisão mostra a duração estimada e o **nível de agressividade**, de um envio a
+cada 20 até 60 segundos.
+
+![Passo Mensagem do assistente, com as variáveis do template ligadas às colunas da planilha e a prévia para o primeiro contato](/changelog/2026-10-21/campanhas-mensagem.webp)
+
+## A IA age só pelas ações que você liberar
+
+Cada ação tem um nome, a regra de **quando usar** e um destino que **você**
+escolhe. A IA decide apenas se e quando usar:
+
+- transferir para um **atendente** ou para uma **equipe**;
+- **fechar** a conversa com um dos status de fechamento;
+- **descadastrar** o contato, para respeitar a LGPD;
+- **anotar** uma observação no contato;
+- **retomar** a conversa depois de algumas horas;
+- disparar um **workflow do CRM**;
+- chamar um **webhook** HTTPS seu, assinado.
+
+Por resposta, a IA usa no máximo três ações e só uma que encerre a conversa.
+Se a proteção da resposta automática barrar o texto, nenhuma ação roda.
+
+![Aba Ações da IA na página da campanha, com cada execução, o motivo dado pela IA e o contato](/changelog/2026-10-21/campanhas-acoes.webp)
+
+## Acompanhe e pare quando quiser
+
+A página da campanha mostra o progresso, o funil (enviados, responderam, deu
+certo, não deu certo), a lista de contatos com o link para cada conversa e o
+histórico das ações. Pause e continue quando quiser. Com o horário de
+atendimento ligado, a campanha só envia dentro dele e retoma na abertura
+seguinte. Conversas de campanha e da IA ficam de fora do fechamento automático
+por inatividade.
+
+<Callout>
+  Criar e iniciar campanhas usa a mesma permissão de **Transmissões** e a
+  conexão da **Meta**, porque só ela tem templates aprovados. O passo a passo
+  está em [Campanhas de IA](/docs/comunicacao/campanhas-ia).
+</Callout>

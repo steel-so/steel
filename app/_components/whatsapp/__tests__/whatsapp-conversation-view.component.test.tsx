@@ -840,6 +840,7 @@ describe('<WhatsappConversationView />', () => {
       status: 'online',
       error: null,
       call: null,
+      recordingNotice: null,
       dial: vi.fn(async () => undefined),
       answer: vi.fn(async () => undefined),
       hangup: vi.fn(async () => undefined),
@@ -890,6 +891,7 @@ describe('<WhatsappConversationView />', () => {
       expect(phone.dial).toHaveBeenCalledWith(
         expect.stringMatching(/^\d+$/),
         expect.anything(),
+        { conversationId: 'cv_1' },
       )
       expect(
         fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
@@ -1305,6 +1307,8 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       return {
         id: 'call1',
         conversationId: 'cv_1',
+        direction: 'OUTBOUND',
+        source: 'CLICK_TO_CALL',
         userId: 'u_1',
         extension: '200',
         destination: '11999998888',
@@ -1334,6 +1338,10 @@ describe('<WhatsappConversationView /> · Equipes', () => {
         sdTicketId: null,
         crmPersonId: 'p1',
         crmOpportunityId: null,
+        voiceAgent: false,
+        voiceEndReason: null,
+        voiceTransferTarget: null,
+        voiceHandoff: null,
         ...overrides,
       }
     }

@@ -220,6 +220,23 @@ export const ERROR_CODES = {
     code: 'PHONE_CALL_RECORDING_NOT_FOUND',
     status: 404,
   },
+  // IVR voice attendant (ADR 0046): PABX dialplan secret missing or wrong.
+  VOICE_AGENT_SECRET_INVALID: {
+    code: 'VOICE_AGENT_SECRET_INVALID',
+    status: 401,
+  },
+  // Voice attendant: the attendant cannot be turned on as configured (no
+  // run-as identity, identity not a workspace member, no routes).
+  VOICE_AGENT_NOT_READY: { code: 'VOICE_AGENT_NOT_READY', status: 422 },
+  VOICE_AGENT_ROUTE_NOT_FOUND: {
+    code: 'VOICE_AGENT_ROUTE_NOT_FOUND',
+    status: 404,
+  },
+  // A queue/DID is already routed to the attendant in this workspace.
+  VOICE_AGENT_ROUTE_DUPLICATE: {
+    code: 'VOICE_AGENT_ROUTE_DUPLICATE',
+    status: 409,
+  },
   WHATSAPP_WEBHOOK_UNAUTHORIZED: {
     code: 'WHATSAPP_WEBHOOK_UNAUTHORIZED',
     status: 401,

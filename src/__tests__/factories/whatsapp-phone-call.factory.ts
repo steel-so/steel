@@ -22,6 +22,10 @@ export function createFakeWhatsAppPhoneCall(
     durationSeconds: null,
     createdAt: now,
     updatedAt: now,
+    direction: 'OUTBOUND',
+    source: 'CLICK_TO_CALL',
+    pabxUniqueId: null,
+    remoteName: null,
     recordingRequested: false,
     recordingNotice: null,
     recordingKey: null,
@@ -41,6 +45,10 @@ export function createFakeWhatsAppPhoneCall(
     sdTicketId: null,
     crmPersonId: null,
     crmOpportunityId: null,
+    voiceAgent: false,
+    voiceEndReason: null,
+    voiceTransferTarget: null,
+    voiceHandoff: null,
     ...overrides,
   }
 }

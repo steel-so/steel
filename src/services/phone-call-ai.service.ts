@@ -14,10 +14,7 @@ import {
   TRANSCRIPTION_MODEL,
   transcribeAudio,
 } from '@/src/lib/ai/transcription'
-import {
-  PHONE_CALL_RECORDINGS_BUCKET,
-  phoneMatchKey,
-} from '@/src/lib/pabx/recording'
+import { PHONE_CALL_RECORDINGS_BUCKET } from '@/src/lib/pabx/recording'
 import { ok, type Result } from '@/src/lib/result'
 import { getObject } from '@/src/lib/storage/s3'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
@@ -28,10 +25,10 @@ import {
   AiUsageRepository,
   WorkspaceAiSettingsRepository,
 } from '@/src/repositories/ai-settings.repository'
-import { PhoneCallLinkRepository } from '@/src/repositories/phone-call-link.repository'
 import { WhatsAppPhoneCallRepository } from '@/src/repositories/whatsapp-phone-call.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
+import { PhoneCallLinkService } from './phone-call-link.service'
 
 /** Transcript characters sent to the summary model at most (~40 min). */
 export const SUMMARY_TRANSCRIPT_CHAR_BUDGET = 60_000
@@ -130,20 +127,30 @@ async function finish(
   return updated
 }
 
-/** Why the AI step cannot run for this workspace, or `null` when it can. */
-async function blocker(workspaceId: string): Promise<
+/**
+ * Why the AI step cannot run for this workspace, or `null` when it can.
+ * `voice` = a call of the IVR attendant (ADR 0046): the transcript already
+ * exists, so the recorded-call transcription switch and the Whisper key do
+ * not apply.
+ */
+async function blocker(
+  workspaceId: string,
+  voice = false,
+): Promise<
   Result<
     | { reason: string }
     | {
         call: PreparedAiCall
-        client: NonNullable<ReturnType<typeof getOpenAiClient>>
+        client: ReturnType<typeof getOpenAiClient>
       }
   >
 > {
-  const zap = await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
-  if (!zap.ok) return zap
-  if (!toWhatsAppSettingsDTO(workspaceId, zap.value).callTranscriptionEnabled)
-    return ok({ reason: 'transcription_disabled' })
+  if (!voice) {
+    const zap = await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
+    if (!zap.ok) return zap
+    if (!toWhatsAppSettingsDTO(workspaceId, zap.value).callTranscriptionEnabled)
+      return ok({ reason: 'transcription_disabled' })
+  }
 
   const ai = await WorkspaceAiSettingsRepository.findByWorkspace(workspaceId)
   if (!ai.ok) return ai
@@ -151,7 +158,7 @@ async function blocker(workspaceId: string): Promise<
     return ok({ reason: 'ai_disabled' })
 
   const client = getOpenAiClient()
-  if (!client) return ok({ reason: 'no_transcription_provider' })
+  if (!client && !voice) return ok({ reason: 'no_transcription_provider' })
 
   const prepared = await AiUsageService.prepare(workspaceId, 'PHONE_CALL_AI')
   if (!prepared.ok) {
@@ -240,55 +247,6 @@ async function summarize(
   }
 }
 
-/** A lookup that fails only loses that link; the summary still lands. */
-function linkOrNull(
-  result: Result<string | null>,
-  call: WhatsAppPhoneCall,
-  link: string,
-): string | null {
-  if (result.ok) return result.value
-  logger.warn('phone_call.link_lookup_failed', {
-    component: 'PhoneCallAiService',
-    workspaceId: call.workspaceId,
-    callId: call.id,
-    link,
-  })
-  return null
-}
-
-async function resolveLinks(call: WhatsAppPhoneCall) {
-  const sdTicketId = linkOrNull(
-    await PhoneCallLinkRepository.findTicketForConversation(
-      call.workspaceId,
-      call.conversationId,
-    ),
-    call,
-    'sd_ticket',
-  )
-  const key = phoneMatchKey(call.destination)
-  const crmPersonId = key
-    ? linkOrNull(
-        await PhoneCallLinkRepository.findPersonByPhoneKey(
-          call.workspaceId,
-          key,
-        ),
-        call,
-        'crm_person',
-      )
-    : null
-  const crmOpportunityId = crmPersonId
-    ? linkOrNull(
-        await PhoneCallLinkRepository.findOpenOpportunityForPerson(
-          call.workspaceId,
-          crmPersonId,
-        ),
-        call,
-        'crm_opportunity',
-      )
-    : null
-  return { sdTicketId, crmPersonId, crmOpportunityId }
-}
-
 /**
  * Turns an uploaded call recording into information (ADR 0043): Whisper
  * transcript, then summary, sentiment and next steps by the workspace model,
@@ -305,13 +263,17 @@ export const PhoneCallAiService = {
     // PROCESSING is accepted too: a retry after a crash mid-way.
     if (call.aiStatus !== 'PENDING' && call.aiStatus !== 'PROCESSING')
       return ok({ status: 'ignored', reason: 'not_pending' })
-    if (!call.recordingKey) {
+    // A voice-attendant call (ADR 0046) arrives with its transcript from the
+    // realtime session and has no audio: only the summary step is left.
+    const voiceTranscript =
+      call.voiceAgent && call.transcript ? call.transcript : null
+    if (!call.recordingKey && !voiceTranscript) {
       const done = await finish(call, 'SKIPPED', 'no_recording')
       if (!done.ok) return done
       return ok({ status: 'skipped', reason: 'no_recording' })
     }
 
-    const gate = await blocker(call.workspaceId)
+    const gate = await blocker(call.workspaceId, Boolean(voiceTranscript))
     if (!gate.ok) return gate
     if ('reason' in gate.value) {
       const done = await finish(call, 'SKIPPED', gate.value.reason)
@@ -325,47 +287,59 @@ export const PhoneCallAiService = {
     })
     if (!processing.ok) return processing
 
-    // Storage errors throw on purpose: the job retries (BullMQ attempts).
-    const audio = await getObject({
-      bucket: PHONE_CALL_RECORDINGS_BUCKET,
-      key: call.recordingKey,
-    })
-    const ext = call.recordingKey.slice(call.recordingKey.lastIndexOf('.') + 1)
-
-    let transcription: Awaited<ReturnType<typeof transcribeAudio>>
-    try {
-      transcription = await transcribeAudio(client, audio, `call.${ext}`, {
-        language: 'pt',
-        withDuration: true,
+    let transcription: { text: string; durationSeconds?: number | null } | null
+    if (voiceTranscript) {
+      transcription = { text: voiceTranscript }
+    } else {
+      // Storage errors throw on purpose: the job retries (BullMQ attempts).
+      const audio = await getObject({
+        bucket: PHONE_CALL_RECORDINGS_BUCKET,
+        key: call.recordingKey as string,
       })
-    } catch (error) {
-      const detail = errorMessage(error)
-      logger.error('phone_call.transcription_failed', {
-        component: 'PhoneCallAiService',
-        workspaceId: call.workspaceId,
-        callId: call.id,
-        message: detail,
-      })
-      const done = await finish(call, 'FAILED', 'transcription_failed')
-      if (!done.ok) return done
-      return ok({ status: 'failed', reason: 'transcription_failed', detail })
-    }
+      const key = call.recordingKey as string
+      const ext = key.slice(key.lastIndexOf('.') + 1)
 
-    await recordTranscription(
-      call,
-      prepared,
-      transcription?.durationSeconds ?? call.durationSeconds ?? 0,
-    )
-    if (!transcription) {
-      const done = await finish(call, 'SKIPPED', 'empty_transcript')
-      if (!done.ok) return done
-      return ok({ status: 'skipped', reason: 'empty_transcript' })
+      try {
+        transcription = await transcribeAudio(
+          client as NonNullable<typeof client>,
+          audio,
+          `call.${ext}`,
+          { language: 'pt', withDuration: true },
+        )
+      } catch (error) {
+        const detail = errorMessage(error)
+        logger.error('phone_call.transcription_failed', {
+          component: 'PhoneCallAiService',
+          workspaceId: call.workspaceId,
+          callId: call.id,
+          message: detail,
+        })
+        const done = await finish(call, 'FAILED', 'transcription_failed')
+        if (!done.ok) return done
+        return ok({ status: 'failed', reason: 'transcription_failed', detail })
+      }
+
+      await recordTranscription(
+        call,
+        prepared,
+        transcription?.durationSeconds ?? call.durationSeconds ?? 0,
+      )
+      if (!transcription) {
+        const done = await finish(call, 'SKIPPED', 'empty_transcript')
+        if (!done.ok) return done
+        return ok({ status: 'skipped', reason: 'empty_transcript' })
+      }
     }
 
     // PII masking and provider failover run inside the guarded provider
     // from AiUsageService.prepare (ADR 0041/0042); the speech is fenced.
     const summary = await summarize(call, prepared, transcription.text)
-    const links = await resolveLinks(call)
+    const resolved = await PhoneCallLinkService.resolve(call)
+    // The ticket the voice attendant opened stays when the conversation has none.
+    const links = {
+      ...resolved,
+      sdTicketId: resolved.sdTicketId ?? call.sdTicketId,
+    }
 
     const updated = await WhatsAppPhoneCallRepository.update(call.id, {
       aiStatus: 'DONE',

@@ -39,11 +39,11 @@ const HANGUP_STATUS: Record<string, WhatsAppPhoneCallStatus> = {
   CANCEL: 'CANCELED',
 }
 
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-function callbackUrl(): string {
+export function callbackUrl(): string {
   return PABX_CALLBACK_URL ?? `${BETTER_AUTH_URL}/api/pabx/calls/webhook`
 }
 
@@ -240,8 +240,13 @@ export const WhatsAppPhoneCallService = {
     if (!found.value) return err(pabxCallbackInvalid())
 
     const call = found.value
-    const next = transition(call, report, new Date())
-    if (!next) return ok(toWhatsAppPhoneCallDTO(call))
+    const step = transition(call, report, new Date())
+    if (!step) return ok(toWhatsAppPhoneCallDTO(call))
+    // Remember the PABX id, so a browser report of the same call finds this row.
+    const next =
+      report.uniqueid && !call.pabxUniqueId
+        ? { ...step, pabxUniqueId: report.uniqueid }
+        : step
 
     const updated = await WhatsAppPhoneCallRepository.update(call.id, next)
     if (!updated.ok) return updated
