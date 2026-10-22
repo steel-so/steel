@@ -196,6 +196,7 @@ export const WhatsAppConversationRepository = {
           workspaceId,
           contactId,
           ...scopeWhere(scope),
+          deletedAt: null,
           status: { in: ['NEW', 'IN_PROGRESS'] },
         },
         orderBy: { createdAt: 'desc' },

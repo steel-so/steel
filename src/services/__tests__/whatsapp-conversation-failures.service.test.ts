@@ -1,5 +1,5 @@
 import type { WhatsAppConversationEvent } from '@prisma/client'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeUser } from '@/src/__tests__/factories/user.factory'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
@@ -138,6 +138,11 @@ const refetchingMutations: [string, Call][] = [
 describe.each(refetchingMutations)(
   'WhatsAppConversationService.%s() failures',
   (_name, call) => {
+    beforeEach(() => {
+      // setArchived closes an open conversation first and logs the event.
+      mockedEventRepo.create.mockResolvedValue(ok(fakeEvent()))
+    })
+
     it('should return FORBIDDEN for a non-member', async () => {
       asNonMember()
 

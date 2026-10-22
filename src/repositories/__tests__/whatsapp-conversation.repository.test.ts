@@ -90,6 +90,31 @@ describe('WhatsAppConversationRepository', () => {
       expect(found?.id).toBe(active.id)
       expect(found?.id).not.toBe(closed.id)
     })
+
+    it('should ignore a deleted conversation that is still open', async () => {
+      const { workspace, connection, contact } = await seedFixtures()
+      const deleted = expectOk(
+        await WhatsAppConversationRepository.create({
+          workspaceId: workspace.id,
+          connectionId: connection.id,
+          contactId: contact.id,
+          status: 'IN_PROGRESS',
+        }),
+      )
+      expectOk(
+        await WhatsAppConversationRepository.update(deleted.id, {
+          deletedAt: new Date(),
+        }),
+      )
+
+      const found = expectOk(
+        await WhatsAppConversationRepository.findActiveByContact(
+          workspace.id,
+          contact.id,
+        ),
+      )
+      expect(found).toBeNull()
+    })
   })
 
   describe('listByWorkspace()', () => {

@@ -667,6 +667,38 @@ describe('WhatsAppConversationService', () => {
       })
     })
 
+    it('should close an open conversation when archiving it', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      const conversation = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        status: 'IN_PROGRESS',
+      })
+      mockedConversationRepo.findById.mockResolvedValue(ok(conversation))
+      mockedConversationRepo.update.mockResolvedValue(ok(conversation))
+
+      expectOk(
+        await WhatsAppConversationService.setArchived(
+          'u1',
+          'ws1',
+          'conv1',
+          true,
+        ),
+      )
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'conv1',
+        expect.objectContaining({
+          status: 'CLOSED',
+          closedAt: expect.any(Date),
+        }),
+      )
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith('conv1', {
+        archivedAt: expect.any(Date),
+      })
+    })
+
     it('should unarchive a conversation by clearing the timestamp', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
         ok(createFakeMembership({ role: 'MEMBER' })),
@@ -725,6 +757,25 @@ describe('WhatsAppConversationService', () => {
       expect(mockedConversationRepo.update).toHaveBeenCalledWith('conv1', {
         deletedAt: expect.any(Date),
       })
+    })
+
+    it('should close an open conversation when deleting it', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+      const conversation = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        status: 'IN_PROGRESS',
+      })
+      mockedConversationRepo.findById.mockResolvedValue(ok(conversation))
+      mockedConversationRepo.update.mockResolvedValue(ok(conversation))
+
+      expectOk(await WhatsAppConversationService.remove('u1', 'ws1', 'conv1'))
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'conv1',
+        expect.objectContaining({ status: 'CLOSED' }),
+      )
     })
 
     it('should return WHATSAPP_CONVERSATION_NOT_FOUND when missing', async () => {

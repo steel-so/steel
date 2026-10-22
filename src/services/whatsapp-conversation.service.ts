@@ -583,6 +583,16 @@ export const WhatsAppConversationService = {
     const access = await authorizeConversation(actorId, workspaceId, id, 'EDIT')
     if (!access.ok) return access
 
+    // An archived conversation leaves the active list, so it must not stay
+    // open: otherwise it keeps blocking a new attendance with the contact.
+    if (archived && access.value.conversation.status !== 'CLOSED') {
+      const closed = await applyClose(access.value.conversation, {
+        actorUserId: actorId,
+        source: 'AGENT',
+      })
+      if (!closed.ok) return closed
+    }
+
     const updated = await WhatsAppConversationRepository.update(id, {
       archivedAt: archived ? new Date() : null,
     })
@@ -622,6 +632,15 @@ export const WhatsAppConversationService = {
       'DELETE',
     )
     if (!access.ok) return access
+
+    // Same reason as archiving: a deleted conversation cannot stay open.
+    if (access.value.conversation.status !== 'CLOSED') {
+      const closed = await applyClose(access.value.conversation, {
+        actorUserId: actorId,
+        source: 'AGENT',
+      })
+      if (!closed.ok) return closed
+    }
 
     const updated = await WhatsAppConversationRepository.update(id, {
       deletedAt: new Date(),
