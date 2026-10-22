@@ -418,6 +418,27 @@ describe('WhatsAppConversationRepository', () => {
       )
       expect(excluded).toEqual([])
     })
+
+    it('should skip idle conversations the AI is answering', async () => {
+      const { workspace, connection, contact } = await seedFixtures()
+      await WhatsAppConversationRepository.create({
+        workspaceId: workspace.id,
+        connectionId: connection.id,
+        contactId: contact.id,
+        status: 'NEW',
+        aiActive: true,
+        lastMessageAt: new Date('2026-01-01T00:00:00Z'),
+      })
+
+      const idle = expectOk(
+        await WhatsAppConversationRepository.listInactiveOpen({
+          cutoff: new Date('2026-06-01T00:00:00Z'),
+          workspaceIds: { in: [workspace.id] },
+          limit: 10,
+        }),
+      )
+      expect(idle).toEqual([])
+    })
   })
 
   describe('claimSentimentAlert()', () => {

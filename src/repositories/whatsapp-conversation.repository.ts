@@ -247,6 +247,10 @@ export const WhatsAppConversationRepository = {
           ...ZAP_ONLY,
           deletedAt: null,
           status: { in: ['NEW', 'IN_PROGRESS'] },
+          // The AI and AI campaigns keep their conversations open: people
+          // follow them in "Ativas" and only a manual close ends them.
+          aiActive: false,
+          aiCampaignId: null,
           OR: [
             { lastMessageAt: { lt: input.cutoff } },
             { lastMessageAt: null, updatedAt: { lt: input.cutoff } },
