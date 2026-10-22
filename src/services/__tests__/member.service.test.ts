@@ -205,7 +205,7 @@ describe('MemberService.list()', () => {
 
   it('reports an unlimited plan as limit null', async () => {
     mockDirectory()
-    mockSeats(3, 0, 'PRO' as never)
+    mockSeats(3, 0, 'BUSINESS' as never)
 
     const result = expectOk(await MemberService.list('actor', WS, query()))
 
