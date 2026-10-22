@@ -291,10 +291,13 @@ describe('WhatsAppConversationService', () => {
       )
 
       expectOk(result)
+      // Unassigned: the human queue clock starts now (reminder reset).
       expect(mockedConversationRepo.update).toHaveBeenCalledWith('conv1', {
         aiActive: false,
         aiHandoff: true,
         status: 'IN_PROGRESS',
+        queuedAt: expect.any(Date),
+        unassignedReminderAt: null,
       })
     })
 

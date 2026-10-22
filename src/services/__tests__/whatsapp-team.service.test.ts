@@ -8,6 +8,13 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
+vi.mock('@/src/repositories/whatsapp-settings.repository')
+vi.mock('@/src/services/whatsapp-distribution.service', () => ({
+  WhatsAppDistributionService: { distributeConversation: vi.fn() },
+}))
+vi.mock('@/src/services/whatsapp-unassigned-alert.service', () => ({
+  WhatsAppUnassignedAlertService: { notifySupervisors: vi.fn() },
+}))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/src/services/whatsapp-notify', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../whatsapp-notify')>()),
@@ -18,9 +25,12 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { WhatsAppTeamSnapshotCache } from '@/src/cache/whatsapp-team.cache'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
+import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
 import { notifyWhatsAppUsers } from '../whatsapp-notify'
 import { WhatsAppTeamService } from '../whatsapp-team.service'
+import { WhatsAppUnassignedAlertService } from '../whatsapp-unassigned-alert.service'
 
 const memberships = vi.mocked(MembershipRepository)
 const teams = vi.mocked(WhatsAppTeamRepository)
@@ -337,6 +347,22 @@ describe('WhatsAppTeamService.remove()', () => {
 })
 
 describe('WhatsAppTeamService.notifyQueueOnInbound()', () => {
+  const distribute = vi.mocked(
+    WhatsAppDistributionService.distributeConversation,
+  )
+  const alertSupervisors = vi.mocked(
+    WhatsAppUnassignedAlertService.notifySupervisors,
+  )
+  const settings = vi.mocked(WhatsAppSettingsRepository)
+
+  beforeEach(() => {
+    settings.findByWorkspace.mockResolvedValue(ok(null))
+    distribute.mockResolvedValue(
+      ok({ assigned: false, reason: 'disabled' as const }),
+    )
+    alertSupervisors.mockResolvedValue({ recipients: 1, inApp: 1, email: 0 })
+  })
+
   function arrange(
     overrides: Parameters<typeof createFakeWhatsAppConversationWithPreview>[0],
   ) {
@@ -365,6 +391,8 @@ describe('WhatsAppTeamService.notifyQueueOnInbound()', () => {
         path: '/zap?conversa=conv1',
       }),
     )
+    // The team has people to tell: supervisors only hear when nobody can take it.
+    expect(alertSupervisors).not.toHaveBeenCalled()
   })
 
   it('falls back to a generic title when the team name is not loaded', async () => {
@@ -375,23 +403,85 @@ describe('WhatsAppTeamService.notifyQueueOnInbound()', () => {
     )
   })
 
+  it('tells the supervisors about a conversation with no team and no assignee', async () => {
+    arrange({ teamId: null, team: null })
+    await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
+    expect(notify).not.toHaveBeenCalled()
+    expect(alertSupervisors).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws1',
+        notice: { kind: 'queued', reason: 'no_team' },
+      }),
+    )
+  })
+
   it.each([
-    ['no team', { teamId: null, team: null }],
+    'empty_pool',
+    'nobody_available',
+    'all_at_capacity',
+    'outside_business_hours',
+  ] as const)(
+    'also tells the supervisors when distribution found nobody (%s)',
+    async (reason) => {
+      arrange({})
+      distribute.mockResolvedValue(ok({ assigned: false, reason }))
+      await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
+      expect(notify).toHaveBeenCalledTimes(1)
+      expect(alertSupervisors).toHaveBeenCalledWith(
+        expect.objectContaining({
+          notice: { kind: 'queued', reason: 'no_agent_available' },
+        }),
+      )
+    },
+  )
+
+  it('stays quiet when the distribution gave the conversation to an agent', async () => {
+    arrange({})
+    distribute.mockResolvedValue(ok({ assigned: true, userId: 'ana' }))
+    await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
+    expect(notify).not.toHaveBeenCalled()
+    expect(alertSupervisors).not.toHaveBeenCalled()
+  })
+
+  it('retries the distribution on every message but notifies once per unread streak', async () => {
+    arrange({ unreadCount: 3, teamId: null, team: null })
+    await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
+    expect(distribute).toHaveBeenCalledTimes(1)
+    expect(notify).not.toHaveBeenCalled()
+    expect(alertSupervisors).not.toHaveBeenCalled()
+  })
+
+  it('does not treat a failed distribution as "nobody available"', async () => {
+    arrange({})
+    distribute.mockResolvedValue(err(databaseError()))
+    await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(alertSupervisors).not.toHaveBeenCalled()
+  })
+
+  it.each([
     ['already assigned', { assignedUserId: 'ana' }],
     ['AI answering', { aiActive: true }],
     ['closed', { status: 'CLOSED' as const }],
-    ['not the first unread', { unreadCount: 3 }],
+    ['archived', { archivedAt: new Date() }],
+    ['deleted', { deletedAt: new Date() }],
   ])('stays quiet when %s', async (_label, overrides) => {
     arrange(overrides)
     await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
     expect(notify).not.toHaveBeenCalled()
+    expect(alertSupervisors).not.toHaveBeenCalled()
+    expect(distribute).not.toHaveBeenCalled()
   })
 
-  it('stays quiet when the conversation cannot be read', async () => {
+  it('stays quiet when the conversation or the settings cannot be read', async () => {
     conversations.findById.mockResolvedValue(ok(null))
     await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
     conversations.findById.mockResolvedValue(err(databaseError()))
     await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
+    arrange({})
+    settings.findByWorkspace.mockResolvedValue(err(databaseError()))
+    await WhatsAppTeamService.notifyQueueOnInbound('ws1', 'conv1')
     expect(notify).not.toHaveBeenCalled()
+    expect(distribute).not.toHaveBeenCalled()
   })
 })

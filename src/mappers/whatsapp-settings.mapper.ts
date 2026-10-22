@@ -25,6 +25,13 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   businessHoursStart: '08:00',
   businessHoursEnd: '18:00',
   businessHoursDays: [1, 2, 3, 4, 5] as number[],
+  unassignedAlertNotifyInApp: true,
+  unassignedAlertNotifyEmail: false,
+  unassignedReminderMinutes: 10,
+  distributionMode: 'OFF' as 'OFF' | 'ROUND_ROBIN' | 'LEAST_LOADED',
+  distributionMaxOpenPerAgent: null as number | null,
+  distributionOnlyAvailable: true,
+  distributionRespectBusinessHours: true,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -61,5 +68,12 @@ export function toWhatsAppSettingsDTO(
     businessHoursStart: settings.businessHoursStart,
     businessHoursEnd: settings.businessHoursEnd,
     businessHoursDays: settings.businessHoursDays,
+    unassignedAlertNotifyInApp: settings.unassignedAlertNotifyInApp,
+    unassignedAlertNotifyEmail: settings.unassignedAlertNotifyEmail,
+    unassignedReminderMinutes: settings.unassignedReminderMinutes,
+    distributionMode: settings.distributionMode,
+    distributionMaxOpenPerAgent: settings.distributionMaxOpenPerAgent,
+    distributionOnlyAvailable: settings.distributionOnlyAvailable,
+    distributionRespectBusinessHours: settings.distributionRespectBusinessHours,
   }
 }

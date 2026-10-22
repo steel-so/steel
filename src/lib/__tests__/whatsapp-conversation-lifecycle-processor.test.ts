@@ -1,13 +1,23 @@
 import type { Job } from 'bullmq'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { closeInactiveMock, loggerMock } = vi.hoisted(() => ({
-  closeInactiveMock: vi.fn(),
-  loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
+const { closeInactiveMock, drainMock, remindMock, loggerMock } = vi.hoisted(
+  () => ({
+    closeInactiveMock: vi.fn(),
+    drainMock: vi.fn(),
+    remindMock: vi.fn(),
+    loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  }),
+)
 
 vi.mock('@/src/services/whatsapp-conversation.service', () => ({
   WhatsAppConversationService: { closeInactive: closeInactiveMock },
+}))
+vi.mock('@/src/services/whatsapp-distribution.service', () => ({
+  WhatsAppDistributionService: { drainEnabledWorkspaces: drainMock },
+}))
+vi.mock('@/src/services/whatsapp-unassigned-alert.service', () => ({
+  WhatsAppUnassignedAlertService: { remindUnattended: remindMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -57,5 +67,72 @@ describe('processWhatsappConversationLifecycle', () => {
     ).rejects.toThrow(
       'Unknown whatsapp-conversation-lifecycle job: nope (id=unknown)',
     )
+  })
+  describe('distribution-tick', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('drains the queues, sends the reminders and reports both', async () => {
+      drainMock.mockResolvedValue({
+        ok: true,
+        value: { assigned: 4, workspaces: 2 },
+      })
+      remindMock.mockResolvedValue({ ok: true, value: { reminded: 3 } })
+
+      const result = await processWhatsappConversationLifecycle(
+        fakeJob('distribution-tick'),
+      )
+
+      expect(result).toEqual({ distributed: 4, reminded: 3 })
+      expect(drainMock).toHaveBeenCalledWith(expect.any(Date))
+      expect(remindMock).toHaveBeenCalledWith(expect.any(Date))
+      // Both steps share one clock.
+      expect(drainMock.mock.calls[0][0]).toBe(remindMock.mock.calls[0][0])
+      expect(loggerMock.info).toHaveBeenCalledWith(
+        'queue.whatsapp_conversation_lifecycle.distribution_tick',
+        expect.objectContaining({ distributed: 4, reminded: 3 }),
+      )
+    })
+
+    it('stays quiet when there was nothing to do', async () => {
+      drainMock.mockResolvedValue({
+        ok: true,
+        value: { assigned: 0, workspaces: 0 },
+      })
+      remindMock.mockResolvedValue({ ok: true, value: { reminded: 0 } })
+
+      const result = await processWhatsappConversationLifecycle(
+        fakeJob('distribution-tick'),
+      )
+
+      expect(result).toEqual({ distributed: 0, reminded: 0 })
+      expect(loggerMock.info).not.toHaveBeenCalled()
+    })
+
+    it('throws when the distribution fails so BullMQ retries', async () => {
+      drainMock.mockResolvedValue({
+        ok: false,
+        error: { code: 'DATABASE_ERROR', message: 'down' },
+      })
+      await expect(
+        processWhatsappConversationLifecycle(fakeJob('distribution-tick')),
+      ).rejects.toThrow('DATABASE_ERROR')
+      expect(remindMock).not.toHaveBeenCalled()
+    })
+
+    it('throws when the reminders fail', async () => {
+      drainMock.mockResolvedValue({
+        ok: true,
+        value: { assigned: 0, workspaces: 0 },
+      })
+      remindMock.mockResolvedValue({
+        ok: false,
+        error: { code: 'DATABASE_ERROR', message: 'down' },
+      })
+      await expect(
+        processWhatsappConversationLifecycle(fakeJob('distribution-tick')),
+      ).rejects.toThrow('DATABASE_ERROR')
+    })
   })
 })

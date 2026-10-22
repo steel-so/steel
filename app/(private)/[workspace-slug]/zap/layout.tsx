@@ -12,13 +12,14 @@ import {
   UserMultipleIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { notFound } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { type ReactNode, Suspense } from 'react'
 import {
   ContextHeader,
   ContextSidebar,
   NavGroup,
   NavItem,
 } from '@/app/_components/navigation/sidebar-context'
+import { WhatsappPresenceSlot } from '@/app/_components/whatsapp/whatsapp-presence-slot'
 import { hasModuleAccess } from '@/src/lib/module-access-guard'
 
 export default async function ZapLayout({
@@ -36,6 +37,9 @@ export default async function ZapLayout({
     <>
       <ContextSidebar>
         <ContextHeader title='WhatsApp' />
+        <Suspense fallback={null}>
+          <WhatsappPresenceSlot slug={slug} />
+        </Suspense>
         <NavGroup>
           <NavItem href={base} icon={Chatting01Icon}>
             Conversas

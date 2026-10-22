@@ -27,4 +27,17 @@ export interface WhatsAppSettingsDTO {
   businessHoursEnd: string
   /** 0 = domingo … 6 = sábado. */
   businessHoursDays: number[]
+  /** Conversa sem atendente: aviso no app / por e-mail aos supervisores. */
+  unassignedAlertNotifyInApp: boolean
+  unassignedAlertNotifyEmail: boolean
+  /** Minutos sem atendente até o lembrete (0 = sem lembrete). */
+  unassignedReminderMinutes: number
+  /** Distribuição automática da fila (OFF = manual, como sempre). */
+  distributionMode: 'OFF' | 'ROUND_ROBIN' | 'LEAST_LOADED'
+  /** Teto de conversas abertas por atendente; nulo = sem limite. */
+  distributionMaxOpenPerAgent: number | null
+  /** Só distribui para atendentes com presença Disponível. */
+  distributionOnlyAvailable: boolean
+  /** Fora do horário de atendimento a conversa espera na fila. */
+  distributionRespectBusinessHours: boolean
 }

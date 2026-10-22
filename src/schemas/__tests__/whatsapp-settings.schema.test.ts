@@ -91,4 +91,65 @@ describe('UpdateWhatsAppSettingsSchema', () => {
       ).toBe(false)
     })
   })
+  describe('queue and distribution (ADR 0047)', () => {
+    it('should accept a full distribution configuration', () => {
+      expect(
+        UpdateWhatsAppSettingsSchema.safeParse({
+          unassignedAlertNotifyInApp: true,
+          unassignedAlertNotifyEmail: true,
+          unassignedReminderMinutes: 15,
+          distributionMode: 'LEAST_LOADED',
+          distributionMaxOpenPerAgent: 12,
+          distributionOnlyAvailable: false,
+          distributionRespectBusinessHours: true,
+        }).success,
+      ).toBe(true)
+    })
+
+    it('should accept every mode and a null cap', () => {
+      for (const distributionMode of ['OFF', 'ROUND_ROBIN', 'LEAST_LOADED']) {
+        expect(
+          UpdateWhatsAppSettingsSchema.safeParse({
+            distributionMode,
+            distributionMaxOpenPerAgent: null,
+          }).success,
+        ).toBe(true)
+      }
+    })
+
+    it('should reject an unknown mode', () => {
+      expect(
+        UpdateWhatsAppSettingsSchema.safeParse({ distributionMode: 'RANDOM' })
+          .success,
+      ).toBe(false)
+    })
+
+    it('should accept 0 to turn the reminder off and cap it at 24 hours', () => {
+      expect(
+        UpdateWhatsAppSettingsSchema.safeParse({ unassignedReminderMinutes: 0 })
+          .success,
+      ).toBe(true)
+      for (const unassignedReminderMinutes of [-1, 1.5, 1441]) {
+        expect(
+          UpdateWhatsAppSettingsSchema.safeParse({ unassignedReminderMinutes })
+            .success,
+        ).toBe(false)
+      }
+    })
+
+    it('should keep the open-conversation cap between 1 and 500', () => {
+      for (const distributionMaxOpenPerAgent of [0, -3, 2.5, 501]) {
+        expect(
+          UpdateWhatsAppSettingsSchema.safeParse({
+            distributionMaxOpenPerAgent,
+          }).success,
+        ).toBe(false)
+      }
+      expect(
+        UpdateWhatsAppSettingsSchema.safeParse({
+          distributionMaxOpenPerAgent: 500,
+        }).success,
+      ).toBe(true)
+    })
+  })
 })

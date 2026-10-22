@@ -79,6 +79,7 @@ model User {
   whatsappGroupMessagesSent           WhatsAppGroupMessage[]        @relation("WhatsAppGroupMessageSender")
   whatsappAiKnowledgeDocumentsCreated WhatsAppAiKnowledgeDocument[] @relation("WhatsAppAiKnowledgeDocumentCreatedBy")
   whatsappConversationEventsActed     WhatsAppConversationEvent[]   @relation("WhatsAppConversationEventActor")
+  whatsappAgentPresence               WhatsAppAgentPresence[]       @relation("WhatsAppAgentPresenceUser")
   whatsappPhoneCalls                  WhatsAppPhoneCall[]
   voiceAgentRunAs                     VoiceAgentSettings[]
   notifications                       Notification[]
@@ -465,6 +466,7 @@ model Workspace {
   whatsappAiCampaignRuns       WhatsAppAiCampaignActionRun[]
   whatsappUsage                WhatsAppUsageMonthly[]
   whatsappConversationEvents   WhatsAppConversationEvent[]
+  whatsappAgentPresence        WhatsAppAgentPresence[]
   notifications                Notification[]
   notificationPreferences      NotificationPreference[]
   notificationDeliverySettings NotificationDeliverySetting[]
@@ -1251,6 +1253,11 @@ model WhatsAppConversation {
   /// Campanha de IA que abriu (ou reenviou para) esta conversa: a IA segue
   /// as instruções e ações dela ao responder.
   aiCampaignId       String?                    @map("ai_campaign_id")
+  /// Quando a conversa entrou na fila sem responsável (início da sequência
+  /// sem atendente) e quando o lembrete "ainda sem atendimento" foi enviado.
+  /// Um lembrete por sequência: vale só se `unassignedReminderAt >= queuedAt`.
+  queuedAt             DateTime?                  @map("queued_at")
+  unassignedReminderAt DateTime?                  @map("unassigned_reminder_at")
   createdAt          DateTime                   @default(now()) @map("created_at")
   updatedAt          DateTime                   @updatedAt @map("updated_at")
 
@@ -1470,6 +1477,8 @@ enum WhatsAppConversationEventSource {
   AUTO_OUTREACH
   /// Campanha de IA (envio do template ou ação da IA).
   AI_CAMPAIGN
+  /// Distribuição automática da fila (ADR 0047).
+  DISTRIBUTION
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -1558,6 +1567,18 @@ model WhatsAppSettings {
   businessHoursStart          String   @default("08:00") @map("business_hours_start") @db.VarChar(5)
   businessHoursEnd            String   @default("18:00") @map("business_hours_end") @db.VarChar(5)
   businessHoursDays           Int[]    @default([1, 2, 3, 4, 5]) @map("business_hours_days")
+  /// Conversas sem atendente (ADR 0047): aviso aos supervisores e lembrete
+  /// após N minutos sem responsável (0 = sem lembrete).
+  unassignedAlertNotifyInApp  Boolean  @default(true) @map("unassigned_alert_notify_in_app")
+  unassignedAlertNotifyEmail  Boolean  @default(false) @map("unassigned_alert_notify_email")
+  unassignedReminderMinutes   Int      @default(10) @map("unassigned_reminder_minutes")
+  /// Distribuição automática da fila (ADR 0047). OFF = como sempre foi.
+  distributionMode                  WhatsAppDistributionMode @default(OFF) @map("distribution_mode")
+  distributionMaxOpenPerAgent       Int?                     @map("distribution_max_open_per_agent")
+  distributionOnlyAvailable         Boolean                  @default(true) @map("distribution_only_available")
+  distributionRespectBusinessHours  Boolean                  @default(true) @map("distribution_respect_business_hours")
+  /// Ponteiro do rodízio das conversas sem equipe.
+  distributionLastAssignedUserId    String?                  @map("distribution_last_assigned_user_id")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -1937,6 +1958,8 @@ model WhatsAppTeam {
   workspaceId String   @map("workspace_id")
   name        String
   description String?
+  /// Ponteiro do rodízio da equipe (distribuição automática, ADR 0047).
+  distributionLastAssignedUserId String? @map("distribution_last_assigned_user_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -1947,6 +1970,37 @@ model WhatsAppTeam {
   @@unique([workspaceId, name])
   @@index([workspaceId])
   @@map("whatsapp_teams")
+}
+
+/// Como a fila sem responsável é distribuída entre os atendentes.
+enum WhatsAppDistributionMode {
+  OFF
+  ROUND_ROBIN
+  LEAST_LOADED
+}
+
+enum WhatsAppPresenceStatus {
+  AVAILABLE
+  AWAY
+}
+
+/// Presença manual do atendente (Disponível/Ausente). Sem linha = Disponível.
+model WhatsAppAgentPresence {
+  id             String                 @id @default(cuid())
+  workspaceId    String                 @map("workspace_id")
+  userId         String                 @map("user_id")
+  status         WhatsAppPresenceStatus @default(AVAILABLE)
+  /// Última conversa recebida pela distribuição — desempate do menos carregado.
+  lastAssignedAt DateTime?              @map("last_assigned_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation("WhatsAppAgentPresenceUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("whatsapp_agent_presence")
 }
 
 model WhatsAppTeamMember {
@@ -5201,6 +5255,8 @@ enum NotificationKind {
   SD_MONITOR_ALERT
   WHATSAPP_CONVERSATION_ASSIGNED
   WHATSAPP_AI_HANDOFF
+  /// Conversa há N minutos sem atendente (lembrete aos supervisores, ADR 0047).
+  WHATSAPP_CONVERSATION_UNATTENDED
   WHATSAPP_CONNECTION_LOST
   WHATSAPP_BROADCAST_FINISHED
   WHATSAPP_TEMPLATE_REJECTED

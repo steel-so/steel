@@ -42,6 +42,9 @@ vi.mock('@/src/services/authz', () => ({ assertMember: vi.fn() }))
 vi.mock('@/src/services/crm-workflow.service', () => ({
   CrmWorkflowService: { triggerFromSystem: vi.fn() },
 }))
+vi.mock('@/src/services/whatsapp-distribution.service', () => ({
+  WhatsAppDistributionService: { distributeConversation: vi.fn() },
+}))
 vi.mock('@/src/services/whatsapp-ai-reply.service', () => ({
   WhatsAppAiReplyService: { generateReply: vi.fn() },
 }))
@@ -73,6 +76,7 @@ import { WhatsAppAiReplyService } from '@/src/services/whatsapp-ai-reply.service
 import { notifyWhatsAppUsers } from '@/src/services/whatsapp-notify'
 import { WhatsAppButtonActionService } from '../whatsapp-button-action.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
+import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
 
 const templateRepo = vi.mocked(WhatsAppTemplateRepository)
 const quickReplyRepo = vi.mocked(WhatsAppQuickReplyRepository)
@@ -88,6 +92,7 @@ const webhook = vi.mocked(postButtonWebhook)
 const workflow = vi.mocked(CrmWorkflowService)
 const aiReply = vi.mocked(WhatsAppAiReplyService)
 const member = vi.mocked(assertMember)
+const distribute = vi.mocked(WhatsAppDistributionService.distributeConversation)
 
 const contact = createFakeWhatsAppContact({
   id: 'ct1',
@@ -133,6 +138,9 @@ const job = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  distribute.mockResolvedValue(
+    ok({ assigned: false, reason: 'disabled' as const }),
+  )
   eventRepo.create.mockResolvedValue(ok({} as never))
   conversationRepo.findByIdWithConnection.mockResolvedValue(ok(conversation))
   conversationRepo.findById.mockResolvedValue(
@@ -439,6 +447,20 @@ describe('runActions', () => {
     )
     // It had no agent: it was already waiting.
     expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+    // The automatic distribution (when on) is offered the team queue.
+    expect(distribute).toHaveBeenCalledWith('ws1', 'c1')
+  })
+
+  it('ASSIGN_TEAM lets the distribution take it: the agent hears, not the whole team', async () => {
+    arrange([{ kind: 'ASSIGN_TEAM', teamId: 't1' }])
+    teamRepo.findTeam.mockResolvedValue(
+      ok({ id: 't1', name: 'Suporte', memberIds: ['u3', 'u4'] }),
+    )
+    distribute.mockResolvedValue(ok({ assigned: true, userId: 'u3' }))
+
+    expectOk(await WhatsAppButtonActionService.runActions(job))
+
+    expect(notify).not.toHaveBeenCalled()
   })
 
   it('ASSIGN_TEAM announces a conversation taken from its agent as waiting', async () => {
@@ -454,6 +476,15 @@ describe('runActions', () => {
 
     expectOk(await WhatsAppButtonActionService.runActions(job))
 
+    // Taken from an agent: a new streak in the queue (clock and reminder reset).
+    expect(conversationRepo.update).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({
+        teamId: 't1',
+        queuedAt: expect.any(Date),
+        unassignedReminderAt: null,
+      }),
+    )
     expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
       conversation: queued,
       contact,
