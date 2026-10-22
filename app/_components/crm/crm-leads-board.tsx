@@ -1,8 +1,14 @@
 'use client'
 
 import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  ArrowUpDownIcon,
+  Cancel01Icon,
   Download01Icon,
+  FilterIcon,
   PlusSignIcon,
+  Search01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
@@ -21,6 +27,11 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -94,6 +105,85 @@ const THERMOMETER_COLORS = [
   'bg-orange-400',
   'bg-rose-400',
 ]
+
+type LeadFieldKey =
+  | 'name'
+  | 'company'
+  | 'email'
+  | 'phone'
+  | 'jobTitle'
+  | 'city'
+  | 'source'
+  | 'channel'
+  | 'score'
+  | 'createdAt'
+  | 'updatedAt'
+
+const LEAD_FIELDS: { key: LeadFieldKey; label: string; sortable: boolean }[] = [
+  { key: 'name', label: 'Nome', sortable: true },
+  { key: 'company', label: 'Empresa', sortable: true },
+  { key: 'email', label: 'E-mail', sortable: true },
+  { key: 'phone', label: 'Telefone', sortable: true },
+  { key: 'jobTitle', label: 'Cargo', sortable: true },
+  { key: 'city', label: 'Cidade', sortable: true },
+  { key: 'source', label: 'Origem', sortable: true },
+  { key: 'channel', label: 'Canal', sortable: true },
+  { key: 'score', label: 'Pontuação', sortable: true },
+  { key: 'createdAt', label: 'Criado em', sortable: true },
+  { key: 'updatedAt', label: 'Última atualização', sortable: true },
+]
+
+const FILTERABLE_FIELDS = LEAD_FIELDS.filter(
+  (f) => f.key !== 'score' && f.key !== 'createdAt' && f.key !== 'updatedAt',
+)
+
+type LeadSort = { key: LeadFieldKey; desc: boolean }
+
+function leadFieldValue(lead: CrmLeadDTO, key: LeadFieldKey): string | number {
+  switch (key) {
+    case 'email':
+      return lead.emails.join(' ')
+    case 'phone':
+      return lead.phones.join(' ')
+    case 'score':
+      return lead.score
+    case 'name':
+    case 'company':
+    case 'jobTitle':
+    case 'city':
+    case 'source':
+    case 'channel':
+    case 'createdAt':
+    case 'updatedAt':
+      return lead[key] ?? ''
+  }
+}
+
+function fieldLabel(key: LeadFieldKey) {
+  return LEAD_FIELDS.find((f) => f.key === key)?.label ?? key
+}
+
+function FilterChip({
+  children,
+  onRemove,
+}: {
+  children: React.ReactNode
+  onRemove: () => void
+}) {
+  return (
+    <span className='inline-flex items-center gap-1 rounded-full border bg-card py-0.5 pr-1 pl-2 text-xs'>
+      {children}
+      <button
+        type='button'
+        onClick={onRemove}
+        className='rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground'
+        aria-label='Remover'
+      >
+        <SteelIcon icon={Cancel01Icon} strokeWidth={2} className='size-3' />
+      </button>
+    </span>
+  )
+}
 
 function InterestThermometer({
   value,
@@ -173,12 +263,63 @@ export function CrmLeadsBoard({
     }
   }, [])
 
+  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState<Partial<Record<LeadFieldKey, string>>>(
+    {},
+  )
+  const [sorting, setSorting] = useState<LeadSort[]>([])
+  const activeFilters = FILTERABLE_FIELDS.filter(
+    (f) => (filters[f.key] ?? '').trim() !== '',
+  )
+
+  const visibleLeads = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    const filtered = leads.filter((lead) => {
+      if (term) {
+        const haystack = FILTERABLE_FIELDS.map((f) =>
+          String(leadFieldValue(lead, f.key)),
+        )
+          .join(' ')
+          .toLowerCase()
+        if (!haystack.includes(term)) return false
+      }
+      return activeFilters.every((f) =>
+        String(leadFieldValue(lead, f.key))
+          .toLowerCase()
+          .includes((filters[f.key] ?? '').trim().toLowerCase()),
+      )
+    })
+    if (sorting.length === 0) return filtered
+    return [...filtered].sort((a, b) => {
+      for (const { key, desc } of sorting) {
+        const va = leadFieldValue(a, key)
+        const vb = leadFieldValue(b, key)
+        const cmp =
+          typeof va === 'number' && typeof vb === 'number'
+            ? va - vb
+            : String(va).localeCompare(String(vb), 'pt-BR', {
+                sensitivity: 'base',
+                numeric: true,
+              })
+        if (cmp !== 0) return desc ? -cmp : cmp
+      }
+      return 0
+    })
+  }, [leads, search, filters, sorting, activeFilters])
+
+  const toggleSort = (key: LeadFieldKey, desc: boolean) =>
+    setSorting((cur) => {
+      const current = cur.find((s) => s.key === key)
+      if (current?.desc === desc) return cur.filter((s) => s.key !== key)
+      return [...cur.filter((s) => s.key !== key), { key, desc }]
+    })
+
   const byStage = useMemo(() => {
     const map = new Map<CrmLeadStageDTO, CrmLeadDTO[]>()
     for (const stage of LEAD_STAGES) map.set(stage, [])
-    for (const lead of leads) map.get(lead.stage)?.push(lead)
+    for (const lead of visibleLeads) map.get(lead.stage)?.push(lead)
     return map
-  }, [leads])
+  }, [visibleLeads])
 
   const selectedLead = leads.find((l) => l.id === selectedLeadId) ?? null
   const boardRef = useRef<HTMLDivElement | null>(null)
@@ -204,9 +345,130 @@ export function CrmLeadsBoard({
       />
       <div className='flex items-center justify-between'>
         <p className='text-muted-foreground text-sm'>
-          {leads.length} lead{leads.length === 1 ? '' : 's'} no funil
+          {visibleLeads.length === leads.length
+            ? `${leads.length} lead${leads.length === 1 ? '' : 's'} no funil`
+            : `${visibleLeads.length} de ${leads.length} leads`}
         </p>
         <div className='flex items-center gap-2'>
+          <div className='relative'>
+            <SteelIcon
+              icon={Search01Icon}
+              strokeWidth={2}
+              className='-translate-y-1/2 absolute top-1/2 left-2.5 size-4 text-muted-foreground'
+            />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder='Buscar leads…'
+              aria-label='Buscar leads'
+              className='h-8 w-56 pl-8'
+            />
+          </div>
+          <Popover>
+            <PopoverTrigger
+              render={
+                <Button variant='outline' size='sm' data-shortcut-filters>
+                  <SteelIcon icon={FilterIcon} strokeWidth={2} />
+                  Filtrar
+                  {activeFilters.length > 0 ? (
+                    <span className='ml-1 rounded bg-primary px-1 text-primary-foreground text-xs'>
+                      {activeFilters.length}
+                    </span>
+                  ) : null}
+                </Button>
+              }
+            />
+            <PopoverContent align='end' className='w-72'>
+              <div className='grid gap-3'>
+                <p className='font-medium text-sm'>Filtrar por campo</p>
+                {FILTERABLE_FIELDS.map((field) => (
+                  <div key={field.key} className='grid gap-1'>
+                    <span className='text-muted-foreground text-xs'>
+                      {field.label}
+                    </span>
+                    <Input
+                      value={filters[field.key] ?? ''}
+                      onChange={(e) =>
+                        setFilters((cur) => ({
+                          ...cur,
+                          [field.key]: e.target.value,
+                        }))
+                      }
+                      placeholder={`Filtrar ${field.label}…`}
+                      className='h-8'
+                    />
+                  </div>
+                ))}
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => setFilters({})}
+                  disabled={activeFilters.length === 0}
+                >
+                  <SteelIcon icon={Cancel01Icon} strokeWidth={2} />
+                  Limpar filtros
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger
+              render={
+                <Button variant='outline' size='sm'>
+                  <SteelIcon icon={ArrowUpDownIcon} strokeWidth={2} />
+                  Ordenar
+                  {sorting.length > 0 ? (
+                    <span className='ml-1 rounded bg-primary px-1 text-primary-foreground text-xs'>
+                      {sorting.length}
+                    </span>
+                  ) : null}
+                </Button>
+              }
+            />
+            <PopoverContent align='end' className='w-72'>
+              <div className='grid gap-2'>
+                <p className='font-medium text-sm'>Ordenar por</p>
+                {LEAD_FIELDS.filter((f) => f.sortable).map((field) => {
+                  const current = sorting.find((s) => s.key === field.key)
+                  return (
+                    <div
+                      key={field.key}
+                      className='flex items-center justify-between gap-2'
+                    >
+                      <span className='truncate text-sm'>{field.label}</span>
+                      <div className='flex gap-1'>
+                        <Button
+                          variant={
+                            current && !current.desc ? 'default' : 'outline'
+                          }
+                          size='xs'
+                          onClick={() => toggleSort(field.key, false)}
+                        >
+                          Asc
+                        </Button>
+                        <Button
+                          variant={current?.desc ? 'default' : 'outline'}
+                          size='xs'
+                          onClick={() => toggleSort(field.key, true)}
+                        >
+                          Desc
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => setSorting([])}
+                  disabled={sorting.length === 0}
+                >
+                  <SteelIcon icon={Cancel01Icon} strokeWidth={2} />
+                  Limpar ordenação
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button
             size='sm'
             variant='outline'
@@ -221,6 +483,53 @@ export function CrmLeadsBoard({
           </Button>
         </div>
       </div>
+
+      {activeFilters.length > 0 || sorting.length > 0 ? (
+        <div className='flex shrink-0 flex-wrap items-center gap-1.5'>
+          {activeFilters.map((f) => (
+            <FilterChip
+              key={`filter-${f.key}`}
+              onRemove={() => setFilters((cur) => ({ ...cur, [f.key]: '' }))}
+            >
+              <SteelIcon
+                icon={FilterIcon}
+                strokeWidth={2}
+                className='size-3 text-muted-foreground'
+              />
+              <span className='font-medium'>{f.label}</span>
+              <span className='max-w-32 truncate text-muted-foreground'>
+                {filters[f.key]}
+              </span>
+            </FilterChip>
+          ))}
+          {sorting.map((s) => (
+            <FilterChip
+              key={`sort-${s.key}`}
+              onRemove={() =>
+                setSorting((cur) => cur.filter((x) => x.key !== s.key))
+              }
+            >
+              <SteelIcon
+                icon={s.desc ? ArrowDown01Icon : ArrowUp01Icon}
+                strokeWidth={2}
+                className='size-3 text-muted-foreground'
+              />
+              <span className='font-medium'>{fieldLabel(s.key)}</span>
+            </FilterChip>
+          ))}
+          <Button
+            variant='ghost'
+            size='xs'
+            className='text-muted-foreground'
+            onClick={() => {
+              setFilters({})
+              setSorting([])
+            }}
+          >
+            Limpar tudo
+          </Button>
+        </div>
+      ) : null}
 
       <div
         ref={boardRef}
