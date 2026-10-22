@@ -348,13 +348,13 @@ describe('InvitationService', () => {
       expectErr(result, 'SEAT_LIMIT_REACHED')
     })
 
-    it('should allow create ona n unlimited (paid) plan', async () => {
+    it('should allow create ona n unlimited (BUSINESS) plan', async () => {
       mockedWorkspace.findById.mockResolvedValue(
         ok(
           createFakeWorkspace({
             id: 'ws1',
             slug: 'acme',
-            activePlan: 'PRO',
+            activePlan: 'BUSINESS',
           }),
         ),
       )
