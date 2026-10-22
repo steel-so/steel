@@ -40,7 +40,9 @@ const INSIGHT_METRICS: {
   metric: string
   key: keyof Omit<CrmFacebookInsightsPoint, 'date'>
 }[] = [
-  { metric: 'page_impressions_unique', key: 'impressions' },
+  // `page_impressions_unique` was retired on 2025-06-15 (unique viewers
+  // replace it; the DTO field keeps its name).
+  { metric: 'page_total_media_view_unique', key: 'impressions' },
   { metric: 'page_post_engagements', key: 'engagements' },
   { metric: 'page_daily_follows', key: 'fanAdds' },
 ]

@@ -215,52 +215,48 @@ describe('getInsights()', () => {
     vi.setSystemTime(NOW)
   })
 
-  it('should query each metric separately and merge them by day', async () => {
+  it('should query views per day and the others as a series, merging by day', async () => {
     fetchMock = mockFetch((url) => {
-      const metric = new URL(url).searchParams.get('metric')
-      if (metric === 'impressions') {
-        return jsonResponse({
-          data: [
-            {
-              values: [
-                { value: 10, end_time: '2026-09-17T07:00:00+0000' },
-                { value: 5, end_time: '2026-09-16T07:00:00+0000' },
-                { value: 99 },
-              ],
-            },
-          ],
-        })
+      const params = new URL(url).searchParams
+      const metric = params.get('metric')
+      if (metric === 'views') {
+        const day = params.get('since')
+        const value = day === '2026-09-16' ? 5 : day === '2026-09-17' ? 10 : 0
+        return jsonResponse({ data: [{ total_value: { value } }] })
       }
       if (metric === 'reach') {
         return jsonResponse({
           data: [{ values: [{ value: '7', end_time: '2026-09-17T07:00' }] }],
         })
       }
-      // profile_views foi descontinuada pela Meta: falha isolada.
+      // profile_views: refused by Meta → contributes nothing.
       return jsonResponse({ error: { message: 'dead' } }, { status: 400 })
     })
 
-    const insights = expectOk(await getInsights('u1', 'ws1', '28d'))
+    const insights = expectOk(await getInsights('u1', 'ws1', '7d'))
 
-    expect(insights).toEqual({
-      range: '28d',
-      startDate: '2026-08-21',
-      endDate: '2026-09-18',
-      totals: { impressions: 15, reach: 7, profileViews: 0 },
-      series: [
-        { date: '2026-09-16', impressions: 5, reach: 0, profileViews: 0 },
-        { date: '2026-09-17', impressions: 10, reach: 7, profileViews: 0 },
-      ],
+    expect(insights.totals).toEqual({
+      impressions: 15,
+      reach: 7,
+      profileViews: 0,
     })
-    const calls = fetchMock.calls()
-    expect(calls.map((c) => new URL(c.url).searchParams.get('metric'))).toEqual(
-      ['impressions', 'reach', 'profile_views'],
+    expect(insights.series).toEqual([
+      { date: '2026-09-16', impressions: 5, reach: 0, profileViews: 0 },
+      { date: '2026-09-17', impressions: 10, reach: 7, profileViews: 0 },
+    ])
+    const calls = fetchMock.calls().map((c) => new URL(c.url).searchParams)
+    // `impressions` is gone from the API: it must never be requested.
+    expect(calls.some((p) => p.get('metric') === 'impressions')).toBe(false)
+    const day = calls.find((p) => p.get('metric') === 'views')
+    expect(day?.get('metric_type')).toBe('total_value')
+    expect(day?.get('until')).toBe(
+      new Date(Date.parse(`${day?.get('since')}T00:00:00Z`) + 86_400_000)
+        .toISOString()
+        .slice(0, 10),
     )
-    const params = new URL(calls[0].url).searchParams
-    expect(pathOf(calls[0].url)).toBe(`/${IG}/insights`)
-    expect(params.get('period')).toBe('day')
-    expect(params.get('since')).toBe('2026-08-21')
-    expect(params.get('until')).toBe('2026-09-18')
+    const reach = calls.find((p) => p.get('metric') === 'reach')
+    expect(reach?.get('since')).toBe('2026-09-11')
+    expect(reach?.get('until')).toBe('2026-09-18')
   })
 
   it('should return an empty series when every metric payload is empty', async () => {
@@ -377,7 +373,16 @@ describe('getWeeklyEngagement()', () => {
       const path = pathOf(url)
       const metric = new URL(url).searchParams.get('metric')
       if (path === `/${IG}/insights`) {
-        const value = metric === 'impressions' ? 100 : 7
+        const value = metric === 'views' ? 100 : 7
+        const day = new URL(url).searchParams.get('since')
+        // `views`/`profile_views` are total_value per day; the other metrics are series.
+        if (metric === 'views' || metric === 'profile_views') {
+          return jsonResponse({
+            data: [
+              { total_value: { value: day === '2026-09-17' ? value : 0 } },
+            ],
+          })
+        }
         return jsonResponse({
           data: [{ values: [{ value, end_time: '2026-09-17T07:00' }] }],
         })

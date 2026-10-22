@@ -748,7 +748,7 @@ export function CrmFacebookStudio({
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
                 <StatCard
                   icon={Analytics01Icon}
-                  label='Impressões'
+                  label='Visualizantes'
                   value={insights.totals.impressions}
                 />
                 <StatCard
@@ -780,7 +780,7 @@ export function CrmFacebookStudio({
                     return (
                       <ResponsiveLine
                         data={[
-                          { id: 'Impressões', data: s1 },
+                          { id: 'Visualizantes', data: s1 },
                           { id: 'Engajamentos', data: s2 },
                         ]}
                         margin={{ top: 36, right: 20, bottom: 64, left: 52 }}
