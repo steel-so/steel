@@ -134,6 +134,22 @@ export const WhatsAppSettingsService = {
       businessHoursStart,
       businessHoursEnd,
       businessHoursDays,
+      unassignedAlertNotifyInApp:
+        dto.unassignedAlertNotifyInApp ?? current.unassignedAlertNotifyInApp,
+      unassignedAlertNotifyEmail:
+        dto.unassignedAlertNotifyEmail ?? current.unassignedAlertNotifyEmail,
+      unassignedReminderMinutes:
+        dto.unassignedReminderMinutes ?? current.unassignedReminderMinutes,
+      distributionMode: dto.distributionMode ?? current.distributionMode,
+      distributionMaxOpenPerAgent:
+        dto.distributionMaxOpenPerAgent === undefined
+          ? current.distributionMaxOpenPerAgent
+          : dto.distributionMaxOpenPerAgent,
+      distributionOnlyAvailable:
+        dto.distributionOnlyAvailable ?? current.distributionOnlyAvailable,
+      distributionRespectBusinessHours:
+        dto.distributionRespectBusinessHours ??
+        current.distributionRespectBusinessHours,
     })
     if (!saved.ok) return saved
 
@@ -156,6 +172,12 @@ export const WhatsAppSettingsService = {
         businessHoursEnabled: saved.value.businessHoursEnabled,
         businessHoursStart: saved.value.businessHoursStart,
         businessHoursEnd: saved.value.businessHoursEnd,
+        unassignedReminderMinutes: saved.value.unassignedReminderMinutes,
+        distributionMode: saved.value.distributionMode,
+        distributionMaxOpenPerAgent: saved.value.distributionMaxOpenPerAgent,
+        distributionOnlyAvailable: saved.value.distributionOnlyAvailable,
+        distributionRespectBusinessHours:
+          saved.value.distributionRespectBusinessHours,
       },
     })
 

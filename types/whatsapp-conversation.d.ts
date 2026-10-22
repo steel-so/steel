@@ -59,6 +59,7 @@ export type WhatsAppConversationEventSourceDTO =
   | 'AUTO_OUTREACH'
   | 'AI_CAMPAIGN'
   | 'AI_ACTION'
+  | 'DISTRIBUTION'
 
 export interface WhatsAppConversationEventDTO {
   id: string

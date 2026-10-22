@@ -3,17 +3,13 @@ import { logger } from '@/lib/axiom/logger'
 import { NEXT_PUBLIC_URL } from '@/lib/env/env'
 import { sendWhatsAppSentimentAlertEmail } from '@/src/lib/mail/workspace/send-whatsapp-sentiment-alert'
 import { ok, type Result } from '@/src/lib/result'
-import {
-  canSeeConversation,
-  scopeFromSnapshot,
-} from '@/src/lib/whatsapp/conversation-scope'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
+import { filterSupervisorRecipients } from '@/src/lib/whatsapp/supervisor-recipients'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
-import { isPrivilegedRole } from './authz'
 import { NotificationService } from './notification.service'
 import { loadWhatsAppTeamSnapshot } from './whatsapp-conversation-scope.service'
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
@@ -87,12 +83,6 @@ export const WhatsAppSentimentAlertService = {
       input.workspaceId,
     )
     if (!members.ok) return members
-    const configured = new Set(rule.sentimentAlertRecipientIds)
-    const candidates = members.value.filter((member) =>
-      configured.size > 0
-        ? configured.has(member.userId)
-        : isPrivilegedRole(member.role),
-    )
     const supervisor = rule.sentimentAlertAssignToId
       ? members.value.find((m) => m.userId === rule.sentimentAlertAssignToId)
       : undefined
@@ -108,12 +98,12 @@ export const WhatsAppSentimentAlertService = {
       assignedUserId: assignedToId ?? conversation.value.assignedUserId,
       teamId: conversation.value.teamId,
     }
-    const recipients = candidates.filter((member) =>
-      canSeeConversation(
-        scopeFromSnapshot(member.userId, member.role, snapshot.value),
-        target,
-      ),
-    )
+    const recipients = filterSupervisorRecipients({
+      members: members.value,
+      configuredIds: rule.sentimentAlertRecipientIds,
+      target,
+      teams: snapshot.value,
+    })
     if (recipients.length === 0 && !shouldAssign) {
       return ok({ alerted: false, reason: 'no_recipients' })
     }

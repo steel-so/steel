@@ -16,6 +16,7 @@ export function createFakeWhatsAppTeam(
     workspaceId: createId(),
     name: 'Vendas',
     description: null,
+    distributionLastAssignedUserId: null,
     createdAt: now,
     updatedAt: now,
     ...teamOverrides,

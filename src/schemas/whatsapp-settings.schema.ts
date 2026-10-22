@@ -10,6 +10,15 @@ export const WHATSAPP_SENTIMENT_ALERT_MAX_COOLDOWN_HOURS = 168
 export const CALL_RECORDING_MIN_RETENTION_DAYS = 1
 export const CALL_RECORDING_MAX_RETENTION_DAYS = 1825
 export const CALL_RECORDING_NOTICE_MAX = 500
+/** Lembrete de conversa sem atendente: até 24 h (0 = desligado). */
+export const WHATSAPP_UNASSIGNED_REMINDER_MAX_MINUTES = 1440
+/** Teto de conversas abertas por atendente na distribuição automática. */
+export const WHATSAPP_DISTRIBUTION_MAX_OPEN_LIMIT = 500
+export const WHATSAPP_DISTRIBUTION_MODES = [
+  'OFF',
+  'ROUND_ROBIN',
+  'LEAST_LOADED',
+] as const
 
 export const UpdateWhatsAppSettingsSchema = z.object({
   autoCloseAfterHours: z
@@ -98,6 +107,35 @@ export const UpdateWhatsAppSettingsSchema = z.object({
     .regex(BUSINESS_HOURS_TIME_PATTERN, 'Use o formato HH:mm (ex.: 18:00)')
     .optional(),
   businessHoursDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+
+  /** Conversas sem atendente (ADR 0047). */
+  unassignedAlertNotifyInApp: z.boolean().optional(),
+  unassignedAlertNotifyEmail: z.boolean().optional(),
+  unassignedReminderMinutes: z
+    .number()
+    .int('Informe um número inteiro de minutos')
+    .min(0, 'Use 0 para desligar o lembrete')
+    .max(
+      WHATSAPP_UNASSIGNED_REMINDER_MAX_MINUTES,
+      `Máximo de ${WHATSAPP_UNASSIGNED_REMINDER_MAX_MINUTES} minutos (24 horas)`,
+    )
+    .optional(),
+
+  /** Distribuição automática da fila (ADR 0047). */
+  distributionMode: z.enum(WHATSAPP_DISTRIBUTION_MODES).optional(),
+  /** Máximo de conversas abertas por atendente; nulo = sem limite. */
+  distributionMaxOpenPerAgent: z
+    .number()
+    .int('Informe um número inteiro de conversas')
+    .min(1, 'O limite mínimo é 1 conversa')
+    .max(
+      WHATSAPP_DISTRIBUTION_MAX_OPEN_LIMIT,
+      `Máximo de ${WHATSAPP_DISTRIBUTION_MAX_OPEN_LIMIT} conversas`,
+    )
+    .nullable()
+    .optional(),
+  distributionOnlyAvailable: z.boolean().optional(),
+  distributionRespectBusinessHours: z.boolean().optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

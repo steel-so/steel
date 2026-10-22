@@ -35,6 +35,14 @@ vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
 }))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
+vi.mock('@/src/services/whatsapp-distribution.service', () => ({
+  WhatsAppDistributionService: {
+    distributeConversation: vi.fn(async () => ({
+      ok: true,
+      value: { assigned: false, reason: 'disabled' },
+    })),
+  },
+}))
 vi.mock('@/src/services/whatsapp-notify', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../whatsapp-notify')>()),
   notifyWhatsAppUsers: vi.fn(async () => 1),
@@ -62,6 +70,7 @@ import {
 } from '@/src/services/ai-usage.service'
 import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
 import { WhatsAppAiReplyService } from '../whatsapp-ai-reply.service'
+import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
 import { notifyWhatsAppUsers, whatsAppAdminIds } from '../whatsapp-notify'
 
 const mockedConversationRepo = vi.mocked(WhatsAppConversationRepository)
@@ -516,6 +525,44 @@ describe('WhatsAppAiReplyService · handoff notice', () => {
     expectOk(await handoff({ assignedUserId: null, teamId: 'team1' }))
     expect(admins).not.toHaveBeenCalled()
     expect(notify.mock.calls[0][0].userIds).toEqual(['lia', 'ana'])
+  })
+
+  it('offers an unassigned handoff to the automatic distribution and starts the queue clock', async () => {
+    expectOk(await handoff({ assignedUserId: null }))
+    expect(
+      WhatsAppDistributionService.distributeConversation,
+    ).toHaveBeenCalledWith(WS, CONV)
+    expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+      CONV,
+      expect.objectContaining({
+        aiHandoff: true,
+        queuedAt: expect.any(Date),
+        unassignedReminderAt: null,
+      }),
+    )
+  })
+
+  it('lets the agent the distribution picked hear about it instead of the usual handoff notice', async () => {
+    vi.mocked(
+      WhatsAppDistributionService.distributeConversation,
+    ).mockResolvedValueOnce({
+      ok: true,
+      value: { assigned: true, userId: 'ana' },
+    })
+    expectOk(await handoff({ assignedUserId: null }))
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('does not distribute when the conversation already has an assignee', async () => {
+    vi.mocked(WhatsAppDistributionService.distributeConversation).mockClear()
+    expectOk(await handoff({ assignedUserId: 'agent' }))
+    expect(
+      WhatsAppDistributionService.distributeConversation,
+    ).not.toHaveBeenCalled()
+    expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+      CONV,
+      expect.not.objectContaining({ queuedAt: expect.anything() }),
+    )
   })
 
   it('never notifies a regular AI reply', async () => {

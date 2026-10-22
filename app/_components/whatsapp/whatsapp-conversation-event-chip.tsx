@@ -9,6 +9,7 @@ const BY_BUTTON = 'pela ação de um botão'
 
 function byActor(event: WhatsAppConversationEventDTO): string {
   if (event.source === 'BUTTON_ACTION') return ` ${BY_BUTTON}`
+  if (event.source === 'DISTRIBUTION') return ' pela distribuição automática'
   return event.actorName ? ` por ${event.actorName}` : ''
 }
 

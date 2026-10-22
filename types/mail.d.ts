@@ -81,3 +81,14 @@ export interface WhatsAppSentimentAlertEmailProps extends EmailProps {
   averageScore: string
   redirectUrl: string
 }
+
+export interface WhatsAppUnassignedConversationEmailProps extends EmailProps {
+  workspaceName: string
+  /** Nome do contato (ou número, sem nome salvo). */
+  contactLabel: string
+  /** Há quanto tempo espera, já formatado (ex.: "10 minutos"). */
+  waitingFor: string
+  /** Nome da equipe da conversa, quando há. */
+  teamName: string | null
+  redirectUrl: string
+}

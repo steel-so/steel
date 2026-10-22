@@ -3,9 +3,11 @@ import { logger } from '@/lib/axiom/logger'
 import { badRequest, validationError, whatsappTeamNotFound } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
 import { toWhatsAppConversationScopeDTO } from '@/src/lib/whatsapp/conversation-scope'
+import { toWhatsAppSettingsDTO } from '@/src/mappers/whatsapp-settings.mapper'
 import { toWhatsAppTeamDTO } from '@/src/mappers/whatsapp-team.mapper'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import {
   type WhatsAppTeamMemberInput,
   WhatsAppTeamRepository,
@@ -24,10 +26,12 @@ import {
   resolveConversationScope,
   whatsAppTeamMemberIds,
 } from './whatsapp-conversation-scope.service'
+import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
   notifyWhatsAppUsers,
   whatsAppConversationPath,
 } from './whatsapp-notify'
+import { WhatsAppUnassignedAlertService } from './whatsapp-unassigned-alert.service'
 
 const MODULE = 'COMMUNICATION' as const
 
@@ -228,8 +232,11 @@ export const WhatsAppTeamService = {
   },
 
   /**
-   * An inbound message landed on an unassigned conversation of a team (and
-   * the AI is not answering it): the team hears about it — once per unread
+   * An inbound message landed on an unassigned conversation (the AI is not
+   * answering it): first the automatic distribution tries to give it to an
+   * agent; when it stays in the queue, the people who can take it hear about
+   * it — the team (when it has one) and, with no team or no agent able to
+   * receive it, the supervisors (ADR 0047). Notices go out once per unread
    * streak (first unread message), never per message. System flow; never
    * fails the webhook.
    */
@@ -244,29 +251,73 @@ export const WhatsAppTeamService = {
     if (!found.ok || !found.value) return
     const conversation = found.value
     if (
-      !conversation.teamId ||
       conversation.assignedUserId ||
       conversation.aiActive ||
       conversation.status === 'CLOSED' ||
-      conversation.unreadCount !== 1
+      conversation.archivedAt ||
+      conversation.deletedAt
     ) {
       return
     }
 
-    const userIds = await whatsAppTeamMemberIds(
-      workspaceId,
-      conversation.teamId,
-    )
+    const row = await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
+    if (!row.ok) return
+    const settings = toWhatsAppSettingsDTO(workspaceId, row.value)
+
+    const distribution =
+      await WhatsAppDistributionService.distributeConversation(
+        workspaceId,
+        conversationId,
+        { settings },
+      )
+    if (distribution.ok && distribution.value.assigned) return
+    if (conversation.unreadCount !== 1) return
+
+    const nobodyCanTake =
+      distribution.ok &&
+      !distribution.value.assigned &&
+      NO_AGENT_REASONS.has(distribution.value.reason)
+
     const contact = conversation.contact
-    await notifyWhatsAppUsers({
-      workspaceId,
-      kind: 'WHATSAPP_CONVERSATION_ASSIGNED',
-      userIds,
-      title:
-        `Nova mensagem na fila da equipe ${conversation.team?.name ?? ''}`.trim(),
-      body: `${contact.name ?? contact.waId} aguarda atendimento.`,
-      path: whatsAppConversationPath(conversationId),
-      meta: { conversationId, teamId: conversation.teamId, via: 'team_queue' },
-    })
+    if (conversation.teamId) {
+      const userIds = await whatsAppTeamMemberIds(
+        workspaceId,
+        conversation.teamId,
+      )
+      await notifyWhatsAppUsers({
+        workspaceId,
+        kind: 'WHATSAPP_CONVERSATION_ASSIGNED',
+        userIds,
+        title:
+          `Nova mensagem na fila da equipe ${conversation.team?.name ?? ''}`.trim(),
+        body: `${contact.name ?? contact.waId} aguarda atendimento.`,
+        path: whatsAppConversationPath(conversationId),
+        meta: {
+          conversationId,
+          teamId: conversation.teamId,
+          via: 'team_queue',
+        },
+      })
+    }
+
+    if (!conversation.teamId || nobodyCanTake) {
+      await WhatsAppUnassignedAlertService.notifySupervisors({
+        workspaceId,
+        conversation,
+        settings,
+        notice: {
+          kind: 'queued',
+          reason: nobodyCanTake ? 'no_agent_available' : 'no_team',
+        },
+      })
+    }
   },
 }
+
+/** Distribution outcomes where the conversation stays queued for lack of an agent. */
+const NO_AGENT_REASONS: ReadonlySet<string> = new Set([
+  'empty_pool',
+  'nobody_available',
+  'all_at_capacity',
+  'outside_business_hours',
+])

@@ -64,3 +64,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0045 | [Campanhas de IA agem só por ações liberadas pelo administrador](./0045-whatsapp-ai-campaigns-allowlisted-actions.md) | Aceita | 2026-10-21 |
 | 0046 | [Voz no PABX, fase 2: atendente de voz com IA na URA](./0046-pabx-voice-agent-ivr-realtime.md) | Aceita | 2026-10-22 |
 | 0049 | [Protocolo de atendimento no Zap: um número por ciclo de atendimento](./0049-protocolo-de-atendimento-no-zap.md) | Proposta | 2026-10-22 |
+| 0047 | [Fila do WhatsApp: avisos de conversa sem atendente e distribuição automática](./0047-whatsapp-queue-alerts-and-automatic-distribution.md) | Aceita | 2026-10-22 |

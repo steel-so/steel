@@ -25040,7 +25040,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
@@ -25120,7 +25120,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_2"
@@ -31148,7 +31148,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -31216,7 +31216,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
@@ -38834,7 +38834,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
           }
         },
         "security": [
@@ -40150,7 +40150,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
           }
         },
         "security": [
@@ -43504,7 +43504,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_CRM_PROPOSAL_NOT_FOUND"
@@ -43859,7 +43859,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_QUOTA_CONFLICT"
@@ -43941,7 +43941,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
@@ -44010,7 +44010,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
@@ -46216,7 +46216,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -47300,7 +47300,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57339,7 +57339,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_SOCIAL_CONNECTION_NOT_FOUND"
@@ -63894,6 +63894,7 @@
                             "AI_QUOTA_EXCEEDED",
                             "WHATSAPP_CONVERSATION_ASSIGNED",
                             "WHATSAPP_AI_HANDOFF",
+                            "WHATSAPP_CONVERSATION_UNATTENDED",
                             "WHATSAPP_CONNECTION_LOST",
                             "WHATSAPP_BROADCAST_FINISHED",
                             "WHATSAPP_TEMPLATE_REJECTED",
@@ -64491,7 +64492,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -64851,7 +64852,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_PHONE_CALL_NOT_FOUND"
@@ -106291,7 +106292,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -107745,7 +107746,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -107808,7 +107809,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -107887,7 +107888,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -108342,7 +108343,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -108910,7 +108911,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -109709,7 +109710,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_MESSAGE_NOT_FOUND"
@@ -109886,7 +109887,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -110018,7 +110019,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_CONVERSATION_LIMIT_REACHED_2"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -111212,7 +111213,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
@@ -112397,6 +112398,180 @@
         ]
       }
     },
+    "/workspaces/{id}/whatsapp/presence": {
+      "get": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Presença dos membros das equipes",
+        "operationId": "getWorkspacesByIdWhatsappPresence",
+        "description": "Disponível ou Ausente de cada pessoa que está em alguma equipe (quem nunca mexeu conta como Disponível). OWNER/ADMIN veem todas as equipes; um líder vê só os membros das equipes que lidera. Só importa para a distribuição automática da fila (ADR 0047).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presença dos membros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WhatsAppPresence"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/presence/me": {
+      "get": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Minha presença",
+        "operationId": "getWorkspacesByIdWhatsappPresenceMe",
+        "description": "Disponível ou Ausente do usuário (Disponível enquanto nunca alterou). Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presença do usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppPresence"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["Comunicação · Equipes"],
+        "summary": "Definir minha presença",
+        "operationId": "putWorkspacesByIdWhatsappPresenceMe",
+        "description": "O atendente marca-se Disponível ou Ausente; a troca é manual, nada a altera sozinho. Ausente é pulado pela distribuição automática da fila. Ao voltar a Disponível, a fila de espera é entregue (em segundo plano, em lote limitado). Auditado. Módulo **Comunicação** habilitado e permissão `conversations` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["AVAILABLE", "AWAY"]
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Presença salva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppPresence"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_8"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/whatsapp/quick-replies": {
       "get": {
         "tags": ["Comunicação · Templates e respostas rápidas"],
@@ -112438,7 +112613,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -112692,7 +112867,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56"
           },
           "409": {
             "$ref": "#/components/responses/409_WHATSAPP_QUICK_REPLY_CONFLICT"
@@ -112969,7 +113144,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -113041,7 +113216,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -114389,7 +114564,7 @@
         "tags": ["Comunicação · Configurações"],
         "summary": "Atualizar configurações de atendimento",
         "operationId": "patchWorkspacesByIdWhatsappSettings",
-        "description": "Upsert parcial (omitido = mantém). `autoCloseAfterHours`: 0 desliga, máximo 720 (30 dias) — o worker fecha conversas sem mensagem além dessa janela. Alerta de sentimento: quando a média da conversa cai abaixo de `sentimentAlertThreshold` (-1 a 0), avisa os destinatários (in-app e/ou e-mail; vazio = todos os OWNER/ADMIN), opcionalmente atribui a conversa a `sentimentAlertAssignToId` e respeita `sentimentAlertCooldownHours` (1–168) por conversa. Destinatários e supervisor precisam ser membros do workspace. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Upsert parcial (omitido = mantém). Fila e distribuição (ADR 0047): `unassignedAlertNotifyInApp`/`unassignedAlertNotifyEmail` e `unassignedReminderMinutes` (0–1440; 0 desliga o lembrete) controlam o aviso aos supervisores de conversas sem atendente; `distributionMode` (`OFF`, `ROUND_ROBIN`, `LEAST_LOADED`), `distributionMaxOpenPerAgent` (1–500 ou `null`), `distributionOnlyAvailable` e `distributionRespectBusinessHours` controlam a entrega automática da fila. `autoCloseAfterHours`: 0 desliga, máximo 720 (30 dias) — o worker fecha conversas sem mensagem além dessa janela. Alerta de sentimento: quando a média da conversa cai abaixo de `sentimentAlertThreshold` (-1 a 0), avisa os destinatários (in-app e/ou e-mail; vazio = todos os OWNER/ADMIN), opcionalmente atribui a conversa a `sentimentAlertAssignToId` e respeita `sentimentAlertCooldownHours` (1–168) por conversa. Destinatários e supervisor precisam ser membros do workspace. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -114496,6 +114671,39 @@
                       "minimum": 0,
                       "maximum": 6
                     }
+                  },
+                  "unassignedAlertNotifyInApp": {
+                    "type": "boolean"
+                  },
+                  "unassignedAlertNotifyEmail": {
+                    "type": "boolean"
+                  },
+                  "unassignedReminderMinutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1440
+                  },
+                  "distributionMode": {
+                    "type": "string",
+                    "enum": ["OFF", "ROUND_ROBIN", "LEAST_LOADED"]
+                  },
+                  "distributionMaxOpenPerAgent": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "distributionOnlyAvailable": {
+                    "type": "boolean"
+                  },
+                  "distributionRespectBusinessHours": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -115032,7 +115240,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -115398,7 +115606,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -115648,7 +115856,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_TEMPLATE_NOT_FOUND"
@@ -120197,7 +120405,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -123685,6 +123893,51 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `EDIT`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Consentimento LGPD pendente",
                 "value": {
                   "success": false,
@@ -123719,51 +123972,6 @@
               },
               "MODULE_DISABLED": {
                 "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `EDIT`",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -125794,7 +126002,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `VIEW`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -125825,6 +126033,17 @@
                     "code": "MODULE_DISABLED"
                   }
                 }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — O membro não é OWNER/ADMIN nem líder de equipe",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
               }
             }
           }
@@ -125839,7 +126058,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -125884,7 +126103,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -125929,7 +126148,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -125974,7 +126193,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `opportunities` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `VIEW`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -126019,7 +126238,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `people` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `opportunities` × `VIEW`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -126064,7 +126283,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `people` × `VIEW`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -126109,7 +126328,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `DELETE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -126154,7 +126373,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `DELETE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -126199,7 +126418,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `VIEW`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `EDIT`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -126236,6 +126455,51 @@
         }
       },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `quick-replies` × `VIEW`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -126291,7 +126555,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -126336,7 +126600,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -198608,7 +198872,8 @@
               "SENTIMENT",
               "AI_GUARDRAIL",
               "AUTO_OUTREACH",
-              "AI_CAMPAIGN"
+              "AI_CAMPAIGN",
+              "DISTRIBUTION"
             ]
           },
           "actorUserId": {
@@ -199260,6 +199525,32 @@
           "createdAt"
         ]
       },
+      "WhatsAppPresence": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["AVAILABLE", "AWAY"],
+            "description": "`AVAILABLE` (Disponível) recebe conversas da distribuição automática; `AWAY` (Ausente) é pulado."
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` enquanto a pessoa nunca mexeu (vale Disponível)."
+          }
+        },
+        "required": ["userId", "status", "updatedAt"]
+      },
       "WhatsAppQrCode": {
         "type": "object",
         "properties": {
@@ -199590,6 +199881,46 @@
               "maximum": 9007199254740991
             },
             "description": "Dias de atendimento, 0 = domingo … 6 = sábado (padrão seg–sex)."
+          },
+          "unassignedAlertNotifyInApp": {
+            "type": "boolean",
+            "description": "Avisar no app os supervisores quando uma conversa fica sem atendente (padrão: ligado; ADR 0047)."
+          },
+          "unassignedAlertNotifyEmail": {
+            "type": "boolean",
+            "description": "Avisar os supervisores por e-mail quando uma conversa fica sem atendente (padrão: desligado)."
+          },
+          "unassignedReminderMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Minutos sem atendente até um lembrete aos supervisores e líderes (0 = sem lembrete; padrão 10). Um lembrete por conversa a cada vez que ela volta a ficar sem atendente."
+          },
+          "distributionMode": {
+            "type": "string",
+            "enum": ["OFF", "ROUND_ROBIN", "LEAST_LOADED"],
+            "description": "Distribuição automática da fila: `OFF` (manual, padrão), `ROUND_ROBIN` (rodízio) ou `LEAST_LOADED` (quem tem menos conversas abertas)."
+          },
+          "distributionMaxOpenPerAgent": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Máximo de conversas abertas por atendente (1 a 500); `null` = sem limite."
+          },
+          "distributionOnlyAvailable": {
+            "type": "boolean",
+            "description": "Só distribui para atendentes com presença Disponível (padrão: ligado)."
+          },
+          "distributionRespectBusinessHours": {
+            "type": "boolean",
+            "description": "Fora do horário de atendimento a conversa espera na fila (padrão: ligado)."
           }
         },
         "required": [
@@ -199611,7 +199942,14 @@
           "businessHoursEnabled",
           "businessHoursStart",
           "businessHoursEnd",
-          "businessHoursDays"
+          "businessHoursDays",
+          "unassignedAlertNotifyInApp",
+          "unassignedAlertNotifyEmail",
+          "unassignedReminderMinutes",
+          "distributionMode",
+          "distributionMaxOpenPerAgent",
+          "distributionOnlyAvailable",
+          "distributionRespectBusinessHours"
         ]
       },
       "WhatsAppTeam": {

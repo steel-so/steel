@@ -18,6 +18,7 @@ import {
   postButtonWebhook,
 } from '@/src/lib/whatsapp/button-webhook'
 import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
+import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { templateButtons } from '@/src/lib/whatsapp/template-send'
@@ -40,6 +41,7 @@ import { assertMember } from './authz'
 import { CrmWorkflowService } from './crm-workflow.service'
 import { WhatsAppAiReplyService } from './whatsapp-ai-reply.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
+import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
   notifyWhatsAppUsers,
   WHATSAPP_NOTIFY_ADMIN_CAP,
@@ -240,6 +242,9 @@ async function runAssignTeam(
     teamId,
     assignedUserId: null,
     status: 'NEW',
+    // Taken from an agent = a new streak in the queue; an unassigned one
+    // keeps the clock it already had.
+    ...(ctx.conversation.assignedUserId ? queueEntry() : {}),
   })
   if (!updated.ok) return updated
   // An unassigned conversation was already waiting (the contact's message
@@ -257,6 +262,12 @@ async function runAssignTeam(
   }
   const event = await recordEvent(ctx, 'TEAM_CHANGED', team.value.name)
   if (!event.ok) return event
+  // With the automatic distribution on, an agent of the team takes it.
+  const distribution = await WhatsAppDistributionService.distributeConversation(
+    workspaceId,
+    conversationId,
+  )
+  const distributed = distribution.ok && distribution.value.assigned
 
   auditMutation({
     entity: 'whatsapp_conversation',
@@ -265,6 +276,7 @@ async function runAssignTeam(
     targetId: conversationId,
     meta: { teamId, source: 'BUTTON_ACTION', actor: 'system' },
   })
+  if (distributed) return ok(undefined)
   await notifyWhatsAppUsers({
     workspaceId,
     kind: 'WHATSAPP_CONVERSATION_ASSIGNED',

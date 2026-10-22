@@ -94,6 +94,9 @@ export const WhatsappBroadcastScheduleCron = '*/5 * * * *' as const
 /** Frequência do fechamento automático de conversas inativas do WhatsApp. */
 export const WhatsappConversationAutoCloseCron = '*/15 * * * *' as const
 
+/** Frequência da distribuição da fila e dos lembretes de conversa sem atendente. */
+export const WhatsappDistributionTickCron = '* * * * *' as const
+
 export const BackupRetentionDays = 90
 
 export const DatabaseBackupCron = {

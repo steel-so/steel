@@ -32,6 +32,9 @@ vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
 }))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
+vi.mock('@/src/services/whatsapp-distribution.service', () => ({
+  WhatsAppDistributionService: { distributeConversation: vi.fn() },
+}))
 
 import type { WhatsAppConversationEvent } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
@@ -45,6 +48,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
+import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
@@ -266,6 +270,9 @@ describe('WhatsAppConversationService.reopen()', () => {
     expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
     // Someone already serves it: it does not enter the queue.
     expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+    expect(
+      WhatsAppDistributionService.distributeConversation,
+    ).not.toHaveBeenCalled()
   })
 
   it('should refuse to reopen once the monthly conversation limit is reached', async () => {
@@ -293,9 +300,14 @@ describe('WhatsAppConversationService.reopen()', () => {
 
     expectOk(await WhatsAppConversationService.reopen('u1', 'ws1', 'conv1'))
 
+    // The queue clock restarts and the automatic distribution is offered it.
     expect(mockedConversationRepo.update).toHaveBeenCalledWith(
       'conv1',
-      expect.objectContaining({ status: 'NEW' }),
+      expect.objectContaining({
+        status: 'NEW',
+        queuedAt: expect.any(Date),
+        unassignedReminderAt: null,
+      }),
     )
     expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
       conversation,
@@ -303,6 +315,9 @@ describe('WhatsAppConversationService.reopen()', () => {
       reason: 'reopened',
       actorId: 'u1',
     })
+    expect(
+      WhatsAppDistributionService.distributeConversation,
+    ).toHaveBeenCalledWith('ws1', 'conv1')
   })
 
   it('should return WHATSAPP_CONVERSATION_NOT_CLOSED for an open conversation', async () => {

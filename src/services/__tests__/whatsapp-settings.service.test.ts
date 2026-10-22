@@ -473,4 +473,128 @@ describe('WhatsAppSettingsService failure paths and alert rule', () => {
       )
     })
   })
+  describe('queue and distribution settings (ADR 0047)', () => {
+    it('should default to a manual queue with a 10 minute reminder', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
+
+      const dto = expectOk(await WhatsAppSettingsService.get('u1', 'ws1'))
+      expect(dto).toMatchObject({
+        unassignedAlertNotifyInApp: true,
+        unassignedAlertNotifyEmail: false,
+        unassignedReminderMinutes: 10,
+        distributionMode: 'OFF',
+        distributionMaxOpenPerAgent: null,
+        distributionOnlyAvailable: true,
+        distributionRespectBusinessHours: true,
+      })
+    })
+
+    it('should save the distribution rules and audit them', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+      mockedSettingsRepo.upsert.mockResolvedValue(
+        ok(
+          row({
+            distributionMode: 'LEAST_LOADED',
+            distributionMaxOpenPerAgent: 8,
+            distributionOnlyAvailable: false,
+            distributionRespectBusinessHours: false,
+            unassignedReminderMinutes: 0,
+            unassignedAlertNotifyEmail: true,
+            unassignedAlertNotifyInApp: false,
+          }),
+        ),
+      )
+
+      const dto = expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          distributionMode: 'LEAST_LOADED',
+          distributionMaxOpenPerAgent: 8,
+          distributionOnlyAvailable: false,
+          distributionRespectBusinessHours: false,
+          unassignedReminderMinutes: 0,
+          unassignedAlertNotifyEmail: true,
+          unassignedAlertNotifyInApp: false,
+        }),
+      )
+
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          distributionMode: 'LEAST_LOADED',
+          distributionMaxOpenPerAgent: 8,
+          distributionOnlyAvailable: false,
+          distributionRespectBusinessHours: false,
+          unassignedReminderMinutes: 0,
+          unassignedAlertNotifyEmail: true,
+          unassignedAlertNotifyInApp: false,
+        }),
+      )
+      expect(dto.distributionMode).toBe('LEAST_LOADED')
+      expect(auditMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meta: expect.objectContaining({
+            distributionMode: 'LEAST_LOADED',
+            distributionMaxOpenPerAgent: 8,
+          }),
+        }),
+      )
+    })
+
+    it('should keep the saved rules when the patch does not send them', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+        ok(
+          row({
+            distributionMode: 'ROUND_ROBIN',
+            distributionMaxOpenPerAgent: 5,
+          }),
+        ),
+      )
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          autoCloseAfterHours: 2,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          distributionMode: 'ROUND_ROBIN',
+          distributionMaxOpenPerAgent: 5,
+        }),
+      )
+    })
+
+    it('should clear the open-conversation cap with null', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+        ok(row({ distributionMaxOpenPerAgent: 5 })),
+      )
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          distributionMaxOpenPerAgent: null,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ distributionMaxOpenPerAgent: null }),
+      )
+    })
+
+    it('should forbid a MEMBER from changing the distribution', async () => {
+      asRole('MEMBER')
+      expectErr(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          distributionMode: 'ROUND_ROBIN',
+        }),
+        'FORBIDDEN',
+      )
+      expect(mockedSettingsRepo.upsert).not.toHaveBeenCalled()
+    })
+  })
 })

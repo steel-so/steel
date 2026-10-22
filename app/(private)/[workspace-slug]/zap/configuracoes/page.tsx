@@ -12,6 +12,7 @@ import { WhatsappSettingsBusinessHours } from '@/app/_components/whatsapp/settin
 import { WhatsappSettingsCallRecording } from '@/app/_components/whatsapp/settings/whatsapp-settings-call-recording'
 import { WhatsappSettingsCloseStatuses } from '@/app/_components/whatsapp/settings/whatsapp-settings-close-statuses'
 import { WhatsappSettingsConnections } from '@/app/_components/whatsapp/settings/whatsapp-settings-connections'
+import { WhatsappSettingsDistribution } from '@/app/_components/whatsapp/settings/whatsapp-settings-distribution'
 import { WhatsappSettingsService } from '@/app/_components/whatsapp/settings/whatsapp-settings-service'
 import { WhatsappSettingsVoiceAgent } from '@/app/_components/whatsapp/settings/whatsapp-settings-voice-agent'
 import { SteelIcon } from '@/components/icon/icon'
@@ -73,6 +74,7 @@ export default async function ZapSettingsPage({
           <TabsContent value='service' className='space-y-6 pt-4'>
             <WhatsappSettingsService workspaceId={workspaceId} />
             <WhatsappSettingsBusinessHours workspaceId={workspaceId} />
+            <WhatsappSettingsDistribution workspaceId={workspaceId} />
             <WhatsappSettingsCloseStatuses workspaceId={workspaceId} />
             <WhatsappSettingsCallRecording workspaceId={workspaceId} />
           </TabsContent>

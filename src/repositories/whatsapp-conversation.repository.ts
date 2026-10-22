@@ -295,6 +295,160 @@ export const WhatsAppConversationRepository = {
     }
   },
 
+  /**
+   * Open conversations (not closed, archived or deleted) per assignee — the
+   * load the least-loaded distribution balances. Users with none are absent.
+   */
+  async countOpenByAssignees(
+    workspaceId: string,
+    userIds: string[],
+  ): Promise<Result<Map<string, number>>> {
+    if (userIds.length === 0) return ok(new Map())
+    try {
+      const rows = await prisma.whatsAppConversation.groupBy({
+        by: ['assignedUserId'],
+        where: {
+          workspaceId,
+          ...ZAP_ONLY,
+          assignedUserId: { in: userIds },
+          status: { not: 'CLOSED' },
+          deletedAt: null,
+          archivedAt: null,
+        },
+        _count: { _all: true },
+      })
+      const counts = new Map<string, number>()
+      for (const row of rows) {
+        if (row.assignedUserId) counts.set(row.assignedUserId, row._count._all)
+      }
+      return ok(counts)
+    } catch (error) {
+      return err(dbError('Failed to count open whatsapp conversations', error))
+    }
+  },
+
+  /**
+   * The queue the distribution drains: open, unassigned, not answered by the
+   * AI, not archived or deleted — oldest in the queue first.
+   */
+  async listAwaitingDistribution(
+    workspaceId: string,
+    limit: number,
+  ): Promise<Result<WhatsAppConversation[]>> {
+    try {
+      const rows = await prisma.whatsAppConversation.findMany({
+        where: {
+          workspaceId,
+          ...ZAP_ONLY,
+          assignedUserId: null,
+          aiActive: false,
+          status: { not: 'CLOSED' },
+          deletedAt: null,
+          archivedAt: null,
+        },
+        orderBy: [
+          { queuedAt: { sort: 'asc', nulls: 'first' } },
+          { createdAt: 'asc' },
+        ],
+        take: limit,
+      })
+      return ok(rows)
+    } catch (error) {
+      return err(
+        dbError('Failed to list whatsapp conversations to distribute', error),
+      )
+    }
+  },
+
+  /**
+   * Gives an unassigned open conversation to `userId` — conditional write,
+   * so a manual assignment (or another worker) that got there first wins.
+   * true = assigned by this call.
+   */
+  async claimForAssignment(
+    id: string,
+    workspaceId: string,
+    userId: string,
+  ): Promise<Result<boolean>> {
+    try {
+      const result = await prisma.whatsAppConversation.updateMany({
+        where: {
+          id,
+          workspaceId,
+          assignedUserId: null,
+          aiActive: false,
+          status: { not: 'CLOSED' },
+          deletedAt: null,
+          archivedAt: null,
+        },
+        data: {
+          assignedUserId: userId,
+          status: 'IN_PROGRESS',
+          queuedAt: null,
+        },
+      })
+      return ok(result.count > 0)
+    } catch (error) {
+      return err(dbError('Failed to claim whatsapp conversation', error))
+    }
+  },
+
+  /**
+   * Conversations that waited without an assignee since before `cutoff`
+   * (the queue clock is `queuedAt`, else the creation date), got no
+   * reminder in this streak and are younger than `notBefore`.
+   */
+  async listUnattendedForReminder(input: {
+    workspaceIds: { in: string[] } | { notIn: string[] }
+    cutoff: Date
+    notBefore: Date
+    limit: number
+  }): Promise<Result<WhatsAppConversationWithPreview[]>> {
+    const window = { lt: input.cutoff, gt: input.notBefore }
+    try {
+      const rows = await prisma.whatsAppConversation.findMany({
+        where: {
+          workspaceId: input.workspaceIds,
+          ...ZAP_ONLY,
+          assignedUserId: null,
+          aiActive: false,
+          status: { not: 'CLOSED' },
+          deletedAt: null,
+          archivedAt: null,
+          unassignedReminderAt: null,
+          OR: [{ queuedAt: window }, { queuedAt: null, createdAt: window }],
+        },
+        include: conversationListInclude,
+        orderBy: { createdAt: 'asc' },
+        take: input.limit,
+      })
+      return ok(rows)
+    } catch (error) {
+      return err(
+        dbError('Failed to list unattended whatsapp conversations', error),
+      )
+    }
+  },
+
+  /**
+   * Reserves the reminder of the current unassigned streak: conditional
+   * write so two ticks never remind twice. true = reserved by this call.
+   */
+  async claimUnassignedReminder(
+    id: string,
+    now: Date,
+  ): Promise<Result<boolean>> {
+    try {
+      const result = await prisma.whatsAppConversation.updateMany({
+        where: { id, assignedUserId: null, unassignedReminderAt: null },
+        data: { unassignedReminderAt: now },
+      })
+      return ok(result.count > 0)
+    } catch (error) {
+      return err(dbError('Failed to claim whatsapp unassigned reminder', error))
+    }
+  },
+
   async create(
     data: Prisma.WhatsAppConversationUncheckedCreateInput,
   ): Promise<Result<WhatsAppConversation>> {

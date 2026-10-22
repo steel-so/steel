@@ -22,6 +22,7 @@ import {
   parseAiCampaignActionCall,
   selectAiCampaignActionRequests,
 } from '@/src/lib/whatsapp/ai-campaign-actions'
+import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
@@ -43,6 +44,7 @@ import { WhatsAppAiCampaignService } from './whatsapp-ai-campaign.service'
 import { WhatsAppAiCampaignActionService } from './whatsapp-ai-campaign-action.service'
 import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import { whatsAppTeamMemberIds } from './whatsapp-conversation-scope.service'
+import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
   notifyWhatsAppUsers,
   whatsAppAdminIds,
@@ -538,7 +540,12 @@ export const WhatsAppAiReplyService = {
       {
         lastMessageAt: new Date(),
         ...(shouldHandoff
-          ? { aiActive: false, aiHandoff: true, status: 'IN_PROGRESS' as const }
+          ? {
+              aiActive: false,
+              aiHandoff: true,
+              status: 'IN_PROGRESS' as const,
+              ...(conversation.assignedUserId ? {} : queueEntry()),
+            }
           : {}),
       },
     )
@@ -584,25 +591,39 @@ export const WhatsAppAiReplyService = {
           actor: 'system',
         },
       })
+      // The AI handed off: with the automatic distribution on, the next
+      // agent takes it (and hears about it from the distribution).
+      let distributedTo: string | null = null
+      if (!conversation.assignedUserId) {
+        const distribution =
+          await WhatsAppDistributionService.distributeConversation(
+            workspaceId,
+            conversationId,
+          )
+        if (distribution.ok && distribution.value.assigned) {
+          distributedTo = distribution.value.userId
+        }
+      }
       // A human must take over: the assignee, else the conversation's team
       // (Equipes), else the module admins (capped) — never every member
       // with conversation access.
       const label = contact.value.name ?? contact.value.waId
-      await notifyWhatsAppUsers({
-        workspaceId,
-        kind: 'WHATSAPP_AI_HANDOFF',
-        userIds: conversation.assignedUserId
-          ? [conversation.assignedUserId]
-          : conversation.teamId
-            ? await whatsAppTeamMemberIds(workspaceId, conversation.teamId)
-            : await whatsAppAdminIds(workspaceId),
-        title: 'A IA transferiu uma conversa para você',
-        body: guardrail
-          ? `${label} precisa de um atendente. ${guardrail.note}`
-          : `${label} precisa de um atendente.`,
-        path: whatsAppConversationPath(conversationId),
-        meta: { conversationId },
-      })
+      if (!distributedTo)
+        await notifyWhatsAppUsers({
+          workspaceId,
+          kind: 'WHATSAPP_AI_HANDOFF',
+          userIds: conversation.assignedUserId
+            ? [conversation.assignedUserId]
+            : conversation.teamId
+              ? await whatsAppTeamMemberIds(workspaceId, conversation.teamId)
+              : await whatsAppAdminIds(workspaceId),
+          title: 'A IA transferiu uma conversa para você',
+          body: guardrail
+            ? `${label} precisa de um atendente. ${guardrail.note}`
+            : `${label} precisa de um atendente.`,
+          path: whatsAppConversationPath(conversationId),
+          meta: { conversationId },
+        })
       void dispatchSteelAgentEvent(workspaceId, 'zap.ai.handoff', {
         conversationId,
       })

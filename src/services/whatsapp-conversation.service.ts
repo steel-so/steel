@@ -31,6 +31,7 @@ import {
   scopeVisibility,
   type WhatsAppConversationScope,
 } from '@/src/lib/whatsapp/conversation-scope'
+import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppConversationEventDTO } from '@/src/mappers/whatsapp-conversation-event.mapper'
@@ -71,6 +72,7 @@ import {
   whatsAppTeamMemberIds,
 } from './whatsapp-conversation-scope.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
+import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
   notifyWhatsAppUsers,
   whatsAppConversationPath,
@@ -252,6 +254,7 @@ export async function reopenWhatsAppConversation(
   },
 ): Promise<Result<WhatsAppConversation>> {
   const updated = await WhatsAppConversationRepository.update(conversation.id, {
+    ...(conversation.assignedUserId ? {} : queueEntry()),
     ...input.extra,
     status: conversation.assignedUserId ? 'IN_PROGRESS' : 'NEW',
     closedAt: null,
@@ -488,6 +491,7 @@ export const WhatsAppConversationService = {
       aiActive: false,
       aiHandoff: true,
       status: 'IN_PROGRESS',
+      ...(access.value.conversation.assignedUserId ? {} : queueEntry()),
     })
     if (!updated.ok) return updated
 
@@ -761,6 +765,10 @@ export const WhatsAppConversationService = {
     const changed = assignedUserId !== existing.assignedUserId
     const updated = await WhatsAppConversationRepository.update(id, {
       assignedUserId,
+      // Handed back to the queue: its waiting clock restarts.
+      ...(changed && !assignedUserId && existing.status !== 'CLOSED'
+        ? queueEntry()
+        : {}),
       // Back to the queue = NEW again; a closed one stays closed.
       status:
         existing.status === 'CLOSED'
@@ -979,6 +987,8 @@ export const WhatsAppConversationService = {
         reason: 'reopened',
         actorId,
       })
+      // Back in the queue: the automatic distribution (when on) gives it out.
+      await WhatsAppDistributionService.distributeConversation(workspaceId, id)
     }
 
     void indexSearchDocument('zap-conversation', workspaceId, id)

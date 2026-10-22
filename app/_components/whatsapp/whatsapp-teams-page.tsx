@@ -44,12 +44,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { useWhatsAppAssignableMembers } from '@/src/hooks/use-whatsapp-conversations'
+import { useWhatsAppTeamPresence } from '@/src/hooks/use-whatsapp-presence'
 import {
   useCreateWhatsAppTeam,
   useDeleteWhatsAppTeam,
   useUpdateWhatsAppTeam,
+  useWhatsAppConversationScope,
   useWhatsAppTeams,
 } from '@/src/hooks/use-whatsapp-teams'
+import type { WhatsAppPresenceStatusDTO } from '@/types/whatsapp-presence'
 import type {
   WhatsAppTeamDTO,
   WhatsAppTeamMemberDTO,
@@ -287,9 +290,12 @@ function TeamDialog({
 function MemberChips({
   label,
   members,
+  presence,
 }: {
   label: string
   members: WhatsAppTeamMemberDTO[]
+  /** Presence by user id; undefined when the viewer does not manage teams. */
+  presence?: Map<string, WhatsAppPresenceStatusDTO>
 }) {
   return (
     <div className='space-y-1.5'>
@@ -312,6 +318,26 @@ function MemberChips({
                 </AvatarFallback>
               </Avatar>
               <span className='truncate'>{member.name}</span>
+              {presence ? (
+                <span
+                  role='img'
+                  aria-label={
+                    presence.get(member.userId) === 'AWAY'
+                      ? 'Ausente'
+                      : 'Disponível'
+                  }
+                  title={
+                    presence.get(member.userId) === 'AWAY'
+                      ? 'Ausente'
+                      : 'Disponível'
+                  }
+                  className={
+                    presence.get(member.userId) === 'AWAY'
+                      ? 'size-2 shrink-0 rounded-full bg-muted-foreground/40'
+                      : 'size-2 shrink-0 rounded-full bg-primary'
+                  }
+                />
+              ) : null}
             </span>
           ))}
         </div>
@@ -324,6 +350,15 @@ export function WhatsappTeamsPage({ workspaceId }: { workspaceId: string }) {
   const teams = useWhatsAppTeams(workspaceId)
   const deleteTeam = useDeleteWhatsAppTeam(workspaceId)
   const canManage = useIsPrivileged()
+  const scope = useWhatsAppConversationScope(workspaceId)
+  const leadsATeam = (scope.data?.leadsTeamIds.length ?? 0) > 0
+  const presenceQuery = useWhatsAppTeamPresence(
+    workspaceId,
+    canManage || leadsATeam,
+  )
+  const presence = presenceQuery.data
+    ? new Map(presenceQuery.data.map((row) => [row.userId, row.status]))
+    : undefined
   // `undefined` = closed; `null` = creating; a team = editing it.
   const [editing, setEditing] = useState<WhatsAppTeamDTO | null | undefined>(
     undefined,
@@ -404,8 +439,16 @@ export function WhatsappTeamsPage({ workspaceId }: { workspaceId: string }) {
                       : `${team.members.length} membros`}
                   </Badge>
                 </div>
-                <MemberChips label='Líderes' members={leaders} />
-                <MemberChips label='Agentes' members={agents} />
+                <MemberChips
+                  label='Líderes'
+                  members={leaders}
+                  presence={presence}
+                />
+                <MemberChips
+                  label='Agentes'
+                  members={agents}
+                  presence={presence}
+                />
                 {canManage ? (
                   <div className='mt-auto flex justify-end gap-1 border-t pt-2'>
                     <Button

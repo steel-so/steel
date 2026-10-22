@@ -407,6 +407,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'handoff',
     color: 'violet',
   },
+  WHATSAPP_CONVERSATION_UNATTENDED: {
+    module: 'COMMUNICATION',
+    label: 'Conversa sem atendente',
+    icon: 'hourglass',
+    color: 'amber',
+  },
   WHATSAPP_CONNECTION_LOST: {
     module: 'COMMUNICATION',
     label: 'Conexão perdida',

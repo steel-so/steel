@@ -28,6 +28,7 @@ import {
   isWhatsAppOptOutKeyword,
   WHATSAPP_OPT_OUT_CONFIRMATION,
 } from '@/src/lib/whatsapp/opt-out'
+import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
@@ -303,6 +304,7 @@ export const WhatsAppWebhookService = {
           aiHandoff: false,
           unreadCount: 1,
           lastMessageAt: new Date(),
+          ...queueEntry(),
         })
         if (!created.ok) return created
         conversationId = created.value.id

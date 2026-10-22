@@ -1,0 +1,96 @@
+---
+title: Fila e distribuição de conversas
+description: Avisos de conversa sem atendente, lembrete, distribuição automática entre atendentes e a presença Disponível/Ausente.
+section: comunicacao
+order: 10
+---
+
+Conversa nova que ninguém assumiu fica na **fila** (em **Conversas**, filtro
+*Fila*). Esta página mostra como o Steel avisa a equipe quando a fila para e,
+se você quiser, como entrega cada conversa a um atendente sem que ninguém
+precise pegar uma a uma.
+
+## Avisos de conversa sem atendente
+
+Quando uma conversa chega e ninguém a assumiu, o Steel avisa:
+
+- **a equipe da conversa**, quando ela tem equipe, como já acontecia;
+- **os supervisores**, quando ela não tem equipe nem atendente, ou quando
+  nenhum atendente pode recebê-la agora. Supervisores são as pessoas escolhidas
+  no alerta de sentimento (**Configurações › Atendimento**); sem ninguém
+  escolhido, o dono e os administradores.
+
+Se a conversa continuar sem atendente depois de alguns minutos, os supervisores
+e, quando há equipe, os **líderes da equipe** recebem **um lembrete** (um por
+vez que a conversa fica sem atendente; se ela for atribuída e depois voltar
+para a fila, o ciclo recomeça).
+
+Conversas fechadas, arquivadas, excluídas ou que a **IA está atendendo** nunca
+geram aviso.
+
+Em **Configurações › Atendimento › Conversas sem atendente**:
+
+| Opção | O que faz |
+| --- | --- |
+| **Avisar no app** | Notificação na caixa de entrada (ligado por padrão) |
+| **Avisar por e-mail** | E-mail aos mesmos destinatários (desligado por padrão) |
+| **Lembrar após quantos minutos** | De 0 a 1440; 10 por padrão; 0 desliga o lembrete |
+
+## Distribuição automática
+
+Por padrão a fila é **manual**: cada atendente assume a conversa que quiser.
+Em **Configurações › Atendimento › Distribuição automática** você escolhe:
+
+- **Manual**: nada muda.
+- **Rodízio**: cada conversa nova vai para o próximo atendente da vez, em ordem.
+  Ao longo do tempo todos recebem a mesma quantidade.
+- **Menos ocupado**: a conversa vai para quem tem menos conversas abertas no
+  momento. Se houver empate, vai para quem recebeu a última há mais tempo.
+
+A conversa é entregue quando chega sem atendente, quando um botão a manda para
+uma equipe, quando é reaberta sem atendente e quando a **IA transfere** para um
+humano. Também é entregue quando um atendente volta a ficar **Disponível** e há
+conversas esperando, ou quando o horário de atendimento abre.
+
+### Quem recebe
+
+- Conversa **de uma equipe**: os membros da equipe (agentes e líderes).
+- Conversa **sem equipe**: os membros do workspace com papel de **membro**.
+  Donos e administradores supervisionam a fila e não entram no rodízio, a
+  menos que sejam membros da equipe da conversa. Visualizadores nunca recebem.
+
+### Regras
+
+| Opção | O que faz |
+| --- | --- |
+| **Só para quem está disponível** | Atendentes **Ausentes** não recebem (ligado por padrão) |
+| **Respeitar o horário de atendimento** | Fora do horário a conversa espera na fila e os supervisores continuam sendo avisados (ligado por padrão) |
+| **Limite de conversas abertas por atendente** | Quem chegou ao limite deixa de receber até fechar alguma conversa; sem limite por padrão |
+
+Se ninguém puder receber (todos ausentes, no limite ou fora do horário), a
+conversa **continua na fila** e os supervisores são avisados.
+
+<Callout type='nota'>
+  Uma atribuição feita por uma pessoa sempre vale: a distribuição nunca tira a
+  conversa de quem já a tem, nem mexe numa conversa que a IA está atendendo.
+  Se um atendente devolver uma conversa para a fila, ela volta a ser
+  distribuída.
+</Callout>
+
+Na linha do tempo da conversa aparece *"Conversa atribuída a Fulano pela
+distribuição automática"*, e o atendente escolhido recebe uma notificação.
+
+## Disponível e Ausente
+
+No menu lateral do WhatsApp, cada atendente tem um interruptor **Disponível /
+Ausente**. Quem nunca mexeu conta como Disponível. A troca é **manual**: o Steel
+não marca ninguém como ausente por inatividade.
+
+Donos, administradores e líderes veem a situação de cada pessoa na tela
+**Equipes** (um ponto ao lado do nome). Os líderes veem apenas as equipes que
+lideram.
+
+<Callout type='admin'>
+  Só o dono e os administradores alteram as regras de distribuição. A situação
+  Disponível/Ausente é de cada pessoa.
+</Callout>

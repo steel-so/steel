@@ -326,8 +326,14 @@ describe('WhatsAppWebhookService', () => {
       )
 
       expectOk(result)
+      // The queue clock starts with the conversation (ADR 0047).
       expect(mockedConversationRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ aiActive: true, status: 'NEW' }),
+        expect.objectContaining({
+          aiActive: true,
+          status: 'NEW',
+          queuedAt: expect.any(Date),
+          unassignedReminderAt: null,
+        }),
       )
       // Inbound is counted but never blocked by the monthly limit.
       expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')

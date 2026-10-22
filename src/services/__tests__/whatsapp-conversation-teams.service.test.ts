@@ -352,8 +352,11 @@ describe('assign()', () => {
     expectOk(
       await WhatsAppConversationService.assign('ana', 'ws1', 'conv1', null),
     )
+    // Back in the queue: the waiting clock restarts for the reminder.
     expect(conversations.update).toHaveBeenCalledWith('conv1', {
       assignedUserId: null,
+      queuedAt: expect.any(Date),
+      unassignedReminderAt: null,
       status: 'NEW',
     })
     expect(events.create).toHaveBeenCalledWith(
