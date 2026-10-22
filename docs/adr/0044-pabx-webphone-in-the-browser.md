@@ -67,3 +67,47 @@ página do workspace; a conversa só chama o mesmo telefone.
 - A ligação feita pelo navegador **ainda não entra no histórico** da conversa
   (`whatsapp_phone_calls`) nem na gravação do ADR 0043; ficam para uma próxima
   fase.
+
+## Adendo 2026-10-22 — histórico e gravação das ligações do telefone web
+
+A última consequência acima ficou resolvida: a ligação feita ou atendida no
+navegador agora entra no histórico (`whatsapp_phone_calls`) e no fluxo de
+gravação, transcrição e resumo do [ADR 0043](./0043-pabx-call-recording-transcription-and-summary.md).
+
+- **Quem registra é o navegador, o PABX confirma.** O telefone avisa o Steel
+  quando vai ligar ou quando começa a tocar uma chamada
+  (`POST /api/workspaces/{id}/phone-calls/webphone`) e relata o atendimento e o
+  fim (`PATCH …/phone-calls/{callId}/webphone`). A duração é medida no
+  servidor. Só o dono da ligação a atualiza; o primeiro relato final vale
+  (PABX ou navegador), o outro só completa os vínculos.
+- **Uma ligação, uma linha.** A ligação de saída do navegador nasce com um
+  `callback_token` próprio, que o telefone envia no INVITE
+  (`X-Steel-Callback-Url`, `X-Steel-Callback-Token`, `X-Steel-Record`): o PABX
+  relata e envia a gravação com **o mesmo token** do click-to-call, então cai
+  na mesma linha. Para a chamada que chega ao navegador, o Steel reaproveita a
+  linha existente pelo `UNIQUEID` do Asterisk (`pabx_unique_id`, único por
+  workspace; o PABX o manda no INVITE em `X-Steel-Uniqueid` e no webhook como
+  `uniqueid`) ou, sem ele, pelo mesmo ramal + mesmo número (chave DDD + 8
+  últimos dígitos) nos últimos 5 minutos. Esse segundo caso cobre o "Ligar" por
+  click-to-call quando o ramal toca justamente no telefone web.
+- **Vínculos pelas mesmas regras.** A conversa vem do número (contato do
+  WhatsApp, com ou sem 9º dígito e `55`) ou da conversa de onde o usuário
+  ligou; chamado, pessoa e oportunidade do CRM são resolvidos por
+  `PhoneCallLinkService`, o mesmo serviço do processamento da gravação. Eles
+  agora são resolvidos **ao fim da ligação**, mesmo sem gravação.
+- **`conversation_id` passou a aceitar nulo.** Uma ligação de/para um número
+  sem conversa ainda aparece no chamado e no CRM (por telefone) e guarda o
+  nome do identificador de chamadas em `remote_name`. Novas colunas:
+  `direction` (`OUTBOUND`/`INBOUND`), `source` (`CLICK_TO_CALL`/`WEBPHONE`),
+  `pabx_unique_id` e `remote_name`.
+- **Gravação.** Só ligações de **saída** do navegador pedem gravação (quando o
+  workspace grava), porque só nelas o Steel tem um token a entregar ao PABX
+  antes da chamada. O aviso de gravação aparece no telefone enquanto a
+  ligação dura. A chamada **recebida** no navegador entra no histórico, mas
+  não é gravada nesta fase: o PABX gravaria sem token. Fica para uma fase
+  futura (token por SIP INFO ou gravação no navegador).
+- **Consequências.** O dono do ramal passa a conhecer o token da própria
+  ligação de saída (pode, no máximo, enviar a gravação dela). O PABX deve
+  aceitar `X-Steel-Callback-Url` só do host do Steel (runbook). Uma ligação
+  cujo navegador fechou no meio fica em andamento até o PABX relatar o fim;
+  sem o snippet de relato no PABX, ela permanece assim.
