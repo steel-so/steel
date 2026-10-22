@@ -11,7 +11,36 @@ Em **Contatos**, use **Novo contato** e informe nome, número (com DDI e DDD),
 uma descrição ou recado e, se quiser, a URL de uma foto. Com uma conexão Z-API,
 **Buscar foto de perfil** traz a foto do WhatsApp.
 
-A coluna **Transmissões** mostra se o contato recebe transmissões.
+A coluna **Transmissões** mostra se o contato recebe transmissões, e a coluna
+**WhatsApp** mostra se o número foi conferido (veja abaixo).
+
+### Tem WhatsApp? (validar a base)
+
+Com uma conexão **Z-API**, o Steel confere quais números da sua base têm
+WhatsApp. É uma limpeza de base, feita de tempos em tempos ou depois de
+importar uma planilha. Não use como conferência a cada mensagem: a Z-API já
+valida o número no envio.
+
+- Cada contato mostra **Tem WhatsApp**, **Sem WhatsApp** ou **Não
+  verificado**. Quem nunca foi conferido continua recebendo normalmente.
+- Use o filtro acima da lista para ver só um desses grupos.
+- Clique em **Validar números** para conferir todos os contatos. Com uma busca
+  ou filtro ligado, só a lista na tela é conferida.
+- Até 200 contatos terminam na hora. Listas maiores rodam em segundo plano e
+  mostram o andamento na tela.
+- O resultado vale por 30 dias e é reaproveitado, sem nova consulta. Marque
+  **Verificar de novo** para ignorar esse prazo.
+- Na importação de contatos, marque **Validar se tem WhatsApp depois de
+  importar**.
+
+A checagem não envia mensagem nenhuma e não consome o limite do plano. Ela
+usa a conexão Z-API conectada do workspace; com a API oficial da Meta o recurso
+não existe (a Meta não oferece essa consulta), então nada é consultado nela.
+
+<Callout type='admin'>
+  O dono e os administradores definem a validade do resultado em
+  **Configurações › Atendimento › Checagem "tem WhatsApp?"** (1 a 365 dias).
+</Callout>
 
 ### Descadastro e reinscrição
 

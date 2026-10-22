@@ -69,4 +69,17 @@ describe('toWhatsAppContactDTO()', () => {
 
     expect(toWhatsAppContactDTO(contact).conversationCount).toBe(0)
   })
+
+  it('should expose the "tem zap?" state', () => {
+    const checkedAt = new Date('2026-10-20T10:00:00.000Z')
+    const contact = createFakeWhatsAppContact({
+      hasWhatsapp: true,
+      whatsappCheckedAt: checkedAt,
+    })
+
+    const dto = toWhatsAppContactDTO(contact)
+
+    expect(dto.hasWhatsapp).toBe(true)
+    expect(dto.whatsappCheckedAt).toBe(checkedAt.toISOString())
+  })
 })

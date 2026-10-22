@@ -67,3 +67,14 @@ inatividade.
   Com o **horário de atendimento** ligado (Configurações › Atendimento), a
   campanha só envia dentro dele e continua sozinha na abertura seguinte.
 </Callout>
+
+## Pular números sem WhatsApp
+
+Na página da campanha, **Validar contatos** confere, pela conexão **Z-API** do
+workspace, quais números têm WhatsApp (mesmo que a campanha envie pela API
+oficial da Meta). Com **Pular números sem WhatsApp** ligado, quem foi marcado
+**sem WhatsApp** aparece como *Pulado* ("Número sem WhatsApp") e não gasta um
+envio. Quem não foi verificado continua sendo enviado normalmente.
+
+Sem conexão Z-API a opção fica indisponível: a Meta não oferece essa consulta.
+Veja mais em [Contatos](/docs/comunicacao/contatos-e-grupos#tem-whatsapp-validar-a-base).

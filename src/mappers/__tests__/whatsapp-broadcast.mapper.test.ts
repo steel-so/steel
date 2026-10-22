@@ -74,3 +74,41 @@ describe('toWhatsAppBroadcastListDetailDTO()', () => {
     expect(dto.failedCount).toBe(0)
   })
 })
+
+describe('"tem zap?" in the broadcast DTOs', () => {
+  it('counts the numbers skipped for having no WhatsApp apart from opt-outs', () => {
+    const list = createFakeWhatsAppBroadcastListWithCounts(
+      { id: 'b5', skipNoWhatsapp: true },
+      [
+        { status: 'SKIPPED' },
+        { status: 'SKIPPED_NO_WHATSAPP' },
+        { status: 'SKIPPED_NO_WHATSAPP' },
+      ],
+    )
+
+    const dto = toWhatsAppBroadcastListDTO(list)
+
+    expect(dto.skippedCount).toBe(1)
+    expect(dto.noWhatsappCount).toBe(2)
+    expect(dto.skipNoWhatsapp).toBe(true)
+  })
+
+  it('exposes the checked state of each recipient contact in the detail', () => {
+    const list = createFakeWhatsAppBroadcastListWithRecipients(
+      { id: 'b6', skipNoWhatsapp: false },
+      2,
+    )
+    list.recipients[0].contact.hasWhatsapp = false
+    list.recipients[0].status = 'SKIPPED_NO_WHATSAPP'
+    list.recipients[1].contact.hasWhatsapp = null
+
+    const dto = toWhatsAppBroadcastListDetailDTO(list)
+
+    expect(dto.recipients.map((r) => r.contactHasWhatsapp)).toEqual([
+      false,
+      null,
+    ])
+    expect(dto.noWhatsappCount).toBe(1)
+    expect(dto.skipNoWhatsapp).toBe(false)
+  })
+})

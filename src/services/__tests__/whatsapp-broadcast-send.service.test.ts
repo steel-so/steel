@@ -99,6 +99,88 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
     expect(mockedSend.text).not.toHaveBeenCalled()
   })
 
+  it('should skip a contact without WhatsApp when the list skips them', async () => {
+    arrangeRecipient({ list: { skipNoWhatsapp: true } })
+    mockedBroadcastRepo.findRecipientById.mockResolvedValue(
+      ok({
+        ...createFakeWhatsAppBroadcastRecipient({
+          id: 'r1',
+          broadcastListId: 'list1',
+        }),
+        contact: createFakeWhatsAppContact({ hasWhatsapp: false }),
+        broadcastList: createFakeWhatsAppBroadcastList({
+          id: 'list1',
+          workspaceId: 'ws1',
+          skipNoWhatsapp: true,
+        }),
+      }),
+    )
+    mockedBroadcastRepo.markRecipientNoWhatsapp.mockResolvedValue(ok(1))
+
+    const outcome = expectOk(
+      await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+    )
+
+    expect(outcome).toEqual({ status: 'skipped', reason: 'no_whatsapp' })
+    expect(mockedBroadcastRepo.markRecipientNoWhatsapp).toHaveBeenCalledWith(
+      'r1',
+    )
+    expect(mockedSend.text).not.toHaveBeenCalled()
+    expect(mockedBroadcastRepo.closeIfRunning).toHaveBeenCalled()
+  })
+
+  it('should propagate a failure marking the recipient without WhatsApp', async () => {
+    arrangeRecipient()
+    mockedBroadcastRepo.findRecipientById.mockResolvedValue(
+      ok({
+        ...createFakeWhatsAppBroadcastRecipient({ id: 'r1' }),
+        contact: createFakeWhatsAppContact({ hasWhatsapp: false }),
+        broadcastList: createFakeWhatsAppBroadcastList({
+          id: 'list1',
+          skipNoWhatsapp: true,
+        }),
+      }),
+    )
+    mockedBroadcastRepo.markRecipientNoWhatsapp.mockResolvedValue(
+      err(databaseError('x')),
+    )
+
+    expectErr(
+      await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it.each([
+    ['the list does not skip', false, false],
+    ['the contact was never checked', true, null],
+    ['the contact has WhatsApp', true, true],
+  ])(
+    'should still send when %s',
+    async (_name, skipNoWhatsapp, hasWhatsapp) => {
+      arrangeRecipient({ list: { skipNoWhatsapp } })
+      mockedBroadcastRepo.findRecipientById.mockResolvedValue(
+        ok({
+          ...createFakeWhatsAppBroadcastRecipient({ id: 'r1' }),
+          contact: createFakeWhatsAppContact({ hasWhatsapp }),
+          broadcastList: createFakeWhatsAppBroadcastList({
+            id: 'list1',
+            workspaceId: 'ws1',
+            connectionId: 'conn1',
+            skipNoWhatsapp,
+          }),
+        }),
+      )
+      mockedSend.text.mockResolvedValue(ok({ providerMessageId: 'wamid.1' }))
+
+      const outcome = expectOk(
+        await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+      )
+
+      expect(outcome.status).toBe('sent')
+    },
+  )
+
   it('should mark an opted-out contact as SKIPPED without sending (LGPD)', async () => {
     arrangeRecipient({ optedOut: true })
 

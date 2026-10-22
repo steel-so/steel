@@ -270,6 +270,21 @@ describe('WhatsAppAiCampaignService — management', () => {
     )
   })
 
+  it('should save the "skip numbers without WhatsApp" choice at any time', async () => {
+    asRole('ADMIN')
+    repo.findById.mockResolvedValue(ok(withTemplate()))
+
+    expectOk(
+      await WhatsAppAiCampaignService.update('u1', 'ws1', 'cp1', {
+        skipNoWhatsapp: true,
+      }),
+    )
+    expect(repo.update).toHaveBeenLastCalledWith(
+      'cp1',
+      expect.objectContaining({ skipNoWhatsapp: true }),
+    )
+  })
+
   it('should reset the variables when the template changes', async () => {
     asRole('ADMIN')
     repo.findById.mockResolvedValue(ok(withTemplate({ status: 'PAUSED' })))
@@ -516,6 +531,42 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
     })
     expect(conversationRepo.create).not.toHaveBeenCalled()
     expect(send.template).toHaveBeenCalled()
+  })
+
+  it('should skip a contact checked as having no WhatsApp when the campaign asks for it', async () => {
+    repo.findByIdRaw.mockResolvedValue(ok(campaign({ skipNoWhatsapp: true })))
+    repo.findNextPending.mockResolvedValue(
+      ok({
+        ...pendingRecipient(),
+        contact: { ...contact, hasWhatsapp: false },
+      }),
+    )
+
+    expect(
+      expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok')),
+    ).toEqual({ status: 'skipped', nextDelayMs: 1000 })
+    expect(repo.updateRecipient).toHaveBeenCalledWith('r1', {
+      status: 'SKIPPED',
+      errorMessage: 'Número sem WhatsApp',
+    })
+    expect(send.template).not.toHaveBeenCalled()
+  })
+
+  it('should keep sending to unverified contacts even when the campaign skips numbers without WhatsApp', async () => {
+    repo.findByIdRaw.mockResolvedValue(ok(campaign({ skipNoWhatsapp: true })))
+    repo.findNextPending.mockResolvedValue(
+      ok({
+        ...pendingRecipient(),
+        contact: { ...contact, hasWhatsapp: null },
+      }),
+    )
+
+    expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok'))
+
+    expect(repo.updateRecipient).not.toHaveBeenCalledWith('r1', {
+      status: 'SKIPPED',
+      errorMessage: 'Número sem WhatsApp',
+    })
   })
 
   it('should skip a contact with no value for a variable', async () => {

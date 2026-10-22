@@ -17,6 +17,7 @@ interface CreateBroadcastInput {
   mediaMimeType?: string
   mediaFileName?: string
   mediaSizeBytes?: number
+  skipNoWhatsapp?: boolean
   contactIds: string[]
 }
 
@@ -26,6 +27,8 @@ interface ImportBroadcastInput {
   templateId: string
   sendOffsetHours: number
   csv: string
+  validateWhatsapp?: boolean
+  skipNoWhatsapp?: boolean
 }
 
 export function useWhatsAppBroadcasts(workspaceId: string) {

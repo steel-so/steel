@@ -1,14 +1,21 @@
 import type { Job } from 'bullmq'
 import { describe, expect, it, vi } from 'vitest'
 
-const { sendMock, tickMock, campaignMock, followUpMock, loggerMock } =
-  vi.hoisted(() => ({
-    sendMock: vi.fn(),
-    tickMock: vi.fn(),
-    campaignMock: vi.fn(),
-    followUpMock: vi.fn(),
-    loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  }))
+const {
+  sendMock,
+  tickMock,
+  campaignMock,
+  followUpMock,
+  validateMock,
+  loggerMock,
+} = vi.hoisted(() => ({
+  sendMock: vi.fn(),
+  validateMock: vi.fn(),
+  tickMock: vi.fn(),
+  campaignMock: vi.fn(),
+  followUpMock: vi.fn(),
+  loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
 
 vi.mock('@/src/services/whatsapp-broadcast.service', () => ({
   WhatsAppBroadcastService: {
@@ -21,6 +28,9 @@ vi.mock('@/src/services/whatsapp-ai-campaign.service', () => ({
 }))
 vi.mock('@/src/services/whatsapp-ai-campaign-action.service', () => ({
   WhatsAppAiCampaignActionService: { followUp: followUpMock },
+}))
+vi.mock('@/src/services/whatsapp-contact-validation.service', () => ({
+  WhatsAppContactValidationService: { execute: validateMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -266,5 +276,50 @@ describe('processWhatsappBroadcast — AI campaign follow-up', () => {
         data,
       } as unknown as Job),
     ).rejects.toThrow('DATABASE_ERROR')
+  })
+
+  it('logs skips of numbers without WhatsApp', async () => {
+    sendMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'skipped', reason: 'no_whatsapp' },
+    })
+
+    await processWhatsappBroadcast(sendJob())
+
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.whatsapp_broadcast.skipped_no_whatsapp',
+      expect.objectContaining({ recipientId: 'r1' }),
+    )
+  })
+
+  describe('validate-whatsapp-numbers', () => {
+    const job = {
+      id: 'job-v',
+      name: 'validate-whatsapp-numbers',
+      data: { validationId: 'run1' },
+    } as unknown as Job
+
+    it('runs the validation service and logs the outcome', async () => {
+      validateMock.mockResolvedValue({ ok: true, value: { status: 'DONE' } })
+
+      await processWhatsappBroadcast(job)
+
+      expect(validateMock).toHaveBeenCalledWith('run1')
+      expect(loggerMock.info).toHaveBeenCalledWith(
+        'queue.whatsapp_number_validation.completed',
+        expect.objectContaining({ validationId: 'run1', outcome: 'DONE' }),
+      )
+    })
+
+    it('throws on a database failure', async () => {
+      validateMock.mockResolvedValue({
+        ok: false,
+        error: { code: 'DATABASE_ERROR', message: 'x' },
+      })
+
+      await expect(processWhatsappBroadcast(job)).rejects.toThrow(
+        'DATABASE_ERROR',
+      )
+    })
   })
 })

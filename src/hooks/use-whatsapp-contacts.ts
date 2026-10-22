@@ -3,8 +3,14 @@ import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
 import { apiFetch, apiSend } from './_fetch'
 
-const CONTACTS_KEY = (workspaceId: string, search?: string) =>
-  ['whatsapp-contacts', workspaceId, search ?? ''] as const
+const CONTACTS_KEY = (
+  workspaceId: string,
+  search?: string,
+  whatsapp?: WhatsAppCheckFilter,
+) => ['whatsapp-contacts', workspaceId, search ?? '', whatsapp ?? ''] as const
+
+/** Filtro "tem zap?" da lista: com, sem ou ainda não verificado. */
+export type WhatsAppCheckFilter = 'yes' | 'no' | 'unknown'
 
 interface CreateWhatsAppContactInput {
   waId: string
@@ -20,12 +26,21 @@ interface UpdateWhatsAppContactInput {
   description?: string | null
 }
 
-export function useWhatsAppContacts(workspaceId: string, search?: string) {
+export function useWhatsAppContacts(
+  workspaceId: string,
+  search?: string,
+  whatsapp?: WhatsAppCheckFilter,
+) {
+  const params = new URLSearchParams()
+  if (search) params.set('search', search)
+  if (whatsapp) params.set('whatsapp', whatsapp)
+  const query = params.toString()
+
   return useQuery({
-    queryKey: CONTACTS_KEY(workspaceId, search),
+    queryKey: CONTACTS_KEY(workspaceId, search, whatsapp),
     queryFn: () =>
       apiFetch<WhatsAppContactDTO[]>(
-        `/api/workspaces/${workspaceId}/whatsapp/contacts${search ? `?search=${encodeURIComponent(search)}` : ''}`,
+        `/api/workspaces/${workspaceId}/whatsapp/contacts${query ? `?${query}` : ''}`,
         undefined,
         'Erro ao buscar contatos',
       ),
@@ -176,13 +191,15 @@ export function useImportWhatsAppContacts(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (csv: string) =>
+    mutationFn: (input: string | { csv: string; validateWhatsapp?: boolean }) =>
       apiFetch<WhatsAppContactImportResultDTO>(
         `/api/workspaces/${workspaceId}/whatsapp/contacts/import`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ csv }),
+          body: JSON.stringify(
+            typeof input === 'string' ? { csv: input } : input,
+          ),
         },
         'Erro ao importar contatos',
       ),

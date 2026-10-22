@@ -55,6 +55,7 @@ import type {
   WhatsAppAiCampaignRecipientDTO,
   WhatsAppAiCampaignRecipientStatusDTO,
 } from '@/types/whatsapp-ai-campaign'
+import { AiCampaignNoWhatsapp } from './ai-campaign-no-whatsapp'
 import {
   AiCampaignFunnel,
   AiCampaignStatusBadge,
@@ -560,6 +561,7 @@ export function WhatsappAiCampaignDetail({
               <dd>{formatDate(campaign.lastSentAt)}</dd>
             </div>
           </dl>
+          <AiCampaignNoWhatsapp workspaceId={workspaceId} campaign={campaign} />
           {campaign.aiReplies && campaign.actions.length > 0 ? (
             <ul className='flex flex-wrap gap-1.5 pt-2'>
               {campaign.actions.map((action) => (
