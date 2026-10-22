@@ -24,6 +24,8 @@ describe('toWhatsAppPhoneCallDTO()', () => {
     expect(dto).toEqual({
       id: call.id,
       conversationId: call.conversationId,
+      direction: 'OUTBOUND',
+      source: 'CLICK_TO_CALL',
       userId: call.userId,
       extension: '200',
       destination: '11999999999',
@@ -114,6 +116,29 @@ describe('toPhoneCallRecordDTO()', () => {
       crmPersonId: 'p1',
       crmOpportunityId: 'o1',
     })
+  })
+
+  it('describes a browser phone call with no conversation by the caller name', () => {
+    const base = createFakePhoneCallWithNames({
+      conversationId: null,
+      direction: 'INBOUND',
+      source: 'WEBPHONE',
+      remoteName: 'Maria da Silva',
+    })
+    const dto = toPhoneCallRecordDTO({ ...base, conversation: null })
+    expect(dto).toMatchObject({
+      conversationId: null,
+      direction: 'INBOUND',
+      source: 'WEBPHONE',
+      contactName: 'Maria da Silva',
+    })
+
+    const unnamed = toPhoneCallRecordDTO({
+      ...base,
+      remoteName: null,
+      conversation: null,
+    })
+    expect(unnamed.contactName).toBeNull()
   })
 
   it('has no recording block without a stored object', () => {

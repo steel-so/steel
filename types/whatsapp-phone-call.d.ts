@@ -11,7 +11,10 @@ export type WhatsAppPhoneCallStatusDTO =
 
 export interface WhatsAppPhoneCallDTO {
   id: string
-  conversationId: string
+  /** Null for a browser phone call that matches no conversation. */
+  conversationId: string | null
+  direction: 'OUTBOUND' | 'INBOUND'
+  source: 'CLICK_TO_CALL' | 'WEBPHONE'
   userId: string | null
   extension: string
   destination: string
@@ -60,4 +63,19 @@ export interface PhoneCallRecordDTO extends WhatsAppPhoneCallDTO {
   sdTicketId: string | null
   crmPersonId: string | null
   crmOpportunityId: string | null
+}
+
+/** What the browser phone gets back when it starts tracking a call. */
+export interface WebphoneCallTrackingDTO {
+  call: WhatsAppPhoneCallDTO
+  /**
+   * Secret the PABX echoes on its status/recording reports (ADR 0043).
+   * Only on a new outbound call; the phone forwards it in the INVITE.
+   */
+  callbackToken: string | null
+  callbackUrl: string
+  /** The workspace asked for this call to be recorded. */
+  record: boolean
+  /** The call matched a row the PABX already created; nothing new was added. */
+  adopted: boolean
 }
