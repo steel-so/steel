@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { authenticatedOwner, defaultHeaders } from '@/src/__tests__/helpers/e2e'
+import { fakeVoiceAgentSecret } from '@/src/__tests__/helpers/fake-tokens'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 import { prisma } from '@/src/lib/prisma'
 
-const SECRET = 'vk_e2e-secret-abcdefghijklmnop'
+const SECRET = fakeVoiceAgentSecret()
+const OTHER_SECRET = fakeVoiceAgentSecret('y')
 const sha = (value: string) => createHash('sha256').update(value).digest('hex')
 
 let counter = 0
@@ -93,7 +95,7 @@ describe('POST /api/pabx/voice-agent/session', () => {
     await seedWorkspaceSettings(other.id, user.id)
     const wrong = await post('session', {
       workspace: other.id,
-      secret: 'vk_another-secret-abcdefghijk',
+      secret: OTHER_SECRET,
       ...caller,
     })
     expect(wrong.status).toBe(401)
@@ -169,7 +171,7 @@ describe('POST /api/pabx/voice-agent/outcome', () => {
 
     const wrong = await post('outcome', {
       workspace: workspace.id,
-      secret: 'vk_another-secret-abcdefghijk',
+      secret: OTHER_SECRET,
       session,
     })
     expect(wrong.status).toBe(401)

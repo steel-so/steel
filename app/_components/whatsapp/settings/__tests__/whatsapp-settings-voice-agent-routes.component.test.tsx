@@ -5,6 +5,7 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
+import { fakeVoiceAgentSecret } from '@/src/__tests__/helpers/fake-tokens'
 import type {
   VoiceAgentRouteDTO,
   VoiceAgentSettingsDTO,
@@ -17,6 +18,7 @@ const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
 
 const BASE = '/api/workspaces/ws_1/voice-agent'
+const SECRET = fakeVoiceAgentSecret()
 
 const ROUTE: VoiceAgentRouteDTO = {
   id: 'r_1',
@@ -60,7 +62,7 @@ function setup(routes: VoiceAgentRouteDTO[], saved = settings()) {
     {
       method: 'POST',
       match: `${BASE}/secret`,
-      data: { secret: 'vk_secret-value-1234', hint: '1234' },
+      data: { secret: SECRET, hint: '1234' },
     },
     { match: `${BASE}/settings`, data: saved },
   ])
@@ -223,12 +225,10 @@ describe('<WhatsappSettingsVoiceAgentRoutes />', () => {
 
     expect(await screen.findByText('Nenhum segredo gerado ainda.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Gerar segredo' }))
-    expect(await screen.findByText('vk_secret-value-1234')).toBeTruthy()
+    expect(await screen.findByText(SECRET)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Copiar segredo' }))
-    await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith('vk_secret-value-1234'),
-    )
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(SECRET))
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Segredo copiado'),
     )

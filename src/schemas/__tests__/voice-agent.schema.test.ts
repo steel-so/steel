@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { fakeVoiceAgentSecret } from '@/src/__tests__/helpers/fake-tokens'
 import {
   CreateVoiceAgentRouteSchema,
   PabxVoiceOutcomeSchema,
@@ -8,7 +9,7 @@ import {
   VOICE_AGENT_VOICES,
 } from '../voice-agent.schema'
 
-const SECRET = 'vk_abcdefghijklmnopqrstuvwxyz'
+const SECRET = fakeVoiceAgentSecret()
 
 describe('UpdateVoiceAgentSettingsSchema', () => {
   it('accepts a partial update and an empty one', () => {

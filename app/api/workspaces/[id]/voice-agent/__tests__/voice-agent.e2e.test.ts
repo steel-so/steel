@@ -7,7 +7,6 @@ import {
   patchJson,
   postJson,
 } from '@/src/__tests__/helpers/e2e'
-import { prisma } from '@/src/lib/prisma'
 
 const base = (workspaceId: string) =>
   `/api/workspaces/${workspaceId}/voice-agent`
@@ -63,9 +62,7 @@ describe('voice attendant settings', () => {
     )
     expect(invalid.status).toBe(422)
 
-    const stranger = await prisma.user.findFirstOrThrow({
-      where: { NOT: { id: user.id } },
-    })
+    const { user: stranger } = await authenticatedOwner()
     const notMember = await patchJson(
       `${base(workspace.id)}/settings`,
       { runAsUserId: stranger.id },

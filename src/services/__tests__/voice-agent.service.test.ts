@@ -6,6 +6,7 @@ import type {
 } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeWhatsAppPhoneCall } from '@/src/__tests__/factories/whatsapp-phone-call.factory'
+import { fakeVoiceAgentSecret } from '@/src/__tests__/helpers/fake-tokens'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import {
   aiQuotaExceeded,
@@ -94,7 +95,7 @@ const workspaceRepo = vi.mocked(WorkspaceRepository)
 const usageRepo = vi.mocked(AiUsageRepository)
 
 const DB = databaseError('db down')
-const SECRET = 'vk_abcdefghijklmnopqrstuvwxyz'
+const SECRET = fakeVoiceAgentSecret()
 const SESSION = '0b6f6f4e-7a1d-4a58-9a3e-6b5b2f7a9c11'
 const NOW = new Date('2026-10-22T12:00:00.000Z')
 
