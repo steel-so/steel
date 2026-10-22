@@ -1,0 +1,56 @@
+---
+title: Disparo automático, status de fechamento e horário no WhatsApp
+slug: disparo-automatico-status-de-fechamento-e-horario
+date: 2026-10-20
+summary: A IA dispara um template aprovado para os contatos com play e pausa e velocidade ajustável, as conversas fecham com status de sucesso ou falha, o horário de atendimento trava os envios e dá para baixar a conversa em texto ou CSV.
+tags: [COMUNICACAO, IA]
+cover: /changelog/2026-10-20/capa-whatsapp-atendimento.jpg
+---
+
+## Disparo automático com play e pausa
+
+Na página de **Contatos**, o painel de **Disparo automático** escolhe uma
+conexão da Meta e um template aprovado, coloca na fila os contatos
+selecionados (ou todos) e roda com **play** e **pausa**. Cada envio abre ou
+reabre a conversa do contato e a **IA** responde conforme a configuração do
+workspace; o template fica registrado como mensagem da IA.
+
+![Painel Disparo automático na página de Contatos, com o template escolhido, o progresso da fila e os botões de play e pausa](/changelog/2026-10-20/disparo-automatico.webp)
+
+Quem já está em atendimento ou pediu para não receber mensagens é pulado, e os
+limites mensais pausam a fila mostrando o motivo. A **agressividade** é um
+controle deslizante que define o ritmo entre um envio e outro, do mais
+cuidadoso ao mais rápido.
+
+## Horário de atendimento que trava os envios
+
+Em **Configurações › Atendimento**, o administrador define o horário de
+atendimento (inclusive janelas que viram a noite) e os dias da semana. Fora
+dele, o compositor fica bloqueado com um aviso que informa a **próxima
+abertura**, a resposta da IA espera a abertura e o disparo automático dorme até
+lá. Tudo no fuso de São Paulo.
+
+## Status de fechamento
+
+O administrador cadastra **status de fechamento**, cada um com um nome e um
+resultado de **sucesso** ou **falha**, e define quantos o atendente precisa
+escolher ao encerrar (de 0 a 10). Ao fechar, a janela lista as opções e só
+libera o botão quando o mínimo foi atingido.
+
+![Janela de fechar conversa com os status de fechamento e o botão bloqueado até o mínimo ser escolhido](/changelog/2026-10-20/status-de-fechamento.webp)
+
+A conversa guarda o resultado (falha se algum status escolhido for de falha) e
+reabrir limpa a classificação. Status que saem de uso ficam arquivados em vez
+de apagados, então o histórico continua legível.
+
+## Baixar a conversa
+
+O cabeçalho da conversa ganhou o menu **Baixar**, com a conversa em **texto**,
+no formato de uma conversa do WhatsApp, ou em **CSV**, para planilha. O arquivo
+usa o horário de São Paulo, respeita a última limpeza da conversa e registra o
+download na auditoria.
+
+<Callout>
+  Os status de fechamento e o horário de atendimento ficam em **WhatsApp ›
+  Configurações › Atendimento**. Veja também [Conversas](/docs/comunicacao/conversas).
+</Callout>
