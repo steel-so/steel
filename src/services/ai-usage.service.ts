@@ -82,6 +82,9 @@ export const AI_TASK_CLASS_BY_FEATURE: Record<AiUsageFeature, AiTaskClass> = {
   PHONE_CALL_AI: 'CONVERSATION',
   // Daily digest intro (ADR 0040): short phrasing, the cheap model.
   PROACTIVE_DIGEST: 'CLASSIFICATION',
+  // IVR voice attendant (ADR 0046): the realtime model is not in the chat
+  // catalog; the class only decides the quota/guardrails of `prepare`.
+  VOICE_AGENT: 'CONVERSATION',
 }
 
 /** Workspace model of a task class, most specific first. */

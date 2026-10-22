@@ -552,3 +552,99 @@ describe('parseCallSummary()', () => {
     expect(parseCallSummary(content)).toBeNull()
   })
 })
+
+describe('PhoneCallAiService.process() — voice attendant calls (ADR 0046)', () => {
+  function voiceCall(overrides: Partial<WhatsAppPhoneCall> = {}) {
+    return pendingCall({
+      userId: null,
+      voiceAgent: true,
+      recordingKey: null,
+      recordingMimeType: null,
+      transcript: 'Cliente: oi\nAtendente: olá, como posso ajudar?',
+      sdTicketId: 'voice-ticket',
+      ...overrides,
+    })
+  }
+
+  function usingCall(call: WhatsAppPhoneCall) {
+    callRepo.findById.mockResolvedValue(ok(call))
+    callRepo.update.mockImplementation(async (_id, data) =>
+      ok({ ...call, ...(data as Partial<WhatsAppPhoneCall>) }),
+    )
+  }
+
+  it('summarizes the transcript that came with the call, with no audio and no Whisper', async () => {
+    usingCall(voiceCall())
+    mocks.getOpenAiClient.mockReturnValue(null)
+    zapSettingsRepo.findByWorkspace.mockResolvedValue(
+      ok(createFakeWhatsAppSettings({ callTranscriptionEnabled: false })),
+    )
+
+    const outcome = expectOk(await PhoneCallAiService.process('call1'))
+
+    expect(outcome).toMatchObject({ status: 'done', summarized: true })
+    expect(mocks.getObject).not.toHaveBeenCalled()
+    expect(mocks.transcribe).not.toHaveBeenCalled()
+    expect(zapSettingsRepo.findByWorkspace).not.toHaveBeenCalled()
+    expect(usageRepo.record).not.toHaveBeenCalled()
+    expect(chat).toHaveBeenCalledTimes(1)
+    expect(callRepo.update).toHaveBeenLastCalledWith(
+      'call1',
+      expect.objectContaining({
+        aiStatus: 'DONE',
+        transcript: 'Cliente: oi\nAtendente: olá, como posso ajudar?',
+        summary: 'Cliente pediu a segunda via do boleto.',
+      }),
+    )
+  })
+
+  it('keeps the ticket the attendant opened when the conversation has none', async () => {
+    usingCall(voiceCall())
+    linkRepo.findTicketForConversation.mockResolvedValue(ok(null))
+    await PhoneCallAiService.process('call1')
+    expect(callRepo.update).toHaveBeenLastCalledWith(
+      'call1',
+      expect.objectContaining({ sdTicketId: 'voice-ticket' }),
+    )
+  })
+
+  it('prefers the open ticket of the conversation over the stored one', async () => {
+    usingCall(voiceCall())
+    linkRepo.findTicketForConversation.mockResolvedValue(ok('t1'))
+    await PhoneCallAiService.process('call1')
+    expect(callRepo.update).toHaveBeenLastCalledWith(
+      'call1',
+      expect.objectContaining({ sdTicketId: 't1' }),
+    )
+  })
+
+  it('still respects the AI switch and the monthly quota', async () => {
+    usingCall(voiceCall())
+    aiSettingsRepo.findByWorkspace.mockResolvedValue(
+      ok(
+        createFakeWorkspaceAiSettings({ workspaceId: 'ws1', aiEnabled: false }),
+      ),
+    )
+    expect(expectOk(await PhoneCallAiService.process('call1'))).toEqual({
+      status: 'skipped',
+      reason: 'ai_disabled',
+    })
+
+    aiSettingsRepo.findByWorkspace.mockResolvedValue(
+      ok(createFakeWorkspaceAiSettings({ workspaceId: 'ws1' })),
+    )
+    aiUsage.prepare.mockResolvedValue(err(aiQuotaExceeded(10, 10)))
+    expect(expectOk(await PhoneCallAiService.process('call1'))).toEqual({
+      status: 'skipped',
+      reason: 'ai_quota_exceeded',
+    })
+  })
+
+  it('skips a voice call that has no transcript to summarize', async () => {
+    usingCall(voiceCall({ transcript: null }))
+    expect(expectOk(await PhoneCallAiService.process('call1'))).toEqual({
+      status: 'skipped',
+      reason: 'no_recording',
+    })
+  })
+})

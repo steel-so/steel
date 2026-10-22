@@ -74,6 +74,12 @@ services:
       # own external IP, the router does not hairpin it, and every probe timed
       # out — the page showed a permanent outage. The .env still wins if set.
       STATUS_APP_PROBE_URL: ${STATUS_APP_PROBE_URL:-http://nextjs-app:3000}
+    # AudioSocket do atendente de voz (ADR 0046). Fica no loopback até o TI
+    # definir VOICE_AGENT_AUDIOSOCKET_BIND com o IP privado que o PABX alcança
+    # (e liberar só esse IP no firewall) — docs/runbooks/pabx-voice-agent.md.
+    # Sem VOICE_AGENT_AUDIOSOCKET_PORT no .env o worker nem abre a porta.
+    ports:
+      - "${VOICE_AGENT_AUDIOSOCKET_BIND:-127.0.0.1}:${VOICE_AGENT_AUDIOSOCKET_PORT:-8090}:${VOICE_AGENT_AUDIOSOCKET_PORT:-8090}"
     volumes:
       - ./redis-tls/ca.crt:/etc/redis-tls/ca.crt:ro
     dns:

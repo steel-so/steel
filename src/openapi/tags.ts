@@ -243,6 +243,11 @@ export const TAG_GROUPS = [
         description:
           'Ligações do "Ligar" pelo PABX: gravação, transcrição, resumo e onde aparecem (conversa, chamado, CRM).',
       },
+      {
+        name: 'Comunicação · Atendente de voz',
+        description:
+          'Atendente de voz com IA na URA do PABX (ADR 0046): ajustes, filas e números atendidos, segredo do dialplan, minutos do mês e os endpoints que o dialplan chama.',
+      },
     ],
   },
   {

@@ -130,20 +130,30 @@ async function finish(
   return updated
 }
 
-/** Why the AI step cannot run for this workspace, or `null` when it can. */
-async function blocker(workspaceId: string): Promise<
+/**
+ * Why the AI step cannot run for this workspace, or `null` when it can.
+ * `voice` = a call of the IVR attendant (ADR 0046): the transcript already
+ * exists, so the recorded-call transcription switch and the Whisper key do
+ * not apply.
+ */
+async function blocker(
+  workspaceId: string,
+  voice = false,
+): Promise<
   Result<
     | { reason: string }
     | {
         call: PreparedAiCall
-        client: NonNullable<ReturnType<typeof getOpenAiClient>>
+        client: ReturnType<typeof getOpenAiClient>
       }
   >
 > {
-  const zap = await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
-  if (!zap.ok) return zap
-  if (!toWhatsAppSettingsDTO(workspaceId, zap.value).callTranscriptionEnabled)
-    return ok({ reason: 'transcription_disabled' })
+  if (!voice) {
+    const zap = await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
+    if (!zap.ok) return zap
+    if (!toWhatsAppSettingsDTO(workspaceId, zap.value).callTranscriptionEnabled)
+      return ok({ reason: 'transcription_disabled' })
+  }
 
   const ai = await WorkspaceAiSettingsRepository.findByWorkspace(workspaceId)
   if (!ai.ok) return ai
@@ -151,7 +161,7 @@ async function blocker(workspaceId: string): Promise<
     return ok({ reason: 'ai_disabled' })
 
   const client = getOpenAiClient()
-  if (!client) return ok({ reason: 'no_transcription_provider' })
+  if (!client && !voice) return ok({ reason: 'no_transcription_provider' })
 
   const prepared = await AiUsageService.prepare(workspaceId, 'PHONE_CALL_AI')
   if (!prepared.ok) {
@@ -305,13 +315,17 @@ export const PhoneCallAiService = {
     // PROCESSING is accepted too: a retry after a crash mid-way.
     if (call.aiStatus !== 'PENDING' && call.aiStatus !== 'PROCESSING')
       return ok({ status: 'ignored', reason: 'not_pending' })
-    if (!call.recordingKey) {
+    // A voice-attendant call (ADR 0046) arrives with its transcript from the
+    // realtime session and has no audio: only the summary step is left.
+    const voiceTranscript =
+      call.voiceAgent && call.transcript ? call.transcript : null
+    if (!call.recordingKey && !voiceTranscript) {
       const done = await finish(call, 'SKIPPED', 'no_recording')
       if (!done.ok) return done
       return ok({ status: 'skipped', reason: 'no_recording' })
     }
 
-    const gate = await blocker(call.workspaceId)
+    const gate = await blocker(call.workspaceId, Boolean(voiceTranscript))
     if (!gate.ok) return gate
     if ('reason' in gate.value) {
       const done = await finish(call, 'SKIPPED', gate.value.reason)
@@ -325,47 +339,59 @@ export const PhoneCallAiService = {
     })
     if (!processing.ok) return processing
 
-    // Storage errors throw on purpose: the job retries (BullMQ attempts).
-    const audio = await getObject({
-      bucket: PHONE_CALL_RECORDINGS_BUCKET,
-      key: call.recordingKey,
-    })
-    const ext = call.recordingKey.slice(call.recordingKey.lastIndexOf('.') + 1)
-
-    let transcription: Awaited<ReturnType<typeof transcribeAudio>>
-    try {
-      transcription = await transcribeAudio(client, audio, `call.${ext}`, {
-        language: 'pt',
-        withDuration: true,
+    let transcription: { text: string; durationSeconds?: number | null } | null
+    if (voiceTranscript) {
+      transcription = { text: voiceTranscript }
+    } else {
+      // Storage errors throw on purpose: the job retries (BullMQ attempts).
+      const audio = await getObject({
+        bucket: PHONE_CALL_RECORDINGS_BUCKET,
+        key: call.recordingKey as string,
       })
-    } catch (error) {
-      const detail = errorMessage(error)
-      logger.error('phone_call.transcription_failed', {
-        component: 'PhoneCallAiService',
-        workspaceId: call.workspaceId,
-        callId: call.id,
-        message: detail,
-      })
-      const done = await finish(call, 'FAILED', 'transcription_failed')
-      if (!done.ok) return done
-      return ok({ status: 'failed', reason: 'transcription_failed', detail })
-    }
+      const key = call.recordingKey as string
+      const ext = key.slice(key.lastIndexOf('.') + 1)
 
-    await recordTranscription(
-      call,
-      prepared,
-      transcription?.durationSeconds ?? call.durationSeconds ?? 0,
-    )
-    if (!transcription) {
-      const done = await finish(call, 'SKIPPED', 'empty_transcript')
-      if (!done.ok) return done
-      return ok({ status: 'skipped', reason: 'empty_transcript' })
+      try {
+        transcription = await transcribeAudio(
+          client as NonNullable<typeof client>,
+          audio,
+          `call.${ext}`,
+          { language: 'pt', withDuration: true },
+        )
+      } catch (error) {
+        const detail = errorMessage(error)
+        logger.error('phone_call.transcription_failed', {
+          component: 'PhoneCallAiService',
+          workspaceId: call.workspaceId,
+          callId: call.id,
+          message: detail,
+        })
+        const done = await finish(call, 'FAILED', 'transcription_failed')
+        if (!done.ok) return done
+        return ok({ status: 'failed', reason: 'transcription_failed', detail })
+      }
+
+      await recordTranscription(
+        call,
+        prepared,
+        transcription?.durationSeconds ?? call.durationSeconds ?? 0,
+      )
+      if (!transcription) {
+        const done = await finish(call, 'SKIPPED', 'empty_transcript')
+        if (!done.ok) return done
+        return ok({ status: 'skipped', reason: 'empty_transcript' })
+      }
     }
 
     // PII masking and provider failover run inside the guarded provider
     // from AiUsageService.prepare (ADR 0041/0042); the speech is fenced.
     const summary = await summarize(call, prepared, transcription.text)
-    const links = await resolveLinks(call)
+    const resolved = await resolveLinks(call)
+    // The ticket the voice attendant opened stays when the conversation has none.
+    const links = {
+      ...resolved,
+      sdTicketId: resolved.sdTicketId ?? call.sdTicketId,
+    }
 
     const updated = await WhatsAppPhoneCallRepository.update(call.id, {
       aiStatus: 'DONE',
