@@ -115,20 +115,25 @@ resto exige o cookie `better-auth.session_token`).
   (`WorkspaceModuleConnection`, credenciais cifradas com `CONNECTION_SECRETS`,
   resolvido por `src/lib/module-db/resolver.ts`).
 - Planos (`FREE`, `PRO`, `BUSINESS`, `ENTERPRISE`) em `src/config/plans.ts` —
-  ver [revisão de limites](../plans-review.md).
+  hoje só o limite de assentos (12 no Free e no Pro, ilimitado do Business em
+  diante); ver [limites dos planos](../plans-review.md).
 - **Feature flags** por workspace (capacidades opcionais dentro de um módulo,
   default por plano + override do admin): [feature-flags](../feature-flags.md).
 
 - **Ciclo de vida** (`workspaces.status`): `ACTIVE`, `SUSPENDED` (bloqueio
   pelo admin global — `assertMember` responde `WORKSPACE_SUSPENDED`) e
   `DELETING` (exclusão em andamento). Ver [painel admin](../admin-panel.md).
+- **Lista de IPs permitidos** (`workspaces.allowed_ips`, IP ou CIDR v4/v6),
+  definida só pelo admin global: vazia deixa o workspace aberto; preenchida,
+  `assertMember` e o layout do workspace recusam outras origens com
+  `WORKSPACE_IP_NOT_ALLOWED` (falha fechada quando o IP é desconhecido).
 
 ## Módulos de domínio
 
 | Módulo | UI | API / serviços |
 | ------ | -- | -------------- |
 | **CRM** | `[workspace-slug]/crm/*` — leads, pessoas, empresas, oportunidades, pipelines, propostas, produtos, forecast, cotas, relatórios, dashboards, campanhas de e-mail, listas, landing pages, formulários, workflows, redes sociais, IA | `src/services/crm-*.service.ts`, `app/api/crm/*` (forms, landing pages, propostas, integrações, workflows) |
-| **Comunicação (WhatsApp)** | `[workspace-slug]/zap/*` — conversas, contatos, grupos, templates, respostas rápidas, transmissões, dashboards, relatórios, configurações | `src/services/whatsapp-*.service.ts`, `src/lib/whatsapp/*` (Meta Cloud API e Z-API), webhooks em `app/api/whatsapp/webhook/{meta,zapi}`, tempo real via SSE `app/api/whatsapp/events` (Redis pub/sub) |
+| **Comunicação (WhatsApp)** | `[workspace-slug]/zap/*` — conversas, contatos, grupos, templates, respostas rápidas, transmissões, dashboards, relatórios, configurações | `src/services/whatsapp-*.service.ts`, `src/lib/whatsapp/*` (Meta Cloud API e Z-API), webhooks em `app/api/whatsapp/webhook/{meta,zapi}`, tempo real via SSE `app/api/whatsapp/events` (Redis pub/sub); **Campanhas de IA** ([ADR 0045](../adr/0045-whatsapp-ai-campaigns-allowlisted-actions.md)), disparo automático por template com play/pause e horário de atendimento, classificação de conversas por status de fechamento; **telefone web** no navegador direto no PABX ([ADR 0044](../adr/0044-pabx-webphone-in-the-browser.md)) e gravação, transcrição e resumo de ligações ([ADR 0043](../adr/0043-pabx-call-recording-transcription-and-summary.md)) |
 | **ServiceDesk (ITIL 4)** | `[workspace-slug]/servicedesk/*` — início, quadros de chamados (incidente, requisição, mudança, problema) em kanban/lista/tabela, tela do chamado com abas (histórico/chat, WhatsApp, tarefas, custos, aprovação, peças, itens filhos, escalonamento, rastreabilidade, assinatura, conhecimento), cadastros (clientes, empresas, contatos, CMDB), base de conhecimento, painéis (+ modo TV), portal do solicitante e configurações | `src/services/sd-*.service.ts` + `SdTicketEngine`, `src/lib/servicedesk/*` (SLA em minutos úteis, condições, realtime), `app/api/workspaces/[id]/servicedesk/**`, aprovação pública em `app/api/servicedesk/approvals/[token]`, filas `servicedesk-sla`, `servicedesk-ai`, `servicedesk-mail`, `servicedesk-digest`, `servicedesk-recurring` e `servicedesk-billing` — ver [ServiceDesk](../servicedesk/README.md) e [ADR 0008](../adr/0008-servicedesk-itil-configurable-engine.md) |
 | **Base (Nexo)** | auth, onboarding, settings (membros, billing, conexões), wiki, IA, sticky notes, short links, `/status`, referência da API (Scalar em `/reference`, gerada de `src/openapi/` — ver [API](../api.md)) | `src/services/{workspace,membership,invitation,subscription,user,...}.service.ts` |
 
