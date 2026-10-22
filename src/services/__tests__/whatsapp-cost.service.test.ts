@@ -1,3 +1,4 @@
+import type { WhatsAppPrice } from '@prisma/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
@@ -48,7 +49,7 @@ function asRole(role: 'VIEWER' | 'MEMBER' | 'ADMIN' | 'OWNER') {
   )
 }
 
-function priceRow(category: string, unitPrice: number) {
+function priceRow(category: string, unitPrice: number): WhatsAppPrice {
   return {
     id: `p-${category}`,
     workspaceId: 'ws1',
@@ -60,7 +61,7 @@ function priceRow(category: string, unitPrice: number) {
     reference: false,
     createdById: null,
     createdAt: NOW,
-  } as never
+  } as unknown as WhatsAppPrice
 }
 
 beforeEach(() => {
@@ -873,7 +874,9 @@ describe('report() aggregation math', () => {
       fixtures()
       const original = costs.groupBy.getMockImplementation()
       costs.groupBy.mockImplementation(async (f, by) =>
-        by === field ? err(databaseError('x')) : (original as never)(f, by),
+        by === field
+          ? err(databaseError('x'))
+          : (original as (f: unknown, by: string) => unknown)(f, by),
       )
       expectErr(
         await WhatsAppCostService.report('u1', 'ws1', query, NOW),
