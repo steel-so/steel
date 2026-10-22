@@ -11,6 +11,7 @@ import { groupRoutes } from './whatsapp/groups'
 import { phoneCallRoutes } from './whatsapp/phone-calls'
 import { realtimeRoutes } from './whatsapp/realtime'
 import { settingsRoutes } from './whatsapp/settings'
+import { slaRoutes } from './whatsapp/sla'
 import { teamRoutes } from './whatsapp/teams'
 import { templateRoutes } from './whatsapp/templates'
 import { voiceAgentRoutes } from './whatsapp/voice-agent'
@@ -38,6 +39,7 @@ const routes: RouteConfig[] = [
   ...teamRoutes,
   ...phoneCallRoutes,
   ...voiceAgentRoutes,
+  ...slaRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

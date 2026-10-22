@@ -9686,7 +9686,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_7"
+            "$ref": "#/components/responses/409_CONFLICT_8"
           }
         },
         "security": [
@@ -12308,7 +12308,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           }
         },
         "security": [
@@ -18609,7 +18609,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -19186,7 +19186,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -43510,7 +43510,7 @@
             "$ref": "#/components/responses/404_CRM_PROPOSAL_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_6"
+            "$ref": "#/components/responses/409_CONFLICT_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
@@ -55039,7 +55039,7 @@
             "$ref": "#/components/responses/404_SITE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_5"
+            "$ref": "#/components/responses/409_CONFLICT_6"
           },
           "422": {
             "$ref": "#/components/responses/422_SITE_DOCUMENT_INVALID"
@@ -56939,7 +56939,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57348,7 +57348,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -62852,7 +62852,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -63071,7 +63071,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -63900,6 +63900,8 @@
                             "WHATSAPP_TEMPLATE_QUALITY",
                             "WHATSAPP_USAGE_WARNING",
                             "WHATSAPP_USAGE_LIMIT_REACHED",
+                            "WHATSAPP_SLA_AT_RISK",
+                            "WHATSAPP_SLA_BREACHED",
                             "AGENT_APPROVAL_REQUESTED",
                             "AGENT_RUN_FAILED",
                             "AI_ACTION_EXPIRING",
@@ -65396,7 +65398,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -69467,7 +69469,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -70443,7 +70445,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -71616,7 +71618,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -72048,7 +72050,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -74955,7 +74957,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -75560,7 +75562,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -77367,7 +77369,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -78638,7 +78640,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -80203,7 +80205,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -85064,7 +85066,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -87683,7 +87685,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -88012,7 +88014,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -88439,7 +88441,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88633,7 +88635,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88976,7 +88978,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -91685,7 +91687,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -92072,7 +92074,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -92415,7 +92417,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -93114,7 +93116,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -100338,7 +100340,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -105509,7 +105511,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -105950,7 +105952,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -106001,7 +106003,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -107543,7 +107545,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -108169,7 +108171,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -108761,7 +108763,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -108982,7 +108984,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -109049,7 +109051,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_2"
@@ -109137,7 +109139,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -109952,7 +109954,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -114545,6 +114547,545 @@
         ]
       }
     },
+    "/workspaces/{id}/whatsapp/sla/open": {
+      "get": {
+        "tags": ["Comunicação · Dashboards e relatórios"],
+        "summary": "Ciclos de SLA abertos",
+        "operationId": "getWorkspacesByIdWhatsappSlaOpen",
+        "description": "Ciclos de SLA abertos das conversas que o usuário pode ver, com o estado de cada prazo (`OK`, `AT_RISK`, `BREACHED`) — alimenta o indicador de SLA no cabeçalho da conversa e o filtro \"SLA em risco / estourado\". `state=AT_RISK` devolve os em risco e os estourados; `state=BREACHED`, só os estourados. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["AT_RISK", "BREACHED"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ciclos abertos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WhatsAppSlaOpenCycle"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/sla/policies": {
+      "get": {
+        "tags": ["Comunicação · Configurações"],
+        "summary": "Políticas de SLA",
+        "operationId": "getWorkspacesByIdWhatsappSlaPolicies",
+        "description": "A política padrão do workspace e as exceções por equipe (a da equipe vence a padrão). Workspace sem política não mede SLA. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Políticas (a padrão primeiro).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WhatsAppSlaPolicy"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Comunicação · Configurações"],
+        "summary": "Criar política de SLA",
+        "operationId": "postWorkspacesByIdWhatsappSlaPolicies",
+        "description": "Cria a política padrão (`teamId` omitido) ou a exceção de uma equipe. Nasce desligada (`enabled: false`). Uma por escopo. Os prazos são fixados no início de cada ciclo: mudar a política vale só para os ciclos seguintes. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teamId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "firstResponseMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 43200
+                  },
+                  "resolutionMinutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 43200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "businessHoursOnly": {
+                    "type": "boolean"
+                  },
+                  "warnAtPercent": {
+                    "type": "integer",
+                    "minimum": 10,
+                    "maximum": 99
+                  },
+                  "countAiAsResponse": {
+                    "type": "boolean"
+                  },
+                  "notifyAssignee": {
+                    "type": "boolean"
+                  },
+                  "notifyTeamLeaders": {
+                    "type": "boolean"
+                  },
+                  "notifySupervisors": {
+                    "type": "boolean"
+                  },
+                  "supervisorIds": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "notifyInApp": {
+                    "type": "boolean"
+                  },
+                  "notifyEmail": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Política criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppSlaPolicy"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CONFLICT_5"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/sla/policies/{policyId}": {
+      "patch": {
+        "tags": ["Comunicação · Configurações"],
+        "summary": "Atualizar política de SLA",
+        "operationId": "patchWorkspacesByIdWhatsappSlaPoliciesByPolicyId",
+        "description": "Atualização parcial. Ciclos já abertos mantêm os prazos de quando começaram. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "description": "Id da política de SLA.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "firstResponseMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 43200
+                  },
+                  "resolutionMinutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 43200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "businessHoursOnly": {
+                    "type": "boolean"
+                  },
+                  "warnAtPercent": {
+                    "type": "integer",
+                    "minimum": 10,
+                    "maximum": 99
+                  },
+                  "countAiAsResponse": {
+                    "type": "boolean"
+                  },
+                  "notifyAssignee": {
+                    "type": "boolean"
+                  },
+                  "notifyTeamLeaders": {
+                    "type": "boolean"
+                  },
+                  "notifySupervisors": {
+                    "type": "boolean"
+                  },
+                  "supervisorIds": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "notifyInApp": {
+                    "type": "boolean"
+                  },
+                  "notifyEmail": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Política salva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppSlaPolicy"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_SLA_POLICY_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Comunicação · Configurações"],
+        "summary": "Remover política de SLA",
+        "operationId": "deleteWorkspacesByIdWhatsappSlaPoliciesByPolicyId",
+        "description": "Remove a política; os ciclos abertos seguem com o prazo que já tinham. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "description": "Id da política de SLA.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Política removida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_SLA_POLICY_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/sla/report": {
+      "get": {
+        "tags": ["Comunicação · Dashboards e relatórios"],
+        "summary": "Relatório de SLA",
+        "operationId": "getWorkspacesByIdWhatsappSlaReport",
+        "description": "Percentual dentro do prazo (primeira resposta e resolução), tempo médio e p90 da primeira resposta e estouros por atendente e por equipe, nos ciclos iniciados no período. `from`/`to` são datas `YYYY-MM-DD` em America/Sao_Paulo (`to` inclusivo; padrão: últimos 30 dias; máximo 1 ano). `format=csv` baixa o CSV (fora do envelope JSON). Prazos ainda em andamento não entram na conta. Administradores veem tudo; líderes de equipe, só as equipes que lideram; atendentes recebem 403. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["json", "csv"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relatório.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppSlaReport"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/whatsapp/teams": {
       "get": {
         "tags": ["Comunicação · Equipes"],
@@ -114586,7 +115127,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -114737,7 +115278,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -114797,7 +115338,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_6"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_TEAM_NOT_FOUND"
@@ -123595,51 +124136,6 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `conversations` × `VIEW`",
                 "value": {
                   "success": false,
@@ -123663,6 +124159,51 @@
               },
               "MODULE_DISABLED": {
                 "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_7": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -139365,6 +139906,29 @@
           }
         }
       },
+      "404_WHATSAPP_SLA_POLICY_NOT_FOUND": {
+        "description": "Não encontrado: `WHATSAPP_SLA_POLICY_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_SLA_POLICY_NOT_FOUND": {
+                "summary": "WHATSAPP_SLA_POLICY_NOT_FOUND — Política inexistente",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Política de SLA não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_SLA_POLICY_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_WHATSAPP_TEAM_NOT_FOUND": {
         "description": "Não encontrado: `WHATSAPP_TEAM_NOT_FOUND`",
         "content": {
@@ -139974,7 +140538,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — Outra publicação do mesmo site em andamento",
+                "summary": "CONFLICT — O escopo (padrão ou equipe) já tem uma política",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -139988,6 +140552,28 @@
         }
       },
       "409_CONFLICT_6": {
+        "description": "Conflito com o estado atual: `CONFLICT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CONFLICT": {
+                "summary": "CONFLICT — Outra publicação do mesmo site em andamento",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "CONFLICT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CONFLICT_7": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {
@@ -140010,7 +140596,7 @@
           }
         }
       },
-      "409_CONFLICT_7": {
+      "409_CONFLICT_8": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {
@@ -144904,7 +145490,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -144945,7 +145531,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR",
+                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -144967,6 +145553,47 @@
         }
       },
       "422_VALIDATION_ERROR_36": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_37": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145000,7 +145627,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_37": {
+      "422_VALIDATION_ERROR_38": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145034,7 +145661,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_38": {
+      "422_VALIDATION_ERROR_39": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145057,7 +145684,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_39": {
+      "422_VALIDATION_ERROR_40": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145087,7 +145714,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_40": {
+      "422_VALIDATION_ERROR_41": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145110,7 +145737,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_41": {
+      "422_VALIDATION_ERROR_42": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145133,7 +145760,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_42": {
+      "422_VALIDATION_ERROR_43": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145156,7 +145783,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_43": {
+      "422_VALIDATION_ERROR_44": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -172682,6 +173309,7 @@
           "WHATSAPP_CLOSE_STATUS_NOT_FOUND",
           "WHATSAPP_CLOSE_STATUS_LIMIT_REACHED",
           "WHATSAPP_CLOSE_STATUS_SELECTION_INVALID",
+          "WHATSAPP_SLA_POLICY_NOT_FOUND",
           "WHATSAPP_AI_CAMPAIGN_NOT_FOUND",
           "WHATSAPP_AI_CAMPAIGN_NOT_READY",
           "WHATSAPP_AI_CAMPAIGN_RUNNING",
@@ -173075,7 +173703,7 @@
           "BACKUP_FAILED",
           "BILLING_DISABLED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -173571,6 +174199,8 @@
                     "WHATSAPP_TEMPLATE_QUALITY",
                     "WHATSAPP_USAGE_WARNING",
                     "WHATSAPP_USAGE_LIMIT_REACHED",
+                    "WHATSAPP_SLA_AT_RISK",
+                    "WHATSAPP_SLA_BREACHED",
                     "AGENT_APPROVAL_REQUESTED",
                     "AGENT_RUN_FAILED",
                     "AI_ACTION_EXPIRING",
@@ -198596,7 +199226,8 @@
               "ASSIGNED",
               "TEAM_CHANGED",
               "AI_GUARDRAIL_HANDOFF",
-              "AI_ACTION"
+              "AI_ACTION",
+              "SLA_BREACHED"
             ]
           },
           "source": {
@@ -198608,7 +199239,8 @@
               "SENTIMENT",
               "AI_GUARDRAIL",
               "AUTO_OUTREACH",
-              "AI_CAMPAIGN"
+              "AI_CAMPAIGN",
+              "SLA"
             ]
           },
           "actorUserId": {
@@ -199613,6 +200245,392 @@
           "businessHoursEnd",
           "businessHoursDays"
         ]
+      },
+      "WhatsAppSlaOpenCycle": {
+        "type": "object",
+        "properties": {
+          "cycleId": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "firstResponse": {
+            "type": "object",
+            "properties": {
+              "dueAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "warnAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "doneAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Só na primeira resposta: quando aconteceu."
+              },
+              "state": {
+                "type": "string",
+                "enum": ["OK", "AT_RISK", "BREACHED"]
+              }
+            },
+            "required": ["dueAt", "warnAt", "doneAt", "state"]
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "dueAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "warnAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "doneAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Só na primeira resposta: quando aconteceu."
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": ["OK", "AT_RISK", "BREACHED"]
+                  }
+                },
+                "required": ["dueAt", "warnAt", "doneAt", "state"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` quando a política não mede a resolução."
+          },
+          "state": {
+            "type": "string",
+            "enum": ["OK", "AT_RISK", "BREACHED"],
+            "description": "Pior estado entre os prazos ainda em andamento."
+          }
+        },
+        "required": ["cycleId", "conversationId", "startedAt", "firstResponse", "resolution", "state"],
+        "description": "Ciclo de SLA aberto de uma conversa."
+      },
+      "WhatsAppSlaPolicy": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "teamId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` = política padrão do workspace."
+          },
+          "teamName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Desligada por padrão: nada é medido até ligar."
+          },
+          "firstResponseMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Minutos até a primeira resposta humana.",
+            "example": 15
+          },
+          "resolutionMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Minutos até o fechamento. `null` = não medido."
+          },
+          "businessHoursOnly": {
+            "type": "boolean",
+            "description": "O relógio só corre dentro do horário de atendimento. Sem efeito enquanto o horário de atendimento do workspace estiver desligado."
+          },
+          "warnAtPercent": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Percentual do prazo em que sai o aviso de risco.",
+            "example": 80
+          },
+          "countAiAsResponse": {
+            "type": "boolean",
+            "description": "Resposta da IA conta como primeira resposta."
+          },
+          "notifyAssignee": {
+            "type": "boolean"
+          },
+          "notifyTeamLeaders": {
+            "type": "boolean"
+          },
+          "notifySupervisors": {
+            "type": "boolean"
+          },
+          "supervisorIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Vazio = todos os OWNER/ADMIN."
+          },
+          "notifyInApp": {
+            "type": "boolean"
+          },
+          "notifyEmail": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "teamId",
+          "teamName",
+          "enabled",
+          "firstResponseMinutes",
+          "resolutionMinutes",
+          "businessHoursOnly",
+          "warnAtPercent",
+          "countAiAsResponse",
+          "notifyAssignee",
+          "notifyTeamLeaders",
+          "notifySupervisors",
+          "supervisorIds",
+          "notifyInApp",
+          "notifyEmail",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "Política de SLA do atendimento."
+      },
+      "WhatsAppSlaReport": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string",
+            "example": "America/Sao_Paulo"
+          },
+          "teamId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstResponse": {
+            "type": "object",
+            "properties": {
+              "evaluated": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "withinTarget": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "withinPercent": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "averageSeconds": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "p90Seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["evaluated", "withinTarget", "withinPercent", "averageSeconds", "p90Seconds"]
+          },
+          "resolution": {
+            "type": "object",
+            "properties": {
+              "evaluated": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "withinTarget": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "withinPercent": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["evaluated", "withinTarget", "withinPercent"]
+          },
+          "byAgent": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "cycles": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "breaches": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["id", "label", "cycles", "breaches"]
+            }
+          },
+          "byTeam": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "cycles": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "breaches": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["id", "label", "cycles", "breaches"]
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "timeZone",
+          "teamId",
+          "firstResponse",
+          "resolution",
+          "byAgent",
+          "byTeam"
+        ],
+        "description": "Relatório de SLA do período."
       },
       "WhatsAppTeam": {
         "type": "object",
