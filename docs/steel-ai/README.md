@@ -232,6 +232,7 @@ Decisão: [ADR 0043](../adr/0043-pabx-call-recording-transcription-and-summary.m
 - **Leitura** (`PhoneCallService`): `GET .../whatsapp/conversations/{id}/calls`, `.../servicedesk/tickets/{ticketId}/calls` (só agentes), `.../crm/people/{personId}/calls`, `.../crm/opportunities/{opportunityId}/calls` → `PhoneCallRecordDTO[]` (`types/whatsapp-phone-call.d.ts`); áudio em `GET/DELETE /api/workspaces/{id}/phone-calls/{callId}/recording` (stream com `Range`; apagar = OWNER/ADMIN).
 - **Telas**: `PhoneCallCard` / `PhoneCallList` (`app/_components/phone-calls/`), na linha do tempo da conversa, na aba **Ligações** do chamado e na atividade da pessoa/oportunidade; "Criar tarefa" por próximo passo. Hook `src/hooks/use-phone-calls.ts`; o SSE `phone-call.updated` invalida as listas.
 - **Retenção**: `data-retention` › `purge-call-recordings` (03:00) apaga áudio vencido e órfão.
+- **Telefone web** (ADR 0044, adendo de 22/10): `WebphoneCallService` (`POST .../phone-calls/webphone`, `PATCH .../phone-calls/{callId}/webphone`) grava a ligação feita ou atendida no navegador como `WhatsAppPhoneCall` (`source: WEBPHONE`, `direction`), reaproveita a linha do PABX (`pabx_unique_id` ou ramal + número em 5 min) e resolve os vínculos com `PhoneCallLinkService`, o mesmo do `PhoneCallAiService`. A ligação de saída leva o `callback_token` no INVITE e cai na gravação/transcrição normais; a recebida não é gravada.
 - **Fase 2** (não construída): atendente de voz com IA na URA — ver a ADR.
 
 ## IA proativa — alertas e resumo diário (frente 3, 18/10/2026)

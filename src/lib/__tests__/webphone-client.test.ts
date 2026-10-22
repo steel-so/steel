@@ -142,6 +142,7 @@ vi.mock('sip.js', () => ({
 import {
   ENDED_VISIBLE_MS,
   type WebPhoneCall,
+  type WebPhoneCallEvent,
   WebPhoneClient,
   type WebPhoneStatus,
 } from '../webphone/client'
@@ -612,6 +613,159 @@ describe('WebPhoneClient', () => {
       h.created.ua?.stop.mockRejectedValueOnce(new Error('closed'))
 
       await expect(client.stop()).resolves.toBeUndefined()
+    })
+  })
+  describe('call events (history)', () => {
+    function setupEvents() {
+      const events: WebPhoneCallEvent[] = []
+      const audio = {
+        srcObject: null as unknown,
+        play: vi.fn(async () => undefined),
+      }
+      const client = new WebPhoneClient(
+        credentials,
+        audio as unknown as HTMLAudioElement,
+        {
+          onStatus: () => undefined,
+          onCall: () => undefined,
+          onCallEvent: (event) => events.push(event),
+        },
+      )
+      return { client, events }
+    }
+
+    it('reports an answered outbound call and sends the extra INVITE headers', async () => {
+      const { client, events } = setupEvents()
+      await client.start()
+      await client.dial('5513996374317', 'Gusttavo', {
+        extraHeaders: ['X-Steel-Callback-Token: abc'],
+      })
+      expect(h.created.inviter?.options).toMatchObject({
+        extraHeaders: ['X-Steel-Callback-Token: abc'],
+      })
+
+      h.created.inviter?.move(h.SessionState.Established)
+      h.created.inviter?.move(h.SessionState.Terminated)
+
+      expect(events).toEqual([
+        {
+          type: 'started',
+          direction: 'out',
+          number: '13996374317',
+          name: 'Gusttavo',
+          pabxUniqueId: null,
+        },
+        { type: 'answered' },
+        { type: 'ended', answered: true, outcome: 'completed' },
+      ])
+    })
+
+    it('reports a canceled outbound call once', async () => {
+      const { client, events } = setupEvents()
+      await client.start()
+      await client.dial('13996374317')
+
+      await client.hangup()
+      h.created.inviter?.move(h.SessionState.Terminated)
+
+      expect(events.filter((e) => e.type === 'ended')).toEqual([
+        { type: 'ended', answered: false, outcome: 'canceled' },
+      ])
+    })
+
+    it.each([
+      [486, 'busy'],
+      [600, 'busy'],
+      [404, 'failed'],
+      [503, 'failed'],
+    ])('reports a %i rejection as %s', async (statusCode, outcome) => {
+      const { client, events } = setupEvents()
+      await client.start()
+      await client.dial('13996374317')
+
+      h.created.inviter?.delegate?.onReject?.({ message: { statusCode } })
+
+      expect(events.at(-1)).toEqual({ type: 'ended', answered: false, outcome })
+    })
+
+    it('reports an INVITE failure as failed', async () => {
+      const { client, events } = setupEvents()
+      await client.start()
+      h.created.nextInviteError = new Error('boom')
+      await client.dial('13996374317')
+
+      expect(events.at(-1)).toEqual({
+        type: 'ended',
+        answered: false,
+        outcome: 'failed',
+      })
+    })
+
+    it('reports an incoming call with the PABX unique id, then answered and completed', async () => {
+      const { client, events } = setupEvents()
+      await client.start()
+      const invitation = new h.Invitation()
+      Object.assign(invitation, {
+        request: {
+          getHeader: (name: string) =>
+            name === 'X-Steel-Uniqueid' ? ' 1729.7 ' : undefined,
+        },
+      })
+      delegate().onInvite(invitation)
+
+      await client.answer()
+      invitation.move(h.SessionState.Terminated)
+
+      expect(events).toEqual([
+        {
+          type: 'started',
+          direction: 'in',
+          number: '11987654321',
+          name: 'Maria',
+          pabxUniqueId: '1729.7',
+        },
+        { type: 'answered' },
+        { type: 'ended', answered: true, outcome: 'completed' },
+      ])
+    })
+
+    it('tells a missed incoming call from a declined one', async () => {
+      const { client, events } = setupEvents()
+      await client.start()
+
+      const missed = new h.Invitation()
+      delegate().onInvite(missed)
+      missed.move(h.SessionState.Terminated)
+      expect(events.at(-1)).toEqual({
+        type: 'ended',
+        answered: false,
+        outcome: 'missed',
+      })
+
+      const declined = new h.Invitation()
+      delegate().onInvite(declined)
+      await client.hangup()
+      expect(events.at(-1)).toEqual({
+        type: 'ended',
+        answered: false,
+        outcome: 'declined',
+      })
+    })
+
+    it('reports a failed answer when the microphone is denied', async () => {
+      const { client, events } = setupEvents()
+      await client.start()
+      const invitation = new h.Invitation()
+      invitation.accept.mockRejectedValueOnce(new Error('denied'))
+      delegate().onInvite(invitation)
+
+      await client.answer()
+
+      expect(events.at(-1)).toEqual({
+        type: 'ended',
+        answered: false,
+        outcome: 'failed',
+      })
     })
   })
 })

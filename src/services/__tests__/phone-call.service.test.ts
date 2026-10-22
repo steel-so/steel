@@ -216,6 +216,23 @@ describe('PhoneCallService.recordingFor()', () => {
     expectOk(await PhoneCallService.recordingFor('u1', 'ws1', 'call1'))
   })
 
+  it('serves a browser phone call without a conversation through its other records', async () => {
+    callRepo.findWithNames.mockResolvedValue(
+      ok({
+        ...call({ conversationId: null, sdTicketId: 't1' }),
+        conversation: null,
+      }),
+    )
+    expectOk(await PhoneCallService.recordingFor('u1', 'ws1', 'call1'))
+    expect(viewer).not.toHaveBeenCalled()
+
+    requireAgent.mockResolvedValue(err(forbidden()))
+    expectErr(
+      await PhoneCallService.recordingFor('u1', 'ws1', 'call1'),
+      'PHONE_CALL_NOT_FOUND',
+    )
+  })
+
   it('answers not found to someone who sees none of the records', async () => {
     callRepo.findWithNames.mockResolvedValue(
       ok(call({ sdTicketId: 't1', crmOpportunityId: 'o1', crmPersonId: 'p1' })),

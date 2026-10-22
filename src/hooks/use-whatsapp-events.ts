@@ -74,10 +74,12 @@ export function useWhatsAppRealtimeEvents(workspaceId: string) {
       }
 
       if (parsed.type === 'phone-call.updated') {
-        queryClient.setQueryData(
-          ['whatsapp-phone-call', workspaceId, parsed.call.conversationId],
-          parsed.call,
-        )
+        if (parsed.call.conversationId) {
+          queryClient.setQueryData(
+            ['whatsapp-phone-call', workspaceId, parsed.call.conversationId],
+            parsed.call,
+          )
+        }
         // Recording / transcript / summary landed: refresh the call cards.
         queryClient.invalidateQueries({ queryKey: phoneCallsKey(workspaceId) })
       }

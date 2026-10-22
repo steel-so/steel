@@ -195,7 +195,9 @@ export function PhoneCallCard({
   const deleteRecording = useDeletePhoneCallRecording(workspaceId)
   const answered = call.status === 'COMPLETED'
   const sentiment = call.sentiment ? SENTIMENT[call.sentiment] : null
-  const who = [call.userName, call.contactName ?? call.destination]
+  const inbound = call.direction === 'INBOUND'
+  const parties = [call.userName, call.contactName ?? call.destination]
+  const who = (inbound ? parties.reverse() : parties)
     .filter(Boolean)
     .join(' → ')
 
@@ -234,7 +236,8 @@ export function PhoneCallCard({
         </span>
         <div className='min-w-0 flex-1'>
           <p className='truncate font-medium'>
-            Ligação{who ? ` · ${who}` : ''}
+            {inbound ? 'Ligação recebida' : 'Ligação'}
+            {who ? ` · ${who}` : ''}
           </p>
           <p className='text-muted-foreground text-xs'>
             {DATE_TIME.format(new Date(call.createdAt))}
@@ -242,7 +245,9 @@ export function PhoneCallCard({
           </p>
         </div>
         <Badge variant={answered ? 'secondary' : 'outline'}>
-          {PHONE_CALL_STATUS_LABEL[call.status]}
+          {inbound && call.status === 'NO_ANSWER'
+            ? 'Perdida'
+            : PHONE_CALL_STATUS_LABEL[call.status]}
         </Badge>
       </header>
 

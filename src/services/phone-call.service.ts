@@ -52,7 +52,10 @@ async function canSeeCall(
   workspaceId: string,
   call: PhoneCallWithNames,
 ): Promise<boolean> {
-  if (await canSeeConversation(actorId, workspaceId, call.conversationId))
+  if (
+    call.conversationId &&
+    (await canSeeConversation(actorId, workspaceId, call.conversationId))
+  )
     return true
   if (call.sdTicketId) {
     const agent = await SdAccess.requireAgent(actorId, workspaceId, {

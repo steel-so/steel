@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { apiFetch } from '@/src/hooks/_fetch'
 import { useUser } from '@/src/hooks/use-user'
+import { WebPhoneCallTracker } from '@/src/lib/webphone/call-tracker'
 import type { WebPhoneCall, WebPhoneClient } from '@/src/lib/webphone/client'
 import type { WebphoneCredentialsDTO } from '@/types/pabx-webphone'
 import {
@@ -24,7 +25,13 @@ import { WebPhoneDock } from './webphone-dock'
  * only (a Web Lock): two tabs registering the same extension would take the
  * registration from each other. The SIP library is loaded on demand.
  */
-export function WebPhoneProvider({ children }: { children: ReactNode }) {
+export function WebPhoneProvider({
+  children,
+  workspaceId,
+}: {
+  children: ReactNode
+  workspaceId: string
+}) {
   const user = useUser()
   const userId = user.data?.id
   const enabled = Boolean(
@@ -35,6 +42,14 @@ export function WebPhoneProvider({ children }: { children: ReactNode }) {
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const clientRef = useRef<WebPhoneClient | null>(null)
+  const [recordingNotice, setRecordingNotice] = useState<string | null>(null)
+  // Reports each call to the Steel (history, recording); one per workspace.
+  const tracker = useMemo(
+    () => new WebPhoneCallTracker(workspaceId, setRecordingNotice),
+    [workspaceId],
+  )
+  const trackerRef = useRef(tracker)
+  trackerRef.current = tracker
   const [status, setStatus] = useState<WebPhoneUiStatus>('offline')
   const [error, setError] = useState<string | null>(null)
   const [call, setCall] = useState<WebPhoneCall | null>(null)
@@ -67,6 +82,7 @@ export function WebPhoneProvider({ children }: { children: ReactNode }) {
             setError(detail ?? null)
           },
           onCall: setCall,
+          onCallEvent: (event) => trackerRef.current.handle(event),
         })
         clientRef.current = client
         await client.start()
@@ -113,11 +129,25 @@ export function WebPhoneProvider({ children }: { children: ReactNode }) {
     }
   }, [enabled, userId, attempt])
 
-  const dial = useCallback<WebPhoneApi['dial']>(async (phone, name = null) => {
-    const client = clientRef.current
-    if (!client) throw new Error('O telefone web não está conectado.')
-    await client.dial(phone, name)
-  }, [])
+  const dial = useCallback<WebPhoneApi['dial']>(
+    async (phone, name = null, options = {}) => {
+      const client = clientRef.current
+      if (!client) throw new Error('O telefone web não está conectado.')
+      // Registered first: the INVITE carries the callback the PABX reports to.
+      const extraHeaders = await trackerRef.current.prepareOutbound({
+        number: phone,
+        name,
+        conversationId: options.conversationId,
+      })
+      try {
+        await client.dial(phone, name, { extraHeaders })
+      } catch (error) {
+        trackerRef.current.abandonPrepared()
+        throw error
+      }
+    },
+    [],
+  )
 
   const api = useMemo<WebPhoneApi>(
     () => ({
@@ -125,6 +155,7 @@ export function WebPhoneProvider({ children }: { children: ReactNode }) {
       status: enabled ? status : 'offline',
       error,
       call,
+      recordingNotice,
       dial,
       answer: async () => clientRef.current?.answer(),
       hangup: async () => clientRef.current?.hangup(),
@@ -132,7 +163,7 @@ export function WebPhoneProvider({ children }: { children: ReactNode }) {
       sendDtmf: (tone) => clientRef.current?.sendDtmf(tone),
       reconnect: () => setAttempt((n) => n + 1),
     }),
-    [enabled, status, error, call, dial],
+    [enabled, status, error, call, recordingNotice, dial],
   )
 
   return (

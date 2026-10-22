@@ -34,10 +34,41 @@ export interface WebPhoneCall {
   endReason: string | null
 }
 
+/** How a call ended, as the history records it (ADR 0044 addendum). */
+export type WebPhoneCallOutcome =
+  | 'completed'
+  | 'busy'
+  | 'missed'
+  | 'declined'
+  | 'canceled'
+  | 'failed'
+
+/** Call lifecycle, for the history; the dock reads {@link WebPhoneCall}. */
+export type WebPhoneCallEvent =
+  | {
+      type: 'started'
+      direction: 'in' | 'out'
+      number: string
+      name: string | null
+      /** Asterisk unique id sent by the PABX on the INVITE, if any. */
+      pabxUniqueId: string | null
+    }
+  | { type: 'answered' }
+  | { type: 'ended'; answered: boolean; outcome: WebPhoneCallOutcome }
+
 export interface WebPhoneEvents {
   onStatus: (status: WebPhoneStatus, detail?: string) => void
   onCall: (call: WebPhoneCall | null) => void
+  onCallEvent?: (event: WebPhoneCallEvent) => void
 }
+
+export interface WebPhoneDialOptions {
+  /** Extra SIP headers of the INVITE (`Name: value`). */
+  extraHeaders?: string[]
+}
+
+/** Header the PABX dialplan may set with the Asterisk unique id of an inbound call. */
+export const PABX_UNIQUE_ID_HEADER = 'X-Steel-Uniqueid'
 
 /** How long an ended call stays visible before the dock clears it. */
 export const ENDED_VISIBLE_MS = 4000
@@ -73,6 +104,8 @@ export class WebPhoneClient {
   private call: WebPhoneCall | null = null
   private clearTimer: ReturnType<typeof setTimeout> | undefined
   private stopped = false
+  /** The user declined the ringing call (so it is not "missed"). */
+  private declined = false
 
   constructor(
     private readonly credentials: WebphoneCredentialsDTO,
@@ -176,20 +209,35 @@ export class WebPhoneClient {
       return
     }
     this.session = invitation
+    this.declined = false
+    const number = invitation.remoteIdentity.uri.user ?? ''
+    const name = invitation.remoteIdentity.displayName || null
     this.setCall({
       direction: 'in',
-      number: invitation.remoteIdentity.uri.user ?? '',
-      name: invitation.remoteIdentity.displayName || null,
+      number,
+      name,
       state: 'incoming',
       answeredAt: null,
       muted: false,
       endReason: null,
     })
+    this.events.onCallEvent?.({
+      type: 'started',
+      direction: 'in',
+      number,
+      name,
+      pabxUniqueId:
+        invitation.request?.getHeader?.(PABX_UNIQUE_ID_HEADER)?.trim() || null,
+    })
     this.watch(invitation)
   }
 
   /** Places a call to a phone number (any format; a leading 55 is dropped). */
-  async dial(phone: string, name: string | null = null): Promise<void> {
+  async dial(
+    phone: string,
+    name: string | null = null,
+    options: WebPhoneDialOptions = {},
+  ): Promise<void> {
     if (!this.ua || this.session)
       throw new Error('Já existe uma ligação em andamento.')
     const dialed = toDialedNumber(phone)
@@ -198,17 +246,27 @@ export class WebPhoneClient {
 
     const inviter = new Inviter(this.ua, target, {
       earlyMedia: true,
+      extraHeaders: options.extraHeaders,
       sessionDescriptionHandlerOptions: MEDIA,
     })
     this.session = inviter
+    this.declined = false
+    const number = dialed.replace(/^0/, '')
     this.setCall({
       direction: 'out',
-      number: dialed.replace(/^0/, ''),
+      number,
       name,
       state: 'calling',
       answeredAt: null,
       muted: false,
       endReason: null,
+    })
+    this.events.onCallEvent?.({
+      type: 'started',
+      direction: 'out',
+      number,
+      name,
+      pabxUniqueId: null,
     })
     this.watch(inviter)
 
@@ -219,20 +277,18 @@ export class WebPhoneClient {
             this.patchCall({ state: 'ringing' })
             this.attachMedia()
           },
-          onReject: (response) =>
-            this.finish(
-              response.message.statusCode === 486 ||
-                response.message.statusCode === 600
-                ? 'O contato está ocupado.'
-                : response.message.statusCode === 404 ||
-                    response.message.statusCode === 484
-                  ? 'Número não encontrado.'
-                  : 'A ligação não completou.',
-            ),
+          onReject: (response) => {
+            const code = response.message.statusCode
+            if (code === 486 || code === 600)
+              this.finish('O contato está ocupado.', 'busy')
+            else if (code === 404 || code === 484)
+              this.finish('Número não encontrado.', 'failed')
+            else this.finish('A ligação não completou.', 'failed')
+          },
         },
       })
     } catch (error) {
-      this.finish(describeMediaError(error))
+      this.finish(describeMediaError(error), 'failed')
       this.session = undefined
     }
   }
@@ -244,7 +300,7 @@ export class WebPhoneClient {
     try {
       await session.accept({ sessionDescriptionHandlerOptions: MEDIA })
     } catch (error) {
-      this.finish(describeMediaError(error))
+      this.finish(describeMediaError(error), 'failed')
     }
   }
 
@@ -257,6 +313,7 @@ export class WebPhoneClient {
     } else if (session instanceof Inviter) {
       await session.cancel()
     } else if (session instanceof Invitation) {
+      this.declined = true
       await session.reject({ statusCode: 603 })
     }
   }
@@ -284,6 +341,7 @@ export class WebPhoneClient {
       if (state === SessionState.Established) {
         this.attachMedia()
         this.patchCall({ state: 'in-call', answeredAt: Date.now() })
+        this.events.onCallEvent?.({ type: 'answered' })
       } else if (state === SessionState.Terminated) {
         this.finish(null)
       }
@@ -305,9 +363,23 @@ export class WebPhoneClient {
   }
 
   /** Closes the current call, keeping it visible for a moment. */
-  private finish(reason: string | null): void {
-    if (!this.call) return
+  private finish(reason: string | null, outcome?: WebPhoneCallOutcome): void {
+    if (!this.call || this.call.state === 'ended') return
     const wasAnswered = this.call.answeredAt !== null
+    // Ended without a SIP answer: we canceled it, the caller gave up (missed)
+    // or the user declined it.
+    const unanswered: WebPhoneCallOutcome =
+      outcome ??
+      (this.call.direction === 'out'
+        ? 'canceled'
+        : this.declined
+          ? 'declined'
+          : 'missed')
+    this.events.onCallEvent?.({
+      type: 'ended',
+      answered: wasAnswered,
+      outcome: wasAnswered ? 'completed' : unanswered,
+    })
     this.session = undefined
     this.audio.srcObject = null
     this.setCall({

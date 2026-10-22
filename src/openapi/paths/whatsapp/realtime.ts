@@ -214,6 +214,11 @@ ${WEBHOOK_EFFECTS} ${WEBHOOK_NOTE}`,
             ],
           },
           job: { type: 'string', description: 'Job do call file no PABX.' },
+          uniqueid: {
+            type: 'string',
+            description:
+              '`UNIQUEID` do Asterisk. Opcional: guardado na ligação para que o relato do telefone web da mesma chamada a reconheça (ADR 0044).',
+          },
           dialstatus: {
             type: 'string',
             description:

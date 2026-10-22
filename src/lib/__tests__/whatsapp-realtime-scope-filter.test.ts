@@ -134,6 +134,21 @@ describe('createRealtimeScopeFilter()', () => {
     ).toBeNull()
   })
 
+  it('shows a call without a conversation only to the user who made it', async () => {
+    const { filter, loadTarget } = filterFor(agent)
+    const own: WhatsAppRealtimeEvent = {
+      type: 'phone-call.updated',
+      call: { conversationId: null, userId: 'ana' } as WhatsAppPhoneCallDTO,
+    }
+    const others: WhatsAppRealtimeEvent = {
+      type: 'phone-call.updated',
+      call: { conversationId: null, userId: 'bia' } as WhatsAppPhoneCallDTO,
+    }
+    expect(await filter(own)).toEqual(own)
+    expect(await filter(others)).toBeNull()
+    expect(loadTarget).not.toHaveBeenCalled()
+  })
+
   it('forwards phone calls to an unscoped viewer and group messages to all', async () => {
     const call: WhatsAppRealtimeEvent = {
       type: 'phone-call.updated',

@@ -365,6 +365,7 @@ export function useStartWhatsAppPhoneCall(workspaceId: string) {
         'Erro ao iniciar a ligação',
       ),
     onSuccess: (call) => {
+      if (!call.conversationId) return
       queryClient.setQueryData(
         WHATSAPP_PHONE_CALL_KEY(workspaceId, call.conversationId),
         call,

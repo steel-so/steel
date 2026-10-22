@@ -122,6 +122,12 @@ resumidas pelo Steel AI ([ADR 0043](./adr/0043-pabx-call-recording-transcription
   o áudio de ligação que não existe mais (apagada junto com a conversa, o
   contato ou o workspace). A transcrição e o resumo ficam com a ligação e
   saem quando ela sai.
+- **Telefone web.** As ligações feitas no navegador
+  ([ADR 0044](./adr/0044-pabx-webphone-in-the-browser.md), adendo de
+  22/10/2026) entram no mesmo histórico e seguem as mesmas regras: só as de
+  **saída** são gravadas, com o aviso mostrado no telefone e registrado na
+  ligação. As recebidas ficam no histórico (número, horário e duração), sem
+  áudio.
 - **Exclusão na hora.** OWNER/ADMIN apaga o áudio de uma ligação pelo card
   ("Apagar áudio"), auditado (`audit.mutation.whatsapp_phone_call_recording.delete`);
   o upload também é auditado (`...recording.create`), sem o conteúdo.

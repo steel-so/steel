@@ -112,6 +112,117 @@ describe('WhatsAppPhoneCallRepository', () => {
     ).toBeNull()
   })
 
+  it('ignores browser phone calls when looking for the latest PABX call', async () => {
+    const ctx = await seedConversation()
+    const pabx = expectOk(
+      await WhatsAppPhoneCallRepository.create(callData(ctx, 'p1')),
+    )
+    expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'p2'),
+        source: 'WEBPHONE',
+        direction: 'INBOUND',
+      }),
+    )
+    const found = expectOk(
+      await WhatsAppPhoneCallRepository.findLatestByConversation(
+        ctx.conversation.id,
+        ctx.workspace.id,
+      ),
+    )
+    expect(found?.id).toBe(pabx.id)
+  })
+
+  it('finds a call by its PABX unique id inside the workspace', async () => {
+    const ctx = await seedConversation()
+    const call = expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'u1'),
+        pabxUniqueId: '1729590000.42',
+      }),
+    )
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.findByPabxUniqueId(
+          ctx.workspace.id,
+          '1729590000.42',
+        ),
+      )?.id,
+    ).toBe(call.id)
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.findByPabxUniqueId(
+          'other',
+          '1729590000.42',
+        ),
+      ),
+    ).toBeNull()
+    // The same id cannot become a second row of the workspace.
+    expectErr(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'u2'),
+        pabxUniqueId: '1729590000.42',
+      }),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('lists the live calls of an extension since a moment, newest first', async () => {
+    const ctx = await seedConversation()
+    const live = expectOk(
+      await WhatsAppPhoneCallRepository.create(callData(ctx, 'l1')),
+    )
+    expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'l2'),
+        status: 'COMPLETED',
+      }),
+    )
+    expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'l3'),
+        extension: '999',
+      }),
+    )
+    const listed = expectOk(
+      await WhatsAppPhoneCallRepository.listLiveByExtension(
+        ctx.workspace.id,
+        '200',
+        new Date(Date.now() - 60_000),
+      ),
+    )
+    expect(listed.map((call) => call.id)).toEqual([live.id])
+    expect(
+      expectOk(
+        await WhatsAppPhoneCallRepository.listLiveByExtension(
+          ctx.workspace.id,
+          '200',
+          new Date(Date.now() + 60_000),
+        ),
+      ),
+    ).toEqual([])
+  })
+
+  it('stores a call without a conversation', async () => {
+    const ctx = await seedConversation()
+    const call = expectOk(
+      await WhatsAppPhoneCallRepository.create({
+        ...callData(ctx, 'n1'),
+        conversationId: null,
+        remoteName: 'Maria',
+      }),
+    )
+    expect(call.conversationId).toBeNull()
+    const withNames = expectOk(
+      await WhatsAppPhoneCallRepository.findWithNames(
+        call.id,
+        ctx.workspace.id,
+      ),
+    )
+    expect(withNames?.conversation).toBeNull()
+    expect(withNames?.remoteName).toBe('Maria')
+  })
+
   it('returns DATABASE_ERROR on failures', async () => {
     const ctx = await seedConversation()
 
@@ -142,6 +253,26 @@ describe('WhatsAppPhoneCallRepository', () => {
       await WhatsAppPhoneCallRepository.findLatestByConversation('c', 'w'),
       'DATABASE_ERROR',
     )
+
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findUnique').mockRejectedValueOnce(
+      new Error('boom'),
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.findByPabxUniqueId('w', 'u'),
+      'DATABASE_ERROR',
+    )
+
+    vi.spyOn(prisma.whatsAppPhoneCall, 'findMany').mockRejectedValueOnce(
+      new Error('boom'),
+    )
+    expectErr(
+      await WhatsAppPhoneCallRepository.listLiveByExtension(
+        'w',
+        '200',
+        new Date(),
+      ),
+      'DATABASE_ERROR',
+    )
   })
 
   it('lists the calls of a record with the names, newest first', async () => {
@@ -165,7 +296,7 @@ describe('WhatsAppPhoneCallRepository', () => {
       }),
     )
     expect(list.map((c) => c.id)).toEqual([newer.id, older.id])
-    expect(list[0].conversation.contact.name).toBe('Maria')
+    expect(list[0].conversation?.contact.name).toBe('Maria')
     expect(list[0].user?.name).toBe(ctx.user.name)
 
     // Another workspace never sees them.

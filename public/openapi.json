@@ -6548,6 +6548,10 @@
                     "type": "string",
                     "description": "Job do call file no PABX."
                   },
+                  "uniqueid": {
+                    "type": "string",
+                    "description": "`UNIQUEID` do Asterisk. Opcional: guardado na ligação para que o relato do telefone web da mesma chamada a reconheça (ADR 0044)."
+                  },
                   "dialstatus": {
                     "type": "string",
                     "description": "`DIALSTATUS` do Asterisk no `HANGUP` (`ANSWER`, `BUSY`, `NOANSWER`, `CANCEL`, ...)."
@@ -38352,7 +38356,24 @@
                                 "type": "string"
                               },
                               "conversationId": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa."
+                              },
+                              "direction": {
+                                "type": "string",
+                                "enum": ["OUTBOUND", "INBOUND"]
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": ["CLICK_TO_CALL", "WEBPHONE"],
+                                "description": "`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044)."
                               },
                               "userId": {
                                 "anyOf": [
@@ -38605,6 +38626,8 @@
                             "required": [
                               "id",
                               "conversationId",
+                              "direction",
+                              "source",
                               "userId",
                               "extension",
                               "destination",
@@ -39608,7 +39631,24 @@
                                 "type": "string"
                               },
                               "conversationId": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa."
+                              },
+                              "direction": {
+                                "type": "string",
+                                "enum": ["OUTBOUND", "INBOUND"]
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": ["CLICK_TO_CALL", "WEBPHONE"],
+                                "description": "`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044)."
                               },
                               "userId": {
                                 "anyOf": [
@@ -39861,6 +39901,8 @@
                             "required": [
                               "id",
                               "conversationId",
+                              "direction",
+                              "source",
                               "userId",
                               "extension",
                               "destination",
@@ -64002,6 +64044,259 @@
         ]
       }
     },
+    "/workspaces/{id}/phone-calls/webphone": {
+      "post": {
+        "tags": ["Comunicação · Ligações"],
+        "summary": "Registrar ligação do telefone web",
+        "operationId": "postWorkspacesByIdPhoneCallsWebphone",
+        "description": "O telefone do navegador (ADR 0044) avisa que vai ligar ou que está recebendo uma ligação. Cria a ligação no histórico (`direction`, `source: WEBPHONE`), ligada à conversa pelo número (ou à informada em `conversationId`) e, ao terminar, ao chamado e à pessoa/oportunidade do CRM. Idempotente com o PABX: se o `pabxUniqueId` já existe, ou se um \"Ligar\" do mesmo ramal para o mesmo número tocou há menos de 5 min, devolve essa ligação (`adopted: true`, 200) em vez de criar outra. Em ligação de saída de workspace com gravação ligada, devolve `callbackToken` e `callbackUrl` para o telefone enviar nos cabeçalhos do INVITE (`X-Steel-Callback-Url`, `X-Steel-Callback-Token`, `X-Steel-Record`); o PABX então grava e relata como no click-to-call. Exige telefone web liberado para o usuário. Auditado.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "direction": {
+                    "type": "string",
+                    "enum": ["in", "out"]
+                  },
+                  "number": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "name": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "conversationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "pabxUniqueId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  }
+                },
+                "required": ["direction", "number"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ligação registrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "call": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "conversationId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa."
+                                },
+                                "direction": {
+                                  "type": "string",
+                                  "enum": ["OUTBOUND", "INBOUND"]
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": ["CLICK_TO_CALL", "WEBPHONE"],
+                                  "description": "`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044)."
+                                },
+                                "userId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "extension": {
+                                  "type": "string",
+                                  "description": "Ramal que toca primeiro."
+                                },
+                                "destination": {
+                                  "type": "string",
+                                  "description": "Número discado pelo PABX (DDD + número, sem o 55)."
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "QUEUED",
+                                    "DIALING",
+                                    "IN_PROGRESS",
+                                    "COMPLETED",
+                                    "BUSY",
+                                    "NO_ANSWER",
+                                    "CANCELED",
+                                    "EXTENSION_NO_ANSWER",
+                                    "FAILED"
+                                  ]
+                                },
+                                "answeredAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "endedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "durationSeconds": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                },
+                                "recordingNotice": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Aviso de gravação que o atendente lê ao contato (só em ligação gravada; o texto mostrado fica registrado)."
+                                },
+                                "hasRecording": {
+                                  "type": "boolean"
+                                },
+                                "aiStatus": {
+                                  "type": "string",
+                                  "enum": ["NONE", "PENDING", "PROCESSING", "DONE", "SKIPPED", "FAILED"],
+                                  "description": "Transcrição + resumo: `PENDING` (na fila) → `PROCESSING` → `DONE`; `SKIPPED`/`FAILED` com o motivo em `aiSkipReason`."
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "conversationId",
+                                "direction",
+                                "source",
+                                "userId",
+                                "extension",
+                                "destination",
+                                "status",
+                                "answeredAt",
+                                "endedAt",
+                                "durationSeconds",
+                                "createdAt",
+                                "recordingNotice",
+                                "hasRecording",
+                                "aiStatus"
+                              ]
+                            },
+                            "callbackToken": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "callbackUrl": {
+                              "type": "string"
+                            },
+                            "record": {
+                              "type": "boolean"
+                            },
+                            "adopted": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["call", "callbackToken", "callbackUrl", "record", "adopted"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_PABX_EXTENSION_REQUIRED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/phone-calls/{callId}/recording": {
       "get": {
         "tags": ["Comunicação · Ligações"],
@@ -64133,6 +64428,221 @@
           },
           "500": {
             "$ref": "#/components/responses/500_STORAGE_ERROR"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/phone-calls/{callId}/webphone": {
+      "patch": {
+        "tags": ["Comunicação · Ligações"],
+        "summary": "Atualizar ligação do telefone web",
+        "operationId": "patchWorkspacesByIdPhoneCallsByCallIdWebphone",
+        "description": "O telefone do navegador relata `answered` (atendida) ou `ended` (terminou, com `outcome` quando não foi atendida). Só o usuário dono da ligação. A duração é medida no servidor. Uma ligação que o PABX já encerrou não muda (vale o primeiro relato final), mas ganha os vínculos com chamado e CRM. Publica `phone-call.updated`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "callId",
+            "in": "path",
+            "required": true,
+            "description": "Id da ligação.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "enum": ["answered", "ended"]
+                  },
+                  "outcome": {
+                    "type": "string",
+                    "enum": ["completed", "busy", "missed", "declined", "canceled", "failed"]
+                  }
+                },
+                "required": ["event"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ligação atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "conversationId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa."
+                            },
+                            "direction": {
+                              "type": "string",
+                              "enum": ["OUTBOUND", "INBOUND"]
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": ["CLICK_TO_CALL", "WEBPHONE"],
+                              "description": "`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044)."
+                            },
+                            "userId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "extension": {
+                              "type": "string",
+                              "description": "Ramal que toca primeiro."
+                            },
+                            "destination": {
+                              "type": "string",
+                              "description": "Número discado pelo PABX (DDD + número, sem o 55)."
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "QUEUED",
+                                "DIALING",
+                                "IN_PROGRESS",
+                                "COMPLETED",
+                                "BUSY",
+                                "NO_ANSWER",
+                                "CANCELED",
+                                "EXTENSION_NO_ANSWER",
+                                "FAILED"
+                              ]
+                            },
+                            "answeredAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "endedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "durationSeconds": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "recordingNotice": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Aviso de gravação que o atendente lê ao contato (só em ligação gravada; o texto mostrado fica registrado)."
+                            },
+                            "hasRecording": {
+                              "type": "boolean"
+                            },
+                            "aiStatus": {
+                              "type": "string",
+                              "enum": ["NONE", "PENDING", "PROCESSING", "DONE", "SKIPPED", "FAILED"],
+                              "description": "Transcrição + resumo: `PENDING` (na fila) → `PROCESSING` → `DONE`; `SKIPPED`/`FAILED` com o motivo em `aiSkipReason`."
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "conversationId",
+                            "direction",
+                            "source",
+                            "userId",
+                            "extension",
+                            "destination",
+                            "status",
+                            "answeredAt",
+                            "endedAt",
+                            "durationSeconds",
+                            "createdAt",
+                            "recordingNotice",
+                            "hasRecording",
+                            "aiStatus"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_PHONE_CALL_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": [
@@ -95493,7 +96003,24 @@
                                 "type": "string"
                               },
                               "conversationId": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa."
+                              },
+                              "direction": {
+                                "type": "string",
+                                "enum": ["OUTBOUND", "INBOUND"]
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": ["CLICK_TO_CALL", "WEBPHONE"],
+                                "description": "`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044)."
                               },
                               "userId": {
                                 "anyOf": [
@@ -95746,6 +96273,8 @@
                             "required": [
                               "id",
                               "conversationId",
+                              "direction",
+                              "source",
                               "userId",
                               "extension",
                               "destination",
@@ -106636,7 +107165,24 @@
                                 "type": "string"
                               },
                               "conversationId": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa."
+                              },
+                              "direction": {
+                                "type": "string",
+                                "enum": ["OUTBOUND", "INBOUND"]
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": ["CLICK_TO_CALL", "WEBPHONE"],
+                                "description": "`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044)."
                               },
                               "userId": {
                                 "anyOf": [
@@ -106889,6 +107435,8 @@
                             "required": [
                               "id",
                               "conversationId",
+                              "direction",
+                              "source",
                               "userId",
                               "extension",
                               "destination",
@@ -131888,6 +132436,29 @@
           }
         }
       },
+      "404_PHONE_CALL_NOT_FOUND": {
+        "description": "Não encontrado: `PHONE_CALL_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "PHONE_CALL_NOT_FOUND": {
+                "summary": "PHONE_CALL_NOT_FOUND — Ligação inexistente ou de outro usuário",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Ligação não encontrada",
+                  "error": {
+                    "code": "PHONE_CALL_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_PHONE_CALL_NOT_FOUND_PHONE_CALL_RECORDING_NOT_FOUND": {
         "description": "Não encontrado: `PHONE_CALL_NOT_FOUND`, `PHONE_CALL_RECORDING_NOT_FOUND`",
         "content": {
@@ -144255,6 +144826,47 @@
                   "message": "Definição inválida",
                   "error": {
                     "code": "CRM_WORKFLOW_INVALID_DEFINITION"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_PABX_EXTENSION_REQUIRED": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `PABX_EXTENSION_REQUIRED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "PABX_EXTENSION_REQUIRED": {
+                "summary": "PABX_EXTENSION_REQUIRED — Perfil sem ramal/device",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Configure seu ramal e device no perfil para fazer ligações",
+                  "error": {
+                    "code": "PABX_EXTENSION_REQUIRED"
                   }
                 }
               }

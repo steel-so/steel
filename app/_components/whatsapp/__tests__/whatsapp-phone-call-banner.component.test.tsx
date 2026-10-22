@@ -9,6 +9,8 @@ function call(overrides: Partial<WhatsAppPhoneCallDTO>): WhatsAppPhoneCallDTO {
   return {
     id: 'call_1',
     conversationId: 'cv_1',
+    direction: 'OUTBOUND',
+    source: 'CLICK_TO_CALL',
     userId: 'u_1',
     extension: '200',
     destination: '11999999999',

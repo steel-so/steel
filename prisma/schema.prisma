@@ -1322,7 +1322,9 @@ enum WhatsAppPhoneCallStatus {
 model WhatsAppPhoneCall {
   id                String                  @id @default(cuid())
   workspaceId       String                  @map("workspace_id")
-  conversationId    String                  @map("conversation_id")
+  /// Null for a browser phone call whose number matches no conversation
+  /// (ADR 0044 addendum); it still reaches the ticket/CRM timelines.
+  conversationId    String?                 @map("conversation_id")
   userId            String?                 @map("user_id")
   deviceId          String                  @map("device_id") @db.VarChar(20)
   extension         String                  @db.VarChar(20)
@@ -1338,6 +1340,16 @@ model WhatsAppPhoneCall {
   durationSeconds   Int?                    @map("duration_seconds")
   createdAt         DateTime                @default(now()) @map("created_at")
   updatedAt         DateTime                @updatedAt @map("updated_at")
+
+  /// Who placed the call and from where (ADR 0044 addendum). Click-to-call
+  /// rows are always outbound; the browser phone reports both directions.
+  direction         WhatsAppPhoneCallDirection @default(OUTBOUND)
+  source            WhatsAppPhoneCallSource    @default(CLICK_TO_CALL)
+  /// Asterisk unique id, when the PABX reports it: the key that keeps one
+  /// call from becoming two rows (status webhook + browser report).
+  pabxUniqueId      String?                 @map("pabx_unique_id") @db.VarChar(40)
+  /// Remote party name from the SIP caller id (browser phone calls).
+  remoteName        String?                 @map("remote_name") @db.VarChar(120)
 
   /// Recording asked to the PABX when the call was placed (workspace
   /// setting at that moment) and the notice the agent was shown to read to
@@ -1371,7 +1383,7 @@ model WhatsAppPhoneCall {
   crmOpportunityId   String?                   @map("crm_opportunity_id")
 
   workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation   WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   sdTicket       SdTicket?            @relation(fields: [sdTicketId], references: [id], onDelete: SetNull)
   crmPerson      CrmPerson?           @relation(fields: [crmPersonId], references: [id], onDelete: SetNull)
@@ -1383,7 +1395,21 @@ model WhatsAppPhoneCall {
   @@index([crmPersonId])
   @@index([crmOpportunityId])
   @@index([recordingExpiresAt])
+  @@index([workspaceId, extension, createdAt])
+  @@unique([workspaceId, pabxUniqueId])
   @@map("whatsapp_phone_calls")
+}
+
+enum WhatsAppPhoneCallDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum WhatsAppPhoneCallSource {
+  /// The PABX rang the user's extension and bridged it to the contact.
+  CLICK_TO_CALL
+  /// Placed or answered in the browser phone (ADR 0044).
+  WEBPHONE
 }
 
 /// Transcription + summary of a call recording (ADR 0043).

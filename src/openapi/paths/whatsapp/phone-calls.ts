@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+  WebphoneCallBeginSchema,
+  WebphoneCallReportSchema,
+} from '@/src/schemas/webphone-call.schema'
 import { PABX_RECORDING_MAX_BYTES } from '@/src/schemas/whatsapp-phone-call.schema'
 import type { RouteConfig } from '../../registry'
 import { CONVERSATION_PARAM, PRIVILEGED_ERRORS, permErrors } from './shared'
@@ -9,7 +13,15 @@ const MAX_MB = Math.round(PABX_RECORDING_MAX_BYTES / (1024 * 1024))
 /** Live fields of a call (the same as the conversation `/call` route). */
 export const WhatsAppPhoneCallFields = {
   id: z.string(),
-  conversationId: z.string(),
+  conversationId: z.string().nullable().meta({
+    description:
+      'Nulo numa ligação do telefone web cujo número não casa com nenhuma conversa.',
+  }),
+  direction: z.enum(['OUTBOUND', 'INBOUND']),
+  source: z.enum(['CLICK_TO_CALL', 'WEBPHONE']).meta({
+    description:
+      '`WEBPHONE`: feita ou atendida no telefone do navegador (ADR 0044).',
+  }),
   userId: z.string().nullable(),
   extension: z.string().meta({ description: 'Ramal que toca primeiro.' }),
   destination: z.string().meta({
@@ -76,6 +88,60 @@ const LIST_NOTE =
   'Ligações do "Ligar" (click-to-call pelo PABX), mais recentes primeiro (até 50), com gravação, transcrição, resumo, sentimento e próximos passos (ADR 0043).'
 
 export const phoneCallRoutes: RouteConfig[] = [
+  {
+    method: 'post',
+    path: '/workspaces/{id}/phone-calls/webphone',
+    tags: [TAG],
+    summary: 'Registrar ligação do telefone web',
+    description:
+      'O telefone do navegador (ADR 0044) avisa que vai ligar ou que está recebendo uma ligação. Cria a ligação no histórico (`direction`, `source: WEBPHONE`), ligada à conversa pelo número (ou à informada em `conversationId`) e, ao terminar, ao chamado e à pessoa/oportunidade do CRM. Idempotente com o PABX: se o `pabxUniqueId` já existe, ou se um "Ligar" do mesmo ramal para o mesmo número tocou há menos de 5 min, devolve essa ligação (`adopted: true`, 200) em vez de criar outra. Em ligação de saída de workspace com gravação ligada, devolve `callbackToken` e `callbackUrl` para o telefone enviar nos cabeçalhos do INVITE (`X-Steel-Callback-Url`, `X-Steel-Callback-Token`, `X-Steel-Record`); o PABX então grava e relata como no click-to-call. Exige telefone web liberado para o usuário. Auditado.',
+    rateLimit: 'user',
+    body: WebphoneCallBeginSchema,
+    responses: {
+      201: {
+        description: 'Ligação registrada.',
+        schema: z.object({
+          call: z.object(WhatsAppPhoneCallFields),
+          callbackToken: z.string().nullable(),
+          callbackUrl: z.string(),
+          record: z.boolean(),
+          adopted: z.boolean(),
+        }),
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'EDIT'),
+      { code: 'PABX_EXTENSION_REQUIRED', when: 'Perfil sem ramal/device' },
+      { code: 'FORBIDDEN', when: 'Telefone web não liberado para o usuário' },
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
+      'VALIDATION_ERROR',
+    ],
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/phone-calls/{callId}/webphone',
+    tags: [TAG],
+    summary: 'Atualizar ligação do telefone web',
+    description:
+      'O telefone do navegador relata `answered` (atendida) ou `ended` (terminou, com `outcome` quando não foi atendida). Só o usuário dono da ligação. A duração é medida no servidor. Uma ligação que o PABX já encerrou não muda (vale o primeiro relato final), mas ganha os vínculos com chamado e CRM. Publica `phone-call.updated`.',
+    params: { callId: 'Id da ligação.' },
+    rateLimit: 'user',
+    body: WebphoneCallReportSchema,
+    responses: {
+      200: {
+        description: 'Ligação atualizada.',
+        schema: z.object(WhatsAppPhoneCallFields),
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'EDIT'),
+      {
+        code: 'PHONE_CALL_NOT_FOUND',
+        when: 'Ligação inexistente ou de outro usuário',
+      },
+      'VALIDATION_ERROR',
+    ],
+  },
   {
     method: 'post',
     path: '/pabx/calls/webhook/recording',

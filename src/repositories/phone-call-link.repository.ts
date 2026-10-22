@@ -10,6 +10,31 @@ import { dbError } from './db-error'
  * service only chains them.
  */
 export const PhoneCallLinkRepository = {
+  /**
+   * Latest live conversation of the contact whose WhatsApp id is one of
+   * `waIds` (a browser phone call knows only the number).
+   */
+  async findConversationByWaIds(
+    workspaceId: string,
+    waIds: string[],
+  ): Promise<Result<string | null>> {
+    if (waIds.length === 0) return ok(null)
+    try {
+      const conversation = await prisma.whatsAppConversation.findFirst({
+        where: {
+          workspaceId,
+          deletedAt: null,
+          contact: { waId: { in: waIds } },
+        },
+        orderBy: [{ lastMessageAt: { sort: 'desc', nulls: 'last' } }],
+        select: { id: true },
+      })
+      return ok(conversation?.id ?? null)
+    } catch (error) {
+      return err(dbError('Failed to find a conversation by phone', error))
+    }
+  },
+
   /** Latest ticket linked to the conversation, open ones first. */
   async findTicketForConversation(
     workspaceId: string,
