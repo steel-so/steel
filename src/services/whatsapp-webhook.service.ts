@@ -49,6 +49,7 @@ import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
+import { WhatsAppSlaService } from './whatsapp-sla.service'
 import { WhatsAppTeamService } from './whatsapp-team.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
@@ -226,6 +227,8 @@ export const WhatsAppWebhookService = {
 
     let conversationId: string
     let aiActive: boolean
+    /** Owner fields of the conversation, for the SLA cycle bookkeeping. */
+    let slaOwner: { teamId: string | null; assignedUserId: string | null }
     /** Set when this message puts the conversation in the agents' queue. */
     let waiting: {
       conversation: WhatsAppConversation
@@ -258,6 +261,7 @@ export const WhatsAppWebhookService = {
       )
       if (!updated.ok) return updated
       conversationId = updated.value.id
+      slaOwner = updated.value
     } else {
       // Contato voltou a escrever numa conversa fechada: reabre a mesma
       // conversa (histórico junto) em vez de abrir outra. A IA volta ao
@@ -287,6 +291,7 @@ export const WhatsAppWebhookService = {
         if (!reopened.ok) return reopened
         conversationId = reopened.value.id
         aiActive = reopenAi
+        slaOwner = reopened.value
         if (!closed.value.assignedUserId) {
           waiting = { conversation: reopened.value, reason: 'reopened' }
         }
@@ -307,6 +312,7 @@ export const WhatsAppWebhookService = {
         if (!created.ok) return created
         conversationId = created.value.id
         aiActive = aiConfigActive
+        slaOwner = created.value
         waiting = { conversation: created.value, reason: 'new' }
         // Inbound is counted toward the monthly limit but never blocked.
         if (!serviceDesk) {
@@ -366,6 +372,14 @@ export const WhatsAppWebhookService = {
       })
       return ok(undefined)
     }
+
+    // SLA cycle (ADR 0048): never fails the webhook.
+    await WhatsAppSlaService.onInbound({
+      id: conversationId,
+      workspaceId,
+      teamId: slaOwner.teamId,
+      assignedUserId: slaOwner.assignedUserId,
+    })
 
     await publishWhatsAppEvent(workspaceId, {
       type: 'message.created',
@@ -573,6 +587,14 @@ export const WhatsAppWebhookService = {
       })
       return ok(undefined)
     }
+
+    // A person answered from the linked phone: that is a human response.
+    await WhatsAppSlaService.onOutbound({
+      workspaceId,
+      conversationId,
+      senderUserId: null,
+      byAi: false,
+    })
 
     await publishWhatsAppEvent(workspaceId, {
       type: 'message.created',

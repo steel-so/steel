@@ -27,6 +27,13 @@ vi.mock('@/src/services/whatsapp-usage.service', () => ({
     record: vi.fn(async () => undefined),
   },
 }))
+vi.mock('@/src/services/whatsapp-sla.service', () => ({
+  WhatsAppSlaService: {
+    onInbound: vi.fn(async () => undefined),
+    onOutbound: vi.fn(async () => undefined),
+    onClosed: vi.fn(async () => undefined),
+  },
+}))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -67,6 +74,7 @@ import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repos
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
+import { WhatsAppSlaService } from '../whatsapp-sla.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 import { WhatsAppWebhookService } from '../whatsapp-webhook.service'
 
@@ -199,6 +207,13 @@ describe('WhatsAppWebhookService', () => {
       expect(mockedUsage.record).toHaveBeenCalledWith('ws1', 'conversations')
       // Its agent still has it: it does not enter the queue.
       expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+      // A reopened conversation starts a new SLA cycle (ADR 0048).
+      expect(WhatsAppSlaService.onInbound).toHaveBeenCalledWith({
+        id: 'closed1',
+        workspaceId: 'ws1',
+        teamId: null,
+        assignedUserId: 'agent1',
+      })
     })
 
     it('should announce a reopened conversation without an agent as waiting', async () => {
@@ -340,6 +355,12 @@ describe('WhatsAppWebhookService', () => {
         'analyze-message',
         expect.objectContaining({ messageId: expect.any(String) }),
       )
+      expect(WhatsAppSlaService.onInbound).toHaveBeenCalledWith({
+        id: 'conv1',
+        workspaceId: 'ws1',
+        teamId: null,
+        assignedUserId: null,
+      })
       // A brand-new conversation lands in the queue.
       expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith({
         conversation: created,
@@ -527,6 +548,10 @@ describe('WhatsAppWebhookService', () => {
       expect(aiReplyAdd).toHaveBeenCalled()
       // Already open: no new "waiting" event per message.
       expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+      // Every inbound message asks the SLA to open a cycle if none is open.
+      expect(WhatsAppSlaService.onInbound).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'conv1' }),
+      )
     })
 
     it('should NOT re-activate the AI once a human has explicitly taken over (aiHandoff)', async () => {
@@ -688,6 +713,14 @@ describe('WhatsAppWebhookService', () => {
         expect.objectContaining({ direction: 'OUT', status: 'SENT' }),
       )
       expect(aiReplyAdd).not.toHaveBeenCalled()
+      // A person answering from the phone is a human response.
+      expect(WhatsAppSlaService.onOutbound).toHaveBeenCalledWith({
+        workspaceId: 'ws1',
+        conversationId: 'conv1',
+        senderUserId: null,
+        byAi: false,
+      })
+      expect(WhatsAppSlaService.onInbound).not.toHaveBeenCalled()
     })
 
     it('should create a new conversation already handed off when none exists', async () => {

@@ -41,6 +41,7 @@ import {
   loadVisibleConversation,
   resolveConversationScope,
 } from './whatsapp-conversation-scope.service'
+import { WhatsAppSlaService } from './whatsapp-sla.service'
 
 /**
  * Module member with the permission + their conversation visibility
@@ -134,6 +135,14 @@ async function finalizeOutboundMessage(input: {
   await WhatsAppConversationRepository.update(input.conversationId, {
     lastMessageAt: new Date(),
     status: 'IN_PROGRESS',
+  })
+
+  // First human answer closes the SLA first-response clock (ADR 0048).
+  await WhatsAppSlaService.onOutbound({
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    senderUserId: input.actorId,
+    byAi: false,
   })
 
   const dto = toWhatsAppMessageDTO(message.value)

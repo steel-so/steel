@@ -203,6 +203,7 @@ export type WhatsappBroadcastJobPayload = {
 
 export const WhatsappConversationLifecycleJob = {
   AutoCloseInactive: 'auto-close-inactive',
+  SlaTick: 'sla-tick',
 } as const
 
 export type WhatsappConversationLifecycleJob =
@@ -210,6 +211,7 @@ export type WhatsappConversationLifecycleJob =
 
 export type WhatsappConversationLifecycleJobPayload = {
   [WhatsappConversationLifecycleJob.AutoCloseInactive]: Record<string, never>
+  [WhatsappConversationLifecycleJob.SlaTick]: Record<string, never>
 }
 
 export const WhatsappTemplateSyncJob = {

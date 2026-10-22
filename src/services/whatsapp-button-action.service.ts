@@ -45,6 +45,7 @@ import {
   WHATSAPP_NOTIFY_ADMIN_CAP,
   whatsAppConversationPath,
 } from './whatsapp-notify'
+import { WhatsAppSlaService } from './whatsapp-sla.service'
 
 type ReplyButton = Extract<WhatsAppButtonDTO, { type: 'REPLY' }>
 type ActionJob =
@@ -298,6 +299,10 @@ async function runSetStatus(
   if (!updated.ok) return updated
   const event = await recordEvent(ctx, 'CLOSED', reason ?? null)
   if (!event.ok) return event
+  await WhatsAppSlaService.onClosed({
+    id: conversationId,
+    assignedUserId: null,
+  })
   auditMutation({
     entity: 'whatsapp_conversation',
     action: 'close',

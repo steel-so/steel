@@ -94,6 +94,9 @@ export const WhatsappBroadcastScheduleCron = '*/5 * * * *' as const
 /** Frequência do fechamento automático de conversas inativas do WhatsApp. */
 export const WhatsappConversationAutoCloseCron = '*/15 * * * *' as const
 
+/** Every minute: warn / flag breaches of the Communication SLA (ADR 0048). */
+export const WhatsappSlaTickCron = '* * * * *' as const
+
 export const BackupRetentionDays = 90
 
 export const DatabaseBackupCron = {

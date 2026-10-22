@@ -20,6 +20,9 @@ vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
     })),
   },
 }))
+vi.mock('@/src/services/whatsapp-sla.service', () => ({
+  WhatsAppSlaService: { onOutbound: vi.fn(async () => undefined) },
+}))
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
 vi.mock('@/src/repositories/whatsapp-ai-knowledge-document.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')
@@ -61,6 +64,7 @@ import {
   type PreparedAiCall,
 } from '@/src/services/ai-usage.service'
 import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
+import { WhatsAppSlaService } from '@/src/services/whatsapp-sla.service'
 import { WhatsAppAiReplyService } from '../whatsapp-ai-reply.service'
 import { notifyWhatsAppUsers, whatsAppAdminIds } from '../whatsapp-notify'
 
@@ -304,6 +308,13 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
       usage: { inputTokens: 10, outputTokens: 5 },
     })
     expect(auditMutation).not.toHaveBeenCalled()
+    // Reported as an AI answer: the SLA counts it only if the policy says so.
+    expect(WhatsAppSlaService.onOutbound).toHaveBeenCalledWith({
+      workspaceId: WS,
+      conversationId: CONV,
+      senderUserId: null,
+      byAi: true,
+    })
   })
 
   it('answers a button AI instruction even with the AI off', async () => {

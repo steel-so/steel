@@ -17,6 +17,9 @@ vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
     })),
   },
 }))
+vi.mock('@/src/services/whatsapp-sla.service', () => ({
+  WhatsAppSlaService: { onOutbound: vi.fn(async () => undefined) },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
@@ -55,6 +58,7 @@ import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.r
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
+import { WhatsAppSlaService } from '@/src/services/whatsapp-sla.service'
 import { WhatsAppMessageService } from '../whatsapp-message.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
@@ -115,6 +119,13 @@ describe('WhatsAppMessageService', () => {
           providerMessageId: 'pm1',
         }),
       )
+      // The first human answer closes the SLA first-response clock.
+      expect(WhatsAppSlaService.onOutbound).toHaveBeenCalledWith({
+        workspaceId: 'ws1',
+        conversationId: 'conv1',
+        senderUserId: 'u1',
+        byAi: false,
+      })
     })
 
     it('should block sending while the AI is handling the conversation', async () => {
