@@ -166,6 +166,7 @@ export const WhatsAppConversationEventDTO = dto(
         'TEAM_CHANGED',
         'AI_GUARDRAIL_HANDOFF',
         'AI_ACTION',
+        'SLA_BREACHED',
       ]),
       source: z.enum([
         'AGENT',
@@ -176,6 +177,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AUTO_OUTREACH',
         'AI_CAMPAIGN',
         'DISTRIBUTION',
+        'SLA',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -951,4 +953,112 @@ export const WhatsAppContactImportResultDTO = dto(
       }),
     ),
   }),
+)
+
+/* ----------------------------------- SLA ---------------------------------- */
+
+export const WhatsAppSlaPolicyDTO = dto(
+  'WhatsAppSlaPolicy',
+  z
+    .object({
+      id: z.string(),
+      teamId: z.string().nullable().meta({
+        description: '`null` = política padrão do workspace.',
+      }),
+      teamName: z.string().nullable(),
+      enabled: z.boolean().meta({
+        description: 'Desligada por padrão: nada é medido até ligar.',
+      }),
+      firstResponseMinutes: z.number().int().meta({
+        description: 'Minutos até a primeira resposta humana.',
+        example: 15,
+      }),
+      resolutionMinutes: z.number().int().nullable().meta({
+        description: 'Minutos até o fechamento. `null` = não medido.',
+      }),
+      businessHoursOnly: z.boolean().meta({
+        description:
+          'O relógio só corre dentro do horário de atendimento. Sem efeito enquanto o horário de atendimento do workspace estiver desligado.',
+      }),
+      warnAtPercent: z.number().int().meta({
+        description: 'Percentual do prazo em que sai o aviso de risco.',
+        example: 80,
+      }),
+      countAiAsResponse: z.boolean().meta({
+        description: 'Resposta da IA conta como primeira resposta.',
+      }),
+      notifyAssignee: z.boolean(),
+      notifyTeamLeaders: z.boolean(),
+      notifySupervisors: z.boolean(),
+      supervisorIds: z.array(z.string()).meta({
+        description: 'Vazio = todos os OWNER/ADMIN.',
+      }),
+      notifyInApp: z.boolean(),
+      notifyEmail: z.boolean(),
+      createdAt: dateTime(),
+      updatedAt: dateTime(),
+    })
+    .meta({ description: 'Política de SLA do atendimento.' }),
+)
+
+const WhatsAppSlaState = z.enum(['OK', 'AT_RISK', 'BREACHED'])
+
+const WhatsAppSlaTargetDTO = z.object({
+  dueAt: dateTime(),
+  warnAt: dateTime(),
+  doneAt: nullableDateTime().meta({
+    description: 'Só na primeira resposta: quando aconteceu.',
+  }),
+  state: WhatsAppSlaState,
+})
+
+export const WhatsAppSlaOpenCycleDTO = dto(
+  'WhatsAppSlaOpenCycle',
+  z
+    .object({
+      cycleId: z.string(),
+      conversationId: z.string(),
+      startedAt: dateTime(),
+      firstResponse: WhatsAppSlaTargetDTO,
+      resolution: WhatsAppSlaTargetDTO.nullable().meta({
+        description: '`null` quando a política não mede a resolução.',
+      }),
+      state: WhatsAppSlaState.meta({
+        description: 'Pior estado entre os prazos ainda em andamento.',
+      }),
+    })
+    .meta({ description: 'Ciclo de SLA aberto de uma conversa.' }),
+)
+
+const WhatsAppSlaBreakdownRowDTO = z.object({
+  id: z.string().nullable(),
+  label: z.string(),
+  cycles: z.number().int(),
+  breaches: z.number().int(),
+})
+
+export const WhatsAppSlaReportDTO = dto(
+  'WhatsAppSlaReport',
+  z
+    .object({
+      from: dateTime(),
+      to: dateTime(),
+      timeZone: z.string().meta({ example: 'America/Sao_Paulo' }),
+      teamId: z.string().nullable(),
+      firstResponse: z.object({
+        evaluated: z.number().int(),
+        withinTarget: z.number().int(),
+        withinPercent: z.number().nullable(),
+        averageSeconds: z.number().int().nullable(),
+        p90Seconds: z.number().int().nullable(),
+      }),
+      resolution: z.object({
+        evaluated: z.number().int(),
+        withinTarget: z.number().int(),
+        withinPercent: z.number().nullable(),
+      }),
+      byAgent: z.array(WhatsAppSlaBreakdownRowDTO),
+      byTeam: z.array(WhatsAppSlaBreakdownRowDTO),
+    })
+    .meta({ description: 'Relatório de SLA do período.' }),
 )

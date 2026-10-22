@@ -10,6 +10,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { ok } from '@/src/lib/result'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-sla.service', () => ({
+  WhatsAppSlaService: { onClosed: vi.fn(async () => undefined) },
+}))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))
@@ -49,6 +52,7 @@ import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
+import { WhatsAppSlaService } from '../whatsapp-sla.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
@@ -135,6 +139,10 @@ describe('WhatsAppConversationService.close()', () => {
     expect(publishWhatsAppEvent).toHaveBeenCalledWith(
       'ws1',
       expect.objectContaining({ type: 'conversation.updated' }),
+    )
+    // Closing ends the SLA cycle (ADR 0048).
+    expect(WhatsAppSlaService.onClosed).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'conv1' }),
     )
   })
 

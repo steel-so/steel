@@ -15,6 +15,9 @@ import { err, ok } from '@/src/lib/result'
 import type { WhatsAppButtonAction } from '@/src/schemas/whatsapp-button.schema'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-sla.service', () => ({
+  WhatsAppSlaService: { onClosed: vi.fn(async () => undefined) },
+}))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))
@@ -77,6 +80,7 @@ import { notifyWhatsAppUsers } from '@/src/services/whatsapp-notify'
 import { WhatsAppButtonActionService } from '../whatsapp-button-action.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
+import { WhatsAppSlaService } from '../whatsapp-sla.service'
 
 const templateRepo = vi.mocked(WhatsAppTemplateRepository)
 const quickReplyRepo = vi.mocked(WhatsAppQuickReplyRepository)
@@ -552,6 +556,10 @@ describe('runActions', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'close' }),
     )
+    expect(WhatsAppSlaService.onClosed).toHaveBeenCalledWith({
+      id: 'c1',
+      assignedUserId: null,
+    })
   })
 
   it('SET_STATUS closes without a reason and moves to in progress', async () => {

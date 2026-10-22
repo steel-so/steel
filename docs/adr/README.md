@@ -65,3 +65,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0046 | [Voz no PABX, fase 2: atendente de voz com IA na URA](./0046-pabx-voice-agent-ivr-realtime.md) | Aceita | 2026-10-22 |
 | 0049 | [Protocolo de atendimento no Zap: um número por ciclo de atendimento](./0049-protocolo-de-atendimento-no-zap.md) | Proposta | 2026-10-22 |
 | 0047 | [Fila do WhatsApp: avisos de conversa sem atendente e distribuição automática](./0047-whatsapp-queue-alerts-and-automatic-distribution.md) | Aceita | 2026-10-22 |
+| 0048 | [SLA de primeira resposta e resolução no atendimento do WhatsApp](./0048-whatsapp-sla-first-response-and-resolution.md) | Aceita | 2026-10-22 |

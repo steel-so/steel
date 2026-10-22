@@ -1,14 +1,14 @@
 import type { Job } from 'bullmq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { closeInactiveMock, drainMock, remindMock, loggerMock } = vi.hoisted(
-  () => ({
+const { closeInactiveMock, drainMock, remindMock, scanDueMock, loggerMock } =
+  vi.hoisted(() => ({
     closeInactiveMock: vi.fn(),
     drainMock: vi.fn(),
     remindMock: vi.fn(),
+    scanDueMock: vi.fn(),
     loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  }),
-)
+  }))
 
 vi.mock('@/src/services/whatsapp-conversation.service', () => ({
   WhatsAppConversationService: { closeInactive: closeInactiveMock },
@@ -18,6 +18,9 @@ vi.mock('@/src/services/whatsapp-distribution.service', () => ({
 }))
 vi.mock('@/src/services/whatsapp-unassigned-alert.service', () => ({
   WhatsAppUnassignedAlertService: { remindUnattended: remindMock },
+}))
+vi.mock('@/src/services/whatsapp-sla-engine.service', () => ({
+  WhatsAppSlaEngineService: { scanDue: scanDueMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -50,6 +53,43 @@ describe('processWhatsappConversationLifecycle', () => {
     await expect(
       processWhatsappConversationLifecycle(fakeJob()),
     ).rejects.toThrow('DATABASE_ERROR')
+  })
+
+  it('runs the SLA scan on the sla-tick job and logs only when something happened', async () => {
+    scanDueMock.mockResolvedValue({
+      ok: true,
+      value: { warned: 2, breached: 1 },
+    })
+
+    const result = await processWhatsappConversationLifecycle(
+      fakeJob('sla-tick'),
+    )
+
+    expect(result).toEqual({ warned: 2, breached: 1 })
+    expect(scanDueMock).toHaveBeenCalledWith(expect.any(Date))
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.whatsapp_conversation_lifecycle.sla_tick_completed',
+      expect.objectContaining({ warned: 2, breached: 1 }),
+    )
+
+    loggerMock.info.mockClear()
+    scanDueMock.mockResolvedValue({
+      ok: true,
+      value: { warned: 0, breached: 0 },
+    })
+    await processWhatsappConversationLifecycle(fakeJob('sla-tick'))
+    expect(loggerMock.info).not.toHaveBeenCalled()
+  })
+
+  it('throws when the SLA scan fails so BullMQ retries', async () => {
+    scanDueMock.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'down' },
+    })
+
+    await expect(
+      processWhatsappConversationLifecycle(fakeJob('sla-tick')),
+    ).rejects.toThrow('Falha ao varrer o SLA do WhatsApp: DATABASE_ERROR')
   })
 
   it('rejects unknown job names', async () => {

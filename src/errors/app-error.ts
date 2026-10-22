@@ -197,6 +197,9 @@ export const whatsappCloseStatusSelectionInvalid = (
   message = 'Seleção de status de fechamento inválida',
 ): AppError => appError('WHATSAPP_CLOSE_STATUS_SELECTION_INVALID', message)
 
+export const whatsappSlaPolicyNotFound = (): AppError =>
+  appError('WHATSAPP_SLA_POLICY_NOT_FOUND', 'Política de SLA não encontrada')
+
 export const whatsappAiCampaignNotFound = (): AppError =>
   appError('WHATSAPP_AI_CAMPAIGN_NOT_FOUND', 'Campanha de IA não encontrada')
 

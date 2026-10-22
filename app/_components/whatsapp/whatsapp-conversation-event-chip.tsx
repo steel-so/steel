@@ -31,6 +31,9 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
     // `reason` = "action label: why the AI ran it".
     case 'AI_ACTION':
       return 'A IA da campanha executou uma ação'
+    // `reason` says which target: "Primeira resposta" or "Resolução".
+    case 'SLA_BREACHED':
+      return 'SLA estourado: responsáveis avisados'
     case 'BUTTON_CLICKED':
       return event.reason
         ? `O contato clicou em “${event.reason}”`
@@ -69,6 +72,7 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   // The guardrail note says why the AI stopped.
   if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason
   if (event.kind === 'AI_ACTION') return event.reason
+  if (event.kind === 'SLA_BREACHED') return event.reason
   // The assignee / team name is already in the headline.
   if (event.kind === 'ASSIGNED' || event.kind === 'TEAM_CHANGED') return null
   return `Motivo: ${event.reason}`

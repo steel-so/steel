@@ -78,6 +78,7 @@ import {
   whatsAppConversationPath,
 } from './whatsapp-notify'
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
+import { WhatsAppSlaService } from './whatsapp-sla.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
 /** Máximo de conversas fechadas por inatividade a cada tick do job. */
@@ -187,6 +188,9 @@ async function applyClose(
     closeStatusLabels: classification?.labels ?? [],
   })
   if (!event.ok) return event
+
+  // Ends the SLA cycle (ADR 0048); never fails the close.
+  await WhatsAppSlaService.onClosed(conversation)
 
   auditMutation({
     entity: 'whatsapp_conversation',

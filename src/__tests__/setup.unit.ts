@@ -62,6 +62,21 @@ vi.mock('@/src/repositories/whatsapp-team.repository', () => ({
   },
 }))
 
+// Communication SLA (ADR 0048): the webhook, send and close paths call the SLA
+// bookkeeping, which reads these repositories. Unit default = no policy and no
+// open cycle (a no-op); `whatsapp-sla*.test.ts` re-mock them in the file.
+vi.mock('@/src/repositories/whatsapp-sla-policy.repository', () => ({
+  WhatsAppSlaPolicyRepository: {
+    resolveForTeam: vi.fn(async () => ok(null)),
+  },
+}))
+vi.mock('@/src/repositories/whatsapp-sla-cycle.repository', () => ({
+  WhatsAppSlaCycleRepository: {
+    findOpenByConversation: vi.fn(async () => ok(null)),
+    resolveOpen: vi.fn(async () => ok(0)),
+  },
+}))
+
 // Outbound webhooks (`emitWebhookEvent`, fire-and-forget after writes):
 // no-op in unit tests; `webhook-emitter.test.ts` un-mocks the module and the
 // webhook service tests drive `dispatchWebhookEvent`/`enqueueWebhookDelivery`.

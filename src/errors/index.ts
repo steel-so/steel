@@ -326,6 +326,7 @@ export {
   whatsappSignupNameNotApproved,
   whatsappSignupPaymentRequired,
   whatsappSignupPermissionDenied,
+  whatsappSlaPolicyNotFound,
   whatsappTeamConflict,
   whatsappTeamNotFound,
   whatsappTemplateNotApproved,

@@ -103,6 +103,7 @@ import {
   WhatsappBroadcastScheduleCron,
   WhatsappConversationAutoCloseCron,
   WhatsappDistributionTickCron,
+  WhatsappSlaTickCron,
   WorkspaceExportPruneCron,
 } from './retention'
 
@@ -245,6 +246,18 @@ export async function scheduleWhatsappConversationLifecycleJobs(): Promise<void>
   logger.info('queue.scheduler.whatsapp_conversation_lifecycle_registered', {
     component: 'Worker',
     pattern: WhatsappConversationAutoCloseCron,
+    timezone: RetentionTimezone,
+  })
+
+  await queue.upsertJobScheduler(
+    WhatsappConversationLifecycleJob.SlaTick,
+    { pattern: WhatsappSlaTickCron, tz: RetentionTimezone },
+    { name: WhatsappConversationLifecycleJob.SlaTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.whatsapp_sla_tick_registered', {
+    component: 'Worker',
+    pattern: WhatsappSlaTickCron,
     timezone: RetentionTimezone,
   })
 }

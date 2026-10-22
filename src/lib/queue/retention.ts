@@ -96,6 +96,8 @@ export const WhatsappConversationAutoCloseCron = '*/15 * * * *' as const
 
 /** Frequência da distribuição da fila e dos lembretes de conversa sem atendente. */
 export const WhatsappDistributionTickCron = '* * * * *' as const
+/** Every minute: warn / flag breaches of the Communication SLA (ADR 0048). */
+export const WhatsappSlaTickCron = '* * * * *' as const
 
 export const BackupRetentionDays = 90
 

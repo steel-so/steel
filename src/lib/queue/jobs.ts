@@ -205,6 +205,7 @@ export const WhatsappConversationLifecycleJob = {
   AutoCloseInactive: 'auto-close-inactive',
   /** Every minute: drains the unassigned queue and sends reminders (ADR 0047). */
   DistributionTick: 'distribution-tick',
+  SlaTick: 'sla-tick',
 } as const
 
 export type WhatsappConversationLifecycleJob =
@@ -213,6 +214,7 @@ export type WhatsappConversationLifecycleJob =
 export type WhatsappConversationLifecycleJobPayload = {
   [WhatsappConversationLifecycleJob.AutoCloseInactive]: Record<string, never>
   [WhatsappConversationLifecycleJob.DistributionTick]: Record<string, never>
+  [WhatsappConversationLifecycleJob.SlaTick]: Record<string, never>
 }
 
 export const WhatsappTemplateSyncJob = {

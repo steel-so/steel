@@ -73,6 +73,19 @@ export interface CrmProposalExpiredEmailProps extends EmailProps {
   proposalUrl: string
 }
 
+export interface WhatsAppSlaAlertEmailProps extends EmailProps {
+  workspaceName: string
+  /** Nome do contato (ou número, sem nome salvo). */
+  contactLabel: string
+  /** `true` = prazo estourado; `false` = em risco. */
+  breached: boolean
+  /** Qual prazo: "primeira resposta" ou "resolução". */
+  targetLabel: string
+  /** Prazo já formatado no fuso do workspace (ex.: "23/10 às 14:35"). */
+  dueLabel: string
+  redirectUrl: string
+}
+
 export interface WhatsAppSentimentAlertEmailProps extends EmailProps {
   workspaceName: string
   /** Nome do contato (ou número, sem nome salvo). */

@@ -69,8 +69,17 @@ import {
   useWhatsAppConversationScope,
   useWhatsAppTeams,
 } from '@/src/hooks/use-whatsapp-teams'
+import {
+  matchesSlaFilter,
+  type WhatsAppSlaListFilter,
+} from '@/src/lib/whatsapp/sla-format'
 import type { WhatsAppConnectionDTO } from '@/types/whatsapp-connection'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
+import {
+  useSlaClock,
+  useWhatsAppSlaByConversation,
+  WhatsappSlaFilterSelect,
+} from './whatsapp-sla-chip'
 import {
   matchesInboxFilter,
   type WhatsAppInboxFilter,
@@ -289,6 +298,9 @@ export function WhatsappConversationSidebar({
   // Ativas = abertas (NEW/IN_PROGRESS); fechadas saem da caixa de entrada.
   const [tab, setTab] = useState<'active' | 'closed' | 'archived'>('active')
   const [inboxFilter, setInboxFilter] = useState<WhatsAppInboxFilter>('all')
+  const [slaFilter, setSlaFilter] = useState<WhatsAppSlaListFilter>('all')
+  const slaByConversation = useWhatsAppSlaByConversation(workspaceId)
+  const slaNow = useSlaClock()
   const currentUser = useUser()
   const [clearTargetId, setClearTargetId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
@@ -307,6 +319,15 @@ export function WhatsappConversationSidebar({
 
   const filtered = (conversations.data ?? []).filter((conversation) => {
     if (!matchesInboxFilter(conversation, inboxFilter, currentUser.data?.id)) {
+      return false
+    }
+    if (
+      !matchesSlaFilter(
+        slaByConversation.get(conversation.id),
+        slaFilter,
+        slaNow,
+      )
+    ) {
       return false
     }
     if (!search) return true
@@ -438,6 +459,11 @@ export function WhatsappConversationSidebar({
           workspaceId={workspaceId}
           value={inboxFilter}
           onChange={setInboxFilter}
+        />
+        <WhatsappSlaFilterSelect
+          workspaceId={workspaceId}
+          value={slaFilter}
+          onChange={setSlaFilter}
         />
       </div>
       <div className='flex-1 overflow-y-auto'>

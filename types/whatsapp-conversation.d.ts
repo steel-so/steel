@@ -49,6 +49,7 @@ export type WhatsAppConversationEventKindDTO =
   | 'TEAM_CHANGED'
   | 'AI_GUARDRAIL_HANDOFF'
   | 'AI_ACTION'
+  | 'SLA_BREACHED'
 export type WhatsAppConversationEventSourceDTO =
   | 'AGENT'
   | 'CONTACT'
@@ -60,6 +61,7 @@ export type WhatsAppConversationEventSourceDTO =
   | 'AI_CAMPAIGN'
   | 'AI_ACTION'
   | 'DISTRIBUTION'
+  | 'SLA'
 
 export interface WhatsAppConversationEventDTO {
   id: string

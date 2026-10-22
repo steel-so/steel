@@ -50,6 +50,7 @@ import {
   whatsAppAdminIds,
   whatsAppConversationPath,
 } from './whatsapp-notify'
+import { WhatsAppSlaService } from './whatsapp-sla.service'
 
 const HISTORY_LIMIT = 20
 
@@ -550,6 +551,14 @@ export const WhatsAppAiReplyService = {
       },
     )
     if (!updated.ok) return updated
+
+    // Counts as the first response only when the SLA policy says so.
+    await WhatsAppSlaService.onOutbound({
+      workspaceId,
+      conversationId,
+      senderUserId: null,
+      byAi: true,
+    })
 
     if (guardrail) {
       reportAutoReplyGuardrailHit({
