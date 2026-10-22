@@ -21,6 +21,7 @@ const saved = {
   businessHoursStart: '08:00',
   businessHoursEnd: '18:00',
   businessHoursDays: [1, 2, 3, 4, 5],
+  whatsappCheckTtlDays: 30,
 }
 
 function setup() {

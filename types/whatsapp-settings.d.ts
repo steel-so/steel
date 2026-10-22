@@ -27,4 +27,6 @@ export interface WhatsAppSettingsDTO {
   businessHoursEnd: string
   /** 0 = domingo … 6 = sábado. */
   businessHoursDays: number[]
+  /** Dias até a checagem "tem zap?" de um contato valer de novo. */
+  whatsappCheckTtlDays: number
 }

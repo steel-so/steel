@@ -266,6 +266,17 @@ export const whatsappBroadcastNoRecipients = (
   message = 'Nenhum contato elegível: os selecionados se descadastraram das transmissões',
 ): AppError => appError('WHATSAPP_BROADCAST_NO_RECIPIENTS', message)
 
+/**
+ * "Tem zap?" needs a Z-API connection (Meta Cloud API has no equivalent
+ * endpoint), so a workspace without one cannot validate numbers.
+ */
+export const whatsappValidationUnavailable = (
+  message = 'A checagem "tem WhatsApp?" só funciona com uma conexão Z-API. A API oficial da Meta não oferece esse recurso. Conecte uma instância Z-API para validar a base.',
+): AppError => appError('WHATSAPP_VALIDATION_UNAVAILABLE', message)
+
+export const whatsappValidationNotFound = (): AppError =>
+  appError('WHATSAPP_VALIDATION_NOT_FOUND', 'Validação não encontrada')
+
 export const whatsappAiConfigNotFound = (): AppError =>
   appError(
     'WHATSAPP_AI_CONFIG_NOT_FOUND',

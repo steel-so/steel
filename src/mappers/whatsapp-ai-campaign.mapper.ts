@@ -57,6 +57,7 @@ export function toWhatsAppAiCampaignDTO(
     actions: parseAiCampaignActions(campaign.actions),
     intervalSeconds: campaign.intervalSeconds,
     aiReplies: campaign.aiReplies,
+    skipNoWhatsapp: campaign.skipNoWhatsapp,
     status: campaign.status,
     lastSentAt: iso(campaign.lastSentAt),
     lastError: campaign.lastError,

@@ -174,6 +174,8 @@ export const WhatsappBroadcastJob = {
   SendAiCampaignNext: 'send-ai-campaign-next',
   /** AI campaign action FOLLOW_UP: the AI writes again if no reply came. */
   AiCampaignFollowUp: 'ai-campaign-follow-up',
+  /** "Tem zap?" bulk check of a contact set through Z-API. */
+  ValidateWhatsappNumbers: 'validate-whatsapp-numbers',
 } as const
 
 export type WhatsappBroadcastJob =
@@ -189,6 +191,9 @@ export type WhatsappBroadcastJobPayload = {
   [WhatsappBroadcastJob.SendAiCampaignNext]: {
     campaignId: string
     runToken: string
+  }
+  [WhatsappBroadcastJob.ValidateWhatsappNumbers]: {
+    validationId: string
   }
   [WhatsappBroadcastJob.AiCampaignFollowUp]: {
     workspaceId: string

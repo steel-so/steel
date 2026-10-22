@@ -39,6 +39,7 @@ export const WhatsAppContactService = {
     const result = await WhatsAppContactRepository.listByWorkspace(
       workspaceId,
       options.search,
+      options.whatsapp,
     )
     if (!result.ok) return result
 

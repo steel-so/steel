@@ -25,6 +25,7 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   businessHoursStart: '08:00',
   businessHoursEnd: '18:00',
   businessHoursDays: [1, 2, 3, 4, 5] as number[],
+  whatsappCheckTtlDays: 30,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -61,5 +62,6 @@ export function toWhatsAppSettingsDTO(
     businessHoursStart: settings.businessHoursStart,
     businessHoursEnd: settings.businessHoursEnd,
     businessHoursDays: settings.businessHoursDays,
+    whatsappCheckTtlDays: settings.whatsappCheckTtlDays,
   }
 }

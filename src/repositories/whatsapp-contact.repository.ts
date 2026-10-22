@@ -12,11 +12,15 @@ export const WhatsAppContactRepository = {
   async listByWorkspace(
     workspaceId: string,
     search?: string,
+    whatsapp?: 'yes' | 'no' | 'unknown',
   ): Promise<Result<WhatsAppContactWithCount[]>> {
     try {
       const contacts = await prisma.whatsAppContact.findMany({
         where: {
           workspaceId,
+          ...(whatsapp
+            ? { hasWhatsapp: { yes: true, no: false, unknown: null }[whatsapp] }
+            : {}),
           ...(search
             ? {
                 OR: [
@@ -176,6 +180,93 @@ export const WhatsAppContactRepository = {
       return err(
         dbError('Failed to list broadcast-eligible whatsapp contacts', error),
       )
+    }
+  },
+
+  /** Contatos do workspace por id, só com o que a checagem "tem zap?" usa. */
+  async listForWhatsappCheck(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<
+    Result<
+      {
+        id: string
+        waId: string
+        hasWhatsapp: boolean | null
+        whatsappCheckedAt: Date | null
+      }[]
+    >
+  > {
+    if (ids.length === 0) return ok([])
+    try {
+      const contacts = await prisma.whatsAppContact.findMany({
+        where: { workspaceId, id: { in: ids } },
+        select: {
+          id: true,
+          waId: true,
+          hasWhatsapp: true,
+          whatsappCheckedAt: true,
+        },
+      })
+      return ok(contacts)
+    } catch (error) {
+      return err(dbError('Failed to list contacts for whatsapp check', error))
+    }
+  },
+
+  /** Ids de todos os contatos do workspace (limitado) — "validar tudo". */
+  async listIds(workspaceId: string, take: number): Promise<Result<string[]>> {
+    try {
+      const contacts = await prisma.whatsAppContact.findMany({
+        where: { workspaceId },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+        take,
+      })
+      return ok(contacts.map((contact) => contact.id))
+    } catch (error) {
+      return err(dbError('Failed to list whatsapp contact ids', error))
+    }
+  },
+
+  /**
+   * Grava o resultado de uma checagem "tem zap?" (escopado ao workspace).
+   * Quem tem WhatsApp guarda também o LID; quem não tem, limpa o LID.
+   */
+  async applyWhatsappChecks(
+    workspaceId: string,
+    checks: { id: string; hasWhatsapp: boolean; lid: string | null }[],
+    checkedAt: Date,
+  ): Promise<Result<number>> {
+    if (checks.length === 0) return ok(0)
+    try {
+      const without = checks.filter((check) => !check.hasWhatsapp)
+      const operations = [
+        prisma.whatsAppContact.updateMany({
+          where: { workspaceId, id: { in: without.map((c) => c.id) } },
+          data: {
+            hasWhatsapp: false,
+            whatsappCheckedAt: checkedAt,
+            whatsappLid: null,
+          },
+        }),
+        ...checks
+          .filter((check) => check.hasWhatsapp)
+          .map((check) =>
+            prisma.whatsAppContact.updateMany({
+              where: { workspaceId, id: check.id },
+              data: {
+                hasWhatsapp: true,
+                whatsappCheckedAt: checkedAt,
+                whatsappLid: check.lid,
+              },
+            }),
+          ),
+      ]
+      await prisma.$transaction(operations)
+      return ok(checks.length)
+    } catch (error) {
+      return err(dbError('Failed to save whatsapp check results', error))
     }
   },
 

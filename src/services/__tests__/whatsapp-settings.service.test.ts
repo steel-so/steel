@@ -165,6 +165,22 @@ describe('WhatsAppSettingsService', () => {
       )
     })
 
+    it('should save the "tem zap?" re-check TTL', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))
+      mockedSettingsRepo.upsert.mockResolvedValue(ok(row()))
+
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          whatsappCheckTtlDays: 7,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ whatsappCheckTtlDays: 7 }),
+      )
+    })
+
     it('should reject business hours that start and end at the same time', async () => {
       asRole('ADMIN')
       mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))

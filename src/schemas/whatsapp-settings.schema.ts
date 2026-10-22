@@ -98,6 +98,8 @@ export const UpdateWhatsAppSettingsSchema = z.object({
     .regex(BUSINESS_HOURS_TIME_PATTERN, 'Use o formato HH:mm (ex.: 18:00)')
     .optional(),
   businessHoursDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  /** Dias até a checagem "tem zap?" de um contato valer de novo. */
+  whatsappCheckTtlDays: z.number().int().min(1).max(365).optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

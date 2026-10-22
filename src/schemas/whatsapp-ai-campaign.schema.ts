@@ -240,6 +240,8 @@ export const UpdateWhatsAppAiCampaignSchema = z
       )
       .optional(),
     aiReplies: z.boolean().optional(),
+    /** Pula contatos que a checagem "tem zap?" marcou sem WhatsApp. */
+    skipNoWhatsapp: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'Informe ao menos um campo para alterar',

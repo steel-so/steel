@@ -52,6 +52,7 @@ function campaign(
     ],
     intervalSeconds: 30,
     aiReplies: true,
+    skipNoWhatsapp: false,
     status: 'PAUSED',
     lastSentAt: null,
     lastError: null,

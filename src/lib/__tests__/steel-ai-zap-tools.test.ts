@@ -319,6 +319,7 @@ describe('zap_broadcasts_list', () => {
       sent: 6,
       failed: 1,
       skippedOptOut: 1,
+      skippedNoWhatsapp: 0,
       pending: 2,
     })
     const byName = expectOk(
@@ -364,6 +365,7 @@ describe('zap_broadcast_get', () => {
               contactId: 'ct1',
               contactName: null,
               contactWaId: '5511',
+              contactHasWhatsapp: null,
               status: 'FAILED',
               errorMessage: 'Número inválido',
               sentAt: null,
@@ -373,6 +375,7 @@ describe('zap_broadcast_get', () => {
               contactId: 'ct2',
               contactName: 'João',
               contactWaId: '5512',
+              contactHasWhatsapp: null,
               status: 'FAILED',
               errorMessage: null,
               sentAt: null,
@@ -382,6 +385,7 @@ describe('zap_broadcast_get', () => {
               contactId: 'ct3',
               contactName: 'Ana',
               contactWaId: '5513',
+              contactHasWhatsapp: null,
               status: 'SENT',
               errorMessage: null,
               sentAt: null,

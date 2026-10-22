@@ -57,6 +57,8 @@ export interface WhatsAppAiCampaignDTO {
   actions: AiCampaignAction[]
   intervalSeconds: number
   aiReplies: boolean
+  /** Pula contatos sem WhatsApp (checagem "tem zap?"). */
+  skipNoWhatsapp: boolean
   status: WhatsAppAiCampaignStatusDTO
   lastSentAt: string | null
   lastError: string | null

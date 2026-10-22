@@ -25,6 +25,8 @@ describe('toWhatsAppContactDTO()', () => {
       description: null,
       broadcastOptedOutAt: null,
       broadcastOptOutSource: null,
+      hasWhatsapp: null,
+      whatsappCheckedAt: null,
       conversationCount: 0,
       createdAt: contact.createdAt.toISOString(),
       updatedAt: contact.updatedAt.toISOString(),

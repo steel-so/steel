@@ -3,6 +3,7 @@ import { logger } from '@/lib/axiom/logger'
 import { WhatsAppAiCampaignService } from '@/src/services/whatsapp-ai-campaign.service'
 import { WhatsAppAiCampaignActionService } from '@/src/services/whatsapp-ai-campaign-action.service'
 import { WhatsAppBroadcastService } from '@/src/services/whatsapp-broadcast.service'
+import { WhatsAppContactValidationService } from '@/src/services/whatsapp-contact-validation.service'
 import { WhatsappBroadcastJob, type WhatsappBroadcastJobPayload } from '../jobs'
 
 async function processSendBroadcastMessage(
@@ -27,6 +28,8 @@ async function processSendBroadcastMessage(
       logger.warn('queue.whatsapp_broadcast.recipient_missing', base)
     } else if (outcome.reason === 'opted_out') {
       logger.info('queue.whatsapp_broadcast.skipped_opted_out', base)
+    } else if (outcome.reason === 'no_whatsapp') {
+      logger.info('queue.whatsapp_broadcast.skipped_no_whatsapp', base)
     }
     return
   }
@@ -98,6 +101,25 @@ async function processAiCampaignFollowUp(
   })
 }
 
+async function processValidateWhatsappNumbers(
+  job: Job<WhatsappBroadcastJobPayload['validate-whatsapp-numbers']>,
+): Promise<void> {
+  const { validationId } = job.data
+  const result = await WhatsAppContactValidationService.execute(validationId)
+  // Database failure: throw so the job shows as failed in the dashboard.
+  if (!result.ok) {
+    throw new Error(
+      `Failed to run the WhatsApp number validation: ${result.error.code}`,
+    )
+  }
+  logger.info('queue.whatsapp_number_validation.completed', {
+    component: 'WhatsappNumberValidation',
+    jobId: job.id,
+    validationId,
+    outcome: result.value.status,
+  })
+}
+
 export async function processWhatsappBroadcast(job: Job): Promise<void> {
   switch (job.name) {
     case WhatsappBroadcastJob.SendBroadcastMessage:
@@ -113,6 +135,10 @@ export async function processWhatsappBroadcast(job: Job): Promise<void> {
     case WhatsappBroadcastJob.AiCampaignFollowUp:
       return processAiCampaignFollowUp(
         job as Job<WhatsappBroadcastJobPayload['ai-campaign-follow-up']>,
+      )
+    case WhatsappBroadcastJob.ValidateWhatsappNumbers:
+      return processValidateWhatsappNumbers(
+        job as Job<WhatsappBroadcastJobPayload['validate-whatsapp-numbers']>,
       )
     case WhatsappBroadcastJob.SendAutoOutreachNext:
       // Chains of the removed auto outreach still queued at deploy time:

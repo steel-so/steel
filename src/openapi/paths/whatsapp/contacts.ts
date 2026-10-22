@@ -7,10 +7,12 @@ import {
   UpdateWhatsAppContactSchema,
 } from '@/src/schemas/whatsapp-contact.schema'
 import { ImportWhatsAppContactsSchema } from '@/src/schemas/whatsapp-contact-import.schema'
+import { StartWhatsAppNumberValidationSchema } from '@/src/schemas/whatsapp-number-validation.schema'
 import type { RouteConfig } from '../../registry'
 import {
   WhatsAppContactDTO,
   WhatsAppContactImportResultDTO,
+  WhatsAppNumberValidationDTO,
 } from '../../schemas/whatsapp'
 import {
   CONTACT_PARAM,
@@ -30,7 +32,7 @@ export const contactRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/contacts',
     tags: [TAG],
     summary: 'Listar contatos',
-    description: `Contatos do workspace em ordem alfabética, com o número de conversas. \`search\` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. Sem paginação. ${perm('contacts', 'VIEW')}`,
+    description: `Contatos do workspace em ordem alfabética, com o número de conversas. \`search\` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. \`whatsapp\` (\`yes\` | \`no\` | \`unknown\`) filtra pelo resultado da checagem "tem WhatsApp?". Sem paginação. ${perm('contacts', 'VIEW')}`,
     query: ListWhatsAppContactsSchema,
     responses: {
       200: { description: 'Contatos.', schema: z.array(WhatsAppContactDTO) },
@@ -156,5 +158,45 @@ export const contactRoutes: RouteConfig[] = [
       200: { description: 'Contato atualizado.', schema: WhatsAppContactDTO },
     },
     errors: [...PRIVILEGED_ERRORS, 'WHATSAPP_CONTACT_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/number-validations',
+    tags: [TAG],
+    summary: 'Validar se os números têm WhatsApp',
+    description: `Checagem "tem WhatsApp?" para higiene de base (**não** é uma pré-checagem a cada mensagem: a Z-API já valida no envio). Escolha a origem em \`scope\`: \`CONTACTS\` (\`contactIds\` ou \`all\`, até 20.000), \`BROADCAST\` (\`broadcastId\`) ou \`AI_CAMPAIGN\` (\`campaignId\`). Só funciona com uma conexão **Z-API** conectada — a API oficial da Meta não tem endpoint equivalente e nunca é chamada. Contatos com resultado recente (TTL em \`whatsappCheckTtlDays\`, padrão 30 dias) não são consultados de novo, a menos que \`force: true\`. Até 200 contatos terminam na própria chamada; acima disso vira um job em segundo plano e o progresso sai em \`GET .../number-validations/{validationId}\`. Uma validação por vez por workspace. Não consome limite do plano (não envia mensagem). Os números nunca são gravados no log nem na auditoria. Auditado. ${perm('contacts', 'EDIT')}`,
+    body: StartWhatsAppNumberValidationSchema,
+    responses: {
+      201: {
+        description: 'Validação criada (ou já concluída, se pequena).',
+        schema: WhatsAppNumberValidationDTO,
+      },
+    },
+    errors: [
+      ...permErrors('contacts', 'EDIT'),
+      'WHATSAPP_VALIDATION_UNAVAILABLE',
+      'WHATSAPP_BROADCAST_NOT_FOUND',
+      'WHATSAPP_AI_CAMPAIGN_NOT_FOUND',
+      'WHATSAPP_CONNECTION_NOT_FOUND',
+      {
+        code: 'CONFLICT',
+        when: 'Já há uma validação em andamento, a seleção está vazia ou passa de 20.000 contatos',
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/number-validations/{validationId}',
+    tags: [TAG],
+    summary: 'Consultar o progresso de uma validação',
+    description: `Estado e contadores de uma validação "tem WhatsApp?" (a tela consulta por polling). ${perm('contacts', 'VIEW')}`,
+    params: { validationId: 'Id da validação "tem WhatsApp?".' },
+    responses: {
+      200: { description: 'Validação.', schema: WhatsAppNumberValidationDTO },
+    },
+    errors: [
+      ...permErrors('contacts', 'VIEW'),
+      'WHATSAPP_VALIDATION_NOT_FOUND',
+    ],
   },
 ]

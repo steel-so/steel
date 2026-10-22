@@ -40,7 +40,8 @@ export async function zapiRequest<T>(
 
   if (!response.ok) {
     logger.error('whatsapp.zapi.request_failed', {
-      path,
+      // Phone numbers are personal data (LGPD): never log them in full.
+      path: path.replace(/\d{8,}/g, (digits) => `${digits.slice(0, 4)}****`),
       status: response.status,
       body,
     })
@@ -313,4 +314,192 @@ export async function getZapiContactProfilePicture(
     `/profile-picture?phone=${encodeURIComponent(phone)}`,
   )
   return result?.link ?? null
+}
+
+// ---------------------------------------------------------------------------
+// "Tem zap?" — Z-API number check (list/base hygiene only)
+//
+// Z-API validates the number on every send, so this must NOT be used as a
+// per-message pre-check; it exists to clean a contact base or a broadcast
+// list. Meta's Cloud API has no equivalent endpoint, so this is Z-API only.
+//   GET  /phone-exists/{phone}      -> [{ exists, phone, lid }]
+//   POST /phone-exists-batch        -> [{ exists, inputPhone, outputPhone, lid }]
+//        body { phones: string[] }, up to 50,000 per request on Z-API's side.
+// ---------------------------------------------------------------------------
+
+/** Numbers per batch call. Z-API accepts 50,000; we stay far below that. */
+export const ZAPI_PHONE_CHECK_BATCH_SIZE = 1000
+/** Pause between two batch calls, to be gentle with the instance. */
+export const ZAPI_PHONE_CHECK_PAUSE_MS = 500
+/** Wait before retrying a failed batch call once. */
+export const ZAPI_PHONE_CHECK_RETRY_DELAY_MS = 2000
+
+const ZAPI_PHONE_PATTERN = /^\d{10,15}$/
+
+export interface ZapiPhoneCheck {
+  /** Digits-only number as we sent it. */
+  phone: string
+  exists: boolean
+  /** Number as WhatsApp formats it (e.g. Brazilian ninth digit). */
+  outputPhone: string | null
+  lid: string | null
+}
+
+export interface ZapiPhonesBatchResult {
+  results: ZapiPhoneCheck[]
+  /** Numbers whose chunk failed twice or that Z-API did not answer for. */
+  failed: string[]
+  /** Inputs that are not valid DDI+DDD+number phones (never sent). */
+  invalid: string[]
+}
+
+export interface ZapiPhonesBatchOptions {
+  batchSize?: number
+  pauseMs?: number
+  retryDelayMs?: number
+  /** Called after every chunk, so callers can persist progress. */
+  onChunk?: (chunk: {
+    results: ZapiPhoneCheck[]
+    failed: string[]
+  }) => Promise<void> | void
+}
+
+const wait = (ms: number) =>
+  ms > 0 ? new Promise<void>((resolve) => setTimeout(resolve, ms)) : undefined
+
+function digitsOnly(raw: string): string {
+  return raw.replace(/\D/g, '')
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function optionalString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+/** Single check. Returns null when Z-API answers with an unusable body. */
+export async function checkZapiPhoneExists(
+  credentials: ZapiCredentials,
+  phone: string,
+): Promise<ZapiPhoneCheck | null> {
+  const digits = digitsOnly(phone)
+  if (!ZAPI_PHONE_PATTERN.test(digits)) return null
+  const body = await zapiRequest<unknown>(
+    credentials,
+    `/phone-exists/${encodeURIComponent(digits)}`,
+  )
+  const item = asRecord(Array.isArray(body) ? body[0] : body)
+  if (!item || typeof item.exists !== 'boolean') return null
+  return {
+    phone: digits,
+    exists: item.exists,
+    outputPhone: optionalString(item.phone),
+    lid: item.exists ? optionalString(item.lid) : null,
+  }
+}
+
+async function postPhonesChunk(
+  credentials: ZapiCredentials,
+  phones: string[],
+): Promise<{ results: ZapiPhoneCheck[]; unanswered: string[] }> {
+  const body = await zapiRequest<unknown>(credentials, '/phone-exists-batch', {
+    method: 'POST',
+    body: JSON.stringify({ phones }),
+  })
+  if (!Array.isArray(body)) throw new Error('Resposta inesperada da Z-API')
+
+  const byPhone = new Map<string, ZapiPhoneCheck>()
+  body.forEach((raw, index) => {
+    const item = asRecord(raw)
+    if (!item || typeof item.exists !== 'boolean') return
+    // Prefer the echoed input; fall back to position when it is absent.
+    const input =
+      typeof item.inputPhone === 'string'
+        ? digitsOnly(item.inputPhone)
+        : body.length === phones.length
+          ? phones[index]
+          : null
+    if (!input) return
+    byPhone.set(input, {
+      phone: input,
+      exists: item.exists,
+      outputPhone: optionalString(item.outputPhone),
+      lid: item.exists ? optionalString(item.lid) : null,
+    })
+  })
+
+  const results: ZapiPhoneCheck[] = []
+  const unanswered: string[] = []
+  for (const phone of phones) {
+    const found = byPhone.get(phone)
+    if (found) results.push(found)
+    else unanswered.push(phone)
+  }
+  return { results, unanswered }
+}
+
+/**
+ * Batch check, chunked and paced. Numbers are normalized to digits and
+ * de-duplicated; invalid ones are reported, never sent. A chunk that fails is
+ * retried once, then its numbers are reported in `failed` while the remaining
+ * chunks still run (partial failure tolerated).
+ */
+export async function checkZapiPhonesBatch(
+  credentials: ZapiCredentials,
+  phones: string[],
+  options: ZapiPhonesBatchOptions = {},
+): Promise<ZapiPhonesBatchResult> {
+  const batchSize = options.batchSize ?? ZAPI_PHONE_CHECK_BATCH_SIZE
+  const pauseMs = options.pauseMs ?? ZAPI_PHONE_CHECK_PAUSE_MS
+  const retryDelayMs = options.retryDelayMs ?? ZAPI_PHONE_CHECK_RETRY_DELAY_MS
+
+  const valid: string[] = []
+  const invalid: string[] = []
+  const seen = new Set<string>()
+  for (const raw of phones) {
+    const digits = digitsOnly(raw)
+    if (!ZAPI_PHONE_PATTERN.test(digits)) {
+      invalid.push(raw)
+      continue
+    }
+    if (seen.has(digits)) continue
+    seen.add(digits)
+    valid.push(digits)
+  }
+
+  const results: ZapiPhoneCheck[] = []
+  const failed: string[] = []
+  for (let start = 0; start < valid.length; start += batchSize) {
+    if (start > 0) await wait(pauseMs)
+    const chunk = valid.slice(start, start + batchSize)
+
+    let answered: { results: ZapiPhoneCheck[]; unanswered: string[] }
+    try {
+      try {
+        answered = await postPhonesChunk(credentials, chunk)
+      } catch {
+        await wait(retryDelayMs)
+        answered = await postPhonesChunk(credentials, chunk)
+      }
+    } catch (error) {
+      logger.warn('whatsapp.zapi.phone_check_chunk_failed', {
+        size: chunk.length,
+        reason: error instanceof Error ? error.message : 'unknown',
+      })
+      answered = { results: [], unanswered: chunk }
+    }
+
+    results.push(...answered.results)
+    failed.push(...answered.unanswered)
+    await options.onChunk?.({
+      results: answered.results,
+      failed: answered.unanswered,
+    })
+  }
+
+  return { results, failed, invalid }
 }

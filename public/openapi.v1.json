@@ -7758,6 +7758,16 @@
             "maximum": 9007199254740991,
             "description": "Contatos descadastrados (opt-out LGPD) no momento do disparo."
           },
+          "noWhatsappCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Números pulados (`SKIPPED_NO_WHATSAPP`) por estarem sem WhatsApp na checagem \"tem WhatsApp?\"."
+          },
+          "skipNoWhatsapp": {
+            "type": "boolean",
+            "description": "Lista com \"pular números sem WhatsApp\" ligado. Só pula quem já foi verificado."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -7792,9 +7802,20 @@
                   "description": "Número do WhatsApp só com dígitos (DDI + DDD + número).",
                   "example": "5511987654321"
                 },
+                "contactHasWhatsapp": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Checagem \"tem WhatsApp?\" do contato: `true`/`false`, ou `null` se não verificado."
+                },
                 "status": {
                   "type": "string",
-                  "enum": ["PENDING", "SENT", "FAILED", "SKIPPED"]
+                  "enum": ["PENDING", "SENT", "FAILED", "SKIPPED", "SKIPPED_NO_WHATSAPP"]
                 },
                 "errorMessage": {
                   "anyOf": [
@@ -7818,7 +7839,16 @@
                   ]
                 }
               },
-              "required": ["id", "contactId", "contactName", "contactWaId", "status", "errorMessage", "sentAt"]
+              "required": [
+                "id",
+                "contactId",
+                "contactName",
+                "contactWaId",
+                "contactHasWhatsapp",
+                "status",
+                "errorMessage",
+                "sentAt"
+              ]
             }
           }
         },
@@ -7838,6 +7868,8 @@
           "sentCount",
           "failedCount",
           "skippedCount",
+          "noWhatsappCount",
+          "skipNoWhatsapp",
           "createdAt",
           "updatedAt",
           "recipients"

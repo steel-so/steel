@@ -135,6 +135,7 @@ function campaign(
     actions: [],
     intervalSeconds: 30,
     aiReplies: true,
+    skipNoWhatsapp: false,
     status: 'RUNNING',
     runToken: 'tok',
     lastSentAt: null,

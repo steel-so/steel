@@ -49,6 +49,25 @@ describe('WhatsAppContactService', () => {
       expect(mockedContactRepo.listByWorkspace).toHaveBeenCalledWith(
         'ws1',
         undefined,
+        undefined,
+      )
+    })
+
+    it('should pass the "tem zap?" filter to the repository', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      mockedContactRepo.listByWorkspace.mockResolvedValue(ok([]))
+
+      await WhatsAppContactService.list('u1', 'ws1', {
+        search: 'ana',
+        whatsapp: 'no',
+      })
+
+      expect(mockedContactRepo.listByWorkspace).toHaveBeenCalledWith(
+        'ws1',
+        'ana',
+        'no',
       )
     })
 

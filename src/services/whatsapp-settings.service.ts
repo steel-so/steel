@@ -134,6 +134,8 @@ export const WhatsAppSettingsService = {
       businessHoursStart,
       businessHoursEnd,
       businessHoursDays,
+      whatsappCheckTtlDays:
+        dto.whatsappCheckTtlDays ?? current.whatsappCheckTtlDays,
     })
     if (!saved.ok) return saved
 
@@ -156,6 +158,7 @@ export const WhatsAppSettingsService = {
         businessHoursEnabled: saved.value.businessHoursEnabled,
         businessHoursStart: saved.value.businessHoursStart,
         businessHoursEnd: saved.value.businessHoursEnd,
+        whatsappCheckTtlDays: saved.value.whatsappCheckTtlDays,
       },
     })
 

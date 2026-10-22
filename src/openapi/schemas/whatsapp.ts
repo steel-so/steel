@@ -279,6 +279,13 @@ export const WhatsAppContactDTO = dto(
       description:
         '`KEYWORD` = o contato respondeu uma palavra de descadastro; `ADMIN` = marcado no cadastro; `AI` = registrado pela IA de uma campanha de IA.',
     }),
+    hasWhatsapp: z.boolean().nullable().meta({
+      description:
+        'Resultado da checagem "tem WhatsApp?" (Z-API): `true`/`false`, ou `null` se o número ainda não foi verificado.',
+    }),
+    whatsappCheckedAt: nullableDateTime().meta({
+      description: 'Quando a checagem "tem WhatsApp?" foi feita.',
+    }),
     conversationCount: z.number().int(),
     createdAt: dateTime(),
     updatedAt: dateTime(),
@@ -331,6 +338,39 @@ export const WhatsAppGroupMessageDTO = dto(
   }),
 )
 
+export const WhatsAppNumberValidationDTO = dto(
+  'WhatsAppNumberValidation',
+  z.object({
+    id: z.string(),
+    workspaceId: z.string(),
+    connectionId: z.string().meta({
+      description: 'Conexão Z-API consultada (a Meta não tem essa checagem).',
+    }),
+    scope: z.enum(['CONTACTS', 'BROADCAST', 'AI_CAMPAIGN', 'IMPORT']),
+    scopeId: z.string().nullable().meta({
+      description: 'Lista de transmissão ou campanha de origem, se houver.',
+    }),
+    status: z
+      .enum(['QUEUED', 'RUNNING', 'DONE', 'FAILED'])
+      .meta({ description: 'Listas de até 200 contatos terminam na hora.' }),
+    total: z.number().int(),
+    processed: z.number().int(),
+    withWhatsapp: z.number().int(),
+    withoutWhatsapp: z.number().int(),
+    failed: z.number().int().meta({
+      description:
+        'Contatos que a Z-API não conseguiu checar (tentar de novo).',
+    }),
+    cached: z.number().int().meta({
+      description: 'Contatos com resultado recente (TTL), não consultados.',
+    }),
+    errorMessage: z.string().nullable(),
+    startedAt: nullableDateTime(),
+    finishedAt: nullableDateTime(),
+    createdAt: dateTime(),
+  }),
+)
+
 /* ----------------------------- transmissões ------------------------------ */
 
 const BroadcastBase = z.object({
@@ -355,6 +395,14 @@ const BroadcastBase = z.object({
     description:
       'Contatos descadastrados (opt-out LGPD) no momento do disparo.',
   }),
+  noWhatsappCount: z.number().int().meta({
+    description:
+      'Números pulados (`SKIPPED_NO_WHATSAPP`) por estarem sem WhatsApp na checagem "tem WhatsApp?".',
+  }),
+  skipNoWhatsapp: z.boolean().meta({
+    description:
+      'Lista com "pular números sem WhatsApp" ligado. Só pula quem já foi verificado.',
+  }),
   createdAt: dateTime(),
   updatedAt: dateTime(),
 })
@@ -370,7 +418,17 @@ export const WhatsAppBroadcastDetailDTO = dto(
         contactId: z.string(),
         contactName: z.string().nullable(),
         contactWaId: waId(),
-        status: z.enum(['PENDING', 'SENT', 'FAILED', 'SKIPPED']),
+        contactHasWhatsapp: z.boolean().nullable().meta({
+          description:
+            'Checagem "tem WhatsApp?" do contato: `true`/`false`, ou `null` se não verificado.',
+        }),
+        status: z.enum([
+          'PENDING',
+          'SENT',
+          'FAILED',
+          'SKIPPED',
+          'SKIPPED_NO_WHATSAPP',
+        ]),
         errorMessage: z.string().nullable(),
         sentAt: nullableDateTime(),
       }),
@@ -391,6 +449,14 @@ export const WhatsAppBroadcastImportResultDTO = dto(
         reason: z.string().meta({ example: 'Telefone inválido' }),
       }),
     ),
+    validation: WhatsAppNumberValidationDTO.nullable().optional().meta({
+      description:
+        'Presente quando o passo "validar se tem WhatsApp" foi pedido e rodou.',
+    }),
+    validationUnavailable: z.string().nullable().optional().meta({
+      description:
+        'Presente quando o passo foi pedido mas não rodou (ex.: sem conexão Z-API); a importação em si concluiu.',
+    }),
   }),
 )
 
@@ -550,6 +616,10 @@ export const WhatsAppSettingsDTO = dto(
       description:
         'Dias de atendimento, 0 = domingo … 6 = sábado (padrão seg–sex).',
     }),
+    whatsappCheckTtlDays: z.number().int().meta({
+      description:
+        'Dias até a checagem "tem WhatsApp?" de um contato valer de novo (1 a 365; padrão 30).',
+    }),
   }),
 )
 
@@ -638,6 +708,10 @@ export const WhatsAppAiCampaignDTO = dto(
       intervalSeconds: z.number().int().meta({
         description:
           'Nível de agressividade: segundos entre dois envios (20 a 60).',
+      }),
+      skipNoWhatsapp: z.boolean().meta({
+        description:
+          'Pula (`SKIPPED`) contatos que a checagem "tem WhatsApp?" marcou sem WhatsApp. Contatos não verificados continuam sendo enviados. Padrão: desligado.',
       }),
       aiReplies: z.boolean().meta({
         description: 'A IA responde quem voltar a escrever.',
@@ -907,5 +981,13 @@ export const WhatsAppContactImportResultDTO = dto(
         message: z.string().meta({ example: 'Telefone em branco.' }),
       }),
     ),
+    validation: WhatsAppNumberValidationDTO.nullable().optional().meta({
+      description:
+        'Presente quando o passo "validar se tem WhatsApp" foi pedido e rodou.',
+    }),
+    validationUnavailable: z.string().nullable().optional().meta({
+      description:
+        'Presente quando o passo foi pedido mas não rodou (ex.: sem conexão Z-API); a importação em si concluiu.',
+    }),
   }),
 )

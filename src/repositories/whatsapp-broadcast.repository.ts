@@ -114,7 +114,11 @@ export const WhatsAppBroadcastRepository = {
   async listDueScheduledRecipients(now: Date): Promise<
     Result<
       (WhatsAppBroadcastRecipient & {
-        contact: { waId: string; broadcastOptedOutAt: Date | null }
+        contact: {
+          waId: string
+          broadcastOptedOutAt: Date | null
+          hasWhatsapp: boolean | null
+        }
         broadcastList: WhatsAppBroadcastList
       })[]
     >
@@ -168,7 +172,11 @@ export const WhatsAppBroadcastRepository = {
   async findRecipientById(id: string): Promise<
     Result<
       | (WhatsAppBroadcastRecipient & {
-          contact: { waId: string; broadcastOptedOutAt: Date | null }
+          contact: {
+            waId: string
+            broadcastOptedOutAt: Date | null
+            hasWhatsapp: boolean | null
+          }
           broadcastList: WhatsAppBroadcastList
         })
       | null
@@ -220,6 +228,74 @@ export const WhatsAppBroadcastRepository = {
     }
   },
 
+  /** Marks one PENDING recipient as skipped for having no WhatsApp. */
+  async markRecipientNoWhatsapp(id: string): Promise<Result<number>> {
+    try {
+      const result = await prisma.whatsAppBroadcastRecipient.updateMany({
+        where: { id, status: 'PENDING' },
+        data: {
+          status: 'SKIPPED_NO_WHATSAPP',
+          errorMessage: 'Número sem WhatsApp',
+        },
+      })
+      return ok(result.count)
+    } catch (error) {
+      return err(dbError('Failed to skip recipient without whatsapp', error))
+    }
+  },
+
+  /** PENDING recipients of the list whose contact was checked and has no
+   * WhatsApp become SKIPPED_NO_WHATSAPP. */
+  async skipPendingWithoutWhatsapp(
+    broadcastListId: string,
+  ): Promise<Result<number>> {
+    try {
+      const result = await prisma.whatsAppBroadcastRecipient.updateMany({
+        where: {
+          broadcastListId,
+          status: 'PENDING',
+          contact: { hasWhatsapp: false },
+        },
+        data: {
+          status: 'SKIPPED_NO_WHATSAPP',
+          errorMessage: 'Número sem WhatsApp',
+        },
+      })
+      return ok(result.count)
+    } catch (error) {
+      return err(dbError('Failed to skip recipients without whatsapp', error))
+    }
+  },
+
+  async listRecipientContactIds(
+    broadcastListId: string,
+  ): Promise<Result<string[]>> {
+    try {
+      const rows = await prisma.whatsAppBroadcastRecipient.findMany({
+        where: { broadcastListId },
+        select: { contactId: true },
+      })
+      return ok(rows.map((row) => row.contactId))
+    } catch (error) {
+      return err(dbError('Failed to list broadcast recipient contacts', error))
+    }
+  },
+
+  async setSkipNoWhatsapp(
+    id: string,
+    skipNoWhatsapp: boolean,
+  ): Promise<Result<void>> {
+    try {
+      await prisma.whatsAppBroadcastList.update({
+        where: { id },
+        data: { skipNoWhatsapp },
+      })
+      return ok(undefined)
+    } catch (error) {
+      return err(dbError('Failed to update broadcast skip setting', error))
+    }
+  },
+
   /** Recipients of the list per status (every status present, 0 default). */
   async countRecipientsByStatus(
     broadcastListId: string,
@@ -235,6 +311,7 @@ export const WhatsAppBroadcastRepository = {
         SENT: 0,
         FAILED: 0,
         SKIPPED: 0,
+        SKIPPED_NO_WHATSAPP: 0,
       }
       for (const row of rows) counts[row.status] = row._count._all
       return ok(counts)

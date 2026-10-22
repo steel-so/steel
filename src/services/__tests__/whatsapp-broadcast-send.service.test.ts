@@ -75,7 +75,7 @@ function arrangeRecipient(options?: {
   mockedBroadcastRepo.markRecipientsSkipped.mockResolvedValue(ok(1))
   mockedBroadcastRepo.countPendingRecipients.mockResolvedValue(ok(0))
   mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-    ok({ PENDING: 0, SENT: 1, FAILED: 0, SKIPPED: 0 }),
+    ok({ PENDING: 0, SENT: 1, FAILED: 0, SKIPPED: 0, SKIPPED_NO_WHATSAPP: 0 }),
   )
   mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
     ok(createFakeWhatsAppBroadcastList({ id: 'list1' })),
@@ -348,7 +348,13 @@ describe('WhatsAppBroadcastService · finished notice', () => {
     arrangeRecipient()
     mockedSend.text.mockResolvedValue(ok({ providerMessageId: 'wamid-1' }))
     mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-      ok({ PENDING: 0, SENT: 8, FAILED: 2, SKIPPED: 1 }),
+      ok({
+        PENDING: 0,
+        SENT: 8,
+        FAILED: 2,
+        SKIPPED: 1,
+        SKIPPED_NO_WHATSAPP: 0,
+      }),
     )
     mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
       ok(
@@ -384,7 +390,13 @@ describe('WhatsAppBroadcastService · finished notice', () => {
       err(whatsappProviderError('Número inválido')),
     )
     mockedBroadcastRepo.countRecipientsByStatus.mockResolvedValue(
-      ok({ PENDING: 0, SENT: 0, FAILED: 3, SKIPPED: 0 }),
+      ok({
+        PENDING: 0,
+        SENT: 0,
+        FAILED: 3,
+        SKIPPED: 0,
+        SKIPPED_NO_WHATSAPP: 0,
+      }),
     )
     mockedBroadcastRepo.closeIfRunning.mockResolvedValue(
       ok(createFakeWhatsAppBroadcastList({ id: 'list1', name: 'Aviso' })),
