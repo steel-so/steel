@@ -876,7 +876,12 @@ describe('report() aggregation math', () => {
       costs.groupBy.mockImplementation(async (f, by) =>
         by === field
           ? err(databaseError('x'))
-          : (original as (f: unknown, by: string) => unknown)(f, by),
+          : (
+              original as (
+                f: unknown,
+                by: string,
+              ) => ReturnType<typeof costs.groupBy>
+            )(f, by),
       )
       expectErr(
         await WhatsAppCostService.report('u1', 'ws1', query, NOW),
