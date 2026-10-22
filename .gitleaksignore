@@ -15,3 +15,5 @@ a034a748958647c74fb3d9e069398f0e16af7a11:src/lib/__tests__/ai-memory-context.tes
 1ce45f140263729d049f071682fd89281021f0ae:src/lib/social/providers/linkedin.ts:linkedin-client-id:17
 # Codecov badge token (public, read-only badge URL).
 6d83de01ff39348390ad50ca5027e05ca48e9663:README.md:generic-api-key:29
+# False positive: fake PABX secret in a test fixture (the literal was replaced by a runtime helper in a later commit).
+3fe90f0ead5fb4cc3140518ce49a5f6bda74c659:app/api/pabx/voice-agent/__tests__/voice-agent-pabx.e2e.test.ts:generic-api-key:7
