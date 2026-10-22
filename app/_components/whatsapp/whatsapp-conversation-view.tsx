@@ -87,6 +87,7 @@ import {
 import { WhatsappConversationEventChip } from './whatsapp-conversation-event-chip'
 import { WhatsappHandoffBanner } from './whatsapp-handoff-banner'
 import { WhatsappPhoneCallBanner } from './whatsapp-phone-call-banner'
+import { WhatsappSlaChip } from './whatsapp-sla-chip'
 import {
   canAssignTo,
   canMoveToTeam,
@@ -449,6 +450,10 @@ export function WhatsappConversationView({
                       {conversation.contactName ?? conversation.contactWaId}
                     </span>
                     <WhatsappTeamBadge team={conversation.team} />
+                    <WhatsappSlaChip
+                      workspaceId={workspaceId}
+                      conversationId={conversation.id}
+                    />
                   </p>
                   <p className='text-muted-foreground text-xs'>
                     {conversation.contactWaId}

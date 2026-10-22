@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { WhatsappReportsList } from '@/app/_components/whatsapp/whatsapp-reports-list'
+import { WhatsappSlaReport } from '@/app/_components/whatsapp/whatsapp-sla-report'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { MembershipService } from '@/src/services/membership.service'
 
@@ -28,6 +29,7 @@ export default async function WhatsappReportsPage({
   return (
     <div className='flex h-full w-full min-h-0 flex-col'>
       <div className='min-h-0 flex-1 overflow-y-auto'>
+        <WhatsappSlaReport workspaceId={membership.value.workspaceId} />
         <WhatsappReportsList
           workspaceId={membership.value.workspaceId}
           slug={slug}
