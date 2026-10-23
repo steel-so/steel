@@ -15,7 +15,7 @@ concurrency:
 jobs:
   lint:
     name: Lint & Type Check
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 10
     env:
       DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
@@ -72,7 +72,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 30
     env:
       DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
@@ -108,7 +108,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 25
     services:
       postgres:
@@ -180,7 +180,7 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 40
     services:
       postgres:
@@ -330,7 +330,7 @@ jobs:
 
   coverage-tests:
     name: Coverage Tests
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     # The suite now runs ~19 min on a hosted runner; 20 cut it off right
     # after a passing run.
     timeout-minutes: 30
@@ -409,7 +409,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 20
     services:
       postgres:
@@ -484,7 +484,7 @@ jobs:
 
   audit:
     name: Dependency Audit
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -516,7 +516,7 @@ jobs:
   # still blocked by the audit job.
   snyk:
     name: Snyk Security Scan
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
@@ -559,7 +559,7 @@ jobs:
 
   semgrep:
     name: Semgrep SAST
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -584,7 +584,7 @@ jobs:
 
   redis-tls-smoke:
     name: Redis TLS Smoke
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 10
     env:
       REDIS_URL: rediss://:testpassword@localhost:6379
@@ -650,7 +650,7 @@ jobs:
 
   gitleaks:
     name: Secret Scan
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -705,7 +705,7 @@ jobs:
   pr-title:
     name: PR Title Convention
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 5
     permissions:
       pull-requests: read
@@ -723,7 +723,7 @@ jobs:
   # gate pegue a falha antes do CD.
   docker-build:
     name: Docker Image Build
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
@@ -773,7 +773,7 @@ jobs:
       - gitleaks
       - redis-tls-smoke
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Fail if any required job failed or was cancelled
@@ -791,7 +791,7 @@ jobs:
     needs: [gate]
     # Only trunk failures; PRs (Dependabot, external) have no access to the secret.
     if: failure() && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 5
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
