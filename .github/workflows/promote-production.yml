@@ -43,7 +43,7 @@ env:
 jobs:
   prepare:
     name: Resolve Release
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 5
     outputs:
       enabled: ${{ steps.resolve.outputs.enabled }}
@@ -239,7 +239,7 @@ jobs:
     name: Notify Slack
     needs: [prepare, build, deploy]
     if: always() && needs.prepare.outputs.enabled == 'true'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 5
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
