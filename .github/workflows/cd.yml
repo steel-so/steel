@@ -62,7 +62,7 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch == 'main'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.calver.outputs.version }}
@@ -96,7 +96,7 @@ jobs:
     # runner self-hosted — passou a morrer com `ResourceExhausted` depois que
     # o ServiceDesk e o editor da base de conhecimento entraram. A imagem vai
     # para o GHCR e o deploy continua no runner do servidor (ADR 0009).
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     timeout-minutes: 45
     permissions:
       contents: read
@@ -299,7 +299,7 @@ jobs:
   release:
     name: Tag & Release
     needs: [version, deploy]
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: write
@@ -331,7 +331,7 @@ jobs:
     name: Notify Slack
     needs: [version, build, migrate, deploy]
     if: always() && needs.version.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     timeout-minutes: 5
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
