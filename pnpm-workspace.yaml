@@ -24,7 +24,8 @@ overrides:
   # GHSA-p293-qw3h-jr36 / GHSA-2xp9-vwfh-vxw4 (RCE) e GHSA-vcvr-r3jv-pc5j
   # (RCE no next/og, corrigida em 16.3.6) e a RCE do otimizador de imagens com SVG (corrigida em 16.4.1): @react-email/ui puxa o próprio
   # next@16.2.x; força toda cópia para a release corrigida.
-  next: '>=16.4.1'
+  # Travado em 16.3.8: o 16.4.x emite o bootstrap do Turbopack inline (<script id="_R_">) sem nonce, a CSP o bloqueia e a página não hidrata. Reavaliar ao sair uma correção.
+  next: '16.3.8'
   effect: '^3.21.0'
   ioredis: '5.10.1'
   esbuild: '>=0.28.1'
