@@ -43,11 +43,55 @@ const REQUIRED_SCOPES = {
 const INSIGHT_METRICS: {
   metric: string
   key: keyof Omit<CrmInstagramInsightsPoint, 'date'>
+  /** `total_value` only: no time series, so one call per day. */
+  perDay?: boolean
 }[] = [
-  { metric: 'impressions', key: 'impressions' },
+  // `impressions` was retired for every API version on 2025-04-21; `views`
+  // replaces it (the DTO field keeps its name).
+  { metric: 'views', key: 'impressions', perDay: true },
   { metric: 'reach', key: 'reach' },
-  { metric: 'profile_views', key: 'profileViews' },
+  { metric: 'profile_views', key: 'profileViews', perDay: true },
 ]
+
+/** Day calls in flight at once for the `perDay` metrics. */
+const PER_DAY_CONCURRENCY = 10
+
+/** Every `YYYY-MM-DD` from `startDate` up to (excluding) `endDate`. */
+function daysBetween(startDate: string, endDate: string): string[] {
+  const days: string[] = []
+  const end = Date.parse(`${endDate}T00:00:00Z`)
+  for (let t = Date.parse(`${startDate}T00:00:00Z`); t < end; t += 86_400_000) {
+    days.push(new Date(t).toISOString().slice(0, 10))
+  }
+  return days
+}
+
+function nextDay(date: string): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000)
+    .toISOString()
+    .slice(0, 10)
+}
+
+/** One day of a `total_value` metric; null when Meta refuses the call. */
+async function fetchDayTotal(
+  pageToken: string,
+  igAccountId: string,
+  metric: string,
+  day: string,
+): Promise<number | null> {
+  const params = new URLSearchParams({
+    metric,
+    metric_type: 'total_value',
+    period: 'day',
+    since: day,
+    until: nextDay(day),
+  })
+  const result = await getJson<{
+    data?: { total_value?: { value?: number } }[]
+  }>(`${GRAPH}/${igAccountId}/insights?${params.toString()}`, pageToken)
+  if (!result.ok) return null
+  return toInt(result.value.data?.[0]?.total_value?.value)
+}
 
 function isoDate(days: number): string {
   return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10)
@@ -122,7 +166,24 @@ async function fetchInsights(
     return fresh
   }
 
-  for (const { metric, key } of INSIGHT_METRICS) {
+  for (const { metric, key, perDay } of INSIGHT_METRICS) {
+    if (perDay) {
+      const days = daysBetween(args.startDate, args.endDate)
+      for (let i = 0; i < days.length; i += PER_DAY_CONCURRENCY) {
+        const batch = days.slice(i, i + PER_DAY_CONCURRENCY)
+        const totals = await Promise.all(
+          batch.map((day) =>
+            fetchDayTotal(pageToken, igAccountId, metric, day),
+          ),
+        )
+        batch.forEach((day, index) => {
+          const value = totals[index]
+          // A dead metric (all calls refused) simply contributes nothing.
+          if (value !== null && value > 0) pointFor(day)[key] = value
+        })
+      }
+      continue
+    }
     const params = new URLSearchParams({
       metric,
       period: 'day',

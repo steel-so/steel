@@ -21,10 +21,14 @@ beforeEach(() => {
 })
 
 describe('formatSdWaId', () => {
-  it('formats a brazilian number and keeps anything else as it is', () => {
+  it('formats a brazilian number and keeps other digit strings as they are', () => {
     expect(formatSdWaId('5511999998888')).toBe('+55 (11) 99999-8888')
     expect(formatSdWaId('551133334444')).toBe('+55 (11) 3333-4444')
-    expect(formatSdWaId('abc')).toBe('abc')
+    expect(formatSdWaId('12345')).toBe('12345')
+  })
+
+  it('shows a contact known only by its BSUID as having no phone', () => {
+    expect(formatSdWaId('BR.13491208655302741918')).toBe('Sem telefone')
   })
 })
 

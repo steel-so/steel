@@ -45,6 +45,7 @@ const mockedSend = vi.mocked(WhatsAppSend)
 function arrangeRecipient(options?: {
   list?: Partial<WhatsAppBroadcastList>
   optedOut?: boolean
+  waId?: string
   status?: 'PENDING' | 'SENT'
 }) {
   const list = createFakeWhatsAppBroadcastList({
@@ -55,7 +56,7 @@ function arrangeRecipient(options?: {
     ...options?.list,
   })
   const contact = createFakeWhatsAppContact({
-    waId: '5511988887777',
+    waId: options?.waId ?? '5511988887777',
     broadcastOptedOutAt: options?.optedOut ? new Date() : null,
   })
   mockedBroadcastRepo.findRecipientById.mockResolvedValue(
@@ -198,6 +199,22 @@ describe('WhatsAppBroadcastService.sendToRecipient()', () => {
       'list1',
       'DONE',
     )
+  })
+
+  it('should skip a BSUID-only contact without sending', async () => {
+    arrangeRecipient({ waId: 'BR.13491208655302741918' })
+
+    const outcome = expectOk(
+      await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
+    )
+
+    expect(outcome).toEqual({ status: 'skipped', reason: 'no_phone' })
+    expect(mockedBroadcastRepo.updateRecipientStatus).toHaveBeenCalledWith(
+      'r1',
+      { status: 'SKIPPED', errorMessage: 'Contato sem telefone' },
+    )
+    expect(mockedSend.text).not.toHaveBeenCalled()
+    expect(mockedSend.template).not.toHaveBeenCalled()
   })
 
   it('should send a text broadcast and close the list when drained', async () => {

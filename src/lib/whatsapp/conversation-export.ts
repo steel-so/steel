@@ -3,6 +3,7 @@ import type {
   WhatsAppMessageType,
 } from '@prisma/client'
 import { toCsv } from '@/src/lib/crm-export'
+import { formatWaId } from '@/src/lib/whatsapp/phone'
 
 /** Formats a conversation can be downloaded in. */
 export const WHATSAPP_CONVERSATION_EXPORT_FORMATS = ['txt', 'csv'] as const
@@ -123,7 +124,7 @@ export function buildWhatsAppConversationExport(
   }
 
   const header = [
-    `Conversa com ${contactLabel} (+${input.contactWaId})`,
+    `Conversa com ${contactLabel} (${formatWaId(input.contactWaId)})`,
     `Exportada em ${formatDateTime(new Date())}`,
     '',
   ]

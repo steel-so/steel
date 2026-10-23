@@ -955,7 +955,7 @@ export function CrmInstagramStudio({
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
                 <StatCard
                   icon={Analytics01Icon}
-                  label='Impressões'
+                  label='Visualizações'
                   value={insights.totals.impressions}
                 />
                 <StatCard
@@ -988,7 +988,7 @@ export function CrmInstagramStudio({
                     return (
                       <ResponsiveLine
                         data={[
-                          { id: 'Impressões', data: s1 },
+                          { id: 'Visualizações', data: s1 },
                           { id: 'Alcance', data: s2 },
                           { id: 'Visitas', data: s3 },
                         ]}

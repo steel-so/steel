@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ok } from '@/src/lib/result'
+import { formatWaId } from '@/src/lib/whatsapp/phone'
 import { WhatsAppConnectionService } from '@/src/services/whatsapp-connection.service'
 import { WhatsAppGroupService } from '@/src/services/whatsapp-group.service'
 import { WhatsAppTemplateService } from '@/src/services/whatsapp-template.service'
@@ -78,7 +79,7 @@ export const zapGroupsListTool: SteelAiTool<GroupsArgs> = {
           admins: g.participants
             .filter((p) => p.role !== 'MEMBER')
             .slice(0, 10)
-            .map((p) => p.name ?? `+${p.waId}`),
+            .map((p) => p.name ?? formatWaId(p.waId)),
           lastMessageAt: g.lastMessageAt,
           lastMessagePreview: truncate(g.lastMessagePreview, 200),
         })),

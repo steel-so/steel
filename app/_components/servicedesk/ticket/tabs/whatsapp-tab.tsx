@@ -69,6 +69,7 @@ const CONVERSATION_STATUS_LABEL: Record<string, string> = {
 
 /** Número em dígitos → `+55 (11) 99999-9999` (ou o próprio, se não casar). */
 export function formatSdWaId(waId: string): string {
+  if (waId && !/^\d+$/.test(waId)) return 'Sem telefone'
   const match = /^(\d{2})(\d{2})(\d{4,5})(\d{4})$/.exec(waId)
   if (!match) return waId
   return `+${match[1]} (${match[2]}) ${match[3]}-${match[4]}`

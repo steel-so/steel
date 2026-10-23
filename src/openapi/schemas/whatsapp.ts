@@ -108,6 +108,11 @@ export const WhatsAppConversationDTO = dto(
     contactId: z.string(),
     contactName: z.string().nullable(),
     contactWaId: waId(),
+    contactUsername: z.string().nullable(),
+    contactHasPhone: z.boolean().meta({
+      description:
+        'Falso quando só o BSUID do contato é conhecido (usuário com username): `contactWaId` traz então o BSUID, sem ligação e sem telefone.',
+    }),
     contactAvatarUrl: z.string().nullable(),
     status: z.enum(['NEW', 'IN_PROGRESS', 'CLOSED']),
     assignedUserId: z.string().nullable(),
@@ -271,6 +276,11 @@ export const WhatsAppContactDTO = dto(
     id: id('ckv9x2p0h0000ct7d3k1e5abc'),
     workspaceId: z.string(),
     waId: waId(),
+    username: z.string().nullable(),
+    hasPhone: z.boolean().meta({
+      description:
+        'Falso quando só o BSUID é conhecido (usuário com username): `waId` traz então o BSUID.',
+    }),
     name: z.string().nullable(),
     avatarUrl: z.string().nullable(),
     description: z.string().nullable(),

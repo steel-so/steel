@@ -11,6 +11,10 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
+import {
+  contactRecordTitle,
+  contactTitle,
+} from '@/app/_components/whatsapp/whatsapp-contact-label'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -211,7 +215,7 @@ function NewConversationDialog({
                 <SelectGroup>
                   {(contacts.data ?? []).map((contact) => (
                     <SelectItem key={contact.id} value={contact.id}>
-                      {contact.name ?? contact.waId}
+                      {contactRecordTitle(contact)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -334,7 +338,8 @@ export function WhatsappConversationSidebar({
     const term = search.toLowerCase()
     return (
       conversation.contactName?.toLowerCase().includes(term) ||
-      conversation.contactWaId.includes(term)
+      conversation.contactWaId.toLowerCase().includes(term) ||
+      conversation.contactUsername?.toLowerCase().includes(term)
     )
   })
 
@@ -490,9 +495,7 @@ export function WhatsappConversationSidebar({
                     src={conversation.contactAvatarUrl ?? undefined}
                   />
                   <AvatarFallback>
-                    {(conversation.contactName ?? conversation.contactWaId)
-                      .slice(0, 2)
-                      .toUpperCase()}
+                    {contactTitle(conversation).slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className='min-w-0 flex-1'>
@@ -512,7 +515,7 @@ export function WhatsappConversationSidebar({
                       />
                     )}
                     <span className='truncate font-medium text-sm'>
-                      {conversation.contactName ?? conversation.contactWaId}
+                      {contactTitle(conversation)}
                     </span>
                     <span className='ml-auto shrink-0 text-[10px] text-muted-foreground'>
                       {formatRelativeTime(conversation.lastMessageAt)}

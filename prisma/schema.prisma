@@ -1188,7 +1188,12 @@ model WhatsAppConnection {
 model WhatsAppContact {
   id                    String                @id @default(cuid())
   workspaceId           String                @map("workspace_id")
+  // Identity key: the phone (digits) or, for a contact Meta reports without a
+  // phone (username users), the BSUID. Turns into the phone once it is known.
   waId                  String                @map("wa_id")
+  // Business-scoped user ID (`BR.123…`), always sent by Meta since 2026-04.
+  bsuid                 String?
+  username              String?
   name                  String?
   avatarUrl             String?               @map("avatar_url")
   // Freeform "about"/bio text — manually entered, no provider API exposes this.
@@ -1213,6 +1218,7 @@ model WhatsAppContact {
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
 
   @@unique([workspaceId, waId])
+  @@unique([workspaceId, bsuid])
   @@index([workspaceId])
   @@map("whatsapp_contacts")
 }

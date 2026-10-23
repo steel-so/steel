@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { conflict, whatsappContactNotFound } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
+import { formatWaId } from '@/src/lib/whatsapp/phone'
 import { toWhatsAppContactDTO } from '@/src/mappers/whatsapp-contact.mapper'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { assertModuleMember } from '@/src/services/authz'
@@ -29,8 +30,8 @@ const MODULE = 'COMMUNICATION' as const
 
 function label(contact: Pick<WhatsAppContactDTO, 'name' | 'waId'>): string {
   return contact.name
-    ? `${contact.name} (+${contact.waId})`
-    : `+${contact.waId}`
+    ? `${contact.name} (${formatWaId(contact.waId)})`
+    : formatWaId(contact.waId)
 }
 
 function compactContact(contact: WhatsAppContactDTO) {

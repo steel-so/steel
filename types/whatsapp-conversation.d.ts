@@ -9,6 +9,10 @@ export interface WhatsAppConversationDTO {
   contactId: string
   contactName: string | null
   contactWaId: string
+  /** Username the contact adopted on WhatsApp, when Meta reports it. */
+  contactUsername: string | null
+  /** False when only the BSUID is known: no calls, no phone display. */
+  contactHasPhone: boolean
   contactAvatarUrl: string | null
   status: WhatsAppConversationStatusDTO
   assignedUserId: string | null

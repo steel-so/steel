@@ -67,3 +67,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0047 | [Fila do WhatsApp: avisos de conversa sem atendente e distribuição automática](./0047-whatsapp-queue-alerts-and-automatic-distribution.md) | Aceita | 2026-10-22 |
 | 0048 | [SLA de primeira resposta e resolução no atendimento do WhatsApp](./0048-whatsapp-sla-first-response-and-resolution.md) | Aceita | 2026-10-22 |
 | 0050 | [Análise de custos do WhatsApp: razão por envio, tabela de preços por workspace e orçamento que só avisa](./0050-whatsapp-cost-analysis-meta-and-zapi.md) | Aceita | 2026-10-22 |
+| 0051 | [Identidade do contato WhatsApp: telefone ou BSUID](./0051-whatsapp-contact-identity-bsuid.md) | Aceita | 2026-10-22 |

@@ -162,7 +162,7 @@ describe('getInsights()', () => {
   it('should fetch each page metric separately and merge them by day', async () => {
     fetchMock = mockFetch((url) => {
       const metric = new URL(url).searchParams.get('metric')
-      if (metric === 'page_impressions_unique') {
+      if (metric === 'page_total_media_view_unique') {
         return jsonResponse({
           data: [
             {
@@ -198,7 +198,7 @@ describe('getInsights()', () => {
     const calls = fetchMock.calls()
     expect(calls.map((c) => new URL(c.url).searchParams.get('metric'))).toEqual(
       [
-        'page_impressions_unique',
+        'page_total_media_view_unique',
         'page_post_engagements',
         'page_daily_follows',
       ],

@@ -3,9 +3,14 @@ import type { WhatsAppPhoneCall, WhatsAppPhoneCallStatus } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL, PABX_CALLBACK_URL } from '@/lib/env/server'
-import { pabxCallbackInvalid, pabxExtensionRequired } from '@/src/errors'
+import {
+  badRequest,
+  pabxCallbackInvalid,
+  pabxExtensionRequired,
+} from '@/src/errors'
 import { placePabxCall } from '@/src/lib/pabx/click-to-call'
 import { err, ok, type Result } from '@/src/lib/result'
+import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { toWhatsAppPhoneCallDTO } from '@/src/mappers/whatsapp-phone-call.mapper'
 import { toWhatsAppSettingsDTO } from '@/src/mappers/whatsapp-settings.mapper'
@@ -111,6 +116,9 @@ export const WhatsAppPhoneCallService = {
     )
     if (!visible.ok) return visible
     const { contact } = visible.value.conversation
+    if (!isWhatsAppPhone(contact.waId)) {
+      return err(badRequest('Este contato não tem telefone para ligar'))
+    }
 
     const actor = await UserRepository.findById(actorId)
     if (!actor.ok) return actor

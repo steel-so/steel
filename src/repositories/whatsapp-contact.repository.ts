@@ -100,26 +100,101 @@ export const WhatsAppContactRepository = {
     }
   },
 
+  /**
+   * Upsert by identity. Meta may send only a BSUID (username users): `waId` is
+   * then the identity key too. Lookup is by BSUID first, then by phone, so a
+   * contact keeps one row when its phone shows up later (the phone replaces
+   * the BSUID as `waId`, unless another contact already owns that phone).
+   */
   async upsertByWaId(data: {
     workspaceId: string
     waId: string
+    bsuid?: string
+    username?: string
     name?: string
     avatarUrl?: string
   }): Promise<Result<WhatsAppContact>> {
     try {
-      const contact = await prisma.whatsAppContact.upsert({
-        where: {
-          workspaceId_waId: { workspaceId: data.workspaceId, waId: data.waId },
-        },
-        create: data,
-        update: {
-          ...(data.name ? { name: data.name } : {}),
-          ...(data.avatarUrl ? { avatarUrl: data.avatarUrl } : {}),
+      const { workspaceId, waId, bsuid, username } = data
+      const known = bsuid
+        ? await prisma.whatsAppContact.findUnique({
+            where: { workspaceId_bsuid: { workspaceId, bsuid } },
+          })
+        : null
+      const byPhone = await prisma.whatsAppContact.findUnique({
+        where: { workspaceId_waId: { workspaceId, waId } },
+      })
+      const current = known ?? byPhone
+      const fields = {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.avatarUrl ? { avatarUrl: data.avatarUrl } : {}),
+        ...(username ? { username } : {}),
+      }
+      if (!current) {
+        const created = await prisma.whatsAppContact.create({
+          data: { workspaceId, waId, bsuid, ...fields },
+        })
+        return ok(created)
+      }
+      const adoptPhone = known !== null && known.waId !== waId && !byPhone
+      const updated = await prisma.whatsAppContact.update({
+        where: { id: current.id },
+        data: {
+          ...fields,
+          ...(bsuid && !current.bsuid ? { bsuid } : {}),
+          ...(adoptPhone ? { waId } : {}),
         },
       })
-      return ok(contact)
+      return ok(updated)
     } catch (error) {
       return err(dbError('Failed to upsert whatsapp contact', error))
+    }
+  },
+
+  /**
+   * Meta changed a contact's BSUID (new phone number). Finds the contact by
+   * the previous BSUID (or the phone it reports) and moves it to the new one;
+   * the phone becomes `waId` when no other contact owns it. No-op for a
+   * contact we never talked to.
+   */
+  async applyIdentityChange(data: {
+    workspaceId: string
+    bsuid: string
+    previousBsuid?: string
+    waId?: string
+  }): Promise<Result<WhatsAppContact | null>> {
+    try {
+      const { workspaceId, bsuid, previousBsuid, waId } = data
+      const contact =
+        (previousBsuid
+          ? await prisma.whatsAppContact.findUnique({
+              where: {
+                workspaceId_bsuid: { workspaceId, bsuid: previousBsuid },
+              },
+            })
+          : null) ??
+        (waId
+          ? await prisma.whatsAppContact.findUnique({
+              where: { workspaceId_waId: { workspaceId, waId } },
+            })
+          : null)
+      if (!contact) return ok(null)
+      const phoneTaken =
+        waId && waId !== contact.waId
+          ? await prisma.whatsAppContact.findUnique({
+              where: { workspaceId_waId: { workspaceId, waId } },
+            })
+          : null
+      const updated = await prisma.whatsAppContact.update({
+        where: { id: contact.id },
+        data: {
+          bsuid,
+          ...(waId && !phoneTaken ? { waId } : {}),
+        },
+      })
+      return ok(updated)
+    } catch (error) {
+      return err(dbError('Failed to apply whatsapp identity change', error))
     }
   },
 

@@ -2,6 +2,7 @@
 
 import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
 import { WhatsappNumberValidationDialog } from '@/app/_components/whatsapp/number-validation/whatsapp-number-validation-dialog'
+import { contactRecordTitle } from '@/app/_components/whatsapp/whatsapp-contact-label'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -336,7 +337,7 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                       onCheckedChange={() => toggleContact(contact.id)}
                     />
                     <span className='min-w-0 flex-1 truncate'>
-                      {contact.name ?? contact.waId}
+                      {contactRecordTitle(contact)}
                     </span>
                     {optedOut ? (
                       <Badge

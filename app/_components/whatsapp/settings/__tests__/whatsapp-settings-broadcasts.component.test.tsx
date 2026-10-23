@@ -60,6 +60,8 @@ function contact(id: string, name: string | null, waId: string) {
     id,
     workspaceId: 'ws_1',
     waId,
+    username: null,
+    hasPhone: true,
     name,
     avatarUrl: null,
     description: null,

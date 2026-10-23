@@ -25,6 +25,7 @@ import {
   resolveTemplateValues,
   templateFields,
 } from '@/src/lib/whatsapp/ai-campaign'
+import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
@@ -908,6 +909,9 @@ export const WhatsAppAiCampaignService = {
 
     if (recipient.contact.broadcastOptedOutAt) {
       return skip('Contato descadastrado das mensagens automáticas')
+    }
+    if (!isWhatsAppPhone(recipient.contact.waId)) {
+      return skip('Contato sem telefone')
     }
     // "Tem zap?": only a contact already checked and found without WhatsApp
     // is skipped; unknown (never checked) keeps being sent.

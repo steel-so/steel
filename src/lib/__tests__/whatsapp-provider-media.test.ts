@@ -134,3 +134,61 @@ describe('Z-API sendMedia()', () => {
     expect(audio.body.caption).toBeUndefined()
   })
 })
+
+describe('Meta Cloud API recipient (BSUID)', () => {
+  const client = createMetaClient({
+    phoneNumberId: 'phone',
+    wabaId: 'waba',
+    accessToken: 'token',
+  })
+
+  it('should address a phone number in `to`', async () => {
+    const spy = stubFetch({ messages: [{ id: 'wamid.1' }] })
+
+    await client.sendText({ to: '5513991374570', text: 'oi' })
+
+    const { body } = lastCall(spy)
+    expect(body.to).toBe('5513991374570')
+    expect(body).not.toHaveProperty('recipient')
+  })
+
+  it('should address a BSUID in `recipient`, never in `to`', async () => {
+    const spy = stubFetch({ messages: [{ id: 'wamid.2' }] })
+
+    await client.sendText({ to: 'BR.13491208655302741918', text: 'oi' })
+
+    const { body } = lastCall(spy)
+    expect(body.recipient).toBe('BR.13491208655302741918')
+    expect(body).not.toHaveProperty('to')
+  })
+})
+
+describe('Meta Cloud API BSUID errors', () => {
+  const client = createMetaClient({
+    phoneNumberId: 'phone',
+    wabaId: 'waba',
+    accessToken: 'token',
+  })
+
+  it('should explain error 131062 in plain Portuguese', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: 131062,
+                message: 'BSUID recipients are not supported',
+              },
+            }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    )
+
+    await expect(
+      client.sendText({ to: 'BR.13491208655302741918', text: 'oi' }),
+    ).rejects.toThrow('sem telefone')
+  })
+})

@@ -18,6 +18,10 @@ import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
 import { useWebPhone } from '@/app/_components/webphone/webphone-context'
+import {
+  contactSubtitle,
+  contactTitle,
+} from '@/app/_components/whatsapp/whatsapp-contact-label'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -439,15 +443,13 @@ export function WhatsappConversationView({
                     src={conversation.contactAvatarUrl ?? undefined}
                   />
                   <AvatarFallback>
-                    {(conversation.contactName ?? conversation.contactWaId)
-                      .slice(0, 2)
-                      .toUpperCase()}
+                    {contactTitle(conversation).slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className='min-w-0'>
                   <p className='flex items-center gap-1.5 font-medium text-sm'>
                     <span className='truncate'>
-                      {conversation.contactName ?? conversation.contactWaId}
+                      {contactTitle(conversation)}
                     </span>
                     <WhatsappTeamBadge team={conversation.team} />
                     <WhatsappSlaChip
@@ -456,7 +458,7 @@ export function WhatsappConversationView({
                     />
                   </p>
                   <p className='text-muted-foreground text-xs'>
-                    {conversation.contactWaId}
+                    {contactSubtitle(conversation)}
                   </p>
                 </div>
               </button>
@@ -467,9 +469,7 @@ export function WhatsappConversationView({
               <Avatar className='size-16'>
                 <AvatarImage src={conversation.contactAvatarUrl ?? undefined} />
                 <AvatarFallback className='text-lg'>
-                  {(conversation.contactName ?? conversation.contactWaId)
-                    .slice(0, 2)
-                    .toUpperCase()}
+                  {contactTitle(conversation).slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -477,7 +477,7 @@ export function WhatsappConversationView({
                   {conversation.contactName ?? 'Sem nome'}
                 </p>
                 <p className='text-muted-foreground text-xs'>
-                  {conversation.contactWaId}
+                  {contactSubtitle(conversation)}
                 </p>
               </div>
             </div>
@@ -523,7 +523,7 @@ export function WhatsappConversationView({
             workspaceId={workspaceId}
             reference={{
               kind: 'conversation',
-              label: conversation.contactName ?? conversation.contactWaId,
+              label: contactTitle(conversation),
             }}
           />
           {canEdit && (
@@ -532,13 +532,17 @@ export function WhatsappConversationView({
               size='icon-sm'
               aria-label='Ligar para o contato'
               title={
-                webPhone.enabled
-                  ? `Ligar pelo telefone web (ramal ${currentUser.data?.pabxExtension})`
-                  : hasPabx
-                    ? `Ligar pelo ramal ${currentUser.data?.pabxExtension}`
-                    : 'Configure seu ramal e device no perfil para ligar'
+                !conversation.contactHasPhone
+                  ? 'Este contato não tem telefone para ligar'
+                  : webPhone.enabled
+                    ? `Ligar pelo telefone web (ramal ${currentUser.data?.pabxExtension})`
+                    : hasPabx
+                      ? `Ligar pelo ramal ${currentUser.data?.pabxExtension}`
+                      : 'Configure seu ramal e device no perfil para ligar'
               }
-              disabled={startPhoneCall.isPending}
+              disabled={
+                startPhoneCall.isPending || !conversation.contactHasPhone
+              }
               onClick={handlePhoneCall}
             >
               <SteelIcon icon={Call02Icon} size={18} />
@@ -742,7 +746,7 @@ export function WhatsappConversationView({
       <WhatsappComposer
         workspaceId={workspaceId}
         conversationId={conversation.id}
-        contactName={conversation.contactName ?? conversation.contactWaId}
+        contactName={contactTitle(conversation)}
         disabled={conversation.aiActive || isClosed || outsideHours}
         replyTarget={replyTarget}
         onClearReply={() => setReplyTarget(null)}

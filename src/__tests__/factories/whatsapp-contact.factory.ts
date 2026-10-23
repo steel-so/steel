@@ -10,6 +10,8 @@ export function createFakeWhatsAppContact(
     id: createId(),
     workspaceId: createId(),
     waId: '5511988887777',
+    bsuid: null,
+    username: null,
     name: 'Maria Silva',
     avatarUrl: null,
     description: null,
