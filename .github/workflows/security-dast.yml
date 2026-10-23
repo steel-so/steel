@@ -12,7 +12,7 @@ permissions:
 jobs:
   zap-baseline:
     name: OWASP ZAP Baseline Scan
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -36,7 +36,7 @@ jobs:
 
   headers-check:
     name: Security Headers Validation
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     env:
       BASE_URL: https://homologacao.stratustelecom.com.br
     steps:
