@@ -76,6 +76,39 @@ const REVIEWED_PUBLIC: Record<string, string> = {
  */
 const OPEN_BY_DESIGN = ['/api/auth', '/api/status', '/api/talk-to-sales']
 
+/**
+ * Single endpoints under a credentialed prefix that answer an anonymous call
+ * on purpose. Each one reads or changes nothing without its token.
+ */
+const OPEN_ENDPOINTS: Record<string, string> = {
+  'GET /api/whatsapp/webhook/zapi':
+    'health check, answers "OK" and reads nothing',
+  'DELETE /api/servicedesk/portal/session':
+    'portal logout, only clears the caller own cookie',
+  'GET /api/crm/campaigns/o/[token]':
+    'open-tracking pixel, answers a GIF whatever the token',
+  'POST /api/v1/auth/device': 'device authorization request (RFC 8628)',
+  'GET /api/crm/unsubscribe/[token]':
+    'redirects to the result page; an invalid token unsubscribes nobody',
+}
+
+/** Browser OAuth callbacks send the visitor away instead of answering 401. */
+const REDIRECTS_WITHOUT_SESSION = [
+  'GET /api/servicedesk/integrations/oauth/slack',
+  'GET /api/social/callback/[platform]',
+]
+
+// GitHub answers 200 to `ping` and unknown events before it reads anything.
+// Declaring a real event makes the sweep reach the signature check.
+const WEBHOOK_EVENT_HEADERS = { 'x-github-event': 'issues' }
+
+/** 503 = the webhook secret is not configured, which fails closed. */
+const refused = (status: number | 'timeout', p: Probe) =>
+  status !== 'timeout' &&
+  (DENIED.has(status) ||
+    status === 503 ||
+    `${p.method} ${p.template}` in OPEN_ENDPOINTS)
+
 function listRouteFiles(dir: string, name: string): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
@@ -186,12 +219,13 @@ function probes(routes: ApiRoute[], workspaceId?: string): Probe[] {
 async function sweep(
   list: Probe[],
   headers: Record<string, string>,
-  accept: (status: number | 'timeout') => boolean,
+  accept: (status: number | 'timeout', probe: Probe) => boolean,
 ): Promise<string[]> {
   const failures: string[] = []
   await pool(list, 16, async (p) => {
     const status = await call(p.method, p.path, headers)
-    if (!accept(status)) failures.push(`${status}  ${p.method} ${p.template}`)
+    if (!accept(status, p))
+      failures.push(`${status}  ${p.method} ${p.template}`)
   })
   return failures.sort()
 }
@@ -232,7 +266,12 @@ describe('private API routes', () => {
     const failures = await sweep(
       probes(PRIVATE),
       { Cookie: FORGED_COOKIE },
-      (s) => s === 401,
+      (s, p) =>
+        s === 401 ||
+        (typeof s === 'number' &&
+          s >= 300 &&
+          s < 400 &&
+          REDIRECTS_WITHOUT_SESSION.includes(`${p.method} ${p.template}`)),
     )
     expect(failures).toEqual([])
   }, 300_000)
@@ -276,11 +315,7 @@ describe('public API routes', () => {
   )
 
   it('should refuse an anonymous call that carries no valid credential', async () => {
-    const failures = await sweep(
-      probes(closed),
-      {},
-      (s) => s !== 'timeout' && DENIED.has(s),
-    )
+    const failures = await sweep(probes(closed), WEBHOOK_EVENT_HEADERS, refused)
     expect(failures).toEqual([])
   }, 300_000)
 
@@ -288,13 +323,14 @@ describe('public API routes', () => {
     const failures = await sweep(
       probes(closed),
       {
+        ...WEBHOOK_EVENT_HEADERS,
         Authorization: 'Bearer stl_pat_invalid',
         'x-hub-signature-256': 'sha256=invalid',
         'x-signature': 'invalid',
         'x-slack-signature': 'v0=invalid',
         'x-gitlab-token': 'invalid',
       },
-      (s) => s !== 'timeout' && DENIED.has(s),
+      refused,
     )
     expect(failures).toEqual([])
   }, 300_000)
