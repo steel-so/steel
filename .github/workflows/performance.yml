@@ -15,7 +15,7 @@ jobs:
   lighthouse:
     name: Lighthouse CI
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     continue-on-error: true
     services:
       postgres:
@@ -87,7 +87,7 @@ jobs:
   k6-local:
     name: k6 Load Tests (Local)
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     continue-on-error: true
     services:
       postgres:
@@ -184,7 +184,7 @@ jobs:
   k6-homolog-smoke:
     name: k6 Homologação Smoke Test
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-26.04
     env:
       BASE_URL: https://homologacao.stratustelecom.com.br
       # GitHub runners (US) -> homologação (BR): the body transfer of the
