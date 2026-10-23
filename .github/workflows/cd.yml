@@ -96,7 +96,9 @@ jobs:
     # runner self-hosted — passou a morrer com `ResourceExhausted` depois que
     # o ServiceDesk e o editor da base de conhecimento entraram. A imagem vai
     # para o GHCR e o deploy continua no runner do servidor (ADR 0009).
-    runs-on: avrea-ubuntu-26.04
+    # Heavy job: the Avrea runner is killed by the OOM killer on tsc, next build
+    # and the image build, so it stays on the GitHub-hosted runner.
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
