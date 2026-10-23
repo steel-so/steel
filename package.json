@@ -230,7 +230,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^5.0.3",
-    "@vitest/ui": "5.0.3",
+    "@vitest/ui": "5.0.5",
     "chokidar": "^5.0.0",
     "dotenv": "^17.4.2",
     "esbuild": "^0.28.1",
