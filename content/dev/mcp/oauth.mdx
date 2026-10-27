@@ -17,7 +17,7 @@ O servidor de autorização é o do Steel, OAuth 2.1:
 | Recurso protegido | `https://homologacao.stratustelecom.com.br/api/mcp` |
 | Emissor (_issuer_) | o endereço do Steel seguido de `/api/auth` |
 | Fluxo | Authorization code com PKCE (`S256`, obrigatório) |
-| Registro de cliente | Dinâmico (RFC 7591), sem autenticação; clientes registrados assim são públicos (`token_endpoint_auth_method: none`) |
+| Registro de cliente | Dinâmico (RFC 7591), sem autenticação; cliente público declara `token_endpoint_auth_method: none` |
 | Escopos | `mcp:read`, `mcp:write` e `offline_access` (para receber refresh token) |
 | Access token | Opaco, prefixo `stl_at_`, vale **1 hora** |
 | Refresh token | Prefixo `stl_rt_`, vale **30 dias**, só com `offline_access` |
@@ -115,8 +115,8 @@ curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/register 
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
   "token_endpoint_auth_method": "none",
-  "scope": "mcp:read mcp:write offline_access",
-  "public": true
+  "application_type": "native",
+  "scope": "mcp:read mcp:write offline_access"
 }
 ```
 
@@ -147,6 +147,17 @@ lista é identificado pelo host, não pelo `client_name`, então use um domínio
 que a pessoa reconheça.
 
 Sem `redirect_uris`, o registro responde `400 invalid_redirect_uri`.
+
+Dois campos mudam o tipo do cliente:
+
+- `token_endpoint_auth_method`: mande `none` para um cliente público (app de
+  terminal ou desktop, que não guarda segredo). Sem o campo, o cliente é
+  **confidencial**: a resposta traz um `client_secret` e o endpoint de token
+  passa a exigi-lo por HTTP Basic.
+- `application_type`: sem o campo, o Steel deduz pelo `redirect_uri`. Loopback
+  (`http://localhost`, `http://127.0.0.1`, `http://[::1]`) ou esquema próprio
+  (`cursor://…`) vira `native`; o resto vira `web`, que só aceita HTTPS fora do
+  loopback.
 
 ## 3. Autorização com PKCE
 
@@ -233,7 +244,9 @@ curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/token \
 ```
 
 A resposta tem o mesmo formato da troca. Guarde o `refresh_token` novo quando
-ele vier. Um refresh que falha com `invalid_grant` quer dizer que a conexão foi
+ele vier. Quando a pessoa sai do Steel no navegador em que autorizou, o access
+token emitido naquela sessão para de valer na hora (`401`), mas o refresh
+token com `offline_access` continua: renove e siga. Um refresh que falha com `invalid_grant` quer dizer que a conexão foi
 revogada, a pessoa saiu do workspace ou passaram os 30 dias: recomece pela
 autorização.
 
