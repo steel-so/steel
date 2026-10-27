@@ -1121,6 +1121,20 @@ export const ERROR_CODES = {
   BILLING_DISABLED: { code: 'BILLING_DISABLED', status: 503 },
   // Cost analysis: the price row to delete does not exist in the workspace.
   WHATSAPP_PRICE_NOT_FOUND: { code: 'WHATSAPP_PRICE_NOT_FOUND', status: 404 },
+  // WhatsApp archive for banks (ADR 0052).
+  WHATSAPP_ARCHIVE_NOT_FOUND: {
+    code: 'WHATSAPP_ARCHIVE_NOT_FOUND',
+    status: 404,
+  },
+  WHATSAPP_ARCHIVE_NOT_READY: {
+    code: 'WHATSAPP_ARCHIVE_NOT_READY',
+    status: 409,
+  },
+  WHATSAPP_ARCHIVE_DISABLED: { code: 'WHATSAPP_ARCHIVE_DISABLED', status: 409 },
+  WHATSAPP_ARCHIVE_IN_PROGRESS: {
+    code: 'WHATSAPP_ARCHIVE_IN_PROGRESS',
+    status: 409,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES
