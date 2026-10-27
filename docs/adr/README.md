@@ -68,3 +68,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0048 | [SLA de primeira resposta e resolução no atendimento do WhatsApp](./0048-whatsapp-sla-first-response-and-resolution.md) | Aceita | 2026-10-22 |
 | 0050 | [Análise de custos do WhatsApp: razão por envio, tabela de preços por workspace e orçamento que só avisa](./0050-whatsapp-cost-analysis-meta-and-zapi.md) | Aceita | 2026-10-22 |
 | 0051 | [Identidade do contato WhatsApp: telefone ou BSUID](./0051-whatsapp-contact-identity-bsuid.md) | Aceita | 2026-10-22 |
+| 0053 | [Registro de acessos de workspaces com IP restrito](./0053-registro-de-acessos-de-workspace-com-ip-restrito.md) | Aceita | 2026-10-27 |

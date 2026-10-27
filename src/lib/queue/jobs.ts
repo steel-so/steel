@@ -58,6 +58,7 @@ export const DataRetentionJob = {
   CleanupApiTokens: 'cleanup-api-tokens',
   PruneDeadIntegrationGrants: 'prune-dead-integration-grants',
   PurgeCallRecordings: 'purge-call-recordings',
+  CleanupWorkspaceAccessLogs: 'cleanup-workspace-access-logs',
 } as const
 
 export type DataRetentionJob =
@@ -71,6 +72,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.CleanupApiTokens]: Record<string, never>
   [DataRetentionJob.PruneDeadIntegrationGrants]: Record<string, never>
   [DataRetentionJob.PurgeCallRecordings]: Record<string, never>
+  [DataRetentionJob.CleanupWorkspaceAccessLogs]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {

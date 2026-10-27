@@ -1489,7 +1489,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -2101,6 +2101,375 @@
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/workspaces/{id}/access-logs": {
+      "get": {
+        "tags": ["Admin · Workspaces"],
+        "summary": "Registro de acessos do workspace",
+        "operationId": "getAdminWorkspacesByIdAccessLogs",
+        "description": "Cada tentativa de entrada num workspace **com** allowlist de IPs — permitida ou bloqueada, no app ou na API — com usuário (nome e e-mail gravados na hora), IP, navegador e caminho. Sem allowlist nada é registrado. Entradas repetidas da mesma pessoa, rede, resultado e canal contam uma vez a cada 30 min (permitidas) ou a cada minuto (bloqueadas). Guardado por 5 anos. Dias civis em `America/Sao_Paulo`; sem `from`/`to`, os últimos 30 dias.\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Primeiro dia (inclusivo). Padrão: 30 dias antes de `to`.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Último dia (inclusivo). Padrão: hoje.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "description": "Só entradas permitidas ou só bloqueadas.",
+            "schema": {
+              "type": "string",
+              "enum": ["ALLOWED", "BLOCKED"]
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "description": "Só o app (páginas) ou só a API.",
+            "schema": {
+              "type": "string",
+              "enum": ["APP", "API"]
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "required": false,
+            "description": "ID exato do usuário, ou parte do nome/e-mail gravados na entrada.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entradas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "userId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Mantido mesmo depois que o usuário é excluído."
+                                  },
+                                  "userEmail": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "E-mail do usuário no momento da tentativa."
+                                  },
+                                  "userName": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Nome do usuário no momento da tentativa."
+                                  },
+                                  "ip": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "IP de origem; `null` quando desconhecido."
+                                  },
+                                  "userAgent": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "outcome": {
+                                    "type": "string",
+                                    "enum": ["ALLOWED", "BLOCKED"]
+                                  },
+                                  "surface": {
+                                    "type": "string",
+                                    "enum": ["APP", "API"],
+                                    "description": "`APP`: páginas do app; `API`: chamadas à API."
+                                  },
+                                  "path": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "userId",
+                                  "userEmail",
+                                  "userName",
+                                  "ip",
+                                  "userAgent",
+                                  "outcome",
+                                  "surface",
+                                  "path",
+                                  "createdAt"
+                                ]
+                              }
+                            },
+                            "total": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "page": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "pageSize": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "period": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "example": "2026-09-28"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "example": "2026-10-27"
+                                },
+                                "timezone": {
+                                  "type": "string",
+                                  "const": "America/Sao_Paulo"
+                                }
+                              },
+                              "required": ["from", "to", "timezone"]
+                            },
+                            "allowedIps": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Allowlist atual do workspace (vazia = sem restrição e nada é registrado)."
+                            }
+                          },
+                          "required": ["items", "total", "page", "pageSize", "period", "allowedIps"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/workspaces/{id}/access-logs/export": {
+      "get": {
+        "tags": ["Admin · Workspaces"],
+        "summary": "Exportar registro de acessos do workspace (CSV)",
+        "operationId": "getAdminWorkspacesByIdAccessLogsExport",
+        "description": "CSV em UTF-8 com BOM, transmitido em partes, em ordem cronológica, com cabeçalho em português (`Data e hora (São Paulo), Resultado, Canal, Nome, E-mail, ID do usuário, IP, Caminho, Navegador (user agent)`). Até 100.000 linhas por arquivo: acima disso responde `VALIDATION_ERROR` com `details.total` e `details.max` (reduza o período ou filtre). Células que começam com `=`, `+`, `-` ou `@` ganham `'`. Auditado (IP é dado pessoal).\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Primeiro dia (inclusivo). Padrão: 30 dias antes de `to`.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Último dia (inclusivo). Padrão: hoje.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "description": "Só entradas permitidas ou só bloqueadas.",
+            "schema": {
+              "type": "string",
+              "enum": ["ALLOWED", "BLOCKED"]
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "description": "Só o app (páginas) ou só a API.",
+            "schema": {
+              "type": "string",
+              "enum": ["APP", "API"]
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "required": false,
+            "description": "ID exato do usuário, ou parte do nome/e-mail gravados na entrada.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo CSV (`Content-Disposition: attachment`).",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -5117,7 +5486,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_24"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -5902,7 +6271,7 @@
             "$ref": "#/components/responses/404_CRM_WORKFLOW_WEBHOOK_INVALID"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -10205,7 +10574,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -10337,7 +10706,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -12982,6 +13351,369 @@
         ]
       }
     },
+    "/workspaces/{id}/access-logs": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Registro de acessos (rede permitida)",
+        "operationId": "getWorkspacesByIdAccessLogs",
+        "description": "Cada tentativa de entrada num workspace **com** allowlist de IPs — permitida ou bloqueada, no app ou na API — com usuário (nome e e-mail gravados na hora), IP, navegador e caminho. Sem allowlist nada é registrado. Entradas repetidas da mesma pessoa, rede, resultado e canal contam uma vez a cada 30 min (permitidas) ou a cada minuto (bloqueadas). Guardado por 5 anos. Dias civis em `America/Sao_Paulo`; sem `from`/`to`, os últimos 30 dias. Também devolve a allowlist atual (só leitura; quem a define é o admin global). Só OWNER/ADMIN.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Primeiro dia (inclusivo). Padrão: 30 dias antes de `to`.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Último dia (inclusivo). Padrão: hoje.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "description": "Só entradas permitidas ou só bloqueadas.",
+            "schema": {
+              "type": "string",
+              "enum": ["ALLOWED", "BLOCKED"]
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "description": "Só o app (páginas) ou só a API.",
+            "schema": {
+              "type": "string",
+              "enum": ["APP", "API"]
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "required": false,
+            "description": "ID exato do usuário, ou parte do nome/e-mail gravados na entrada.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entradas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "userId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Mantido mesmo depois que o usuário é excluído."
+                                  },
+                                  "userEmail": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "E-mail do usuário no momento da tentativa."
+                                  },
+                                  "userName": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Nome do usuário no momento da tentativa."
+                                  },
+                                  "ip": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "IP de origem; `null` quando desconhecido."
+                                  },
+                                  "userAgent": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "outcome": {
+                                    "type": "string",
+                                    "enum": ["ALLOWED", "BLOCKED"]
+                                  },
+                                  "surface": {
+                                    "type": "string",
+                                    "enum": ["APP", "API"],
+                                    "description": "`APP`: páginas do app; `API`: chamadas à API."
+                                  },
+                                  "path": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "userId",
+                                  "userEmail",
+                                  "userName",
+                                  "ip",
+                                  "userAgent",
+                                  "outcome",
+                                  "surface",
+                                  "path",
+                                  "createdAt"
+                                ]
+                              }
+                            },
+                            "total": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "page": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "pageSize": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "period": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "example": "2026-09-28"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "example": "2026-10-27"
+                                },
+                                "timezone": {
+                                  "type": "string",
+                                  "const": "America/Sao_Paulo"
+                                }
+                              },
+                              "required": ["from", "to", "timezone"]
+                            },
+                            "allowedIps": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Allowlist atual do workspace (vazia = sem restrição e nada é registrado)."
+                            }
+                          },
+                          "required": ["items", "total", "page", "pageSize", "period", "allowedIps"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/access-logs/export": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Exportar registro de acessos (CSV)",
+        "operationId": "getWorkspacesByIdAccessLogsExport",
+        "description": "CSV em UTF-8 com BOM, transmitido em partes, em ordem cronológica, com cabeçalho em português (`Data e hora (São Paulo), Resultado, Canal, Nome, E-mail, ID do usuário, IP, Caminho, Navegador (user agent)`). Até 100.000 linhas por arquivo: acima disso responde `VALIDATION_ERROR` com `details.total` e `details.max` (reduza o período ou filtre). Células que começam com `=`, `+`, `-` ou `@` ganham `'`. Auditado (IP é dado pessoal). Só OWNER/ADMIN.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Primeiro dia (inclusivo). Padrão: 30 dias antes de `to`.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Último dia (inclusivo). Padrão: hoje.",
+            "schema": {
+              "type": "string",
+              "example": "2026-10-27"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "description": "Só entradas permitidas ou só bloqueadas.",
+            "schema": {
+              "type": "string",
+              "enum": ["ALLOWED", "BLOCKED"]
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "description": "Só o app (páginas) ou só a API.",
+            "schema": {
+              "type": "string",
+              "enum": ["APP", "API"]
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "required": false,
+            "description": "ID exato do usuário, ou parte do nome/e-mail gravados na entrada.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo CSV (`Content-Disposition: attachment`).",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/agents": {
       "get": {
         "tags": ["Steel Agents"],
@@ -15260,7 +15992,7 @@
             "$ref": "#/components/responses/415_AI_ATTACHMENT_UNSUPPORTED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -15414,7 +16146,7 @@
             "$ref": "#/components/responses/404_AI_CONVERSATION_NOT_FOUND_AI_ATTACHMENT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -18609,7 +19341,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -19116,7 +19848,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_CONNECTION_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_20"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_21"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -19405,7 +20137,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -21996,7 +22728,7 @@
             "$ref": "#/components/responses/404_CRM_EMAIL_TEMPLATE_NOT_FOUND_CRM_CAMPAIGN_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -23584,7 +24316,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -23814,7 +24546,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -26069,7 +26801,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_26"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -26826,7 +27558,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28223,7 +28955,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28306,7 +29038,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -30340,7 +31072,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_17"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -32577,7 +33309,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -32731,7 +33463,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_15"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -42876,7 +43608,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -43361,7 +44093,7 @@
             "$ref": "#/components/responses/409_CRM_PROPOSAL_EXPIRED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_21"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_22"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -43513,7 +44245,7 @@
             "$ref": "#/components/responses/409_CONFLICT_8"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -45654,7 +46386,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_20"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47177,7 +47909,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_6"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -56739,7 +57471,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -56834,7 +57566,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57034,7 +57766,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57532,7 +58264,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57627,7 +58359,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -63071,7 +63803,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -70978,7 +71710,7 @@
             "$ref": "#/components/responses/404_SD_CEP_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -78512,7 +79244,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88129,7 +88861,7 @@
             "$ref": "#/components/responses/404_SD_PHASE_NOT_FOUND_SD_CONFIG_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_23"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_24"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88521,7 +89253,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_17"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_18"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -94085,7 +94817,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -109093,7 +109825,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -111874,7 +112606,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_26"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -115454,7 +116186,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_18"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -115993,7 +116725,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -116147,7 +116879,7 @@
             "$ref": "#/components/responses/409_WHATSAPP_TEAM_CONFLICT"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_22"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_23"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -117115,7 +117847,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_TEMPLATE_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_15"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -121546,7 +122278,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -122796,7 +123528,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -122880,7 +123612,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_8"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -132708,6 +133440,51 @@
               },
               "FORBIDDEN_2": {
                 "summary": "FORBIDDEN — Usuário não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "WORKSPACE_IP_NOT_ALLOWED": {
+                "summary": "WORKSPACE_IP_NOT_ALLOWED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace só pode ser acessado a partir da rede autorizada pela sua empresa.",
+                  "error": {
+                    "code": "WORKSPACE_IP_NOT_ALLOWED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_3": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Usuário não é membro ou não é OWNER/ADMIN",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -145451,6 +146228,47 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_5": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — Slug de plataforma desconhecido",
                 "value": {
                   "success": false,
@@ -145465,7 +146283,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_5": {
+      "422_VALIDATION_ERROR_6": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145488,7 +146306,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_6": {
+      "422_VALIDATION_ERROR_7": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145511,7 +146329,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_7": {
+      "422_VALIDATION_ERROR_8": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145559,7 +146377,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_8": {
+      "422_VALIDATION_ERROR_9": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145600,7 +146418,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_9": {
+      "422_VALIDATION_ERROR_10": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145623,7 +146441,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_10": {
+      "422_VALIDATION_ERROR_11": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145653,7 +146471,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_11": {
+      "422_VALIDATION_ERROR_12": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145683,7 +146501,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_12": {
+      "422_VALIDATION_ERROR_13": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145713,7 +146531,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_13": {
+      "422_VALIDATION_ERROR_14": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145743,7 +146561,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_14": {
+      "422_VALIDATION_ERROR_15": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145766,7 +146584,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_15": {
+      "422_VALIDATION_ERROR_16": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145807,7 +146625,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_16": {
+      "422_VALIDATION_ERROR_17": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145848,7 +146666,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_17": {
+      "422_VALIDATION_ERROR_18": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145889,7 +146707,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_18": {
+      "422_VALIDATION_ERROR_19": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -145963,7 +146781,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_19": {
+      "422_VALIDATION_ERROR_20": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146004,7 +146822,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_20": {
+      "422_VALIDATION_ERROR_21": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146045,7 +146863,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_21": {
+      "422_VALIDATION_ERROR_22": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146086,7 +146904,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_22": {
+      "422_VALIDATION_ERROR_23": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146127,7 +146945,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_23": {
+      "422_VALIDATION_ERROR_24": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146168,7 +146986,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_24": {
+      "422_VALIDATION_ERROR_25": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146216,7 +147034,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_25": {
+      "422_VALIDATION_ERROR_26": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146257,7 +147075,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_26": {
+      "422_VALIDATION_ERROR_27": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146298,7 +147116,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_27": {
+      "422_VALIDATION_ERROR_28": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146339,7 +147157,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_28": {
+      "422_VALIDATION_ERROR_29": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146387,7 +147205,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_29": {
+      "422_VALIDATION_ERROR_30": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146428,7 +147246,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_30": {
+      "422_VALIDATION_ERROR_31": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146458,7 +147276,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_31": {
+      "422_VALIDATION_ERROR_32": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -146488,36 +147306,6 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_32": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "422_VALIDATION_ERROR_33": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
@@ -146527,18 +147315,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
+                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -146579,7 +147356,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
+                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -146620,7 +147397,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -146661,7 +147438,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR",
+                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
                 "value": {
                   "success": false,
                   "statusCode": 422,

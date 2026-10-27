@@ -1,0 +1,69 @@
+---
+title: Rede permitida e registro de acessos
+description: Veja de quais redes o workspace pode ser acessado e quem entrou ou foi bloqueado, com IP e horário, e exporte o registro em CSV.
+section: seguranca
+order: 5
+---
+
+<Callout type='admin'>
+  Só o dono e os administradores do workspace veem **Ajustes › Segurança**.
+</Callout>
+
+Alguns clientes — bancos, por exemplo — exigem que o workspace só abra a partir
+das redes da empresa e que cada tentativa de entrada fique registrada. No Steel
+isso funciona em duas partes: a **rede permitida** e o **registro de acessos**.
+
+## Rede permitida
+
+A lista de redes permitidas (endereços IP ou faixas, como `200.1.2.0/24`) é
+definida pela equipe da Stratus Telecom, a pedido do cliente. Com a lista
+preenchida, quem tenta abrir o workspace de outra rede vê uma tela de bloqueio,
+e a API responde com erro `WORKSPACE_IP_NOT_ALLOWED`.
+
+Em **Ajustes › Segurança** você vê a lista atual, só para consulta. Para incluir
+ou remover uma rede, fale com o suporte.
+
+<Callout type='nota'>
+  Sem lista, o workspace abre de qualquer rede e **nada é registrado**. O
+  registro começa no momento em que a lista é preenchida.
+</Callout>
+
+## Registro de acessos
+
+Cada tentativa de entrada num workspace com rede permitida fica registrada, seja
+ela **permitida** ou **bloqueada**, com:
+
+| Campo | O que é |
+| --- | --- |
+| Data e hora | Sempre no horário de São Paulo |
+| Resultado | Permitido ou bloqueado |
+| Canal | **App** (as telas do Steel) ou **API** (chamadas de integrações, do aplicativo e das próprias telas) |
+| Pessoa | Nome e e-mail como estavam no momento — continuam no registro mesmo se a pessoa for removida |
+| IP | O endereço de origem da tentativa |
+| Caminho | A página ou rota acessada |
+| Navegador | O identificador do navegador ou do programa usado |
+
+Para o registro não crescer a cada clique, entradas repetidas da mesma pessoa,
+da mesma rede, com o mesmo resultado e pelo mesmo canal contam **uma vez a cada
+30 minutos** quando permitidas e **uma vez por minuto** quando bloqueadas.
+
+### Filtros e exportação
+
+Filtre por período (padrão: últimos 30 dias, até 366 dias por consulta),
+resultado, canal e pessoa (nome ou e-mail). **Exportar CSV** baixa exatamente o
+que está filtrado, em ordem cronológica, com cabeçalho em português — até
+100.000 linhas por arquivo. Acima disso, reduza o período.
+
+Cada exportação fica registrada na auditoria do Steel, porque o endereço IP é
+dado pessoal.
+
+## Por quanto tempo fica guardado
+
+O registro é guardado por **5 anos** e apagado automaticamente depois disso. A
+equipe da Stratus Telecom também consegue consultar e exportar o registro de
+qualquer workspace, para atender auditorias.
+
+<Callout type='aviso'>
+  O arquivo exportado contém dados pessoais dos membros (nome, e-mail e IP).
+  Quem baixa passa a ser responsável pela guarda da cópia, conforme a LGPD.
+</Callout>

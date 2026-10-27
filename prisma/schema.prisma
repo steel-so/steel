@@ -609,6 +609,7 @@ model Workspace {
   aiInsights                AiInsight[]
   aiDigestSettings          AiDigestSetting[]
   crmApolloImports          CrmApolloImport[]
+  accessLogs                WorkspaceAccessLog[]
 
   @@index([status])
   @@map("workspaces")
@@ -9480,4 +9481,39 @@ model WhatsAppNumberValidation {
 
   @@index([workspaceId, createdAt])
   @@map("whatsapp_number_validations")
+}
+
+enum WorkspaceAccessOutcome {
+  ALLOWED
+  BLOCKED
+}
+
+enum WorkspaceAccessSurface {
+  APP
+  API
+}
+
+/// Entry attempts to a workspace with an IP allowlist (ADR 0053). Written
+/// only while `Workspace.allowedIps` is set, deduplicated in Redis, kept 5
+/// years. `userId` has no foreign key on purpose: the row (and the name/e-mail
+/// snapshot) outlives the user's deletion.
+model WorkspaceAccessLog {
+  id          String                 @id @default(cuid())
+  workspaceId String                 @map("workspace_id")
+  userId      String?                @map("user_id")
+  userEmail   String?                @map("user_email")
+  userName    String?                @map("user_name")
+  /// Client IP as seen by the app (`null` when the proxy sent none).
+  ip          String?
+  userAgent   String?                @map("user_agent")
+  outcome     WorkspaceAccessOutcome
+  surface     WorkspaceAccessSurface
+  path        String?
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([createdAt])
+  @@map("workspace_access_logs")
 }

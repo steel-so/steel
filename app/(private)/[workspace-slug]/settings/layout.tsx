@@ -6,6 +6,7 @@ import {
   Chatting01Icon,
   McpServerIcon,
   Notification01Icon,
+  SecurityLockIcon,
   SparklesIcon,
   Upload01Icon,
   UserMultipleIcon,
@@ -51,6 +52,9 @@ export default async function SettingsLayout({
           </NavItem>
           <NavItem href={`${base}/worklogs`} icon={AlarmClockIcon}>
             Registros de trabalho
+          </NavItem>
+          <NavItem href={`${base}/security`} icon={SecurityLockIcon}>
+            Segurança
           </NavItem>
         </NavGroup>
         <NavGroup>

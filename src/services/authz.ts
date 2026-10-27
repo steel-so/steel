@@ -8,7 +8,10 @@ import {
   workspaceSuspended,
 } from '../errors'
 import { clientIpFrom } from '../lib/analytics/geoip'
-import { annotateRequest } from '../lib/analytics/request-context'
+import {
+  annotateRequest,
+  currentRequestContext,
+} from '../lib/analytics/request-context'
 import { isIpAllowed } from '../lib/ip-allowlist'
 import {
   can,
@@ -16,10 +19,12 @@ import {
   type PermissionMap,
   SYSTEM_PROFILE_PERMISSIONS,
 } from '../lib/permissions'
+import { PATHNAME_REQUEST_HEADER } from '../lib/request-path'
 import { err, ok, type Result } from '../lib/result'
 import { MembershipRepository } from '../repositories/membership.repository'
 import { UserRepository } from '../repositories/user.repository'
 import { WorkspaceModuleAccessRepository } from '../repositories/workspace-module-access.repository'
+import { recordWorkspaceAccess } from './workspace-access-recorder'
 
 export const PRIVILEGED_ROLES = ['OWNER', 'ADMIN'] as const
 
@@ -90,6 +95,12 @@ export function assertWorkspaceActive(
  * Allowlist de rede do workspace. Lista vazia/ausente libera tudo; preenchida,
  * nega quando o IP é desconhecido (fail-closed). Fora de uma requisição
  * (worker, scripts) não há IP a avaliar e a checagem é ignorada.
+ *
+ * With an allowlist, every decision (allowed or blocked) also goes to the
+ * entry log (ADR 0053), fire-and-forget and deduplicated in Redis, so the
+ * request never waits for it. The surface comes from the path the proxy
+ * stamped (`/api/*` → API, anything else → APP); without it, a route
+ * handler (inside `withAxiom`) counts as API and a Server Component as APP.
  */
 export async function assertIpAllowed(
   workspaceId: string,
@@ -106,7 +117,21 @@ export async function assertIpAllowed(
   }
 
   const ip = clientIpFrom(reqHeaders)
-  if (isIpAllowed(ip, allowedIps)) return ok(true)
+  const allowed = isIpAllowed(ip, allowedIps)
+  const path = reqHeaders.get(PATHNAME_REQUEST_HEADER) || null
+  const isApi = path
+    ? path === '/api' || path.startsWith('/api/')
+    : currentRequestContext() !== undefined
+  void recordWorkspaceAccess({
+    workspaceId,
+    userId: actorId,
+    ip,
+    userAgent: reqHeaders.get('user-agent'),
+    outcome: allowed ? 'ALLOWED' : 'BLOCKED',
+    surface: isApi ? 'API' : 'APP',
+    path,
+  })
+  if (allowed) return ok(true)
 
   logger.warn('workspace.ip_blocked', { workspaceId, actorId, ip })
   return err(workspaceIpNotAllowed())
