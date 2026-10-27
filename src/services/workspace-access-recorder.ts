@@ -3,7 +3,6 @@ import type {
   WorkspaceAccessSurface,
 } from '@prisma/client'
 import { logger } from '@/lib/axiom/logger'
-import { WorkspaceAccessLogCache } from '@/src/cache/workspace-access-log.cache'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceAccessLogRepository } from '@/src/repositories/workspace-access-log.repository'
 
@@ -54,6 +53,11 @@ export async function recordWorkspaceAccess(
     surface: attempt.surface,
   }
   try {
+    // Loaded on demand: `authz.ts` imports this module, and pulling the
+    // Redis client into every importer of authz breaks their env mocks.
+    const { WorkspaceAccessLogCache } = await import(
+      '@/src/cache/workspace-access-log.cache'
+    )
     if (!(await WorkspaceAccessLogCache.claim(key))) return
 
     // Snapshot of who it was: the row must still say it after the user is
