@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   pruneWithoutLiveTokens: vi.fn(),
   purgeExpiredRecordings: vi.fn(),
   sweepOrphanRecordings: vi.fn(),
+  pruneAccessLogs: vi.fn(),
   prisma: {
     session: { deleteMany: vi.fn() },
     verification: { deleteMany: vi.fn() },
@@ -57,6 +58,9 @@ vi.mock('@/src/services/phone-call-recording.service', () => ({
     purgeExpired: mocks.purgeExpiredRecordings,
     sweepOrphans: mocks.sweepOrphanRecordings,
   },
+}))
+vi.mock('@/src/services/workspace-access-log.service', () => ({
+  WorkspaceAccessLogService: { pruneOlderThan: mocks.pruneAccessLogs },
 }))
 vi.mock('@/src/services/crm-notifications', () => ({
   notifyCrmCampaignFinished: mocks.notifyCampaignFinished,
@@ -368,6 +372,36 @@ describe('processDataRetention', () => {
     await expect(
       processDataRetention(fakeJob(DataRetentionJob.PurgeCallRecordings)),
     ).rejects.toThrow('s3 down')
+  })
+
+  it('deletes workspace access logs older than 5 years', async () => {
+    mocks.pruneAccessLogs.mockResolvedValue({ ok: true, value: 12 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.CleanupWorkspaceAccessLogs),
+    )
+
+    expect(result.deleted).toBe(12)
+    const cutoff: Date = mocks.pruneAccessLogs.mock.calls[0][0]
+    expect(cutoff.toISOString()).toBe(result.cutoff)
+    const days = (Date.now() - cutoff.getTime()) / 86_400_000
+    expect(Math.round(days)).toBe(5 * 365)
+    expect(mocks.loggerMock.info).toHaveBeenCalledWith(
+      'queue.data_retention.workspace_access_logs_cleaned',
+      expect.objectContaining({ deleted: 12 }),
+    )
+  })
+
+  it('throws so BullMQ retries when pruning access logs fails', async () => {
+    mocks.pruneAccessLogs.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'db down' },
+    })
+    await expect(
+      processDataRetention(
+        fakeJob(DataRetentionJob.CleanupWorkspaceAccessLogs),
+      ),
+    ).rejects.toThrow('db down')
   })
 
   it('throws on an unknown job name', async () => {
