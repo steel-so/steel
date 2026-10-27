@@ -26,6 +26,7 @@ import { registerWebhookPaths } from './paths/webhooks'
 import { registerWhatsAppPaths } from './paths/whatsapp'
 import { registerWhiteboardPaths } from './paths/whiteboard'
 import { registerWikiPaths } from './paths/wiki'
+import { registerWorkspaceAccessLogPaths } from './paths/workspace-access-logs'
 import { OpenApiRegistry } from './registry'
 import { TAG_GROUPS } from './tags'
 
@@ -58,6 +59,7 @@ export function createRegistry(): OpenApiRegistry {
   registerIntegrationGrantPaths(registry)
   registerApiTokenPaths(registry)
   registerWebhookPaths(registry)
+  registerWorkspaceAccessLogPaths(registry)
   return registry
 }
 
