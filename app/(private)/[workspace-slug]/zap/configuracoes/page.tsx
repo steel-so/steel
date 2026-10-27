@@ -8,6 +8,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { WhatsappSettingsAi } from '@/app/_components/whatsapp/settings/whatsapp-settings-ai'
 import { WhatsappSettingsAiKnowledge } from '@/app/_components/whatsapp/settings/whatsapp-settings-ai-knowledge'
+import { WhatsappSettingsArchive } from '@/app/_components/whatsapp/settings/whatsapp-settings-archive'
 import { WhatsappSettingsBusinessHours } from '@/app/_components/whatsapp/settings/whatsapp-settings-business-hours'
 import { WhatsappSettingsCallRecording } from '@/app/_components/whatsapp/settings/whatsapp-settings-call-recording'
 import { WhatsappSettingsCloseStatuses } from '@/app/_components/whatsapp/settings/whatsapp-settings-close-statuses'
@@ -81,6 +82,7 @@ export default async function ZapSettingsPage({
             <WhatsappSettingsSla workspaceId={workspaceId} />
             <WhatsappSettingsCallRecording workspaceId={workspaceId} />
             <WhatsappSettingsNumberCheck workspaceId={workspaceId} />
+            <WhatsappSettingsArchive workspaceId={workspaceId} />
           </TabsContent>
           <TabsContent value='voice' className='pt-4'>
             <WhatsappSettingsVoiceAgent workspaceId={workspaceId} />

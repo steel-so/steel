@@ -18,6 +18,10 @@ import {
   UpdateProfileSchema,
 } from '@/src/schemas/profile.schema'
 import { ReleaseDraftRequestSchema } from '@/src/schemas/release-notes.schema'
+import {
+  TriggerWhatsAppArchiveSchema,
+  UpdateWhatsAppArchiveSettingsSchema,
+} from '@/src/schemas/whatsapp-archive.schema'
 import { SetWorkspaceModuleAccessSchema } from '@/src/schemas/workspace-module-access.schema'
 import { flag, PLATFORM_ADMIN_ERRORS } from '../common'
 import type { ErrorEntry, OpenApiRegistry, RouteConfig } from '../registry'
@@ -44,6 +48,11 @@ import {
   ProfileDTO,
   WorkspaceMemberDTO,
 } from '../schemas/core'
+import {
+  WhatsAppArchiveDTO,
+  WhatsAppArchiveOverviewDTO,
+  WhatsAppArchiveSettingsDTO,
+} from '../schemas/whatsapp-archive'
 
 /**
  * Painel do admin global (`/admin`). Todas as rotas exigem sessão de um
@@ -657,6 +666,96 @@ const routes: RouteConfig[] = [
         schema: PlatformAiSettingsDTO,
       },
     },
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/workspaces/{id}/whatsapp-archive',
+    tags: ['Admin · Workspaces'],
+    summary: 'Arquivamento de conversas do workspace',
+    description:
+      'Arquivamento do WhatsApp para bancos (ADR 0052): se está ativo, a pasta raiz e os pacotes gerados.',
+    responses: {
+      200: {
+        description: 'Arquivamento do workspace.',
+        schema: WhatsAppArchiveOverviewDTO,
+      },
+    },
+    errors: [WORKSPACE_NOT_FOUND],
+  }),
+  admin({
+    method: 'patch',
+    path: '/admin/workspaces/{id}/whatsapp-archive',
+    tags: ['Admin · Workspaces'],
+    summary: 'Ligar/desligar o arquivamento de conversas',
+    description:
+      'Liga ou desliga a geração semanal (segunda 02:00) e completa (dia 1, 02:30) e define a pasta raiz do .zip. Auditado.',
+    consent: true,
+    body: {
+      schema: UpdateWhatsAppArchiveSettingsSchema,
+      example: { enabled: true, rootFolderName: 'FIDELIZZAMAIS' },
+    },
+    responses: {
+      200: {
+        description: 'Ajustes salvos.',
+        schema: WhatsAppArchiveSettingsDTO,
+      },
+    },
+    errors: [WORKSPACE_NOT_FOUND, 'VALIDATION_ERROR'],
+  }),
+  admin({
+    method: 'post',
+    path: '/admin/workspaces/{id}/whatsapp-archive/generate',
+    tags: ['Admin · Workspaces'],
+    summary: 'Gerar pacote do arquivamento agora',
+    description:
+      '`WEEKLY` (semana anterior) ou `MONTHLY_FULL` (todo o histórico até o fim do mês anterior). Assíncrono (202): o worker monta o .zip. Auditado.',
+    consent: true,
+    body: { schema: TriggerWhatsAppArchiveSchema, example: { kind: 'WEEKLY' } },
+    responses: {
+      202: { description: 'Pacote na fila.', schema: WhatsAppArchiveDTO },
+    },
+    errors: [
+      WORKSPACE_NOT_FOUND,
+      'VALIDATION_ERROR',
+      {
+        code: 'WHATSAPP_ARCHIVE_DISABLED',
+        when: 'O arquivamento não está ativo no workspace',
+      },
+      {
+        code: 'WHATSAPP_ARCHIVE_IN_PROGRESS',
+        when: 'Já há um pacote do mesmo tipo na fila ou em geração',
+      },
+      {
+        code: 'WHATSAPP_ARCHIVE_NOT_READY',
+        when: 'A fila não aceitou o job',
+      },
+    ],
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/workspaces/{id}/whatsapp-archive/{archiveId}/download',
+    tags: ['Admin · Workspaces'],
+    summary: 'Baixar pacote do arquivamento',
+    description:
+      'Transmite o .zip (para entregar ao banco). Auditado no histórico do admin.',
+    params: { archiveId: 'ID do pacote.' },
+    responses: {
+      200: {
+        description: 'Arquivo ZIP (`Content-Disposition: attachment`).',
+        envelope: false,
+        contentType: 'application/zip',
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+    errors: [
+      WORKSPACE_NOT_FOUND,
+      'WHATSAPP_ARCHIVE_NOT_FOUND',
+      {
+        code: 'WHATSAPP_ARCHIVE_NOT_READY',
+        when: 'Ainda na fila ou em geração, falhou ou passou do prazo de guarda',
+      },
+      { code: 'STORAGE_ERROR', message: 'Arquivo do pacote indisponível' },
+    ],
   }),
 ]
 

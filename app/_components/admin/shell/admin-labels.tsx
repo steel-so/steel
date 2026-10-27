@@ -19,6 +19,9 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   'module.revoke': 'Revogou módulo',
   'feature.override': 'Alterou funcionalidade',
   'feature.override_removed': 'Voltou funcionalidade ao padrão',
+  'whatsapp_archive.settings': 'Alterou o arquivamento do WhatsApp',
+  'whatsapp_archive.requested': 'Gerou pacote do arquivamento do WhatsApp',
+  'whatsapp_archive.download': 'Baixou pacote do arquivamento do WhatsApp',
 }
 
 export function AuditActionLabel({
