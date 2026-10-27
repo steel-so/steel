@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto'
-import { once } from 'node:events'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { mkdtemp, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable, Transform } from 'node:stream'
 import { finished, pipeline } from 'node:stream/promises'
+import { promisify } from 'node:util'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import type { Job } from 'bullmq'
 import { ZipFile } from 'yazl'
@@ -223,7 +223,11 @@ async function writePackage(params: {
   failure.catch(() => undefined)
 
   const index = createWriteStream(indexPath)
-  index.write(archiveIndexHeader())
+  // One line per PDF, flushed before the next: bounded memory, like the zip.
+  const writeIndex = promisify(index.write.bind(index)) as (
+    chunk: string,
+  ) => Promise<void>
+  await writeIndex(archiveIndexHeader())
 
   const folders = new AttendantFolders()
   const paths = new ArchivePathRegistry()
@@ -291,7 +295,7 @@ async function writePackage(params: {
         messageCount: messages.length,
         sha256: pdfSha,
       })
-      if (!index.write(line)) await once(index, 'drain')
+      await writeIndex(line)
       fileCount += 1
     }
     atendimentoCount += 1
