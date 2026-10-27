@@ -8,6 +8,7 @@ import {
 import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
+import { startOfSaoPauloDay } from '@/src/lib/whatsapp/contact-created-today'
 import { getZapiContactProfilePicture } from '@/src/lib/whatsapp/zapi-client'
 import { toWhatsAppContactDTO } from '@/src/mappers/whatsapp-contact.mapper'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
@@ -40,6 +41,7 @@ export const WhatsAppContactService = {
       workspaceId,
       options.search,
       options.whatsapp,
+      options.created === 'today' ? startOfSaoPauloDay() : undefined,
     )
     if (!result.ok) return result
 

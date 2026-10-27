@@ -98,6 +98,43 @@ describe('WhatsAppContactRepository', () => {
       expect(list).toHaveLength(1)
       expect(list[0].name).toBe('Maria Silva')
     })
+
+    it('should keep only contacts created from the given instant', async () => {
+      const workspace = await seedWorkspace()
+      const old = expectOk(
+        await WhatsAppContactRepository.create({
+          workspaceId: workspace.id,
+          waId: '5511988887777',
+          name: 'Antigo',
+        }),
+      )
+      await prisma.whatsAppContact.update({
+        where: { id: old.id },
+        data: { createdAt: new Date('2026-10-27T02:59:59Z') },
+      })
+      const fresh = expectOk(
+        await WhatsAppContactRepository.create({
+          workspaceId: workspace.id,
+          waId: '5511977776666',
+          name: 'Novo',
+        }),
+      )
+      await prisma.whatsAppContact.update({
+        where: { id: fresh.id },
+        data: { createdAt: new Date('2026-10-27T03:00:00Z') },
+      })
+
+      const list = expectOk(
+        await WhatsAppContactRepository.listByWorkspace(
+          workspace.id,
+          undefined,
+          undefined,
+          new Date('2026-10-27T03:00:00Z'),
+        ),
+      )
+
+      expect(list.map((contact) => contact.id)).toEqual([fresh.id])
+    })
   })
 
   describe('listByWorkspace() conversation count', () => {

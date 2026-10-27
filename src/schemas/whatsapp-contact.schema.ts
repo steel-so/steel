@@ -63,6 +63,8 @@ export const ListWhatsAppContactsSchema = z.object({
   search: z.string().max(120).optional(),
   /** Filtro "tem zap?": com WhatsApp, sem WhatsApp ou ainda não verificado. */
   whatsapp: z.enum(['yes', 'no', 'unknown']).optional(),
+  /** Only contacts inserted today (São Paulo calendar day). */
+  created: z.enum(['today']).optional(),
 })
 
 export type ListWhatsAppContactsDTO = z.infer<typeof ListWhatsAppContactsSchema>

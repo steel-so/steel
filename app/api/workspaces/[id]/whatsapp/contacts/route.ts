@@ -28,6 +28,7 @@ export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
   const parsed = ListWhatsAppContactsSchema.safeParse({
     search: searchParams.get('search') ?? undefined,
     whatsapp: searchParams.get('whatsapp') ?? undefined,
+    created: searchParams.get('created') ?? undefined,
   })
 
   if (!parsed.success) {

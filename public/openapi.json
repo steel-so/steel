@@ -106856,7 +106856,7 @@
         "tags": ["Comunicação · Contatos"],
         "summary": "Listar contatos",
         "operationId": "getWorkspacesByIdWhatsappContacts",
-        "description": "Contatos do workspace em ordem alfabética, com o número de conversas. `search` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. `whatsapp` (`yes` | `no` | `unknown`) filtra pelo resultado da checagem \"tem WhatsApp?\". Sem paginação. Módulo **Comunicação** habilitado e permissão `contacts` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Contatos do workspace em ordem alfabética, com o número de conversas. `search` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. `whatsapp` (`yes` | `no` | `unknown`) filtra pelo resultado da checagem \"tem WhatsApp?\". `created` = `today` devolve só os contatos inseridos hoje (dia civil de São Paulo, a partir da meia-noite em America/Sao_Paulo). Sem paginação. Módulo **Comunicação** habilitado e permissão `contacts` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -106877,6 +106877,15 @@
             "schema": {
               "type": "string",
               "enum": ["yes", "no", "unknown"]
+            }
+          },
+          {
+            "name": "created",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["today"]
             }
           }
         ],
@@ -198872,6 +198881,11 @@
                   "description": "Número do WhatsApp só com dígitos (DDI + DDD + número).",
                   "example": "5511987654321"
                 },
+                "contactCreatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Quando o contato foi inserido no workspace."
+                },
                 "status": {
                   "type": "string",
                   "enum": ["PENDING", "SENT", "FAILED", "SKIPPED"]
@@ -198953,6 +198967,7 @@
                 "contactId",
                 "contactName",
                 "waId",
+                "contactCreatedAt",
                 "status",
                 "errorMessage",
                 "values",

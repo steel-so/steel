@@ -89,6 +89,15 @@ describe('ListWhatsAppContactsSchema', () => {
       ListWhatsAppContactsSchema.safeParse({ search: 'maria' }).success,
     ).toBe(true)
   })
+
+  it('should accept the "inserted today" filter and reject other values', () => {
+    expect(
+      ListWhatsAppContactsSchema.safeParse({ created: 'today' }).success,
+    ).toBe(true)
+    expect(
+      ListWhatsAppContactsSchema.safeParse({ created: 'yesterday' }).success,
+    ).toBe(false)
+  })
 })
 
 describe('UpdateWhatsAppContactBroadcastOptOutSchema', () => {

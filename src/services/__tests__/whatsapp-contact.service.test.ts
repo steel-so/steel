@@ -50,6 +50,7 @@ describe('WhatsAppContactService', () => {
         'ws1',
         undefined,
         undefined,
+        undefined,
       )
     })
 
@@ -68,6 +69,27 @@ describe('WhatsAppContactService', () => {
         'ws1',
         'ana',
         'no',
+        undefined,
+      )
+    })
+
+    it('should pass the São Paulo start of today for the "inserted today" filter', async () => {
+      vi.useFakeTimers()
+      // 22:30 in São Paulo on the 27th — UTC already turned the day.
+      vi.setSystemTime(new Date('2026-10-28T01:30:00Z'))
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      mockedContactRepo.listByWorkspace.mockResolvedValue(ok([]))
+
+      await WhatsAppContactService.list('u1', 'ws1', { created: 'today' })
+      vi.useRealTimers()
+
+      expect(mockedContactRepo.listByWorkspace).toHaveBeenCalledWith(
+        'ws1',
+        undefined,
+        undefined,
+        new Date('2026-10-27T03:00:00Z'),
       )
     })
 

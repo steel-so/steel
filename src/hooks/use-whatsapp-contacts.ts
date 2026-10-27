@@ -7,10 +7,21 @@ const CONTACTS_KEY = (
   workspaceId: string,
   search?: string,
   whatsapp?: WhatsAppCheckFilter,
-) => ['whatsapp-contacts', workspaceId, search ?? '', whatsapp ?? ''] as const
+  created?: WhatsAppCreatedFilter,
+) =>
+  [
+    'whatsapp-contacts',
+    workspaceId,
+    search ?? '',
+    whatsapp ?? '',
+    created ?? '',
+  ] as const
 
 /** Filtro "tem zap?" da lista: com, sem ou ainda não verificado. */
 export type WhatsAppCheckFilter = 'yes' | 'no' | 'unknown'
+
+/** Filtro "Inseridos hoje" (dia civil de São Paulo). */
+export type WhatsAppCreatedFilter = 'today'
 
 interface CreateWhatsAppContactInput {
   waId: string
@@ -30,14 +41,16 @@ export function useWhatsAppContacts(
   workspaceId: string,
   search?: string,
   whatsapp?: WhatsAppCheckFilter,
+  created?: WhatsAppCreatedFilter,
 ) {
   const params = new URLSearchParams()
   if (search) params.set('search', search)
   if (whatsapp) params.set('whatsapp', whatsapp)
+  if (created) params.set('created', created)
   const query = params.toString()
 
   return useQuery({
-    queryKey: CONTACTS_KEY(workspaceId, search, whatsapp),
+    queryKey: CONTACTS_KEY(workspaceId, search, whatsapp, created),
     queryFn: () =>
       apiFetch<WhatsAppContactDTO[]>(
         `/api/workspaces/${workspaceId}/whatsapp/contacts${query ? `?${query}` : ''}`,

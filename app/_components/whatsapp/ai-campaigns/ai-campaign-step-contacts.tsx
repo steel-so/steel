@@ -33,6 +33,7 @@ import {
   parseAiCampaignSheet,
   toAiCampaignImportRows,
 } from '@/src/lib/whatsapp/ai-campaign-import'
+import { formatContactCreatedAt } from '@/src/lib/whatsapp/contact-created-today'
 import type { WhatsAppAiCampaignDTO } from '@/types/whatsapp-ai-campaign'
 
 const NO_NAME = '__none__'
@@ -59,10 +60,23 @@ function SelectContacts({
   pending: boolean
 }) {
   const [search, setSearch] = useState('')
+  const [onlyToday, setOnlyToday] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const contacts = useWhatsAppContacts(workspaceId, search || undefined)
+  const contacts = useWhatsAppContacts(
+    workspaceId,
+    search || undefined,
+    undefined,
+    onlyToday ? 'today' : undefined,
+  )
   const list = contacts.data ?? []
-  const allVisible = list.length > 0 && list.every((c) => selected.has(c.id))
+  const selectable = list.filter((c) => !c.broadcastOptedOutAt)
+  const allVisible =
+    selectable.length > 0 && selectable.every((c) => selected.has(c.id))
+
+  /** Marca exatamente os inseridos hoje (descadastrados ficam de fora). */
+  function markToday() {
+    setSelected(new Set(selectable.map((c) => c.id)))
+  }
 
   function toggle(id: string) {
     setSelected((current) => {
@@ -84,12 +98,30 @@ function SelectContacts({
         />
         <Button
           size='sm'
+          variant={onlyToday ? 'default' : 'outline'}
+          aria-pressed={onlyToday}
+          onClick={() => setOnlyToday((value) => !value)}
+        >
+          Inseridos hoje
+        </Button>
+        {onlyToday ? (
+          <Button
+            size='sm'
+            variant='outline'
+            disabled={selectable.length === 0 || contacts.isFetching}
+            onClick={markToday}
+          >
+            Marcar só os de hoje ({selectable.length})
+          </Button>
+        ) : null}
+        <Button
+          size='sm'
           variant='outline'
-          disabled={list.length === 0}
+          disabled={selectable.length === 0}
           onClick={() =>
             setSelected((current) => {
               const next = new Set(current)
-              for (const contact of list) {
+              for (const contact of selectable) {
                 if (allVisible) next.delete(contact.id)
                 else next.add(contact.id)
               }
@@ -105,7 +137,9 @@ function SelectContacts({
           <li className='p-4 text-center text-muted-foreground text-sm'>
             {contacts.isLoading
               ? 'Carregando...'
-              : 'Nenhum contato encontrado.'}
+              : onlyToday
+                ? 'Nenhum contato inserido hoje.'
+                : 'Nenhum contato encontrado.'}
           </li>
         ) : (
           list.map((contact) => (
@@ -123,8 +157,11 @@ function SelectContacts({
                 <span className='min-w-0 flex-1 truncate'>
                   {contact.name ?? 'Sem nome'}
                 </span>
-                <span className='text-muted-foreground text-xs'>
-                  {contact.waId}
+                <span className='flex shrink-0 flex-col items-end text-muted-foreground text-xs sm:flex-row sm:gap-2'>
+                  <span>{contact.waId}</span>
+                  <span title='Inserido em'>
+                    {formatContactCreatedAt(contact.createdAt)}
+                  </span>
                 </span>
                 {contact.broadcastOptedOutAt ? (
                   <span className='text-destructive text-xs'>
