@@ -239,6 +239,9 @@ export type AuditEntity =
   | 'whatsapp_sla_cycle'
   // IP-restricted workspace entry log (ADR 0053): CSV exports
   | 'workspace_access_log'
+  // WhatsApp archive for banks (ADR 0052)
+  | 'whatsapp_archive'
+  | 'whatsapp_archive_settings'
 
 export type AuditAction =
   | 'create'

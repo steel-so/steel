@@ -233,6 +233,7 @@ model User {
   aiInsights                AiInsight[]
   aiDigestSettings          AiDigestSetting[]
   crmApolloImports          CrmApolloImport[]          @relation("CrmApolloImportCreatedBy")
+  whatsappArchivesTriggered WhatsAppArchive[]          @relation("WhatsAppArchiveTriggeredBy")
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -610,6 +611,8 @@ model Workspace {
   aiDigestSettings          AiDigestSetting[]
   crmApolloImports          CrmApolloImport[]
   accessLogs                WorkspaceAccessLog[]
+  whatsappArchives          WhatsAppArchive[]
+  whatsappArchiveSettings   WhatsAppArchiveSettings?
 
   @@index([status])
   @@map("workspaces")
@@ -9516,4 +9519,76 @@ model WorkspaceAccessLog {
   @@index([workspaceId, createdAt])
   @@index([createdAt])
   @@map("workspace_access_logs")
+}
+
+/// WhatsApp conversation archive for banks (ADR 0052): one `.zip` of PDFs
+/// (one per atendimento = conversation × São Paulo day) per period.
+enum WhatsAppArchiveKind {
+  /// Previous Monday 00:00 → Sunday 23:59:59 (São Paulo).
+  WEEKLY
+  /// All history up to the end of the previous month.
+  MONTHLY_FULL
+}
+
+enum WhatsAppArchiveStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+/// Per-workspace opt-in of the archive. Off by default; toggled only by the
+/// platform admin.
+model WhatsAppArchiveSettings {
+  workspaceId    String   @id @map("workspace_id")
+  enabled        Boolean  @default(false)
+  /// Top folder inside the zip; null = workspace slug uppercased, only A-Z0-9.
+  rootFolderName String?  @map("root_folder_name")
+  updatedById    String?  @map("updated_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([enabled])
+  @@map("whatsapp_archive_settings")
+}
+
+model WhatsAppArchive {
+  id               String                @id @default(cuid())
+  workspaceId      String                @map("workspace_id")
+  kind             WhatsAppArchiveKind
+  /// Inclusive start; null for MONTHLY_FULL (since the first message).
+  periodStart      DateTime?             @map("period_start")
+  /// Inclusive end (23:59:59.999 São Paulo of the last day).
+  periodEnd        DateTime              @map("period_end")
+  status           WhatsAppArchiveStatus @default(QUEUED)
+  /// Object key in the `whatsapp-archives` bucket; null until DONE and after expiry.
+  objectKey        String?               @map("object_key")
+  sizeBytes        BigInt?               @map("size_bytes")
+  /// SHA-256 (hex) of the whole zip.
+  sha256           String?
+  /// Files inside the zip (PDFs, one per attendant folder, + the index).
+  fileCount        Int                   @default(0) @map("file_count")
+  /// Distinct atendimentos (conversation × day).
+  atendimentoCount Int                   @default(0) @map("atendimento_count")
+  /// Root folder used when the package was built.
+  rootFolderName   String?               @map("root_folder_name")
+  offsiteKey       String?               @map("offsite_key")
+  offsiteCopiedAt  DateTime?             @map("offsite_copied_at")
+  error            String?
+  triggeredById    String?               @map("triggered_by_id")
+  startedAt        DateTime?             @map("started_at")
+  completedAt      DateTime?             @map("completed_at")
+  expiresAt        DateTime?             @map("expires_at")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  triggeredBy User?     @relation("WhatsAppArchiveTriggeredBy", fields: [triggeredById], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, kind, periodEnd])
+  @@index([status, expiresAt])
+  @@map("whatsapp_archives")
 }

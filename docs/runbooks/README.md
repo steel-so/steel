@@ -18,6 +18,7 @@ confirmar que deu certo.
 | Ligar a busca semântica do Steel AI (instalar o pgvector no `steel-db`) | [pgvector no Postgres](./postgres-pgvector.md) |
 | Ligar a gravação, transcrição e resumo das ligações num PABX | [Gravação das ligações no PABX](./pabx-call-recording.md) |
 | Liberar o telefone web (ligar e atender pelo navegador) ou instalá-lo num PABX | [Telefone web](./pabx-webphone.md) |
+| Ligar o arquivamento de conversas do WhatsApp, gerar e entregar um pacote a um banco | [Arquivamento de conversas do WhatsApp](./whatsapp-archive.md) |
 
 ## Referência rápida do servidor
 

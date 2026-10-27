@@ -46,6 +46,7 @@ import { processSteelAgents } from '../src/lib/queue/processors/steel-agents'
 import { processUsageRollup } from '../src/lib/queue/processors/usage-rollup'
 import { processWebhooksDelivery } from '../src/lib/queue/processors/webhooks-delivery'
 import { processWhatsappAiReply } from '../src/lib/queue/processors/whatsapp-ai-reply'
+import { processWhatsappArchive } from '../src/lib/queue/processors/whatsapp-archive'
 import { processWhatsappBroadcast } from '../src/lib/queue/processors/whatsapp-broadcast'
 import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsapp-button-actions'
 import { processWhatsappConversationLifecycle } from '../src/lib/queue/processors/whatsapp-conversation-lifecycle'
@@ -83,6 +84,7 @@ import {
   scheduleSteelAgentsJobs,
   scheduleTrialLifecycleJobs,
   scheduleUsageRollupJobs,
+  scheduleWhatsappArchiveJobs,
   scheduleWhatsappBroadcastJobs,
   scheduleWhatsappConversationLifecycleJobs,
   scheduleWorkspaceExportJobs,
@@ -280,6 +282,9 @@ async function main(): Promise<void> {
     }),
   )
   workers.push(registerWorker(QueueName.AiEval, processAiEval))
+  workers.push(
+    registerWorker(QueueName.WhatsappArchive, processWhatsappArchive),
+  )
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -318,6 +323,7 @@ async function main(): Promise<void> {
   await scheduleWorkspaceIntegrationsJobs()
   await scheduleCrmCampaignsJobs()
   await scheduleSitePostsJobs()
+  await scheduleWhatsappArchiveJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

@@ -37,7 +37,7 @@ export interface WhatsAppConversationExportFile {
   body: string
 }
 
-const TYPE_PLACEHOLDER: Record<WhatsAppMessageType, string> = {
+export const TYPE_PLACEHOLDER: Record<WhatsAppMessageType, string> = {
   TEXT: '',
   IMAGE: '[imagem]',
   AUDIO: '[áudio]',
@@ -64,7 +64,7 @@ function formatDateTime(date: Date): string {
   return dateTimeFormatter.format(date).replace(',', '')
 }
 
-function senderLabel(
+export function senderLabel(
   message: ExportableWhatsAppMessage,
   contactLabel: string,
 ): string {

@@ -1752,3 +1752,25 @@ export const aiInsightNotFound = (
 
 export const whatsappPriceNotFound = (): AppError =>
   appError('WHATSAPP_PRICE_NOT_FOUND', 'Preço não encontrado')
+
+export const whatsappArchiveNotFound = (): AppError =>
+  appError(
+    'WHATSAPP_ARCHIVE_NOT_FOUND',
+    'Pacote de arquivamento não encontrado',
+  )
+
+export const whatsappArchiveNotReady = (
+  message = 'O pacote ainda não está pronto para download',
+): AppError => appError('WHATSAPP_ARCHIVE_NOT_READY', message)
+
+export const whatsappArchiveDisabled = (): AppError =>
+  appError(
+    'WHATSAPP_ARCHIVE_DISABLED',
+    'O arquivamento de conversas não está ativo neste workspace',
+  )
+
+export const whatsappArchiveInProgress = (): AppError =>
+  appError(
+    'WHATSAPP_ARCHIVE_IN_PROGRESS',
+    'Já existe um pacote deste tipo sendo gerado. Aguarde terminar.',
+  )

@@ -24,6 +24,7 @@ import {
   WorkspaceBackupsSection,
 } from '@/app/_components/admin/workspaces/workspace-backups-section'
 import { WorkspaceLifecyclePanel } from '@/app/_components/admin/workspaces/workspace-lifecycle-panel'
+import { WorkspaceWhatsappArchiveSection } from '@/app/_components/admin/workspaces/workspace-whatsapp-archive-section'
 import { CrmMembersSection } from '@/app/_components/settings/crm-members-section'
 import { CrmProfilesSection } from '@/app/_components/settings/crm-profiles-section'
 import { getAuthSession } from '@/src/lib/auth-session'
@@ -160,6 +161,11 @@ export default async function AdminWorkspaceDetailPage({
       <CrmProfilesSection
         workspaceId={workspace.id}
         basePath={ADMIN_BASE_PATH}
+      />
+
+      <WorkspaceWhatsappArchiveSection
+        workspaceId={workspace.id}
+        disabled={deleting}
       />
 
       <div className='grid items-start gap-4 xl:grid-cols-[3fr_2fr]'>
