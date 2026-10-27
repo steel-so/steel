@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { drainInputOtpTimers } from '@/src/__tests__/helpers/input-otp'
 import { SignUpForm } from '../sign-up-form'
 
 const push = vi.fn()
@@ -58,6 +59,9 @@ const CONSENT_ERROR =
   'Você precisa aceitar os Termos de Serviço e a Política de Privacidade'
 
 describe('<SignUpForm />', () => {
+  // The OTP step mounts `input-otp`, whose mount timers outlive the test.
+  afterEach(drainInputOtpTimers)
+
   it('shows every pt-BR validation message on an empty submit', async () => {
     render(<SignUpForm />)
     submit()

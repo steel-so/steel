@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { drainInputOtpTimers } from '@/src/__tests__/helpers/input-otp'
 import { SignInForm } from '../sign-in-form'
 
 const push = vi.fn()
@@ -51,6 +52,9 @@ describe('<SignInForm />', () => {
     auth.sendOtp.mockResolvedValue({ data: {}, error: null })
     hint.lastTwoFactorMethod.mockReturnValue(null)
   })
+
+  // The OTP steps mount `input-otp`, whose mount timers outlive the test.
+  afterEach(drainInputOtpTimers)
 
   it('shows pt-BR required-field errors and does not call the API', async () => {
     render(<SignInForm />)
