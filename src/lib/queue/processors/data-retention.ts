@@ -3,6 +3,7 @@ import { logger } from '@/lib/axiom/logger'
 import { prisma } from '@/src/lib/prisma'
 import { IntegrationGrantLifecycleService } from '@/src/services/integration-grant-lifecycle.service'
 import { PhoneCallRecordingService } from '@/src/services/phone-call-recording.service'
+import { WorkspaceAccessLogService } from '@/src/services/workspace-access-log.service'
 import { DataRetentionJob } from '../jobs'
 import { RetentionWindowMs } from '../retention'
 
@@ -94,6 +95,15 @@ async function purgeCallRecordings(): Promise<
   }
 }
 
+/** Entry log of IP-restricted workspaces: 5 years (ADR 0053). */
+async function cleanupWorkspaceAccessLogs(): Promise<CleanupResult> {
+  const cutoff = new Date(Date.now() - RetentionWindowMs.workspaceAccessLogs)
+  const deleted = await WorkspaceAccessLogService.pruneOlderThan(cutoff)
+  // Throw so BullMQ retries.
+  if (!deleted.ok) throw new Error(deleted.error.message)
+  return { deleted: deleted.value, cutoff: cutoff.toISOString() }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -163,6 +173,16 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
         jobId: job.id,
         deleted: result.deleted,
         orphans: result.orphans,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.CleanupWorkspaceAccessLogs: {
+      const result = await cleanupWorkspaceAccessLogs()
+      logger.info('queue.data_retention.workspace_access_logs_cleaned', {
+        component: 'Worker',
+        jobId: job.id,
+        deleted: result.deleted,
         cutoff: result.cutoff,
       })
       return result

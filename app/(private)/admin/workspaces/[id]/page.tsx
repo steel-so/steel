@@ -18,6 +18,7 @@ import {
   StatusPill,
   WorkspaceStatusPill,
 } from '@/app/_components/admin/shell/admin-ui'
+import { WorkspaceAccessLogSection } from '@/app/_components/admin/workspaces/workspace-access-log-section'
 import {
   WorkspaceAuditSection,
   WorkspaceBackupsSection,
@@ -143,6 +144,11 @@ export default async function AdminWorkspaceDetailPage({
           <AdminFeatureFlagsPanel workspaceId={workspace.id} />
         </AdminPanel>
       </div>
+
+      <WorkspaceAccessLogSection
+        workspaceId={workspace.id}
+        restricted={workspace.allowedIps.length > 0}
+      />
 
       <AdminPanel title='Membros' description='Papel e perfil de acesso'>
         <CrmMembersSection

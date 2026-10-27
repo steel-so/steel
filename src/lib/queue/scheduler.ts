@@ -154,6 +154,12 @@ export async function scheduleDataRetentionJobs(): Promise<void> {
     data: {},
   })
 
+  await queue.upsertJobScheduler(
+    DataRetentionJob.CleanupWorkspaceAccessLogs,
+    repeat,
+    { name: DataRetentionJob.CleanupWorkspaceAccessLogs, data: {} },
+  )
+
   logger.info('queue.scheduler.data_retention_registered', {
     component: 'Worker',
     pattern: RetentionCron.dataRetention,
@@ -166,6 +172,7 @@ export async function scheduleDataRetentionJobs(): Promise<void> {
       DataRetentionJob.CleanupApiTokens,
       DataRetentionJob.PruneDeadIntegrationGrants,
       DataRetentionJob.PurgeCallRecordings,
+      DataRetentionJob.CleanupWorkspaceAccessLogs,
     ],
   })
 }

@@ -10,6 +10,11 @@ export const RetentionWindowMs = {
    * so the settings list and audit lookups still resolve the token name.
    */
   apiTokensAfterEnd: 90 * DAY_MS,
+  /**
+   * Entry log of IP-restricted workspaces (ADR 0053): 5 years, the horizon
+   * banks keep access records for under BACEN rules (5 × 365 days).
+   */
+  workspaceAccessLogs: 5 * 365 * DAY_MS,
 } as const
 
 export const RetentionCron = {
