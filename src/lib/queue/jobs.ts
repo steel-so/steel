@@ -46,6 +46,7 @@ export const QueueName = {
   AiEval: 'ai-eval',
   PhoneCallAi: 'phone-call-ai',
   AiProactive: 'ai-proactive',
+  WhatsappArchive: 'whatsapp-archive',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -940,4 +941,30 @@ export type AiProactiveJob =
 export type AiProactiveJobPayload = {
   [AiProactiveJob.InsightsTick]: Record<string, never>
   [AiProactiveJob.DigestTick]: Record<string, never>
+}
+
+/**
+ * WhatsApp archive for banks (ADR 0052): `schedule-weekly` (Monday 02:00)
+ * and `schedule-monthly` (day 1, 02:30) queue one package per opted-in
+ * workspace; `build` streams one package (PDFs in a zip) to MinIO;
+ * `copy-to-offsite` copies it to `BACKUP_OFFSITE_*` (own job, so a provider
+ * failure retries alone); `prune-expired` deletes packages past retention.
+ */
+export const WhatsappArchiveJob = {
+  ScheduleWeekly: 'schedule-weekly',
+  ScheduleMonthly: 'schedule-monthly',
+  Build: 'build',
+  CopyToOffsite: 'copy-to-offsite',
+  PruneExpired: 'prune-expired',
+} as const
+
+export type WhatsappArchiveJob =
+  (typeof WhatsappArchiveJob)[keyof typeof WhatsappArchiveJob]
+
+export type WhatsappArchiveJobPayload = {
+  [WhatsappArchiveJob.ScheduleWeekly]: Record<string, never>
+  [WhatsappArchiveJob.ScheduleMonthly]: Record<string, never>
+  [WhatsappArchiveJob.Build]: { archiveId: string }
+  [WhatsappArchiveJob.CopyToOffsite]: { archiveId: string }
+  [WhatsappArchiveJob.PruneExpired]: Record<string, never>
 }

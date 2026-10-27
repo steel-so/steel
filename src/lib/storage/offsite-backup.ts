@@ -265,3 +265,76 @@ export async function pruneOffsiteObjects(
   }
   return expired.length
 }
+
+export interface OffsiteStreamUploadInput {
+  /** Relative key (the prefix of `config` is prepended). */
+  key: string
+  /** Content, streamed: never fully in memory. */
+  body: NodeJS.ReadableStream
+  sizeBytes: number
+  /** SHA-256 (hex) of the content, checked on the read-back. */
+  sha256: string
+  contentType: string
+}
+
+/**
+ * Like `uploadAndVerifyOffsite`, for objects too big to buffer (the
+ * WhatsApp archive packages, ADR 0052): streams the upload with a known
+ * length and verifies by streaming the read-back through SHA-256.
+ */
+export async function uploadAndVerifyOffsiteStream(
+  config: OffsiteConfig,
+  input: OffsiteStreamUploadInput,
+): Promise<OffsiteUploadResult> {
+  const s3 = getClient(config)
+  const key = `${config.prefix}${input.key}`
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: input.body as never,
+      ContentLength: input.sizeBytes,
+      ContentType: input.contentType,
+      ...(config.serverSideEncryption
+        ? { ServerSideEncryption: 'AES256' as const }
+        : {}),
+      Metadata: { 'sha256-plain': input.sha256 },
+    }),
+  )
+
+  const head = await s3.send(
+    new HeadObjectCommand({ Bucket: config.bucket, Key: key }),
+  )
+  if (head.ContentLength !== input.sizeBytes) {
+    throw new Error(
+      `Offsite verification failed for "${key}": size ${head.ContentLength} != ${input.sizeBytes}`,
+    )
+  }
+
+  const readBack = await s3.send(
+    new GetObjectCommand({ Bucket: config.bucket, Key: key }),
+  )
+  const hash = createHash('sha256')
+  for await (const chunk of readBack.Body as AsyncIterable<Uint8Array>) {
+    hash.update(chunk)
+  }
+  const downloaded = hash.digest('hex')
+  if (downloaded !== input.sha256) {
+    throw new Error(
+      `Offsite verification failed for "${key}": sha256 ${downloaded} != ${input.sha256}`,
+    )
+  }
+
+  return { key, sizeBytes: input.sizeBytes, encryptedChecksum: input.sha256 }
+}
+
+/** Deletes one off-site object by its full key (as returned on upload). */
+export async function deleteOffsiteKey(
+  config: OffsiteConfig,
+  fullKey: string,
+): Promise<void> {
+  await getClient(config).send(
+    new DeleteObjectCommand({ Bucket: config.bucket, Key: fullKey }),
+  )
+}

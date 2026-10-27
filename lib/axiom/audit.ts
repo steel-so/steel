@@ -237,6 +237,9 @@ export type AuditEntity =
   // Communication SLA (ADR 0048)
   | 'whatsapp_sla_policy'
   | 'whatsapp_sla_cycle'
+  // WhatsApp archive for banks (ADR 0052)
+  | 'whatsapp_archive'
+  | 'whatsapp_archive_settings'
 
 export type AuditAction =
   | 'create'

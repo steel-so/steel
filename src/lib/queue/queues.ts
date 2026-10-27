@@ -80,6 +80,8 @@ import {
   type WebhooksDeliveryJobPayload,
   type WhatsappAiReplyJob,
   type WhatsappAiReplyJobPayload,
+  type WhatsappArchiveJob,
+  type WhatsappArchiveJobPayload,
   type WhatsappBroadcastJob,
   type WhatsappBroadcastJobPayload,
   type WhatsappButtonActionsJob,
@@ -152,6 +154,7 @@ let phoneCallAiQueue: Queue | null = null
 let aiProactiveQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
+let whatsappArchiveQueue: Queue | null = null
 
 export function getDataRetentionQueue(): Queue<
   DataRetentionJobPayload[DataRetentionJob],
@@ -844,6 +847,7 @@ export async function closeQueues(): Promise<void> {
     aiIndexQueue?.close(),
     aiEvalQueue?.close(),
     aiProactiveQueue?.close(),
+    whatsappArchiveQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -886,6 +890,7 @@ export async function closeQueues(): Promise<void> {
   aiIndexQueue = null
   aiEvalQueue = null
   aiProactiveQueue = null
+  whatsappArchiveQueue = null
 }
 
 export function getCrmTaskRemindersQueue(): Queue<
@@ -1169,6 +1174,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.AiEval]: getAiEvalQueue,
   [QueueName.PhoneCallAi]: getPhoneCallAiQueue,
   [QueueName.AiProactive]: getAiProactiveQueue,
+  [QueueName.WhatsappArchive]: getWhatsappArchiveQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1241,5 +1247,24 @@ export function getAiProactiveQueue(): Queue<
     AiProactiveJobPayload[AiProactiveJob],
     unknown,
     AiProactiveJob
+  >
+}
+
+/** WhatsApp archive for banks (ADR 0052). Attempts like the backups (3). */
+export function getWhatsappArchiveQueue(): Queue<
+  WhatsappArchiveJobPayload[WhatsappArchiveJob],
+  unknown,
+  WhatsappArchiveJob
+> {
+  if (!whatsappArchiveQueue) {
+    whatsappArchiveQueue = new Queue(QueueName.WhatsappArchive, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return whatsappArchiveQueue as Queue<
+    WhatsappArchiveJobPayload[WhatsappArchiveJob],
+    unknown,
+    WhatsappArchiveJob
   >
 }

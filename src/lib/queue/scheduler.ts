@@ -29,6 +29,7 @@ import {
   SteelAgentsJob,
   TrialLifecycleJob,
   UsageRollupJob,
+  WhatsappArchiveJob,
   WhatsappBroadcastJob,
   WhatsappConversationLifecycleJob,
   WorkspaceExportJob,
@@ -63,6 +64,7 @@ import {
   getSteelAgentsQueue,
   getTrialLifecycleQueue,
   getUsageRollupQueue,
+  getWhatsappArchiveQueue,
   getWhatsappBroadcastQueue,
   getWhatsappConversationLifecycleQueue,
   getWorkspaceExportQueue,
@@ -100,6 +102,7 @@ import {
   StatusCollectCron,
   SteelAgentsTickCron,
   UsageRollupCron,
+  WhatsappArchiveCron,
   WhatsappBroadcastScheduleCron,
   WhatsappConversationAutoCloseCron,
   WhatsappDistributionTickCron,
@@ -677,6 +680,34 @@ export async function scheduleAiProactiveJobs(): Promise<void> {
     component: 'Worker',
     insightsPattern: AiProactiveInsightsCron,
     digestPattern: AiProactiveDigestCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** WhatsApp archive for banks (ADR 0052): weekly, monthly full and prune. */
+export async function scheduleWhatsappArchiveJobs(): Promise<void> {
+  const queue = getWhatsappArchiveQueue()
+  await queue.upsertJobScheduler(
+    WhatsappArchiveJob.ScheduleWeekly,
+    { pattern: WhatsappArchiveCron.weekly, tz: RetentionTimezone },
+    { name: WhatsappArchiveJob.ScheduleWeekly, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    WhatsappArchiveJob.ScheduleMonthly,
+    { pattern: WhatsappArchiveCron.monthlyFull, tz: RetentionTimezone },
+    { name: WhatsappArchiveJob.ScheduleMonthly, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    WhatsappArchiveJob.PruneExpired,
+    { pattern: WhatsappArchiveCron.pruneExpired, tz: RetentionTimezone },
+    { name: WhatsappArchiveJob.PruneExpired, data: {} },
+  )
+
+  logger.info('queue.scheduler.whatsapp_archive_registered', {
+    component: 'Worker',
+    weeklyPattern: WhatsappArchiveCron.weekly,
+    monthlyFullPattern: WhatsappArchiveCron.monthlyFull,
+    prunePattern: WhatsappArchiveCron.pruneExpired,
     timezone: RetentionTimezone,
   })
 }

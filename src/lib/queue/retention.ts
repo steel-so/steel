@@ -175,3 +175,21 @@ export const AiProactiveInsightsCron = '7,22,37,52 * * * *' as const
  * each person at the digest hour of their own time zone.
  */
 export const AiProactiveDigestCron = '10 * * * *' as const
+
+/**
+ * WhatsApp archive for banks (ADR 0052): the weekly package on Monday at
+ * 02:00 (previous Monday → Sunday), the monthly full package on day 1 at
+ * 02:30 (all history up to the end of the previous month), and the prune of
+ * expired packages at 04:50 (after the backup and export prunes).
+ */
+export const WhatsappArchiveCron = {
+  weekly: '0 2 * * 1',
+  monthlyFull: '30 2 1 * *',
+  pruneExpired: '50 4 * * *',
+} as const
+
+/** How long each package is kept (MinIO and the off-site copy). */
+export const WhatsappArchiveRetention = {
+  weeklyDays: 90,
+  monthlyFullMonths: 12,
+} as const
