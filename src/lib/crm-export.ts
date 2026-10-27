@@ -14,7 +14,7 @@ function cellText(value: unknown): string {
 }
 
 /** Escapa um campo CSV (RFC 4180): aspas duplas e separadores. */
-function csvField(value: string): string {
+export function csvField(value: string): string {
   if (/[",\n\r]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`
   }
