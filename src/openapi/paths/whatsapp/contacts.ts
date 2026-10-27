@@ -32,7 +32,7 @@ export const contactRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/contacts',
     tags: [TAG],
     summary: 'Listar contatos',
-    description: `Contatos do workspace em ordem alfabética, com o número de conversas. \`search\` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. \`whatsapp\` (\`yes\` | \`no\` | \`unknown\`) filtra pelo resultado da checagem "tem WhatsApp?". Sem paginação. ${perm('contacts', 'VIEW')}`,
+    description: `Contatos do workspace em ordem alfabética, com o número de conversas. \`search\` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. \`whatsapp\` (\`yes\` | \`no\` | \`unknown\`) filtra pelo resultado da checagem "tem WhatsApp?". \`created\` = \`today\` devolve só os contatos inseridos hoje (dia civil de São Paulo, a partir da meia-noite em America/Sao_Paulo). Sem paginação. ${perm('contacts', 'VIEW')}`,
     query: ListWhatsAppContactsSchema,
     responses: {
       200: { description: 'Contatos.', schema: z.array(WhatsAppContactDTO) },

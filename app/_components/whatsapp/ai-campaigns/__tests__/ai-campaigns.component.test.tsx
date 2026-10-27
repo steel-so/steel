@@ -7,8 +7,10 @@ import {
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
 import type { WhatsAppAiCampaignDTO } from '@/types/whatsapp-ai-campaign'
+import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
 import { actionDraftProblem } from '../ai-campaign-actions-editor'
 import { WhatsappAiCampaignDetail } from '../ai-campaign-detail'
+import { AiCampaignStepContacts } from '../ai-campaign-step-contacts'
 import { WhatsappAiCampaignWizard } from '../ai-campaign-wizard'
 import { WhatsappAiCampaignsPage } from '../ai-campaigns-page'
 
@@ -202,6 +204,7 @@ describe('<WhatsappAiCampaignDetail />', () => {
               contactId: 'ct_1',
               contactName: 'Maria',
               waId: '5511999990000',
+              contactCreatedAt: '2026-10-28T01:30:00.000Z',
               status: 'SENT',
               errorMessage: null,
               values: {},
@@ -229,6 +232,77 @@ describe('<WhatsappAiCampaignDetail />', () => {
     const link = await screen.findByRole('link', { name: 'Deu certo' })
     expect(link.getAttribute('href')).toBe('/acme/zap?conversa=conv_1')
     expect(screen.getByText('Maria')).toBeTruthy()
+    // Insertion date in São Paulo time (UTC already turned the day).
+    expect(screen.getByText('27/10/2026 22:30')).toBeTruthy()
+  })
+})
+
+describe('<AiCampaignStepContacts /> "Inseridos hoje"', () => {
+  function contact(id: string, extra: Partial<WhatsAppContactDTO> = {}) {
+    return {
+      id,
+      workspaceId: 'ws_1',
+      waId: `55119999900${id.slice(-2)}`,
+      name: `Contato ${id}`,
+      avatarUrl: null,
+      description: null,
+      hasWhatsapp: true,
+      broadcastOptedOutAt: null,
+      conversationCount: 0,
+      createdAt: '2026-10-27T12:15:00.000Z',
+      updatedAt: '2026-10-27T12:15:00.000Z',
+      ...extra,
+    } as unknown as WhatsAppContactDTO
+  }
+
+  it('filters by today and marks exactly the opted-in contacts of today', async () => {
+    const contactsUrl = '/api/workspaces/ws_1/whatsapp/contacts'
+    const fetchSpy = mockFetch([
+      {
+        method: 'POST',
+        match: `${BASE}/c1/recipients`,
+        data: { added: 2, rejected: 0, optedOut: 0 },
+      },
+      {
+        match: `${contactsUrl}?created=today`,
+        data: [
+          contact('ct_01'),
+          contact('ct_02'),
+          contact('ct_03', { broadcastOptedOutAt: '2026-10-27T12:30:00.000Z' }),
+        ],
+      },
+      {
+        match: contactsUrl,
+        data: [contact('ct_09', { createdAt: '2026-09-01T15:00:00.000Z' })],
+      },
+    ])
+    renderWithQuery(
+      <AiCampaignStepContacts
+        workspaceId='ws_1'
+        campaign={campaign()}
+        onDone={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('01/09/2026 12:00')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inseridos hoje' }))
+    expect(await screen.findByText('Contato ct_01')).toBeTruthy()
+    expect(screen.queryByText('Contato ct_09')).toBeNull()
+    expect(screen.getAllByText('27/10/2026 09:15')).toHaveLength(3)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Marcar só os de hoje (2)' }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Adicionar 2 selecionado(s)' }),
+    )
+
+    await waitFor(() =>
+      expect(fetchBody(fetchSpy, `${BASE}/c1/recipients`)).toEqual({
+        contactIds: ['ct_01', 'ct_02'],
+      }),
+    )
   })
 })
 

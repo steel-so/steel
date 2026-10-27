@@ -13,11 +13,13 @@ export const WhatsAppContactRepository = {
     workspaceId: string,
     search?: string,
     whatsapp?: 'yes' | 'no' | 'unknown',
+    createdFrom?: Date,
   ): Promise<Result<WhatsAppContactWithCount[]>> {
     try {
       const contacts = await prisma.whatsAppContact.findMany({
         where: {
           workspaceId,
+          ...(createdFrom ? { createdAt: { gte: createdFrom } } : {}),
           ...(whatsapp
             ? { hasWhatsapp: { yes: true, no: false, unknown: null }[whatsapp] }
             : {}),

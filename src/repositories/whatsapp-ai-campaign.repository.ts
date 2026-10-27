@@ -34,7 +34,7 @@ export type WhatsAppAiCampaignRecipientWithContact =
   WhatsAppAiCampaignRecipient & { contact: WhatsAppContact }
 
 export type WhatsAppAiCampaignRecipientRow = WhatsAppAiCampaignRecipient & {
-  contact: Pick<WhatsAppContact, 'name' | 'waId'>
+  contact: Pick<WhatsAppContact, 'name' | 'waId' | 'createdAt'>
   conversation: {
     status: 'NEW' | 'IN_PROGRESS' | 'CLOSED'
     closeOutcome: 'SUCCESS' | 'FAILURE' | null
@@ -396,7 +396,9 @@ export const WhatsAppAiCampaignRepository = {
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: options.limit,
         ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
-        include: { contact: { select: { name: true, waId: true } } },
+        include: {
+          contact: { select: { name: true, waId: true, createdAt: true } },
+        },
       })
       const conversationIds = rows
         .map((row) => row.conversationId)

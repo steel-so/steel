@@ -49,6 +49,7 @@ import {
   formatDuration,
 } from '@/src/lib/whatsapp/ai-campaign'
 import { AI_CAMPAIGN_ACTION_KIND_LABEL } from '@/src/lib/whatsapp/ai-campaign-actions'
+import { formatContactCreatedAt } from '@/src/lib/whatsapp/contact-created-today'
 import type { AiCampaignAction } from '@/src/schemas/whatsapp-ai-campaign.schema'
 import type {
   WhatsAppAiCampaignDTO,
@@ -186,11 +187,12 @@ function RecipientsTab({
                     <p className='font-medium'>
                       {recipient.contactName ?? recipient.waId}
                     </p>
-                    {recipient.contactName ? (
-                      <p className='text-muted-foreground text-xs'>
-                        {recipient.waId}
-                      </p>
-                    ) : null}
+                    <p className='text-muted-foreground text-xs'>
+                      {recipient.contactName ? `${recipient.waId} · ` : ''}
+                      <span title='Inserido em'>
+                        {formatContactCreatedAt(recipient.contactCreatedAt)}
+                      </span>
+                    </p>
                   </td>
                   <td className='px-3 py-2'>
                     <Badge

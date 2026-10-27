@@ -246,6 +246,7 @@ describe('WhatsAppAiCampaignRepository', () => {
       }),
     )
     expect(page).toHaveLength(2)
+    expect(page[0].contact.createdAt).toBeInstanceOf(Date)
     expect(page[0].conversation).toEqual({
       status: 'CLOSED',
       closeOutcome: 'FAILURE',

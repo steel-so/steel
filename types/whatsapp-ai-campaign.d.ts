@@ -76,6 +76,8 @@ export interface WhatsAppAiCampaignRecipientDTO {
   contactId: string
   contactName: string | null
   waId: string
+  /** When the WhatsApp contact was inserted (ISO). */
+  contactCreatedAt: string
   status: WhatsAppAiCampaignRecipientStatusDTO
   errorMessage: string | null
   values: Record<string, string>

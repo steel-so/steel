@@ -87,6 +87,7 @@ export function toWhatsAppAiCampaignRecipientDTO(
     contactId: row.contactId,
     contactName: row.contact.name,
     waId: row.contact.waId,
+    contactCreatedAt: row.contact.createdAt.toISOString(),
     status: row.status,
     errorMessage: row.errorMessage,
     values: recipientValues(row.values),

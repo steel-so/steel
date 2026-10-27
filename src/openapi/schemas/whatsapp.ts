@@ -783,6 +783,9 @@ export const WhatsAppAiCampaignRecipientPageDTO = dto(
         contactId: z.string(),
         contactName: z.string().nullable(),
         waId: waId(),
+        contactCreatedAt: dateTime().meta({
+          description: 'Quando o contato foi inserido no workspace.',
+        }),
         status: AiCampaignRecipientStatus,
         errorMessage: z.string().nullable(),
         values: z.record(z.string(), z.string()).meta({
