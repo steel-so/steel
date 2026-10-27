@@ -1,0 +1,68 @@
+---
+title: Arquivamento de conversas
+description: Pacotes semanais e completos com um PDF por atendimento, organizados por dia, atendente e contato, para entregar a bancos e auditorias.
+section: comunicacao
+order: 11
+---
+
+<Callout type='admin'>
+  O arquivamento é ligado pela equipe da Stratus, a pedido do cliente. Depois de
+  ligado, o dono e os administradores do workspace baixam os pacotes em
+  **Comunicação › Configurações › Atendimento**.
+</Callout>
+
+Alguns parceiros — bancos, por exemplo — pedem uma cópia organizada de todas
+as conversas do WhatsApp para auditoria. O **arquivamento de conversas** gera
+essa cópia sozinho, num arquivo `.zip`:
+
+- **Semanal**: toda segunda-feira às 02:00, com a semana anterior (de segunda a
+  domingo).
+- **Completo**: todo dia 1 às 02:30, com todo o histórico até o fim do mês
+  anterior.
+
+Os horários e as datas são sempre de Brasília.
+
+## Como o pacote é organizado
+
+Cada **atendimento** — uma conversa num dia — vira um PDF:
+
+```
+FIDELIZZAMAIS/WHATSAPP/2026-10-20/ana-souza/maria-silva-5511988887777-2026-10-20-14h05.pdf
+```
+
+- `FIDELIZZAMAIS`: a pasta raiz, que por padrão é o nome do workspace.
+- `2026-10-20`: o dia do atendimento.
+- `ana-souza`: o atendente que respondeu. Se duas pessoas atenderam, o mesmo
+  PDF aparece na pasta de cada uma. Se só a IA respondeu, a pasta é `IA`; se
+  ninguém respondeu, vale o responsável pela conversa ou `sem-atendente`.
+- `maria-silva-5511988887777-2026-10-20-14h05`: o contato, o telefone, o dia e
+  a hora da primeira mensagem.
+
+O PDF traz o workspace, a conexão, o contato e o telefone, os atendentes e o
+dia, e depois cada mensagem com hora, quem enviou e o texto. Imagens,
+áudios e documentos aparecem como `[imagem]`, `[áudio]`, `[documento]` com o
+nome do arquivo; mensagens apagadas aparecem marcadas como
+`[mensagem apagada]`. Emojis aparecem como `[emoji]`.
+
+## Conferir a integridade
+
+Na pasta `WHATSAPP` vem o arquivo **INDICE.csv**, que abre no Excel, com uma
+linha por PDF: data, hora, atendente, contato, telefone, número de mensagens e
+o **SHA-256** do PDF. O SHA-256 é uma impressão digital do arquivo: se alguém
+alterar o PDF, ele muda. A tela de download também mostra o SHA-256 do `.zip`
+inteiro.
+
+## Baixar
+
+Em **Comunicação › Configurações › Atendimento**, a seção **Arquivamento de
+conversas** lista os pacotes com a situação (na fila, gerando, pronto ou
+falhou), o período, quantos atendimentos e arquivos há, o tamanho e o botão
+**Baixar**.
+
+<Callout type='aviso'>
+  O pacote tem dados pessoais dos seus contatos. Entregue-o só pelo canal seguro
+  que o banco indicar, nunca por e-mail aberto.
+</Callout>
+
+Os pacotes ficam guardados por **90 dias** (semanal) e **12 meses** (completo),
+com uma cópia fora do servidor. Depois disso aparecem como **Expirado**.
