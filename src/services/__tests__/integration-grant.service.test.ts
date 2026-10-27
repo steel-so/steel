@@ -696,7 +696,7 @@ describe('IntegrationGrantService.resolveAccessToken', () => {
     expect(clients.findAccessTokenByHash).not.toHaveBeenCalled()
   })
 
-  it('rejects an unknown, expired, orphan or disabled-client token', async () => {
+  it('rejects an unknown, expired, revoked, orphan or disabled-client token', async () => {
     clients.findAccessTokenByHash.mockResolvedValueOnce(ok(null))
     expectErr(
       await IntegrationGrantService.resolveAccessToken(RAW, NOW),
@@ -706,6 +706,8 @@ describe('IntegrationGrantService.resolveAccessToken', () => {
     for (const token of [
       { expiresAt: new Date(NOW.getTime() - 1) },
       { expiresAt: null },
+      // Revoked by the provider when the session that issued it ended.
+      { revoked: new Date(NOW.getTime() - 1) },
       { referenceId: null },
       { userId: null },
       { client: createFakeOauthClientSummary({ disabled: true }) },

@@ -67,9 +67,14 @@ export function createFakeOauthAccessToken(
     sessionId: null,
     userId: createId(),
     referenceId: createId(),
+    authorizationCodeId: null,
+    resources: [],
+    requestedUserInfoClaims: [],
     refreshId: null,
     expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
     createdAt: now,
+    revoked: null,
+    confirmation: null,
     scopes: ['mcp:read', 'offline_access'],
     client: createFakeOauthClientSummary({ clientId }),
     ...overrides,
@@ -88,7 +93,6 @@ export async function seedOauthClient(overrides?: {
       disabled: overrides?.disabled ?? false,
       redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
       scopes: ['mcp:read', 'mcp:write', 'offline_access'],
-      public: true,
       tokenEndpointAuthMethod: 'none',
       grantTypes: ['authorization_code', 'refresh_token'],
       responseTypes: ['code'],
@@ -129,6 +133,7 @@ export async function seedOauthAccessToken(data: {
   scopes?: string[]
   expiresAt?: Date
   refreshId?: string | null
+  revoked?: Date | null
 }) {
   const raw = createId()
   const row = await prisma.oauthAccessToken.create({
@@ -140,6 +145,7 @@ export async function seedOauthAccessToken(data: {
       refreshId: data.refreshId ?? null,
       scopes: data.scopes ?? ['mcp:read', 'offline_access'],
       expiresAt: data.expiresAt ?? new Date(Date.now() + 60 * 60 * 1000),
+      revoked: data.revoked ?? null,
     },
   })
   return { row, raw: `stl_at_${raw}` }
