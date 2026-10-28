@@ -212,7 +212,7 @@ const nextConfig: NextConfig = {
     // a same-origin `<script src>` again, covered by `'self'` like every other
     // chunk. The e2e `app/(public)/__tests__/csp-hydration.e2e.test.ts` fails
     // if an inline script without the nonce comes back.
-    turbopackSharedRuntime: false,
+    // turbopackSharedRuntime: false, (negative control: 16.4 default)
     // Low-memory mode, only for image builds on the ~3.8GB self-hosted runner
     // (still used by promote-production.yml; CI/CD build on 16GB hosted
     // runners since ADR 0009). There, Turbopack grows until the OOM killer
