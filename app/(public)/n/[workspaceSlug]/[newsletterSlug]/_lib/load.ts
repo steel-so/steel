@@ -13,7 +13,8 @@ import { CrmNewsletterArchiveService } from '@/src/services/crm-newsletter-archi
  * Cached reads of the public archive, tagged
  * `newsletter-archive:<ws>/<newsletter>` — `revalidateNewsletterArchive`
  * (called when an issue is sent or the newsletter changes) expires them.
- * `hours` is only the safety net for a change that forgot to expire it.
+ * `minutes` is the safety net: an issue whose send finishes in the worker
+ * (outside Next, where no tag can be expired) shows within a minute.
  *
  * A 404 is cached too (a probe for an unknown slug does not hit the
  * database every time); any other failure throws, so it is never cached
@@ -38,7 +39,7 @@ export async function loadNewsletterArchive(
 ): Promise<PublicNewsletterArchivePageDTO | null> {
   'use cache'
   cacheTag(newsletterArchiveTag(workspaceSlug, newsletterSlug))
-  cacheLife('hours')
+  cacheLife('minutes')
   return valueOrNull(
     await CrmNewsletterArchiveService.getArchive(
       workspaceSlug,
@@ -55,7 +56,7 @@ export async function loadNewsletterIssue(
 ): Promise<PublicNewsletterIssuePageDTO | null> {
   'use cache'
   cacheTag(newsletterArchiveTag(workspaceSlug, newsletterSlug))
-  cacheLife('hours')
+  cacheLife('minutes')
   return valueOrNull(
     await CrmNewsletterArchiveService.getIssue(
       workspaceSlug,
@@ -71,7 +72,7 @@ export async function loadNewsletterFeed(
 ): Promise<PublicNewsletterFeedDTO | null> {
   'use cache'
   cacheTag(newsletterArchiveTag(workspaceSlug, newsletterSlug))
-  cacheLife('hours')
+  cacheLife('minutes')
   return valueOrNull(
     await CrmNewsletterArchiveService.getFeed(workspaceSlug, newsletterSlug),
   )
