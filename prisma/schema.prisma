@@ -8957,41 +8957,57 @@ model SiteExperimentEvent {
 // ---------------------------------------------------------------------------
 
 model OauthClient {
-  id                      String    @id @default(cuid())
-  clientId                String    @unique @map("client_id")
-  clientSecret            String?   @map("client_secret")
-  disabled                Boolean?  @default(false)
-  skipConsent             Boolean?  @map("skip_consent")
-  enableEndSession        Boolean?  @map("enable_end_session")
-  subjectType             String?   @map("subject_type")
-  scopes                  String[]
-  userId                  String?   @map("user_id")
-  createdAt               DateTime? @default(now()) @map("created_at")
-  updatedAt               DateTime? @updatedAt @map("updated_at")
-  name                    String?
-  uri                     String?
-  icon                    String?
-  contacts                String[]
-  tos                     String?
-  policy                  String?
-  softwareId              String?   @map("software_id")
-  softwareVersion         String?   @map("software_version")
-  softwareStatement       String?   @map("software_statement")
-  redirectUris            String[]  @map("redirect_uris")
-  postLogoutRedirectUris  String[]  @map("post_logout_redirect_uris")
-  tokenEndpointAuthMethod String?   @map("token_endpoint_auth_method")
-  grantTypes              String[]  @map("grant_types")
-  responseTypes           String[]  @map("response_types")
-  public                  Boolean?
-  type                    String?
-  requirePKCE             Boolean?  @map("require_pkce")
-  referenceId             String?   @map("reference_id")
-  metadata                Json?
+  id                               String    @id @default(cuid())
+  clientId                         String    @unique @map("client_id")
+  clientSecret                     String?   @map("client_secret")
+  /// Better Auth 1.7: provenance of a discovered client (CIMD). Unused here.
+  clientDiscoveryId                String?   @map("client_discovery_id")
+  disabled                         Boolean?  @default(false)
+  skipConsent                      Boolean?  @map("skip_consent")
+  enableEndSession                 Boolean?  @map("enable_end_session")
+  subjectType                      String?   @map("subject_type")
+  scopes                           String[]
+  /// Better Auth 1.7: scopes for the `client_credentials` grant, which Steel
+  /// does not enable.
+  clientCredentialsScopes          String[]  @default([]) @map("client_credentials_scopes")
+  userId                           String?   @map("user_id")
+  createdAt                        DateTime? @default(now()) @map("created_at")
+  updatedAt                        DateTime? @updatedAt @map("updated_at")
+  name                             String?
+  uri                              String?
+  icon                             String?
+  contacts                         String[]
+  tos                              String?
+  policy                           String?
+  softwareId                       String?   @map("software_id")
+  softwareVersion                  String?   @map("software_version")
+  softwareStatement                String?   @map("software_statement")
+  redirectUris                     String[]  @map("redirect_uris")
+  postLogoutRedirectUris           String[]  @map("post_logout_redirect_uris")
+  /// Better Auth 1.7: OIDC back-channel logout target (needs the JWT plugin,
+  /// which Steel keeps off — so it is never called).
+  backchannelLogoutUri             String?   @map("backchannel_logout_uri")
+  backchannelLogoutSessionRequired Boolean?  @map("backchannel_logout_session_required")
+  tokenEndpointAuthMethod          String?   @map("token_endpoint_auth_method")
+  /// Better Auth 1.7: `web` | `native` (replaces the old `type` column; the
+  /// old `public` flag is now `tokenEndpointAuthMethod = 'none'`).
+  applicationType                  String?   @map("application_type")
+  /// Better Auth 1.7: `private_key_jwt` client keys. Unused here.
+  jwks                             String?
+  jwksUri                          String?   @map("jwks_uri")
+  grantTypes                       String[]  @map("grant_types")
+  responseTypes                    String[]  @map("response_types")
+  requirePKCE                      Boolean?  @map("require_pkce")
+  /// Better Auth 1.7: DPoP-bound access tokens (RFC 9449).
+  dpopBoundAccessTokens            Boolean?  @default(false) @map("dpop_bound_access_tokens")
+  referenceId                      String?   @map("reference_id")
+  metadata                         Json?
 
-  user              User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens     OauthRefreshToken[]
   accessTokens      OauthAccessToken[]
   consents          OauthConsent[]
+  resources         OauthClientResource[]
   integrationGrants IntegrationGrant[]
 
   @@index([userId])
@@ -8999,18 +9015,30 @@ model OauthClient {
 }
 
 model OauthRefreshToken {
-  id          String    @id @default(cuid())
-  token       String    @unique
-  clientId    String    @map("client_id")
-  sessionId   String?   @map("session_id")
-  userId      String    @map("user_id")
+  id                      String    @id @default(cuid())
+  token                   String    @unique
+  clientId                String    @map("client_id")
+  sessionId               String?   @map("session_id")
+  userId                  String    @map("user_id")
   /// `IntegrationGrant.id` the token was issued for.
-  referenceId String?   @map("reference_id")
-  expiresAt   DateTime? @map("expires_at")
-  createdAt   DateTime? @default(now()) @map("created_at")
-  revoked     DateTime?
-  authTime    DateTime? @map("auth_time")
-  scopes      String[]
+  referenceId             String?   @map("reference_id")
+  /// Better Auth 1.7: the authorization code it came from (code replay
+  /// revokes every token issued from it).
+  authorizationCodeId     String?   @map("authorization_code_id")
+  /// Better Auth 1.7: RFC 8707 resources bound to the grant.
+  resources               String[]
+  requestedUserInfoClaims String[]  @map("requested_user_info_claims")
+  expiresAt               DateTime? @map("expires_at")
+  createdAt               DateTime? @default(now()) @map("created_at")
+  revoked                 DateTime?
+  /// Better Auth 1.7: refresh rotation bookkeeping (reuse interval replay).
+  rotatedAt               DateTime? @map("rotated_at")
+  rotationReplayResponse  String?   @map("rotation_replay_response")
+  rotationReplayExpiresAt DateTime? @map("rotation_replay_expires_at")
+  authTime                DateTime? @map("auth_time")
+  /// Better Auth 1.7: DPoP confirmation (`cnf`).
+  confirmation            Json?
+  scopes                  String[]
 
   client       OauthClient        @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
   session      Session?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
@@ -9021,21 +9049,32 @@ model OauthRefreshToken {
   @@index([sessionId])
   @@index([userId])
   @@index([referenceId])
+  @@index([authorizationCodeId])
   @@map("oauth_refresh_tokens")
 }
 
 model OauthAccessToken {
-  id          String    @id @default(cuid())
-  token       String?   @unique
-  clientId    String    @map("client_id")
-  sessionId   String?   @map("session_id")
-  userId      String?   @map("user_id")
+  id                      String    @id @default(cuid())
+  token                   String?   @unique
+  clientId                String    @map("client_id")
+  sessionId               String?   @map("session_id")
+  userId                  String?   @map("user_id")
   /// `IntegrationGrant.id` the token was issued for.
-  referenceId String?   @map("reference_id")
-  refreshId   String?   @map("refresh_id")
-  expiresAt   DateTime? @map("expires_at")
-  createdAt   DateTime? @default(now()) @map("created_at")
-  scopes      String[]
+  referenceId             String?   @map("reference_id")
+  /// Better Auth 1.7: the authorization code it came from.
+  authorizationCodeId     String?   @map("authorization_code_id")
+  /// Better Auth 1.7: RFC 8707 resources (the token audience).
+  resources               String[]
+  requestedUserInfoClaims String[]  @map("requested_user_info_claims")
+  refreshId               String?   @map("refresh_id")
+  expiresAt               DateTime? @map("expires_at")
+  createdAt               DateTime? @default(now()) @map("created_at")
+  /// Better Auth 1.7: set when the session that issued it ends (sign-out),
+  /// instead of deleting the row. A revoked token is dead.
+  revoked                 DateTime?
+  /// Better Auth 1.7: DPoP confirmation (`cnf`).
+  confirmation            Json?
+  scopes                  String[]
 
   client       OauthClient        @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
   session      Session?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
@@ -9047,18 +9086,22 @@ model OauthAccessToken {
   @@index([userId])
   @@index([refreshId])
   @@index([referenceId])
+  @@index([authorizationCodeId])
   @@map("oauth_access_tokens")
 }
 
 model OauthConsent {
-  id          String    @id @default(cuid())
-  clientId    String    @map("client_id")
-  userId      String?   @map("user_id")
+  id                      String    @id @default(cuid())
+  clientId                String    @map("client_id")
+  userId                  String?   @map("user_id")
   /// `IntegrationGrant.id` the consent belongs to.
-  referenceId String?   @map("reference_id")
-  scopes      String[]
-  createdAt   DateTime? @default(now()) @map("created_at")
-  updatedAt   DateTime? @updatedAt @map("updated_at")
+  referenceId             String?   @map("reference_id")
+  /// Better Auth 1.7: RFC 8707 resources and OIDC claims consented to.
+  resources               String[]
+  requestedUserInfoClaims String[]  @map("requested_user_info_claims")
+  scopes                  String[]
+  createdAt               DateTime? @default(now()) @map("created_at")
+  updatedAt               DateTime? @updatedAt @map("updated_at")
 
   client OauthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
   user   User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -9067,6 +9110,58 @@ model OauthConsent {
   @@index([userId])
   @@index([referenceId])
   @@map("oauth_consents")
+}
+
+/// Better Auth 1.7: a protected resource the provider issues tokens for
+/// (RFC 8707). Seeded at startup from `oauthProvider({ resources })` in
+/// `src/lib/auth.ts` (insert-only: rows edited here are not reverted).
+model OauthResource {
+  id                            String    @id @default(cuid())
+  identifier                    String    @unique
+  name                          String
+  accessTokenTtl                Int?      @map("access_token_ttl")
+  refreshTokenTtl               Int?      @map("refresh_token_ttl")
+  signingAlgorithm              String?   @map("signing_algorithm")
+  signingKeyId                  String?   @map("signing_key_id")
+  allowedScopes                 String[]  @map("allowed_scopes")
+  customClaims                  Json?     @map("custom_claims")
+  dpopBoundAccessTokensRequired Boolean?  @default(false) @map("dpop_bound_access_tokens_required")
+  disabled                      Boolean?  @default(false)
+  createdAt                     DateTime? @default(now()) @map("created_at")
+  updatedAt                     DateTime? @updatedAt @map("updated_at")
+  policyVersion                 Int?      @default(1) @map("policy_version")
+  metadata                      Json?
+
+  clients OauthClientResource[]
+
+  @@map("oauth_resources")
+}
+
+/// Better Auth 1.7: which client may ask for which resource. Only enforced
+/// with `enforcePerClientResources: true`, which Steel turns off.
+model OauthClientResource {
+  id         String    @id @default(cuid())
+  clientId   String    @map("client_id")
+  resourceId String    @map("resource_id")
+  metadata   Json?
+  createdAt  DateTime? @default(now()) @map("created_at")
+
+  client   OauthClient   @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  resource OauthResource @relation(fields: [resourceId], references: [identifier], onDelete: Cascade)
+
+  @@unique([clientId, resourceId])
+  @@index([clientId])
+  @@index([resourceId])
+  @@map("oauth_client_resources")
+}
+
+/// Better Auth 1.7: single-use `jti` of `private_key_jwt` client assertions.
+/// Steel registers no such client, so it stays empty.
+model OauthClientAssertion {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+
+  @@map("oauth_client_assertions")
 }
 
 /// What an integration (MCP client, later the CLI) may do on behalf of a user:

@@ -118,7 +118,9 @@ export function ProfileForm({
         return
       }
       setIs2FAEnabled(true)
-      setBackupCodes(data?.backupCodes ?? [])
+      // Better Auth 1.7 answers `enable()` with a union on `method`; only the
+      // default `totp` branch carries backup codes.
+      setBackupCodes(data && 'backupCodes' in data ? data.backupCodes : [])
       setTwoFAMode('idle')
       setTwoFAPass('')
       return

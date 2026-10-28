@@ -326,13 +326,44 @@ export const auth = betterAuth({
       consentPage: '/oauth/consent',
       scopes: [...OAUTH_SCOPES],
       // MCP clients send `resource=<app>/api/mcp` (RFC 8707). The issuer and
-      // the bare origin stay valid for clients that send one of those.
-      validAudiences: [mcpResourceUrl(), oauthIssuer(), appOrigin()],
+      // the bare origin stay valid for clients that send one of those. Since
+      // Better Auth 1.7 these are protected resources, seeded at startup into
+      // `oauth_resources`, instead of the old `validAudiences`. Skipped while
+      // env validation is off (Docker build): an empty origin is not an
+      // absolute URI.
+      //
+      // `allowedScopes` is spelled out because the plugin seeds `null` for
+      // "no restriction", and Prisma refuses `null` for a list column. The
+      // full list restricts nothing, and `merge` re-applies it on every boot,
+      // so a scope added to OAUTH_SCOPES reaches the existing rows too.
+      resources: appOrigin()
+        ? [
+            { identifier: mcpResourceUrl(), name: 'Steel MCP' },
+            { identifier: oauthIssuer(), name: 'Steel (issuer)' },
+            { identifier: appOrigin(), name: 'Steel' },
+          ].map((resource) => ({
+            ...resource,
+            allowedScopes: [...OAUTH_SCOPES],
+          }))
+        : [],
+      resourceSeedMode: 'merge',
+      // Every resource above is Steel's own, so any registered client may ask
+      // for any of them, as before 1.7. With the 1.7 default (`true`) a
+      // client must be linked to each resource in `oauth_client_resources`,
+      // and the clients registered before the upgrade have no link at all:
+      // their next token request would fail with `invalid_target`.
+      enforcePerClientResources: false,
       grantTypes: ['authorization_code', 'refresh_token'],
       // MCP clients (Claude, ChatGPT, Cursor) register themselves; the
       // consent screen is where the user decides, not the registration.
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
+      // Since 1.7 a registration without `application_type` is a `web`
+      // client, and web clients may not use loopback redirect URIs — which
+      // is exactly what `steel mcp login` (`http://127.0.0.1:<port>`) and
+      // Claude Code / Cursor (`http://localhost:<port>`) register. `infer`
+      // makes those native and keeps https-only for everything else.
+      clientRegistrationDefaultApplicationType: 'infer',
       // Opaque tokens only: every call resolves the token to its grant in the
       // database, so a revocation or a removed membership cuts access on the
       // next request — a self-contained JWT would outlive both.
@@ -345,7 +376,6 @@ export const auth = betterAuth({
         shouldRedirect: () => false,
         consentReferenceId: () => currentGrantReference(),
       },
-      silenceWarnings: { oauthAuthServerConfig: true },
     }),
     emailOTP({
       overrideDefaultEmailVerification: true,
@@ -373,19 +403,19 @@ export const auth = betterAuth({
     twoFactor({
       // Nome que o aplicativo autenticador mostra ao lado do código.
       issuer: 'Steel',
-      // Nesta versão do better-auth (1.6.x) o `enable()` é um interruptor
-      // único: ele grava o segredo, gera os códigos de backup e devolve a
-      // `totpURI` de uma vez, sem parâmetro `method`. Mantemos
-      // `skipVerificationOnEnable: true` porque o fluxo que já existe é o OTP
-      // por e-mail — o endereço já está verificado nesse ponto, não sobra
-      // nada a provar, e sem isso `twoFactorEnabled` não persistiria e a
-      // ativação "sumiria" ao recarregar a sessão.
+      // Since Better Auth 1.7, `enable()` takes a `method` (`otp` or `totp`,
+      // default `totp`) and answers with a union on it. Steel only calls the
+      // default, which behaves like the single 1.6 switch: it stores the
+      // secret, generates the backup codes and returns the `totpURI` at once,
+      // so e-mail 2FA keeps its recovery codes and the authenticator app
+      // reuses the same secret. `skipVerificationOnEnable: true` stays because
+      // the existing flow is the e-mail OTP: the address is already verified
+      // at that point, and without it `twoFactorEnabled` would not persist.
       //
-      // O aplicativo autenticador exige um passo a mais, que é nosso:
-      // `users.two_factor_totp_enabled` só vira `true` depois de
-      // `POST /api/users/me/two-factor/totp` verificar um código que o app
-      // realmente gerou (ver `src/services/two-factor.service.ts`). Ninguém
-      // fica com "aplicativo ativo" por um QR que nunca escaneou.
+      // The authenticator app takes one more step, ours:
+      // `users.two_factor_totp_enabled` only turns `true` after
+      // `POST /api/users/me/two-factor/totp` verifies a code the app really
+      // produced (see `src/services/two-factor.service.ts`).
       skipVerificationOnEnable: true,
       // O plugin reserva 10 tentativas; cinco bastam para um código de 6
       // dígitos e cortam a superfície de adivinhação pela metade. Os dois
