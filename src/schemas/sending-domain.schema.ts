@@ -102,4 +102,20 @@ export type SendingDomainDTO = {
   /** Active newsletters sending from this domain. */
   newslettersCount: number
   createdAt: string
+  /**
+   * DMARC of the registrable domain (detail only — the list leaves it out).
+   * `found: null` means the lookup failed or timed out (unknown).
+   */
+  dmarc?: SendingDomainDmarcDTO
+}
+
+export const SUGGESTED_DMARC_VALUE = 'v=DMARC1; p=none;'
+
+export type SendingDomainDmarcDTO = {
+  /** Where the TXT record lives, e.g. `_dmarc.acme.com.br`. */
+  name: string
+  found: boolean | null
+  /** The DMARC TXT value when found. */
+  value: string | null
+  suggested: string
 }

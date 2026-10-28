@@ -503,6 +503,18 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'digest',
     color: 'violet',
   },
+  CRM_SENDING_DOMAIN_VERIFIED: {
+    module: 'CRM',
+    label: 'Domínio de e-mail verificado',
+    icon: 'mail',
+    color: 'emerald',
+  },
+  CRM_SENDING_DOMAIN_FAILED: {
+    module: 'CRM',
+    label: 'Domínio de e-mail com falha',
+    icon: 'mail',
+    color: 'rose',
+  },
 }
 
 const MODULE_BY_PREFIX: [string, NotificationModule][] = [

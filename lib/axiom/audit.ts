@@ -242,6 +242,8 @@ export type AuditEntity =
   // WhatsApp archive for banks (ADR 0052)
   | 'whatsapp_archive'
   | 'whatsapp_archive_settings'
+  // Sending domains of the CRM newsletter (ADR 0054)
+  | 'sending_domain'
 
 export type AuditAction =
   | 'create'

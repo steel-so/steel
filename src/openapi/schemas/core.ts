@@ -549,6 +549,8 @@ export const NotificationListDTO = dto(
           'AI_ACTION_EXPIRING',
           'WEBHOOK_ENDPOINT_DISABLED',
           'AI_DAILY_DIGEST',
+          'CRM_SENDING_DOMAIN_VERIFIED',
+          'CRM_SENDING_DOMAIN_FAILED',
         ]),
         title: z.string(),
         body: z.string(),

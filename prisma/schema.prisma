@@ -5501,6 +5501,10 @@ enum NotificationKind {
   WHATSAPP_COST_BUDGET_WARNING
   /// Comunicação: monthly cost reached the budget.
   WHATSAPP_COST_BUDGET_REACHED
+  /// CRM newsletter (ADR 0054): a sending domain became VERIFIED.
+  CRM_SENDING_DOMAIN_VERIFIED
+  /// CRM newsletter (ADR 0054): a VERIFIED sending domain stopped verifying.
+  CRM_SENDING_DOMAIN_FAILED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
