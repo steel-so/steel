@@ -11,6 +11,7 @@ import {
 } from '@/src/schemas/admin.schema'
 import { AnalyticsQuerySchema } from '@/src/schemas/admin-analytics.schema'
 import { CreateChangelogSchema } from '@/src/schemas/changelog.schema'
+import { UpdateCrmNewsletterSettingsSchema } from '@/src/schemas/crm-newsletter.schema'
 import { SetFeatureOverrideSchema } from '@/src/schemas/feature-flag.schema'
 import { UpdatePlatformAiSettingsSchema } from '@/src/schemas/platform-ai-settings.schema'
 import {
@@ -48,6 +49,7 @@ import {
   ProfileDTO,
   WorkspaceMemberDTO,
 } from '../schemas/core'
+import { CrmNewsletterUsageDTO } from '../schemas/crm/newsletter-issues'
 import {
   WhatsAppArchiveDTO,
   WhatsAppArchiveOverviewDTO,
@@ -756,6 +758,35 @@ const routes: RouteConfig[] = [
       },
       { code: 'STORAGE_ERROR', message: 'Arquivo do pacote indisponível' },
     ],
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/workspaces/{id}/newsletter-settings',
+    tags: ['Admin · Workspaces'],
+    summary: 'Limite mensal da newsletter do workspace',
+    description:
+      'Uso do mês (fuso de São Paulo) e o limite de e-mails de newsletter: o ajuste manual ou o do plano (ADR 0054).',
+    responses: {
+      200: { description: 'Uso e limite.', schema: CrmNewsletterUsageDTO },
+    },
+    errors: [WORKSPACE_NOT_FOUND],
+  }),
+  admin({
+    method: 'put',
+    path: '/admin/workspaces/{id}/newsletter-settings',
+    tags: ['Admin · Workspaces'],
+    summary: 'Ajustar o limite mensal da newsletter',
+    description:
+      'Substitui o `newsletterEmailsPerMonth` do plano; `null` volta ao do plano. Auditado no histórico do admin.',
+    consent: true,
+    body: {
+      schema: UpdateCrmNewsletterSettingsSchema,
+      example: { monthlyEmailLimitOverride: 50000 },
+    },
+    responses: {
+      200: { description: 'Uso e limite.', schema: CrmNewsletterUsageDTO },
+    },
+    errors: [WORKSPACE_NOT_FOUND],
   }),
 ]
 

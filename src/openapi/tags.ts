@@ -187,6 +187,11 @@ export const TAG_GROUPS = [
         description:
           'Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração e migração das landing pages.',
       },
+      {
+        name: 'CRM · Newsletter · Edições',
+        description:
+          'Edições da newsletter: editor, teste, envio e agendamento, relatório (funil, cliques por link, destinatários) e o limite mensal de e-mails.',
+      },
     ],
   },
   {
