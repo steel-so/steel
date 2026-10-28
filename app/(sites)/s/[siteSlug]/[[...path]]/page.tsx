@@ -20,7 +20,10 @@ import {
   searchTerm,
 } from '@/src/lib/sites/blog/routes'
 import { siteMetaCsp } from '@/src/lib/sites/csp'
-import { collectFormTokens } from '@/src/lib/sites/document'
+import {
+  collectFormTokens,
+  collectNewsletterIds,
+} from '@/src/lib/sites/document'
 import {
   AB_CONFIG_ID,
   abCookieName,
@@ -67,6 +70,7 @@ import {
   loadPublishedSite,
   loadSiteExperiments,
   loadSiteForms,
+  loadSiteNewsletters,
   loadSiteRedirects,
 } from '../../../_lib/load'
 
@@ -289,6 +293,11 @@ export default async function PublishedSitePage({
     site.workspaceId,
     collectFormTokens(documents),
   )
+  const newsletters = await loadSiteNewsletters(
+    site.slug,
+    site.workspaceId,
+    collectNewsletterIds(documents),
+  )
   const pages = snapshot.pages.map((item) => ({
     id: item.id,
     title: item.title,
@@ -303,6 +312,9 @@ export default async function PublishedSitePage({
     forms,
     formAction: (token) => `/api/crm/forms/${encodeURIComponent(token)}/submit`,
     symbols,
+    newsletters,
+    siteId: site.id,
+    timeZone: snapshot.settings.timezone ?? DEFAULT_SITE_TIMEZONE,
     cms: await siteCmsContext(site, documents, {
       path: `/${publicPathOf(snapshot, page)}`,
       dynamic,

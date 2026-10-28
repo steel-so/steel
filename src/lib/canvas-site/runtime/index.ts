@@ -1,6 +1,7 @@
 import { getNode } from '@/src/lib/canvas/nodes'
 import type { CanvasDocument, CanvasNode } from '@/src/lib/canvas/types'
 import { SITE_FORM_SCRIPT } from '../components/form'
+import { SITE_NEWSLETTER_SCRIPT } from '../components/newsletter'
 import { SITE_TYPES } from '../constants'
 import {
   SITE_ACTIONS_SCRIPT,
@@ -36,6 +37,7 @@ export type SiteRuntimeFeature =
   | 'map'
   | 'before-after'
   | 'reveal'
+  | 'newsletter'
 
 export interface SiteRuntimeScript {
   id: SiteRuntimeFeature
@@ -59,6 +61,7 @@ const CODE: Record<SiteRuntimeFeature, string> = {
   map: SITE_MAP_SCRIPT,
   'before-after': SITE_BEFORE_AFTER_SCRIPT,
   reveal: SITE_REVEAL_SCRIPT,
+  newsletter: SITE_NEWSLETTER_SCRIPT,
 }
 
 /** Visible nodes of the documents (hidden subtrees skipped). */
@@ -121,6 +124,9 @@ function featuresOf(node: CanvasNode): SiteRuntimeFeature[] {
     case SITE_TYPES.beforeAfter:
       out.push('before-after')
       break
+    case SITE_TYPES.newsletterSubscribe:
+      if (p.newsletterId) out.push('newsletter')
+      break
   }
   return out
 }
@@ -145,7 +151,9 @@ export function siteRuntimeScripts(docs: CanvasDocument[]): SiteRuntime {
     code: CODE[id],
   }))
   return {
-    boot: scripts.some((script) => script.id !== 'form')
+    boot: scripts.some(
+      (script) => script.id !== 'form' && script.id !== 'newsletter',
+    )
       ? SITE_BOOT_SCRIPT
       : null,
     scripts,

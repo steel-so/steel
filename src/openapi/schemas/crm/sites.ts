@@ -167,3 +167,26 @@ export const SiteLandingMigrationReportDTO = dto(
     items: z.array(MigrationItem),
   }),
 )
+
+/** Newsletter picker of the `site.newsletter-*` elements (ADR 0054). */
+export const SiteNewsletterOptionDTO = dto(
+  'SiteNewsletterOption',
+  z.object({
+    id: z.string(),
+    workspaceSlug: z.string(),
+    slug: z.string(),
+    name: z.string(),
+    doubleOptIn: z.boolean(),
+    archiveEnabled: z.boolean(),
+    archiveUrl: z.string(),
+    issues: z.array(
+      z.object({
+        number: z.number().int(),
+        subject: z.string(),
+        slug: z.string(),
+        excerpt: z.string().nullable(),
+        sentAt: dateTime(),
+      }),
+    ),
+  }),
+)

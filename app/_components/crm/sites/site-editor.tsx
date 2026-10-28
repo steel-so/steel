@@ -44,6 +44,7 @@ import {
   useCrmSite,
   useSiteForms,
 } from '@/src/hooks/use-crm-sites'
+import { useLiveSiteNewsletters } from '@/src/hooks/use-site-newsletters'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
 import { canvasDocumentName } from '@/src/lib/canvas-collab/names'
@@ -79,6 +80,7 @@ import { AbPanel } from './experiments/ab-panel'
 import { SiteFormPicker } from './form-picker'
 import { GlobalsPanel } from './globals-panel'
 import { MediaPanel } from './media-panel'
+import { SiteNewsletterPicker } from './newsletter-picker'
 import { PagesPanel } from './pages-panel'
 import { SearchPanel } from './search/search-panel'
 import {
@@ -299,6 +301,7 @@ function SiteCanvas({
   const queryClient = useQueryClient()
   const canEmbed = useIsPrivileged()
   const forms = useLiveForms(workspaceId)
+  const newsletters = useLiveSiteNewsletters(workspaceId)
   // Blog posts and collection items the blog/collection elements show.
   const cms = useEditorCms(
     workspaceId,
@@ -329,6 +332,10 @@ function SiteCanvas({
       currentPageId: target.kind === 'page' ? target.id : undefined,
       canEmbed,
       formPicker: SiteFormPicker,
+      newsletterPicker: SiteNewsletterPicker,
+      newsletters,
+      siteId: site.id,
+      timeZone: site.settings.timezone,
       anchorPicker: SiteAnchorPicker,
       whatsappPicker: SiteWhatsappPicker,
       childAdder: SiteChildAdder,
@@ -342,7 +349,17 @@ function SiteCanvas({
       collectionFieldPicker: SiteCollectionFieldPicker,
     })
     return { ...base, icons: { ...base.icons, ...TAB_ICONS } }
-  }, [pageLinks, target, canEmbed, forms, symbols, cms])
+  }, [
+    pageLinks,
+    target,
+    canEmbed,
+    forms,
+    symbols,
+    cms,
+    newsletters,
+    site.id,
+    site.settings.timezone,
+  ])
 
   const header = globals.find((global) => global.kind === 'HEADER')
   const footer = globals.find((global) => global.kind === 'FOOTER')

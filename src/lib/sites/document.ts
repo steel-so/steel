@@ -88,3 +88,23 @@ export function collectFormTokens(documents: CanvasDocument[]): string[] {
   }
   return [...tokens]
 }
+
+/** Newsletter ids the `site.newsletter-*` nodes point to
+ * (`props.newsletterId`), so the runtime loads them once per page. */
+export function collectNewsletterIds(documents: CanvasDocument[]): string[] {
+  const ids = new Set<string>()
+  for (const doc of documents) {
+    for (const node of Object.values(doc.nodes)) {
+      const id = node.props.newsletterId
+      if (
+        (node.type === SITE_TYPES.newsletterSubscribe ||
+          node.type === SITE_TYPES.newsletterIssues) &&
+        typeof id === 'string' &&
+        id
+      ) {
+        ids.add(id)
+      }
+    }
+  }
+  return [...ids]
+}
