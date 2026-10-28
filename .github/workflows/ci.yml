@@ -149,6 +149,11 @@ jobs:
       BETTER_AUTH_SECRET: ci-test-secret-not-real
       BETTER_AUTH_URL: http://localhost:3001
       SKIP_ENV_VALIDATION: 'true'
+      # Inlined into the browser bundle at build time. SKIP_ENV_VALIDATION is
+      # not (it has no NEXT_PUBLIC_ prefix), so lib/env/env.ts validates in the
+      # browser and, without this, throws before React mounts. Deploys always
+      # pass it as a build-arg (Dockerfile, cd.yml).
+      NEXT_PUBLIC_URL: http://localhost:3001
       # Shared by the server and the test process so the secret-checked routes
       # (status collector, payment webhook) accept the requests the e2e tests send.
       STATUS_COLLECTOR_SECRET: ci-status-collector-secret
@@ -253,6 +258,14 @@ jobs:
       - name: Build application
         run: pnpm build
 
+      # The standalone server does not serve `.next/static` or `public/` on its
+      # own (the Dockerfile copies them next to it). Without this every JS
+      # chunk 404s: the HTML looks fine, but no page ever hydrates.
+      - name: Copy static assets into the standalone build
+        run: |
+          cp -r public .next/standalone/
+          cp -r .next/static .next/standalone/.next/
+
       - name: Start server
         run: pnpm start &
         env:
@@ -270,6 +283,13 @@ jobs:
           done
           echo "Server failed to start"
           exit 1
+
+      # Headless Chromium for the hydration guard
+      # (app/(public)/__tests__/csp-hydration.e2e.test.ts): only a real
+      # browser enforces the CSP and runs React. The build is the one pinned
+      # by the playwright-core version in the lockfile.
+      - name: Install Chromium for the hydration check
+        run: pnpm exec playwright-core install --with-deps --only-shell chromium
 
       - name: Run e2e tests
         run: pnpm test:e2e --shard=${{ matrix.shard }}/3

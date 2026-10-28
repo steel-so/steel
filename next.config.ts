@@ -203,6 +203,16 @@ const nextConfig: NextConfig = {
     // the published customer sites, app/(sites)); `app/global-not-found.tsx`
     // answers URLs that match no route at all.
     globalNotFound: true,
+    // Next 16.4 turned the Turbopack shared runtime on by default: it drops
+    // the per-route runtime chunk and inlines the route's chunk-group
+    // bootstrap into the HTML as `<script id="_R_">`. With Cache Components
+    // that script lands in the static shell prerendered at build time, where
+    // no request (and so no CSP nonce) exists, so `script-src 'self'
+    // 'nonce-…'` blocks it and the page never hydrates. Off, the bootstrap is
+    // a same-origin `<script src>` again, covered by `'self'` like every other
+    // chunk. The e2e `app/(public)/__tests__/csp-hydration.e2e.test.ts` fails
+    // if an inline script without the nonce comes back.
+    turbopackSharedRuntime: false,
     // Low-memory mode, only for image builds on the ~3.8GB self-hosted runner
     // (still used by promote-production.yml; CI/CD build on 16GB hosted
     // runners since ADR 0009). There, Turbopack grows until the OOM killer

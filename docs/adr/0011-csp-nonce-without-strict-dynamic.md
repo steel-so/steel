@@ -51,3 +51,26 @@ pela homologação, cujos chunks vinham sem nonce.
   interface inteira enquanto houver rota pré-renderizada. Só faz sentido se o
   Next passar a nonce-ar a casca ou se o Cache Components for desligado — e
   aí com verificação no navegador, não só no cabeçalho.
+
+## Atualização (2026-10-28) — Next 16.4 e o runtime compartilhado do Turbopack
+
+O Next 16.4 ligou por padrão o `experimental.turbopackSharedRuntime`: o
+runtime do navegador vira um `runtime.js` único e o bootstrap de cada rota
+passa a ir **inline** no HTML (`<script id="_R_">`). Com o Cache Components
+esse script cai na casca pré-renderizada no build, sem nonce, a CSP o bloqueia
+e nenhuma página hidrata — foi o que nos prendeu no 16.3.8 de 23/10 a 28/10,
+com o CD vermelho no Trivy por causa das duas RCEs corrigidas só no 16.4.1. O
+16.4.3 não muda isso.
+
+Decisão: `turbopackSharedRuntime: false` no `next.config.ts`. O bootstrap
+volta a ser um `<script src>` de mesma origem, coberto por `'self'`, como no
+16.3.8 — a política não ganhou `'unsafe-inline'` nem hash.
+
+Para não depender de alguém notar no navegador de novo, o e2e
+`app/(public)/__tests__/csp-hydration.e2e.test.ts` confere, nas respostas
+reais do `next start` da CI, que todo `<script>` executável é permitido pela
+CSP da própria resposta (a única exceção é o marcador `$RT` do React descrito
+acima, comparado pelo texto exato) e abre a página num Chromium headless para
+provar que ela hidrata (o aviso de cookies só some no clique com o React
+rodando). Quem reativar o runtime compartilhado, ou um Next futuro que volte a
+pôr script inline na casca, quebra esse teste.
