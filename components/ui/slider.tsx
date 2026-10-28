@@ -24,7 +24,10 @@ function Slider({
       value={value}
       min={min}
       max={max}
-      thumbAlignment="edge"
+      // `edge` adds an inline pre-hydration <script> to the static shell,
+      // where no CSP nonce exists, so the CSP blocks it; `edge-client-only`
+      // looks the same once hydrated and emits no script.
+      thumbAlignment="edge-client-only"
       {...props}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
