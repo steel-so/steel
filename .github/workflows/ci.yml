@@ -149,6 +149,11 @@ jobs:
       BETTER_AUTH_SECRET: ci-test-secret-not-real
       BETTER_AUTH_URL: http://localhost:3001
       SKIP_ENV_VALIDATION: 'true'
+      # Inlined into the browser bundle at build time. SKIP_ENV_VALIDATION is
+      # not (it has no NEXT_PUBLIC_ prefix), so lib/env/env.ts validates in the
+      # browser and, without this, throws before React mounts. Deploys always
+      # pass it as a build-arg (Dockerfile, cd.yml).
+      NEXT_PUBLIC_URL: http://localhost:3001
       # Shared by the server and the test process so the secret-checked routes
       # (status collector, payment webhook) accept the requests the e2e tests send.
       STATUS_COLLECTOR_SECRET: ci-status-collector-secret
