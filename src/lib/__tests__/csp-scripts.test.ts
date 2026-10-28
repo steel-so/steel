@@ -24,6 +24,8 @@ describe('scriptsBlockedByCsp', () => {
       {
         tag: '<script id="_R_">',
         reason: 'inline script without the CSP nonce',
+        snippet:
+          '(globalThis["TURBOPACK"] || (globalThis["TURBOPACK"] = [])).push(["/sign-in/page",{}]);',
       },
     ])
   })
@@ -57,6 +59,7 @@ describe('scriptsBlockedByCsp', () => {
       {
         tag: '<script nonce="stale">',
         reason: 'inline script with a nonce that is not the CSP nonce',
+        snippet: 'alert(1)',
       },
     ])
   })

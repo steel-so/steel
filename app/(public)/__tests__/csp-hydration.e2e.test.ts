@@ -99,6 +99,25 @@ describe('hydration under the production CSP (Chromium)', () => {
     try {
       if (session) await context.addCookies([{ ...session, url: BASE_URL }])
       const page = await context.newPage()
+      // What went wrong, printed only when hydration does not happen.
+      const problems: string[] = []
+      page.on('pageerror', (error) =>
+        problems.push(`pageerror: ${error.message}`),
+      )
+      page.on('console', (message) => {
+        if (message.type() === 'error')
+          problems.push(`console: ${message.text()}`)
+      })
+      page.on('requestfailed', (request) =>
+        problems.push(
+          `failed: ${request.url()} ${request.failure()?.errorText}`,
+        ),
+      )
+      page.on('response', (response) => {
+        if (response.status() >= 400) {
+          problems.push(`${response.status()}: ${response.url()}`)
+        }
+      })
       await page.addInitScript(() => {
         const violations: { directive: string; blocked: string }[] = []
         Object.assign(window, { __cspViolations: violations })
@@ -117,14 +136,21 @@ describe('hydration under the production CSP (Chromium)', () => {
       await banner.waitFor({ state: 'visible', timeout: 20_000 })
       // The bootstrap ran: Next's `hydrateRoot(document, …)` marks the
       // container. Blocked by the CSP, this never happens.
-      await page.waitForFunction(
-        () =>
-          Object.keys(document).some((key) =>
-            key.startsWith('__reactContainer$'),
-          ),
-        undefined,
-        { timeout: 20_000 },
-      )
+      const hydrated = await page
+        .waitForFunction(
+          () =>
+            Object.keys(document).some((key) =>
+              key.startsWith('__reactContainer$'),
+            ),
+          undefined,
+          { timeout: 20_000 },
+        )
+        .then(() => true)
+        .catch(() => false)
+      expect(
+        hydrated,
+        `${path}: React never mounted\n${problems.slice(0, 20).join('\n')}`,
+      ).toBe(true)
       // A click that lands before the banner's boundary finished hydrating
       // may be dropped, so retry a few times; without React it never goes.
       const reject = banner.getByRole('button', { name: 'Rejeitar' })
@@ -153,7 +179,14 @@ describe('hydration under the production CSP (Chromium)', () => {
           }
         ).__cspViolations
         return {
-          violations: all.filter((v) => v.directive.startsWith('script-src')),
+          // `eval` is not a script element (a library probing for it); only
+          // blocked <script> loads and inline scripts matter here.
+          violations: all.filter(
+            (v) =>
+              v.directive.startsWith('script-src') &&
+              v.blocked !== 'eval' &&
+              v.blocked !== 'wasm-eval',
+          ),
           shellMarkers: Array.from(document.scripts).filter(
             (script) => !script.src && script.text === marker,
           ).length,

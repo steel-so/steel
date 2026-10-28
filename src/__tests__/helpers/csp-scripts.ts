@@ -40,6 +40,8 @@ export const REACT_SHELL_TIME_SCRIPT =
 export interface BlockedScript {
   tag: string
   reason: string
+  /** First characters of an inline script's text, to tell which one it is. */
+  snippet?: string
 }
 
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi
@@ -187,6 +189,7 @@ export function scriptsBlockedByCsp(
           nonce === undefined
             ? 'inline script without the CSP nonce'
             : 'inline script with a nonce that is not the CSP nonce',
+        snippet: script.body.trim().slice(0, 160),
       })
       continue
     }
