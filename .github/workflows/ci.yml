@@ -253,6 +253,14 @@ jobs:
       - name: Build application
         run: pnpm build
 
+      # The standalone server does not serve `.next/static` or `public/` on its
+      # own (the Dockerfile copies them next to it). Without this every JS
+      # chunk 404s: the HTML looks fine, but no page ever hydrates.
+      - name: Copy static assets into the standalone build
+        run: |
+          cp -r public .next/standalone/
+          cp -r .next/static .next/standalone/.next/
+
       - name: Start server
         run: pnpm start &
         env:
