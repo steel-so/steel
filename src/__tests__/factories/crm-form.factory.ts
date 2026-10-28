@@ -17,6 +17,7 @@ export function createFakeCrmForm(overrides?: Partial<CrmForm>): CrmForm {
     successMessage: null,
     redirectUrl: null,
     submissionCount: 0,
+    newsletterId: null,
     workspaceId: createId(),
     createdById: createId(),
     updatedById: null,

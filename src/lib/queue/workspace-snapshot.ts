@@ -90,6 +90,8 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   siteVersion: (ws) => ({ site: { workspaceId: ws } }),
   siteView: (ws) => ({ site: { workspaceId: ws } }),
   siteRedirect: (ws) => ({ site: { workspaceId: ws } }),
+  // CRM newsletter (ADR 0054): link clicks reach the workspace via the issue.
+  crmNewsletterLinkClick: (ws) => ({ issue: { workspaceId: ws } }),
   // Site blog and collections (slice site-blog), parents first.
   siteAuthor: (ws) => ({ site: { workspaceId: ws } }),
   siteBlogCategory: (ws) => ({ site: { workspaceId: ws } }),

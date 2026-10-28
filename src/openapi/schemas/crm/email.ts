@@ -192,9 +192,9 @@ export const CrmEmailOptOutDTO = dto(
         .string()
         .nullable()
         .meta({ description: 'Campanha cujo link originou o descadastro.' }),
-      source: z.enum(['LINK', 'ONE_CLICK']).meta({
+      source: z.enum(['LINK', 'ONE_CLICK', 'PREFERENCES']).meta({
         description:
-          '`LINK` = página de descadastro; `ONE_CLICK` = RFC 8058 (botão do cliente de e-mail).',
+          '`LINK` = página de descadastro; `ONE_CLICK` = RFC 8058 (botão do cliente de e-mail); `PREFERENCES` = "sair de tudo" na central de preferências da newsletter.',
       }),
       createdAt: dateTime(),
     })
