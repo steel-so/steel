@@ -2,6 +2,26 @@ packages:
   - '.'
 
 minimumReleaseAge: 10080
+# next 16.4.3 (2026-10-23) fixes nothing security-related over 16.4.2, but it is
+# the current LTS patch and carries "don't load the app-page runtime in
+# proxy.ts", which this app runs on every request. The 16.4 line is what clears
+# the two critical RCEs (GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr) that keep CD
+# red. Exact versions only; drop these entries after 2026-10-30, when 16.4.3
+# clears the 7-day window by itself.
+minimumReleaseAgeExclude:
+  - 'next@16.4.3'
+  - '@next/env@16.4.3'
+  - '@next/third-parties@16.4.3'
+  - '@next/eslint-plugin-next@16.4.3'
+  - 'eslint-config-next@16.4.3'
+  - '@next/swc-darwin-arm64@16.4.3'
+  - '@next/swc-darwin-x64@16.4.3'
+  - '@next/swc-linux-arm64-gnu@16.4.3'
+  - '@next/swc-linux-arm64-musl@16.4.3'
+  - '@next/swc-linux-x64-gnu@16.4.3'
+  - '@next/swc-linux-x64-musl@16.4.3'
+  - '@next/swc-win32-arm64-msvc@16.4.3'
+  - '@next/swc-win32-x64-msvc@16.4.3'
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - 'semver@6.3.1'
@@ -20,24 +40,13 @@ trustPolicyExclude:
   - 'langium@3.3.1'
 blockExoticSubdeps: true
 
-# Next is pinned to 16.3.8 (see the `next` override): 16.4.x breaks hydration
-# under our CSP. These two advisories are fixed only in >=16.4.1 and do not
-# apply here; revisit as soon as the pin is lifted.
-#  - GHSA-2464-fhr4-w9xw (SVG in the image optimizer): sharp is already 0.35.5,
-#    the version the advisory names as the workaround.
-#  - GHSA-673q-mjm6-r5xr (`use cache` returning typed arrays): the only
-#    `use cache` files (app/(sites)/_lib, workspace home) return plain data.
-auditConfig:
-  ignoreGhsas:
-    - GHSA-2464-fhr4-w9xw
-    - GHSA-673q-mjm6-r5xr
-
 overrides:
-  # GHSA-p293-qw3h-jr36 / GHSA-2xp9-vwfh-vxw4 (RCE) e GHSA-vcvr-r3jv-pc5j
-  # (RCE no next/og, corrigida em 16.3.6) e a RCE do otimizador de imagens com SVG (corrigida em 16.4.1): @react-email/ui puxa o próprio
-  # next@16.2.x; força toda cópia para a release corrigida.
-  # Travado em 16.3.8: o 16.4.x emite o bootstrap do Turbopack inline (<script id="_R_">) sem nonce, a CSP o bloqueia e a página não hidrata. Reavaliar ao sair uma correção.
-  next: '16.3.8'
+  # @react-email/ui pulls its own next@16.2.x: force every copy onto the
+  # patched release (GHSA-p293-qw3h-jr36 / GHSA-2xp9-vwfh-vxw4 RCE,
+  # GHSA-vcvr-r3jv-pc5j next/og RCE, and the 16.4.1 criticals
+  # GHSA-2464-fhr4-w9xw / GHSA-673q-mjm6-r5xr). Keep it equal to the `next`
+  # dependency in package.json.
+  next: '16.4.3'
   effect: '^3.21.0'
   ioredis: '5.10.1'
   esbuild: '>=0.28.1'
