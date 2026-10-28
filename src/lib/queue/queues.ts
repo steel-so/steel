@@ -46,6 +46,8 @@ import {
   QueueName,
   type SearchReindexJob,
   type SearchReindexJobPayload,
+  type SendingDomainsJob,
+  type SendingDomainsJobPayload,
   type ServicedeskAiJob,
   type ServicedeskAiJobPayload,
   type ServicedeskBillingJob,
@@ -155,6 +157,7 @@ let aiProactiveQueue: Queue | null = null
 let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 let whatsappArchiveQueue: Queue | null = null
+let sendingDomainsQueue: Queue | null = null
 
 export function getDataRetentionQueue(): Queue<
   DataRetentionJobPayload[DataRetentionJob],
@@ -848,6 +851,7 @@ export async function closeQueues(): Promise<void> {
     aiEvalQueue?.close(),
     aiProactiveQueue?.close(),
     whatsappArchiveQueue?.close(),
+    sendingDomainsQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -891,6 +895,7 @@ export async function closeQueues(): Promise<void> {
   aiEvalQueue = null
   aiProactiveQueue = null
   whatsappArchiveQueue = null
+  sendingDomainsQueue = null
 }
 
 export function getCrmTaskRemindersQueue(): Queue<
@@ -1175,6 +1180,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.PhoneCallAi]: getPhoneCallAiQueue,
   [QueueName.AiProactive]: getAiProactiveQueue,
   [QueueName.WhatsappArchive]: getWhatsappArchiveQueue,
+  [QueueName.SendingDomains]: getSendingDomainsQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1266,5 +1272,28 @@ export function getWhatsappArchiveQueue(): Queue<
     WhatsappArchiveJobPayload[WhatsappArchiveJob],
     unknown,
     WhatsappArchiveJob
+  >
+}
+
+/** Sending domains (ADR 0054). One attempt: the next tick redoes it. */
+export function getSendingDomainsQueue(): Queue<
+  SendingDomainsJobPayload[SendingDomainsJob],
+  unknown,
+  SendingDomainsJob
+> {
+  if (!sendingDomainsQueue) {
+    sendingDomainsQueue = new Queue(QueueName.SendingDomains, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        removeOnComplete: { age: 60 * 60 * 24 * 7, count: 200 },
+        removeOnFail: { age: 60 * 60 * 24 * 7 },
+        attempts: 1,
+      },
+    })
+  }
+  return sendingDomainsQueue as Queue<
+    SendingDomainsJobPayload[SendingDomainsJob],
+    unknown,
+    SendingDomainsJob
   >
 }
