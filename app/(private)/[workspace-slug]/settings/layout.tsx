@@ -4,6 +4,7 @@ import {
   Building02Icon,
   ChartRelationshipIcon,
   Chatting01Icon,
+  Mail01Icon,
   McpServerIcon,
   Notification01Icon,
   SecurityLockIcon,
@@ -32,6 +33,7 @@ export default async function SettingsLayout({
   const { 'workspace-slug': slug } = await params
   const base = `/${slug}/settings`
   const communication = await hasModuleAccess(slug, 'COMMUNICATION')
+  const crm = await hasModuleAccess(slug, 'CRM')
 
   return (
     <>
@@ -64,6 +66,11 @@ export default async function SettingsLayout({
           <NavItem href={`${base}/integrations/webhooks`} icon={WebhookIcon}>
             Webhooks
           </NavItem>
+          {crm && (
+            <NavItem href={`${base}/email-domains`} icon={Mail01Icon}>
+              Domínios de e-mail
+            </NavItem>
+          )}
           <NavItem href={`${base}/connected-apps`} icon={McpServerIcon}>
             Apps conectados
           </NavItem>
