@@ -6,6 +6,7 @@ import {
   AiUsageWeeklyEmailJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
+  CrmNewsletterJob,
   CrmProposalExpiryJob,
   CrmScheduledSendJob,
   CrmSocialPostsTickJob,
@@ -41,6 +42,7 @@ import {
   getAiUsageWeeklyEmailQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
+  getCrmNewsletterQueue,
   getCrmProposalExpiryQueue,
   getCrmScheduledSendQueue,
   getCrmSocialPostsTickQueue,
@@ -78,6 +80,7 @@ import {
   CommunicationWaitingCron,
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
+  CrmNewsletterTickCron,
   CrmProposalExpiryCron,
   CrmScheduledSendCron,
   CrmSocialPostsTickCron,
@@ -715,6 +718,22 @@ export async function scheduleWhatsappArchiveJobs(): Promise<void> {
     weeklyPattern: WhatsappArchiveCron.weekly,
     monthlyFullPattern: WhatsappArchiveCron.monthlyFull,
     prunePattern: WhatsappArchiveCron.pruneExpired,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** CRM newsletter (ADR 0054): every minute. */
+export async function scheduleCrmNewsletterJobs(): Promise<void> {
+  const queue = getCrmNewsletterQueue()
+  await queue.upsertJobScheduler(
+    CrmNewsletterJob.Tick,
+    { pattern: CrmNewsletterTickCron, tz: RetentionTimezone },
+    { name: CrmNewsletterJob.Tick, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_newsletter_registered', {
+    component: 'Worker',
+    pattern: CrmNewsletterTickCron,
     timezone: RetentionTimezone,
   })
 }

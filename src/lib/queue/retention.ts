@@ -198,3 +198,6 @@ export const WhatsappArchiveRetention = {
   weeklyDays: 90,
   monthlyFullMonths: 12,
 } as const
+
+/** CRM newsletter (ADR 0054): due scheduled issues and the send safety net. */
+export const CrmNewsletterTickCron = '* * * * *' as const

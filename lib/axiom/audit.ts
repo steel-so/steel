@@ -242,6 +242,9 @@ export type AuditEntity =
   // WhatsApp archive for banks (ADR 0052)
   | 'whatsapp_archive'
   | 'whatsapp_archive_settings'
+  // CRM newsletter issues and the monthly quota override (ADR 0054)
+  | 'crm_newsletter_issue'
+  | 'crm_newsletter_settings'
 
 export type AuditAction =
   | 'create'

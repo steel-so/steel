@@ -47,6 +47,7 @@ export const QueueName = {
   PhoneCallAi: 'phone-call-ai',
   AiProactive: 'ai-proactive',
   WhatsappArchive: 'whatsapp-archive',
+  CrmNewsletter: 'crm-newsletter',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -969,4 +970,23 @@ export type WhatsappArchiveJobPayload = {
   [WhatsappArchiveJob.Build]: { archiveId: string }
   [WhatsappArchiveJob.CopyToOffsite]: { archiveId: string }
   [WhatsappArchiveJob.PruneExpired]: Record<string, never>
+}
+
+/**
+ * CRM newsletter issues (ADR 0054): `tick` (every minute) starts the due
+ * SCHEDULED issues, gives stuck rows back and re-dispatches what is still
+ * pending; `dispatch` claims one batch of recipients of an issue, sends it
+ * through the Resend batch API and queues the next batch.
+ */
+export const CrmNewsletterJob = {
+  Tick: 'tick',
+  Dispatch: 'dispatch',
+} as const
+
+export type CrmNewsletterJob =
+  (typeof CrmNewsletterJob)[keyof typeof CrmNewsletterJob]
+
+export type CrmNewsletterJobPayload = {
+  [CrmNewsletterJob.Tick]: Record<string, never>
+  [CrmNewsletterJob.Dispatch]: { issueId: string }
 }
