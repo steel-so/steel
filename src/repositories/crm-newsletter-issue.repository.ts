@@ -240,7 +240,7 @@ export const CrmNewsletterIssueRepository = {
             SELECT 1 FROM crm_email_opt_outs o
             WHERE o.workspace_id = s.workspace_id AND o.email = s.email
           )`
-      return ok(Number(rows[0]?.count ?? 0))
+      return ok(Number(rows[0].count))
     } catch (error) {
       return err(dbError('Failed to count CRM newsletter audience', error))
     }
