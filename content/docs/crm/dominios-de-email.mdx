@@ -1,0 +1,113 @@
+---
+title: Domínios de e-mail
+description: Cadastre o domínio da empresa para enviar as newsletters com o seu nome no remetente, publique os registros DNS e acompanhe a verificação.
+section: crm
+order: 12
+---
+
+<Callout type='admin'>
+  Só o dono e os administradores do workspace veem **Ajustes › Domínios de
+  e-mail**. A opção aparece quando o CRM está ligado.
+</Callout>
+
+As newsletters do CRM saem do **domínio da sua empresa**, e não do Steel. Assim
+o leitor reconhece o remetente (por exemplo,
+`novidades@news.suaempresa.com.br`), a entrega na caixa de entrada melhora e a
+reputação do seu envio não se mistura com a de ninguém.
+
+Para isso, o Steel precisa de uma autorização no **DNS** do seu domínio — o
+mesmo lugar onde se configura o site e o e-mail da empresa. Se você não cuida
+disso, peça a quem cuida (a agência do site, o TI ou o provedor do domínio):
+leva uns 10 minutos.
+
+## Qual domínio usar
+
+Recomendamos um **subdomínio dedicado**, como `news.suaempresa.com.br`:
+
+- separa a reputação da newsletter da do e-mail do dia a dia — se algum envio em
+  massa for marcado como spam, os e-mails da equipe continuam chegando;
+- não mexe nos registros que o e-mail atual (Google Workspace, Microsoft 365…)
+  já usa;
+- o leitor continua vendo o nome da empresa no remetente.
+
+Não vale usar Gmail, Outlook, Yahoo e outros provedores gratuitos: o domínio
+precisa ser da empresa.
+
+## Cadastrar
+
+1. Em **Ajustes › Domínios de e-mail**, clique em **Adicionar domínio**.
+2. Informe o domínio (por exemplo, `news.suaempresa.com.br`) e a **região de
+   envio** — para leitores no Brasil, deixe **São Paulo**.
+3. O Steel mostra a lista de **registros DNS** para criar.
+
+## Publicar os registros DNS
+
+Cada linha da tabela é um registro para criar no painel de DNS do domínio
+(Registro.br, Cloudflare, GoDaddy, Hostinger, Locaweb…). Use os botões de copiar
+para não errar nenhum caractere.
+
+| Coluna | O que é |
+| --- | --- |
+| **Tipo** | `TXT`, `MX` ou `CNAME`. No `MX`, use a **prioridade** indicada. |
+| **Nome** | Onde o registro fica, por exemplo `send.news`. |
+| **Valor** | O conteúdo do registro. |
+| **Status** | **Ok**, **Pendente**, **Não publicado** ou **Não encontrado**. |
+
+<Callout type='aviso'>
+  No campo **Nome**, cole exatamente o que aparece na tela, **sem** repetir o
+  seu domínio no fim: a maioria dos painéis completa sozinha. No **Cloudflare**,
+  deixe a nuvem **cinza** ("Somente DNS") nos registros `CNAME`.
+</Callout>
+
+## Verificação
+
+Depois de publicar, clique em **Verificar agora**. O DNS pode levar de alguns
+minutos a algumas horas para propagar. Você não precisa ficar clicando: o Steel
+confere sozinho a cada 10 minutos nas primeiras 72 horas e depois uma vez por
+dia.
+
+| Status | O que significa |
+| --- | --- |
+| **Aguardando DNS** | Os registros ainda não foram publicados. |
+| **Verificando** | O Steel está conferindo; a propagação ainda pode estar em andamento. |
+| **Verificado** | Pronto: as newsletters já podem sair de qualquer endereço deste domínio. |
+| **Falhou** | Algum registro não foi encontrado. A tela diz qual; corrija e verifique de novo. |
+| **Falha temporária** | O DNS do domínio não respondeu. O Steel tenta de novo sozinho. |
+
+Quando o domínio fica verificado — ou quando um domínio verificado deixa de
+estar, porque alguém apagou um registro —, o dono e os administradores recebem
+um aviso na caixa de entrada. Enquanto o domínio não estiver verificado, as
+newsletters que usam esse remetente **não são enviadas**.
+
+<Callout type='nota'>
+  O domínio verificado vale exatamente para ele: verificar
+  `news.suaempresa.com.br` libera `qualquer@news.suaempresa.com.br`, mas não
+  `contato@suaempresa.com.br`.
+</Callout>
+
+## DMARC (recomendado)
+
+O DMARC é uma política que protege o seu domínio contra falsificação. Ele não é
+obrigatório para a verificação, mas **Gmail e Yahoo exigem DMARC** de quem envia
+em volume — sem ele, parte das newsletters pode cair no spam.
+
+A tela do domínio consulta o DMARC do domínio principal. Se não encontrar,
+sugere um registro `TXT` com nome `_dmarc.suaempresa.com.br` e valor
+`v=DMARC1; p=none;`, que você pode copiar. Se o domínio já tiver DMARC, mantenha
+o que existe — não crie um segundo.
+
+## Remover
+
+**Remover domínio** pede confirmação. Ele não pode ser removido enquanto alguma
+newsletter ativa envia dele: troque o remetente dessas newsletters (ou
+arquive-as) antes. Depois de remover, os registros DNS podem ser apagados.
+
+## Problemas comuns
+
+- **Ficou em "Verificando" por horas**: confira se o campo **Nome** não ficou
+  com o domínio repetido (`send.news.suaempresa.com.br.suaempresa.com.br`).
+- **Já existe um registro SPF no mesmo nome**: um nome só pode ter um SPF. Com
+  um subdomínio dedicado isso não acontece; no domínio principal, junte os dois
+  num só (o suporte ajuda).
+- **"Este domínio já está cadastrado na plataforma"**: outro workspace já usa
+  esse domínio. Fale com o suporte.
