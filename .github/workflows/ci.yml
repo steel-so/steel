@@ -271,6 +271,13 @@ jobs:
           echo "Server failed to start"
           exit 1
 
+      # Headless Chromium for the hydration guard
+      # (app/(public)/__tests__/csp-hydration.e2e.test.ts): only a real
+      # browser enforces the CSP and runs React. The build is the one pinned
+      # by the playwright-core version in the lockfile.
+      - name: Install Chromium for the hydration check
+        run: pnpm exec playwright-core install --with-deps --only-shell chromium
+
       - name: Run e2e tests
         run: pnpm test:e2e --shard=${{ matrix.shard }}/3
 
