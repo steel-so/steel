@@ -37,6 +37,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     ip,
     request.headers.get('referer') ?? undefined,
     parsed.data,
+    request.headers.get('user-agent'),
   )
   if (!result.ok) return handleError(result.error)
 
