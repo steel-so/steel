@@ -272,3 +272,39 @@ export type CrmNewsletterUsageDTO = {
   limit: number | null
   limitSource: 'PLAN' | 'OVERRIDE'
 }
+
+// ─── nl-core additions (additive) ──────────────────────────────────────────
+
+/** GET …/newsletters/[newsletterId]/subscribers */
+export type CrmNewsletterSubscriberPageDTO = {
+  items: CrmNewsletterSubscriberDTO[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+/**
+ * Answer of POST /api/newsletters/subscribe. Identical whatever the state
+ * of the address (nothing leaks); only the newsletter setting shows.
+ */
+export type PublicNewsletterSubscribeResultDTO = {
+  /** True: "check your inbox to confirm"; false: subscribed right away. */
+  requiresConfirmation: boolean
+}
+
+/** Unsubscribe page / POST /api/newsletters/unsubscribe/[token] body. */
+export const NewsletterUnsubscribeSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+})
+
+export type NewsletterUnsubscribeResultDTO = {
+  email: string
+  newsletterName: string
+  /** The address had already left this newsletter. */
+  alreadyUnsubscribed: boolean
+}
+
+/** Consent box of a CRM form that subscribes to a newsletter. */
+export function crmFormNewsletterConsentText(newsletterName: string): string {
+  return `Quero receber a newsletter ${newsletterName} por e-mail. Posso cancelar quando quiser.`
+}

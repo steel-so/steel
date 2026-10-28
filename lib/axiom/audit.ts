@@ -242,6 +242,9 @@ export type AuditEntity =
   // WhatsApp archive for banks (ADR 0052)
   | 'whatsapp_archive'
   | 'whatsapp_archive_settings'
+  // CRM newsletter (ADR 0054): newsletters and their subscribers
+  | 'crm_newsletter'
+  | 'crm_newsletter_subscriber'
 
 export type AuditAction =
   | 'create'
@@ -322,6 +325,8 @@ export type AuditAction =
   | 'voice_end'
   | 'voice_transfer'
   | 'voice_ticket'
+  // CRM newsletter (ADR 0054): CSV import of subscribers
+  | 'import'
 
 type AuditOutcome = 'success' | 'failure'
 

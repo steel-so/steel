@@ -87,6 +87,15 @@ const DEVICE_POLL_DURATION_SECONDS = 60
 const DEVICE_VERIFY_POINTS = 20
 const DEVICE_VERIFY_DURATION_SECONDS = 10 * 60
 
+// Public newsletter subscribe (ADR 0054): per IP (a shared office NAT can
+// sign several people up) and per e-mail (one address cannot be flooded
+// with confirmation e-mails).
+const NEWSLETTER_SUBSCRIBE_IP_POINTS = 20
+const NEWSLETTER_SUBSCRIBE_IP_DURATION_SECONDS = 10 * 60
+
+const NEWSLETTER_SUBSCRIBE_EMAIL_POINTS = 5
+const NEWSLETTER_SUBSCRIBE_EMAIL_DURATION_SECONDS = 60 * 60
+
 const authInsurance = new RateLimiterMemory({
   points: AUTH_POINTS,
   duration: AUTH_DURATION_SECONDS,
@@ -274,6 +283,24 @@ export const deviceVerifyLimiter = new RateLimiterRedis({
   duration: DEVICE_VERIFY_DURATION_SECONDS,
 })
 
+export const newsletterSubscribeIpLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:newsletter:subscribe:ip',
+  points: NEWSLETTER_SUBSCRIBE_IP_POINTS,
+  duration: NEWSLETTER_SUBSCRIBE_IP_DURATION_SECONDS,
+})
+
+export const newsletterSubscribeEmailLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:newsletter:subscribe:email',
+  points: NEWSLETTER_SUBSCRIBE_EMAIL_POINTS,
+  duration: NEWSLETTER_SUBSCRIBE_EMAIL_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -297,6 +324,8 @@ const limiterNames = new WeakMap<Limiter, string>([
   [deviceStartLimiter, 'device_start'],
   [devicePollLimiter, 'device_poll'],
   [deviceVerifyLimiter, 'device_verify'],
+  [newsletterSubscribeIpLimiter, 'newsletter_subscribe_ip'],
+  [newsletterSubscribeEmailLimiter, 'newsletter_subscribe_email'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

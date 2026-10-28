@@ -125,3 +125,18 @@ export function verifyPreferencesToken(
   }
   return ok({ workspaceId: value.workspaceId, email: value.email })
 }
+
+/**
+ * Subscriber of a confirmation token whose signature is valid, ignoring the
+ * expiry: lets the "link expired" page send a fresh confirmation. Never use
+ * it to confirm.
+ */
+export function readConfirmTokenSubject(
+  token: string,
+): Result<{ subscriberId: string }, 'invalid'> {
+  const read_ = read('confirm', token)
+  if (!read_.ok) return read_
+  const value = (read_.value ?? {}) as Partial<ConfirmTokenPayload>
+  if (!isNonEmpty(value.subscriberId)) return err('invalid')
+  return ok({ subscriberId: value.subscriberId })
+}
