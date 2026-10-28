@@ -1,0 +1,83 @@
+---
+title: Arquivo público da newsletter
+description: A página pública de cada newsletter, com o formulário de inscrição, as edições enviadas, a versão web de cada edição, o RSS e os elementos de newsletter do Sites.
+section: crm
+order: 15
+---
+
+Toda newsletter com o **arquivo público** ligado (em **CRM › Newsletters ›
+Configurações**) ganha uma página aberta, sem login, para quem quiser conhecer
+e assinar.
+
+## A página do arquivo
+
+O endereço é `/n/<workspace>/<newsletter>` — por exemplo,
+`/n/acme/novidades`. Ela mostra:
+
+- o **logo e a cor** da marca do e-mail (configurados na marca dos modelos de
+  e-mail do CRM);
+- o **nome**, a **descrição** e a **frequência** da newsletter;
+- o **formulário de inscrição**: nome (opcional), e-mail e a autorização de
+  envio;
+- as **edições já enviadas**, das mais recentes para as mais antigas, com
+  número, data e um resumo. Com muitas edições, a lista é dividida em páginas
+  de 12.
+
+Rascunhos, edições agendadas e edições em envio nunca aparecem. A página sai do
+ar (responde "não encontrada") quando a newsletter é arquivada, quando o
+arquivo público é desligado ou quando o módulo CRM é desativado no workspace.
+
+## Inscrição pela página
+
+Depois de enviar o formulário, o visitante vê uma de duas mensagens:
+
+- **Confira seu e-mail** — a newsletter usa confirmação dupla: a inscrição só
+  vale depois do clique no link enviado por e-mail.
+- **Inscrição feita** — sem confirmação dupla: a pessoa já entra como
+  assinante ativa.
+
+A inscrição fica registrada com a origem **Página pública**, a data, o IP e o
+texto da autorização, como prova de consentimento (LGPD). Por segurança, a
+resposta é sempre a mesma, mesmo para endereços que já saíram da lista ou que
+não podem receber e-mails.
+
+## Versão web de cada edição
+
+Cada edição enviada tem o endereço `/n/<workspace>/<newsletter>/<edição>`,
+com o conteúdo exatamente como saiu no e-mail, mas **sem nenhum dado pessoal**
+do assinante. Abaixo do conteúdo ficam os links para a edição anterior e a
+próxima e o formulário de inscrição — bom para compartilhar uma edição nas
+redes sociais. O título, a descrição e a imagem de compartilhamento (logo da
+marca) são preenchidos automaticamente.
+
+Os links da edição abrem em uma nova aba. Por segurança, nenhum script do
+conteúdo é executado na página.
+
+## RSS
+
+O endereço `/n/<workspace>/<newsletter>/rss.xml` traz as últimas 50 edições
+em RSS 2.0, para leitores de feed e automações. Cada item tem o assunto, a
+data, o resumo e o link da versão web.
+
+## Atualização
+
+Uma edição aparece no arquivo quando o envio termina. Alterações no nome, na
+descrição ou na configuração da newsletter normalmente aparecem na hora e,
+no máximo, em uma hora. Nos sites, a lista de edições se atualiza em poucos
+minutos.
+
+## Newsletter no Sites
+
+No editor do **Sites**, a categoria **Newsletter** tem dois elementos:
+
+- **Inscrição na newsletter**: escolha a newsletter no painel à direita.
+  Ajuste o título, se pede o nome, o texto do botão e se o e-mail e o botão
+  ficam empilhados ou lado a lado (por tamanho de tela). As inscrições entram
+  com a origem **Site**, ligadas ao site.
+- **Últimas edições**: lista as últimas edições enviadas (de 1 a 12), em
+  cartões ou lista, com número, data e resumo, e um link "Ver todas as
+  edições" para o arquivo público. As datas seguem o fuso do site. Se o
+  arquivo público estiver desligado, nenhuma edição aparece.
+
+Os dois elementos somem do site publicado se a newsletter for arquivada ou
+excluída. Na prévia do site, o formulário não envia de verdade.
