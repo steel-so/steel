@@ -8,6 +8,9 @@ export type PlanTier = z.infer<typeof PlanSchema>
 // here (docs/plans-review.md); add a key together with its enforcement.
 export const PlanLimitsSchema = z.object({
   seats: z.number().int().positive().nullable(),
+  // CRM newsletter e-mails per month (ADR 0054); a platform-admin override
+  // per workspace (CrmNewsletterSettings) wins over the plan.
+  newsletterEmailsPerMonth: z.number().int().positive().nullable(),
 })
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>
 export type PlanLimitKey = keyof PlanLimits

@@ -1,6 +1,7 @@
 # Limites dos planos — estado e decisões
 
-> Atualizado em 22/10/2026 com as decisões do dono do produto. Os valores
+> Atualizado em 28/10/2026 (limite mensal da newsletter, ADR 0054) e em
+> 22/10/2026 com as decisões do dono do produto. Os valores
 > abaixo são os que estão em `src/config/plans.ts`.
 
 ## Resumo
@@ -53,6 +54,7 @@ servidor (SOPS) e reiniciar os containers — não precisa de rebuild.
 | Limite | FREE | PRO | BUSINESS | ENTERPRISE | Onde é aplicado |
 | ------ | ---- | --- | -------- | ---------- | --------------- |
 | `seats` (membros + convites pendentes) | 12 | 12 | ilimitado | ilimitado | `InvitationService.assertSeatAvailable` (`src/services/invitation.service.ts`) ao criar convite (workspace e projeto) e ao aceitar → `SEAT_LIMIT_REACHED` (403). Exibido em `settings/billing` (usa `subscription.seats` se houver, senão o limite do plano) |
+| `newsletterEmailsPerMonth` (e-mails de newsletter do CRM no mês, fuso America/Sao_Paulo; testes não contam) | 3.000 | 30.000 | 150.000 | ilimitado | Envio da edição recusado antes de começar se a audiência não cabe no saldo → `CRM_NEWSLETTER_LIMIT_REACHED` (402). O admin da plataforma pode trocar o limite por workspace (`CrmNewsletterSettings.monthlyEmailLimitOverride`). ADR 0054 |
 
 Outros valores relacionados, fora do catálogo:
 

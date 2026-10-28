@@ -1135,6 +1135,69 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_ARCHIVE_IN_PROGRESS',
     status: 409,
   },
+  // Sending domains + CRM newsletter (ADR 0054).
+  SENDING_DOMAIN_NOT_FOUND: { code: 'SENDING_DOMAIN_NOT_FOUND', status: 404 },
+  // The domain is already registered by some workspace (Resend keeps one
+  // domain per account, so it is unique across the platform).
+  SENDING_DOMAIN_TAKEN: { code: 'SENDING_DOMAIN_TAKEN', status: 409 },
+  // Not a domain the customer can own: free mail providers, public suffixes,
+  // our own mail domain.
+  SENDING_DOMAIN_INVALID: { code: 'SENDING_DOMAIN_INVALID', status: 422 },
+  // The From address is not on a VERIFIED domain of the workspace.
+  SENDING_DOMAIN_NOT_VERIFIED: {
+    code: 'SENDING_DOMAIN_NOT_VERIFIED',
+    status: 422,
+  },
+  // An ACTIVE newsletter still sends from the domain.
+  SENDING_DOMAIN_IN_USE: { code: 'SENDING_DOMAIN_IN_USE', status: 409 },
+  SENDING_DOMAIN_PROVIDER_ERROR: {
+    code: 'SENDING_DOMAIN_PROVIDER_ERROR',
+    status: 502,
+  },
+  CRM_NEWSLETTER_NOT_FOUND: { code: 'CRM_NEWSLETTER_NOT_FOUND', status: 404 },
+  CRM_NEWSLETTER_SLUG_TAKEN: { code: 'CRM_NEWSLETTER_SLUG_TAKEN', status: 409 },
+  CRM_NEWSLETTER_ARCHIVED: { code: 'CRM_NEWSLETTER_ARCHIVED', status: 409 },
+  CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND: {
+    code: 'CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND',
+    status: 404,
+  },
+  CRM_NEWSLETTER_SUBSCRIBER_EXISTS: {
+    code: 'CRM_NEWSLETTER_SUBSCRIBER_EXISTS',
+    status: 409,
+  },
+  // Confirmation, preferences or unsubscribe token: bad signature, expired
+  // or pointing at a row that no longer exists.
+  CRM_NEWSLETTER_TOKEN_INVALID: {
+    code: 'CRM_NEWSLETTER_TOKEN_INVALID',
+    status: 404,
+  },
+  CRM_NEWSLETTER_IMPORT_INVALID: {
+    code: 'CRM_NEWSLETTER_IMPORT_INVALID',
+    status: 422,
+  },
+  CRM_NEWSLETTER_ISSUE_NOT_FOUND: {
+    code: 'CRM_NEWSLETTER_ISSUE_NOT_FOUND',
+    status: 404,
+  },
+  // The issue left DRAFT/SCHEDULED: content and audience are frozen.
+  CRM_NEWSLETTER_ISSUE_LOCKED: {
+    code: 'CRM_NEWSLETTER_ISSUE_LOCKED',
+    status: 409,
+  },
+  CRM_NEWSLETTER_ISSUE_INCOMPLETE: {
+    code: 'CRM_NEWSLETTER_ISSUE_INCOMPLETE',
+    status: 422,
+  },
+  CRM_NEWSLETTER_NO_SUBSCRIBERS: {
+    code: 'CRM_NEWSLETTER_NO_SUBSCRIBERS',
+    status: 422,
+  },
+  // Monthly newsletter e-mail quota of the workspace (plan or admin
+  // override). 402 like the WhatsApp monthly limits.
+  CRM_NEWSLETTER_LIMIT_REACHED: {
+    code: 'CRM_NEWSLETTER_LIMIT_REACHED',
+    status: 402,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

@@ -1774,3 +1774,86 @@ export const whatsappArchiveInProgress = (): AppError =>
     'WHATSAPP_ARCHIVE_IN_PROGRESS',
     'Já existe um pacote deste tipo sendo gerado. Aguarde terminar.',
   )
+
+// ─── Sending domains + CRM newsletter (ADR 0054) ───────────────────────────
+
+export const sendingDomainNotFound = (): AppError =>
+  appError('SENDING_DOMAIN_NOT_FOUND', 'Domínio de envio não encontrado')
+
+export const sendingDomainTaken = (): AppError =>
+  appError(
+    'SENDING_DOMAIN_TAKEN',
+    'Este domínio já está cadastrado na plataforma. Fale com o suporte se ele é seu.',
+  )
+
+export const sendingDomainInvalid = (
+  message = 'Use um domínio próprio da empresa (não vale Gmail, Outlook e afins)',
+): AppError => appError('SENDING_DOMAIN_INVALID', message)
+
+export const sendingDomainNotVerified = (
+  message = 'O remetente precisa ser de um domínio verificado do workspace',
+): AppError => appError('SENDING_DOMAIN_NOT_VERIFIED', message)
+
+export const sendingDomainInUse = (): AppError =>
+  appError(
+    'SENDING_DOMAIN_IN_USE',
+    'Há newsletters ativas enviando por este domínio. Troque o remetente delas antes.',
+  )
+
+export const sendingDomainProviderError = (
+  message = 'Não foi possível falar com o provedor de e-mail. Tente de novo em instantes.',
+): AppError => appError('SENDING_DOMAIN_PROVIDER_ERROR', message)
+
+export const crmNewsletterNotFound = (): AppError =>
+  appError('CRM_NEWSLETTER_NOT_FOUND', 'Newsletter não encontrada')
+
+export const crmNewsletterSlugTaken = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_SLUG_TAKEN',
+    'Já existe uma newsletter com este endereço',
+  )
+
+export const crmNewsletterArchived = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_ARCHIVED',
+    'Esta newsletter está arquivada. Reative-a para continuar.',
+  )
+
+export const crmNewsletterSubscriberNotFound = (): AppError =>
+  appError('CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND', 'Assinante não encontrado')
+
+export const crmNewsletterSubscriberExists = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_SUBSCRIBER_EXISTS',
+    'Este e-mail já está na newsletter',
+  )
+
+export const crmNewsletterTokenInvalid = (): AppError =>
+  appError('CRM_NEWSLETTER_TOKEN_INVALID', 'Link inválido ou expirado')
+
+export const crmNewsletterImportInvalid = (
+  message = 'Arquivo de importação inválido',
+): AppError => appError('CRM_NEWSLETTER_IMPORT_INVALID', message)
+
+export const crmNewsletterIssueNotFound = (): AppError =>
+  appError('CRM_NEWSLETTER_ISSUE_NOT_FOUND', 'Edição não encontrada')
+
+export const crmNewsletterIssueLocked = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_ISSUE_LOCKED',
+    'Esta edição já foi enviada (ou está sendo) e não pode mais ser alterada',
+  )
+
+export const crmNewsletterIssueIncomplete = (
+  message = 'Preencha assunto e conteúdo antes de enviar',
+): AppError => appError('CRM_NEWSLETTER_ISSUE_INCOMPLETE', message)
+
+export const crmNewsletterNoSubscribers = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_NO_SUBSCRIBERS',
+    'A newsletter ainda não tem assinantes ativos',
+  )
+
+export const crmNewsletterLimitReached = (
+  message = 'O limite mensal de e-mails de newsletter do workspace foi atingido',
+): AppError => appError('CRM_NEWSLETTER_LIMIT_REACHED', message)

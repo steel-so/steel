@@ -234,6 +234,9 @@ model User {
   aiDigestSettings          AiDigestSetting[]
   crmApolloImports          CrmApolloImport[]          @relation("CrmApolloImportCreatedBy")
   whatsappArchivesTriggered WhatsAppArchive[]          @relation("WhatsAppArchiveTriggeredBy")
+  sendingDomainsCreated     WorkspaceSendingDomain[]   @relation("WorkspaceSendingDomainCreatedBy")
+  newslettersCreated        CrmNewsletter[]            @relation("CrmNewsletterCreatedBy")
+  newsletterIssuesCreated   CrmNewsletterIssue[]       @relation("CrmNewsletterIssueCreatedBy")
 
   @@index([deletionScheduledAt])
   @@map("users")
@@ -613,6 +616,10 @@ model Workspace {
   accessLogs                WorkspaceAccessLog[]
   whatsappArchives          WhatsAppArchive[]
   whatsappArchiveSettings   WhatsAppArchiveSettings?
+  sendingDomains            WorkspaceSendingDomain[]
+  crmNewsletters            CrmNewsletter[]
+  crmNewsletterSettings     CrmNewsletterSettings?
+  crmNewsletterUsage        CrmNewsletterUsageMonthly[]
 
   @@index([status])
   @@map("workspaces")
@@ -3433,11 +3440,15 @@ model CrmForm {
   updatedById     String?       @map("updated_by_id")
   position        Int           @default(0)
   publishedAt     DateTime?     @map("published_at")
+  /// Newsletter the form subscribes to when the visitor ticks the consent
+  /// box (ADR 0054). Null = the form does not subscribe anyone.
+  newsletterId    String?       @map("newsletter_id")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   deletedAt       DateTime?     @map("deleted_at")
 
   workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  newsletter  CrmNewsletter?      @relation(fields: [newsletterId], references: [id], onDelete: SetNull)
   createdBy   User                @relation("CrmFormCreatedBy", fields: [createdById], references: [id])
   updatedBy   User?               @relation("CrmFormUpdatedBy", fields: [updatedById], references: [id])
   submissions CrmFormSubmission[]
@@ -3773,6 +3784,8 @@ enum CrmEmailOptOutSource {
   LINK
   // POST RFC 8058 disparado pelo provedor (List-Unsubscribe-Post)
   ONE_CLICK
+  // "Sair de tudo" na central de preferências da newsletter (ADR 0054)
+  PREFERENCES
 }
 
 /// Descadastro LGPD de campanhas de e-mail do CRM — por endereço e workspace.
@@ -9686,4 +9699,291 @@ model WhatsAppArchive {
   @@index([workspaceId, kind, periodEnd])
   @@index([status, expiresAt])
   @@map("whatsapp_archives")
+}
+
+// ─── Sending domains + CRM newsletter (ADR 0054) ──────────────────────────
+
+/// Mirrors the Resend domain status (`not_started`, `pending`, `verified`,
+/// `failed`, `temporary_failure`).
+enum WorkspaceSendingDomainStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  FAILED
+  TEMPORARY_FAILURE
+}
+
+/// A customer's own domain registered in Resend so the workspace sends
+/// marketing e-mail from it (SPF/DKIM/DMARC, open/click tracking on the
+/// domain). Unique across the platform: Resend keeps one domain per account.
+model WorkspaceSendingDomain {
+  id             String                       @id @default(cuid())
+  workspaceId    String                       @map("workspace_id")
+  /// Lower-case FQDN, e.g. "news.acme.com.br".
+  name           String                       @unique
+  resendDomainId String?                      @unique @map("resend_domain_id")
+  status         WorkspaceSendingDomainStatus @default(NOT_STARTED)
+  /// Snapshot of the DNS records Resend asks for — see
+  /// `SendingDomainRecordSchema` in src/schemas/sending-domain.schema.ts.
+  records        Json                         @default("[]")
+  region         String                       @default("sa-east-1")
+  failureReason  String?                      @map("failure_reason")
+  lastCheckedAt  DateTime?                    @map("last_checked_at")
+  verifiedAt     DateTime?                    @map("verified_at")
+  createdById    String                       @map("created_by_id")
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  updatedAt      DateTime                     @updatedAt @map("updated_at")
+
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User            @relation("WorkspaceSendingDomainCreatedBy", fields: [createdById], references: [id])
+  newsletters CrmNewsletter[]
+
+  @@index([workspaceId])
+  @@index([status, lastCheckedAt])
+  @@map("workspace_sending_domains")
+}
+
+enum CrmNewsletterStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// A publication: name, sender, audience of its own and numbered issues.
+model CrmNewsletter {
+  id              String                @id @default(cuid())
+  workspaceId     String                @map("workspace_id")
+  name            String
+  /// Unique per workspace; used in the public archive URL /n/<ws>/<slug>.
+  slug            String
+  description     String?               @db.Text
+  /// Free label shown on the subscribe page, e.g. "Mensal".
+  cadenceLabel    String?               @map("cadence_label")
+  fromName        String                @map("from_name")
+  /// Must belong to a VERIFIED sending domain of the workspace to send.
+  fromEmail       String                @map("from_email")
+  replyTo         String?               @map("reply_to")
+  sendingDomainId String?               @map("sending_domain_id")
+  /// E-mail template (v2) a new issue starts from.
+  templateId      String?               @map("template_id")
+  doubleOptIn     Boolean               @default(true) @map("double_opt_in")
+  legalBasis      CrmCampaignLegalBasis @default(CONSENT) @map("legal_basis")
+  /// Public archive and web version of the issues.
+  archiveEnabled  Boolean               @default(true) @map("archive_enabled")
+  status          CrmNewsletterStatus   @default(ACTIVE)
+  createdById     String                @map("created_by_id")
+  updatedById     String?               @map("updated_by_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  deletedAt       DateTime?             @map("deleted_at")
+
+  workspace     Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sendingDomain WorkspaceSendingDomain?   @relation(fields: [sendingDomainId], references: [id], onDelete: SetNull)
+  createdBy     User                      @relation("CrmNewsletterCreatedBy", fields: [createdById], references: [id])
+  subscribers   CrmNewsletterSubscriber[]
+  issues        CrmNewsletterIssue[]
+  forms         CrmForm[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, deletedAt])
+  @@map("crm_newsletters")
+}
+
+enum CrmNewsletterSubscriberStatus {
+  /// Waiting for the double opt-in confirmation.
+  PENDING
+  ACTIVE
+  UNSUBSCRIBED
+  /// Hard bounce: the address does not receive mail.
+  BOUNCED
+  /// Marked the e-mail as spam.
+  COMPLAINED
+}
+
+enum CrmNewsletterSubscriberSource {
+  FORM
+  SITE
+  PUBLIC_PAGE
+  API
+  IMPORT
+  MANUAL
+}
+
+/// One row per (newsletter, e-mail). Consent evidence is kept for LGPD.
+model CrmNewsletterSubscriber {
+  id                String                        @id @default(cuid())
+  newsletterId      String                        @map("newsletter_id")
+  workspaceId       String                        @map("workspace_id")
+  /// Always lower-case.
+  email             String
+  name              String?
+  /// CRM person with this e-mail in the workspace, when there is one.
+  personId          String?                       @map("person_id")
+  status            CrmNewsletterSubscriberStatus @default(PENDING)
+  source            CrmNewsletterSubscriberSource
+  /// Form id, site id, import id… depending on `source`.
+  sourceRef         String?                       @map("source_ref")
+  consentAt         DateTime?                     @map("consent_at")
+  consentIp         String?                       @map("consent_ip")
+  consentUserAgent  String?                       @map("consent_user_agent")
+  /// Exact consent text the subscriber saw.
+  consentText       String?                       @map("consent_text")
+  confirmSentAt     DateTime?                     @map("confirm_sent_at")
+  confirmedAt       DateTime?                     @map("confirmed_at")
+  unsubscribedAt    DateTime?                     @map("unsubscribed_at")
+  unsubscribeReason String?                       @map("unsubscribe_reason")
+  bouncedAt         DateTime?                     @map("bounced_at")
+  complainedAt      DateTime?                     @map("complained_at")
+  lastSentAt        DateTime?                     @map("last_sent_at")
+  lastOpenedAt      DateTime?                     @map("last_opened_at")
+  lastClickedAt     DateTime?                     @map("last_clicked_at")
+  createdAt         DateTime                      @default(now()) @map("created_at")
+  updatedAt         DateTime                      @updatedAt @map("updated_at")
+
+  newsletter CrmNewsletter                 @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  deliveries CrmNewsletterIssueRecipient[]
+
+  @@unique([newsletterId, email])
+  @@index([newsletterId, status])
+  @@index([workspaceId, email])
+  @@index([personId])
+  @@map("crm_newsletter_subscribers")
+}
+
+enum CrmNewsletterIssueStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELED
+  FAILED
+}
+
+/// An edition. Content is a Steel Canvas e-mail document (same catalog as
+/// the v2 templates), rendered per recipient at send time.
+model CrmNewsletterIssue {
+  id               String                   @id @default(cuid())
+  newsletterId     String                   @map("newsletter_id")
+  workspaceId      String                   @map("workspace_id")
+  /// Edition number, assigned when sending starts (1, 2, 3…).
+  number           Int?
+  subject          String
+  preheader        String?
+  /// Unique per newsletter; web version at /n/<ws>/<newsletter>/<slug>.
+  slug             String
+  builderDocument  Json                     @default("{}") @map("builder_document")
+  /// HTML of the web version (no personal data), written when sending starts.
+  webHtml          String?                  @map("web_html") @db.Text
+  /// Plain-text excerpt for the archive cards and the RSS feed.
+  excerpt          String?                  @db.Text
+  /// Phase 2: audience filter. `{}` = every ACTIVE subscriber.
+  segment          Json                     @default("{}")
+  status           CrmNewsletterIssueStatus @default(DRAFT)
+  scheduledAt      DateTime?                @map("scheduled_at")
+  sendingStartedAt DateTime?                @map("sending_started_at")
+  sentAt           DateTime?                @map("sent_at")
+  canceledAt       DateTime?                @map("canceled_at")
+  failureReason    String?                  @map("failure_reason")
+  createdById      String                   @map("created_by_id")
+  updatedById      String?                  @map("updated_by_id")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+  deletedAt        DateTime?                @map("deleted_at")
+
+  newsletter CrmNewsletter                 @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  createdBy  User                          @relation("CrmNewsletterIssueCreatedBy", fields: [createdById], references: [id])
+  recipients CrmNewsletterIssueRecipient[]
+  clicks     CrmNewsletterLinkClick[]
+
+  @@unique([newsletterId, slug])
+  @@unique([newsletterId, number])
+  @@index([workspaceId, deletedAt])
+  @@index([status, scheduledAt])
+  @@map("crm_newsletter_issues")
+}
+
+enum CrmNewsletterDeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  /// Excluded at send time (opt-out, bounced, quota) — see `skipReason`.
+  SKIPPED
+  FAILED
+}
+
+/// Audience snapshot taken when sending starts: one row per subscriber.
+model CrmNewsletterIssueRecipient {
+  id                String                      @id @default(cuid())
+  issueId           String                      @map("issue_id")
+  workspaceId       String                      @map("workspace_id")
+  subscriberId      String                      @map("subscriber_id")
+  email             String
+  name              String?
+  status            CrmNewsletterDeliveryStatus @default(PENDING)
+  skipReason        String?                     @map("skip_reason")
+  providerMessageId String?                     @unique @map("provider_message_id")
+  error             String?
+  sentAt            DateTime?                   @map("sent_at")
+  deliveredAt       DateTime?                   @map("delivered_at")
+  openedAt          DateTime?                   @map("opened_at")
+  clickedAt         DateTime?                   @map("clicked_at")
+  bouncedAt         DateTime?                   @map("bounced_at")
+  complainedAt      DateTime?                   @map("complained_at")
+  unsubscribedAt    DateTime?                   @map("unsubscribed_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+
+  issue      CrmNewsletterIssue       @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  subscriber CrmNewsletterSubscriber  @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  clicks     CrmNewsletterLinkClick[]
+
+  @@unique([issueId, subscriberId])
+  @@index([issueId, status])
+  @@map("crm_newsletter_issue_recipients")
+}
+
+/// Every click reported by the Resend webhook (link tracking on the
+/// customer's domain) — feeds the per-link report of an issue.
+model CrmNewsletterLinkClick {
+  id          String   @id @default(cuid())
+  issueId     String   @map("issue_id")
+  recipientId String   @map("recipient_id")
+  url         String
+  clickedAt   DateTime @map("clicked_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  issue     CrmNewsletterIssue          @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  recipient CrmNewsletterIssueRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, url])
+  @@index([recipientId])
+  @@map("crm_newsletter_link_clicks")
+}
+
+/// Per-workspace newsletter settings set by the platform admin.
+model CrmNewsletterSettings {
+  workspaceId               String   @id @map("workspace_id")
+  /// Replaces the plan's `newsletterEmailsPerMonth`. Null = use the plan.
+  monthlyEmailLimitOverride Int?     @map("monthly_email_limit_override")
+  updatedById               String?  @map("updated_by_id")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("crm_newsletter_settings")
+}
+
+/// Newsletter e-mails sent per workspace and month (America/Sao_Paulo).
+model CrmNewsletterUsageMonthly {
+  workspaceId        String   @map("workspace_id")
+  /// "YYYY-MM" in America/Sao_Paulo.
+  month              String
+  emailsSent         Int      @default(0) @map("emails_sent")
+  /// Thresholds (50, 80, 100) already notified this month.
+  notifiedThresholds Int[]    @default([]) @map("notified_thresholds")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, month])
+  @@map("crm_newsletter_usage_monthly")
 }
