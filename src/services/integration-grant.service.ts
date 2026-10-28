@@ -351,9 +351,12 @@ export const IntegrationGrantService = {
     )
     if (!token.ok) return token
     const row = token.value
+    // `revoked` (Better Auth 1.7): the provider now marks the access tokens of
+    // a session that ended (sign-out) instead of deleting them.
     if (
       !row?.expiresAt ||
       row.expiresAt.getTime() <= now.getTime() ||
+      row.revoked ||
       row.client.disabled ||
       !row.referenceId ||
       !row.userId

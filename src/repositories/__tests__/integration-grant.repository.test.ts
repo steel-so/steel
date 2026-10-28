@@ -509,6 +509,31 @@ describe('IntegrationGrantRepository', () => {
     )
   })
 
+  it('does not count an access token revoked with its session as live', async () => {
+    const { user, client } = await scenario()
+    const owner = { clientId: client.clientId, userId: user.id }
+    const now = new Date()
+    const grant = await seedIntegrationGrant({
+      ...owner,
+      workspaceId: (await seedWorkspace()).id,
+    })
+    // Unexpired, but Better Auth 1.7 marked it when the session ended.
+    await seedOauthAccessToken({
+      ...owner,
+      referenceId: grant.id,
+      revoked: new Date(now.getTime() - 1_000),
+    })
+
+    expect(
+      expectOk(
+        await IntegrationGrantRepository.listWithoutLiveTokens(
+          { ids: [grant.id] },
+          now,
+        ),
+      ).dead.map((g) => g.id),
+    ).toEqual([grant.id])
+  })
+
   it('returns a cursor when a liveness batch is full', async () => {
     const { user, workspace } = await scenario()
     const clientIds = Array.from(

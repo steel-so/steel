@@ -417,6 +417,12 @@ export function registerAuthPaths(registry: OpenApiRegistry): void {
           schema: {
             type: 'object',
             properties: {
+              method: {
+                type: 'string',
+                enum: ['totp', 'otp'],
+                description:
+                  'Método ativado. Sem `method` no corpo, o padrão é `totp`, que grava o segredo e devolve `totpURI` e os códigos de backup; `otp` só liga o 2º fator e não devolve os dois campos.',
+              },
               totpURI: { type: 'string' },
               backupCodes: { type: 'array', items: { type: 'string' } },
             },

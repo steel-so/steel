@@ -108,7 +108,9 @@ export function UserModalSecurityTab({ tab }: { tab: string }) {
         )
         return
       }
-      setBackupCodes(data?.backupCodes ?? [])
+      // Better Auth 1.7 answers `enable()` with a union on `method`; only the
+      // default `totp` branch carries backup codes.
+      setBackupCodes(data && 'backupCodes' in data ? data.backupCodes : [])
       setTwoFactorMode('idle')
       setTwoFactorPassword('')
       // Este toggle liga o 2º fator por e-mail. A dica local diz ao próximo

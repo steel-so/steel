@@ -96,3 +96,34 @@ chamado "Claude" com um `redirect_uri` seu e manda o link para a vítima
 - Os metadados do servidor de autorização passam a anunciar `none` em
   `revocation_endpoint_auth_methods_supported`: o plugin aceitava cliente
   público revogando só com `client_id`, mas não anunciava.
+
+## Atualização (27/10/2026) — Better Auth 1.7
+
+O `better-auth` e o `@better-auth/oauth-provider` subiram de 1.6.23 para
+1.7.12 (correção da GHSA-965c-763c-88jm, que não tem patch na linha 1.6). A
+decisão continua a mesma; mudam detalhes do provedor:
+
+- **Recursos protegidos.** A lista `validAudiences` deixou de existir. Os três
+  alvos aceitos (`<app>/api/mcp`, o emissor `<app>/api/auth` e a origem) agora
+  são linhas de `oauth_resources`, semeadas na subida do app a partir de
+  `src/lib/auth.ts`. Qualquer cliente pode pedir qualquer um deles
+  (`enforcePerClientResources: false`), como antes: todos são do Steel, e os
+  clientes registrados antes da 1.7 não têm vínculo em
+  `oauth_client_resources`.
+- **Registro dinâmico.** Sem `application_type`, o cliente é classificado pelo
+  redirect (`infer`): loopback (`steel mcp login`, Claude Code, Cursor) vira
+  `native`, o resto `web` com HTTPS obrigatório. Um registro sem
+  `token_endpoint_auth_method` agora é **confidencial**
+  (`client_secret_basic`, com segredo); cliente público precisa declarar
+  `none`, como o Steel CLI e os clientes MCP conhecidos já fazem.
+- **Fim de sessão.** Quando a sessão do navegador que deu o consentimento
+  termina (sair, sessão revogada), o provedor marca como revogados os access
+  tokens emitidos nela (`oauth_access_tokens.revoked`). O refresh token com
+  `offline_access` sobrevive, então o cliente só renova o access token; o
+  `IntegrationGrantService.resolveAccessToken` e a regra de "token vivo"
+  passam a considerar essa coluna.
+- **Migração** `better_auth_17_oauth_provider`: colunas novas nas tabelas do
+  provedor, `oauth_resources`, `oauth_client_resources` e
+  `oauth_client_assertions`; `oauth_clients.type` e `oauth_clients.public`
+  viram `application_type` e `token_endpoint_auth_method = 'none'` antes de
+  sair.

@@ -99,11 +99,13 @@ describe('OAuth discovery', () => {
         expect.arrayContaining(['mcp:read', 'mcp:write']),
       )
       expect(body.token_endpoint_auth_methods_supported).toContain('none')
-      // Public clients revoke with only `client_id`.
+      // Public clients revoke with only `client_id`. Better Auth 1.7 adds
+      // `private_key_jwt` (RFC 7523) to the methods it supports natively.
       expect(body.revocation_endpoint_auth_methods_supported).toEqual([
         'none',
         'client_secret_basic',
         'client_secret_post',
+        'private_key_jwt',
       ])
     }
   })

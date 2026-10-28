@@ -107,7 +107,10 @@ export function UserModalSecurityTotp({
 
     setBusy(false)
 
-    if (uriError || !data) {
+    // Better Auth 1.7 answers `enable()` with a union on `method`: the `otp`
+    // branch has no `totpURI`. We always ask for the default `totp` method,
+    // so a response without it is treated like any other failure.
+    if (uriError || !data || !('totpURI' in data)) {
       setError(
         authErrorMessage(
           uriError,

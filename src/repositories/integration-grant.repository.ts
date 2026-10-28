@@ -282,6 +282,8 @@ export const IntegrationGrantRepository = {
           where: {
             referenceId,
             expiresAt: { gt: now },
+            // Revoked when its session ended (Better Auth 1.7).
+            revoked: null,
             // One left behind by a refresh rotation (or a revoked refresh
             // token) does not keep the grant alive.
             OR: [{ refreshId: null }, { refreshToken: { revoked: null } }],
