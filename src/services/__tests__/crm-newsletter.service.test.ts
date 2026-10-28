@@ -18,8 +18,10 @@ vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/src/lib/sending-domain/resolve-sender')
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/lib/axiom/logger')
+vi.mock('@/src/lib/newsletter/archive-cache')
 
 import { auditMutation } from '@/lib/axiom/audit'
+import { revalidateNewsletterArchive } from '@/src/lib/newsletter/archive-cache'
 import { resolveVerifiedSender } from '@/src/lib/sending-domain/resolve-sender'
 import { CrmNewsletterRepository } from '@/src/repositories/crm-newsletter.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -445,5 +447,34 @@ describe('CrmNewsletterService.remove', () => {
     asRole('MEMBER')
     const result = await CrmNewsletterService.remove('u1', WS, 'nl1')
     expect(result.ok).toBe(false)
+  })
+})
+
+describe('archive cache expiry', () => {
+  it('expires the old and the new slug after a rename', async () => {
+    repo.findById.mockResolvedValue(
+      ok(createFakeCrmNewsletter({ id: 'nl1', workspaceId: WS, slug: 'old' })),
+    )
+    expectOk(
+      await CrmNewsletterService.update('u1', WS, 'nl1', { slug: 'new' }),
+    )
+    expect(vi.mocked(revalidateNewsletterArchive).mock.calls).toEqual([
+      ['acme', 'old'],
+      ['acme', 'new'],
+    ])
+  })
+
+  it('expires the slug on delete and skips when the workspace is unknown', async () => {
+    repo.findById.mockResolvedValue(
+      ok(createFakeCrmNewsletter({ id: 'nl1', slug: 'gone' })),
+    )
+    repo.softDelete.mockResolvedValue(ok(undefined))
+    expectOk(await CrmNewsletterService.remove('u1', WS, 'nl1'))
+    expect(revalidateNewsletterArchive).toHaveBeenCalledWith('acme', 'gone')
+
+    vi.mocked(revalidateNewsletterArchive).mockClear()
+    workspaceRepo.findById.mockResolvedValue(err(databaseError()))
+    expectOk(await CrmNewsletterService.remove('u1', WS, 'nl1'))
+    expect(revalidateNewsletterArchive).not.toHaveBeenCalled()
   })
 })

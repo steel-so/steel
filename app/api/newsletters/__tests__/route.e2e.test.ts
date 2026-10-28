@@ -41,11 +41,17 @@ describe('POST /api/newsletters/subscribe', () => {
     }
     const first = await postJson('/api/newsletters/subscribe', body)
     expect(first.status).toBe(200)
-    expect((await first.json()).data).toEqual({ requiresConfirmation: false })
+    expect((await first.json()).data).toEqual({
+      requiresConfirmation: false,
+      status: 'ACTIVE',
+    })
     expect(first.headers.get('access-control-allow-origin')).toBe('*')
 
     const repeat = await postJson('/api/newsletters/subscribe', body)
-    expect((await repeat.json()).data).toEqual({ requiresConfirmation: false })
+    expect((await repeat.json()).data).toEqual({
+      requiresConfirmation: false,
+      status: 'ACTIVE',
+    })
 
     const row = await prisma.crmNewsletterSubscriber.findFirstOrThrow({
       where: { email: 'leitor@example.com' },

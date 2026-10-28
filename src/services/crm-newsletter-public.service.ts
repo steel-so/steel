@@ -283,7 +283,11 @@ export const CrmNewsletterPublicService = {
       context,
     })
     if (!done.ok) return done
-    return ok({ requiresConfirmation: newsletter.value.doubleOptIn })
+    const { doubleOptIn } = newsletter.value
+    return ok({
+      requiresConfirmation: doubleOptIn,
+      status: doubleOptIn ? 'PENDING' : 'ACTIVE',
+    })
   },
 
   /**

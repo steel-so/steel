@@ -350,20 +350,18 @@ describe('import', () => {
   })
 
   it('sends confirmations to the PENDING rows in the background', async () => {
-    repo.findByEmails
-      .mockResolvedValueOnce(ok([]))
-      .mockResolvedValueOnce(
-        ok([
-          createFakeCrmNewsletterSubscriber({
-            email: 'novo@x.com',
-            status: 'PENDING',
-          }),
-          createFakeCrmNewsletterSubscriber({
-            email: 'x@x.com',
-            status: 'ACTIVE',
-          }),
-        ]),
-      )
+    repo.findByEmails.mockResolvedValueOnce(ok([])).mockResolvedValueOnce(
+      ok([
+        createFakeCrmNewsletterSubscriber({
+          email: 'novo@x.com',
+          status: 'PENDING',
+        }),
+        createFakeCrmNewsletterSubscriber({
+          email: 'x@x.com',
+          status: 'ACTIVE',
+        }),
+      ]),
+    )
     const result = expectOk(
       await Service.import(
         'u1',

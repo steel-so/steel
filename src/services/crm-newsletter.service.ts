@@ -3,6 +3,7 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
 import { crmNewsletterSlugTaken } from '@/src/errors'
+import { revalidateNewsletterArchive } from '@/src/lib/newsletter/archive-cache'
 import { err, ok, type Result } from '@/src/lib/result'
 import { resolveVerifiedSender } from '@/src/lib/sending-domain/resolve-sender'
 import { toCrmNewsletterDTO } from '@/src/mappers/crm-newsletter.mapper'
@@ -63,6 +64,24 @@ async function senderDomain(
   if (resolved.ok) return ok(resolved.value.sendingDomainId)
   if (resolved.error.code === 'SENDING_DOMAIN_NOT_VERIFIED') return ok(null)
   return resolved
+}
+
+/**
+ * Expires the public archive cache (nl-archive) of the given newsletter
+ * slugs: the old and the new one after a rename. Best-effort.
+ */
+async function expireArchive(
+  workspaceId: string,
+  slugs: string[],
+): Promise<void> {
+  const slug = await workspaceSlug(workspaceId)
+  if (!slug.ok) {
+    logger.warn('crm_newsletter.archive_expire_skipped', { workspaceId })
+    return
+  }
+  for (const newsletterSlug of new Set(slugs)) {
+    revalidateNewsletterArchive(slug.value, newsletterSlug)
+  }
 }
 
 async function workspaceSlug(workspaceId: string): Promise<Result<string>> {
@@ -287,6 +306,7 @@ export const CrmNewsletterService = {
       targetId: newsletterId,
       meta: { workspaceId, fields: Object.keys(dto) },
     })
+    await expireArchive(workspaceId, [existing.value.slug, updated.value.slug])
     return toDTO(workspaceId, updated.value)
   },
 
@@ -307,6 +327,7 @@ export const CrmNewsletterService = {
 
     const deleted = await CrmNewsletterRepository.softDelete(newsletterId, now)
     if (!deleted.ok) return deleted
+    await expireArchive(workspaceId, [existing.value.slug])
 
     auditMutation({
       entity: 'crm_newsletter',

@@ -122,7 +122,7 @@ describe('subscribe', () => {
     const result = expectOk(
       await Service.subscribe({ ...subscribeDto, sourceRef: 'site1' }, context),
     )
-    expect(result).toEqual({ requiresConfirmation: true })
+    expect(result).toEqual({ requiresConfirmation: true, status: 'PENDING' })
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         email: 'ana@x.com',
@@ -157,7 +157,7 @@ describe('subscribe', () => {
         },
       ),
     )
-    expect(result).toEqual({ requiresConfirmation: false })
+    expect(result).toEqual({ requiresConfirmation: false, status: 'ACTIVE' })
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'ACTIVE',
@@ -207,6 +207,7 @@ describe('subscribe', () => {
     arrange()
     expect(expectOk(await Service.subscribe(subscribeDto, context))).toEqual({
       requiresConfirmation: true,
+      status: 'PENDING',
     })
     expect(repo.create).not.toHaveBeenCalled()
     expect(repo.update).not.toHaveBeenCalled()

@@ -185,6 +185,8 @@ const OUT = [
   '(public)/servicedesk/approval/',
   '(public)/suporte/',
   '(public)/unsubscribe/',
+  // Newsletter confirm/unsubscribe/preferences links (ADR 0054).
+  '(public)/newsletter/',
   // Sales TV link: full-screen dashboard for the sales-room TV.
   '(public)/tv/',
   // Published customer sites: their own header/footer globals, no Steel shell.

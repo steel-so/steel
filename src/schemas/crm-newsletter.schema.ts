@@ -290,6 +290,9 @@ export type CrmNewsletterSubscriberPageDTO = {
 export type PublicNewsletterSubscribeResultDTO = {
   /** True: "check your inbox to confirm"; false: subscribed right away. */
   requiresConfirmation: boolean
+  /** Status a new subscription gets: PENDING with double opt-in, else
+   * ACTIVE (never the address's real state). */
+  status: 'PENDING' | 'ACTIVE'
 }
 
 /** Unsubscribe page / POST /api/newsletters/unsubscribe/[token] body. */

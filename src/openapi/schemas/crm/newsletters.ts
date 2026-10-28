@@ -115,6 +115,10 @@ export const PublicNewsletterSubscribeResultDTO = dto(
       description:
         'Verdadeiro: "confira seu e-mail para confirmar". A resposta é a mesma qualquer que seja a situação do endereço.',
     }),
+    status: z.enum(['PENDING', 'ACTIVE']).meta({
+      description:
+        'Situação de uma inscrição nova nesta newsletter (`PENDING` com confirmação dupla), nunca a situação real do endereço.',
+    }),
   }),
 )
 

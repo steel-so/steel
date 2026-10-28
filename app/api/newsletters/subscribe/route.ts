@@ -55,6 +55,7 @@ export const POST = withAxiom(async (request: NextRequest) => {
   if (typeof website === 'string' && website.length > 0) {
     const fake: PublicNewsletterSubscribeResultDTO = {
       requiresConfirmation: true,
+      status: 'PENDING',
     }
     return withCors(successResponse(fake))
   }

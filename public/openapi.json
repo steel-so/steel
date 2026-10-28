@@ -179460,9 +179460,14 @@
           "requiresConfirmation": {
             "type": "boolean",
             "description": "Verdadeiro: \"confira seu e-mail para confirmar\". A resposta é a mesma qualquer que seja a situação do endereço."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "ACTIVE"],
+            "description": "Situação de uma inscrição nova nesta newsletter (`PENDING` com confirmação dupla), nunca a situação real do endereço."
           }
         },
-        "required": ["requiresConfirmation"]
+        "required": ["requiresConfirmation", "status"]
       },
       "SdAgent": {
         "type": "object",
