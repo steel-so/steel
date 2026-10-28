@@ -30,6 +30,7 @@ import { processDatabaseBackup } from '../src/lib/queue/processors/database-back
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
 import { processSearchReindex } from '../src/lib/queue/processors/search-reindex'
+import { processSendingDomains } from '../src/lib/queue/processors/sending-domains'
 import { processServicedeskAi } from '../src/lib/queue/processors/servicedesk-ai'
 import { processServicedeskBilling } from '../src/lib/queue/processors/servicedesk-billing'
 import { processServicedeskDigest } from '../src/lib/queue/processors/servicedesk-digest'
@@ -70,6 +71,7 @@ import {
   scheduleDataRetentionJobs,
   scheduleNotificationsJobs,
   scheduleSearchReindexJobs,
+  scheduleSendingDomainsJobs,
   scheduleServicedeskBillingJobs,
   scheduleServicedeskDigestJobs,
   scheduleServicedeskIntegrationsJobs,
@@ -285,6 +287,7 @@ async function main(): Promise<void> {
   workers.push(
     registerWorker(QueueName.WhatsappArchive, processWhatsappArchive),
   )
+  workers.push(registerWorker(QueueName.SendingDomains, processSendingDomains))
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -324,6 +327,7 @@ async function main(): Promise<void> {
   await scheduleCrmCampaignsJobs()
   await scheduleSitePostsJobs()
   await scheduleWhatsappArchiveJobs()
+  await scheduleSendingDomainsJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

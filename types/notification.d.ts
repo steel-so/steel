@@ -68,6 +68,8 @@ export type NotificationKindDTO =
   | 'AI_ACTION_EXPIRING'
   | 'WEBHOOK_ENDPOINT_DISABLED'
   | 'AI_DAILY_DIGEST'
+  | 'CRM_SENDING_DOMAIN_VERIFIED'
+  | 'CRM_SENDING_DOMAIN_FAILED'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'

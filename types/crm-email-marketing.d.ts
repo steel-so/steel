@@ -100,7 +100,7 @@ export interface CrmEmailOptOutDTO {
   email: string
   personId: string | null
   campaignId: string | null
-  source: 'LINK' | 'ONE_CLICK'
+  source: 'LINK' | 'ONE_CLICK' | 'PREFERENCES'
   createdAt: string
 }
 

@@ -47,6 +47,7 @@ export const QueueName = {
   PhoneCallAi: 'phone-call-ai',
   AiProactive: 'ai-proactive',
   WhatsappArchive: 'whatsapp-archive',
+  SendingDomains: 'sending-domains',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -969,4 +970,19 @@ export type WhatsappArchiveJobPayload = {
   [WhatsappArchiveJob.Build]: { archiveId: string }
   [WhatsappArchiveJob.CopyToOffsite]: { archiveId: string }
   [WhatsappArchiveJob.PruneExpired]: Record<string, never>
+}
+
+/**
+ * Sending domains of the CRM newsletter (ADR 0054): `check-tick` every 10
+ * min re-checks young pending domains each tick and the rest once a day.
+ */
+export const SendingDomainsJob = {
+  CheckTick: 'check-tick',
+} as const
+
+export type SendingDomainsJob =
+  (typeof SendingDomainsJob)[keyof typeof SendingDomainsJob]
+
+export type SendingDomainsJobPayload = {
+  [SendingDomainsJob.CheckTick]: Record<string, never>
 }

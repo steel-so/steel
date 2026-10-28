@@ -15,6 +15,7 @@ import {
   DataRetentionJob,
   NotificationsJob,
   SearchReindexJob,
+  SendingDomainsJob,
   ServicedeskBillingJob,
   ServicedeskDigestJob,
   ServicedeskIntegrationsJob,
@@ -50,6 +51,7 @@ import {
   getDataRetentionQueue,
   getNotificationsQueue,
   getSearchReindexQueue,
+  getSendingDomainsQueue,
   getServicedeskBillingQueue,
   getServicedeskDigestQueue,
   getServicedeskIntegrationsQueue,
@@ -88,6 +90,7 @@ import {
   RetentionCron,
   RetentionTimezone,
   SearchReindexCron,
+  SendingDomainsCheckCron,
   ServicedeskBillingCron,
   ServicedeskClusterCron,
   ServicedeskDigestCron,
@@ -715,6 +718,22 @@ export async function scheduleWhatsappArchiveJobs(): Promise<void> {
     weeklyPattern: WhatsappArchiveCron.weekly,
     monthlyFullPattern: WhatsappArchiveCron.monthlyFull,
     prunePattern: WhatsappArchiveCron.pruneExpired,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** Sending domains (ADR 0054): the 10-minute re-check tick. */
+export async function scheduleSendingDomainsJobs(): Promise<void> {
+  const queue = getSendingDomainsQueue()
+  await queue.upsertJobScheduler(
+    SendingDomainsJob.CheckTick,
+    { pattern: SendingDomainsCheckCron, tz: RetentionTimezone },
+    { name: SendingDomainsJob.CheckTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.sending_domains_registered', {
+    component: 'Worker',
+    pattern: SendingDomainsCheckCron,
     timezone: RetentionTimezone,
   })
 }
