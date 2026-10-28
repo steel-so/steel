@@ -64929,7 +64929,9 @@
                             "AGENT_APPROVAL_REQUESTED",
                             "AGENT_RUN_FAILED",
                             "AI_ACTION_EXPIRING",
-                            "WEBHOOK_ENDPOINT_DISABLED"
+                            "WEBHOOK_ENDPOINT_DISABLED",
+                            "CRM_SENDING_DOMAIN_VERIFIED",
+                            "CRM_SENDING_DOMAIN_FAILED"
                           ]
                         },
                         "inApp": {
@@ -67633,6 +67635,917 @@
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/sending-domains": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Listar domínios de envio",
+        "operationId": "getWorkspacesByIdSendingDomains",
+        "description": "Domínios do workspace, mais antigos primeiro, com o número de newsletters ativas de cada um (sem a consulta de DMARC). Só OWNER/ADMIN de um workspace com o módulo CRM habilitado.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domínios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "news.acme.com.br"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["NOT_STARTED", "PENDING", "VERIFIED", "FAILED", "TEMPORARY_FAILURE"]
+                              },
+                              "region": {
+                                "type": "string",
+                                "enum": ["sa-east-1", "us-east-1", "eu-west-1", "ap-northeast-1"]
+                              },
+                              "records": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "record": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "value": {
+                                      "type": "string"
+                                    },
+                                    "ttl": {
+                                      "type": "string"
+                                    },
+                                    "priority": {
+                                      "type": "number"
+                                    },
+                                    "status": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["record", "type", "name", "value", "status"]
+                                },
+                                "description": "Registros DNS pedidos pelo Resend (SPF, DKIM, rastreamento), com o status de cada um."
+                              },
+                              "failureReason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "lastCheckedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "verifiedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "newslettersCount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Newsletters ativas que enviam deste domínio."
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "dmarc": {
+                                "description": "Só no detalhe (e nas respostas de cadastro e verificação): DMARC do domínio raiz.",
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "example": "_dmarc.acme.com.br"
+                                  },
+                                  "found": {
+                                    "anyOf": [
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "`true`: há registro DMARC; `false`: não há; `null`: a consulta falhou ou passou do tempo (desconhecido)."
+                                  },
+                                  "value": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "suggested": {
+                                    "type": "string",
+                                    "example": "v=DMARC1; p=none;"
+                                  }
+                                },
+                                "required": ["name", "found", "value", "suggested"]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "status",
+                              "region",
+                              "records",
+                              "failureReason",
+                              "lastCheckedAt",
+                              "verifiedAt",
+                              "newslettersCount",
+                              "createdAt"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Cadastrar domínio de envio",
+        "operationId": "postWorkspacesByIdSendingDomains",
+        "description": "Cadastra o domínio no Resend (com rastreamento de abertura e clique) e devolve os registros DNS a publicar. Recomendado um subdomínio dedicado, como `news.suaempresa.com.br`. Recusa provedores de e-mail gratuitos e terminações públicas (`com.br`). O nome é único na plataforma. Só OWNER/ADMIN de um workspace com o módulo CRM habilitado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "Domínio (ou subdomínio) da empresa. Recomendado um subdomínio dedicado, como `news.suaempresa.com.br`.",
+                    "example": "news.acme.com.br",
+                    "type": "string"
+                  },
+                  "region": {
+                    "default": "sa-east-1",
+                    "type": "string",
+                    "enum": ["sa-east-1", "us-east-1", "eu-west-1", "ap-northeast-1"]
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Domínio cadastrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "news.acme.com.br"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": ["NOT_STARTED", "PENDING", "VERIFIED", "FAILED", "TEMPORARY_FAILURE"]
+                            },
+                            "region": {
+                              "type": "string",
+                              "enum": ["sa-east-1", "us-east-1", "eu-west-1", "ap-northeast-1"]
+                            },
+                            "records": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "record": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "ttl": {
+                                    "type": "string"
+                                  },
+                                  "priority": {
+                                    "type": "number"
+                                  },
+                                  "status": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["record", "type", "name", "value", "status"]
+                              },
+                              "description": "Registros DNS pedidos pelo Resend (SPF, DKIM, rastreamento), com o status de cada um."
+                            },
+                            "failureReason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "lastCheckedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verifiedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "newslettersCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Newsletters ativas que enviam deste domínio."
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "dmarc": {
+                              "description": "Só no detalhe (e nas respostas de cadastro e verificação): DMARC do domínio raiz.",
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "example": "_dmarc.acme.com.br"
+                                },
+                                "found": {
+                                  "anyOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "`true`: há registro DMARC; `false`: não há; `null`: a consulta falhou ou passou do tempo (desconhecido)."
+                                },
+                                "value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "suggested": {
+                                  "type": "string",
+                                  "example": "v=DMARC1; p=none;"
+                                }
+                              },
+                              "required": ["name", "found", "value", "suggested"]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "status",
+                            "region",
+                            "records",
+                            "failureReason",
+                            "lastCheckedAt",
+                            "verifiedAt",
+                            "newslettersCount",
+                            "createdAt"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_SENDING_DOMAIN_TAKEN"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_SENDING_DOMAIN_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_SENDING_DOMAIN_PROVIDER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/sending-domains/{domainId}": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Detalhar domínio de envio",
+        "operationId": "getWorkspacesByIdSendingDomainsByDomainId",
+        "description": "Registros DNS, status e a consulta DMARC de `_dmarc.<domínio raiz>` (sugere `v=DMARC1; p=none;` quando não há). Só OWNER/ADMIN de um workspace com o módulo CRM habilitado.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domainId",
+            "in": "path",
+            "required": true,
+            "description": "ID do domínio.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domínio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "news.acme.com.br"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": ["NOT_STARTED", "PENDING", "VERIFIED", "FAILED", "TEMPORARY_FAILURE"]
+                            },
+                            "region": {
+                              "type": "string",
+                              "enum": ["sa-east-1", "us-east-1", "eu-west-1", "ap-northeast-1"]
+                            },
+                            "records": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "record": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "ttl": {
+                                    "type": "string"
+                                  },
+                                  "priority": {
+                                    "type": "number"
+                                  },
+                                  "status": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["record", "type", "name", "value", "status"]
+                              },
+                              "description": "Registros DNS pedidos pelo Resend (SPF, DKIM, rastreamento), com o status de cada um."
+                            },
+                            "failureReason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "lastCheckedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verifiedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "newslettersCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Newsletters ativas que enviam deste domínio."
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "dmarc": {
+                              "description": "Só no detalhe (e nas respostas de cadastro e verificação): DMARC do domínio raiz.",
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "example": "_dmarc.acme.com.br"
+                                },
+                                "found": {
+                                  "anyOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "`true`: há registro DMARC; `false`: não há; `null`: a consulta falhou ou passou do tempo (desconhecido)."
+                                },
+                                "value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "suggested": {
+                                  "type": "string",
+                                  "example": "v=DMARC1; p=none;"
+                                }
+                              },
+                              "required": ["name", "found", "value", "suggested"]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "status",
+                            "region",
+                            "records",
+                            "failureReason",
+                            "lastCheckedAt",
+                            "verifiedAt",
+                            "newslettersCount",
+                            "createdAt"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SENDING_DOMAIN_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Remover domínio de envio",
+        "operationId": "deleteWorkspacesByIdSendingDomainsByDomainId",
+        "description": "Remove do Resend e do Steel. Recusado enquanto alguma newsletter ativa envia dele. Só OWNER/ADMIN de um workspace com o módulo CRM habilitado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domainId",
+            "in": "path",
+            "required": true,
+            "description": "ID do domínio.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removido (`data: null`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SENDING_DOMAIN_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_SENDING_DOMAIN_IN_USE"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_SENDING_DOMAIN_PROVIDER_ERROR"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/sending-domains/{domainId}/verify": {
+      "post": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Verificar domínio agora",
+        "operationId": "postWorkspacesByIdSendingDomainsByDomainIdVerify",
+        "description": "Pede ao Resend uma nova verificação do DNS e grava o resultado (status, registros, motivo da falha). Um domínio verificado só deixa de estar verificado por falha. Avisa os administradores quando o domínio passa a verificado. Só OWNER/ADMIN de um workspace com o módulo CRM habilitado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do workspace.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "domainId",
+            "in": "path",
+            "required": true,
+            "description": "ID do domínio.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domínio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "news.acme.com.br"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": ["NOT_STARTED", "PENDING", "VERIFIED", "FAILED", "TEMPORARY_FAILURE"]
+                            },
+                            "region": {
+                              "type": "string",
+                              "enum": ["sa-east-1", "us-east-1", "eu-west-1", "ap-northeast-1"]
+                            },
+                            "records": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "record": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string"
+                                  },
+                                  "ttl": {
+                                    "type": "string"
+                                  },
+                                  "priority": {
+                                    "type": "number"
+                                  },
+                                  "status": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["record", "type", "name", "value", "status"]
+                              },
+                              "description": "Registros DNS pedidos pelo Resend (SPF, DKIM, rastreamento), com o status de cada um."
+                            },
+                            "failureReason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "lastCheckedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verifiedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "newslettersCount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Newsletters ativas que enviam deste domínio."
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "dmarc": {
+                              "description": "Só no detalhe (e nas respostas de cadastro e verificação): DMARC do domínio raiz.",
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "example": "_dmarc.acme.com.br"
+                                },
+                                "found": {
+                                  "anyOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "`true`: há registro DMARC; `false`: não há; `null`: a consulta falhou ou passou do tempo (desconhecido)."
+                                },
+                                "value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "suggested": {
+                                  "type": "string",
+                                  "example": "v=DMARC1; p=none;"
+                                }
+                              },
+                              "required": ["name", "found", "value", "suggested"]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "status",
+                            "region",
+                            "records",
+                            "failureReason",
+                            "lastCheckedAt",
+                            "verifiedAt",
+                            "newslettersCount",
+                            "createdAt"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SENDING_DOMAIN_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_SENDING_DOMAIN_PROVIDER_ERROR"
           }
         },
         "security": [
@@ -132890,6 +133803,129 @@
           }
         }
       },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Usuário não é membro ou não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "WORKSPACE_IP_NOT_ALLOWED": {
+                "summary": "WORKSPACE_IP_NOT_ALLOWED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace só pode ser acessado a partir da rede autorizada pela sua empresa.",
+                  "error": {
+                    "code": "WORKSPACE_IP_NOT_ALLOWED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Usuário não é membro ou não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "WORKSPACE_IP_NOT_ALLOWED": {
+                "summary": "WORKSPACE_IP_NOT_ALLOWED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace só pode ser acessado a partir da rede autorizada pela sua empresa.",
+                  "error": {
+                    "code": "WORKSPACE_IP_NOT_ALLOWED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_SD_NOT_AGENT": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`, `SD_NOT_AGENT`",
         "content": {
@@ -140764,6 +141800,29 @@
           }
         }
       },
+      "404_SENDING_DOMAIN_NOT_FOUND": {
+        "description": "Não encontrado: `SENDING_DOMAIN_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SENDING_DOMAIN_NOT_FOUND": {
+                "summary": "SENDING_DOMAIN_NOT_FOUND — Domínio inexistente ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Domínio de envio não encontrado",
+                  "error": {
+                    "code": "SENDING_DOMAIN_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_SITE_NOT_FOUND": {
         "description": "Não encontrado: `SITE_NOT_FOUND`",
         "content": {
@@ -144705,6 +145764,52 @@
                   "message": "Estoque insuficiente para instalar a peça",
                   "error": {
                     "code": "SD_PART_OUT_OF_STOCK"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_SENDING_DOMAIN_IN_USE": {
+        "description": "Conflito com o estado atual: `SENDING_DOMAIN_IN_USE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SENDING_DOMAIN_IN_USE": {
+                "summary": "SENDING_DOMAIN_IN_USE",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Há newsletters ativas enviando por este domínio. Troque o remetente delas antes.",
+                  "error": {
+                    "code": "SENDING_DOMAIN_IN_USE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_SENDING_DOMAIN_TAKEN": {
+        "description": "Conflito com o estado atual: `SENDING_DOMAIN_TAKEN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SENDING_DOMAIN_TAKEN": {
+                "summary": "SENDING_DOMAIN_TAKEN",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este domínio já está cadastrado na plataforma. Fale com o suporte se ele é seu.",
+                  "error": {
+                    "code": "SENDING_DOMAIN_TAKEN"
                   }
                 }
               }
@@ -150579,6 +151684,47 @@
           }
         }
       },
+      "422_VALIDATION_ERROR_SENDING_DOMAIN_INVALID": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `SENDING_DOMAIN_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "SENDING_DOMAIN_INVALID": {
+                "summary": "SENDING_DOMAIN_INVALID",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Use um domínio próprio da empresa (não vale Gmail, Outlook e afins)",
+                  "error": {
+                    "code": "SENDING_DOMAIN_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_VALIDATION_ERROR_SITE_COLLECTION_ITEM_INVALID": {
         "description": "Dados inválidos: `VALIDATION_ERROR`, `SITE_COLLECTION_ITEM_INVALID`",
         "content": {
@@ -152705,6 +153851,29 @@
                   "message": "O serviço externo não respondeu como esperado",
                   "error": {
                     "code": "SD_INTEGRATION_REQUEST_FAILED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_SENDING_DOMAIN_PROVIDER_ERROR": {
+        "description": "Falha em serviço externo: `SENDING_DOMAIN_PROVIDER_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SENDING_DOMAIN_PROVIDER_ERROR": {
+                "summary": "SENDING_DOMAIN_PROVIDER_ERROR — O Resend falhou ou não respondeu",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "message": "Não foi possível falar com o provedor de e-mail. Tente de novo em instantes.",
+                  "error": {
+                    "code": "SENDING_DOMAIN_PROVIDER_ERROR"
                   }
                 }
               }
@@ -176686,7 +177855,9 @@
                     "AGENT_RUN_FAILED",
                     "AI_ACTION_EXPIRING",
                     "WEBHOOK_ENDPOINT_DISABLED",
-                    "AI_DAILY_DIGEST"
+                    "AI_DAILY_DIGEST",
+                    "CRM_SENDING_DOMAIN_VERIFIED",
+                    "CRM_SENDING_DOMAIN_FAILED"
                   ]
                 },
                 "title": {

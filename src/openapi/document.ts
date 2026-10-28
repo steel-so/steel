@@ -10,6 +10,7 @@ import { registerIntegrationPaths } from './paths/integrations'
 import { registerMcpPaths } from './paths/mcp'
 import { registerPublicPaths } from './paths/public'
 import { registerSearchPaths } from './paths/search'
+import { registerSendingDomainPaths } from './paths/sending-domains'
 import { registerServiceDeskPaths } from './paths/servicedesk'
 import { registerServiceDeskKnowledgePaths } from './paths/servicedesk-knowledge'
 import { registerSdTicketPaths } from './paths/servicedesk-tickets'
@@ -60,6 +61,7 @@ export function createRegistry(): OpenApiRegistry {
   registerApiTokenPaths(registry)
   registerWebhookPaths(registry)
   registerWorkspaceAccessLogPaths(registry)
+  registerSendingDomainPaths(registry)
   return registry
 }
 
