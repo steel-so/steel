@@ -38,6 +38,7 @@ export const RESERVED_WORKSPACE_SLUGS: ReadonlySet<string> = new Set([
   'talk-to-sales',
   'twitter-image',
   'unsubscribe',
+  'newsletter',
   'upgrade',
   // Proxies and static paths (PostHog rewrite, nginx media)
   'ingest',

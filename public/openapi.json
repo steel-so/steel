@@ -157,6 +157,10 @@
       "description": "Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração e migração das landing pages."
     },
     {
+      "name": "CRM · Newsletters",
+      "description": "Newsletters do CRM (ADR 0054): publicações com remetente no domínio do cliente, assinantes com prova de consentimento, importação e exportação em CSV."
+    },
+    {
       "name": "Comunicação · Conversas",
       "description": "Conversas e mensagens do WhatsApp, atribuição e fechamento."
     },
@@ -341,6 +345,10 @@
       "description": "Painel do CRM no telão da equipe de vendas: link somente leitura, sem login (o token é o acesso; revogar corta a tela)."
     },
     {
+      "name": "CRM público · Newsletter",
+      "description": "Inscrição pública na newsletter, confirmação dupla, central de preferências e descadastro de um clique (RFC 8058). Sem sessão: o link assinado é o acesso."
+    },
+    {
       "name": "Status",
       "description": "Página de status pública e coleta de health checks dos componentes."
     },
@@ -443,7 +451,8 @@
         "CRM · IA",
         "CRM · Integrações",
         "CRM · Configurações",
-        "CRM · Sites"
+        "CRM · Sites",
+        "CRM · Newsletters"
       ]
     },
     {
@@ -504,7 +513,8 @@
         "CRM público · Descadastro",
         "CRM público · Campanhas",
         "CRM público · Sites",
-        "CRM público · Modo TV"
+        "CRM público · Modo TV",
+        "CRM público · Newsletter"
       ]
     },
     {
@@ -5529,6 +5539,9 @@
                         "maxLength": 40
                       }
                     }
+                  },
+                  "newsletterConsent": {
+                    "type": "boolean"
                   }
                 },
                 "required": ["values"]
@@ -7057,6 +7070,391 @@
         "responses": {
           "405": {
             "description": "Servidor sem estado: não abre stream SSE (GET) nem encerra sessão (DELETE). Responde com `Allow: POST`."
+          }
+        },
+        "security": []
+      }
+    },
+    "/newsletters/confirm/{token}/resend": {
+      "post": {
+        "tags": ["CRM público · Newsletter"],
+        "summary": "Reenviar confirmação (link vencido)",
+        "operationId": "postNewslettersConfirmByTokenResend",
+        "description": "Usado pela página `/newsletter/confirmar/<token>` quando o link venceu (7 dias): manda um novo e-mail de confirmação. No máximo um a cada 10 minutos.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado de confirmação (mesmo vencido).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "sent": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["sent"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_TOKEN_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/newsletters/preferences/{token}": {
+      "get": {
+        "tags": ["CRM público · Newsletter"],
+        "summary": "Central de preferências",
+        "operationId": "getNewslettersPreferencesByToken",
+        "description": "Newsletters ativas do workspace e quais o endereço recebe. `optedOutOfAll` indica o descadastro de tudo (vale também para as campanhas).\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado de preferências (workspace + e-mail).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preferências.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NewsletterPreferences"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_TOKEN_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "tags": ["CRM público · Newsletter"],
+        "summary": "Salvar preferências",
+        "operationId": "putNewslettersPreferencesByToken",
+        "description": "As newsletters listadas ficam (ou passam a ser) recebidas; as outras saem. Ligar alguma desfaz um \"sair de tudo\" anterior. `unsubscribeAll` tira de todas e grava o descadastro do workspace (origem `PREFERENCES`). Endereços com retorno permanente ou denúncia de spam não voltam.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado de preferências.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subscribedNewsletterIds": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "unsubscribeAll": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": ["subscribedNewsletterIds"]
+              },
+              "example": {
+                "subscribedNewsletterIds": ["ckw1nl00000ab7d3k1e5xyz"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferências.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NewsletterPreferences"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_TOKEN_INVALID"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/newsletters/subscribe": {
+      "post": {
+        "tags": ["CRM público · Newsletter"],
+        "summary": "Inscrever na newsletter",
+        "operationId": "postNewslettersSubscribe",
+        "description": "Inscrição pública (página do arquivo, elemento do Sites ou qualquer site — CORS aberto). Sem sessão; limite por IP (20 a cada 10 min) e por e-mail (5 por hora). O campo isca `website` precisa ficar vazio.\n\nA resposta é a **mesma** qualquer que seja a situação do endereço (novo, já inscrito, descadastrado do workspace, com retorno): nada vaza. Com confirmação dupla, o e-mail de confirmação sai (no máximo um a cada 10 minutos); sem ela, o assinante fica ativo na hora. Guarda IP, navegador e o texto do consentimento.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workspaceSlug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "newsletterSlug": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "consent": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "source": {
+                    "default": "PUBLIC_PAGE",
+                    "type": "string",
+                    "enum": ["SITE", "PUBLIC_PAGE", "API"]
+                  },
+                  "sourceRef": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 0
+                  }
+                },
+                "required": ["workspaceSlug", "newsletterSlug", "email", "consent"]
+              },
+              "example": {
+                "workspaceSlug": "acme",
+                "newsletterSlug": "novidades",
+                "email": "ana@empresa.com.br",
+                "consent": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pedido recebido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicNewsletterSubscribeResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403_MODULE_DISABLED_3"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/newsletters/unsubscribe/{token}": {
+      "get": {
+        "tags": ["CRM público · Newsletter"],
+        "summary": "Link de descadastro (redireciona)",
+        "operationId": "getNewslettersUnsubscribeByToken",
+        "description": "Redireciona (303) para a página `/newsletter/sair/<token>`. **Nunca** descadastra em GET.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado de descadastro.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redireciona para a página."
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "tags": ["CRM público · Newsletter"],
+        "summary": "Sair da newsletter",
+        "operationId": "postNewslettersUnsubscribeByToken",
+        "description": "Tira o endereço só desta newsletter. Dois usos:\n\n- **One-click (RFC 8058)** — o provedor faz `POST` com corpo `application/x-www-form-urlencoded` `List-Unsubscribe=One-Click`.\n- **Página** — botão de `/newsletter/sair/<token>`, corpo JSON com `reason` opcional.\n\nIdempotente (`alreadyUnsubscribed`). Quando o token vem de uma edição, marca o descadastro no relatório dela.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado de descadastro.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              },
+              "example": {
+                "reason": "Recebo e-mails demais"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Descadastrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NewsletterUnsubscribeResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_TOKEN_INVALID"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": []
@@ -19630,7 +20028,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20207,7 +20605,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -31322,6 +31720,17 @@
                   "redirectUrl": {
                     "type": "string",
                     "maxLength": 500
+                  },
+                  "newsletterId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -38446,6 +38855,1015 @@
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters": {
+      "get": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Listar newsletters",
+        "operationId": "getWorkspacesByIdCrmNewsletters",
+        "description": "Newsletters do workspace com assinantes ativos e pendentes, edições enviadas, data da última edição, situação do remetente (`senderVerified`, conferida na hora) e o endereço do arquivo público.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newsletters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmNewsletter"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Criar newsletter",
+        "operationId": "postWorkspacesByIdCrmNewsletters",
+        "description": "O `slug` é derivado do nome quando omitido (com sufixo `-2`, `-3`… se já existir). O remetente pode ser salvo antes de o domínio estar verificado: `senderVerified` avisa e o envio das edições fica bloqueado até lá.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "cadenceLabel": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "fromName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "fromEmail": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "replyTo": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "doubleOptIn": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "legalBasis": {
+                    "default": "CONSENT",
+                    "type": "string",
+                    "enum": ["CONSENT", "LEGITIMATE_INTEREST", "CONTRACT"]
+                  },
+                  "archiveEnabled": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": ["name", "fromName", "fromEmail"]
+              },
+              "example": {
+                "name": "Novidades da Acme",
+                "description": "O que mudou no produto, uma vez por mês.",
+                "cadenceLabel": "Mensal",
+                "fromName": "Acme",
+                "fromEmail": "news@news.acme.com.br",
+                "replyTo": "contato@acme.com.br",
+                "doubleOptIn": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Newsletter criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmNewsletter"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_SLUG_TAKEN"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}": {
+      "get": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Detalhe da newsletter",
+        "operationId": "getWorkspacesByIdCrmNewslettersByNewsletterId",
+        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newsletter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmNewsletter"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Editar, arquivar ou reativar newsletter",
+        "operationId": "patchWorkspacesByIdCrmNewslettersByNewsletterId",
+        "description": "`status: ARCHIVED` arquiva (para inscrições e envios); `ACTIVE` reativa. Trocar `fromEmail` reconfere o domínio do remetente.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cadenceLabel": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fromName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "fromEmail": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "replyTo": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 254,
+                        "format": "email"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "templateId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "doubleOptIn": {
+                    "type": "boolean"
+                  },
+                  "legalBasis": {
+                    "type": "string",
+                    "enum": ["CONSENT", "LEGITIMATE_INTEREST", "CONTRACT"]
+                  },
+                  "archiveEnabled": {
+                    "type": "boolean"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["ACTIVE", "ARCHIVED"]
+                  }
+                }
+              },
+              "example": {
+                "status": "ARCHIVED"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Newsletter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmNewsletter"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_SLUG_TAKEN"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Excluir newsletter",
+        "operationId": "deleteWorkspacesByIdCrmNewslettersByNewsletterId",
+        "description": "Exclusão lógica: o endereço público fica livre e os formulários que inscreviam nela deixam de inscrever.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `DELETE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/subscribers": {
+      "get": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Listar assinantes",
+        "operationId": "getWorkspacesByIdCrmNewslettersByNewsletterIdSubscribers",
+        "description": "Paginado, com busca por e-mail ou nome e filtros de situação e origem.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "ACTIVE", "UNSUBSCRIBED", "BOUNCED", "COMPLAINED"]
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["FORM", "SITE", "PUBLIC_PAGE", "API", "IMPORT", "MANUAL"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de assinantes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmNewsletterSubscriberPage"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Adicionar assinante",
+        "operationId": "postWorkspacesByIdCrmNewslettersByNewsletterIdSubscribers",
+        "description": "Fica `ACTIVE` na hora (o membro declara o consentimento) ou `PENDING` com `sendConfirmation`. Quem tinha saído só volta confirmando de novo. Liga à pessoa do CRM com o mesmo e-mail, sem criar pessoa.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "sendConfirmation": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "consentNote": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": ["email"]
+              },
+              "example": {
+                "email": "ana@empresa.com.br",
+                "name": "Ana"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assinante.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmNewsletterSubscriber"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/subscribers/export": {
+      "get": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Exportar assinantes (CSV)",
+        "operationId": "getWorkspacesByIdCrmNewslettersByNewsletterIdSubscribersExport",
+        "description": "CSV em UTF-8 com BOM, datas no fuso de São Paulo, com situação, origem e a prova do consentimento. Auditado (dado pessoal).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo CSV (`Content-Disposition: attachment`).",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/subscribers/import": {
+      "post": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Importar assinantes (CSV)",
+        "operationId": "postWorkspacesByIdCrmNewslettersByNewsletterIdSubscribersImport",
+        "description": "O navegador lê o CSV e envia as linhas. Exige `consentConfirmed: true`. Linhas inválidas, repetidas, no descadastro do workspace, com retorno permanente ou denúncia de spam voltam em `rejected`. Com `sendConfirmation`, até 1.000 linhas por vez. Auditado.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rows": {
+                    "minItems": 1,
+                    "maxItems": 50000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": "string",
+                          "maxLength": 254
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "required": ["email"]
+                    }
+                  },
+                  "consentConfirmed": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "sendConfirmation": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": ["rows", "consentConfirmed"]
+              },
+              "example": {
+                "rows": [
+                  {
+                    "email": "ana@empresa.com.br",
+                    "name": "Ana"
+                  }
+                ],
+                "consentConfirmed": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resumo da importação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmNewsletterImportResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_NEWSLETTER_IMPORT_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/subscribers/{subscriberId}": {
+      "delete": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Remover assinante",
+        "operationId": "deleteWorkspacesByIdCrmNewslettersByNewsletterIdSubscribersBySubscriberId",
+        "description": "Apaga o assinante e o histórico de entregas dele (LGPD). Auditado.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `DELETE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriberId",
+            "in": "path",
+            "required": true,
+            "description": "ID do assinante.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/subscribers/{subscriberId}/resend-confirmation": {
+      "post": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Reenviar confirmação",
+        "operationId": "postWorkspacesByIdCrmNewslettersByNewsletterIdSubscribersBySubscriberIdResendConfirmation",
+        "description": "Só para quem está `PENDING`; no máximo uma vez a cada 10 minutos. `sent: false` quando o provedor recusou o envio.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriberId",
+            "in": "path",
+            "required": true,
+            "description": "ID do assinante.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "sent": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["sent"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57960,7 +59378,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -58369,7 +59787,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -63873,7 +65291,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -66422,7 +67840,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -75981,7 +77399,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -78393,7 +79811,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -89465,7 +90883,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -95106,7 +96524,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -117123,7 +118541,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -122676,7 +124094,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -135146,6 +136564,29 @@
           }
         }
       },
+      "403_MODULE_DISABLED_3": {
+        "description": "Acesso negado: `MODULE_DISABLED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — O workspace está com o CRM desabilitado",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "403_PABX_WEBPHONE_NOT_ENABLED": {
         "description": "Acesso negado: `PABX_WEBPHONE_NOT_ENABLED`",
         "content": {
@@ -136063,6 +137504,109 @@
                   "message": "Modelo de landing page não encontrado",
                   "error": {
                     "code": "CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_NEWSLETTER_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_NEWSLETTER_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_NOT_FOUND": {
+                "summary": "CRM_NEWSLETTER_NOT_FOUND — Newsletter inexistente (ou excluída) no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Newsletter não encontrada",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_NEWSLETTER_NOT_FOUND_2": {
+        "description": "Não encontrado: `CRM_NEWSLETTER_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_NOT_FOUND": {
+                "summary": "CRM_NEWSLETTER_NOT_FOUND — Newsletter inexistente ou arquivada",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Newsletter não encontrada",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_NEWSLETTER_NOT_FOUND`, `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_NOT_FOUND": {
+                "summary": "CRM_NEWSLETTER_NOT_FOUND — Newsletter inexistente (ou excluída) no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Newsletter não encontrada",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_NOT_FOUND"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND": {
+                "summary": "CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND — Assinante inexistente nesta newsletter",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Assinante não encontrado",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_NEWSLETTER_TOKEN_INVALID": {
+        "description": "Não encontrado: `CRM_NEWSLETTER_TOKEN_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_TOKEN_INVALID": {
+                "summary": "CRM_NEWSLETTER_TOKEN_INVALID — Link com assinatura inválida, vencido ou de um registro que não existe mais",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Link inválido ou expirado",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_TOKEN_INVALID"
                   }
                 }
               }
@@ -143420,6 +144964,86 @@
           }
         }
       },
+      "409_CRM_NEWSLETTER_ARCHIVED": {
+        "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_ARCHIVED": {
+                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada: reative para inscrever",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ARCHIVED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS": {
+        "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_SUBSCRIBER_EXISTS`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_ARCHIVED": {
+                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada: reative para inscrever",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ARCHIVED"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_SUBSCRIBER_EXISTS": {
+                "summary": "CRM_NEWSLETTER_SUBSCRIBER_EXISTS — O e-mail já está ativo ou aguardando confirmação",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este e-mail já está na newsletter",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_SUBSCRIBER_EXISTS"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CRM_NEWSLETTER_SLUG_TAKEN": {
+        "description": "Conflito com o estado atual: `CRM_NEWSLETTER_SLUG_TAKEN`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_SLUG_TAKEN": {
+                "summary": "CRM_NEWSLETTER_SLUG_TAKEN — Já existe uma newsletter com este `slug` no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Já existe uma newsletter com este endereço",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_SLUG_TAKEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "409_CRM_PIPELINE_STAGE_IN_USE": {
         "description": "Conflito com o estado atual: `CRM_PIPELINE_STAGE_IN_USE`",
         "content": {
@@ -147838,7 +149462,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
+                "summary": "VALIDATION_ERROR — O assinante não está pendente",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -147868,18 +149492,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
+                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -147920,7 +149533,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
+                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -147961,7 +149574,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -147983,6 +149596,47 @@
         }
       },
       "422_VALIDATION_ERROR_37": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_38": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148016,7 +149670,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_38": {
+      "422_VALIDATION_ERROR_39": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148050,7 +149704,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_39": {
+      "422_VALIDATION_ERROR_40": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148073,7 +149727,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_40": {
+      "422_VALIDATION_ERROR_41": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148103,7 +149757,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_41": {
+      "422_VALIDATION_ERROR_42": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148126,7 +149780,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_42": {
+      "422_VALIDATION_ERROR_43": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148149,7 +149803,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_43": {
+      "422_VALIDATION_ERROR_44": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -148172,7 +149826,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_44": {
+      "422_VALIDATION_ERROR_45": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -149137,6 +150791,47 @@
                   "message": "Registre ao menos uma reunião antes de criar a proposta",
                   "error": {
                     "code": "CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_CRM_NEWSLETTER_IMPORT_INVALID": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `CRM_NEWSLETTER_IMPORT_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_IMPORT_INVALID": {
+                "summary": "CRM_NEWSLETTER_IMPORT_INVALID — Linhas demais para importar com o e-mail de confirmação",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Arquivo de importação inválido",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_IMPORT_INVALID"
                   }
                 }
               }
@@ -164866,6 +166561,17 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "newsletterId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Newsletter em que a caixa de consentimento do formulário inscreve (ADR 0054). Nulo = não inscreve."
+          },
           "workspaceId": {
             "type": "string"
           },
@@ -164917,6 +166623,7 @@
           "successMessage",
           "redirectUrl",
           "submissionCount",
+          "newsletterId",
           "workspaceId",
           "createdById",
           "updatedById",
@@ -165063,6 +166770,26 @@
               }
             ],
             "description": "Para onde levar o visitante após o envio."
+          },
+          "newsletter": {
+            "description": "Presente quando o formulário inscreve numa newsletter: mostrar a caixa opcional de consentimento com `consentText` e enviar `newsletterConsent: true` quando marcada (ADR 0054).",
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "consentText": {
+                    "type": "string"
+                  }
+                },
+                "required": ["name", "consentText"]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": ["id", "name", "description", "fields", "phases", "successMessage", "redirectUrl"],
@@ -169363,6 +171090,383 @@
         },
         "required": ["id", "name", "email", "image"],
         "description": "Membro do workspace, para atribuição no CRM."
+      },
+      "CrmNewsletter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1nl00000ab7d3k1e5xyz"
+          },
+          "name": {
+            "type": "string",
+            "example": "Novidades da Acme"
+          },
+          "slug": {
+            "type": "string",
+            "example": "novidades",
+            "description": "Endereço do arquivo público `/n/<workspace>/<slug>`."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cadenceLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "Mensal"
+          },
+          "fromName": {
+            "type": "string",
+            "example": "Acme"
+          },
+          "fromEmail": {
+            "type": "string",
+            "example": "news@news.acme.com.br"
+          },
+          "replyTo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sendingDomainId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "senderVerified": {
+            "type": "boolean",
+            "description": "Falso enquanto o domínio do remetente não está verificado no workspace: o envio fica bloqueado."
+          },
+          "templateId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "doubleOptIn": {
+            "type": "boolean"
+          },
+          "legalBasis": {
+            "type": "string",
+            "enum": ["CONSENT", "LEGITIMATE_INTEREST", "CONTRACT"]
+          },
+          "archiveEnabled": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ACTIVE", "ARCHIVED"]
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "pending": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "issuesSent": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["active", "pending", "issuesSent"]
+          },
+          "lastIssueSentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archiveUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Arquivo público (nulo com o arquivo desligado ou a newsletter arquivada)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description",
+          "cadenceLabel",
+          "fromName",
+          "fromEmail",
+          "replyTo",
+          "sendingDomainId",
+          "senderVerified",
+          "templateId",
+          "doubleOptIn",
+          "legalBasis",
+          "archiveEnabled",
+          "status",
+          "counts",
+          "lastIssueSentAt",
+          "archiveUrl",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "Newsletter do CRM."
+      },
+      "CrmNewsletterImportResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "reactivated": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Quem tinha saído e voltou para `PENDING` (recebe a confirmação de novo)."
+          },
+          "unchanged": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Já ACTIVE/PENDING."
+          },
+          "rejected": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "email": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": ["row", "email", "reason"]
+            }
+          }
+        },
+        "required": ["created", "reactivated", "unchanged", "rejected"]
+      },
+      "CrmNewsletterSubscriber": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "example": "ana@empresa.com.br"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pessoa do CRM com este e-mail, quando existe."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "ACTIVE", "UNSUBSCRIBED", "BOUNCED", "COMPLAINED"]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["FORM", "SITE", "PUBLIC_PAGE", "API", "IMPORT", "MANUAL"]
+          },
+          "consentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unsubscribedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unsubscribeReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastSentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastOpenedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastClickedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "personId",
+          "status",
+          "source",
+          "consentAt",
+          "confirmedAt",
+          "unsubscribedAt",
+          "unsubscribeReason",
+          "lastSentAt",
+          "lastOpenedAt",
+          "lastClickedAt",
+          "createdAt"
+        ],
+        "description": "Assinante de uma newsletter."
+      },
+      "CrmNewsletterSubscriberPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmNewsletterSubscriber"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "page": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["items", "total", "page", "pageSize"]
       },
       "CrmNote": {
         "type": "object",
@@ -176597,6 +178701,74 @@
         "required": ["workspaceId", "slug", "name", "role", "logoUrl"],
         "description": "Vínculo do usuário com um workspace."
       },
+      "NewsletterPreferences": {
+        "type": "object",
+        "properties": {
+          "workspaceName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "optedOutOfAll": {
+            "type": "boolean"
+          },
+          "newsletters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "cadenceLabel": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "subscribed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["id", "name", "description", "cadenceLabel", "subscribed"]
+            }
+          }
+        },
+        "required": ["workspaceName", "email", "optedOutOfAll", "newsletters"]
+      },
+      "NewsletterUnsubscribeResult": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "newsletterName": {
+            "type": "string"
+          },
+          "alreadyUnsubscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": ["email", "newsletterName", "alreadyUnsubscribed"]
+      },
       "NotificationDelivery": {
         "type": "object",
         "properties": {
@@ -177281,6 +179453,16 @@
           }
         },
         "required": ["userId", "name", "username", "image", "isLead", "createdAt"]
+      },
+      "PublicNewsletterSubscribeResult": {
+        "type": "object",
+        "properties": {
+          "requiresConfirmation": {
+            "type": "boolean",
+            "description": "Verdadeiro: \"confira seu e-mail para confirmar\". A resposta é a mesma qualquer que seja a situação do endereço."
+          }
+        },
+        "required": ["requiresConfirmation"]
       },
       "SdAgent": {
         "type": "object",

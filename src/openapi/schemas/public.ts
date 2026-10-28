@@ -41,6 +41,14 @@ export const CrmFormPublicDTO = dto(
         .string()
         .nullable()
         .meta({ description: 'Para onde levar o visitante após o envio.' }),
+      newsletter: z
+        .object({ name: z.string(), consentText: z.string() })
+        .nullable()
+        .optional()
+        .meta({
+          description:
+            'Presente quando o formulário inscreve numa newsletter: mostrar a caixa opcional de consentimento com `consentText` e enviar `newsletterConsent: true` quando marcada (ADR 0054).',
+        }),
     })
     .meta({ description: 'Formulário publicado, como o visitante o vê.' }),
 )
