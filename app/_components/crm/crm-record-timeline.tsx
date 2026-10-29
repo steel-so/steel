@@ -9,6 +9,7 @@ import {
   MailRemove01Icon,
   PencilEdit02Icon,
   PlusSignIcon,
+  WhatsappIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { PhoneCallList } from '@/app/_components/phone-calls/phone-call-list'
 import { SteelIcon } from '@/components/icon/icon'
@@ -56,6 +57,12 @@ const ACTION_META: Record<CrmActivityDTO['action'], ActionMeta> = {
     icon: Cursor01Icon,
     color: 'text-primary',
     verb: 'clicou em um link',
+  },
+  // nl3-whatsapp-receipts: first read receipt of an issue on WhatsApp.
+  NEWSLETTER_WHATSAPP_READ: {
+    icon: WhatsappIcon,
+    color: 'text-primary',
+    verb: 'leu uma edição no WhatsApp',
   },
 }
 

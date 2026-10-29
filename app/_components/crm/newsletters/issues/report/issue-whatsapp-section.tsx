@@ -18,11 +18,13 @@ import {
   useCrmNewsletterWhatsAppReport,
   type WhatsAppReportQuery,
 } from '@/src/hooks/use-crm-newsletter-engage'
+import type { CrmNewsletterWhatsAppRecipientDTO } from '@/src/schemas/crm-newsletter-engage.schema'
 import { CRM_NEWSLETTER_DELIVERY_STATUSES } from '@/src/schemas/crm-newsletter-issue.schema'
 import {
   DELIVERY_STATUS_LABEL,
   formatCount,
   formatIssueDateTime,
+  formatRate,
 } from '../issue-format'
 import { personHref } from './issue-polls-section'
 
@@ -35,20 +37,35 @@ export const WA_SKIP_REASON_LABEL: Record<string, string> = {
 
 const ALL = 'all'
 
-function Tile({ label, value }: { label: string; value: number }) {
+function Tile({ label, value }: { label: string; value: number | string }) {
   return (
     <div className='flex min-w-0 flex-col rounded-xl border p-3'>
       <span className='truncate text-muted-foreground text-xs'>{label}</span>
       <span className='font-semibold text-xl tabular-nums'>
-        {formatCount(value)}
+        {typeof value === 'number' ? formatCount(value) : value}
       </span>
     </div>
   )
 }
 
 /**
+ * Situation of a number (nl3-whatsapp-receipts): a sent message shows the
+ * furthest provider receipt (read > delivered > sent).
+ */
+export function whatsappRowLabel(row: CrmNewsletterWhatsAppRecipientDTO) {
+  if (row.status === 'SKIPPED' && row.skipReason) {
+    return WA_SKIP_REASON_LABEL[row.skipReason] ?? DELIVERY_STATUS_LABEL.SKIPPED
+  }
+  if (row.status === 'SENT') {
+    if (row.readAt) return 'Lido'
+    if (row.deliveredAt) return 'Entregue'
+  }
+  return DELIVERY_STATUS_LABEL[row.status]
+}
+
+/**
  * "WhatsApp" of the issue report (nl2-engage): totals and the status of
- * each number. Renders nothing when the issue had no WhatsApp version.
+ * each number, with the provider receipts (nl3-whatsapp-receipts). Renders nothing when the issue had no WhatsApp version.
  */
 export function IssueWhatsAppSection({
   workspaceId,
@@ -123,12 +140,22 @@ export function IssueWhatsAppSection({
         </p>
       ) : (
         <>
-          <div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
+          <div className='grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7'>
             <Tile label='Enviados' value={data.stats.sent} />
-            <Tile label='Na fila' value={data.stats.pending} />
+            <Tile label='Entregues' value={data.stats.delivered} />
+            <Tile label='Lidos' value={data.stats.read} />
+            <Tile
+              label='Taxa de leitura'
+              value={formatRate(data.stats.read, data.stats.sent)}
+            />
             <Tile label='Falharam' value={data.stats.failed} />
+            <Tile label='Na fila' value={data.stats.pending} />
             <Tile label='Não enviados' value={data.stats.skipped} />
           </div>
+          <p className='text-muted-foreground text-xs'>
+            Entregues e lidos vêm das confirmações do WhatsApp; quem desativou a
+            confirmação de leitura aparece só como entregue.
+          </p>
           <div className='overflow-x-auto'>
             <Table>
               <TableHeader>
@@ -136,13 +163,15 @@ export function IssueWhatsAppSection({
                   <TableHead>Contato</TableHead>
                   <TableHead>Situação</TableHead>
                   <TableHead>Enviado em</TableHead>
+                  <TableHead>Entregue em</TableHead>
+                  <TableHead>Lido em</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.items.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={3}
+                      colSpan={5}
                       className='py-6 text-center text-muted-foreground text-sm'
                     >
                       Ninguém nesta situação.
@@ -167,21 +196,26 @@ export function IssueWhatsAppSection({
                         </span>
                       </TableCell>
                       <TableCell className='text-sm'>
-                        {row.status === 'SKIPPED' && row.skipReason
-                          ? (WA_SKIP_REASON_LABEL[row.skipReason] ??
-                            DELIVERY_STATUS_LABEL.SKIPPED)
-                          : DELIVERY_STATUS_LABEL[row.status]}
+                        {whatsappRowLabel(row)}
                         {row.status === 'FAILED' && row.error ? (
                           <span
                             className='block max-w-64 truncate text-destructive text-xs'
                             title={row.error}
                           >
-                            {row.error}
+                            {row.failedAt
+                              ? `${row.error} (${formatIssueDateTime(row.failedAt)})`
+                              : row.error}
                           </span>
                         ) : null}
                       </TableCell>
                       <TableCell className='whitespace-nowrap text-muted-foreground text-sm'>
                         {formatIssueDateTime(row.sentAt)}
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap text-muted-foreground text-sm'>
+                        {formatIssueDateTime(row.deliveredAt)}
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap text-muted-foreground text-sm'>
+                        {formatIssueDateTime(row.readAt)}
                       </TableCell>
                     </TableRow>
                   ))
