@@ -172,6 +172,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_GUARDRAIL_HANDOFF',
         'AI_ACTION',
         'SLA_BREACHED',
+        'CHATBOT_HANDOFF',
       ]),
       source: z.enum([
         'AGENT',
@@ -183,6 +184,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_CAMPAIGN',
         'DISTRIBUTION',
         'SLA',
+        'CHATBOT',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',

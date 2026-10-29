@@ -54,6 +54,7 @@ export type WhatsAppConversationEventKindDTO =
   | 'AI_GUARDRAIL_HANDOFF'
   | 'AI_ACTION'
   | 'SLA_BREACHED'
+  | 'CHATBOT_HANDOFF'
 export type WhatsAppConversationEventSourceDTO =
   | 'AGENT'
   | 'CONTACT'
@@ -66,6 +67,7 @@ export type WhatsAppConversationEventSourceDTO =
   | 'AI_ACTION'
   | 'DISTRIBUTION'
   | 'SLA'
+  | 'CHATBOT'
 
 export interface WhatsAppConversationEventDTO {
   id: string
