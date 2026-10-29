@@ -214,6 +214,7 @@ const RUN: SteelAgentRunDTO = {
   status: 'SUCCEEDED',
   triggerType: 'MANUAL',
   triggerPayload: null,
+  rerunOfId: null,
   startedById: 'u1',
   startedAt: '2026-10-08T12:00:00.000Z',
   finishedAt: '2026-10-08T12:00:30.000Z',
