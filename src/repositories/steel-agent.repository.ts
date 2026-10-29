@@ -227,6 +227,8 @@ export const SteelAgentRunRepository = {
     finishedAt?: Date | null
     /** "Testar agente": writes simulated, no approvals. */
     isTest?: boolean
+    /** Run this test re-executes (A4). */
+    rerunOfId?: string | null
   }): Promise<Result<SteelAgentRun>> {
     try {
       const run = await prisma.steelAgentRun.create({ data })

@@ -92,6 +92,7 @@ describe('Steel Agents routes — authentication', () => {
     ['GET', '/a1'],
     ['POST', '/a1/run'],
     ['POST', '/a1/test'],
+    ['POST', '/a1/runs/r1/rerun'],
     ['GET', '/a1/runs'],
     ['POST', '/runs/r1/actions/x/approve'],
     ['POST', '/runs/r1/actions/x/reject'],
@@ -348,6 +349,35 @@ describe('Steel Agents test runs', () => {
       user.cookie,
     )
     expect([403, 404]).toContain(run.status)
+  })
+})
+
+describe('Steel Agents rerun as test', () => {
+  it('should replay a past run as a test run linked to it', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const { agent, run } = await seedPendingRun(workspace.id, user.id)
+
+    const res = await postJson(
+      `${base(workspace.id)}/${agent.id}/runs/${run.id}/rerun`,
+      {},
+      user.cookie,
+    )
+    expect(res.status).toBe(202)
+    const body = (await res.json()).data
+    expect(body.isTest).toBe(true)
+    expect(body.rerunOfId).toBe(run.id)
+    expect(body.triggerType).toBe(run.triggerType)
+  })
+
+  it('should 404 a run that does not exist or belongs to another agent', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const { agent } = await seedPendingRun(workspace.id, user.id)
+    const res = await postJson(
+      `${base(workspace.id)}/${agent.id}/runs/missing/rerun`,
+      {},
+      user.cookie,
+    )
+    expect(res.status).toBe(404)
   })
 })
 

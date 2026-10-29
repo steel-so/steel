@@ -19,7 +19,11 @@ export type SteelAgentRunStatusDTO =
   | 'SUCCEEDED'
   | 'FAILED'
   | 'SKIPPED'
-export type SteelAgentRunStepKindDTO = 'MODEL' | 'TOOL' | 'APPROVAL'
+export type SteelAgentRunStepKindDTO =
+  | 'MODEL'
+  | 'TOOL'
+  | 'APPROVAL'
+  | 'GUARDRAIL'
 export type SteelAgentRunStepStatusDTO =
   | 'OK'
   | 'FAILED'
@@ -117,6 +121,8 @@ export interface SteelAgentRunDTO {
   costUsd: number
   /** "Testar agente": reads real, writes simulated, no approvals. */
   isTest: boolean
+  /** Run this test re-executed ("Reexecutar como teste"), when it is one. */
+  rerunOfId: string | null
   createdAt: string
 }
 

@@ -213,6 +213,26 @@ export function useTestSteelAgent(workspaceId: string, agentId: string) {
   })
 }
 
+/** "Reexecutar como teste": replays the input of a past run, writes simulated. */
+export function useRerunSteelAgentRunAsTest(
+  workspaceId: string,
+  agentId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (runId: string) =>
+      apiFetch<SteelAgentRunDTO>(
+        `${base(workspaceId)}/${agentId}/runs/${runId}/rerun`,
+        { method: 'POST' },
+        'Erro ao reexecutar como teste',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: STEEL_AGENTS_KEY(workspaceId),
+      }),
+  })
+}
+
 export function useDecideSteelAgentAction(workspaceId: string, runId: string) {
   const queryClient = useQueryClient()
   const url = (actionId: string, decision: 'approve' | 'reject') =>

@@ -102,6 +102,34 @@ describe('steel agent mapper', () => {
     expect(model.output).toBeNull()
   })
 
+  it('should hide the retrieved context from viewers who cannot approve', () => {
+    const output = {
+      summary: '1 chamado',
+      context: { excerpt: 'dados', truncated: false },
+    }
+    const step = createFakeSteelAgentRunStep({ output })
+    expect(toSteelAgentRunStepDTO(step, () => null).output).toEqual(output)
+    expect(toSteelAgentRunStepDTO(step, () => null, false).output).toEqual({
+      summary: '1 chamado',
+    })
+    const plain = createFakeSteelAgentRunStep({ output: null })
+    expect(toSteelAgentRunStepDTO(plain, () => null, false).output).toBeNull()
+
+    const detail = createFakeSteelAgentRunDetail({ steps: [step] })
+    const hidden = toSteelAgentRunDetailDTO(detail, {
+      canApprove: false,
+      labelOf: () => null,
+    })
+    expect(hidden.steps[0].output).toEqual({ summary: '1 chamado' })
+  })
+
+  it('should expose the run a test was re-executed from', () => {
+    expect(
+      toSteelAgentRunDTO(createFakeSteelAgentRun({ rerunOfId: 'run0' }))
+        .rerunOfId,
+    ).toBe('run0')
+  })
+
   it('should map the run detail', () => {
     const detail = createFakeSteelAgentRunDetail({
       steps: [createFakeSteelAgentRunStep()],

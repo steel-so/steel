@@ -138,6 +138,19 @@ Pedido do product owner (08/10/2026): "Steel AI modo teste > mostra o que faria 
 - **Steel Agents — "Testar agente"** (`POST /api/workspaces/[id]/agents/[agentId]/test`, 202 `SteelAgentRunDTO` com `isTest: true`): mesmo gate do "Executar agora" (responsável ou admin), funciona com o agente pausado e com o modo agente desligado. Ferramentas `AUTO` e `APPROVAL` são simuladas (passo `SIMULATED` com `output.simulation`); sem aprovação na inbox, sem aviso de falha. Não conta no limite mensal, não mexe em `lastRunAt`/`nextRunAt` e não aparece como `lastRun`. A tela da execução mostra o selo "Teste" e a seção "O que o agente faria".
 - **Migração** `ai_test_mode_simulated_writes`: `AiConversationMode.TEST`, `SteelAgentRunStepStatus.SIMULATED`, `steel_agent_runs.is_test`.
 
+### agent-run-trace — rastreio do "porquê" de cada execução (A4, 29/10/2026)
+
+A linha do tempo da execução (`SteelAgentRunStep`) passou a guardar o suficiente para explicar a decisão, sem nova tabela.
+
+- **Migração** `nov_a4_run_trace_guardrail_rerun`: `SteelAgentRunStepKind.GUARDRAIL` e `steel_agent_runs.rerun_of_id` (id simples, sem FK: o rastro sobrevive à limpeza da origem).
+- **Passos gravados pelo runner** (`src/services/steel-agent-runner.ts`):
+  - `MODEL`: `output.round`, `modelKey`, `text` (raciocínio, até 4.000 caracteres), `toolCalls`, tokens.
+  - `TOOL` de leitura: `output.context = { excerpt, truncated }` — o início (2.000 caracteres) do que a ferramenta devolveu ao modelo. É o "contexto recuperado".
+  - `GUARDRAIL`: `output = { rule, title, detail, ... }`. Regras (`src/lib/steel-agents/trace.ts`): `PROMPT_INJECTION`, `PII_MASKED` (só contagens, nunca os valores), `MODEL_FAILOVER` (todas a partir do `guard.report` da chamada, comparado a cada rodada por `diffGuard`), `AUTO_NEEDS_APPROVAL` (escrita `AUTO` enviada à aprovação por conteúdo de terceiros), `DELETE_NEEDS_APPROVAL`, `ROUND_LIMIT` e `TOOL_NOT_ALLOWED`.
+- **LGPD**: `output.context` pode conter registros que o leitor não abriria no módulo. `toSteelAgentRunStepDTO` o remove quando `canApprove` é falso (só responsável ou quem tem `steel-agents` EDIT recebe). Os passos antigos, sem `context`, continuam válidos.
+- **Reexecutar como teste**: `POST /api/workspaces/[id]/agents/[agentId]/runs/[runId]/rerun` (202 `SteelAgentRunDTO`), `SteelAgentService.rerunAsTest`. Cria uma execução `isTest` com o `triggerType` e o `triggerPayload` da original e `rerunOfId`; mesmo gate do "Testar agente" (responsável ou admin; funciona com o agente pausado; não conta no limite mensal). A original precisa ser do mesmo agente e workspace.
+- **UI**: `app/_components/steel-agents/steel-agent-trace.tsx` (+ `steel-agent-trace-model.ts`, funções puras) dentro de `steel-agent-run-view.tsx`; hook `useRerunSteelAgentRunAsTest`.
+
 ### ai-admin-templates — modelos prontos para admins
 
 Pedido do product owner (08/10/2026): "Steel AI com modelos prontos com foco nos admins". Galeria de **modelos de Steel Agents** e **modelos de skills** para OWNER/ADMIN.

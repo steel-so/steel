@@ -29,6 +29,14 @@ import {
 } from '@/src/lib/steel-agents/prompt'
 import { runInSteelAgentContext } from '@/src/lib/steel-agents/run-context'
 import { effectiveToolMode } from '@/src/lib/steel-agents/tool-mode'
+import {
+  contextExcerpt,
+  diffGuard,
+  GUARDRAIL_RULE_LABEL,
+  type GuardrailRule,
+  guardrailOutput,
+  snapshotGuard,
+} from '@/src/lib/steel-agents/trace'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
 import {
   SteelAgentRunRepository,
@@ -378,6 +386,41 @@ export async function executeSteelAgentRun(
     }
   }
 
+  let guardSeen = snapshotGuard(call.guard?.report)
+  /** A guardrail rule that acted in this run becomes a timeline step. */
+  const guardrail = (
+    rule: GuardrailRule,
+    detail: string,
+    extra?: Record<string, unknown>,
+    toolName?: string,
+  ) =>
+    step({
+      runId: run.id,
+      kind: 'GUARDRAIL',
+      status: 'OK',
+      ...(toolName && { toolName }),
+      output: guardrailOutput(rule, detail, {
+        title: GUARDRAIL_RULE_LABEL[rule],
+        ...extra,
+      }) as Prisma.InputJsonValue,
+    })
+  /** Records what the call guard (PII, injection, failover) did since last look. */
+  const recordGuard = async () => {
+    const diff = diffGuard(guardSeen, call.guard?.report)
+    guardSeen = diff.snapshot
+    for (const event of diff.events) {
+      await step({
+        runId: run.id,
+        kind: 'GUARDRAIL',
+        status: 'OK',
+        output: {
+          ...event,
+          title: GUARDRAIL_RULE_LABEL[event.rule],
+        } as Prisma.InputJsonValue,
+      })
+    }
+  }
+
   /** Runs one tool call; returns the content for the model. */
   const handleCall = async (
     toolCall: AiToolCall,
@@ -391,6 +434,12 @@ export async function executeSteelAgentRun(
       input,
     }
     if (forceText) {
+      await guardrail(
+        'ROUND_LIMIT',
+        `A execução chegou ao limite de ${agent.maxToolRounds} etapas; a ferramenta não foi executada e o agente foi orientado a encerrar.`,
+        { maxToolRounds: agent.maxToolRounds },
+        toolCall.name,
+      )
       await step({
         ...base,
         kind: 'TOOL',
@@ -402,6 +451,12 @@ export async function executeSteelAgentRun(
     const tool = tools.find((t) => t.name === toolCall.name)
     if (!tool) {
       const message = 'Ferramenta não permitida para este agente'
+      await guardrail(
+        'TOOL_NOT_ALLOWED',
+        'O modelo pediu uma ferramenta que não está na lista deste agente; nada foi executado.',
+        undefined,
+        toolCall.name,
+      )
       await step({ ...base, kind: 'TOOL', status: 'FAILED', error: message })
       return errorContent('AI_TOOL_NOT_ALLOWED', message)
     }
@@ -413,7 +468,13 @@ export async function executeSteelAgentRun(
         kind: 'TOOL',
         status: result.ok ? 'OK' : 'FAILED',
         ...(result.ok
-          ? { output: { summary: result.output.summary } }
+          ? {
+              output: {
+                summary: result.output.summary,
+                // The retrieved context the model reasoned over.
+                context: contextExcerpt(result.content),
+              } as Prisma.InputJsonValue,
+            }
           : { error: result.error.message }),
       })
       return result.content
@@ -439,12 +500,26 @@ export async function executeSteelAgentRun(
       return simulated.content
     }
 
-    const mode = effectiveToolMode(
-      tool.kind,
-      modeOf.get(tool.name) ?? 'APPROVAL',
-    )
+    const configuredMode = modeOf.get(tool.name) ?? 'APPROVAL'
+    const mode = effectiveToolMode(tool.kind, configuredMode)
+    if (configuredMode === 'AUTO' && mode === 'APPROVAL') {
+      await guardrail(
+        'DELETE_NEEDS_APPROVAL',
+        'Exclusões nunca rodam sozinhas: a ação foi enviada para aprovação humana.',
+        undefined,
+        tool.name,
+      )
+    }
     // Third-party content tried to instruct the model in this run (ADR
     // 0041): even an AUTO write waits for a human approval in the inbox.
+    if (mode === 'AUTO' && call.guard?.tainted()) {
+      await guardrail(
+        'AUTO_NEEDS_APPROVAL',
+        'Esta ferramenta roda sozinha, mas um conteúdo de terceiros tentou instruir o modelo nesta execução; a ação foi para aprovação humana.',
+        undefined,
+        tool.name,
+      )
+    }
     if (mode === 'AUTO' && !call.guard?.tainted()) {
       const result = await runInSteelAgentContext(
         { agentId: agent.id, runId: run.id },
@@ -572,11 +647,14 @@ export async function executeSteelAgentRun(
       usage.cachedInputTokens =
         (usage.cachedInputTokens ?? 0) + (response.usage.cachedInputTokens ?? 0)
       if (response.text) lastText = response.text
+      await recordGuard()
       await step({
         runId: run.id,
         kind: 'MODEL',
         status: 'OK',
         output: {
+          round: state.round,
+          modelKey: call.model.key,
           text: response.text.slice(0, 4_000),
           toolCalls: response.toolCalls.map((c) => c.name),
           inputTokens: response.usage.inputTokens,

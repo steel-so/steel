@@ -1,4 +1,4 @@
-import type { ModuleKind } from '@prisma/client'
+import type { ModuleKind, Prisma, SteelAgentTriggerType } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
@@ -116,6 +116,8 @@ async function startRun(
   workspaceId: string,
   agentId: string,
   test: boolean,
+  /** A4: re-execute the trigger of this run as a test. */
+  rerunOf?: string,
 ): Promise<Result<SteelAgentRunDTO>> {
   const membership = await assertMember(actorId, workspaceId, {
     resource: RESOURCE,
@@ -132,12 +134,31 @@ async function startRun(
   }
   if (!test && !agent.value.enabled) return err(steelAgentDisabled())
 
+  let source: { triggerType: SteelAgentTriggerType; payload: unknown } | null =
+    null
+  if (rerunOf) {
+    const original = await SteelAgentRunRepository.findDetail(
+      rerunOf,
+      workspaceId,
+    )
+    if (!original.ok) return original
+    if (original.value.agentId !== agentId) return err(steelAgentRunNotFound())
+    source = {
+      triggerType: original.value.triggerType,
+      payload: original.value.triggerPayload,
+    }
+  }
+
   const run = await SteelAgentRunRepository.create({
     workspaceId,
     agentId,
-    triggerType: 'MANUAL',
+    triggerType: source?.triggerType ?? 'MANUAL',
+    ...(source?.payload != null && {
+      triggerPayload: source.payload as Prisma.InputJsonValue,
+    }),
     startedById: actorId,
     ...(test && { isTest: true }),
+    ...(rerunOf && { rerunOfId: rerunOf }),
   })
   if (!run.ok) return run
   const queued = await enqueueSteelAgentRun(run.value.id)
@@ -155,13 +176,18 @@ async function startRun(
     action: 'start',
     actorId,
     targetId: run.value.id,
-    meta: { workspaceId, agentId, ...(test && { mode: 'TEST' }) },
+    meta: {
+      workspaceId,
+      agentId,
+      ...(test && { mode: 'TEST' }),
+      ...(rerunOf && { rerunOfId: rerunOf }),
+    },
   })
   logger.info(
     'steel_agents.run_requested',
     logFields(
       { component: 'SteelAgentService', workspaceId },
-      { agentId, runId: run.value.id, test },
+      { agentId, runId: run.value.id, test, rerunOf: rerunOf ?? null },
     ),
   )
   return ok(toSteelAgentRunDTO(run.value))
@@ -386,6 +412,20 @@ export const SteelAgentService = {
     agentId: string,
   ): Promise<Result<SteelAgentRunDTO>> {
     return startRun(actorId, workspaceId, agentId, true)
+  },
+
+  /**
+   * "Reexecutar como teste" (A4): replays the trigger and input of a past
+   * run as a test run — reads real, writes simulated — so the admin can see
+   * whether an edited prompt or tool list would now decide differently.
+   */
+  async rerunAsTest(
+    actorId: string,
+    workspaceId: string,
+    agentId: string,
+    runId: string,
+  ): Promise<Result<SteelAgentRunDTO>> {
+    return startRun(actorId, workspaceId, agentId, true, runId)
   },
 
   async listRuns(

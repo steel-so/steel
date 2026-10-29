@@ -205,12 +205,34 @@ const routes: RouteConfig[] = [
     errors: [...WORKSPACE_MEMBER_ERRORS, AGENT_NOT_FOUND],
   },
   {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/runs/{runId}/rerun',
+    tags: [TAG],
+    summary: 'Reexecutar como teste',
+    description:
+      'Cria uma execução de teste (`isTest: true`, `rerunOfId` apontando para a original) com o **mesmo gatilho e os mesmos dados de entrada** da execução indicada. Leituras reais, escritas simuladas; não conta no limite mensal. Responsável ou admin; funciona com o agente pausado.',
+    consent: true,
+    params: { agentId: AGENT_PARAM, runId: RUN_PARAM },
+    responses: {
+      202: {
+        description: 'Execução de teste enfileirada.',
+        schema: SteelAgentRunDTO,
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      { code: 'FORBIDDEN', when: 'Nem responsável nem admin' },
+      AGENT_NOT_FOUND,
+      RUN_NOT_FOUND,
+    ],
+  },
+  {
     method: 'get',
     path: '/workspaces/{id}/agents/{agentId}/runs/{runId}',
     tags: [TAG],
     summary: 'Detalhar execução',
     description:
-      'Linha do tempo (modelo, ferramentas, aprovações), ações propostas com prévia e se o usuário pode aprová-las.',
+      'Linha do tempo com o porquê de cada passo (raciocínio do modelo, ferramentas com o contexto recuperado, regras de guardrail acionadas e aprovações), ações propostas com prévia e se o usuário pode aprová-las.',
     params: { agentId: AGENT_PARAM, runId: RUN_PARAM },
     responses: {
       200: { description: 'Execução.', schema: SteelAgentRunDetailDTO },

@@ -86,6 +86,7 @@ export function toSteelAgentRunDTO(run: SteelAgentRun): SteelAgentRunDTO {
     outputTokens: run.outputTokens,
     costUsd: Number(run.costUsd),
     isTest: run.isTest,
+    rerunOfId: run.rerunOfId,
     createdAt: run.createdAt.toISOString(),
   }
 }
@@ -93,7 +94,18 @@ export function toSteelAgentRunDTO(run: SteelAgentRun): SteelAgentRunDTO {
 export function toSteelAgentRunStepDTO(
   step: SteelAgentRunStep,
   labelOf: ToolLabelLookup,
+  /**
+   * The retrieved context (`output.context`, an excerpt of what a READ tool
+   * returned) may hold records the viewer cannot open in the module; only
+   * the owner or an admin gets it.
+   */
+  includeContext = true,
 ): SteelAgentRunStepDTO {
+  let output: unknown = step.output ?? null
+  if (!includeContext && output && typeof output === 'object') {
+    const { context: _context, ...rest } = output as Record<string, unknown>
+    output = rest
+  }
   return {
     id: step.id,
     kind: step.kind,
@@ -101,7 +113,7 @@ export function toSteelAgentRunStepDTO(
     toolLabel: step.toolName ? labelOf(step.toolName) : null,
     pendingActionId: step.pendingActionId,
     input: step.input ?? null,
-    output: step.output ?? null,
+    output,
     status: step.status,
     error: step.error,
     createdAt: step.createdAt.toISOString(),
@@ -119,7 +131,9 @@ export function toSteelAgentRunDetailDTO(
       name: run.agent.name,
       ownerId: run.agent.ownerId,
     },
-    steps: run.steps.map((step) => toSteelAgentRunStepDTO(step, input.labelOf)),
+    steps: run.steps.map((step) =>
+      toSteelAgentRunStepDTO(step, input.labelOf, input.canApprove),
+    ),
     pendingActions: run.pendingActions.map(toAiPendingActionDTO),
     canApprove: input.canApprove,
   }

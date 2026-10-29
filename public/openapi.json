@@ -15643,7 +15643,7 @@
         "tags": ["Steel Agents"],
         "summary": "Detalhar execução",
         "operationId": "getWorkspacesByIdAgentsByAgentIdRunsByRunId",
-        "description": "Linha do tempo (modelo, ferramentas, aprovações), ações propostas com prévia e se o usuário pode aprová-las.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Linha do tempo com o porquê de cada passo (raciocínio do modelo, ferramentas com o contexto recuperado, regras de guardrail acionadas e aprovações), ações propostas com prévia e se o usuário pode aprová-las.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -15698,6 +15698,78 @@
           },
           "404": {
             "$ref": "#/components/responses/404_STEEL_AGENT_RUN_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/{agentId}/runs/{runId}/rerun": {
+      "post": {
+        "tags": ["Steel Agents"],
+        "summary": "Reexecutar como teste",
+        "operationId": "postWorkspacesByIdAgentsByAgentIdRunsByRunIdRerun",
+        "description": "Cria uma execução de teste (`isTest: true`, `rerunOfId` apontando para a original) com o **mesmo gatilho e os mesmos dados de entrada** da execução indicada. Leituras reais, escritas simuladas; não conta no limite mensal. Responsável ou admin; funciona com o agente pausado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do agente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "description": "ID da execução.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Execução de teste enfileirada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelAgentRun"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_STEEL_AGENT_NOT_FOUND_STEEL_AGENT_RUN_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -151788,6 +151860,40 @@
           }
         }
       },
+      "404_STEEL_AGENT_NOT_FOUND_STEEL_AGENT_RUN_NOT_FOUND": {
+        "description": "Não encontrado: `STEEL_AGENT_NOT_FOUND`, `STEEL_AGENT_RUN_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "STEEL_AGENT_NOT_FOUND": {
+                "summary": "STEEL_AGENT_NOT_FOUND — Agente inexistente ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Agente não encontrado",
+                  "error": {
+                    "code": "STEEL_AGENT_NOT_FOUND"
+                  }
+                }
+              },
+              "STEEL_AGENT_RUN_NOT_FOUND": {
+                "summary": "STEEL_AGENT_RUN_NOT_FOUND — Execução inexistente ou de outro agente/workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Execução do agente não encontrada",
+                  "error": {
+                    "code": "STEEL_AGENT_RUN_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_STEEL_AGENT_RUN_NOT_FOUND": {
         "description": "Não encontrado: `STEEL_AGENT_RUN_NOT_FOUND`",
         "content": {
@@ -213484,6 +213590,17 @@
             "type": "boolean",
             "description": "\"Testar agente\": leituras reais, escritas simuladas, sem aprovações."
           },
+          "rerunOfId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execução de origem quando este teste veio de \"Reexecutar como teste\"."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -213506,6 +213623,7 @@
           "outputTokens",
           "costUsd",
           "isTest",
+          "rerunOfId",
           "createdAt"
         ]
       },
@@ -213611,6 +213729,17 @@
             "type": "boolean",
             "description": "\"Testar agente\": leituras reais, escritas simuladas, sem aprovações."
           },
+          "rerunOfId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execução de origem quando este teste veio de \"Reexecutar como teste\"."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -213647,7 +213776,8 @@
                 },
                 "kind": {
                   "type": "string",
-                  "enum": ["MODEL", "TOOL", "APPROVAL"]
+                  "enum": ["MODEL", "TOOL", "APPROVAL", "GUARDRAIL"],
+                  "description": "MODEL: raciocínio da rodada (`output.text`, `round`, tokens). TOOL: chamada com `input` e, nas consultas, `output.context` (trecho recuperado, só para responsável/admin). GUARDRAIL: regra acionada (`output.rule`, `title`, `detail`)."
                 },
                 "toolName": {
                   "anyOf": [
@@ -213741,6 +213871,7 @@
           "outputTokens",
           "costUsd",
           "isTest",
+          "rerunOfId",
           "createdAt",
           "agent",
           "steps",

@@ -1030,3 +1030,166 @@ describe('executeSteelAgentRun() — prompt injection (ADR 0041)', () => {
     )
   })
 })
+
+describe('executeSteelAgentRun() — trace (A4: the "why" of a run)', () => {
+  const stepsOf = (kind: string) =>
+    steps.create.mock.calls
+      .map(([data]) => data)
+      .filter((data) => data.kind === kind)
+
+  it('should record the round, the model and the retrieved context', async () => {
+    setup({
+      rounds: [
+        { text: 'Vou consultar.', toolCalls: [call('sd_list_tickets')] },
+        { text: 'Há 1 chamado.' },
+      ],
+    })
+    readExecute.mockResolvedValue(
+      ok({ data: [{ id: 't1' }], summary: '1 chamado' }),
+    )
+    await executeSteelAgentRun('run1')
+
+    const models = stepsOf('MODEL')
+    expect(models[0].output).toEqual(
+      expect.objectContaining({
+        round: 1,
+        modelKey: 'openai:gpt-4o-mini',
+        text: 'Vou consultar.',
+        toolCalls: ['sd_list_tickets'],
+      }),
+    )
+    expect(models[1].output).toEqual(expect.objectContaining({ round: 2 }))
+    const tool = stepsOf('TOOL')[0]
+    expect(tool.output).toEqual({
+      summary: '1 chamado',
+      context: {
+        excerpt: expect.stringContaining('t1'),
+        truncated: false,
+      },
+    })
+    expect(stepsOf('GUARDRAIL')).toHaveLength(0)
+  })
+
+  it('should cut a long retrieved context', async () => {
+    setup({
+      rounds: [{ toolCalls: [call('sd_list_tickets')] }, { text: 'ok' }],
+    })
+    readExecute.mockResolvedValue(
+      ok({ data: 'x'.repeat(5_000), summary: 'grande' }),
+    )
+    await executeSteelAgentRun('run1')
+    const output = stepsOf('TOOL')[0].output as {
+      context: { excerpt: string; truncated: boolean }
+    }
+    expect(output.context.truncated).toBe(true)
+    expect(output.context.excerpt).toHaveLength(2_000)
+  })
+
+  it('should record the guardrails the call guard applied', async () => {
+    const { fake } = setup({
+      rounds: [{ toolCalls: [call('sd_list_tickets')] }, { text: 'ok' }],
+    })
+    const report = {
+      piiCounts: { EMAIL: 0, CNPJ: 0, CPF: 0, CARD: 0, PHONE: 0 },
+      injection: {
+        detected: false,
+        signals: [] as string[],
+        sources: [] as string[],
+      },
+      failovers: [] as { from: string; to: string; reason: string }[],
+    }
+    usage.prepare.mockResolvedValue(
+      ok({
+        ...prepared(fake.provider),
+        guard: { report, tainted: () => false },
+      }),
+    )
+    // The guard works inside the provider call: mutate the report there.
+    fake.chat.mockImplementationOnce(async () => {
+      report.piiCounts.CPF = 2
+      report.failovers.push({ from: 'a', to: 'b', reason: 'timeout' })
+      return response({ toolCalls: [call('sd_list_tickets')] })
+    })
+    fake.chat.mockImplementationOnce(async () => {
+      report.injection.detected = true
+      report.injection.sources.push('tool_result')
+      report.injection.signals.push('fake_role_tag')
+      return response({ text: 'ok' })
+    })
+    await executeSteelAgentRun('run1')
+
+    const rules = stepsOf('GUARDRAIL').map(
+      (s) => (s.output as { rule: string }).rule,
+    )
+    expect(rules).toEqual(['PII_MASKED', 'MODEL_FAILOVER', 'PROMPT_INJECTION'])
+    expect(stepsOf('GUARDRAIL')[0].output).toEqual(
+      expect.objectContaining({
+        counts: { CPF: 2 },
+        title: 'Dados pessoais mascarados',
+      }),
+    )
+  })
+
+  it('should record why a write went to approval instead of running', async () => {
+    const { fake } = setup({
+      tools: [{ toolName: 'crm_create_task', mode: 'AUTO' }],
+      rounds: [{ toolCalls: [call('crm_create_task')] }, { text: 'ok' }],
+    })
+    usage.prepare.mockResolvedValue(
+      ok({
+        ...prepared(fake.provider),
+        guard: {
+          report: {
+            piiCounts: { EMAIL: 0, CNPJ: 0, CPF: 0, CARD: 0, PHONE: 0 },
+            injection: { detected: true, signals: [], sources: [] },
+            failovers: [],
+          },
+          tainted: () => true,
+        },
+      }),
+    )
+    await executeSteelAgentRun('run1')
+    expect(stepsOf('GUARDRAIL')).toEqual([
+      expect.objectContaining({
+        toolName: 'crm_create_task',
+        output: expect.objectContaining({ rule: 'AUTO_NEEDS_APPROVAL' }),
+      }),
+    ])
+  })
+
+  it('should record the delete rule and a disallowed tool', async () => {
+    setup({
+      tools: [{ toolName: 'crm_delete_task', mode: 'AUTO' }],
+      rounds: [
+        {
+          toolCalls: [
+            call('crm_delete_task'),
+            { id: 'x', name: 'crm_create_task', arguments: {} },
+          ],
+        },
+      ],
+    })
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('waiting')
+    const rules = stepsOf('GUARDRAIL').map(
+      (s) => (s.output as { rule: string }).rule,
+    )
+    expect(rules).toEqual(['DELETE_NEEDS_APPROVAL', 'TOOL_NOT_ALLOWED'])
+  })
+
+  it('should record the round limit rule', async () => {
+    setup({
+      agent: { maxToolRounds: 1 },
+      rounds: [{ toolCalls: [call('sd_list_tickets')] }],
+    })
+    await executeSteelAgentRun('run1')
+    expect(stepsOf('GUARDRAIL')).toEqual([
+      expect.objectContaining({
+        toolName: 'sd_list_tickets',
+        output: expect.objectContaining({
+          rule: 'ROUND_LIMIT',
+          maxToolRounds: 1,
+        }),
+      }),
+    ])
+  })
+})
