@@ -45,21 +45,18 @@ async function peopleById(workspaceId: string, personIds: string[]) {
 }
 
 function toCandidates(
-  rows: {
-    subscriberId: string
-    personId: string | null
-    name: string | null
-  }[],
+  rows: { subscriberId: string; personId: string | null }[],
   people: Map<string, { name: string; phones: string[] }>,
 ): WhatsAppCandidate[] {
   const candidates: WhatsAppCandidate[] = []
+  // Callers only pass rows with a person; a deleted person drops out.
   for (const row of rows) {
-    const person = row.personId ? people.get(row.personId) : undefined
-    if (!row.personId || !person) continue
+    const person = people.get(row.personId as string)
+    if (!person) continue
     candidates.push({
       subscriberId: row.subscriberId,
-      personId: row.personId,
-      name: person.name || row.name || '',
+      personId: row.personId as string,
+      name: person.name,
       phones: person.phones,
     })
   }
@@ -130,7 +127,7 @@ export const CrmNewsletterWhatsAppRepository = {
     try {
       const subscribers = await prisma.crmNewsletterSubscriber.findMany({
         where: { newsletterId, status: 'ACTIVE', personId: { not: null } },
-        select: { id: true, personId: true, name: true },
+        select: { id: true, personId: true },
       })
       const people = await peopleById(
         workspaceId,
@@ -156,7 +153,6 @@ export const CrmNewsletterWhatsAppRepository = {
         where: { issueId, subscriber: { personId: { not: null } } },
         select: {
           subscriberId: true,
-          name: true,
           subscriber: { select: { personId: true } },
         },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -170,7 +166,6 @@ export const CrmNewsletterWhatsAppRepository = {
           recipients.map((row) => ({
             subscriberId: row.subscriberId,
             personId: row.subscriber.personId,
-            name: row.name,
           })),
           people,
         ),
