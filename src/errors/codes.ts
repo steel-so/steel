@@ -668,6 +668,19 @@ export const ERROR_CODES = {
   },
   STEEL_AGENT_INVALID_OWNER: { code: 'STEEL_AGENT_INVALID_OWNER', status: 422 },
   STEEL_AGENT_DISABLED: { code: 'STEEL_AGENT_DISABLED', status: 409 },
+  // Steel Agents: persona simulations (whole-conversation tests).
+  STEEL_AGENT_SIMULATION_NOT_FOUND: {
+    code: 'STEEL_AGENT_SIMULATION_NOT_FOUND',
+    status: 404,
+  },
+  STEEL_AGENT_SIMULATION_IN_PROGRESS: {
+    code: 'STEEL_AGENT_SIMULATION_IN_PROGRESS',
+    status: 409,
+  },
+  STEEL_AGENT_SIMULATION_GENERATION_FAILED: {
+    code: 'STEEL_AGENT_SIMULATION_GENERATION_FAILED',
+    status: 502,
+  },
   STEEL_AGENT_VERSION_NOT_FOUND: {
     code: 'STEEL_AGENT_VERSION_NOT_FOUND',
     status: 404,

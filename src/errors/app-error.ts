@@ -1074,6 +1074,21 @@ export const steelAgentDisabled = (): AppError =>
     'O agente está pausado. Ative-o para executar.',
   )
 
+export const steelAgentSimulationNotFound = (): AppError =>
+  appError('STEEL_AGENT_SIMULATION_NOT_FOUND', 'Simulação não encontrada')
+
+export const steelAgentSimulationInProgress = (): AppError =>
+  appError(
+    'STEEL_AGENT_SIMULATION_IN_PROGRESS',
+    'Já existe uma simulação em andamento para este agente. Aguarde ela terminar.',
+  )
+
+export const steelAgentSimulationGenerationFailed = (): AppError =>
+  appError(
+    'STEEL_AGENT_SIMULATION_GENERATION_FAILED',
+    'Não foi possível gerar os cenários agora. Tente de novo ou escreva os cenários à mão.',
+  )
+
 export const steelAgentVersionNotFound = (): AppError =>
   appError('STEEL_AGENT_VERSION_NOT_FOUND', 'Versão do agente não encontrada')
 

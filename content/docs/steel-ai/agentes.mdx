@@ -172,3 +172,42 @@ reverter também não é às cegas.
   outra seja publicada no meio.
 </Callout>
 
+## Simular conversas com personas
+
+O teste simples roda o agente uma vez. Para ver como ele se sai em **conversas
+inteiras**, use a aba **Simulações** do agente. Uma IA interpreta um cliente
+fictício (a *persona*) e conversa com o agente do começo ao fim; outra IA avalia
+cada conversa.
+
+1. Abra o agente, vá em **Simulações** e clique em **Nova simulação**.
+2. Monte os cenários (de 1 a 10):
+   - comece de um modelo (cliente irritado, leigo, apressado, que pede exceção,
+     que tenta manipular a IA, mudança urgente sem aprovação, indeciso, lead
+     frio), ou clique em **Gerar com IA** para receber sugestões baseadas nas
+     instruções e nas ferramentas do agente, ou crie um cenário em branco;
+   - cada cenário tem **nome**, **canal** (WhatsApp, e-mail, portal ou chat),
+     **persona**, **situação**, **primeira mensagem do cliente**, **critérios
+     de sucesso** (um por linha) e o **máximo de mensagens** do cliente;
+   - defina a **nota mínima** (padrão 70).
+3. Clique em **Simular conversas**. A simulação roda em segundo plano e a página
+   atualiza sozinha.
+
+Em cada conversa, as consultas do agente são reais e **toda alteração é só
+simulada**: nada é gravado, enviado ou mandado para aprovação. Ao final, o
+avaliador dá uma **nota de 0 a 100** e confere cada critério com uma evidência
+tirada da conversa. O cenário **passa** com a nota mínima **e** todos os
+critérios atendidos; do contrário fica **Reprovado**.
+
+A página da simulação mostra o placar, a conversa completa, as ferramentas que
+o agente usou (consultas e alterações simuladas), o resultado de cada critério e
+o resumo do avaliador. Depois de ajustar as instruções, use **Repetir** para
+rodar os mesmos cenários de novo e comparar.
+
+<Callout type='admin'>
+  Quem pode simular é o responsável pelo agente e os administradores. Só uma
+  simulação roda por vez em cada agente, e o agente pode estar pausado. A
+  simulação **consome a cota de IA do workspace** (cada mensagem do cliente, cada
+  resposta do agente e a avaliação são chamadas ao modelo); a estimativa aparece
+  no rodapé do painel. Se a cota acabar no meio, os cenários restantes são
+  marcados como falhos.
+</Callout>

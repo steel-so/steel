@@ -47,6 +47,7 @@ import {
   TEST_RUN_LABEL,
   TRIGGER_LABEL,
 } from './steel-agent-labels'
+import { SteelAgentSimulations } from './steel-agent-simulations'
 import { SteelAgentVersions } from './steel-agent-versions'
 
 export const TEST_AGENT_HINT =
@@ -255,6 +256,7 @@ export function SteelAgentDetail({
             <TabsList>
               <TabsTrigger value='runs'>Execuções</TabsTrigger>
               <TabsTrigger value='versions'>Versões</TabsTrigger>
+              <TabsTrigger value='simulations'>Simulações</TabsTrigger>
               <TabsTrigger value='config'>Configuração</TabsTrigger>
             </TabsList>
             <TabsContent value='runs' className='pt-3'>
@@ -305,6 +307,15 @@ export function SteelAgentDetail({
                 workspaceId={workspaceId}
                 agentId={agentId}
                 timezone={data.timezone}
+              />
+            </TabsContent>
+            <TabsContent value='simulations' className='pt-3'>
+              <SteelAgentSimulations
+                workspaceId={workspaceId}
+                slug={slug}
+                agentId={agentId}
+                timezone={data.timezone}
+                canSimulate={canRun}
               />
             </TabsContent>
             <TabsContent value='config' className='pt-3'>

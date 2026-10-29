@@ -8238,6 +8238,8 @@ model SteelAgent {
   assignments SteelAgentAssignment[]
   versions  SteelAgentVersion[]
 
+  simulations SteelAgentSimulation[]
+
   @@index([workspaceId])
   @@index([triggerType, enabled])
   @@map("steel_agents")
@@ -11575,4 +11577,105 @@ model SdStatusSubscriber {
   @@unique([pageId, channel, address])
   @@index([workspaceId])
   @@map("sd_status_subscribers")
+}
+
+// nov: a3-persona-simulation
+
+enum SteelAgentSimulationStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  /// Not run: agent without owner, AI off, no owner, quota or model unavailable.
+  SKIPPED
+}
+
+enum SteelAgentSimulationCaseStatus {
+  QUEUED
+  RUNNING
+  /// Conversation ran and the judge scored it.
+  DONE
+  FAILED
+}
+
+enum SteelAgentSimulationVerdict {
+  PASS
+  FAIL
+}
+
+/// Whole-conversation simulation of an agent: every case is a scenario where
+/// an AI plays a customer persona against the agent (reads real, writes
+/// simulated) and an AI judge scores the transcript against the criteria.
+model SteelAgentSimulation {
+  id           String                     @id @default(cuid())
+  workspaceId  String                     @map("workspace_id")
+  agentId      String                     @map("agent_id")
+  name         String
+  status       SteelAgentSimulationStatus @default(QUEUED)
+  startedById  String?                    @map("started_by_id")
+  /// Minimum judge score (0-100) for a case to pass.
+  passScore    Int                        @default(70) @map("pass_score")
+  totalCases   Int                        @default(0) @map("total_cases")
+  passedCases  Int                        @default(0) @map("passed_cases")
+  failedCases  Int                        @default(0) @map("failed_cases")
+  /// Average score of the judged cases (null until one is judged).
+  avgScore     Int?                       @map("avg_score")
+  inputTokens  Int                        @default(0) @map("input_tokens")
+  outputTokens Int                        @default(0) @map("output_tokens")
+  costUsd      Decimal                    @default(0) @map("cost_usd") @db.Decimal(14, 6)
+  modelKey     String?                    @map("model_key")
+  error        String?                    @db.Text
+  startedAt    DateTime?                  @map("started_at")
+  finishedAt   DateTime?                  @map("finished_at")
+  createdAt    DateTime                   @default(now()) @map("created_at")
+  updatedAt    DateTime                   @updatedAt @map("updated_at")
+
+  agent SteelAgent                 @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  cases SteelAgentSimulationCase[]
+
+  @@index([agentId, createdAt])
+  @@index([workspaceId, status])
+  @@map("steel_agent_simulations")
+}
+
+model SteelAgentSimulationCase {
+  id              String                         @id @default(cuid())
+  simulationId    String                         @map("simulation_id")
+  position        Int
+  label           String
+  /// Preset key of the persona (null = custom persona).
+  personaKey      String?                        @map("persona_key")
+  /// Who the simulated customer is and how they behave.
+  persona         String                         @db.Text
+  /// The situation and what the customer wants.
+  scenario        String                         @db.Text
+  channel         String                         @default("WHATSAPP")
+  openingMessage  String                         @map("opening_message") @db.Text
+  /// string[]: what a good conversation must do.
+  criteria        Json
+  maxTurns        Int                            @default(6) @map("max_turns")
+  status          SteelAgentSimulationCaseStatus @default(QUEUED)
+  verdict         SteelAgentSimulationVerdict?
+  score           Int?
+  /// [{ role: 'customer' | 'agent', text }]
+  transcript      Json?
+  /// [{ turn, toolName, kind, status, title?, error? }]
+  toolEvents      Json?                          @map("tool_events")
+  /// [{ criterion, met, evidence }]
+  criteriaResults Json?                          @map("criteria_results")
+  judgeSummary    String?                        @map("judge_summary") @db.Text
+  endReason       String?                        @map("end_reason")
+  error           String?                        @db.Text
+  inputTokens     Int                            @default(0) @map("input_tokens")
+  outputTokens    Int                            @default(0) @map("output_tokens")
+  costUsd         Decimal                        @default(0) @map("cost_usd") @db.Decimal(14, 6)
+  startedAt       DateTime?                      @map("started_at")
+  finishedAt      DateTime?                      @map("finished_at")
+  createdAt       DateTime                       @default(now()) @map("created_at")
+  updatedAt       DateTime                       @updatedAt @map("updated_at")
+
+  simulation SteelAgentSimulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  @@index([simulationId, position])
+  @@map("steel_agent_simulation_cases")
 }
