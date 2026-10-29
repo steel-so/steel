@@ -38,11 +38,22 @@ func copyFile(from, to string) error {
 	return os.WriteFile(to, raw, 0o755)
 }
 
-func runCmd(name string, args ...string) error {
-	if output, err := exec.Command(name, args...).CombinedOutput(); err != nil {
+func report(name string, args []string, output []byte, err error) error {
+	if err != nil {
 		return fmt.Errorf("%s %v: %w: %s", name, args, err, output)
 	}
 	return nil
+}
+
+// runSchtasks and runIcacls spawn fixed executables; only the arguments vary.
+func runSchtasks(args ...string) error {
+	output, err := exec.Command("schtasks", args...).CombinedOutput()
+	return report("schtasks", args, output, err)
+}
+
+func runIcacls(args ...string) error {
+	output, err := exec.Command("icacls", args...).CombinedOutput()
+	return report("icacls", args, output, err)
 }
 
 // installService copies the binary, writes the config (restricted to SYSTEM
@@ -70,7 +81,7 @@ func installService(cfg *Config, configPath string, out io.Writer) error {
 		return fmt.Errorf("write config: %w", err)
 	}
 	// Best effort: drop inherited access so ordinary users cannot read the token.
-	_ = runCmd("icacls", configPath, "/inheritance:r", "/grant:r", "SYSTEM:F", "Administrators:F")
+	_ = runIcacls(configPath, "/inheritance:r", "/grant:r", "SYSTEM:F", "Administrators:F")
 
 	interval, err := cfg.IntervalDuration()
 	if err != nil {
@@ -81,11 +92,11 @@ func installService(cfg *Config, configPath string, out io.Writer) error {
 		hours = 1
 	}
 	command := fmt.Sprintf(`"%s" once --config "%s"`, target, configPath)
-	if err := runCmd("schtasks", "/Create", "/TN", windowsTaskName, "/TR", command,
+	if err := runSchtasks("/Create", "/TN", windowsTaskName, "/TR", command,
 		"/SC", "HOURLY", "/MO", strconv.Itoa(hours), "/RU", "SYSTEM", "/RL", "HIGHEST", "/F"); err != nil {
 		return err
 	}
-	if err := runCmd("schtasks", "/Run", "/TN", windowsTaskName); err != nil {
+	if err := runSchtasks("/Run", "/TN", windowsTaskName); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "installed: scheduled task %q runs every %d h (first report started)\n", windowsTaskName, hours)
@@ -93,7 +104,7 @@ func installService(cfg *Config, configPath string, out io.Writer) error {
 }
 
 func uninstallService(out io.Writer) error {
-	_ = runCmd("schtasks", "/Delete", "/TN", windowsTaskName, "/F")
+	_ = runSchtasks("/Delete", "/TN", windowsTaskName, "/F")
 	for _, path := range []string{installDir(), programDataDir()} {
 		if err := os.RemoveAll(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err

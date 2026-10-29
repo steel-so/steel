@@ -5,12 +5,13 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"os"
 	"os/signal"
@@ -200,7 +201,7 @@ func runLoop(ctx context.Context, cfg *Config, collectFn collector, client *http
 	if err != nil {
 		return err
 	}
-	if err := sleep(ctx, time.Duration(rand.Int63n(int64(2*time.Minute)))); err != nil {
+	if err := sleep(ctx, startJitter()); err != nil {
 		return err
 	}
 	for {
@@ -226,4 +227,13 @@ func sleep(ctx context.Context, d time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+// startJitter is a random delay of up to two minutes.
+func startJitter() time.Duration {
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(2*time.Minute)))
+	if err != nil {
+		return 0
+	}
+	return time.Duration(n.Int64())
 }
