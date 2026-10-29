@@ -4,6 +4,10 @@ import {
   StartWhatsAppConversationSchema,
 } from '@/src/schemas/whatsapp-conversation.schema'
 import {
+  AdjustWhatsAppCopilotToneSchema,
+  SuggestWhatsAppCopilotReplySchema,
+} from '@/src/schemas/whatsapp-copilot.schema'
+import {
   ListWhatsAppMessagesSchema,
   ReactToWhatsAppMessageSchema,
   SendWhatsAppContactMessageSchema,
@@ -32,6 +36,21 @@ import {
 
 const TAG = 'Comunicação · Conversas' as const
 const BASE = '/workspaces/{id}/whatsapp/conversations/{conversationId}'
+const COPILOT_ERRORS: ErrorEntry[] = [
+  ...permErrors('conversations', 'CREATE'),
+  'WHATSAPP_CONVERSATION_NOT_FOUND',
+  {
+    code: 'WHATSAPP_COPILOT_NO_CONTEXT',
+    when: 'A conversa ainda não tem mensagens com conteúdo para o copiloto usar',
+  },
+  {
+    code: 'WHATSAPP_COPILOT_FAILED',
+    when: 'O provedor de IA falhou ou devolveu uma resposta inutilizável',
+  },
+  'AI_QUOTA_EXCEEDED',
+  'AI_PROVIDER_UNAVAILABLE',
+]
+
 const PARAMS = { conversationId: CONVERSATION_PARAM }
 const MESSAGE_PARAM = 'Id da mensagem (na conversa).'
 
@@ -633,5 +652,60 @@ export const conversationRoutes: RouteConfig[] = [
       ...permErrors('conversations', 'VIEW'),
       'WHATSAPP_CONVERSATION_NOT_FOUND',
     ],
+  },
+  /* ------------------------------ copiloto (Z7) ------------------------------ */
+  {
+    method: 'post',
+    path: `${BASE}/copilot/suggest`,
+    tags: [TAG],
+    summary: 'Copiloto: sugerir resposta',
+    description: `Lê as últimas mensagens da conversa e devolve uma resposta pronta para o atendente revisar. Nada é enviado nem salvo. \`hint\` é uma orientação opcional ("ofereça reagendar"). Consome a cota de IA do workspace (recurso de resposta do WhatsApp). Auditado. ${perm('conversations', 'CREATE')}`,
+    params: PARAMS,
+    body: {
+      schema: SuggestWhatsAppCopilotReplySchema,
+      required: false,
+      description: 'Opcional; `hint` vazio é ignorado.',
+    },
+    responses: {
+      200: {
+        description: 'Texto sugerido.',
+        schema: z.object({ text: z.string() }),
+      },
+    },
+    errors: COPILOT_ERRORS,
+  },
+  {
+    method: 'post',
+    path: `${BASE}/copilot/summary`,
+    tags: [TAG],
+    summary: 'Copiloto: resumir a conversa',
+    description: `Resume a conversa para quem a está assumindo (por exemplo, numa transferência): o assunto, o que já foi feito e as pendências. Sem corpo; nada é salvo. Consome a cota de IA. Auditado. ${perm('conversations', 'CREATE')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Resumo e pendências.',
+        schema: z.object({
+          summary: z.string(),
+          pending: z.array(z.string()),
+        }),
+      },
+    },
+    errors: COPILOT_ERRORS,
+  },
+  {
+    method: 'post',
+    path: `${BASE}/copilot/tone`,
+    tags: [TAG],
+    summary: 'Copiloto: ajustar o tom',
+    description: `Reescreve o rascunho do atendente no tom pedido (\`FRIENDLY\`, \`FORMAL\`, \`DIRECT\`, \`EMPATHETIC\` ou \`FIX_ONLY\`, que só corrige o texto), preservando fatos, números e links. Nada é enviado. Consome a cota de IA. Auditado. ${perm('conversations', 'CREATE')}`,
+    params: PARAMS,
+    body: AdjustWhatsAppCopilotToneSchema,
+    responses: {
+      200: {
+        description: 'Texto reescrito.',
+        schema: z.object({ text: z.string() }),
+      },
+    },
+    errors: COPILOT_ERRORS,
   },
 ]

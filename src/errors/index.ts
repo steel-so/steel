@@ -365,6 +365,8 @@ export {
   whatsappConversationLimitReached,
   whatsappConversationNotClosed,
   whatsappConversationNotFound,
+  whatsappCopilotFailed,
+  whatsappCopilotNoContext,
   whatsappGroupMessageNotFound,
   whatsappGroupNotFound,
   whatsappGroupProviderUnsupported,

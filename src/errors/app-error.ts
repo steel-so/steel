@@ -1995,3 +1995,16 @@ export const surveyInvalidScore = (
 export const surveyNoRecipient = (
   message = 'Sem WhatsApp ou e-mail para enviar a pesquisa',
 ): AppError => appError('SURVEY_NO_RECIPIENT', message)
+
+export const whatsappCopilotFailed = (message?: string): AppError =>
+  appError(
+    'WHATSAPP_COPILOT_FAILED',
+    message ??
+      'O copiloto não conseguiu responder agora — tente de novo em instantes',
+  )
+
+export const whatsappCopilotNoContext = (message?: string): AppError =>
+  appError(
+    'WHATSAPP_COPILOT_NO_CONTEXT',
+    message ?? 'A conversa ainda não tem mensagens para o copiloto usar',
+  )
