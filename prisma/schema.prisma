@@ -219,6 +219,9 @@ model User {
   sdIncidentClustersClosed  SdIncidentCluster[]        @relation("SdIncidentClusterDismissedBy")
   sdIntegrationsCreated     SdIntegration[]            @relation("SdIntegrationCreatedBy")
   sdIntegrationLinksCreated SdIntegrationLink[]        @relation("SdIntegrationLinkCreatedBy")
+  sdSwarmsStarted           SdSwarm[]                  @relation("SdSwarmStartedBy")
+  sdSwarmsClosed            SdSwarm[]                  @relation("SdSwarmClosedBy")
+  sdSwarmMemberships        SdSwarmMember[]            @relation("SdSwarmMemberUser")
   workspaceExportsRequested WorkspaceExport[]          @relation("WorkspaceExportRequestedBy")
   integrationsCreated       WorkspaceIntegration[]     @relation("WorkspaceIntegrationCreatedBy")
   sitesCreated              Site[]                     @relation("SiteCreatedBy")
@@ -6647,6 +6650,7 @@ model SdTicket {
   recurringRuns          SdRecurringTicketRun[]
   riskPrediction         SdTicketRiskPrediction?
   integrationLinks       SdIntegrationLink[]
+  swarms                 SdSwarm[]
   kbArticlesOriginated   SdKbArticle[]           @relation("SdKbArticleSourceTicket")
   phoneCalls             WhatsAppPhoneCall[]
 
@@ -10841,6 +10845,66 @@ model CrmCnpjEnrichmentRun {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status])
   @@map("crm_cnpj_enrichment_runs")
+// nov: s6-swarming
+
+enum SdSwarmStatus {
+  OPEN
+  CLOSED
+}
+
+enum SdSwarmMemberStatus {
+  INVITED
+  JOINED
+  DECLINED
+}
+
+/// Swarming: specialists called straight into a ticket, bypassing the N1/N2/N3
+/// escalation levels. Optionally mirrored by a temporary private Slack channel
+/// that is archived when the swarm closes.
+model SdSwarm {
+  id               String        @id @default(cuid())
+  workspaceId      String        @map("workspace_id")
+  ticketId         String        @map("ticket_id")
+  status           SdSwarmStatus @default(OPEN)
+  /// Why the specialists are needed (shown to the invitees).
+  reason           String
+  /// What was decided when the swarm closed.
+  outcome          String?
+  /// Temporary Slack channel (private), when the starter asked for one.
+  slackChannelId   String?       @map("slack_channel_id")
+  slackChannelName String?       @map("slack_channel_name")
+  /// Why the channel was not created (kept so the UI can explain it).
+  slackError       String?       @map("slack_error")
+  slackArchivedAt  DateTime?     @map("slack_archived_at")
+  startedById      String?       @map("started_by_id")
+  closedById       String?       @map("closed_by_id")
+  startedAt        DateTime      @default(now()) @map("started_at")
+  closedAt         DateTime?     @map("closed_at")
+
+  ticket    SdTicket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  startedBy User?           @relation("SdSwarmStartedBy", fields: [startedById], references: [id], onDelete: SetNull)
+  closedBy  User?           @relation("SdSwarmClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  members   SdSwarmMember[]
+
+  @@index([ticketId, status])
+  @@index([workspaceId, status])
+  @@map("sd_swarms")
+}
+
+model SdSwarmMember {
+  swarmId     String              @map("swarm_id")
+  userId      String              @map("user_id")
+  status      SdSwarmMemberStatus @default(INVITED)
+  invitedById String?             @map("invited_by_id")
+  invitedAt   DateTime            @default(now()) @map("invited_at")
+  respondedAt DateTime?           @map("responded_at")
+
+  swarm SdSwarm @relation(fields: [swarmId], references: [id], onDelete: Cascade)
+  user  User    @relation("SdSwarmMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([swarmId, userId])
+  @@index([userId, status])
+  @@map("sd_swarm_members")
 }
 
 // nov: a1-agent-triggers
