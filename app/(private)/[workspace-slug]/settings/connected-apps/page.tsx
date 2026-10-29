@@ -6,13 +6,16 @@ import {
   HeaderBreadcrumbList,
 } from '@/app/_components/header/breadcrumb-page'
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
+import { McpConnectGuide } from '@/app/_components/settings/connected-apps/mcp-connect-guide'
 import { WorkspaceApiTokensPanel } from '@/app/_components/settings/connected-apps/workspace-api-tokens-panel'
 import { WorkspaceConnectedAppsPanel } from '@/app/_components/settings/connected-apps/workspace-connected-apps-panel'
 import { SteelIcon } from '@/components/icon/icon'
 import { H3 } from '@/components/typography/heading/h3'
 import { H4 } from '@/components/typography/heading/h4'
 import { Muted } from '@/components/typography/text/muted'
+import { BETTER_AUTH_URL } from '@/lib/env/server'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { mcpServerUrl } from '@/src/lib/mcp/connect-guides'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
@@ -58,11 +61,16 @@ export default async function SettingsConnectedAppsPage({
         <div>
           <H3>Apps conectados</H3>
           <Muted>
-            Apps de IA (Claude, ChatGPT, Cursor…) que os membros autorizaram a
-            acessar este workspace pelo MCP. Revogar corta o acesso na próxima
-            chamada do app.
+            Conecte o Claude, o ChatGPT ou o Gemini ao Steel e veja os apps de
+            IA (Claude, ChatGPT, Cursor…) que os membros autorizaram a acessar
+            este workspace pelo MCP. Revogar corta o acesso na próxima chamada
+            do app.
           </Muted>
         </div>
+        <McpConnectGuide
+          workspaceId={membership.value.workspaceId}
+          mcpUrl={mcpServerUrl(BETTER_AUTH_URL)}
+        />
         {canManage ? (
           <>
             <WorkspaceConnectedAppsPanel
