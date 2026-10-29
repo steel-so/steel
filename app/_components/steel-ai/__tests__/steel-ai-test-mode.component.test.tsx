@@ -224,6 +224,7 @@ const RUN: SteelAgentRunDTO = {
   outputTokens: 50,
   costUsd: 0.01,
   isTest: true,
+  rerunOfId: null,
   createdAt: '2026-10-08T12:00:00.000Z',
 }
 
