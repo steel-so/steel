@@ -1,6 +1,7 @@
 import z from 'zod'
 import { EmailCanvasDocumentSchema } from './crm-email-builder.schema'
 import { CrmNewsletterSlugSchema } from './crm-newsletter.schema'
+import type { CrmNewsletterAbTestDTO } from './crm-newsletter-ab.schema'
 
 /**
  * Newsletter issues (editions) — ADR 0054. Content is a Steel Canvas
@@ -141,6 +142,10 @@ export type CrmNewsletterIssueDTO = {
   webUrl: string | null
   createdAt: string
   updatedAt: string
+  /** Subject A/B test (nl2-digest-ai); null = none. */
+  abTest?: CrmNewsletterAbTestDTO | null
+  /** Digest that created the issue (nl2-digest-ai). */
+  digestId?: string | null
 }
 
 export type CrmNewsletterIssueLinkStatDTO = {
@@ -229,6 +234,8 @@ export type CrmNewsletterPreflightCheckDTO = {
     | 'CONTENT_INVALID'
     | 'NO_SUBSCRIBERS'
     | 'LIMIT_REACHED'
+    /** Subject A/B test below its minimum audience (nl2-digest-ai). */
+    | 'AB_AUDIENCE_TOO_SMALL'
   message: string
 }
 

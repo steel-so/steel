@@ -1857,3 +1857,21 @@ export const crmNewsletterNoSubscribers = (): AppError =>
 export const crmNewsletterLimitReached = (
   message = 'O limite mensal de e-mails de newsletter do workspace foi atingido',
 ): AppError => appError('CRM_NEWSLETTER_LIMIT_REACHED', message)
+
+// ─── newsletter2 · nl2-digest-ai ────────────────────────────────────────────
+
+export const crmNewsletterDigestSourceInvalid = (message: string): AppError =>
+  appError('CRM_NEWSLETTER_DIGEST_SOURCE_INVALID', message)
+
+export const crmNewsletterAiFailed = (message?: string): AppError =>
+  appError(
+    'CRM_NEWSLETTER_AI_FAILED',
+    message ??
+      'A IA não conseguiu responder agora — tente de novo em instantes',
+  )
+
+export const crmNewsletterAbAudienceTooSmall = (minimum: number): AppError =>
+  appError(
+    'CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL',
+    `O teste A/B de assunto precisa de pelo menos ${minimum} assinantes ativos`,
+  )

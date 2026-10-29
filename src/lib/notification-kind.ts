@@ -329,6 +329,18 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'hourglass',
     color: 'rose',
   },
+  CRM_NEWSLETTER_DIGEST_READY: {
+    module: 'CRM',
+    label: 'Resumo automático da newsletter pronto para revisar',
+    icon: 'mail',
+    color: 'violet',
+  },
+  CRM_NEWSLETTER_DIGEST_SKIPPED: {
+    module: 'CRM',
+    label: 'Resumo automático da newsletter não enviado',
+    icon: 'mail',
+    color: 'amber',
+  },
   MEMBER_JOINED: {
     module: 'OTHER',
     label: 'Novo membro',

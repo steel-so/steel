@@ -250,6 +250,8 @@ export type AuditEntity =
   // CRM newsletter issues and the monthly quota override (ADR 0054)
   | 'crm_newsletter_issue'
   | 'crm_newsletter_settings'
+  // newsletter2 nl2-digest-ai: automatic digest settings
+  | 'crm_newsletter_digest'
 
 export type AuditAction =
   | 'create'

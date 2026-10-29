@@ -71,6 +71,13 @@ export function createFakeNewsletterIssue(
     createdAt: NOW,
     updatedAt: NOW,
     deletedAt: null,
+    abSubjectB: null,
+    abTestPercent: null,
+    abMetric: null,
+    abWaitHours: null,
+    abWinner: null,
+    abDecidedAt: null,
+    digestId: null,
     ...overrides,
   }
 }
@@ -98,6 +105,8 @@ export function createFakeNewsletterRecipient(
     unsubscribedAt: null,
     createdAt: NOW,
     updatedAt: NOW,
+    abVariant: null,
+    abHeld: false,
     ...overrides,
   }
 }
