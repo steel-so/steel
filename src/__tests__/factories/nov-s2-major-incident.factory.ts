@@ -121,7 +121,7 @@ export function createFakeSdStatusSubscriber(
     channel: 'EMAIL',
     address: 'ana@acme.com.br',
     name: null,
-    token: 'tok_0123456789abcdef0123456789',
+    token: createId(),
     confirmedAt: fixed(),
     addedById: null,
     createdAt: fixed(),

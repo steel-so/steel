@@ -254,11 +254,14 @@ export const SdStatusPageService = {
     if (!existing.ok) return existing
     if (existing.value) {
       // Already there: an agent adding it confirms a pending self-signup.
-      const row = existing.value.confirmedAt
-        ? existing.value
-        : await SdStatusPageRepository.confirmSubscriber(existing.value.id)
-      if (!('id' in row)) return row
-      return ok(toSdStatusSubscriberDTO(row))
+      if (existing.value.confirmedAt) {
+        return ok(toSdStatusSubscriberDTO(existing.value))
+      }
+      const confirmed = await SdStatusPageRepository.confirmSubscriber(
+        existing.value.id,
+      )
+      if (!confirmed.ok) return confirmed
+      return ok(toSdStatusSubscriberDTO(confirmed.value))
     }
     const created = await SdStatusPageRepository.createSubscriber({
       workspaceId,

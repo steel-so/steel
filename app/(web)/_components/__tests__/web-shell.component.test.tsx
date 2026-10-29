@@ -183,6 +183,8 @@ const OUT = [
   '(public)/p/',
   '(public)/w/',
   '(public)/servicedesk/approval/',
+  // Customer status page of a major incident (token-less public link).
+  '(public)/status-page/',
   '(public)/suporte/',
   // Satisfaction survey link from the e-mail (token, no shell).
   '(public)/pesquisa/',
