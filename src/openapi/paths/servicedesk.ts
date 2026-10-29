@@ -10,6 +10,7 @@ import { sdIntegrationRoutes } from './servicedesk/integrations'
 import { sdInventoryRoutes } from './servicedesk/inventory'
 import { sdKcsRoutes } from './servicedesk/kcs'
 import { sdMailRoutes } from './servicedesk/mail'
+import { sdMajorIncidentRoutes } from './servicedesk/major-incident'
 import { sdMonitoringRoutes } from './servicedesk/monitoring'
 import { sdNotificationRoutes } from './servicedesk/notifications'
 import { sdOnCallRoutes } from './servicedesk/oncall'
@@ -46,6 +47,7 @@ const routes: RouteConfig[] = [
   ...sdAiComparisonRoutes,
   ...sdIntegrationRoutes,
   ...sdSwarmRoutes,
+  ...sdMajorIncidentRoutes,
   ...sdInventoryRoutes,
 ]
 
