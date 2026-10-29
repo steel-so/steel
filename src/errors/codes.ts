@@ -1294,6 +1294,16 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_COPILOT_NO_CONTEXT',
     status: 422,
   },
+  // s6-swarming: specialists called straight into a ticket.
+  SD_SWARM_NOT_FOUND: { code: 'SD_SWARM_NOT_FOUND', status: 404 },
+  // The ticket already has an open swarm (close it before starting another).
+  SD_SWARM_ALREADY_OPEN: { code: 'SD_SWARM_ALREADY_OPEN', status: 409 },
+  // The swarm is closed; it accepts no more invitations or answers.
+  SD_SWARM_CLOSED: { code: 'SD_SWARM_CLOSED', status: 409 },
+  // Only the invited specialist answers an invitation.
+  SD_SWARM_NOT_INVITED: { code: 'SD_SWARM_NOT_INVITED', status: 403 },
+  // Too many specialists in one swarm.
+  SD_SWARM_LIMIT_REACHED: { code: 'SD_SWARM_LIMIT_REACHED', status: 422 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

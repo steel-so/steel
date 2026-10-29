@@ -1,3 +1,4 @@
+// nov: s6-swarming
 export {
   aiInsightNotFound,
   aiModelNotEnabled,
@@ -293,6 +294,11 @@ export {
   sdRiskPredictionNotFound,
   sdSignatureNotFound,
   sdSignatureRequired,
+  sdSwarmAlreadyOpen,
+  sdSwarmClosed,
+  sdSwarmLimitReached,
+  sdSwarmNotFound,
+  sdSwarmNotInvited,
   sdTaskNotFound,
   sdTicketClosed,
   sdTicketForbidden,

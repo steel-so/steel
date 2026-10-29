@@ -16,6 +16,7 @@ import {
   Route01Icon,
   SignatureIcon,
   Task01Icon,
+  UserGroupIcon,
   WhatsappIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import type { ComponentType } from 'react'
@@ -40,6 +41,7 @@ import { SdTicketHoursTab } from './tabs/hours-tab'
 import { SdTicketKnowledgeTab } from './tabs/knowledge-tab'
 import { SdTicketPartsTab } from './tabs/parts-tab'
 import { SdTicketSignatureTab } from './tabs/signature-tab'
+import { SdTicketSwarmTab } from './tabs/swarm-tab'
 import { SdTicketTasksTab } from './tabs/tasks-tab'
 import { SdTicketTraceabilityTab } from './tabs/traceability-tab'
 import type { SdTicketTabProps } from './tabs/types'
@@ -145,6 +147,13 @@ export const SD_TICKET_TABS: SdTicketTabDef[] = [
     label: 'Escalonamento',
     icon: ArrowUpDoubleIcon,
     component: SdTicketEscalationTab,
+    agentOnly: true,
+  },
+  {
+    id: 'swarm',
+    label: 'Swarming',
+    icon: UserGroupIcon,
+    component: SdTicketSwarmTab,
     agentOnly: true,
   },
   {

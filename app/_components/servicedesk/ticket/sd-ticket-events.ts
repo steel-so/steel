@@ -71,6 +71,14 @@ const SLA_TITLES: Record<string, string> = {
   'sla.resolution_breached': 'SLA de resolução violado',
 }
 
+const SWARM_TITLES: Record<string, string> = {
+  'swarm.started': 'chamou especialistas (swarming)',
+  'swarm.invited': 'convidou mais especialistas',
+  'swarm.joined': 'entrou no swarming',
+  'swarm.declined': 'recusou o swarming',
+  'swarm.closed': 'encerrou o swarming',
+}
+
 const ACTIVITY_TITLES: Record<string, string> = {
   'message.posted': 'publicou uma mensagem',
   'message.created': 'publicou uma mensagem',
@@ -164,6 +172,14 @@ export function sdDescribeEvent(event: SdTicketEventDTO): SdEventDescription {
           ? 'adicionou participante'
           : 'removeu participante',
       to: to ?? from,
+    }
+  }
+  if (action.startsWith('swarm.')) {
+    return {
+      ...base,
+      kind: 'people',
+      title: SWARM_TITLES[action] ?? 'atualizou o swarming',
+      detail: to,
     }
   }
   if (action.startsWith('automation.')) {

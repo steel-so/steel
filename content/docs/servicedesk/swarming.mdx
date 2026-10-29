@@ -1,0 +1,63 @@
+---
+title: Swarming de especialistas
+description: Chame especialistas direto para dentro do chamado, sem passar pelos níveis de escalonamento, com canal temporário no Slack.
+section: servicedesk
+order: 13
+---
+
+O **swarming** serve para os casos em que o chamado precisa de várias pessoas ao
+mesmo tempo, de áreas diferentes, e não faz sentido subir degrau por degrau
+(N1, N2, N3). Quem atende chama os especialistas, eles entram no chamado e
+trabalham juntos até resolver.
+
+## Chamar especialistas
+
+Na tela do chamado, abra a aba **Swarming** e clique em **Chamar especialistas**:
+
+- **O que precisa ser resolvido**: o motivo que os convidados vão ler.
+- **Especialistas**: de 1 a 10 agentes do workspace. Use a busca por nome ou
+  e-mail.
+- **Abrir um canal temporário no Slack**: aparece só quando o Slack está
+  conectado em **Ajustes › Integrações**. Veja a seção abaixo.
+
+Cada convidado passa a ser **participante** do chamado e recebe um aviso no
+Steel e por e-mail. O responsável e a fase do chamado não mudam.
+
+Um chamado tem no máximo um swarming aberto por vez. Em chamado fechado ou
+cancelado não dá para abrir um novo.
+
+## Responder ao convite
+
+Quem foi chamado vê, na aba **Swarming**, o aviso **Você foi chamado como
+especialista** com os botões **Entrar** e **Recusar**. Quem abriu o swarming é
+avisado da resposta. Cada pessoa aparece com a situação **Aguardando**, **Na
+equipe** ou **Recusou**.
+
+## Convidar mais gente
+
+Com o swarming aberto, **Convidar** acrescenta mais especialistas (até 10 no
+total). Quem tinha recusado pode ser convidado de novo.
+
+## Encerrar
+
+**Encerrar** pede, se você quiser, o que foi decidido. O resumo fica no
+histórico do chamado e a aba guarda o swarming encerrado com o resultado. Tudo
+aparece também na aba **Rastreabilidade**.
+
+## Canal temporário no Slack
+
+Com o Slack conectado, o Steel cria um **canal privado**, chamado por exemplo
+`swarm-inc-000123`, convida os especialistas que têm o mesmo e-mail no Slack e
+posta o motivo com o link do chamado. Ao encerrar, o resumo é postado e o canal é
+**arquivado** (o histórico continua legível no Slack).
+
+Se o Slack recusar, o swarming abre mesmo assim e a aba mostra o motivo, como
+*Não foi possível abrir o canal*. Quem conectou o Slack antes desta
+funcionalidade precisa **reconectar** em Ajustes › Integrações para que o app
+ganhe a permissão de criar canais.
+
+## Quem pode
+
+- **Abrir, convidar e encerrar**: agentes do ServiceDesk.
+- **Ver e responder**: agentes e os convidados.
+- O portal do solicitante não mostra o swarming.

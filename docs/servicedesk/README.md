@@ -389,6 +389,41 @@ amostra — os fatores `waiting_third_party`, `queue_pressure` e
 `assignee_load` saem subestimados. A matemática das métricas tem teste
 unitário em `src/lib/__tests__/servicedesk-risk-backtest.test.ts`.
 
+## Swarming de especialistas (S6)
+
+Chama especialistas para dentro do chamado **sem passar pelos níveis
+N1/N2/N3** do escalonamento. Aba **Swarming** na tela do chamado (só agentes e
+convidados; o portal não a mostra).
+
+- **Modelo**: `SdSwarm` (um por chamado aberto; histórico dos encerrados) e
+  `SdSwarmMember` (`INVITED` → `JOINED` ou `DECLINED`). Migration
+  `nov_s6_swarming_tables`. Teto de 10 especialistas por swarming
+  (`SD_SWARM_MAX_MEMBERS`, `src/lib/servicedesk/swarm.ts`).
+- **Fluxo** (`SdSwarmService`): *abrir* (agente; motivo + 1 a 10 especialistas
+  + opção de canal no Slack) → cada convidado vira **participante** do chamado
+  e recebe `swarm.invited` (in-app e e-mail) → o convidado *entra* ou *recusa*
+  (`swarm.responded` avisa quem abriu) → *convidar mais* (quem recusou é
+  convidado de novo) → *encerrar* (resumo no histórico). Tudo vira evento de
+  rastreabilidade (`swarm.started|invited|joined|declined|closed`) e auditoria
+  (`sd_swarm`). Não há mudança de responsável nem de fase: o dono do chamado
+  continua o mesmo.
+- **Quem pode**: abrir, convidar e encerrar são de agentes; listar e responder
+  também do convidado (membro do workspace, mesmo sem departamento). Chamado
+  fechado ou cancelado não abre swarming, mas ainda dá para encerrar um aberto.
+- **Slack (opcional)**: com o Slack conectado em Ajustes > Integrações, a
+  abertura oferece um **canal privado temporário** (`swarm-<código>`, ex.:
+  `swarm-inc-000123`). O bot cria o canal, convida os especialistas cujo
+  e-mail existe no Slack (`users.lookupByEmail`) e posta o motivo com o link do
+  chamado. Ao encerrar, posta o resumo e **arquiva** o canal. Falha do Slack
+  nunca impede o swarming: o motivo fica em `slackError` e aparece na aba.
+  Código em `sd-swarm-slack.ts`; métodos novos em `slack-client.ts`
+  (`createChannel`, `inviteToChannel`, `archiveChannel`, `lookupByEmail`).
+- **Rotas**: `GET|POST .../tickets/{ticketId}/swarms` e
+  `POST .../swarms/{swarmId}/{invite|respond|close}`; contrato em
+  `src/openapi/paths/servicedesk/swarm.ts`.
+- **Fora desta fatia**: o canal do Slack não espelha a conversa do chamado (o
+  espelho de thread é o das integrações); não há SLA nem fila de swarmings.
+
 ## Rotas de UI
 
 | Rota (`/[slug]/servicedesk/…`) | Tela |
@@ -601,8 +636,11 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
   `/api/servicedesk/integrations/oauth/slack` (caminho histórico, já
   cadastrado nos apps). Escopos de bot: `chat:write`, `chat:write.public`,
   `channels:read`, `groups:read`, `channels:history`, `groups:history`,
-  `commands`, `users:read`, `users:read.email` — e o bot precisa ser
-  convidado nos canais.
+  `commands`, `users:read`, `users:read.email`, `channels:manage`,
+  `groups:write` (os dois últimos, do swarming) — e o bot precisa ser
+  convidado nos canais. Quem já tinha conectado o Slack antes do swarming
+  precisa reconectar para o bot ganhar os escopos novos; sem eles o canal
+  temporário falha com o motivo registrado no swarming, e o resto funciona.
 
   Quais eventos vão para o Slack é **regra do workspace** (Ajustes >
   Integrações > Notificações no Slack): "quando <evento> → enviar para

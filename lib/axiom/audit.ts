@@ -140,6 +140,8 @@ export type AuditEntity =
   // ServiceDesk — central de notificações
   | 'sd_notification_preference'
   | 'sd_ticket_follower'
+  // ServiceDesk — swarming de especialistas
+  | 'sd_swarm'
   // ServiceDesk — portal do contato externo (link mágico)
   | 'sd_portal_access'
   | 'sd_portal_session'

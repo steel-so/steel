@@ -16,6 +16,7 @@ export type SdTicketTabFeature =
   | 'change-schedule'
   | 'signatures'
   | 'time-entries'
+  | 'swarms'
 
 export function sdTicketTabKey(
   workspaceId: string,

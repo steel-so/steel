@@ -65,6 +65,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   sdSlaTarget: (ws) => ({ policy: { workspaceId: ws } }),
   sdTicketParticipant: (ws) => ({ ticket: { workspaceId: ws } }),
   sdTicketFollower: (ws) => ({ ticket: { workspaceId: ws } }),
+  sdSwarmMember: (ws) => ({ swarm: { workspaceId: ws } }),
   sdTicketKbLink: (ws) => ({ ticket: { workspaceId: ws } }),
   sdKbComment: (ws) => ({ article: { workspaceId: ws } }),
   // Fundação da leva de contratos/CAB/plantão (commit 00384d45): modelos-filhos

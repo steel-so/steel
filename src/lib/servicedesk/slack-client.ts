@@ -48,6 +48,9 @@ export const SLACK_BOT_SCOPES = [
   'commands',
   'users:read',
   'users:read.email',
+  // Swarming: temporary channel per swarm (create, invite, archive).
+  'channels:manage',
+  'groups:write',
 ] as const
 
 /**
@@ -300,6 +303,69 @@ export const SlackClient = {
       teamId: result.value.team_id ?? null,
       teamName: result.value.team ?? null,
     })
+  },
+
+  /** Slack user id for an e-mail, or `null` when nobody has it. */
+  async lookupByEmail(token: string, email: string): Promise<string | null> {
+    const result = await call<SlackEnvelope & { user?: { id?: string } }>(
+      'users.lookupByEmail',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ email }).toString(),
+      },
+    )
+    return result.ok ? (result.value.user?.id ?? null) : null
+  },
+
+  /** Creates a (private) channel; the bot becomes its first member. */
+  async createChannel(
+    token: string,
+    input: { name: string; isPrivate: boolean },
+  ): Promise<Result<SlackChannel>> {
+    const result = await call<
+      SlackEnvelope & { channel?: { id?: string; name?: string } }
+    >(
+      'conversations.create',
+      authed(token, { name: input.name, is_private: input.isPrivate }),
+    )
+    if (!result.ok) return result
+    const id = result.value.channel?.id
+    if (!id) {
+      return err(sdIntegrationRequestFailed('O Slack não criou o canal'))
+    }
+    return ok({
+      id,
+      name: result.value.channel?.name ?? input.name,
+      isPrivate: input.isPrivate,
+    })
+  },
+
+  /** Adds people (Slack user ids) to a channel. */
+  async inviteToChannel(
+    token: string,
+    input: { channel: string; userIds: string[] },
+  ): Promise<Result<true>> {
+    const result = await call<SlackEnvelope>(
+      'conversations.invite',
+      authed(token, {
+        channel: input.channel,
+        users: input.userIds.join(','),
+      }),
+    )
+    return result.ok ? ok(true) : result
+  },
+
+  /** Archives the channel (the history stays readable in Slack). */
+  async archiveChannel(token: string, channel: string): Promise<Result<true>> {
+    const result = await call<SlackEnvelope>(
+      'conversations.archive',
+      authed(token, { channel }),
+    )
+    return result.ok ? ok(true) : result
   },
 
   /** Link permanente da mensagem (vai no corpo do chamado). */

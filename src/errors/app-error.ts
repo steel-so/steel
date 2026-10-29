@@ -2008,3 +2008,24 @@ export const whatsappCopilotNoContext = (message?: string): AppError =>
     'WHATSAPP_COPILOT_NO_CONTEXT',
     message ?? 'A conversa ainda não tem mensagens para o copiloto usar',
   )
+
+export const sdSwarmNotFound = (): AppError =>
+  appError('SD_SWARM_NOT_FOUND', 'Swarming não encontrado')
+
+export const sdSwarmAlreadyOpen = (): AppError =>
+  appError(
+    'SD_SWARM_ALREADY_OPEN',
+    'Este chamado já tem um swarming aberto. Encerre-o antes de abrir outro',
+  )
+
+export const sdSwarmClosed = (): AppError =>
+  appError('SD_SWARM_CLOSED', 'O swarming já foi encerrado')
+
+export const sdSwarmNotInvited = (): AppError =>
+  appError('SD_SWARM_NOT_INVITED', 'Você não foi convidado para este swarming')
+
+export const sdSwarmLimitReached = (max: number): AppError =>
+  appError(
+    'SD_SWARM_LIMIT_REACHED',
+    `Um swarming comporta no máximo ${max} especialistas`,
+  )
