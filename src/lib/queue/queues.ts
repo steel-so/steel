@@ -1271,6 +1271,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.ServicedeskInventory]: getServicedeskInventoryQueue,
   [QueueName.ServicedeskIntegrations]: getServicedeskIntegrationsQueue,
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
+  [QueueName.CrmCadences]: getCrmCadencesQueue,
   [QueueName.ServicedeskTaskReminders]: getServicedeskTaskRemindersQueue,
   [QueueName.SteelAgents]: getSteelAgentsQueue,
   [QueueName.Notifications]: getNotificationsQueue,
