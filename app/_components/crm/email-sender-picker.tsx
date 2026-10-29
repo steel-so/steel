@@ -17,8 +17,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCrmEmailSenders } from '@/src/hooks/use-crm-email-senders'
 import { emailDomainsHref } from './newsletters/newsletter-sender-badge'
 
-const PLATFORM = '__platform__'
-
 function splitAddress(value: string): { local: string; domain: string } {
   const at = value.lastIndexOf('@')
   if (at === -1) return { local: value, domain: '' }
@@ -33,7 +31,7 @@ function splitAddress(value: string): { local: string; domain: string } {
 
 /**
  * Sender of a CRM campaign (ADR 0055): a local part on one of the
- * workspace's VERIFIED sending domains, or the platform address. A saved
+ * workspace's VERIFIED sending domains or on Steel's own mail domain. A saved
  * From outside both (scheduled before the rule) is shown with a warning
  * until the user picks a valid one.
  */
@@ -83,65 +81,57 @@ export function EmailSenderPicker({
     )
   }
 
-  const { platformAddress, verifiedDomains } = senders.data
-  const current = value.trim()
-  const isPlatform = current.toLowerCase() === platformAddress
-  const { local, domain } = splitAddress(current)
-  const knownDomain = verifiedDomains.includes(domain)
-  const unverified = Boolean(current) && !isPlatform && !knownDomain
-
-  const fallback = verifiedDomains[0] ?? PLATFORM
-  const selection = isPlatform
-    ? PLATFORM
-    : knownDomain
-      ? domain
-      : pendingDomain && verifiedDomains.includes(pendingDomain)
-        ? pendingDomain
-        : fallback
-
-  const items = [
-    ...verifiedDomains.map((name) => ({ value: name, label: `@${name}` })),
-    { value: PLATFORM, label: `Endereço da plataforma (${platformAddress})` },
+  const { platformDomain, verifiedDomains } = senders.data
+  // The workspace's verified domains first, then Steel's own domain.
+  const domains = [
+    ...verifiedDomains.filter((name) => name !== platformDomain),
+    platformDomain,
   ]
+  const current = value.trim()
+  const { local, domain } = splitAddress(current)
+  const knownDomain = domains.includes(domain)
+  const unverified = Boolean(current) && !knownDomain
+
+  const selection = knownDomain
+    ? domain
+    : pendingDomain && domains.includes(pendingDomain)
+      ? pendingDomain
+      : (domains[0] as string)
+
+  const items = domains.map((name) => ({
+    value: name,
+    label: name === platformDomain ? `${name} (Steel)` : name,
+  }))
 
   function chooseDomain(next: string) {
-    if (next === PLATFORM) {
-      onChange(platformAddress)
-      return
-    }
     setPendingDomain(next)
-    const part = isPlatform ? '' : local.trim()
+    const part = local.trim()
     onChange(part ? `${part}@${next}` : '')
   }
 
   function changeLocal(next: string) {
     const part = next.replace(/@.*$/, '').trim()
-    if (selection === PLATFORM) return
     onChange(part ? `${part}@${selection}` : '')
   }
 
   return (
     <div className='flex min-w-0 flex-col gap-2'>
-      <Label htmlFor={selection === PLATFORM ? `${id}-domain` : id}>
-        {label}
-      </Label>
+      <Label htmlFor={id}>{label}</Label>
       <div className='flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center'>
-        {selection !== PLATFORM ? (
-          <div className='flex min-w-0 flex-1 items-center gap-2'>
-            <Input
-              id={id}
-              value={isPlatform ? '' : local}
-              onChange={(e) => changeLocal(e.target.value)}
-              placeholder='marketing'
-              autoComplete='off'
-              aria-describedby={`${id}-help`}
-              className='min-w-0'
-            />
-            <span aria-hidden='true' className='text-muted-foreground'>
-              @
-            </span>
-          </div>
-        ) : null}
+        <div className='flex min-w-0 flex-1 items-center gap-2'>
+          <Input
+            id={id}
+            value={local}
+            onChange={(e) => changeLocal(e.target.value)}
+            placeholder='marketing'
+            autoComplete='off'
+            aria-describedby={`${id}-help`}
+            className='min-w-0'
+          />
+          <span aria-hidden='true' className='text-muted-foreground'>
+            @
+          </span>
+        </div>
         <Select
           items={items}
           value={selection}
@@ -150,11 +140,7 @@ export function EmailSenderPicker({
           <SelectTrigger
             id={`${id}-domain`}
             aria-label='Domínio do remetente'
-            className={
-              selection === PLATFORM
-                ? 'w-full min-w-0'
-                : 'w-full min-w-0 sm:w-auto sm:max-w-[60%]'
-            }
+            className='w-full min-w-0 sm:w-auto sm:max-w-[60%]'
           >
             <SelectValue placeholder='Escolha o domínio' />
           </SelectTrigger>
@@ -175,15 +161,14 @@ export function EmailSenderPicker({
           <SteelIcon icon={Alert02Icon} size={14} className='mt-px shrink-0' />
           <span>
             O remetente atual, {current}, não é de um domínio verificado e não
-            será enviado. Escolha um domínio verificado ou o endereço da
-            plataforma.
+            será enviado. Escolha um domínio verificado ou o domínio do Steel.
           </span>
         </p>
       ) : null}
       <p id={`${id}-help`} className='text-muted-foreground text-xs'>
         {verifiedDomains.length === 0
-          ? 'Nenhum domínio verificado ainda: a campanha sai pelo endereço da plataforma. '
-          : 'Só domínios verificados aparecem aqui. '}
+          ? `Nenhum domínio verificado ainda: use um endereço @${platformDomain} ou cadastre o da sua empresa em `
+          : 'Só domínios verificados aparecem aqui, além do domínio do Steel. '}
         <Link
           href={emailDomainsHref(workspaceSlug)}
           className='underline underline-offset-2'

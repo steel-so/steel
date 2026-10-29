@@ -71,4 +71,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0052 | [Arquivamento de conversas do WhatsApp para bancos: pacote .zip com um PDF por atendimento](./0052-whatsapp-conversation-archive-for-banks.md) | Aceita | 2026-10-27 |
 | 0053 | [Registro de acessos de workspaces com IP restrito](./0053-registro-de-acessos-de-workspace-com-ip-restrito.md) | Aceita | 2026-10-27 |
 | 0054 | [Newsletter dentro do CRM, enviada do domínio do próprio cliente](./0054-newsletter-no-crm-com-dominio-proprio.md) | Aceita | 2026-10-28 |
-| 0055 | [Campanhas só enviam de domínio verificado ou do endereço da plataforma](./0055-remetente-verificado-nas-campanhas.md) | Aceita | 2026-10-28 |
+| 0055 | [Campanhas só enviam de domínio verificado ou do domínio da plataforma](./0055-remetente-verificado-nas-campanhas.md) | Aceita | 2026-10-28 |

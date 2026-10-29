@@ -118,8 +118,8 @@ describe('CrmEmailCampaignService.send() — sender (ADR 0055)', () => {
     )
   })
 
-  it('lets the platform address through without a verified domain', async () => {
-    draft('notificacoes@stratustelecom.com.br')
+  it('lets a platform-domain address through without a verified domain', async () => {
+    draft('contato@stratustelecom.com.br')
     mockedSendingDomains.findVerifiedByName.mockResolvedValue(ok(null))
     mockedRecipientRepo.listByCampaign.mockResolvedValue(ok([]))
     // Passes the sender check and stops at the next rule.

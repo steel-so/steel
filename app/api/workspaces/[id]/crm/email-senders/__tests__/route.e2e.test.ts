@@ -27,7 +27,7 @@ describe('GET /api/workspaces/[id]/crm/email-senders', () => {
     expect(res.status).toBe(403)
   })
 
-  it('should list verified domains and the platform address, also to a VIEWER', async () => {
+  it('should list verified domains and the platform domain, also to a VIEWER', async () => {
     const { user, workspace } = await authenticatedOwner()
     const verified = await seedSendingDomain({
       workspaceId: workspace.id,
@@ -47,7 +47,7 @@ describe('GET /api/workspaces/[id]/crm/email-senders', () => {
     )
     expect(res.status).toBe(200)
     expect((await res.json()).data).toEqual({
-      platformAddress: 'notificacoes@stratustelecom.com.br',
+      platformDomain: 'stratustelecom.com.br',
       verifiedDomains: [verified.name],
     })
   })

@@ -244,10 +244,10 @@ export const CrmEmailMessageDTO = dto(
 export const CrmEmailSenderOptionsDTO = dto(
   'CrmEmailSenderOptions',
   z.object({
-    platformAddress: z.email().meta({
+    platformDomain: z.string().meta({
       description:
-        'Endereço da plataforma, aceito sem domínio próprio verificado.',
-      example: 'notificacoes@stratustelecom.com.br',
+        'Domínio de e-mail da plataforma: qualquer endereço nele é aceito sem domínio próprio verificado.',
+      example: 'stratustelecom.com.br',
     }),
     verifiedDomains: z.array(z.string()).meta({
       description:

@@ -90,10 +90,10 @@ Ordem de merge: `nl-domains` → `nl-core` → `nl-issues` → `nl-archive`.
 ## Remetente verificado nas campanhas e acertos da fase 1 (nl2-followups)
 
 **Remetente das campanhas** ([ADR 0055](../adr/0055-remetente-verificado-nas-campanhas.md))
-- Campanhas multicanal (`CrmCampaign`) e campanhas de e-mail antigas (`CrmEmailCampaign`) só enviam de um endereço em domínio `VERIFIED` do workspace ou do endereço da plataforma (`PLATFORM_CAMPAIGN_SENDER` = `notificacoes@stratustelecom.com.br`, em `src/lib/sending-domain/platform-sender.ts`). A checagem é `checkCampaignSender` (`src/lib/sending-domain/campaign-sender.ts`), que reaproveita `resolveVerifiedSender`.
+- Campanhas multicanal (`CrmCampaign`) e campanhas de e-mail antigas (`CrmEmailCampaign`) só enviam de um endereço em domínio `VERIFIED` do workspace ou de qualquer endereço no domínio da plataforma (`PLATFORM_CAMPAIGN_DOMAIN` = `mailDomain`, `stratustelecom.com.br`, comparação exata, em `src/lib/sending-domain/platform-sender.ts`). A checagem é `checkCampaignSender` (`src/lib/sending-domain/campaign-sender.ts`), que reaproveita `resolveVerifiedSender`.
 - Multicanal: entra em `issues` (passo `content`) com `fix: 'SENDING_DOMAINS'`, bloqueando o lançamento; a revisão mostra o link para Ajustes › Domínios de e-mail. No disparo, cada e-mail com remetente bloqueado vira `FAILED` com o motivo (sem nova tentativa) e o criador recebe um aviso (`notifyCrmCampaignSenderBlocked`, uma vez por campanha).
 - Campanhas antigas: `send` recusa com `SENDING_DOMAIN_NOT_VERIFIED` (422) antes de mudar qualquer coisa; o worker marca a agendada como `FAILED` e avisa o criador.
-- `GET /api/workspaces/{id}/crm/email-senders` (recurso `email`, `VIEW`): `{ platformAddress, verifiedDomains }` — só nomes de domínio. Alimenta o `EmailSenderPicker` (parte local + domínio) dos dois assistentes.
+- `GET /api/workspaces/{id}/crm/email-senders` (recurso `email`, `VIEW`): `{ platformDomain, verifiedDomains }` — só nomes de domínio. Alimenta o `EmailSenderPicker` (parte local + domínio; o da plataforma aparece como "stratustelecom.com.br (Steel)") dos dois assistentes.
 
 **Formulário do CRM no Sites**
 - O elemento `site.form` mostra a caixa de consentimento da newsletter quando o formulário tem `newsletterId` e a newsletter está `ACTIVE` (igual a `/f/<token>`), e envia `newsletterConsent` junto dos campos.

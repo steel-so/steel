@@ -1,4 +1,4 @@
-# 0055 — Campanhas só enviam de domínio verificado ou do endereço da plataforma
+# 0055 — Campanhas só enviam de domínio verificado ou do domínio da plataforma
 
 - **Status:** Aceita
 - **Data:** 2026-10-28
@@ -20,10 +20,12 @@ O e-mail de uma campanha (multicanal ou antiga) só sai de:
 
 1. um endereço em um domínio de envio **VERIFIED** do próprio workspace
    (mesma regra exata de domínio de `resolveVerifiedSender`); ou
-2. o **endereço da plataforma**, `notificacoes@stratustelecom.com.br` — o
-   mesmo usado como reserva na confirmação da newsletter —, para quem ainda
-   não tem domínio próprio. Outros endereços `@stratustelecom.com.br` não
-   valem.
+2. qualquer endereço no **domínio da plataforma**, `stratustelecom.com.br`
+   (`mailDomain` em `src/lib/mail/senders.ts`, verificado na conta Resend da
+   Stratus), para quem ainda não tem domínio próprio. A comparação é exata:
+   subdomínios (`news.stratustelecom.com.br`) não contam. Aceitar o domínio
+   inteiro, e não só `notificacoes@`, evita quebrar campanhas que já estão em
+   uso na homologação com clientes reais e saem de `vendas@`, `contato@` etc.
 
 Onde a regra entra:
 
@@ -32,10 +34,10 @@ Onde a regra entra:
   bloqueia o lançamento.
 - **Campanha de e-mail antiga**: o envio é recusado com
   `SENDING_DOMAIN_NOT_VERIFIED` antes de mudar a campanha.
-- **Seletor de remetente** nos dois assistentes: parte local + lista de
-  domínios verificados, mais o endereço da plataforma
-  (`GET /crm/email-senders`, só nomes de domínio, visível a quem vê e-mail no
-  CRM).
+- **Seletor de remetente** nos dois assistentes: parte local + lista com os
+  domínios verificados do workspace e o domínio da plataforma
+  ("stratustelecom.com.br (Steel)") (`GET /crm/email-senders`, só nomes de
+  domínio, visível a quem vê e-mail no CRM).
 
 ## Consequências
 
@@ -43,14 +45,17 @@ Onde a regra entra:
   multicanal continuam saindo do endereço informado sem checar domínio")
   deixa de valer.
 - **Campanhas já agendadas** com outro remetente não são migradas. Só
-  continuam funcionando se usam o endereço da plataforma; nas demais, a
+  continuam funcionando se usam um endereço do domínio da plataforma; nas
+  demais, a
   checagem acontece no disparo: na multicanal, cada e-mail vira falha com o
   motivo e o criador recebe um aviso (uma vez); na antiga, a campanha vira
   `FAILED` e o criador é avisado. O WhatsApp da campanha multicanal não é
   afetado.
 - Domínio que perde a verificação depois do lançamento cai na mesma checagem
   do disparo.
-- Quem não tem domínio verificado ainda envia, pelo endereço da plataforma;
-  respostas vão para a caixa de notificações do Steel, então vale cadastrar o
-  domínio. Rever se o endereço da plataforma deve sair do seletor quando o
-  volume de campanhas por ele crescer.
+- Quem não tem domínio verificado ainda envia pelo domínio da plataforma, que
+  segue com a reputação de todos os clientes misturada; vale cadastrar o
+  domínio próprio. Qualquer caixa `@stratustelecom.com.br` pode ser usada como
+  remetente por um cliente — aceito para não quebrar o que já está em uso.
+  Rever (restringir a uma lista de caixas ou tirar o domínio do seletor)
+  quando o volume de campanhas por ele crescer.

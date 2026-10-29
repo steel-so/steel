@@ -42,7 +42,7 @@ describe('CrmEmailSenderService.options()', () => {
   it('lists only verified domain names, sorted, plus the platform address', async () => {
     const options = expectOk(await CrmEmailSenderService.options('u1', 'ws1'))
     expect(options).toEqual({
-      platformAddress: 'notificacoes@stratustelecom.com.br',
+      platformDomain: 'stratustelecom.com.br',
       verifiedDomains: ['news.acme.com.br', 'news.zeta.com.br'],
     })
     expect(domains.listByWorkspace).toHaveBeenCalledWith('ws1')

@@ -13,7 +13,7 @@ import {
 } from '../sending-domain/campaign-sender'
 import {
   isPlatformCampaignSender,
-  PLATFORM_CAMPAIGN_SENDER,
+  PLATFORM_CAMPAIGN_DOMAIN,
 } from '../sending-domain/platform-sender'
 
 const findVerifiedByName = vi.mocked(SendingDomainRepository.findVerifiedByName)
@@ -21,19 +21,29 @@ const findVerifiedByName = vi.mocked(SendingDomainRepository.findVerifiedByName)
 describe('checkCampaignSender', () => {
   beforeEach(() => findVerifiedByName.mockReset())
 
-  it('accepts the platform address without a lookup', async () => {
-    expect(PLATFORM_CAMPAIGN_SENDER).toBe('notificacoes@stratustelecom.com.br')
-    expect(
-      isPlatformCampaignSender(' Notificacoes@StratusTelecom.com.br '),
-    ).toBe(true)
-    expect(await checkCampaignSender('ws_1', PLATFORM_CAMPAIGN_SENDER)).toEqual(
-      ok({ platform: true }),
+  it('accepts any address on the platform domain without a lookup', async () => {
+    expect(PLATFORM_CAMPAIGN_DOMAIN).toBe('stratustelecom.com.br')
+    expect(isPlatformCampaignSender(' Vendas@StratusTelecom.com.br ')).toBe(
+      true,
     )
+    for (const from of [
+      'notificacoes@stratustelecom.com.br',
+      'contato@stratustelecom.com.br',
+    ]) {
+      expect(await checkCampaignSender('ws_1', from)).toEqual(
+        ok({ platform: true }),
+      )
+    }
     expect(findVerifiedByName).not.toHaveBeenCalled()
   })
 
-  it('does not treat other platform-domain addresses as the platform sender', () => {
-    expect(isPlatformCampaignSender('ceo@stratustelecom.com.br')).toBe(false)
+  it('matches the platform domain exactly', () => {
+    expect(isPlatformCampaignSender('a@news.stratustelecom.com.br')).toBe(false)
+    expect(isPlatformCampaignSender('a@stratustelecom.com.br.evil.com')).toBe(
+      false,
+    )
+    expect(isPlatformCampaignSender('stratustelecom.com.br')).toBe(false)
+    expect(isPlatformCampaignSender('@stratustelecom.com.br')).toBe(false)
   })
 
   it('accepts an address on a verified domain of the workspace', async () => {

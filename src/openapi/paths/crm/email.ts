@@ -454,7 +454,7 @@ export const crmEmailRoutes: RouteConfig[] = [
         '',
         'O opt-out é revalidado no disparo: quem se descadastrou nesse meio-tempo vira `SKIPPED`. Cada e-mail leva o rodapé com link de descadastro e os headers `List-Unsubscribe` (RFC 8058). Falhas individuais viram `FAILED` no destinatário; a campanha termina `SENT`, ou `FAILED` se todos os envios tentados falharem.',
         '',
-        'O remetente (`fromAddress`) precisa ser de um domínio de envio **verificado** do workspace ou o endereço da plataforma (ADR 0055); senão nada é enviado e a campanha fica como estava (uma agendada vira `FAILED` no disparo do worker e o criador é avisado).',
+        'O remetente (`fromAddress`) precisa ser de um domínio de envio **verificado** do workspace ou do domínio da plataforma (ADR 0055); senão nada é enviado e a campanha fica como estava (uma agendada vira `FAILED` no disparo do worker e o criador é avisado).',
       ].join('\n'),
       crmAccess('email', 'EDIT'),
     ),
@@ -476,7 +476,7 @@ export const crmEmailRoutes: RouteConfig[] = [
       },
       {
         code: 'SENDING_DOMAIN_NOT_VERIFIED',
-        when: 'Remetente fora dos domínios verificados do workspace e diferente do endereço da plataforma',
+        when: 'Remetente fora dos domínios verificados do workspace e fora do domínio da plataforma',
       },
     ],
   },
@@ -741,7 +741,7 @@ export const crmEmailRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Remetentes permitidos para campanhas',
     description: describe(
-      'Opções do seletor de remetente das campanhas (ADR 0055): os nomes dos domínios de envio verificados do workspace e o endereço da plataforma, aceito sem domínio próprio. Só nomes de domínio — registros DNS e ids ficam em Ajustes.',
+      'Opções do seletor de remetente das campanhas (ADR 0055): os nomes dos domínios de envio verificados do workspace e o domínio da plataforma, aceito sem domínio próprio. Só nomes de domínio — registros DNS e ids ficam em Ajustes.',
       crmAccess('email', 'VIEW'),
     ),
     responses: {

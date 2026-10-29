@@ -377,11 +377,11 @@ describe('CrmCampaignService.get() and issues', () => {
     )
   })
 
-  it('should accept the platform address without a verified domain', async () => {
+  it('should accept any platform-domain address without a verified domain', async () => {
     sendingDomains.findVerifiedByName.mockClear()
     const issues = expectOk(
       await computeCampaignIssues(
-        readyCampaign({ emailFrom: 'notificacoes@stratustelecom.com.br' }),
+        readyCampaign({ emailFrom: 'vendas@stratustelecom.com.br' }),
       ),
     )
     expect(issues).toEqual([])

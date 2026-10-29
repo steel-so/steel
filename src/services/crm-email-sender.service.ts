@@ -1,11 +1,12 @@
 import { ok, type Result } from '@/src/lib/result'
-import { PLATFORM_CAMPAIGN_SENDER } from '@/src/lib/sending-domain/platform-sender'
+import { PLATFORM_CAMPAIGN_DOMAIN } from '@/src/lib/sending-domain/platform-sender'
 import { SendingDomainRepository } from '@/src/repositories/sending-domain.repository'
 import type { CrmEmailSenderOptionsDTO } from '@/types/crm-email-sender'
 import { assertModuleMember } from './authz'
 
 /**
- * Sender picker of the campaign wizards (ADR 0055). Readable by anyone who
+ * Sender picker of the campaign wizards (ADR 0055): the platform domain
+ * plus the workspace's verified ones. Readable by anyone who
  * can see CRM e-mail (the domain list itself is OWNER/ADMIN in Ajustes):
  * only the names of VERIFIED domains leave, never records or ids.
  */
@@ -24,7 +25,7 @@ export const CrmEmailSenderService = {
     if (!domains.ok) return domains
 
     return ok({
-      platformAddress: PLATFORM_CAMPAIGN_SENDER,
+      platformDomain: PLATFORM_CAMPAIGN_DOMAIN,
       verifiedDomains: domains.value
         .filter((domain) => domain.status === 'VERIFIED')
         .map((domain) => domain.name)

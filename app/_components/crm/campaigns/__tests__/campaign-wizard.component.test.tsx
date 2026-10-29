@@ -25,7 +25,7 @@ function setup(
     {
       match: '/crm/email-senders',
       data: {
-        platformAddress: 'notificacoes@stratustelecom.com.br',
+        platformDomain: 'stratustelecom.com.br',
         verifiedDomains: ['news.acme.com.br'],
       },
     },

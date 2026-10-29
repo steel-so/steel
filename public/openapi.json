@@ -23420,7 +23420,7 @@
         "tags": ["CRM · Campanhas"],
         "summary": "Enviar ou agendar",
         "operationId": "postWorkspacesByIdCrmCampaignsByCampaignIdLaunch",
-        "description": "Valida os passos, tira o retrato do público (excluindo descadastrados), grava a base legal confirmada e enfileira o envio no worker (`crm-campaigns`): agora, ou em `scheduledAt` se futuro. O WhatsApp sai `whatsappDelayHours` depois do e-mail. O remetente do e-mail precisa ser de um domínio de envio verificado do workspace ou o endereço da plataforma (ADR 0055): fora disso entra em `issues` com `fix: SENDING_DOMAINS`, e uma campanha já agendada falha os e-mails no disparo, com aviso ao criador.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Valida os passos, tira o retrato do público (excluindo descadastrados), grava a base legal confirmada e enfileira o envio no worker (`crm-campaigns`): agora, ou em `scheduledAt` se futuro. O WhatsApp sai `whatsappDelayHours` depois do e-mail. O remetente do e-mail precisa ser de um domínio de envio verificado do workspace ou do domínio da plataforma (ADR 0055): fora disso entra em `issues` com `fix: SENDING_DOMAINS`, e uma campanha já agendada falha os e-mails no disparo, com aviso ao criador.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -28869,7 +28869,7 @@
         "tags": ["CRM · E-mail marketing"],
         "summary": "Enviar campanha agora",
         "operationId": "postWorkspacesByIdCrmEmailCampaignsByCampaignIdSend",
-        "description": "Dispara a campanha de forma **síncrona** (a resposta só volta ao fim do envio), usando apenas os destinatários gravados na criação.\n\nO opt-out é revalidado no disparo: quem se descadastrou nesse meio-tempo vira `SKIPPED`. Cada e-mail leva o rodapé com link de descadastro e os headers `List-Unsubscribe` (RFC 8058). Falhas individuais viram `FAILED` no destinatário; a campanha termina `SENT`, ou `FAILED` se todos os envios tentados falharem.\n\nO remetente (`fromAddress`) precisa ser de um domínio de envio **verificado** do workspace ou o endereço da plataforma (ADR 0055); senão nada é enviado e a campanha fica como estava (uma agendada vira `FAILED` no disparo do worker e o criador é avisado).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Dispara a campanha de forma **síncrona** (a resposta só volta ao fim do envio), usando apenas os destinatários gravados na criação.\n\nO opt-out é revalidado no disparo: quem se descadastrou nesse meio-tempo vira `SKIPPED`. Cada e-mail leva o rodapé com link de descadastro e os headers `List-Unsubscribe` (RFC 8058). Falhas individuais viram `FAILED` no destinatário; a campanha termina `SENT`, ou `FAILED` se todos os envios tentados falharem.\n\nO remetente (`fromAddress`) precisa ser de um domínio de envio **verificado** do workspace ou do domínio da plataforma (ADR 0055); senão nada é enviado e a campanha fica como estava (uma agendada vira `FAILED` no disparo do worker e o criador é avisado).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -29596,7 +29596,7 @@
         "tags": ["CRM · E-mail marketing"],
         "summary": "Remetentes permitidos para campanhas",
         "operationId": "getWorkspacesByIdCrmEmailSenders",
-        "description": "Opções do seletor de remetente das campanhas (ADR 0055): os nomes dos domínios de envio verificados do workspace e o endereço da plataforma, aceito sem domínio próprio. Só nomes de domínio — registros DNS e ids ficam em Ajustes.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Opções do seletor de remetente das campanhas (ADR 0055): os nomes dos domínios de envio verificados do workspace e o domínio da plataforma, aceito sem domínio próprio. Só nomes de domínio — registros DNS e ids ficam em Ajustes.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -150962,7 +150962,7 @@
                 }
               },
               "SENDING_DOMAIN_NOT_VERIFIED": {
-                "summary": "SENDING_DOMAIN_NOT_VERIFIED — Remetente fora dos domínios verificados do workspace e diferente do endereço da plataforma",
+                "summary": "SENDING_DOMAIN_NOT_VERIFIED — Remetente fora dos domínios verificados do workspace e fora do domínio da plataforma",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -168976,11 +168976,10 @@
       "CrmEmailSenderOptions": {
         "type": "object",
         "properties": {
-          "platformAddress": {
+          "platformDomain": {
             "type": "string",
-            "format": "email",
-            "description": "Endereço da plataforma, aceito sem domínio próprio verificado.",
-            "example": "notificacoes@stratustelecom.com.br"
+            "description": "Domínio de e-mail da plataforma: qualquer endereço nele é aceito sem domínio próprio verificado.",
+            "example": "stratustelecom.com.br"
           },
           "verifiedDomains": {
             "type": "array",
@@ -168991,7 +168990,7 @@
             "example": ["news.acme.com.br"]
           }
         },
-        "required": ["platformAddress", "verifiedDomains"]
+        "required": ["platformDomain", "verifiedDomains"]
       },
       "CrmEmailTemplate": {
         "type": "object",
