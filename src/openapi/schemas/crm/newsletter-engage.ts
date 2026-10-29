@@ -111,6 +111,12 @@ export const CrmNewsletterWhatsAppReportDTO = dto(
       sent: z.number().int(),
       failed: z.number().int(),
       skipped: z.number().int(),
+      delivered: z.number().int().meta({
+        description: 'Enviadas que o provedor confirmou como entregues.',
+      }),
+      read: z.number().int().meta({
+        description: 'Enviadas que o provedor confirmou como lidas.',
+      }),
     }),
     items: z.array(
       z.object({
@@ -124,6 +130,11 @@ export const CrmNewsletterWhatsAppReportDTO = dto(
         }),
         error: z.string().nullable(),
         sentAt: nullableDateTime(),
+        deliveredAt: nullableDateTime(),
+        readAt: nullableDateTime(),
+        failedAt: nullableDateTime().meta({
+          description: 'Falha informada pelo provedor depois do envio.',
+        }),
       }),
     ),
     total: z.number().int(),

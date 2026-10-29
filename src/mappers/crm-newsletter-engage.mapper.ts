@@ -53,5 +53,8 @@ export function toCrmNewsletterWhatsAppRecipientDTO(
     skipReason: row.skipReason,
     error: row.error,
     sentAt: row.sentAt?.toISOString() ?? null,
+    deliveredAt: row.deliveredAt?.toISOString() ?? null,
+    readAt: row.readAt?.toISOString() ?? null,
+    failedAt: row.failedAt?.toISOString() ?? null,
   }
 }

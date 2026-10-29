@@ -76,6 +76,9 @@ describe('crm-newsletter-engage mapper', () => {
       skipReason: null,
       error: null,
       sentAt: at.toISOString(),
+      deliveredAt: null,
+      readAt: null,
+      failedAt: null,
     })
     expect(
       toCrmNewsletterWhatsAppRecipientDTO(createFakeWhatsAppRecipient()).sentAt,
