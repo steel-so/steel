@@ -141,6 +141,9 @@ describe('SteelAgentMentionsSchema', () => {
     )
     expect(SteelAgentMentionsSchema.safeParse(tooMany).success).toBe(false)
     expect(SteelAgentMentionsSchema.safeParse(['']).success).toBe(false)
+  })
+})
+
 describe('version fields (A2)', () => {
   it('should default the gate to none with an 80% minimum on create', () => {
     const parsed = CreateSteelAgentSchema.parse(base)
