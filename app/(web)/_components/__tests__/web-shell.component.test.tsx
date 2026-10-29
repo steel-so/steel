@@ -184,6 +184,8 @@ const OUT = [
   '(public)/w/',
   '(public)/servicedesk/approval/',
   '(public)/suporte/',
+  // Satisfaction survey link from the e-mail (token, no shell).
+  '(public)/pesquisa/',
   '(public)/unsubscribe/',
   // Newsletter confirm/unsubscribe/preferences links (ADR 0054).
   '(public)/newsletter/',
