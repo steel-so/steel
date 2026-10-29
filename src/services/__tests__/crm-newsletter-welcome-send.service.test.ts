@@ -127,6 +127,13 @@ describe('CrmNewsletterWelcomeSendService.processNewsletter', () => {
   it('sends the due rows like an issue and records usage', async () => {
     repo.claimDue.mockResolvedValue(ok(rows(3)))
     const outcome = expectOk(await Service.processNewsletter(newsletter, NOW))
+    // The canvas footer names the newsletter the reader subscribed to.
+    expect(render).toHaveBeenCalledWith(
+      newsletter.workspaceId,
+      expect.anything(),
+      expect.any(String),
+      newsletter.name,
+    )
     expect(outcome).toEqual({
       status: 'sent',
       sent: 3,

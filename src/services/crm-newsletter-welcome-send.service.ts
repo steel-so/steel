@@ -89,6 +89,7 @@ async function sendStep(
     newsletter.workspaceId,
     step.builderDocument,
     step.subject,
+    newsletter.name,
   )
   if (!base.ok) {
     if (base.error.code === 'DATABASE_ERROR') {
