@@ -106,3 +106,28 @@ export const CrmPipelineStageDTO = dto(
     updatedAt: dateTime(),
   }),
 )
+
+export const CrmNlSearchResultDTO = dto(
+  'CrmNlSearchResult',
+  z.object({
+    query: z
+      .string()
+      .meta({ example: 'negócios parados há 15 dias acima de 10 mil' }),
+    interpretation: z.array(z.string()).meta({
+      description: 'Como a pergunta foi lida, em frases curtas.',
+      example: [
+        'Em andamento',
+        'Valor a partir de R$ 10.000',
+        'Parados há 15 dias ou mais',
+      ],
+    }),
+    filter: z.record(z.string(), z.unknown()).meta({
+      description:
+        'Filtro estruturado que rodou: `status`, `amountMin`, `amountMax`, `stalledForDays`, `createdWithinDays`, `closingWithinDays`, `closeDateOverdue`, `noCloseDate`, `probabilityMin`, `probabilityMax`, `ownedByMe`, `unassigned`, `stageContains`, `textContains` e `sort` (os ausentes não restringem).',
+    }),
+    opportunities: z.array(CrmOpportunityDTO),
+    truncated: z.boolean().meta({
+      description: 'Havia mais de 200 resultados; só os 200 primeiros vêm.',
+    }),
+  }),
+)

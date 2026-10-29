@@ -538,6 +538,10 @@ export const ERROR_CODES = {
     code: 'CRM_TEXT_AI_FAILED',
     status: 502,
   },
+  CRM_NL_SEARCH_FAILED: {
+    code: 'CRM_NL_SEARCH_FAILED',
+    status: 502,
+  },
   CRM_COMPETITOR_IDEAS_FAILED: {
     code: 'CRM_COMPETITOR_IDEAS_FAILED',
     status: 502,

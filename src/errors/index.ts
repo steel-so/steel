@@ -112,6 +112,7 @@ export {
   crmNewsletterWelcomeStepLimitReached,
   crmNewsletterWelcomeStepNotFound,
   crmNewsletterWhatsappUnavailable,
+  crmNlSearchFailed,
   crmNoteNotFound,
   crmOpportunityLineItemNotFound,
   crmOpportunityNotFound,
