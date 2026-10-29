@@ -4,6 +4,7 @@ import {
   AiIndexJob,
   AiProactiveJob,
   AiUsageWeeklyEmailJob,
+  CrmCadencesJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
   CrmNewsletterAutomationJob,
@@ -43,6 +44,7 @@ import {
   getAiIndexQueue,
   getAiProactiveQueue,
   getAiUsageWeeklyEmailQueue,
+  getCrmCadencesQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
   getCrmNewsletterAutomationQueue,
@@ -84,6 +86,7 @@ import {
   AiProactiveInsightsCron,
   AiUsageWeeklyEmailCron,
   CommunicationWaitingCron,
+  CrmCadencesCron,
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
   CrmNewsletterAbTickCron,
@@ -530,6 +533,21 @@ export async function scheduleServicedeskIntegrationsJobs(): Promise<void> {
   logger.info('queue.scheduler.servicedesk_integrations_registered', {
     component: 'Worker',
     pattern: ServicedeskIntegrationsCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleCrmCadencesJobs(): Promise<void> {
+  const queue = getCrmCadencesQueue()
+  await queue.upsertJobScheduler(
+    CrmCadencesJob.RunTick,
+    { pattern: CrmCadencesCron, tz: RetentionTimezone },
+    { name: CrmCadencesJob.RunTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_cadences_registered', {
+    component: 'Worker',
+    pattern: CrmCadencesCron,
     timezone: RetentionTimezone,
   })
 }

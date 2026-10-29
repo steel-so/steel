@@ -47,6 +47,7 @@ vi.mock('@/src/services/steel-agent-dispatcher', () => ({
   dispatchSteelAgentEvent: vi.fn(),
 }))
 vi.mock('@/src/services/crm-campaign-tracking.service')
+vi.mock('@/src/services/crm-cadence-reply.service')
 vi.mock('@/src/services/crm-newsletter-whatsapp-receipts.service', () => ({
   CrmNewsletterWhatsAppReceiptsService: { onWhatsAppStatus: vi.fn() },
 }))
@@ -88,8 +89,9 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
-import { WhatsAppChatbotRuntimeService } from '@/src/services/whatsapp-chatbot-runtime.service'
+import { CrmCadenceReplyService } from '@/src/services/crm-cadence-reply.service'
 import { dispatchSteelAgentEvent } from '@/src/services/steel-agent-dispatcher'
+import { WhatsAppChatbotRuntimeService } from '@/src/services/whatsapp-chatbot-runtime.service'
 import { CrmNewsletterWhatsAppReceiptsService } from '../crm-newsletter-whatsapp-receipts.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppSlaService } from '../whatsapp-sla.service'
@@ -394,6 +396,21 @@ describe('WhatsAppWebhookService', () => {
       expect(WhatsAppAiCampaignRepository.markReplied).toHaveBeenCalledWith(
         'closed1',
         expect.any(Date),
+      )
+    })
+
+    it('should stop the sales cadences of the contact that answered', async () => {
+      arrangeClosed({ aiConfigActive: false })
+
+      expectOk(
+        await WhatsAppWebhookService.ingestInboundMessage(
+          baseInbound({ waId: '5511988887777' }),
+        ),
+      )
+
+      expect(CrmCadenceReplyService.onWhatsAppReply).toHaveBeenCalledWith(
+        'ws1',
+        expect.any(String),
       )
     })
 

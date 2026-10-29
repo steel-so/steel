@@ -15,6 +15,8 @@ import {
   type ChangelogJobPayload,
   type CrmApolloImportJob,
   type CrmApolloImportJobPayload,
+  type CrmCadencesJob,
+  type CrmCadencesJobPayload,
   type CrmCampaignsJob,
   type CrmCampaignsJobPayload,
   type CrmCnpjEnrichmentJob,
@@ -141,6 +143,7 @@ let crmApolloImportQueue: Queue | null = null
 let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
+let crmCadencesQueue: Queue | null = null
 let crmSocialPostsTickQueue: Queue | null = null
 let crmSocialPublishQueue: Queue | null = null
 let changelogQueue: Queue | null = null
@@ -920,6 +923,7 @@ export async function closeQueues(): Promise<void> {
     servicedeskInventoryQueue?.close(),
     servicedeskIntegrationsQueue?.close(),
     crmTaskRemindersQueue?.close(),
+    crmCadencesQueue?.close(),
     servicedeskTaskRemindersQueue?.close(),
     steelAgentsQueue?.close(),
     searchReindexQueue?.close(),
@@ -950,6 +954,7 @@ export async function closeQueues(): Promise<void> {
   crmCnpjEnrichmentQueue = null
   crmProposalExpiryQueue = null
   crmTaskRemindersQueue = null
+  crmCadencesQueue = null
   crmSocialPostsTickQueue = null
   crmSocialPublishQueue = null
   changelogQueue = null
@@ -978,6 +983,25 @@ export async function closeQueues(): Promise<void> {
   aiProactiveQueue = null
   whatsappArchiveQueue = null
   sendingDomainsQueue = null
+}
+
+/** Sales cadences tick (c1-sales-cadences). */
+export function getCrmCadencesQueue(): Queue<
+  CrmCadencesJobPayload[CrmCadencesJob],
+  unknown,
+  CrmCadencesJob
+> {
+  if (!crmCadencesQueue) {
+    crmCadencesQueue = new Queue(QueueName.CrmCadences, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmCadencesQueue as Queue<
+    CrmCadencesJobPayload[CrmCadencesJob],
+    unknown,
+    CrmCadencesJob
+  >
 }
 
 export function getCrmTaskRemindersQueue(): Queue<

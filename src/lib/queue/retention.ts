@@ -128,6 +128,9 @@ export const UsageRollupCron = '*/15 * * * *'
 /** CRM task reminders (due within 1 h / overdue): every 15 minutes. */
 export const CrmTaskRemindersCron = '*/15 * * * *' as const
 
+/** Sales cadences: due steps run every minute. */
+export const CrmCadencesCron = '* * * * *' as const
+
 /**
  * Due-date notices of ticket tasks: every 15 minutes, so "due within the
  * hour" is announced with at least 45 minutes to spare.

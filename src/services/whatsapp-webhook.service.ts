@@ -45,6 +45,7 @@ import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repos
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
+import { CrmCadenceReplyService } from './crm-cadence-reply.service'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { CrmNewsletterWhatsAppReceiptsService } from './crm-newsletter-whatsapp-receipts.service'
 import { SatisfactionSurveyService } from './satisfaction-survey.service'
@@ -458,6 +459,15 @@ export const WhatsAppWebhookService = {
         // The row is the one published below: show the summary right away.
         if (reply.value.text) message.value.text = reply.value.text
       }
+    }
+
+    // Sales cadences stop on their own when the lead answers (never fails
+    // the webhook).
+    if (!serviceDesk) {
+      await CrmCadenceReplyService.onWhatsAppReply(
+        workspaceId,
+        contact.value.waId,
+      )
     }
 
     if (input.rawMediaUrl) {

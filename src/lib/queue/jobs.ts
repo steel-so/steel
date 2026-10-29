@@ -31,6 +31,7 @@ export const QueueName = {
   ServicedeskInventory: 'servicedesk-inventory',
   ServicedeskIntegrations: 'servicedesk-integrations',
   CrmTaskReminders: 'crm-task-reminders',
+  CrmCadences: 'crm-cadences',
   ServicedeskTaskReminders: 'servicedesk-task-reminders',
   SteelAgents: 'steel-agents',
   Notifications: 'notifications',
@@ -654,6 +655,21 @@ export type CrmTaskRemindersJob =
 
 export type CrmTaskRemindersJobPayload = {
   [CrmTaskRemindersJob.RunTick]: Record<string, never>
+}
+
+/**
+ * Sales cadences (c1-sales-cadences): every minute the worker claims the
+ * enrollments whose next step is due and runs it (e-mail, WhatsApp, task).
+ */
+export const CrmCadencesJob = {
+  RunTick: 'run-tick',
+} as const
+
+export type CrmCadencesJob =
+  (typeof CrmCadencesJob)[keyof typeof CrmCadencesJob]
+
+export type CrmCadencesJobPayload = {
+  [CrmCadencesJob.RunTick]: Record<string, never>
 }
 
 /**

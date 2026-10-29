@@ -15,6 +15,7 @@ import { processAiProactive } from '../src/lib/queue/processors/ai-proactive'
 import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-weekly-email'
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmApolloImport } from '../src/lib/queue/processors/crm-apollo-import'
+import { processCrmCadences } from '../src/lib/queue/processors/crm-cadences'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
 import { processCrmCnpjEnrichment } from '../src/lib/queue/processors/crm-cnpj-enrichment'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
@@ -66,6 +67,7 @@ import {
   scheduleAiIndexJobs,
   scheduleAiProactiveJobs,
   scheduleAiUsageWeeklyEmailJobs,
+  scheduleCrmCadencesJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
   scheduleCrmNewsletterAutomationJobs,
@@ -275,6 +277,7 @@ async function main(): Promise<void> {
   workers.push(
     registerWorker(QueueName.CrmTaskReminders, processCrmTaskReminders),
   )
+  workers.push(registerWorker(QueueName.CrmCadences, processCrmCadences))
   workers.push(registerWorker(QueueName.SteelAgents, processSteelAgents))
   workers.push(registerWorker(QueueName.Notifications, processNotifications))
   workers.push(registerWorker(QueueName.SearchReindex, processSearchReindex))
@@ -341,6 +344,7 @@ async function main(): Promise<void> {
   await scheduleServicedeskInventoryJobs()
   await scheduleServicedeskIntegrationsJobs()
   await scheduleCrmTaskRemindersJobs()
+  await scheduleCrmCadencesJobs()
   await scheduleServicedeskTaskRemindersJobs()
   await scheduleSteelAgentsJobs()
   await scheduleNotificationsJobs()
