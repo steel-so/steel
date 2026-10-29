@@ -1285,3 +1285,105 @@ export const WhatsAppCostReportDTO = dto(
     }),
   }),
 )
+
+/* ------------- anúncios Click-to-WhatsApp com atribuição (Z4) ------------- */
+
+export const WhatsAppAdSettingsDTO = dto(
+  'WhatsAppAdSettings',
+  z.object({
+    enabled: z.boolean().meta({
+      description:
+        'Chave geral (desligada por padrão): desligada, o webhook ignora o bloco `referral` do anúncio.',
+    }),
+    createLeads: z.boolean().meta({
+      description: 'Abre um lead no CRM quando o contato chega de um anúncio.',
+    }),
+    leadOwnerId: z.string().nullable().meta({
+      description:
+        'Responsável pelos leads abertos; `null` = só as regras de roteamento.',
+    }),
+    leadSource: z.string().meta({
+      description:
+        'Texto base da origem do lead; o título do anúncio é anexado a ele.',
+      example: 'Anúncio Click-to-WhatsApp',
+    }),
+  }),
+)
+
+export const WhatsAppAdReferralDTO = dto(
+  'WhatsAppAdReferral',
+  z.object({
+    id: id('ckadref1'),
+    conversationId: id('ckconv1'),
+    sourceType: z
+      .string()
+      .meta({ example: 'ad', description: '`ad` ou `post`.' }),
+    sourceId: z.string().meta({
+      description: 'Id do anúncio (ou da publicação) na Meta.',
+      example: '120210000000000',
+    }),
+    sourceUrl: z.string().nullable(),
+    headline: z.string().nullable().meta({ description: 'Título do anúncio.' }),
+    body: z.string().nullable().meta({ description: 'Texto do anúncio.' }),
+    mediaType: z.string().nullable(),
+    mediaUrl: z.string().nullable(),
+    leadId: z.string().nullable().meta({
+      description: 'Lead do CRM atribuído a este anúncio, quando existir.',
+    }),
+    receivedAt: dateTime(),
+  }),
+)
+
+export const WhatsAppAdSpendDTO = dto(
+  'WhatsAppAdSpend',
+  z.object({
+    id: id('ckadspend1'),
+    sourceId: z.string(),
+    label: z.string().nullable(),
+    periodStart: z.string().meta({ example: '2026-10-01' }),
+    periodEnd: z.string().meta({ example: '2026-10-31' }),
+    amount: z.number().meta({ description: 'Gasto em R$ no período todo.' }),
+    note: z.string().nullable(),
+    createdAt: dateTime(),
+  }),
+)
+
+const AdMetrics = z.object({
+  clicks: z.number().int().meta({
+    description: 'Mensagens que chegaram com o bloco `referral`.',
+  }),
+  conversations: z.number().int(),
+  contacts: z.number().int(),
+  leads: z.number().int(),
+  leadsWon: z.number().int(),
+  revenue: z.number().meta({
+    description: 'Soma do valor fechado dos leads ganhos, em R$.',
+  }),
+  spend: z.number().meta({
+    description: 'Gasto digitado, proporcional aos dias dentro do período.',
+  }),
+  costPerConversation: z.number().nullable(),
+  costPerLead: z.number().nullable(),
+  roi: z.number().nullable().meta({
+    description: '(receita - gasto) / gasto; `null` sem gasto.',
+  }),
+})
+
+export const WhatsAppAdReportDTO = dto(
+  'WhatsAppAdReport',
+  z.object({
+    from: z.string(),
+    to: z.string(),
+    totals: AdMetrics,
+    rows: z.array(
+      AdMetrics.extend({
+        sourceId: z.string(),
+        sourceType: z.string(),
+        name: z.string().nullable().meta({
+          description: 'Último título visto do anúncio ou o rótulo do gasto.',
+        }),
+        sourceUrl: z.string().nullable(),
+      }),
+    ),
+  }),
+)
