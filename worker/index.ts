@@ -16,6 +16,7 @@ import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmApolloImport } from '../src/lib/queue/processors/crm-apollo-import'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
+import { processCrmCnpjEnrichment } from '../src/lib/queue/processors/crm-cnpj-enrichment'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
 import { processCrmNewsletter } from '../src/lib/queue/processors/crm-newsletter'
 import { processCrmNewsletterAutomation } from '../src/lib/queue/processors/crm-newsletter-automation'
@@ -230,6 +231,7 @@ async function main(): Promise<void> {
   )
   workers.push(
     registerWorker(QueueName.CrmApolloImport, processCrmApolloImport),
+    registerWorker(QueueName.CrmCnpjEnrichment, processCrmCnpjEnrichment),
   )
   workers.push(
     registerWorker(QueueName.CrmProposalExpiry, processCrmProposalExpiry),
