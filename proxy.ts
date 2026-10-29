@@ -58,6 +58,10 @@ const PUBLIC_ROUTES = [
   // and the Resend webhook (Svix signature) — no session.
   '/api/crm/campaigns/c', '/api/crm/campaigns/o',
   '/api/crm/campaigns/resend-webhook',
+  // CRM newsletter (ADR 0054): public subscribe, double opt-in confirmation,
+  // preference center and unsubscribe (one-click RFC 8058) — signed tokens,
+  // no session.
+  '/newsletter', '/api/newsletters',
   // Aprovação de chamado do ServiceDesk por e-mail: link sem sessão (token)
   '/servicedesk/approval', '/api/servicedesk/approvals',
   // Abertura de chamado por monitoramento: webhook sem sessão (token na URL)

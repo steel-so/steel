@@ -44,6 +44,10 @@ export const CrmFormDTO = dto(
       successMessage: z.string().nullable(),
       redirectUrl: z.string().nullable(),
       submissionCount: z.number().int(),
+      newsletterId: z.string().nullable().meta({
+        description:
+          'Newsletter em que a caixa de consentimento do formulário inscreve (ADR 0054). Nulo = não inscreve.',
+      }),
       workspaceId: z.string(),
       createdById: z.string(),
       updatedById: z.string().nullable(),

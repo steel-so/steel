@@ -86,6 +86,7 @@ export const CrmFormRepository = {
       publishedAt?: Date | null
       successMessage?: string
       redirectUrl?: string
+      newsletterId?: string | null
       updatedById?: string
     },
   ): Promise<Result<CrmForm>> {

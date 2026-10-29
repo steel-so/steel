@@ -30,12 +30,14 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { saveCrmForm, useCrmForm } from '@/src/hooks/use-crm-form'
+import { useCrmNewsletters } from '@/src/hooks/use-crm-newsletters'
 import {
   ACTION_TARGETS,
   FORM_ACTIONS,
   FORM_FIELD_TYPES,
   TARGET_ATTRIBUTES,
 } from '@/src/schemas/crm-form.schema'
+import { crmFormNewsletterConsentText } from '@/src/schemas/crm-newsletter.schema'
 import type {
   CrmFormActionDTO,
   CrmFormFieldDefinition,
@@ -127,12 +129,15 @@ function defaultMapping(action: CrmFormActionDTO): {
   return { target: first.target, attribute: first.attribute }
 }
 
+const NO_NEWSLETTER = 'NONE'
+
 function toPublicForm(
   name: string,
   description: string,
   fields: CrmFormFieldDefinition[],
   phases: CrmFormPhase[],
   successMessage: string,
+  newsletterName?: string,
 ): CrmFormPublicDTO {
   return {
     id: 'preview',
@@ -140,6 +145,12 @@ function toPublicForm(
     description: description || null,
     successMessage: successMessage || null,
     redirectUrl: null,
+    newsletter: newsletterName
+      ? {
+          name: newsletterName,
+          consentText: crmFormNewsletterConsentText(newsletterName),
+        }
+      : null,
     phases,
     fields: fields.map((f) => ({
       key: f.key,
@@ -211,6 +222,16 @@ function CrmFormBuilderInner({
     initial.successMessage ?? '',
   )
   const [status, setStatus] = useState(initial.status)
+  const [newsletterId, setNewsletterId] = useState(
+    initial.newsletterId ?? NO_NEWSLETTER,
+  )
+  const newsletters = useCrmNewsletters(workspaceId)
+  const newsletterOptions = (newsletters.data ?? []).filter(
+    (n) => n.status === 'ACTIVE' || n.id === newsletterId,
+  )
+  const newsletterName = newsletterOptions.find(
+    (n) => n.id === newsletterId,
+  )?.name
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
@@ -233,6 +254,7 @@ function CrmFormBuilderInner({
       fields,
       phases,
       successMessage: successMessage.trim() ? successMessage.trim() : undefined,
+      newsletterId: newsletterId === NO_NEWSLETTER ? null : newsletterId,
     }
   }
 
@@ -349,6 +371,7 @@ function CrmFormBuilderInner({
     fields,
     phases,
     successMessage,
+    newsletterName,
   )
 
   return (
@@ -453,6 +476,37 @@ function CrmFormBuilderInner({
                   placeholder='Recebemos suas informações. Obrigado!'
                   onChange={(e) => setSuccessMessage(e.target.value)}
                 />
+              </div>
+
+              <div className='flex flex-col gap-1.5'>
+                <Label htmlFor='form-newsletter'>Inscrever na newsletter</Label>
+                <Select
+                  value={newsletterId}
+                  onValueChange={(v) => setNewsletterId(String(v))}
+                >
+                  <SelectTrigger id='form-newsletter' className='w-full'>
+                    <SelectValue>
+                      {(value: string) =>
+                        value === NO_NEWSLETTER
+                          ? 'Não inscrever'
+                          : (newsletterOptions.find((n) => n.id === value)
+                              ?.name ?? 'Newsletter')
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_NEWSLETTER}>Não inscrever</SelectItem>
+                    {newsletterOptions.map((n) => (
+                      <SelectItem key={n.id} value={n.id}>
+                        {n.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className='text-muted-foreground text-xs'>
+                  O formulário ganha uma caixa opcional de autorização. Só quem
+                  marcar e informar o e-mail entra na newsletter.
+                </p>
               </div>
             </section>
 

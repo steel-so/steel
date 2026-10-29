@@ -187,6 +187,11 @@ export const TAG_GROUPS = [
         description:
           'Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração e migração das landing pages.',
       },
+      {
+        name: 'CRM · Newsletters',
+        description:
+          'Newsletters do CRM (ADR 0054): publicações com remetente no domínio do cliente, assinantes com prova de consentimento, importação e exportação em CSV.',
+      },
     ],
   },
   {
@@ -417,6 +422,11 @@ export const TAG_GROUPS = [
         name: 'CRM público · Modo TV',
         description:
           'Painel do CRM no telão da equipe de vendas: link somente leitura, sem login (o token é o acesso; revogar corta a tela).',
+      },
+      {
+        name: 'CRM público · Newsletter',
+        description:
+          'Inscrição pública na newsletter, confirmação dupla, central de preferências e descadastro de um clique (RFC 8058). Sem sessão: o link assinado é o acesso.',
       },
     ],
   },

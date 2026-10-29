@@ -180,6 +180,7 @@ export function CrmPublicFormRenderer({
 }) {
   const [values, setValues] = useState<Values>({})
   const [honeypot, setHoneypot] = useState('')
+  const [newsletterConsent, setNewsletterConsent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -198,7 +199,11 @@ export function CrmPublicFormRenderer({
       const res = await fetch(`/api/crm/forms/${publicToken}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values, campaign: campaignRefOfPage() }),
+        body: JSON.stringify({
+          values,
+          campaign: campaignRefOfPage(),
+          ...(form.newsletter && { newsletterConsent }),
+        }),
       })
       const json = await res.json()
       if (!res.ok || !json.success) {
@@ -241,6 +246,25 @@ export function CrmPublicFormRenderer({
   )
 
   const disabled = preview || submitting
+
+  // Optional consent box of a form that subscribes to a newsletter (ADR
+  // 0054): never pre-ticked, never required to send the form.
+  const newsletterField = form.newsletter ? (
+    <div className='flex items-start gap-2'>
+      <Checkbox
+        id='newsletter-consent'
+        checked={newsletterConsent}
+        disabled={disabled}
+        onCheckedChange={(checked) => setNewsletterConsent(checked === true)}
+      />
+      <Label
+        htmlFor='newsletter-consent'
+        className='font-normal text-muted-foreground leading-snug'
+      >
+        {form.newsletter.consentText}
+      </Label>
+    </div>
+  ) : null
   const grouped = groupFieldsByPhase(form.fields, form.phases)
 
   if (grouped.length > 1) {
@@ -276,6 +300,7 @@ export function CrmPublicFormRenderer({
           </QuestionnaireItem>
         ))}
 
+        {newsletterField}
         {honeypotField}
         {error ? <p className='text-destructive text-sm'>{error}</p> : null}
 
@@ -315,6 +340,7 @@ export function CrmPublicFormRenderer({
         disabled={disabled}
       />
 
+      {newsletterField}
       {honeypotField}
       {error ? <p className='text-destructive text-sm'>{error}</p> : null}
 

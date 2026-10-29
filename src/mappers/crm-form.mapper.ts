@@ -20,6 +20,7 @@ export function toCrmFormDTO(form: CrmForm): CrmFormDTO {
     successMessage: form.successMessage,
     redirectUrl: form.redirectUrl,
     submissionCount: form.submissionCount,
+    newsletterId: form.newsletterId,
     workspaceId: form.workspaceId,
     createdById: form.createdById,
     updatedById: form.updatedById,
@@ -30,7 +31,10 @@ export function toCrmFormDTO(form: CrmForm): CrmFormDTO {
   }
 }
 
-export function toCrmFormPublicDTO(form: CrmForm): CrmFormPublicDTO {
+export function toCrmFormPublicDTO(
+  form: CrmForm,
+  newsletter?: { name: string; consentText: string } | null,
+): CrmFormPublicDTO {
   return {
     id: form.id,
     name: form.name,
@@ -39,6 +43,7 @@ export function toCrmFormPublicDTO(form: CrmForm): CrmFormPublicDTO {
     phases: form.phases as unknown as CrmFormPhase[],
     successMessage: form.successMessage,
     redirectUrl: form.redirectUrl,
+    ...(newsletter !== undefined && { newsletter }),
   }
 }
 

@@ -3,6 +3,7 @@ import {
   createConfirmToken,
   createPreferencesToken,
   createUnsubscribeToken,
+  readConfirmTokenSubject,
   verifyConfirmToken,
   verifyPreferencesToken,
   verifyUnsubscribeToken,
@@ -75,5 +76,24 @@ describe('newsletter tokens', () => {
     expect(verifyUnsubscribeToken(token).ok).toBe(false)
     expect(verifyPreferencesToken(token).ok).toBe(false)
     expect(verifyConfirmToken(token, NOW).ok).toBe(false)
+  })
+})
+
+describe('readConfirmTokenSubject', () => {
+  it('reads the subscriber of an expired but genuine token', () => {
+    const issued = new Date('2026-01-01T00:00:00.000Z')
+    const token = createConfirmToken('sub-9', issued)
+    expect(readConfirmTokenSubject(token)).toEqual({
+      ok: true,
+      value: { subscriberId: 'sub-9' },
+    })
+  })
+
+  it('rejects forged, foreign-purpose and empty payloads', () => {
+    expect(readConfirmTokenSubject('nope').ok).toBe(false)
+    expect(
+      readConfirmTokenSubject(createUnsubscribeToken({ subscriberId: 's' })).ok,
+    ).toBe(false)
+    expect(readConfirmTokenSubject(createConfirmToken('', NOW)).ok).toBe(false)
   })
 })

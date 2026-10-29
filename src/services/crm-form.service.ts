@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { logger } from '@/lib/axiom/logger'
 import { validationError } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
@@ -14,6 +15,7 @@ import {
   CrmFormSubmissionRepository,
 } from '@/src/repositories/crm-form.repository'
 
+import { CrmNewsletterRepository } from '@/src/repositories/crm-newsletter.repository'
 import { CrmPersonRepository } from '@/src/repositories/crm-person.repository'
 import type {
   CreateCrmFormDTO,
@@ -23,6 +25,7 @@ import type {
   UpdateCrmFormDTO,
 } from '@/src/schemas/crm-form.schema'
 import { validateCrmFormSubmission } from '@/src/schemas/crm-form-submission.schema'
+import { crmFormNewsletterConsentText } from '@/src/schemas/crm-newsletter.schema'
 import type {
   CrmFormDTO,
   CrmFormPublicDTO,
@@ -31,6 +34,7 @@ import type {
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { CrmLeadService } from './crm-lead.service'
+import { CrmNewsletterPublicService } from './crm-newsletter-public.service'
 import { notifyCrmFormSubmitted } from './crm-notifications'
 
 /** Todo `phaseId` referenciado por um campo precisa existir em `phases`.
@@ -50,6 +54,27 @@ function hashIp(ip: string): string {
 }
 
 type TargetAttrs = Record<string, unknown>
+
+/** E-mail and name typed in the form: the first `email` field (or one
+ * mapped to an e-mail attribute) and the first field mapped to a name. */
+export function formContact(
+  fields: CrmFormFieldDTO[],
+  values: Record<string, string | boolean>,
+): { email: string | null; name: string | null } {
+  const text = (field: CrmFormFieldDTO | undefined) => {
+    const value = field ? values[field.key] : undefined
+    return typeof value === 'string' && value.trim() ? value.trim() : null
+  }
+  const email = fields
+    .filter((f) => f.type === 'email' || f.mapping.attribute === 'email')
+    .map(text)
+    .find((v) => v !== null)
+  const name = fields
+    .filter((f) => f.mapping.attribute === 'name')
+    .map(text)
+    .find((v) => v !== null)
+  return { email: email ?? null, name: name ?? null }
+}
 
 /** Agrupa os valores enviados pelos atributos de destino declarados no
  * `mapping` de cada campo (ex.: `{ person: { name, email }, ... }`). */
@@ -181,6 +206,14 @@ export const CrmFormService = {
       }
     }
 
+    if (dto.newsletterId) {
+      const newsletter = await CrmNewsletterRepository.findById(
+        dto.newsletterId,
+        workspaceId,
+      )
+      if (!newsletter.ok) return newsletter
+    }
+
     const result = await CrmFormRepository.update(formId, {
       name: dto.name,
       description: dto.description,
@@ -196,6 +229,7 @@ export const CrmFormService = {
             : null,
       successMessage: dto.successMessage,
       redirectUrl: dto.redirectUrl,
+      newsletterId: dto.newsletterId,
       updatedById: actorId,
     })
     if (!result.ok) return result
@@ -315,7 +349,23 @@ export const CrmFormService = {
     )
     if (!moduleEnabled.ok) return moduleEnabled
 
-    return ok(toCrmFormPublicDTO(result.value))
+    if (!result.value.newsletterId) return ok(toCrmFormPublicDTO(result.value))
+    const newsletter = await CrmNewsletterRepository.findById(
+      result.value.newsletterId,
+      result.value.workspaceId,
+    )
+    const active = newsletter.ok && newsletter.value.status === 'ACTIVE'
+    return ok(
+      toCrmFormPublicDTO(
+        result.value,
+        active
+          ? {
+              name: newsletter.value.name,
+              consentText: crmFormNewsletterConsentText(newsletter.value.name),
+            }
+          : null,
+      ),
+    )
   },
 
   async submit(
@@ -323,6 +373,7 @@ export const CrmFormService = {
     ip: string,
     referrer: string | undefined,
     dto: SubmitCrmFormDTO,
+    userAgent: string | null = null,
   ): Promise<Result<CrmFormSubmissionDTO>> {
     const form = await CrmFormRepository.findPublishedByPublicToken(publicToken)
     if (!form.ok) return form
@@ -447,6 +498,38 @@ export const CrmFormService = {
         },
         new Date(),
       )
+    }
+
+    // Newsletter consent box (ADR 0054): best-effort, never fails the submit.
+    if (form.value.newsletterId && dto.newsletterConsent === true) {
+      const contact = formContact(fields, checked.values)
+      const newsletter = contact.email
+        ? await CrmNewsletterRepository.findById(
+            form.value.newsletterId,
+            form.value.workspaceId,
+          )
+        : null
+      if (contact.email && newsletter?.ok) {
+        const subscribed = await CrmNewsletterPublicService.subscribeFromForm({
+          workspaceId: form.value.workspaceId,
+          newsletterId: form.value.newsletterId,
+          formId: form.value.id,
+          email: contact.email,
+          name: contact.name,
+          consentText: crmFormNewsletterConsentText(newsletter.value.name),
+          context: {
+            ip: ip === 'unknown' ? null : ip,
+            userAgent,
+            now: new Date(),
+          },
+        })
+        if (!subscribed.ok) {
+          logger.warn('crm_form.newsletter_subscribe_failed', {
+            formId: form.value.id,
+            code: subscribed.error.code,
+          })
+        }
+      }
     }
 
     if (!ownerNotifiedByLead) {

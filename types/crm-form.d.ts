@@ -51,6 +51,8 @@ export interface CrmFormDTO {
   successMessage: string | null
   redirectUrl: string | null
   submissionCount: number
+  /** Newsletter the consent box subscribes to (ADR 0054). */
+  newsletterId: string | null
   workspaceId: string
   createdById: string
   updatedById: string | null
@@ -68,6 +70,9 @@ export interface CrmFormPublicDTO {
   phases: CrmFormPhase[]
   successMessage: string | null
   redirectUrl: string | null
+  /** Set when the form subscribes to a newsletter: the public form shows
+   * an optional consent box with this text (ADR 0054). */
+  newsletter?: { name: string; consentText: string } | null
 }
 
 export interface CrmFormSubmissionDTO {

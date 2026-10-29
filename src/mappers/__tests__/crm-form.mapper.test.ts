@@ -34,3 +34,14 @@ describe('toCrmFormSubmissionDTO()', () => {
     expect(dto.id).toBe('s-1')
   })
 })
+
+describe('toCrmFormPublicDTO() — newsletter (ADR 0054)', () => {
+  it('should carry the newsletter consent box when given', () => {
+    const form = createFakeCrmForm({ newsletterId: 'nl1' })
+    const newsletter = { name: 'Novidades', consentText: 'Quero receber' }
+    expect(toCrmFormPublicDTO(form, newsletter).newsletter).toEqual(newsletter)
+    expect(toCrmFormPublicDTO(form, null).newsletter).toBeNull()
+    expect(toCrmFormPublicDTO(form)).not.toHaveProperty('newsletter')
+    expect(toCrmFormDTO(form).newsletterId).toBe('nl1')
+  })
+})

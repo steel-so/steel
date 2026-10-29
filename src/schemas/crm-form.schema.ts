@@ -199,6 +199,8 @@ export const UpdateCrmFormSchema = z
     status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
     successMessage: z.string().max(500).optional(),
     redirectUrl: z.string().max(500).optional(),
+    /** Newsletter the consent box subscribes to (ADR 0054); null = none. */
+    newsletterId: z.string().min(1).nullable().optional(),
   })
   .superRefine((data, ctx) => {
     // Só valida a referência cruzada quando os dois vêm juntos no PATCH — se
@@ -223,6 +225,8 @@ export const SubmitCrmFormSchema = z.object({
   values: z.record(z.string(), z.union([z.string(), z.boolean()])),
   /** Campaign parameters of the page URL (multichannel campaigns). */
   campaign: CrmCampaignRefSchema.optional(),
+  /** Visitor ticked "receive the newsletter" (only when the form has one). */
+  newsletterConsent: z.boolean().optional(),
 })
 
 export type SubmitCrmFormDTO = z.infer<typeof SubmitCrmFormSchema>

@@ -1,0 +1,142 @@
+---
+title: Newsletters
+description: Crie newsletters com assinantes próprios, receba inscrições pela página pública ou por formulário, importe e exporte a lista e deixe cada leitor escolher o que recebe.
+section: crm
+order: 12
+---
+
+Em **Marketing › Newsletters** você cria publicações com lista de assinantes
+própria — por exemplo "Novidades do produto" (mensal) e "Dicas para clientes"
+(quinzenal). Cada newsletter é enviada do **domínio da sua empresa** e cada
+leitor escolhe de quais quer participar.
+
+## Criar uma newsletter
+
+Clique em **Nova newsletter** e informe:
+
+- **Nome**: aparece para o leitor na inscrição e no arquivo público.
+- **Nome e e-mail do remetente**: o endereço precisa ser de um domínio
+  verificado em **Ajustes › Domínios de e-mail** (de preferência um subdomínio
+  só para isso, como `news.suaempresa.com.br`).
+- **Confirmação dupla** (ligada por padrão): quem se inscreve recebe um e-mail
+  para confirmar antes de entrar na lista.
+
+Dá para criar a newsletter antes de verificar o domínio. Enquanto ele não está
+verificado, o selo **Domínio não verificado** aparece no card e na página da
+newsletter, e o envio das edições fica bloqueado. Clique no selo para ir direto
+aos domínios.
+
+A lista mostra, para cada newsletter, os assinantes ativos, quantas edições já
+saíram, a data da última edição e se o remetente está verificado.
+
+## A página da newsletter
+
+A newsletter tem três abas:
+
+- **Edições**: as edições numeradas, com o editor visual e o envio (veja o
+  manual de edições).
+- **Assinantes**: a lista de quem recebe.
+- **Configurações**: tudo o que você definiu na criação e mais.
+
+## Assinantes
+
+Na aba **Assinantes** você busca por e-mail ou nome e filtra por **situação**
+e **origem**.
+
+| Situação | O que significa |
+|---|---|
+| Ativo | Recebe as edições. |
+| Aguardando confirmação | Pediu para assinar e ainda não clicou no link do e-mail (vale por 7 dias). |
+| Descadastrado | Saiu pelo link do e-mail ou pela central de preferências. |
+| Retorno permanente | O endereço não existe mais. Sai de todas as newsletters do workspace. |
+| Marcou como spam | Denunciou a newsletter como spam e não recebe mais. |
+
+Quando já existe uma **pessoa no CRM** com o mesmo e-mail, o assinante fica
+ligado a ela. Nenhuma pessoa nova é criada.
+
+### Adicionar uma pessoa
+
+Use **Adicionar** para incluir alguém que autorizou receber a newsletter. Ela
+entra como **Ativa** na hora, e o seu nome fica registrado como quem declarou o
+consentimento. Se preferir, marque **Pedir confirmação por e-mail** para que a
+própria pessoa confirme.
+
+Quem já saiu da newsletter só volta confirmando de novo: o Steel manda o
+e-mail de confirmação em vez de reativar direto. Endereços que pediram para
+não receber e-mails do workspace, com retorno permanente ou que denunciaram
+spam não podem ser adicionados.
+
+### Importar um CSV
+
+1. Clique em **Importar** e escolha o arquivo `.csv` (vírgula ou ponto e
+   vírgula). Ele precisa ter a coluna **email** e, se quiser, **nome**.
+2. Confira a prévia das primeiras linhas.
+3. Marque **Confirmo que essas pessoas autorizaram receber esta newsletter**.
+   Sem essa declaração (LGPD), a importação não acontece.
+4. Opcional: **Pedir confirmação por e-mail antes de ativar** (até 1.000
+   linhas por vez).
+
+No fim você vê quantos entraram, quantos voltaram (precisam confirmar), quantos
+já estavam na lista e as linhas recusadas com o motivo: e-mail inválido,
+repetido no arquivo, descadastrado do workspace, retorno permanente ou
+denúncia de spam. Cada arquivo aceita até 50.000 linhas.
+
+### Exportar
+
+**Exportar** baixa um CSV com todos os assinantes, a situação, a origem e a
+prova do consentimento (data e texto), com as datas no horário de São Paulo. A
+exportação fica registrada na auditoria do workspace.
+
+### Remover
+
+No menu da linha, **Remover** apaga o assinante e o histórico de envios dele.
+Para só parar os envios, o melhor é a própria pessoa sair pelo link do e-mail.
+Para quem está **Aguardando confirmação**, o mesmo menu traz **Reenviar
+confirmação** (no máximo uma vez a cada 10 minutos).
+
+## Como as pessoas se inscrevem
+
+- **Página pública** e elementos do **Sites**: o formulário de inscrição da
+  newsletter.
+- **Formulários do CRM**: no editor do formulário, em **Inscrever na
+  newsletter**, escolha a newsletter. O formulário publicado ganha uma caixa
+  opcional de autorização (nunca vem marcada). Só quem marca e informa o e-mail
+  entra na newsletter; o resto do formulário funciona como sempre.
+- **Sites externos**: um `POST` para `/api/newsletters/subscribe` (veja a
+  referência da API).
+
+Em todos os casos o Steel guarda a data, o IP, o navegador e o texto que a
+pessoa autorizou. Com a confirmação dupla ligada, ela recebe o e-mail de
+confirmação. Ele sai do seu domínio quando está verificado; senão, sai do
+endereço de notificações do Steel com as respostas indo para o seu remetente.
+
+## Sair e preferências
+
+Todo e-mail de newsletter traz no rodapé:
+
+- **Sair desta newsletter**: abre uma página que pede a confirmação (e,
+  opcionalmente, o motivo). Os provedores de e-mail também mostram o botão
+  "Cancelar inscrição", que tira a pessoa com um clique.
+- **Preferências**: a central onde o leitor liga e desliga cada newsletter do
+  workspace, ou usa **Sair de tudo**. "Sair de tudo" também vale para as
+  campanhas de e-mail do CRM.
+
+## Configurações
+
+Na aba **Configurações** você muda nome, endereço público, descrição,
+frequência (texto livre como "Mensal"), modelo das novas edições, remetente,
+endereço de resposta, confirmação dupla e base legal. Ali também ficam:
+
+- **Arquivo público**: liga ou desliga a página com as edições já enviadas e
+  mostra o link para copiar.
+- **Arquivar**: para inscrições e envios sem perder os assinantes.
+  **Reativar** volta ao normal.
+- **Excluir**: tira a newsletter do CRM, libera o endereço público e desliga
+  os formulários que inscreviam nela.
+
+## Permissões
+
+Ver newsletters e assinantes exige a permissão **E-mail › Ver** do perfil.
+Criar e importar exigem **Criar**, editar exige **Editar**, e excluir a
+newsletter ou remover assinantes exige **Excluir**. Donos e administradores
+sempre podem.

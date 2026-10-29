@@ -56,6 +56,7 @@ export async function saveCrmForm(
     status?: 'DRAFT' | 'PUBLISHED'
     successMessage?: string
     redirectUrl?: string
+    newsletterId?: string | null
   },
 ): Promise<MutationResult<CrmFormDTO>> {
   try {

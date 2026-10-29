@@ -18,6 +18,7 @@ import {
   MailSend01Icon,
   Megaphone01Icon,
   MegaphoneIcon,
+  NewsIcon,
   NewTwitterIcon,
   PackageIcon,
   QuoteUpIcon,
@@ -120,6 +121,9 @@ export default async function CrmLayout({
             </NavItem>
             <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
               Listas
+            </NavItem>
+            <NavItem href={`${base}/newsletters`} icon={NewsIcon}>
+              Newsletters
             </NavItem>
             <NavItem href={`${base}/sites`} icon={WebDesign01Icon}>
               Sites

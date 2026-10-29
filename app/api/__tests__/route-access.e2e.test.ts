@@ -67,6 +67,8 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/tv': 'TV link token',
   '/api/mcp': 'OAuth bearer token',
   '/api/v1': 'personal access token',
+  '/api/newsletters':
+    'newsletter subscribe (rate limited, honeypot) and signed confirm/unsubscribe/preferences tokens',
 }
 
 /**
@@ -90,6 +92,8 @@ const OPEN_ENDPOINTS: Record<string, string> = {
   'POST /api/v1/auth/device': 'device authorization request (RFC 8628)',
   'GET /api/crm/unsubscribe/[token]':
     'redirects to the result page; an invalid token unsubscribes nobody',
+  'GET /api/newsletters/unsubscribe/[token]':
+    'redirects to the confirmation page; never unsubscribes on GET',
 }
 
 /** Browser OAuth callbacks send the visitor away instead of answering 401. */

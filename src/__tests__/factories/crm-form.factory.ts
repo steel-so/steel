@@ -46,6 +46,7 @@ export function createFakeCrmFormDTO(
     successMessage: null,
     redirectUrl: null,
     submissionCount: 0,
+    newsletterId: null,
     workspaceId: createId(),
     createdById: createId(),
     updatedById: null,
