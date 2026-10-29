@@ -1,0 +1,114 @@
+---
+title: Chatbots
+description: Monte, sem código, o fluxo que atende o cliente antes de uma pessoa ou da IA, com menus, perguntas, condições e integrações.
+section: comunicacao
+order: 7
+---
+
+Um **chatbot** é um fluxo desenhado na tela que conversa com o cliente assim que
+ele escreve: mostra um menu, faz perguntas, decide o caminho pelas respostas,
+consulta outro sistema e, no fim, passa a conversa para uma **equipe**, um
+**atendente** ou para a **IA de atendimento**.
+
+<Callout type='admin'>
+  Criar, editar, publicar e excluir chatbots é de dono e administradores.
+  Membros veem a lista, o desenho e as sessões, sem poder alterar.
+</Callout>
+
+## Criar um chatbot
+
+Em **Chatbots**, clique em **Novo chatbot** e informe:
+
+- **Nome** e uma descrição opcional.
+- **Modelo**: em branco, menu de atendimento ou captura de contato (nome e
+  e-mail).
+- **Quando começa** (o gatilho):
+  - **Conversa nova**: toda conversa que abre, ou que reabre depois de fechada,
+    sem atendente.
+  - **Palavra-chave**: a mensagem tem uma das palavras que você definiu (por
+    exemplo `orçamento` ou `segunda via`). Acentos e maiúsculas não importam.
+  - **Fora do horário**: a conversa abre fora do horário de atendimento
+    configurado em **Configurações**.
+- **Conexão**: um número específico ou todos os números do workspace.
+- **Tempo de espera**: depois de quanto tempo sem resposta do cliente a sessão
+  expira (padrão: 12 horas).
+
+O chatbot nasce como **rascunho**. Nada acontece com os clientes até você
+**publicar**.
+
+## O editor
+
+O fluxo é um desenho: cada **bloco** tem saídas que você liga ao próximo bloco.
+Adicione blocos pelo menu **Adicionar bloco**, arraste para organizar e clique
+num bloco para configurá-lo no painel da direita.
+
+| Bloco | O que faz |
+| --- | --- |
+| **Mensagem** | Envia um texto |
+| **Menu** | Mostra opções (de 2 a 10). Até 3 opções curtas viram botões; as demais, uma lista numerada. Cada opção tem a sua saída |
+| **Pergunta** | Faz uma pergunta e guarda a resposta numa variável. Valida texto, número, e-mail, telefone, CPF, CNPJ ou data. Resposta inválida repete a pergunta |
+| **Condição** | Compara uma variável (igual, contém, maior que, está vazia...) e segue pelo primeiro ramo que bater, ou pela saída **senão** |
+| **Definir variável** | Guarda um valor, que pode usar outras variáveis |
+| **Integração** | Chama uma URL HTTPS sua (GET ou POST com JSON) e guarda um campo da resposta numa variável. Tem uma saída de **erro** |
+| **Passar para atendente** | Envia uma mensagem opcional e coloca a conversa na fila de uma equipe, com um atendente ou na fila geral |
+| **Passar para a IA** | Liga a IA de atendimento, com uma instrução opcional para a primeira resposta |
+| **Encerrar** | Envia uma despedida e, se quiser, fecha a conversa |
+
+Use `{{nome_da_variavel}}` em qualquer texto para inserir o que o cliente
+respondeu. Já existem `{{contact_name}}` (nome do contato), `{{contact_phone}}`
+e `{{last_message}}` (a última mensagem).
+
+<Callout type='nota'>
+  Se o cliente responder o que o menu ou a pergunta não entende mais vezes do
+  que o limite do bloco, o fluxo segue pela saída **resposta inválida** se você
+  a ligou; senão, a conversa vai para a fila de atendimento. Ninguém fica preso
+  num laço.
+</Callout>
+
+### Integração com outro sistema
+
+A chamada só aceita endereços **HTTPS públicos**, sem redirecionamento, e espera
+até 8 segundos. Não envie senhas no desenho do fluxo: use um endereço com um
+código difícil de adivinhar. Se a chamada falhar, o fluxo segue pela saída de
+**erro** (ou pela saída normal, se não houver).
+
+## Testar, verificar e publicar
+
+- **Testar** abre um simulador: você faz o papel do cliente e vê o que o bot
+  enviaria, sem mandar nada a ninguém e sem chamar integrações. O simulador roda
+  o **rascunho**.
+- **Verificar** aponta o que impede a publicação (início sem ligação, opção de
+  menu sem destino, ciclo que nunca espera o cliente, equipe ou atendente que
+  não existe mais) e avisa do que é só atenção.
+- **Publicar** congela o rascunho como o fluxo em execução. Conversas que já
+  estavam no meio do fluxo terminam na versão em que começaram.
+
+Um chatbot publicado fica **Ativo**. Você pode **pausar** (não começa novas
+conversas, as em andamento terminam) e **ativar** de novo quando quiser. Editar
+o desenho não muda o chatbot ativo até a próxima publicação: a lista mostra
+**Alterações não publicadas**.
+
+## Como o chatbot convive com a equipe e a IA
+
+- Enquanto o bot conduz a conversa, a **IA de atendimento não responde**.
+- Se uma pessoa **assume** a conversa (atribuição manual ou por distribuição),
+  o fluxo para na hora.
+- Ao **passar para atendente**, a conversa entra na fila (ou vai para quem você
+  escolheu), a IA fica desligada e o histórico mostra “Chatbot passou a conversa
+  para...”. O bot não recomeça sozinho nessa conversa; só se ela for fechada e
+  reaberta.
+- Ao **passar para a IA**, a IA responde a partir dali. Se a IA estiver
+  desligada em **Configurações**, a conversa vai para a fila de atendimento.
+- Se o WhatsApp recusar um envio, o fluxo para e a conversa vai para a fila.
+
+## Sessões
+
+Na aba **Sessões** do chatbot está cada execução: o contato, como terminou
+(concluída, passou para atendente, passou para a IA, expirou, cancelada porque
+uma pessoa assumiu, falhou), as respostas coletadas e o link da conversa. A lista
+de chatbots mostra o resumo dos últimos 30 dias.
+
+<Callout type='nota'>
+  O chatbot vale para as conexões do módulo Comunicação. O WhatsApp do
+  ServiceDesk não usa chatbots.
+</Callout>
