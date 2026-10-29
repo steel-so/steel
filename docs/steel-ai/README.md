@@ -352,3 +352,22 @@ UI: `SteelAgentAssignSelect` (coluna do chamado e painel do lead; some quando
 não há agentes) e o `@` do compositor do histórico do chamado, que mistura
 pessoas e Steel Agents (rótulo "Agente de IA"). Hook:
 `src/hooks/use-steel-agent-assignment.ts`.
+
+## Versões dos Steel Agents — trava por eval e A/B (A2, 29/10/2026)
+
+Cada edição de `instructions`, `tools` ou `maxToolRounds` vira uma `SteelAgentVersion` (`steel_agent_versions`, número sequencial por agente, snapshot imutável). As colunas do `SteelAgent` espelham sempre a versão **publicada** (`publishedVersionId`); assim o resto do sistema (lista, runner sem versão, templates) segue lendo o agente como antes. Editar nome, gatilho, responsável, pausa ou limite mensal não versiona.
+
+**Fluxo de uma edição** (`SteelAgentService.update` → `SteelAgentVersionService.submit`):
+
+1. Só uma versão `PENDING_EVAL` por agente (`STEEL_AGENT_VERSION_PENDING`).
+2. Agente legado sem versão: o estado atual vira a v1 `PUBLISHED` (`ensureBaseline`; agentes novos ganham a v1 na criação).
+3. Com `evalSetId` (conjunto `AiEvalTarget.STEEL_AGENT`, com casos): a versão nasce `PENDING_EVAL`, cria-se um `AiEvalRun` (`agentVersionId`, motivo `prompt_change`) na fila `ai-eval` e **o agente segue na versão publicada**. O runner de evals (`ai-eval-runner.ts`) responde cada caso com as instruções da versão (prompt do agente + aviso de "sem ferramentas") e, ao fechar o run, chama `SteelAgentVersionService.onEvalFinished`: taxa de aprovados >= `evalMinPassRate` (padrão 0,8) publica ou inicia o A/B; abaixo disso, `REJECTED` com a nota; run `FAILED` (cota, IA desligada) também rejeita. Sem casos avaliados nunca passa.
+4. Sem `evalSetId`: publica na hora (ou vira challenger, se pediu A/B).
+5. Reverter é uma edição: `POST .../versions/{versionId}/restore` cria uma versão nova com o conteúdo antigo e passa pela mesma trava.
+
+**A/B**: `rolloutPercent` (1 a 99) faz a versão virar `CHALLENGER` (uma só por agente; a anterior vira `DISCARDED`; `challengerVersionId`). Quando a execução nasce, o runner (`withVersion`) sorteia `pickVersionId` entre publicada e challenger, grava `SteelAgentRun.versionId` e **sobrepõe** instructions/tools/maxToolRounds da execução com o snapshot da versão — a execução retomada após aprovação continua na mesma versão. "Testar agente" não recebe versão. `promote` publica o challenger (a publicada vira `SUPERSEDED`); `discard` encerra `PENDING_EVAL`/`CHALLENGER` sem publicar.
+
+**Métricas** (`GET .../versions`): por versão, só execuções reais (`isTest = false`): execuções, sucesso (SUCCEEDED / (SUCCEEDED + FAILED)), custo e etapas médios, taxa de aprovação das ações (`AiPendingAction` decididas: executadas ou falhas na execução = aprovadas; canceladas e expiradas = não). Lê até 20 mil linhas recentes.
+
+**Decisões da fatia**: (a) o conjunto de avaliação é escolhido por agente (`evalSetId` sem FK; se o conjunto sumir, a edição falha com `STEEL_AGENT_EVAL_SET_INVALID` em vez de publicar sem trava); (b) a trava avalia só o prompt, sem ferramentas — as ferramentas dos Steel Agents mexem em dados de verdade e A3 (simulação de conversas inteiras) estende isso; (c) quem edita agentes (`steel-agents` EDIT) escolhe o conjunto, mas criar/editar conjuntos continua restrito a dono/admin (custam cota); (d) sem notificação própria no resultado da avaliação (a aba Versões atualiza sozinha enquanto há versão em avaliação) — fica para quando houver um `NotificationKind` de agentes; (e) migração sem backfill: agentes antigos ganham a v1 na primeira edição.
+
