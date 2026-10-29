@@ -370,7 +370,7 @@ describe('create()', () => {
       crmFormRepo.findById.mockResolvedValue(err(notFound('CrmForm')))
       expectErr(
         await WhatsAppFlowService.create('u', 'ws', crmInput),
-        'NOT_FOUND',
+        'RESOURCE_NOT_FOUND',
       )
     })
   })
