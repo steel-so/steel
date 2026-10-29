@@ -1,0 +1,50 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: e6fd53a476d942628f24e442c95b272f
+      name: Templates/Steel
+  templates:
+    - uuid: 04159231dd2544388a724f1c585f107f
+      template: 'Steel Server Disk'
+      name: 'Steel Server Disk'
+      description: |
+        Disk usage of the Steel application server (root filesystem, where Docker
+        images and volumes live). Alerts at 80% (warning) and 90% (high).
+        Requires the Zabbix agent on the host. See infra/zabbix/README.md.
+      groups:
+        - name: Templates/Steel
+      items:
+        - uuid: 8a99cf6d0e474caeb19ab19c854c9e39
+          name: 'Disk used on /: percent'
+          key: 'vfs.fs.size[/,pused]'
+          delay: 1m
+          history: 14d
+          trends: 365d
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: component
+              value: storage
+            - tag: app
+              value: steel
+          triggers:
+            - uuid: 6580536c4a9947e9ad3ebab970806710
+              expression: 'last(/Steel Server Disk/vfs.fs.size[/,pused])>=80'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Steel Server Disk/vfs.fs.size[/,pused])<75'
+              name: 'Disk usage on / is {ITEM.LASTVALUE1} on {HOST.NAME} (80% or more)'
+              priority: WARNING
+              description: 'Free space with docker image prune -a -f and check docker system df.'
+              tags:
+                - tag: app
+                  value: steel
+            - uuid: 8bb02b84c9bb4562a0e52a482b8a4ef0
+              expression: 'last(/Steel Server Disk/vfs.fs.size[/,pused])>=90'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Steel Server Disk/vfs.fs.size[/,pused])<85'
+              name: 'Disk usage on / is {ITEM.LASTVALUE1} on {HOST.NAME} (90% or more, Postgres at risk)'
+              priority: HIGH
+              description: 'Postgres panics when it cannot write a checkpoint. Free space now.'
+              tags:
+                - tag: app
+                  value: steel
