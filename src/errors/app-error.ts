@@ -1925,3 +1925,23 @@ export const crmNewsletterAbAudienceTooSmall = (minimum: number): AppError =>
 
 export const whatsappAdSpendNotFound = (): AppError =>
   appError('WHATSAPP_AD_SPEND_NOT_FOUND', 'Gasto com anúncio não encontrado')
+
+// ─── z2 · chatbot builder ───────────────────────────────────────────────────
+
+export const whatsappChatbotNotFound = (): AppError =>
+  appError('WHATSAPP_CHATBOT_NOT_FOUND', 'Chatbot não encontrado')
+
+export const whatsappChatbotInvalidFlow = (message: string): AppError =>
+  appError('WHATSAPP_CHATBOT_INVALID_FLOW', message)
+
+export const whatsappChatbotNotPublished = (): AppError =>
+  appError(
+    'WHATSAPP_CHATBOT_NOT_PUBLISHED',
+    'Publique o fluxo antes de ativar o chatbot',
+  )
+
+export const whatsappChatbotLimitReached = (max: number): AppError =>
+  appError(
+    'WHATSAPP_CHATBOT_LIMIT_REACHED',
+    `O workspace pode ter no máximo ${max} chatbots`,
+  )

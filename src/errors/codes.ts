@@ -1253,6 +1253,22 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_AD_SPEND_NOT_FOUND',
     status: 404,
   },
+  WHATSAPP_CHATBOT_NOT_FOUND: {
+    code: 'WHATSAPP_CHATBOT_NOT_FOUND',
+    status: 404,
+  },
+  WHATSAPP_CHATBOT_INVALID_FLOW: {
+    code: 'WHATSAPP_CHATBOT_INVALID_FLOW',
+    status: 422,
+  },
+  WHATSAPP_CHATBOT_NOT_PUBLISHED: {
+    code: 'WHATSAPP_CHATBOT_NOT_PUBLISHED',
+    status: 409,
+  },
+  WHATSAPP_CHATBOT_LIMIT_REACHED: {
+    code: 'WHATSAPP_CHATBOT_LIMIT_REACHED',
+    status: 409,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

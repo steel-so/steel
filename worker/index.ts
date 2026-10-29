@@ -52,6 +52,7 @@ import { processWhatsappAiReply } from '../src/lib/queue/processors/whatsapp-ai-
 import { processWhatsappArchive } from '../src/lib/queue/processors/whatsapp-archive'
 import { processWhatsappBroadcast } from '../src/lib/queue/processors/whatsapp-broadcast'
 import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsapp-button-actions'
+import { processWhatsappChatbot } from '../src/lib/queue/processors/whatsapp-chatbot'
 import { processWhatsappConversationLifecycle } from '../src/lib/queue/processors/whatsapp-conversation-lifecycle'
 import { processWhatsappMedia } from '../src/lib/queue/processors/whatsapp-media'
 import { processWhatsappSentiment } from '../src/lib/queue/processors/whatsapp-sentiment'
@@ -298,6 +299,10 @@ async function main(): Promise<void> {
       QueueName.CrmNewsletterAutomation,
       processCrmNewsletterAutomation,
     ),
+  )
+  // Concurrency 1 (default): a session's steps never run in parallel.
+  workers.push(
+    registerWorker(QueueName.WhatsappChatbot, processWhatsappChatbot),
   )
 
   failureListener = startJobFailureListener(

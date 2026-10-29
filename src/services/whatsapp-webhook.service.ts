@@ -51,6 +51,7 @@ import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppAdAttributionService } from './whatsapp-ad-attribution.service'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
+import { WhatsAppChatbotRuntimeService } from './whatsapp-chatbot-runtime.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
@@ -250,8 +251,14 @@ export const WhatsAppWebhookService = {
 
     let conversationId: string
     let aiActive: boolean
+    /** This message opened the conversation (new, or a closed one reopened). */
+    let opening = false
     /** Owner fields of the conversation, for the SLA cycle bookkeeping. */
-    let slaOwner: { teamId: string | null; assignedUserId: string | null }
+    let slaOwner: {
+      teamId: string | null
+      assignedUserId: string | null
+      aiHandoff: boolean
+    }
     /** Set when this message puts the conversation in the agents' queue. */
     let waiting: {
       conversation: WhatsAppConversation
@@ -314,6 +321,7 @@ export const WhatsAppWebhookService = {
         if (!reopened.ok) return reopened
         conversationId = reopened.value.id
         aiActive = reopenAi
+        opening = true
         slaOwner = reopened.value
         if (!closed.value.assignedUserId) {
           waiting = { conversation: reopened.value, reason: 'reopened' }
@@ -336,6 +344,7 @@ export const WhatsAppWebhookService = {
         if (!created.ok) return created
         conversationId = created.value.id
         aiActive = aiConfigActive
+        opening = true
         slaOwner = created.value
         waiting = { conversation: created.value, reason: 'new' }
         // Inbound is counted toward the monthly limit but never blocked.
@@ -486,8 +495,34 @@ export const WhatsAppWebhookService = {
       })
     }
 
+    // Visual chatbot (Z2): when a flow owns the message the AI stays quiet.
+    let chatbotEngaged = false
+    if (!serviceDesk && !isOptOut && !buttonHandled) {
+      const claim = await WhatsAppChatbotRuntimeService.claimInbound({
+        workspaceId,
+        connection,
+        conversation: {
+          id: conversationId,
+          assignedUserId: slaOwner.assignedUserId,
+          aiHandoff: slaOwner.aiHandoff,
+        },
+        messageId: message.value.id,
+        text: input.text ?? '',
+        opening,
+      })
+      if (claim.ok) {
+        chatbotEngaged = claim.value.engaged
+      } else {
+        logger.warn('whatsapp.chatbot.claim_failed', {
+          workspaceId,
+          conversationId,
+          reason: claim.error.code,
+        })
+      }
+    }
+
     // A confirmação do descadastro já é a resposta — a IA não responde.
-    if (aiActive && !isOptOut && !buttonHandled) {
+    if (aiActive && !isOptOut && !buttonHandled && !chatbotEngaged) {
       await getWhatsappAiReplyQueue().add(WhatsappAiReplyJob.GenerateAiReply, {
         conversationId,
         messageId: message.value.id,
