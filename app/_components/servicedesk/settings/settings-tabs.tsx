@@ -12,6 +12,7 @@ import {
   File02Icon,
   Flowchart01Icon,
   FormIcon,
+  HardDriveIcon,
   Layers01Icon,
   Link04Icon,
   Mail01Icon,
@@ -40,6 +41,7 @@ import { SdEscalationTab } from './escalation-tab'
 import { SdFlowsTab } from './flows-tab'
 import { SdGeneralTab } from './general-tab'
 import { SdIntegrationsTab } from './integrations-tab'
+import { SdInventoryTab } from './inventory-tab'
 import { SdMailSettingsTab } from './mail-tab'
 import { SdMonitoringTab } from './monitoring-tab'
 import { SdNotificationsTab } from './notifications-tab'
@@ -222,6 +224,14 @@ export const SD_SETTINGS_TABS: SdSettingsTabDefinition[] = [
     description:
       'Origens que abrem chamado sozinhas (Zabbix ou webhook genérico): URL com token, mapa severidade → prioridade, encerramento automático na normalização e alertas recebidos.',
     component: SdMonitoringTab,
+  },
+  {
+    id: 'inventory',
+    label: 'Inventário',
+    icon: HardDriveIcon,
+    description:
+      'Agente de inventário para Windows e Linux (tokens por workspace), varredura SNMP de faixas de rede, limiares de alerta de disco e memória e a sincronização com a CMDB.',
+    component: SdInventoryTab,
   },
   {
     id: 'mail',
