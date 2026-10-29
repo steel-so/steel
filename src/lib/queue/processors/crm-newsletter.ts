@@ -1,6 +1,7 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { CrmNewsletterSendService } from '@/src/services/crm-newsletter-send.service'
+import { CrmNewsletterWhatsAppService } from '@/src/services/crm-newsletter-whatsapp.service'
 import { CrmNewsletterJob, type CrmNewsletterJobPayload } from '../jobs'
 
 /**
@@ -41,6 +42,24 @@ export async function runCrmNewsletterJob(
         )
       }
       logger.info('queue.crm_newsletter.dispatched', {
+        ...base,
+        issueId: data.issueId,
+        ...result.value,
+      })
+      return result.value
+    }
+    case CrmNewsletterJob.WhatsAppDispatch: {
+      const data = job.data as CrmNewsletterJobPayload['whatsapp-dispatch']
+      const result = await CrmNewsletterWhatsAppService.dispatch(
+        data.issueId,
+        now,
+      )
+      if (!result.ok) {
+        throw new Error(
+          `Failed to dispatch CRM newsletter WhatsApp: ${result.error.code}`,
+        )
+      }
+      logger.info('queue.crm_newsletter.whatsapp_dispatched', {
         ...base,
         issueId: data.issueId,
         ...result.value,

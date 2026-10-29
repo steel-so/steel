@@ -54,6 +54,7 @@ import {
 import { IssueEnvelope } from './issue-envelope'
 import { IssueSendButton } from './issue-send-dialog'
 import { IssueTestSendButton } from './issue-test-send-dialog'
+import { IssueWhatsAppButton } from './issue-whatsapp-dialog'
 
 const FRAME_HEAD = <style>{EMAIL_EDITOR_FRAME_CSS}</style>
 const TITLE = <IssueEnvelope />
@@ -64,6 +65,7 @@ function renderActions() {
       <ChecklistButton />
       <PreviewButton />
       <IssueTestSendButton />
+      <IssueWhatsAppButton />
       <IssueSendButton />
     </div>
   )
@@ -111,6 +113,7 @@ export function NewsletterIssueCanvasEditor({
   const [catalog] = useState(() =>
     createEditorEmailCatalog({
       allowHtml,
+      allowPoll: true,
       productPicker: ProductPickerControl,
       context: () =>
         createEmailRenderContext({

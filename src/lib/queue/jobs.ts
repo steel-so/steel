@@ -997,6 +997,8 @@ export type SendingDomainsJobPayload = {
 export const CrmNewsletterJob = {
   Tick: 'tick',
   Dispatch: 'dispatch',
+  /** nl2-engage: one batch of the WhatsApp version of an issue. */
+  WhatsAppDispatch: 'whatsapp-dispatch',
 } as const
 
 export type CrmNewsletterJob =
@@ -1005,4 +1007,5 @@ export type CrmNewsletterJob =
 export type CrmNewsletterJobPayload = {
   [CrmNewsletterJob.Tick]: Record<string, never>
   [CrmNewsletterJob.Dispatch]: { issueId: string }
+  [CrmNewsletterJob.WhatsAppDispatch]: { issueId: string }
 }

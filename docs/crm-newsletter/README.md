@@ -141,3 +141,34 @@ Uma edição vai para todos os assinantes `ACTIVE` (fora do descadastro geral) o
 - Segmento gravado que não é mais válido (tipo de condição removido, campo personalizado excluído) recusa o envio com `CRM_NEWSLETTER_SEGMENT_INVALID` — nunca cai para "todos".
 - A migração limpa `person_id` de assinantes que apontavam para pessoas inexistentes antes de criar a chave estrangeira.
 - Auditoria: `crm_newsletter_segment` (`create` / `update` / `delete`) e `crm_newsletter_issue` `update` com `audience: 'segment'`.
+
+## Enquetes e versão no WhatsApp (nl2-engage)
+
+**Peças**
+
+| Onde | O quê |
+|---|---|
+| `prisma/schema.prisma` (fim) | `CrmNewsletterPoll` (edição × bloco), `CrmNewsletterPollVote` (enquete × envio), `CrmNewsletterIssueWhatsApp` (configuração por edição), `CrmNewsletterWhatsAppRecipient` (fotografia por número) |
+| `src/lib/canvas-email/components/poll.tsx` | Bloco `email.poll` ("Enquete", 2–5 opções). Registrado no catálogo, mas só aparece na paleta com `allowPoll` (editor de edições) |
+| `src/lib/newsletter/poll-links.ts` | Link provisório por opção (`https://enquete.steel.invalid/<bloco>/<opção>`); `applyPollLinks` troca pelo link assinado do envio ou tira o link (opções estáticas) |
+| `src/lib/newsletter/poll-token.ts` | Token do voto (envio + bloco + opção), HMAC com domínio próprio, sem validade |
+| `src/lib/newsletter/whatsapp.ts` | Regras puras do WhatsApp: público (um por número), fontes `summary`/`subject` → fontes da campanha, `{resumo}`/`{assunto}` |
+| `src/services/crm-newsletter-poll.service.ts` | Voto público, resultado do relatório, CSV |
+| `src/services/crm-newsletter-whatsapp.service.ts` | Configuração, conferência antes do envio, fotografia, envio (job `whatsapp-dispatch` da fila `crm-newsletter`), relatório |
+| Ganchos aditivos | `personalizeIssue({ pollLink })`, `preSendChecks` (WhatsApp pronto), `startSending` (fotografia do WhatsApp), `sendBatch` (links de voto por envio), processador `crm-newsletter`, relatório da edição, botão **WhatsApp** do editor |
+
+**Regras — enquete**
+- O voto é um `POST /api/newsletters/polls/<token>` feito pela página `/newsletter/enquete/<token>` depois de carregar; o GET da página nunca vota (robôs de link).
+- Um voto por envio (`CrmNewsletterIssueRecipient`) e enquete; votar de novo troca a opção (`changed: true`).
+- A enquete é criada no primeiro voto com a fotografia do bloco (o documento já está travado depois do envio). Só vale para edições `SENDING`/`SENT`/`CANCELED`.
+- Versão web, arquivo, teste e qualquer e-mail fora da newsletter: opções sem link.
+- Relatório: barras por opção, 200 votantes mais recentes (com a pessoa do CRM), CSV com todos os votos (auditado: `crm_newsletter_poll` / `export_completed`).
+
+**Regras — WhatsApp**
+- Público: a fotografia de e-mail da edição restrita a assinantes ligados a uma `CrmPerson` (não excluída) com telefone válido (`toCampaignWaId`), um por número. Números com `WhatsAppContact.broadcastOptedOutAt` ficam `SKIPPED/OPTED_OUT` (e são conferidos de novo antes de cada mensagem).
+- Consentimento: base legal declarada por um membro (`legalBasis` + `consentConfirmedAt/ById`, como nas campanhas). Trocar a base legal apaga a declaração.
+- Conteúdo: Meta = template aprovado (validação e renderização das campanhas, ADR 0025) com as fontes `name`, `first_name`, `subject`, `summary`, `link`, `link_code`, `static`; Z-API = texto com `{link}` obrigatório.
+- Antes do e-mail sair, `preSendChecks` recusa com `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` se o WhatsApp ligado tiver pendências (módulo Comunicação, conexão, conteúdo, base legal, arquivo público).
+- Quando: só depois de a edição ficar `SENT` + 2 minutos (a versão web precisa existir; o arquivo guarda o 404 em cache por um minuto). `CANCELED`/`FAILED` → pendentes `STOPPED`.
+- Limites: o limite mensal de mensagens da Comunicação vale (`WhatsAppSend`); atingido, o restante fica `LIMIT_REACHED`. Meta: 1.000 conversas por número em 24 h somando campanhas e newsletters; acima disso, tenta de novo em 1 hora. Custos entram como `CRM_CAMPAIGN`.
+- Ritmo: Meta 10 por job (1 s entre lotes por mensagem), Z-API 1 por job a cada 4 s.

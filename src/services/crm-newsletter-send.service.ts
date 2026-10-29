@@ -55,6 +55,7 @@ import {
   loadNewsletterScope,
 } from './crm-newsletter-issue.service'
 import { notifyNewsletterIssueFinished } from './crm-newsletter-notifications'
+import { pollVoteLinkFor } from './crm-newsletter-poll.service'
 import {
   type IssueRenderBase,
   issueChecklist,
@@ -64,6 +65,7 @@ import {
   webVersionOf,
 } from './crm-newsletter-render'
 import { CrmNewsletterUsageService } from './crm-newsletter-usage.service'
+import { CrmNewsletterWhatsAppService } from './crm-newsletter-whatsapp.service'
 
 /**
  * Sending of newsletter issues (ADR 0054): send now, schedule, cancel and
@@ -125,6 +127,13 @@ export async function preSendChecks(
     (item) => item.level === 'error',
   )
   if (error) return err(crmNewsletterIssueIncomplete(error.message))
+
+  // nl2-engage: an enabled WhatsApp version must be ready too.
+  const whatsapp = await CrmNewsletterWhatsAppService.preSendCheck(
+    issue,
+    newsletter,
+  )
+  if (!whatsapp.ok) return whatsapp
 
   const segment = await issueAudienceWhere(issue)
   if (!segment.ok) return segment
@@ -192,6 +201,8 @@ async function startSending(
   })
   if (!started.ok) return started
   if (!started.value) return ok(null)
+  // nl2-engage: WhatsApp version snapshot (never blocks the e-mail send).
+  await CrmNewsletterWhatsAppService.startForIssue(issue.id, now)
   logger.info('crm.newsletter.sending_started', {
     component: 'CrmNewsletterSendService',
     workspaceId: issue.workspaceId,
@@ -568,6 +579,8 @@ export const CrmNewsletterSendService = {
           preferencesUrl: links.preferencesUrl,
         },
         listIds: facts.value.lists.get(row.email.toLowerCase()) ?? [],
+        // nl2-engage: this delivery's vote link per poll option.
+        pollLink: pollVoteLinkFor(row.id),
       })
       return {
         from,

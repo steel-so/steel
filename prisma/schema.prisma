@@ -9863,6 +9863,8 @@ model CrmNewsletterSubscriber {
   deliveries CrmNewsletterIssueRecipient[]
   /// Segments filter on the linked person (slice nl2-segments).
   person     CrmPerson?                    @relation(fields: [personId], references: [id], onDelete: SetNull)
+  /// nl2-engage: WhatsApp version deliveries.
+  whatsappDeliveries CrmNewsletterWhatsAppRecipient[]
 
   @@unique([newsletterId, email])
   @@index([newsletterId, status])
@@ -9915,6 +9917,10 @@ model CrmNewsletterIssue {
   createdBy  User                          @relation("CrmNewsletterIssueCreatedBy", fields: [createdById], references: [id])
   recipients CrmNewsletterIssueRecipient[]
   clicks     CrmNewsletterLinkClick[]
+  /// nl2-engage: polls, WhatsApp version and its recipients.
+  polls              CrmNewsletterPoll[]
+  whatsapp           CrmNewsletterIssueWhatsApp?
+  whatsappRecipients CrmNewsletterWhatsAppRecipient[]
 
   @@unique([newsletterId, slug])
   @@unique([newsletterId, number])
@@ -9957,6 +9963,8 @@ model CrmNewsletterIssueRecipient {
   issue      CrmNewsletterIssue       @relation(fields: [issueId], references: [id], onDelete: Cascade)
   subscriber CrmNewsletterSubscriber  @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
   clicks     CrmNewsletterLinkClick[]
+  /// nl2-engage: poll votes cast from this delivery.
+  pollVotes  CrmNewsletterPollVote[]
 
   @@unique([issueId, subscriberId])
   @@index([issueId, status])
@@ -10056,4 +10064,104 @@ model CrmNewsletterSegment {
   @@unique([newsletterId, name])
   @@index([workspaceId])
   @@map("crm_newsletter_segments")
+}
+
+// ─── newsletter2 · nl2-engage: polls and the WhatsApp version ─────────────
+
+/// A poll block (`email.poll`) of a sent issue. Created on the first vote
+/// with a snapshot of the block (the document is locked once sending starts).
+model CrmNewsletterPoll {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  issueId     String   @map("issue_id")
+  /// Canvas node id of the block inside the issue document.
+  blockId     String   @map("block_id")
+  question    String
+  /// `[{ label }]`, in the order of the block (votes keep the index).
+  options     Json
+  /// Thank-you page shows the current results.
+  showResults Boolean  @default(true) @map("show_results")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  issue CrmNewsletterIssue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  votes CrmNewsletterPollVote[]
+
+  @@unique([issueId, blockId])
+  @@map("crm_newsletter_polls")
+}
+
+/// One vote per (poll, delivery); voting again replaces the option.
+/// PII: `email` (the subscriber's address, for the voters list and CSV).
+model CrmNewsletterPollVote {
+  id           String   @id @default(cuid())
+  pollId       String   @map("poll_id")
+  recipientId  String   @map("recipient_id")
+  subscriberId String   @map("subscriber_id")
+  email        String
+  personId     String?  @map("person_id")
+  /// Index of the chosen option in `CrmNewsletterPoll.options`.
+  optionIndex  Int      @map("option_index")
+  votedAt      DateTime @map("voted_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  poll      CrmNewsletterPoll           @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  recipient CrmNewsletterIssueRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, recipientId])
+  @@index([pollId, optionIndex])
+  @@map("crm_newsletter_poll_votes")
+}
+
+/// "Enviar também no WhatsApp" of an issue: provider content (Meta template
+/// + variable mapping, or Z-API text) and the declared legal basis.
+model CrmNewsletterIssueWhatsApp {
+  issueId              String                 @id @map("issue_id")
+  workspaceId          String                 @map("workspace_id")
+  enabled              Boolean                @default(false)
+  connectionId         String?                @map("connection_id")
+  templateId           String?                @map("template_id")
+  /// Meta template variable mapping (header/body/buttons → source).
+  variables            Json?
+  /// Z-API free text with {nome}, {primeiro_nome}, {link}, {resumo}, {assunto}.
+  text                 String?                @db.Text
+  legalBasis           CrmCampaignLegalBasis? @map("legal_basis")
+  consentConfirmedAt   DateTime?              @map("consent_confirmed_at")
+  consentConfirmedById String?                @map("consent_confirmed_by_id")
+  /// When the WhatsApp audience snapshot was taken (sending started).
+  startedAt            DateTime?              @map("started_at")
+  updatedById          String?                @map("updated_by_id")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  issue CrmNewsletterIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@map("crm_newsletter_issue_whatsapp")
+}
+
+/// WhatsApp version snapshot: one row per number (subscriber with a CRM
+/// person that has a WhatsApp-able phone). PII: `name`, `waId`.
+model CrmNewsletterWhatsAppRecipient {
+  id                String                      @id @default(cuid())
+  issueId           String                      @map("issue_id")
+  workspaceId       String                      @map("workspace_id")
+  subscriberId      String                      @map("subscriber_id")
+  personId          String?                     @map("person_id")
+  name              String
+  waId              String                      @map("wa_id")
+  status            CrmNewsletterDeliveryStatus @default(PENDING)
+  skipReason        String?                     @map("skip_reason")
+  providerMessageId String?                     @map("provider_message_id")
+  error             String?
+  sentAt            DateTime?                   @map("sent_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+
+  issue      CrmNewsletterIssue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  subscriber CrmNewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, waId])
+  @@index([issueId, status])
+  @@map("crm_newsletter_whatsapp_recipients")
 }

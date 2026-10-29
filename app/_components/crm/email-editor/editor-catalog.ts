@@ -145,11 +145,14 @@ function withProductPicker(
  */
 export function createEditorEmailCatalog(options: {
   allowHtml: boolean
+  /** Newsletter issues only: offers the "Enquete" block. */
+  allowPoll?: boolean
   context: () => EmailRenderContext
   productPicker: ComponentType<CustomControlProps>
 }): CanvasCatalog {
   const catalog = createEmailCatalog({
     allowHtml: options.allowHtml,
+    allowPoll: options.allowPoll,
     context: options.context,
   })
   const components: Record<string, CanvasComponentDefinition> = {}

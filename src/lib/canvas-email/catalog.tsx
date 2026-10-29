@@ -2,6 +2,7 @@ import {
   Award01Icon,
   Building03Icon,
   Calendar03Icon,
+  CheckListIcon,
   CouponPercentIcon,
   Cursor01Icon,
   DashedLine01Icon,
@@ -61,6 +62,7 @@ import {
   footerDefinition,
   sectionDefinition,
 } from './components/layout'
+import { pollDefinition } from './components/poll'
 import {
   eventDefinition,
   npsDefinition,
@@ -115,6 +117,8 @@ const BLOCKS = [
   eventDefinition,
   videoDefinition,
   htmlDefinition,
+  // nl2-engage: newsletter issues only (see `allowPoll`).
+  pollDefinition,
 ]
 
 /** Types a column accepts (every block). */
@@ -143,6 +147,7 @@ const ICONS = {
   event: Calendar03Icon,
   video: Video01Icon,
   html: SourceCodeIcon,
+  poll: CheckListIcon,
 }
 
 /** Marker swapped for Outlook's font fallback after render. */
@@ -242,6 +247,10 @@ export type EmailCatalogOptions = {
    * validate and render) but hides it from the palette — for members who
    * are not workspace admins. */
   allowHtml?: boolean
+  /** `true` offers the "Enquete" block in the palette — only newsletter
+   * issues turn its options into vote links (nl2-engage). Documents that
+   * already have one still validate and render (static options). */
+  allowPoll?: boolean
   /** Render context (brand, products, document reader…), read on every
    * render: the editor passes a getter over its state, the server a fixed
    * value per e-mail. */
@@ -257,6 +266,7 @@ export function createEmailCatalog(
   options: EmailCatalogOptions = {},
 ): CanvasCatalog {
   const allowHtml = options.allowHtml ?? true
+  const allowPoll = options.allowPoll ?? false
   const context = options.context ?? createEmailRenderContext()
   const read = typeof context === 'function' ? context : () => context
   const withContext = (
@@ -273,7 +283,8 @@ export function createEmailCatalog(
   })
   const blocks = BLOCKS.map(
     (block): CanvasComponentDefinition =>
-      block.type === HTML_BLOCK && !allowHtml
+      (block.type === HTML_BLOCK && !allowHtml) ||
+      (block.type === pollDefinition.type && !allowPoll)
         ? { ...block, category: undefined, parents: [COLUMN] }
         : { ...block, parents: [COLUMN] },
   )

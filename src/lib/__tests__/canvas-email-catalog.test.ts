@@ -76,6 +76,8 @@ describe('e-mail catalog', () => {
         'email.event',
         'email.video',
         'email.html',
+        // nl2-engage: newsletter issues only.
+        'email.poll',
       ].sort(),
     )
   })

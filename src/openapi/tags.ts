@@ -202,6 +202,11 @@ export const TAG_GROUPS = [
         description:
           'Público das edições: segmentos salvos por newsletter (condições de assinante, engajamento e pessoa do CRM), público da edição e prévia ao vivo da audiência.',
       },
+      {
+        name: 'CRM · Newsletter · Engajamento',
+        description:
+          'Enquetes das edições (resultado, votantes, CSV) e a versão da edição no WhatsApp (configuração e entrega por número).',
+      },
     ],
   },
   {

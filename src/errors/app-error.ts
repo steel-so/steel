@@ -1885,3 +1885,9 @@ export const crmNewsletterSegmentEmpty = (): AppError =>
     'CRM_NEWSLETTER_NO_SUBSCRIBERS',
     'Nenhum assinante ativo corresponde ao público escolhido',
   )
+export const crmNewsletterPollNotFound = (): AppError =>
+  appError('CRM_NEWSLETTER_POLL_NOT_FOUND', 'Enquete não encontrada')
+
+export const crmNewsletterWhatsappUnavailable = (
+  message = 'O envio no WhatsApp não está disponível para esta edição',
+): AppError => appError('CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE', message)
