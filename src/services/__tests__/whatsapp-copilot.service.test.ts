@@ -47,8 +47,10 @@ function response(text: string): AiChatResponse {
   return {
     text,
     toolCalls: [],
+    message: { role: 'assistant', content: text },
     usage: { inputTokens: 10, outputTokens: 5 },
-  } as AiChatResponse
+    stopReason: 'end_turn',
+  } as unknown as AiChatResponse
 }
 
 function prepared(chat: AiProvider['chat']): PreparedAiCall {

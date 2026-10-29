@@ -165,6 +165,6 @@ export function cleanCompletion(text: string): string {
     .trim()
     .replace(/^```[a-z]*\n?|\n?```$/gi, '')
     .trim()
-    .replace(/^["“](.*)["”]$/s, '$1')
+    .replace(/^["“]([\s\S]*)["”]$/, '$1')
     .trim()
 }
