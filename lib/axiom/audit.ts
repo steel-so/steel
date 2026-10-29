@@ -282,6 +282,9 @@ export type AuditEntity =
   // Z1 Pix in the conversation: charges and the workspace switch
   | 'whatsapp_pix_charge'
   | 'whatsapp_pix_settings'
+  // c1-sales-cadences
+  | 'crm_cadence'
+  | 'crm_cadence_enrollment'
 
 export type AuditAction =
   | 'create'

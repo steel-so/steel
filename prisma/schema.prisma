@@ -639,6 +639,7 @@ model Workspace {
   whatsappAdSpends          WhatsAppAdSpend[]
   sendingDomains            WorkspaceSendingDomain[]
   crmNewsletters            CrmNewsletter[]
+  crmCadences               CrmCadence[]
   satisfactionSurveyConfigs SatisfactionSurveyConfig[]
   satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
@@ -2796,6 +2797,7 @@ model CrmLead {
   reopenings            CrmLeadReopening[]
   notes                 CrmNote[]
   scoreEvents           CrmLeadScoreEvent[]
+  cadenceEnrollments    CrmCadenceEnrollment[]
 
   @@unique([workspaceId, externalSource, externalId])
   @@index([workspaceId])
@@ -11678,4 +11680,161 @@ model SteelAgentSimulationCase {
 
   @@index([simulationId, position])
   @@map("steel_agent_simulation_cases")
+}
+
+// nov: c1-sales-cadences ──────────────────────────────────────────────────
+
+enum CrmCadenceStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum CrmCadenceStepType {
+  EMAIL
+  WHATSAPP
+  TASK
+}
+
+enum CrmCadenceDelayUnit {
+  MINUTES
+  HOURS
+  DAYS
+}
+
+enum CrmCadenceEnrollmentStatus {
+  ACTIVE
+  PAUSED
+  /// Stopped on its own because the lead answered.
+  REPLIED
+  COMPLETED
+  STOPPED
+}
+
+enum CrmCadenceStopReason {
+  REPLIED
+  MANUAL
+  LEAD_CLOSED
+  LEAD_DELETED
+  NO_CONTACT
+  CADENCE_ARCHIVED
+}
+
+enum CrmCadenceRunStatus {
+  SENT
+  SKIPPED
+  FAILED
+}
+
+/// Sales cadence: a sequence of steps (e-mail, WhatsApp, task) with delays,
+/// run one lead at a time. Unlike a campaign (mass send) each enrollment
+/// has its own clock and stops when the lead answers.
+model CrmCadence {
+  id                   String           @id @default(cuid())
+  workspaceId          String           @map("workspace_id")
+  name                 String
+  description          String?
+  status               CrmCadenceStatus @default(ACTIVE)
+  /// From of the e-mail steps: a verified domain of the workspace or the platform address.
+  emailFrom            String?          @map("email_from")
+  emailReplyTo         String?          @map("email_reply_to")
+  /// Connection used by the WhatsApp steps (COMMUNICATION module).
+  whatsappConnectionId String?          @map("whatsapp_connection_id")
+  stopOnReply          Boolean          @default(true) @map("stop_on_reply")
+  /// Send window, São Paulo time; both null = any hour.
+  windowStartHour      Int?             @map("window_start_hour")
+  windowEndHour        Int?             @map("window_end_hour")
+  weekdaysOnly         Boolean          @default(true) @map("weekdays_only")
+  createdById          String           @map("created_by_id")
+  updatedById          String?          @map("updated_by_id")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  deletedAt            DateTime?        @map("deleted_at")
+
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  steps       CrmCadenceStep[]
+  enrollments CrmCadenceEnrollment[]
+  runs        CrmCadenceRun[]
+
+  @@index([workspaceId, status])
+  @@index([deletedAt])
+  @@map("crm_cadences")
+}
+
+/// One step; `delay*` counts from the previous step (the first one, from the enrollment).
+model CrmCadenceStep {
+  id                 String              @id @default(cuid())
+  cadenceId          String              @map("cadence_id")
+  workspaceId        String              @map("workspace_id")
+  position           Int
+  type               CrmCadenceStepType
+  delayValue         Int                 @default(0) @map("delay_value")
+  delayUnit          CrmCadenceDelayUnit @default(DAYS) @map("delay_unit")
+  /// E-mail subject, or task title.
+  subject            String?
+  /// E-mail/WhatsApp text or task description, with {{nome}}, {{empresa}}… fields.
+  body               String              @default("") @db.Text
+  /// Meta WhatsApp template (required on Meta connections).
+  whatsappTemplateId String?             @map("whatsapp_template_id")
+  /// Body variables of the template, in order ({{1}}, {{2}}…), with merge fields.
+  templateVariables  String[]            @default([]) @map("template_variables")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  cadence CrmCadence @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+
+  @@unique([cadenceId, position])
+  @@map("crm_cadence_steps")
+}
+
+/// A lead running a cadence. `nextPosition` is the step to run at `nextRunAt`.
+model CrmCadenceEnrollment {
+  id           String                     @id @default(cuid())
+  workspaceId  String                     @map("workspace_id")
+  cadenceId    String                     @map("cadence_id")
+  leadId       String                     @map("lead_id")
+  status       CrmCadenceEnrollmentStatus @default(ACTIVE)
+  nextPosition Int                        @default(0) @map("next_position")
+  nextRunAt    DateTime?                  @map("next_run_at")
+  /// Set while the worker holds the row; a stale claim is taken again.
+  claimedAt    DateTime?                  @map("claimed_at")
+  stopReason   CrmCadenceStopReason?      @map("stop_reason")
+  /// EMAIL | WHATSAPP, when the lead answered.
+  repliedVia   String?                    @map("replied_via")
+  enrolledById String                     @map("enrolled_by_id")
+  enrolledAt   DateTime                   @default(now()) @map("enrolled_at")
+  finishedAt   DateTime?                  @map("finished_at")
+  updatedAt    DateTime                   @updatedAt @map("updated_at")
+
+  cadence CrmCadence      @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  lead    CrmLead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  runs    CrmCadenceRun[]
+
+  @@unique([cadenceId, leadId])
+  @@index([status, nextRunAt])
+  @@index([leadId])
+  @@index([workspaceId])
+  @@map("crm_cadence_enrollments")
+}
+
+/// What happened in each step execution (history of the enrollment).
+model CrmCadenceRun {
+  id                String              @id @default(cuid())
+  workspaceId       String              @map("workspace_id")
+  cadenceId         String              @map("cadence_id")
+  enrollmentId      String              @map("enrollment_id")
+  stepId            String?             @map("step_id")
+  position          Int
+  type              CrmCadenceStepType
+  status            CrmCadenceRunStatus
+  detail            String?
+  providerMessageId String?             @map("provider_message_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  cadence    CrmCadence           @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  enrollment CrmCadenceEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, createdAt])
+  @@index([cadenceId, status])
+  @@map("crm_cadence_runs")
 }

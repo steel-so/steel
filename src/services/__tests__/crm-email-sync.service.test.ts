@@ -13,6 +13,7 @@ import { err, ok } from '@/src/lib/result'
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-email-sync.repository')
+vi.mock('../crm-cadence-reply.service')
 
 import { auditMutation } from '@/lib/axiom/audit'
 import {
@@ -22,6 +23,7 @@ import {
 } from '@/src/repositories/crm-email-sync.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import { CrmCadenceReplyService } from '../crm-cadence-reply.service'
 import {
   CrmCalendarEventService,
   CrmEmailAccountService,
@@ -249,6 +251,37 @@ describe('CrmEmailMessageService', () => {
           targetId: 'msg1',
         }),
       )
+    })
+
+    it('should stop the sales cadences of the lead on an inbound message', async () => {
+      asRole('MEMBER')
+      mockedMessageRepo.create.mockResolvedValue(ok(message))
+
+      expectOk(
+        await CrmEmailMessageService.create('u1', 'ws1', {
+          ...messageInput,
+          direction: 'INBOUND',
+          fromEmail: 'ana@empresa.com.br',
+        }),
+      )
+      expect(CrmCadenceReplyService.onEmailReply).toHaveBeenCalledWith(
+        'ws1',
+        'ana@empresa.com.br',
+      )
+    })
+
+    it('should leave the cadences alone on an outbound message', async () => {
+      asRole('MEMBER')
+      mockedMessageRepo.create.mockResolvedValue(ok(message))
+      vi.mocked(CrmCadenceReplyService.onEmailReply).mockClear()
+
+      expectOk(
+        await CrmEmailMessageService.create('u1', 'ws1', {
+          ...messageInput,
+          direction: 'OUTBOUND',
+        }),
+      )
+      expect(CrmCadenceReplyService.onEmailReply).not.toHaveBeenCalled()
     })
 
     it('should forbid a VIEWER', async () => {

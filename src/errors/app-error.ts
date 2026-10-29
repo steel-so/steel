@@ -2168,3 +2168,17 @@ export const whatsappFlowLimitReached = (max: number): AppError =>
     'WHATSAPP_FLOW_LIMIT_REACHED',
     `O workspace pode ter no máximo ${max} formulários (Flows)`,
   )
+
+// ─── c1-sales-cadences ──────────────────────────────────────────────────────
+
+export const crmCadenceNotFound = (): AppError =>
+  appError('CRM_CADENCE_NOT_FOUND', 'Cadência não encontrada')
+
+export const crmCadenceEnrollmentNotFound = (): AppError =>
+  appError('CRM_CADENCE_ENROLLMENT_NOT_FOUND', 'Inscrição não encontrada')
+
+export const crmCadenceInvalid = (message: string): AppError =>
+  appError('CRM_CADENCE_INVALID', message)
+
+export const crmCadenceStateConflict = (message: string): AppError =>
+  appError('CRM_CADENCE_STATE_CONFLICT', message)

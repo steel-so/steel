@@ -12,6 +12,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
+import { LeadCadencePanel } from '@/app/_components/crm/cadences/lead-cadence-panel'
 import {
   LEAD_STAGES,
   STAGE_LABELS,
@@ -731,6 +732,12 @@ function LeadStagePanel({
         <LeadContacts lead={lead} />
 
         <LeadAgentRow workspaceId={workspaceId} leadId={lead.id} />
+
+        <LeadCadencePanel
+          workspaceId={workspaceId}
+          leadId={lead.id}
+          canEnroll={lead.stage !== 'CLOSED'}
+        />
 
         {lead.stage === 'RECEIVED' || lead.stage === 'IN_CONTACT' ? (
           <ContactAttemptForm

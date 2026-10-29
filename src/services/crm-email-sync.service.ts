@@ -22,6 +22,7 @@ import type {
   CrmEmailMessageDTO,
 } from '@/types/crm-email-sync'
 import { assertModuleMember } from './authz'
+import { CrmCadenceReplyService } from './crm-cadence-reply.service'
 
 export const CrmEmailAccountService = {
   async list(
@@ -173,6 +174,11 @@ export const CrmEmailMessageService = {
       actorId,
       targetId: result.value.id,
     })
+
+    // An answer from the lead ends the sales cadences it is running.
+    if (dto.direction === 'INBOUND') {
+      await CrmCadenceReplyService.onEmailReply(workspaceId, dto.fromEmail)
+    }
 
     return ok(toCrmEmailMessageDTO(result.value))
   },
