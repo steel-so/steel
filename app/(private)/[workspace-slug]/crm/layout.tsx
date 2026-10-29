@@ -22,6 +22,7 @@ import {
   NewTwitterIcon,
   PackageIcon,
   QuoteUpIcon,
+  Route01Icon,
   Settings02Icon,
   Share08Icon,
   StickyNote01Icon,
@@ -71,6 +72,9 @@ export default async function CrmLayout({
         <NavGroup>
           <NavItem href={`${base}/leads`} icon={UserSearch01Icon}>
             Leads
+          </NavItem>
+          <NavItem href={`${base}/cadences`} icon={Route01Icon}>
+            Cadências
           </NavItem>
           <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
             Oportunidades

@@ -8,6 +8,7 @@ import { BASE_URL } from '@/src/__tests__/setup.e2e'
 // is the only guard against a broken import/prop wiring in a page.tsx.
 const SEGMENTS = [
   'leads',
+  'cadences',
   'opportunities',
   'companies',
   'people',
