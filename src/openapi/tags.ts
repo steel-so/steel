@@ -354,6 +354,11 @@ export const TAG_GROUPS = [
           'Origens de monitoramento (Zabbix e webhook genérico) e a entrada pública que abre chamado a partir do alerta: token por origem guardado como SHA-256, deduplicação por evento, mapa severidade → prioridade, vínculo com o item de configuração pelo host, encerramento automático na normalização e reabertura por instabilidade (flapping).',
       },
       {
+        name: 'ServiceDesk · Inventário',
+        description:
+          'Inventário e descoberta de ativos: o agente (Windows e Linux) envia hardware, software e uso de disco e memória com um token por workspace; a varredura SNMP do worker descobre equipamentos de rede por faixa de IP; ambos alimentam a CMDB, abrem alertas de disco e memória e formam o catálogo de software.',
+      },
+      {
         name: 'ServiceDesk · E-mail',
         description:
           'Caixas de e-mail monitoradas por IMAP (credenciais cifradas, teste de conexão, leitura sob demanda, pausa), padrões do chamado aberto por e-mail, listas de remetentes e confirmação automática de abertura. A resposta pública do agente volta pela caixa, encadeada e com o código do chamado no assunto.',

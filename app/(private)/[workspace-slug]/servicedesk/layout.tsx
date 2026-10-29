@@ -9,6 +9,7 @@ import {
   ContactBookIcon,
   CustomerService01Icon,
   DashboardSquare01Icon,
+  HardDriveIcon,
   Home01Icon,
   ServerStack01Icon,
   Settings02Icon,
@@ -119,6 +120,9 @@ export default async function ServiceDeskLayout({
             </NavItem>
             <NavItem href={`${base}/config-items`} icon={ServerStack01Icon}>
               Itens de configuração
+            </NavItem>
+            <NavItem href={`${base}/inventory`} icon={HardDriveIcon}>
+              Inventário
             </NavItem>
           </NavGroup>
           <NavGroup>

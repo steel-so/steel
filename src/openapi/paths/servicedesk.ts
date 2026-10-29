@@ -7,6 +7,7 @@ import { sdDashboardsPortalRoutes } from './servicedesk/dashboards-portal'
 import { sdDirectoryRoutes } from './servicedesk/directory'
 import { sdExternalPortalRoutes } from './servicedesk/external-portal'
 import { sdIntegrationRoutes } from './servicedesk/integrations'
+import { sdInventoryRoutes } from './servicedesk/inventory'
 import { sdKcsRoutes } from './servicedesk/kcs'
 import { sdMailRoutes } from './servicedesk/mail'
 import { sdMonitoringRoutes } from './servicedesk/monitoring'
@@ -45,6 +46,7 @@ const routes: RouteConfig[] = [
   ...sdAiComparisonRoutes,
   ...sdIntegrationRoutes,
   ...sdSwarmRoutes,
+  ...sdInventoryRoutes,
 ]
 
 export function registerServiceDeskPaths(registry: OpenApiRegistry): void {

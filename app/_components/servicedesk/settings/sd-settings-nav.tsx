@@ -57,7 +57,7 @@ const GROUPS: { label: string; ids: string[] }[] = [
     ids: ['sla', 'escalation', 'oncall', 'automations', 'changes'],
   },
   { label: 'Recursos', ids: ['parts', 'contracts'] },
-  { label: 'Operação', ids: ['reports', 'monitoring'] },
+  { label: 'Operação', ids: ['reports', 'monitoring', 'inventory'] },
   { label: 'Canais e integrações', ids: ['mail', 'whatsapp', 'integrations'] },
   { label: 'Preferências', ids: ['notifications', 'ai'] },
 ]

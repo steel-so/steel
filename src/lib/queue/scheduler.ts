@@ -21,6 +21,7 @@ import {
   ServicedeskBillingJob,
   ServicedeskDigestJob,
   ServicedeskIntegrationsJob,
+  ServicedeskInventoryJob,
   ServicedeskMailJob,
   ServicedeskRecurringJob,
   ServicedeskReportsJob,
@@ -59,6 +60,7 @@ import {
   getServicedeskBillingQueue,
   getServicedeskDigestQueue,
   getServicedeskIntegrationsQueue,
+  getServicedeskInventoryQueue,
   getServicedeskMailQueue,
   getServicedeskRecurringQueue,
   getServicedeskReportsQueue,
@@ -103,6 +105,7 @@ import {
   ServicedeskClusterCron,
   ServicedeskDigestCron,
   ServicedeskIntegrationsCron,
+  ServicedeskInventoryCron,
   ServicedeskMailCron,
   ServicedeskRecurringCron,
   ServicedeskReportsCron,
@@ -497,6 +500,21 @@ export async function scheduleServicedeskRiskJobs(): Promise<void> {
     component: 'Worker',
     pattern: ServicedeskRiskCron,
     clusterPattern: ServicedeskClusterCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleServicedeskInventoryJobs(): Promise<void> {
+  const queue = getServicedeskInventoryQueue()
+  await queue.upsertJobScheduler(
+    ServicedeskInventoryJob.ScanDue,
+    { pattern: ServicedeskInventoryCron, tz: RetentionTimezone },
+    { name: ServicedeskInventoryJob.ScanDue, data: {} },
+  )
+
+  logger.info('queue.scheduler.servicedesk_inventory_registered', {
+    component: 'Worker',
+    pattern: ServicedeskInventoryCron,
     timezone: RetentionTimezone,
   })
 }

@@ -424,6 +424,65 @@ convidados; o portal não a mostra).
 - **Fora desta fatia**: o canal do Slack não espelha a conversa do chamado (o
   espelho de thread é o das integrações); não há SLA nem fila de swarmings.
 
+## Inventário e descoberta de ativos (S1)
+
+A CMDB deixa de depender de cadastro manual: um **agente** nas máquinas e uma
+**varredura SNMP** do worker alimentam o inventário, e o inventário mantém os
+itens de configuração. Decisões da fatia (sem ADR próprio para não colidir na
+numeração; viram ADR se a equipe quiser):
+
+- **Agente em Go** (`inventory-agent/`, só biblioteca padrão, um binário por
+  sistema). Linux lê `/proc`, `/sys/class/dmi`, `statfs` e `dpkg`/`rpm`;
+  Windows roda **um** PowerShell (`-EncodedCommand`) com CIM e o registro de
+  desinstalação. Identidade estável = SHA-256 do `machine-id` (Linux) ou
+  `MachineGuid` (Windows), então reinstalar não duplica a máquina. Instala
+  como serviço systemd (Linux) ou tarefa agendada (Windows); o CI
+  (`.github/workflows/inventory-agent.yml`) formata, testa e cruza a build.
+  **Assinatura de código do Windows** é decisão pendente do negócio (ver
+  roadmap): os binários saem sem assinar e o SmartScreen avisa.
+- **Token por workspace** (`SdInventoryToken`): 32 bytes em base64url, só o
+  SHA-256 no banco, valor mostrado **uma única vez**, revogável na hora. Vai em
+  `Authorization: Bearer`. Entrada pública `POST /api/servicedesk/inventory/report`
+  (em `PUBLIC_ROUTES`), com rate limit por IP e corpo de até 2 MB. Um token vale
+  para N máquinas; o equipamento é a chave `(workspace, externalKey)` com
+  `externalKey = agent:<agentId>`.
+- **Varredura SNMP v2c** (`servicedesk-inventory`): `scan-due` a cada 5 min
+  reserva (`nextRunAt` +30 min) e enfileira os alvos vencidos; `scan-target`
+  varre as faixas (CIDR/IP, até 1.024 endereços por alvo), lê sysDescr/sysName,
+  HOST-RESOURCES (memória, discos, software), MIB-II (MACs) e ENTITY (série,
+  modelo, fabricante) e grava via o mesmo `syncInventoryDevice`. A community
+  fica cifrada com `CONNECTION_SECRETS` e nunca volta pela API. Chave do
+  equipamento SNMP: série, senão o primeiro MAC, senão o IP (DHCP não duplica).
+  Host mudo não é falha; falha é erro de socket ou de gravação, e vira
+  `PARTIAL`/`FAILED` no alvo (`lastStatus`/`lastError`).
+- **CMDB** (`syncInventoryDevice`): o item ligado ao equipamento é atualizado
+  (série, fabricante, modelo, IP — **nunca** nome, status, dono ou
+  criticidade); sem item, o inventário **adota** um item manual com o mesmo
+  número de série ainda sem equipamento, ou cria um no tipo escolhido nos
+  ajustes (padrão "Computador" para o agente e "Equipamento de rede" para o
+  SNMP). Se o item for excluído na CMDB, o próximo relatório cria outro.
+  Desligável em Configurações > Inventário ("Manter a CMDB atualizada").
+- **Alertas de disco e RAM** (`SdInventoryAlert`, uma linha por equipamento ×
+  tipo × volume): abre ao passar do limiar (padrão 90%, 50–100%), atualiza o
+  percentual, **fecha sozinho** ao normalizar, reabre se repetir e fecha o de
+  um volume que sumiu. Hoje aparecem na tela e no contador; **abrir chamado a
+  partir do alerta é a fatia S3** (Monitoramento → chamado automático).
+- **Software**: a lista do agente é substituída por inteira a cada relatório
+  (`SdInventorySoftware`); o catálogo agrupa por nome × versão com a contagem de
+  equipamentos — é a base da gestão de licenças (S7). O SNMP só substitui a
+  lista quando o equipamento expõe `hrSWInstalled`.
+- **Sem sinal**: derivado de `lastSeenAt` × `staleAfterDays` (padrão 7 dias);
+  não há job de varredura nem mudança automática do status do item.
+- **Fora do escopo desta entrega**: SNMP v3, descoberta por ARP/ping, ligar o
+  mesmo computador visto pelo agente e pelo SNMP num só equipamento, atualização
+  automática do agente e distribuição dos binários pelo app (hoje são
+  artefatos do workflow).
+
+Contrato: `src/services/sd-inventory-{sync,ingest,token,settings,target}.service.ts`
+e `sd-inventory.service.ts` (consultas); `syncInventoryDevice(workspaceId,
+actorId, input, now?)` é o ponto único de gravação; API em
+`servicedesk/inventory/**`; hook `src/hooks/use-sd-inventory.ts`.
+
 ## Rotas de UI
 
 | Rota (`/[slug]/servicedesk/…`) | Tela |
@@ -439,6 +498,7 @@ convidados; o portal não a mostra).
 | `/knowledge`, `/knowledge/[articleId]` | base de conhecimento |
 | `/ai-comparison` | painel IA vs. técnico: precisão da triagem e do copiloto, aproveitamento por agente, pré-atendimento e consumo da cota |
 | `/risk` | análise de risco: fila por risco (faixa alta/média/baixa) e sugestões de problema a partir de incidentes repetidos |
+| `/inventory` | inventário de ativos: equipamentos (com detalhe de hardware, discos e software), alertas de disco/RAM e catálogo de software |
 | `/dashboards`, `/dashboards/[id]`, `/dashboards/[id]/tv` | painéis |
 | `/settings` | configurações (abas; "Recorrentes" = rotinas preventivas) |
 | `/servicedesk/approval/[token]` (pública, fora do workspace) | aprovar/reprovar |
@@ -468,6 +528,7 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
 | inbox | `notification` (schema/mapper/repository/service da caixa), `app/_components/notifications/*` (lista, painel de leitura, ícone por tipo), `src/lib/notification-kind.ts` (tabela pura de tipo → rótulo/ícone/cor), rota `/inbox` |
 | relatórios agendados | `sd-report` (schema/mapper/repository/service — `SdScheduledReport` + `SdReportRun`) + `sd-report-runner.ts` (geração sem autorização, compartilhada com a fila), `src/lib/servicedesk/{report-sla,report-schedule,report-csv,report-files}.ts` e `report-pdf.tsx`, `src/lib/mail/servicedesk/send-sd-sla-report.ts` + `components/emails/servicedesk/sd-sla-report.tsx`, fila `servicedesk-reports`, API `servicedesk/reports/**`, aba Configurações > Relatórios e o histórico de execuções |
 | kcs | `sd-kb-review` (schema/mapper/repository/service), `sd-kb-draft.service.ts` (artigo a partir do chamado, com rascunho da IA), `src/lib/servicedesk/kcs.ts` (esqueleto KCS, prompt e aritmética da validade), `markResolved`/`suggestForDraft` em `sd-kb-ticket-link.service.ts`, rotas `servicedesk/knowledge/{reviews,review-settings,stats,draft,suggest/draft}` e `knowledge/[articleId]/{reviews,review-interval,resolved}`, painel `SdKbReviewPanel`, `SdKbCuration`, `SdKbDraftSuggestions`, checagem diária no tique do `servicedesk-digest` |
+| inventory | `sd-inventory-*` (token, settings, sync, ingest, target, consultas) + repositórios/mapper/schema, `src/lib/servicedesk/{inventory,snmp}.ts`, fila `servicedesk-inventory`, entrada pública `servicedesk/inventory/report`, tela `/inventory`, aba Inventário das configurações, agente em `inventory-agent/` |
 | risco preditivo | `src/lib/servicedesk/risk.ts` (tabela de fatores e faixas — ADR 0016), `risk-compute.ts` e `incident-cluster.ts` (libs puras), `sd-risk.{schema,mapper,repository,service}`, fila `servicedesk-risk`, API `servicedesk/risk/**`, selo `SdRiskBadge`/`SdRiskWidget` no quadro, na lista, na tabela e na tela do chamado, filtro rápido "Risco alto", tela `/risk` |
 | integrações | conexões do workspace em `workspace-integration` (repository/schema/mapper/service, ADR 0024) e `src/lib/integrations/*`; no módulo: `sd-integration` (schema/mapper/repository dos vínculos), `sd-integration.service.ts` (configurações do módulo), `sd-integration-link.service.ts` (vínculos do chamado, GitHub e GitLab), `sd-integration-dispatcher.ts` (saída para o Slack), `sd-slack-inbound.service.ts`, `sd-github-webhook.service.ts` (+ `SdGithubSyncService`), `sd-gitlab-webhook.service.ts`, `sd-integration-credentials.ts`, `src/lib/servicedesk/{integrations,integrations-queue,slack-client,slack-oauth-state,github-client}.ts`, `src/cache/sd-integration-event.cache.ts`, fila `servicedesk-integrations`, aba Configurações > Integrações, bloco Integrações na tela do chamado |
 

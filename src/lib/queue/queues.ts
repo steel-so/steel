@@ -64,6 +64,8 @@ import {
   type ServicedeskDigestJobPayload,
   type ServicedeskIntegrationsJob,
   type ServicedeskIntegrationsJobPayload,
+  type ServicedeskInventoryJob,
+  type ServicedeskInventoryJobPayload,
   type ServicedeskMailJob,
   type ServicedeskMailJobPayload,
   type ServicedeskRecurringJob,
@@ -153,6 +155,7 @@ let servicedeskRecurringQueue: Queue | null = null
 let servicedeskBillingQueue: Queue | null = null
 let servicedeskReportsQueue: Queue | null = null
 let servicedeskRiskQueue: Queue | null = null
+let servicedeskInventoryQueue: Queue | null = null
 let servicedeskIntegrationsQueue: Queue | null = null
 let servicedeskTaskRemindersQueue: Queue | null = null
 let steelAgentsQueue: Queue | null = null
@@ -791,6 +794,28 @@ export function getServicedeskReportsQueue(): Queue<
 }
 
 /**
+ * Varredura SNMP: uma tentativa só. O alvo guarda a próxima execução, então
+ * uma falha só atrasa a varredura até o próximo `scan-due`.
+ */
+export function getServicedeskInventoryQueue(): Queue<
+  ServicedeskInventoryJobPayload[ServicedeskInventoryJob],
+  unknown,
+  ServicedeskInventoryJob
+> {
+  if (!servicedeskInventoryQueue) {
+    servicedeskInventoryQueue = new Queue(QueueName.ServicedeskInventory, {
+      connection: getQueueConnection(),
+      defaultJobOptions: { ...defaultJobOptions, attempts: 1 },
+    })
+  }
+  return servicedeskInventoryQueue as Queue<
+    ServicedeskInventoryJobPayload[ServicedeskInventoryJob],
+    unknown,
+    ServicedeskInventoryJob
+  >
+}
+
+/**
  * Análise preditiva: uma tentativa só. É recálculo periódico — se falhar, o
  * próximo tick (10 min) refaz tudo do zero.
  */
@@ -892,6 +917,7 @@ export async function closeQueues(): Promise<void> {
     servicedeskBillingQueue?.close(),
     servicedeskReportsQueue?.close(),
     servicedeskRiskQueue?.close(),
+    servicedeskInventoryQueue?.close(),
     servicedeskIntegrationsQueue?.close(),
     crmTaskRemindersQueue?.close(),
     servicedeskTaskRemindersQueue?.close(),
@@ -938,6 +964,7 @@ export async function closeQueues(): Promise<void> {
   servicedeskBillingQueue = null
   servicedeskReportsQueue = null
   servicedeskRiskQueue = null
+  servicedeskInventoryQueue = null
   servicedeskIntegrationsQueue = null
   servicedeskTaskRemindersQueue = null
   steelAgentsQueue = null
@@ -1217,6 +1244,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.ServicedeskBilling]: getServicedeskBillingQueue,
   [QueueName.ServicedeskReports]: getServicedeskReportsQueue,
   [QueueName.ServicedeskRisk]: getServicedeskRiskQueue,
+  [QueueName.ServicedeskInventory]: getServicedeskInventoryQueue,
   [QueueName.ServicedeskIntegrations]: getServicedeskIntegrationsQueue,
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
   [QueueName.ServicedeskTaskReminders]: getServicedeskTaskRemindersQueue,

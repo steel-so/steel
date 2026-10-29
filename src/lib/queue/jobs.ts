@@ -28,6 +28,7 @@ export const QueueName = {
   ServicedeskBilling: 'servicedesk-billing',
   ServicedeskReports: 'servicedesk-reports',
   ServicedeskRisk: 'servicedesk-risk',
+  ServicedeskInventory: 'servicedesk-inventory',
   ServicedeskIntegrations: 'servicedesk-integrations',
   CrmTaskReminders: 'crm-task-reminders',
   ServicedeskTaskReminders: 'servicedesk-task-reminders',
@@ -1089,4 +1090,24 @@ export type SatisfactionSurveyJobPayload = {
   [SatisfactionSurveyJob.DeliverSurvey]: {
     surveyId: string
   }
+}
+
+/**
+ * Inventário de ativos por SNMP (S1). `scan-due` roda a cada 5 minutos e
+ * enfileira um `scan-target` para cada alvo ativo cuja hora chegou; o
+ * `scan-target` varre as faixas do alvo, grava os equipamentos e agenda a
+ * próxima execução. Idempotente: o equipamento é gravado por identidade
+ * estável, então um retry só atualiza.
+ */
+export const ServicedeskInventoryJob = {
+  ScanDue: 'scan-due',
+  ScanTarget: 'scan-target',
+} as const
+
+export type ServicedeskInventoryJob =
+  (typeof ServicedeskInventoryJob)[keyof typeof ServicedeskInventoryJob]
+
+export type ServicedeskInventoryJobPayload = {
+  [ServicedeskInventoryJob.ScanDue]: Record<string, never>
+  [ServicedeskInventoryJob.ScanTarget]: { targetId: string }
 }
