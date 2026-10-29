@@ -37,6 +37,8 @@ export function createFakeWhatsAppSettings(
     distributionRespectBusinessHours: true,
     distributionLastAssignedUserId: null,
     whatsappCheckTtlDays: 30,
+    marketingLiteEnabled: false,
+    marketingLiteCloudFallback: true,
     monthlyCostBudget: null,
     createdAt: now,
     updatedAt: now,

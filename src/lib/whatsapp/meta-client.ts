@@ -20,7 +20,7 @@ export interface MetaCredentials {
   accessToken: string
 }
 
-async function metaRequest<T>(
+export async function metaRequest<T>(
   credentials: MetaCredentials,
   path: string,
   init?: RequestInit,
@@ -201,6 +201,7 @@ export function createMetaClient(
   credentials: MetaCredentials,
 ): WhatsAppProviderClient {
   const messagesPath = `/${credentials.phoneNumberId}/messages`
+  const marketingMessagesPath = `/${credentials.phoneNumberId}/marketing_messages`
 
   return {
     async sendText({
@@ -265,10 +266,11 @@ export function createMetaClient(
       templateName,
       language,
       components,
+      marketingLite,
     }: WhatsAppOutboundTemplate): Promise<WhatsAppSendResult> {
       const result = await metaRequest<{ messages: { id: string }[] }>(
         credentials,
-        messagesPath,
+        marketingLite ? marketingMessagesPath : messagesPath,
         {
           method: 'POST',
           body: JSON.stringify({
@@ -280,6 +282,9 @@ export function createMetaClient(
               language: { code: language },
               ...(components ? { components } : {}),
             },
+            ...(marketingLite?.cloudApiFallback
+              ? { product_policy: 'CLOUD_API_FALLBACK' }
+              : {}),
           }),
         },
       )

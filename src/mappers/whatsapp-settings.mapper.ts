@@ -33,6 +33,8 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   distributionOnlyAvailable: true,
   distributionRespectBusinessHours: true,
   whatsappCheckTtlDays: 30,
+  marketingLiteEnabled: false,
+  marketingLiteCloudFallback: true,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -77,5 +79,7 @@ export function toWhatsAppSettingsDTO(
     distributionOnlyAvailable: settings.distributionOnlyAvailable,
     distributionRespectBusinessHours: settings.distributionRespectBusinessHours,
     whatsappCheckTtlDays: settings.whatsappCheckTtlDays,
+    marketingLiteEnabled: settings.marketingLiteEnabled,
+    marketingLiteCloudFallback: settings.marketingLiteCloudFallback,
   }
 }

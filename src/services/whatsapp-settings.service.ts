@@ -152,6 +152,10 @@ export const WhatsAppSettingsService = {
         current.distributionRespectBusinessHours,
       whatsappCheckTtlDays:
         dto.whatsappCheckTtlDays ?? current.whatsappCheckTtlDays,
+      marketingLiteEnabled:
+        dto.marketingLiteEnabled ?? current.marketingLiteEnabled,
+      marketingLiteCloudFallback:
+        dto.marketingLiteCloudFallback ?? current.marketingLiteCloudFallback,
     })
     if (!saved.ok) return saved
 
@@ -181,6 +185,8 @@ export const WhatsAppSettingsService = {
         distributionRespectBusinessHours:
           saved.value.distributionRespectBusinessHours,
         whatsappCheckTtlDays: saved.value.whatsappCheckTtlDays,
+        marketingLiteEnabled: saved.value.marketingLiteEnabled,
+        marketingLiteCloudFallback: saved.value.marketingLiteCloudFallback,
       },
     })
 

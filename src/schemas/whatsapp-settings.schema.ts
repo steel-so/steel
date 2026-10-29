@@ -138,6 +138,8 @@ export const UpdateWhatsAppSettingsSchema = z.object({
   distributionRespectBusinessHours: z.boolean().optional(),
   /** Dias até a checagem "tem zap?" de um contato valer de novo. */
   whatsappCheckTtlDays: z.number().int().min(1).max(365).optional(),
+  marketingLiteEnabled: z.boolean().optional(),
+  marketingLiteCloudFallback: z.boolean().optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

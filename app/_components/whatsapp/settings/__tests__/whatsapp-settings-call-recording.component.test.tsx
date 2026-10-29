@@ -47,6 +47,8 @@ function settings(
     distributionOnlyAvailable: true,
     distributionRespectBusinessHours: true,
     whatsappCheckTtlDays: 30,
+    marketingLiteEnabled: false,
+    marketingLiteCloudFallback: true,
     ...overrides,
   }
 }

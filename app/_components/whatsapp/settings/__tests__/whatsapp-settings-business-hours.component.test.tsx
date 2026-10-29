@@ -22,6 +22,8 @@ const saved = {
   businessHoursEnd: '18:00',
   businessHoursDays: [1, 2, 3, 4, 5],
   whatsappCheckTtlDays: 30,
+  marketingLiteEnabled: false,
+  marketingLiteCloudFallback: true,
 }
 
 function setup() {

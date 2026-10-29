@@ -36,6 +36,12 @@ export interface WhatsAppOutboundTemplate {
   templateName: string
   language: string
   components?: unknown[]
+  /**
+   * Send through the Marketing Messages Lite API (Meta only; ignored by
+   * Z-API). `cloudApiFallback` lets Meta use the regular Cloud API when the
+   * Lite API can't deliver.
+   */
+  marketingLite?: { cloudApiFallback: boolean }
 }
 
 export interface WhatsAppOutboundContact {
