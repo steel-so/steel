@@ -1,0 +1,80 @@
+---
+title: Anúncios Click-to-WhatsApp
+description: Descubra de qual anúncio cada conversa veio, abra o lead no CRM com a origem e meça conversas, leads, vendas e ROI por anúncio.
+section: comunicacao
+order: 12
+---
+
+Quando alguém clica num anúncio do Facebook ou do Instagram que abre o
+WhatsApp (**Click-to-WhatsApp**), a Meta avisa o Steel de qual anúncio a pessoa
+veio. Com a **atribuição de anúncios** ligada, o Steel guarda essa origem, mostra
+o anúncio na conversa e calcula o retorno de cada um.
+
+<Callout type='admin'>
+  A atribuição fica **desligada** até um dono ou administrador ligá-la em
+  **Comunicação › Relatórios › Anúncios**. Ela só funciona em conexões da **API
+  oficial da Meta**: a Z-API não informa o anúncio. Só vale para conversas
+  iniciadas depois que a opção for ligada.
+</Callout>
+
+## Ligar
+
+1. Abra **Comunicação › Relatórios** e entre na aba **Anúncios** (só dono e
+   administradores veem essa aba).
+2. Em **Atribuição de anúncios**, ligue **Atribuir conversas**.
+3. Se quiser que cada contato vindo de anúncio vire um lead, ligue também
+   **Criar lead no CRM**. É preciso ter o módulo CRM no workspace.
+
+## O que muda nas conversas
+
+Na conversa que veio de um anúncio aparece uma faixa com o título e o texto do
+anúncio e um link para abri-lo. Assim, quem atende já abre falando da oferta
+certa.
+
+## Leads no CRM
+
+Com **Criar lead no CRM** ligado, o primeiro contato de quem veio de um anúncio
+cria um lead com:
+
+- **Canal**: WhatsApp.
+- **Origem**: o texto que você definir (padrão *Anúncio Click-to-WhatsApp*) mais
+  o título do anúncio, por exemplo *Anúncio Click-to-WhatsApp · Promoção de
+  verão*.
+- **Responsável**: o que você escolher na configuração; sem escolha, valem as
+  regras de roteamento de leads.
+
+Se já existe um lead em aberto com o mesmo telefone, o Steel não cria outro: o
+anúncio fica ligado ao lead existente, se ele ainda não tinha um anúncio de
+origem (vale o **primeiro** anúncio). Contatos que a Meta identifica só por
+nome de usuário, sem telefone, não geram lead.
+
+## Gasto por anúncio
+
+O Steel ainda não lê o gasto direto da conta de anúncios da Meta. Na aba
+**Anúncios**, em **Gasto por anúncio**, lance quanto foi gasto em cada anúncio e
+em qual período. O id do anúncio aparece na tabela depois da primeira conversa.
+
+O valor de um lançamento é dividido igualmente pelos dias dele. Ao consultar um
+período, o relatório soma só os dias que caem dentro dele.
+
+## Ler o relatório
+
+A tabela mostra, para cada anúncio no período escolhido:
+
+| Coluna | O que é |
+| --- | --- |
+| **Conversas** | Conversas distintas que chegaram do anúncio |
+| **Leads** | Leads atribuídos ao anúncio |
+| **Ganhos** | Desses leads, quantos foram fechados como ganhos |
+| **Gasto** | Gasto lançado, proporcional aos dias do período |
+| **Custo/lead** | Gasto dividido pelos leads |
+| **Receita** | Soma do valor fechado dos leads ganhos |
+| **ROI** | (Receita − gasto) ÷ gasto |
+
+Custo por lead e ROI aparecem como **—** enquanto não houver gasto lançado. Use
+**Exportar CSV** para levar a tabela para uma planilha.
+
+<Callout type='nota'>
+  A receita vem do valor fechado dos **leads** ganhos. Negócios abertos
+  diretamente como oportunidades, sem passar por um lead, não entram na conta.
+</Callout>
