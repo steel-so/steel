@@ -20,7 +20,7 @@ import { FieldBlock, ToggleRow } from '../../settings/sd-settings-kit'
 import { SdUserAvatar } from '../sd-ticket-badges'
 
 /** Checklist de especialistas (agentes), com busca e teto de seleção. */
-function SpecialistPicker({
+export function SpecialistPicker({
   workspaceId,
   excludeIds,
   selected,

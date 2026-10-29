@@ -364,6 +364,16 @@ export const TAG_GROUPS = [
           'Inventário e descoberta de ativos: o agente (Windows e Linux) envia hardware, software e uso de disco e memória com um token por workspace; a varredura SNMP do worker descobre equipamentos de rede por faixa de IP; ambos alimentam a CMDB, abrem alertas de disco e memória e formam o catálogo de software.',
       },
       {
+        name: 'ServiceDesk · Incidente maior',
+        description:
+          'Incidente maior declarado a partir de um chamado de incidente: agrupa os chamados filhos (com sugestões por categoria, item de configuração e cliente), abre a sala de guerra (swarming) e publica atualizações nas páginas de status. Só agentes.',
+      },
+      {
+        name: 'ServiceDesk · Páginas de status',
+        description:
+          'Páginas de status públicas por cliente ou serviço: a administração (sessão) e a página aberta ao cliente, com inscrição por e-mail (confirmação em duas etapas) e aviso por e-mail e WhatsApp a cada atualização publicada.',
+      },
+      {
         name: 'ServiceDesk · E-mail',
         description:
           'Caixas de e-mail monitoradas por IMAP (credenciais cifradas, teste de conexão, leitura sob demanda, pausa), padrões do chamado aberto por e-mail, listas de remetentes e confirmação automática de abertura. A resposta pública do agente volta pela caixa, encadeada e com o código do chamado no assunto.',

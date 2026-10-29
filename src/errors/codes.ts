@@ -1358,6 +1358,38 @@ export const ERROR_CODES = {
   PIX_PROVIDER_ERROR: { code: 'PIX_PROVIDER_ERROR', status: 502 },
   // Payment notification with a bad or missing signature.
   PIX_WEBHOOK_INVALID: { code: 'PIX_WEBHOOK_INVALID', status: 401 },
+
+  // s2-major-incident: major incident + customer status pages.
+  SD_MAJOR_INCIDENT_NOT_FOUND: {
+    code: 'SD_MAJOR_INCIDENT_NOT_FOUND',
+    status: 404,
+  },
+  // The master ticket already has an active major incident.
+  SD_MAJOR_INCIDENT_ALREADY_ACTIVE: {
+    code: 'SD_MAJOR_INCIDENT_ALREADY_ACTIVE',
+    status: 409,
+  },
+  // The incident is resolved; it accepts no more updates or tickets.
+  SD_MAJOR_INCIDENT_RESOLVED: {
+    code: 'SD_MAJOR_INCIDENT_RESOLVED',
+    status: 409,
+  },
+  // Only INCIDENT tickets can be declared major; a ticket cannot be its own child.
+  SD_MAJOR_INCIDENT_INVALID_TICKET: {
+    code: 'SD_MAJOR_INCIDENT_INVALID_TICKET',
+    status: 422,
+  },
+  SD_STATUS_PAGE_NOT_FOUND: { code: 'SD_STATUS_PAGE_NOT_FOUND', status: 404 },
+  SD_STATUS_PAGE_SLUG_TAKEN: { code: 'SD_STATUS_PAGE_SLUG_TAKEN', status: 409 },
+  // The page does not take self-service subscriptions.
+  SD_STATUS_SUBSCRIPTIONS_CLOSED: {
+    code: 'SD_STATUS_SUBSCRIPTIONS_CLOSED',
+    status: 403,
+  },
+  SD_STATUS_SUBSCRIBER_NOT_FOUND: {
+    code: 'SD_STATUS_SUBSCRIBER_NOT_FOUND',
+    status: 404,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

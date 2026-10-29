@@ -9,6 +9,7 @@ import {
   Call02Icon,
   CheckListIcon,
   Clock01Icon,
+  FireIcon,
   HierarchyIcon,
   HistoryIcon,
   Money03Icon,
@@ -39,6 +40,7 @@ import { SdTicketEscalationTab } from './tabs/escalation-tab'
 import { SdTicketHistoryTab } from './tabs/history-tab'
 import { SdTicketHoursTab } from './tabs/hours-tab'
 import { SdTicketKnowledgeTab } from './tabs/knowledge-tab'
+import { SdTicketMajorIncidentTab } from './tabs/major-incident-tab'
 import { SdTicketPartsTab } from './tabs/parts-tab'
 import { SdTicketSignatureTab } from './tabs/signature-tab'
 import { SdTicketSwarmTab } from './tabs/swarm-tab'
@@ -154,6 +156,13 @@ export const SD_TICKET_TABS: SdTicketTabDef[] = [
     label: 'Swarming',
     icon: UserGroupIcon,
     component: SdTicketSwarmTab,
+    agentOnly: true,
+  },
+  {
+    id: 'major-incident',
+    label: 'Incidente maior',
+    icon: FireIcon,
+    component: SdTicketMajorIncidentTab,
     agentOnly: true,
   },
   {

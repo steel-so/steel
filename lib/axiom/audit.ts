@@ -142,6 +142,10 @@ export type AuditEntity =
   | 'sd_ticket_follower'
   // ServiceDesk — swarming de especialistas
   | 'sd_swarm'
+  // ServiceDesk — incidente maior e páginas de status
+  | 'sd_major_incident'
+  | 'sd_status_page'
+  | 'sd_status_subscriber'
   // ServiceDesk — portal do contato externo (link mágico)
   | 'sd_portal_access'
   | 'sd_portal_session'

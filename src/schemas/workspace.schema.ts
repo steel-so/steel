@@ -34,6 +34,7 @@ export const RESERVED_WORKSPACE_SLUGS: ReadonlySet<string> = new Set([
   'sign-in',
   'sign-up',
   'status',
+  'status-page',
   'suporte',
   'talk-to-sales',
   'twitter-image',

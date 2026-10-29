@@ -498,6 +498,8 @@ export type ServicedeskAiJobPayload = {
 export const ServicedeskMailJob = {
   PollMailboxes: 'poll-mailboxes',
   SyncMailbox: 'sync-mailbox',
+  /** Status-page notices of a major incident update (e-mail + WhatsApp). */
+  NotifyStatusUpdate: 'notify-status-update',
 } as const
 
 export type ServicedeskMailJob =
@@ -506,6 +508,7 @@ export type ServicedeskMailJob =
 export type ServicedeskMailJobPayload = {
   [ServicedeskMailJob.PollMailboxes]: Record<string, never>
   [ServicedeskMailJob.SyncMailbox]: { mailboxId: string }
+  [ServicedeskMailJob.NotifyStatusUpdate]: { updateId: string }
 }
 
 /**

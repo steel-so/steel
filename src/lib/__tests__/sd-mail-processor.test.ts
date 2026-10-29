@@ -1,17 +1,23 @@
 import type { Job } from 'bullmq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { runTickMock, syncMailboxMock, loggerMock } = vi.hoisted(() => ({
-  runTickMock: vi.fn(),
-  syncMailboxMock: vi.fn(),
-  loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}))
+const { runTickMock, syncMailboxMock, deliverMock, loggerMock } = vi.hoisted(
+  () => ({
+    runTickMock: vi.fn(),
+    syncMailboxMock: vi.fn(),
+    deliverMock: vi.fn(),
+    loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  }),
+)
 
 vi.mock('@/src/services/sd-mail-inbound.service', () => ({
   SdMailInboundService: {
     runTick: runTickMock,
     syncMailbox: syncMailboxMock,
   },
+}))
+vi.mock('@/src/services/sd-status-notify.service', () => ({
+  SdStatusNotifyService: { deliver: deliverMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -90,5 +96,38 @@ describe('processServicedeskMail', () => {
     await expect(
       processServicedeskMail(fakeJob('nope', {}, 'x')),
     ).rejects.toThrow('(id=x)')
+  })
+
+  it('delivers a status update notice', async () => {
+    const value = { skipped: null, total: 2, sent: 2, failed: 0 }
+    deliverMock.mockResolvedValue({ ok: true, value })
+    await expect(
+      processServicedeskMail(
+        fakeJob('notify-status-update', { updateId: 'u1' }),
+      ),
+    ).resolves.toBe(value)
+    expect(deliverMock).toHaveBeenCalledWith('u1')
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.servicedesk_mail.status_update_notified',
+      expect.objectContaining({ updateId: 'u1', sent: 2 }),
+    )
+  })
+
+  it('throws when the notice has no updateId or the delivery fails', async () => {
+    await expect(
+      processServicedeskMail(fakeJob('notify-status-update', {}, 'j2')),
+    ).rejects.toThrow('without updateId (id=j2)')
+    await expect(
+      processServicedeskMail(fakeJob('notify-status-update', {})),
+    ).rejects.toThrow('(id=unknown)')
+    deliverMock.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'x' },
+    })
+    await expect(
+      processServicedeskMail(
+        fakeJob('notify-status-update', { updateId: 'u2' }),
+      ),
+    ).rejects.toThrow('Failed to notify status update u2: DATABASE_ERROR')
   })
 })

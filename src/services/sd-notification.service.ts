@@ -161,7 +161,7 @@ async function resolveAudience(
 }
 
 /** Conexão de WhatsApp do ServiceDesk ativa, se houver. */
-async function activeWhatsappConnection(
+export async function activeWhatsappConnection(
   workspaceId: string,
 ): Promise<WhatsAppConnection | null> {
   const settings = await SdTicketContextRepository.ensureSettings(workspaceId)
