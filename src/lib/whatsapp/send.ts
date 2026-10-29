@@ -11,6 +11,7 @@ import type {
   WhatsAppCostContext,
   WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
+  WhatsAppOutboundFlow,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
   WhatsAppOutboundTemplate,
@@ -182,6 +183,30 @@ export const WhatsAppSend = {
       to: input.to,
       cost: options?.cost,
     })
+  },
+
+  flow(
+    connection: WhatsAppConnection,
+    input: WhatsAppOutboundFlow,
+    options?: WhatsAppSendOptions,
+  ): Promise<Result<WhatsAppSendResult>> {
+    return withProvider(
+      connection,
+      (client) => {
+        if (!client.sendFlow) {
+          throw new Error(
+            'WhatsApp Flows só funcionam em conexões da API oficial da Meta',
+          )
+        }
+        return client.sendFlow(input)
+      },
+      {
+        metered: !options?.unmetered,
+        costKind: 'SERVICE',
+        to: input.to,
+        cost: options?.cost,
+      },
+    )
   },
 
   reaction(

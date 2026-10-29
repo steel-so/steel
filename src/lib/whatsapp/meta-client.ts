@@ -3,6 +3,7 @@ import { logger } from '@/lib/axiom/logger'
 import type {
   WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
+  WhatsAppOutboundFlow,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
   WhatsAppOutboundTemplate,
@@ -184,6 +185,31 @@ export function buildMetaInteractive(input: WhatsAppOutboundButtons): {
   return { interactive, body }
 }
 
+/**
+ * Interactive message that opens a Flow. `mode: 'draft'` lets the team test a
+ * flow that is not published yet.
+ */
+export function buildMetaFlowMessage(
+  input: WhatsAppOutboundFlow,
+): Record<string, unknown> {
+  return {
+    type: 'flow',
+    body: { text: input.bodyText },
+    action: {
+      name: 'flow',
+      parameters: {
+        flow_message_version: '3',
+        flow_token: input.flowToken,
+        flow_id: input.flowId,
+        flow_cta: input.ctaLabel,
+        flow_action: 'navigate',
+        flow_action_payload: { screen: input.screen },
+        ...(input.draft ? { mode: 'draft' } : {}),
+      },
+    },
+  }
+}
+
 const PHONE_DIGITS = /^\d+$/
 
 /**
@@ -336,6 +362,23 @@ export function createMetaClient(
             ...metaRecipient(input.to),
             type: 'interactive',
             interactive,
+          }),
+        },
+      )
+      return { providerMessageId: result.messages[0].id }
+    },
+
+    async sendFlow(input: WhatsAppOutboundFlow): Promise<WhatsAppSendResult> {
+      const result = await metaRequest<{ messages: { id: string }[] }>(
+        credentials,
+        messagesPath,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            ...metaRecipient(input.to),
+            type: 'interactive',
+            interactive: buildMetaFlowMessage(input),
           }),
         },
       )

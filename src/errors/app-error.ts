@@ -2133,3 +2133,23 @@ export const sdStatusSubscriptionsClosed = (): AppError =>
 
 export const sdStatusSubscriberNotFound = (): AppError =>
   appError('SD_STATUS_SUBSCRIBER_NOT_FOUND', 'Inscrição não encontrada')
+
+// ─── z3 · whatsapp flows ────────────────────────────────────────────────────
+
+export const whatsappFlowNotFound = (): AppError =>
+  appError('WHATSAPP_FLOW_NOT_FOUND', 'Formulário (Flow) não encontrado')
+
+export const whatsappFlowInvalid = (message: string): AppError =>
+  appError('WHATSAPP_FLOW_INVALID', message)
+
+export const whatsappFlowNotSendable = (message: string): AppError =>
+  appError('WHATSAPP_FLOW_NOT_SENDABLE', message)
+
+export const whatsappFlowMetaRejected = (message: string): AppError =>
+  appError('WHATSAPP_FLOW_META_REJECTED', message)
+
+export const whatsappFlowLimitReached = (max: number): AppError =>
+  appError(
+    'WHATSAPP_FLOW_LIMIT_REACHED',
+    `O workspace pode ter no máximo ${max} formulários (Flows)`,
+  )

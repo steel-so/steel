@@ -1318,6 +1318,21 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_CHATBOT_LIMIT_REACHED',
     status: 409,
   },
+  // nov: z3-whatsapp-flows
+  WHATSAPP_FLOW_NOT_FOUND: { code: 'WHATSAPP_FLOW_NOT_FOUND', status: 404 },
+  WHATSAPP_FLOW_INVALID: { code: 'WHATSAPP_FLOW_INVALID', status: 422 },
+  WHATSAPP_FLOW_NOT_SENDABLE: {
+    code: 'WHATSAPP_FLOW_NOT_SENDABLE',
+    status: 409,
+  },
+  WHATSAPP_FLOW_META_REJECTED: {
+    code: 'WHATSAPP_FLOW_META_REJECTED',
+    status: 422,
+  },
+  WHATSAPP_FLOW_LIMIT_REACHED: {
+    code: 'WHATSAPP_FLOW_LIMIT_REACHED',
+    status: 409,
+  },
 
   // nov: c2-cnpj-enrichment
   CRM_CNPJ_INVALID: { code: 'CRM_CNPJ_INVALID', status: 422 },

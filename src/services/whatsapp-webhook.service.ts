@@ -56,6 +56,7 @@ import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { WhatsAppChatbotRuntimeService } from './whatsapp-chatbot-runtime.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
+import { WhatsAppFlowResponseService } from './whatsapp-flow-response.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
 import { WhatsAppTeamService } from './whatsapp-team.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
@@ -78,6 +79,8 @@ export interface InboundWhatsAppMessage {
   buttonPayload?: string
   /** Click-to-WhatsApp ad that opened the chat (Meta `referral` block). */
   referral?: InboundAdReferral
+  /** WhatsApp Flow answer (`interactive.nfm_reply.response_json`). */
+  flowResponseJson?: string
 }
 
 /**
@@ -430,6 +433,33 @@ export const WhatsAppWebhookService = {
       }
     }
 
+    // WhatsApp Flow answer (Z3): stored, mapped to the contact / CRM, and the
+    // timeline shows the summary instead of the placeholder.
+    let flowHandled = false
+    let flowAfterPublish: (() => Promise<void>) | undefined
+    if (input.flowResponseJson && !serviceDesk) {
+      const reply = await WhatsAppFlowResponseService.handleInbound({
+        workspaceId,
+        connection,
+        contact: contact.value,
+        conversationId,
+        messageId: message.value.id,
+        responseJson: input.flowResponseJson,
+      })
+      if (!reply.ok) {
+        logger.warn('whatsapp.flow.reply_failed', {
+          workspaceId,
+          conversationId,
+          reason: reply.error.code,
+        })
+      } else {
+        flowHandled = reply.value.handled
+        flowAfterPublish = reply.value.afterPublish
+        // The row is the one published below: show the summary right away.
+        if (reply.value.text) message.value.text = reply.value.text
+      }
+    }
+
     if (input.rawMediaUrl) {
       await getWhatsappMediaQueue().add(WhatsappMediaJob.DownloadInboundMedia, {
         messageId: message.value.id,
@@ -491,6 +521,9 @@ export const WhatsAppWebhookService = {
       new Date(),
     )
 
+    // The thank-you of a flow answer goes out after the answer is published.
+    if (flowAfterPublish) await flowAfterPublish()
+
     // Click on one of our reply buttons: timeline event + configured actions.
     // When the button has actions they own the answer — the AI stays quiet.
     let buttonHandled = false
@@ -524,7 +557,7 @@ export const WhatsAppWebhookService = {
 
     // Visual chatbot (Z2): when a flow owns the message the AI stays quiet.
     let chatbotEngaged = false
-    if (!serviceDesk && !isOptOut && !buttonHandled) {
+    if (!serviceDesk && !isOptOut && !buttonHandled && !flowHandled) {
       const claim = await WhatsAppChatbotRuntimeService.claimInbound({
         workspaceId,
         connection,
@@ -549,7 +582,13 @@ export const WhatsAppWebhookService = {
     }
 
     // A confirmação do descadastro já é a resposta — a IA não responde.
-    if (aiActive && !isOptOut && !buttonHandled && !chatbotEngaged) {
+    if (
+      aiActive &&
+      !isOptOut &&
+      !buttonHandled &&
+      !flowHandled &&
+      !chatbotEngaged
+    ) {
       await getWhatsappAiReplyQueue().add(WhatsappAiReplyJob.GenerateAiReply, {
         conversationId,
         messageId: message.value.id,

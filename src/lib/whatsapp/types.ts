@@ -69,6 +69,20 @@ export interface WhatsAppOutboundButtons {
   }
 }
 
+/** Interactive message that opens a WhatsApp Flow (Meta only, 24h window). */
+export interface WhatsAppOutboundFlow {
+  to: string
+  flowId: string
+  /** Opaque token Meta echoes in the answer. */
+  flowToken: string
+  bodyText: string
+  ctaLabel: string
+  /** Screen the flow opens on. */
+  screen: string
+  /** Send a flow that is still a draft at Meta (tests). */
+  draft?: boolean
+}
+
 export interface WhatsAppQrCode {
   status: 'connected' | 'awaiting_scan'
   qrCodeBase64?: string
@@ -81,6 +95,8 @@ export interface WhatsAppProviderClient {
   sendContact(input: WhatsAppOutboundContact): Promise<WhatsAppSendResult>
   sendButtons(input: WhatsAppOutboundButtons): Promise<WhatsAppSendResult>
   sendReaction(input: WhatsAppOutboundReaction): Promise<void>
+  /** Only the Meta client implements it. */
+  sendFlow?(input: WhatsAppOutboundFlow): Promise<WhatsAppSendResult>
   getConnectionStatus(): Promise<{
     connected: boolean
     failed?: boolean
