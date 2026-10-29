@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { CustomControlProps } from '@/src/lib/canvas/registry'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { type CanvasLink, linkHref } from '@/src/lib/canvas/values'
+import type { SiteLiveNewsletter } from '@/src/schemas/crm-newsletter-archive.schema'
 import type { SiteCmsContext } from './cms'
 import { safeHref } from './sanitize'
 import type { SiteFormField } from './schemas'
@@ -74,6 +75,17 @@ export interface SiteRenderContext {
   /** Inspector control that picks a field of the node's collection (or of
    * the collection whose item template is being edited). */
   collectionFieldPicker?: ComponentType<CustomControlProps>
+  /** CRM newsletters the `site.newsletter-*` elements point to, by id
+   * (slice nl-archive). */
+  newsletters?: Record<string, SiteLiveNewsletter>
+  /** Inspector control that picks a newsletter of the workspace; without
+   * it the id is typed. */
+  newsletterPicker?: ComponentType<CustomControlProps>
+  /** Site being rendered: `sourceRef` of a newsletter subscription. */
+  siteId?: string
+  /** IANA timezone of the site (dates of `site.newsletter-issues`);
+   * defaults to America/Sao_Paulo. */
+  timeZone?: string
 }
 
 export function defaultFormAction(token: string): string {

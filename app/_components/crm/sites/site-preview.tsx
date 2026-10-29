@@ -31,10 +31,14 @@ import {
   useCrmSite,
 } from '@/src/hooks/use-crm-sites'
 import { useSiteCmsPreview } from '@/src/hooks/use-site-blog'
+import { useLiveSiteNewsletters } from '@/src/hooks/use-site-newsletters'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { createSiteCatalog } from '@/src/lib/canvas-site/catalog'
 import type { SiteCmsContext } from '@/src/lib/canvas-site/cms'
-import type { SitePageLink } from '@/src/lib/canvas-site/context'
+import type {
+  SitePageLink,
+  SiteRenderContext,
+} from '@/src/lib/canvas-site/context'
 import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SiteDocument } from '@/src/lib/canvas-site/render'
 import { siteRuntimeScripts } from '@/src/lib/canvas-site/runtime'
@@ -85,9 +89,14 @@ function PreviewFrame({
   width,
   onNavigate,
   cms,
+  newsletters,
+  timeZone,
 }: {
   /** Blog posts and collection items of the draft (slice site-blog). */
   cms?: SiteCmsContext
+  /** CRM newsletters of the `site.newsletter-*` elements. */
+  newsletters?: SiteRenderContext['newsletters']
+  timeZone?: string
   docs: {
     header?: CanvasDocument
     page: CanvasDocument
@@ -182,13 +191,22 @@ function PreviewFrame({
     }
     if (runtime.boot) run(runtime.boot)
     for (const script of runtime.scripts) {
-      if (script.id !== 'form') run(script.code)
+      // Forms and newsletter sign-ups never submit from the preview.
+      if (script.id !== 'form' && script.id !== 'newsletter') run(script.code)
     }
   }, [mount])
 
   const catalog = useMemo(
-    () => createSiteCatalog({ pages: links, currentPageId, symbols, cms }),
-    [links, currentPageId, symbols, cms],
+    () =>
+      createSiteCatalog({
+        pages: links,
+        currentPageId,
+        symbols,
+        cms,
+        newsletters,
+        timeZone,
+      }),
+    [links, currentPageId, symbols, cms, newsletters, timeZone],
   )
 
   return (
@@ -259,6 +277,7 @@ export function SitePreview({
 
   const links = useMemo(() => toPageLinks(pages.data ?? []), [pages.data])
   const cmsPreview = useSiteCmsPreview(workspaceId, siteId)
+  const newsletters = useLiveSiteNewsletters(workspaceId)
   const cms = useMemo(
     () =>
       cmsPreview.data
@@ -431,6 +450,8 @@ export function SitePreview({
             width={width}
             onNavigate={setPageId}
             cms={cms}
+            newsletters={newsletters}
+            timeZone={site.data?.settings.timezone}
           />
         ) : (
           <Skeleton className='m-4 h-auto w-full max-w-5xl' />

@@ -51132,6 +51132,60 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/sites/newsletters": {
+      "get": {
+        "tags": ["CRM · Sites"],
+        "summary": "Listar newsletters para o site",
+        "operationId": "getWorkspacesByIdCrmSitesNewsletters",
+        "description": "Newsletters ativas do workspace com as últimas 12 edições enviadas: alimenta os elementos \"Inscrição na newsletter\" e \"Últimas edições\" do editor de sites. Sem o arquivo público ligado, `issues` vem vazio.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newsletters ativas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SiteNewsletterOption"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/sites/slug-availability": {
       "get": {
         "tags": ["CRM · Sites"],
@@ -201629,6 +201683,76 @@
           }
         },
         "required": ["id", "url", "size", "source", "uploadedAt"]
+      },
+      "SiteNewsletterOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "workspaceSlug": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "doubleOptIn": {
+            "type": "boolean"
+          },
+          "archiveEnabled": {
+            "type": "boolean"
+          },
+          "archiveUrl": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "excerpt": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sentAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": ["number", "subject", "slug", "excerpt", "sentAt"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "workspaceSlug",
+          "slug",
+          "name",
+          "doubleOptIn",
+          "archiveEnabled",
+          "archiveUrl",
+          "issues"
+        ]
       },
       "SitePage": {
         "type": "object",

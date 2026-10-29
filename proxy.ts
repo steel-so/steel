@@ -106,6 +106,9 @@ const PUBLIC_ROUTES = [
   // tem sessão, então o gate de autenticação responderia cada beacon com um
   // redirect. Só entra na lista quando há chave configurada.
   ...(NEXT_PUBLIC_POSTHOG_KEY ? [POSTHOG_PROXY_PATH] : []),
+  // Public newsletter archive (ADR 0054): archive home, the web version of
+  // each sent issue and the RSS feed — anyone may read them, no session.
+  '/n',
 ]
 
 /**

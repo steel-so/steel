@@ -615,3 +615,29 @@ descrições e respostas diretas para até 10 páginas, uma chamada por
 página). Mesmo provedor, permissão de plano (`crm.aiAssistant`) e cota
 mensal das outras IAs do CRM. Nada é gravado pela IA: `POST …/search/apply`
 salva só o que o usuário marcou. Falha do provedor: `SITE_SEARCH_AI_FAILED`.
+
+## Sites — elementos de newsletter (fatia nl-archive, ADR 0054)
+
+Categoria **Newsletter** do catálogo `site`:
+
+- `site.newsletter-subscribe` (Inscrição na newsletter): escolhe uma
+  newsletter `ACTIVE` do workspace (`newsletterId`, com `newsletterName` de
+  fotografia). Título, nome opcional, texto do botão, e-mail e botão
+  empilhados ou lado a lado (responsivo), estilo do botão e fundo dos campos.
+  O texto de consentimento é sempre `CRM_NEWSLETTER_DEFAULT_CONSENT_TEXT`.
+  O script `newsletter` do runtime (`SITE_NEWSLETTER_SCRIPT`, só em páginas
+  com o elemento) posta JSON em `POST /api/newsletters/subscribe` com
+  `source: 'SITE'` e `sourceRef: <id do site>`, respeita o honeypot `website`
+  e troca o formulário por "confira seu e-mail" (confirmação dupla) ou
+  "inscrição feita".
+- `site.newsletter-issues` (Últimas edições): 1 a 12 edições `SENT`, em
+  cartões (1–3 colunas, responsivo) ou lista, com número, data (fuso do site,
+  `SiteRenderContext.timeZone`) e resumo, e o link "Ver todas as edições".
+  Links absolutos para `/n/<ws>/<newsletter>` (o site pode estar em outro
+  domínio); sem arquivo público, nada é listado.
+
+Dados: `SiteRenderContext.newsletters` (por id). No runtime vêm de
+`loadSiteNewsletters` (tag do site, vida `minutes`); no editor e na prévia, de
+`GET /api/workspaces/<id>/crm/sites/newsletters` (`useLiveSiteNewsletters`),
+que também alimenta o seletor `SiteNewsletterPicker`. Newsletter arquivada,
+excluída ou CRM desligado: os elementos somem da página publicada.

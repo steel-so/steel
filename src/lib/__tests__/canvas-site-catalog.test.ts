@@ -71,7 +71,7 @@ function wrap(fragment: CanvasFragment): CanvasDocument {
 describe('site catalog', () => {
   it('registers every component with valid default props', () => {
     expect(siteCatalog.id).toBe(SITE_CATALOG_ID)
-    expect(Object.keys(siteCatalog.components)).toHaveLength(41)
+    expect(Object.keys(siteCatalog.components)).toHaveLength(43)
     for (const definition of Object.values(siteCatalog.components)) {
       const parsed = definition.propsSchema.safeParse(definition.defaultProps())
       expect(parsed.success, definition.type).toBe(true)

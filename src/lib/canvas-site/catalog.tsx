@@ -25,6 +25,7 @@ import {
   LayoutThreeRowIcon,
   LayoutTwoColumnIcon,
   LeftToRightListBulletIcon,
+  Mail01Icon,
   MapsLocation01Icon,
   Menu01Icon,
   News01Icon,
@@ -92,6 +93,10 @@ import {
   videoDefinition,
 } from './components/media'
 import { menuDefinition, socialDefinition } from './components/navigation'
+import {
+  newsletterIssuesDefinition,
+  newsletterSubscribeDefinition,
+} from './components/newsletter'
 import {
   countdownDefinition,
   galleryDefinition,
@@ -162,6 +167,8 @@ const ICONS = {
   postAuthor: UserCircleIcon,
   collectionList: Database01Icon,
   collectionField: InputTextIcon,
+  newsletterSubscribe: Mail01Icon,
+  newsletterIssues: News01Icon,
 }
 
 const CHILDREN_LABELS: Record<string, string> = {
@@ -236,6 +243,8 @@ export function createSiteCatalog(ctx: SiteRenderContext = {}): CanvasCatalog {
     postAuthorDefinition(ctx),
     collectionListDefinition(ctx),
     collectionFieldDefinition(ctx),
+    newsletterSubscribeDefinition(ctx),
+    newsletterIssuesDefinition(ctx),
   ].map((definition) => ({
     ...definition,
     // S2 effects: hover, click interaction, entrance animation and free

@@ -73,6 +73,8 @@ export const SITE_TYPES = {
   postAuthor: 'site.post-author',
   collectionList: 'site.collection-list',
   collectionField: 'site.collection-field',
+  newsletterSubscribe: 'site.newsletter-subscribe',
+  newsletterIssues: 'site.newsletter-issues',
 } as const
 
 /** Content elements (leaves): what sections and containers accept besides
@@ -110,6 +112,8 @@ export const SITE_ELEMENT_TYPES: string[] = [
   SITE_TYPES.postAuthor,
   SITE_TYPES.collectionList,
   SITE_TYPES.collectionField,
+  SITE_TYPES.newsletterSubscribe,
+  SITE_TYPES.newsletterIssues,
 ]
 
 /** Blog and collection elements: they render dynamic content, resolved
@@ -139,6 +143,7 @@ export const SITE_CATEGORIES = [
   'Avançado',
   'Blog',
   'Coleções',
+  'Newsletter',
 ] as const
 
 /** Class on the element that wraps a rendered site (theme variables and

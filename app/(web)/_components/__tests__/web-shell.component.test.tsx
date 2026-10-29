@@ -189,6 +189,8 @@ const OUT = [
   '(public)/newsletter/',
   // Sales TV link: full-screen dashboard for the sales-room TV.
   '(public)/tv/',
+  // Public newsletter archive (ADR 0054): the customer's brand, no Steel shell.
+  '(public)/n/',
   // Published customer sites: their own header/footer globals, no Steel shell.
   '(sites)/',
   'onboarding/',

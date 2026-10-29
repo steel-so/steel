@@ -256,6 +256,27 @@ export interface ElementCssUsage {
   interactions: boolean
 }
 
+/** Newsletter elements (slice nl-archive). */
+const NEWSLETTER = [
+  `${r} .s-nl-title{grid-column:1/-1;margin:0;font-size:20px;font-weight:700}`,
+  `${r} .s-nl-row{grid-column:1/-1;display:flex;gap:12px}`,
+  `${r} .s-nl-row>.s-field{flex:1}`,
+  `${r} .s-nl-row>.s-btn{flex:none}`,
+  `${r} .s-nl-items{list-style:none;margin:0;padding:0;display:grid;gap:16px}`,
+  `${r} .s-nl-card{display:flex;flex-direction:column;gap:6px;height:100%;color:inherit;text-decoration:none}`,
+  `${r} .s-nl-cards .s-nl-card{padding:20px;border:1px solid var(--canvas-border);border-radius:var(--s-radius-md);background:var(--canvas-surface);transition:border-color .2s}`,
+  `${r} .s-nl-cards a.s-nl-card[href]:hover{border-color:var(--canvas-primary)}`,
+  `${r} .s-nl-list .s-nl-items{gap:0}`,
+  `${r} .s-nl-list .s-nl-card{padding:14px 0;border-bottom:1px solid var(--canvas-border)}`,
+  `${r} a.s-nl-card[href]:hover .s-nl-subject{text-decoration:underline;text-underline-offset:4px}`,
+  `${r} .s-nl-meta{font-size:13px;color:var(--canvas-muted)}`,
+  `${r} .s-nl-number{font-weight:700;color:var(--canvas-primary)}`,
+  `${r} .s-nl-subject{font-size:18px;font-weight:600;line-height:1.35}`,
+  `${r} .s-nl-excerpt{font-size:15px;color:var(--canvas-muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}`,
+  `${r} .s-nl-all{display:inline-block;margin-top:16px;font-weight:600;color:var(--canvas-primary)}`,
+  `${r} .s-nl-empty{margin:0;padding:16px;border:1px dashed var(--canvas-border);border-radius:var(--s-radius-sm);color:var(--canvas-muted);font-size:15px}`,
+]
+
 const BY_TYPE: Array<[string[], string[]]> = [
   [[SITE_TYPES.gallery], GALLERY],
   [[SITE_TYPES.carousel, SITE_TYPES.testimonials], CAROUSEL],
@@ -271,6 +292,7 @@ const BY_TYPE: Array<[string[], string[]]> = [
   [[SITE_TYPES.map], MAP],
   [[SITE_TYPES.whatsapp], WHATSAPP],
   [[SITE_TYPES.beforeAfter], BEFORE_AFTER],
+  [[SITE_TYPES.newsletterSubscribe, SITE_TYPES.newsletterIssues], NEWSLETTER],
 ]
 
 /** Structural rules for what the page uses (`''` when nothing). */

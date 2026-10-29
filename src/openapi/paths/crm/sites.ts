@@ -20,6 +20,7 @@ import {
   SiteDTOSchema,
   SiteGlobalDTOSchema,
   SiteLandingMigrationReportDTO,
+  SiteNewsletterOptionDTO,
   SitePageDTOSchema,
   SitePageSummaryDTOSchema,
   SitePublishResultDTO,
@@ -525,5 +526,22 @@ export const crmSitesRoutes: RouteConfig[] = [
         when: 'Site inexistente, não publicado ou com o CRM desabilitado',
       },
     ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/sites/newsletters',
+    tags: TAG,
+    summary: 'Listar newsletters para o site',
+    description: describe(
+      'Newsletters ativas do workspace com as últimas 12 edições enviadas: alimenta os elementos "Inscrição na newsletter" e "Últimas edições" do editor de sites. Sem o arquivo público ligado, `issues` vem vazio.',
+      view,
+    ),
+    responses: {
+      200: {
+        description: 'Newsletters ativas.',
+        schema: z.array(SiteNewsletterOptionDTO),
+      },
+    },
+    errors: CRM_ERRORS,
   },
 ]
