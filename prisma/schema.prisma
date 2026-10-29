@@ -11300,6 +11300,7 @@ model SdMonitorHostAlias {
   @@unique([workspaceId, host])
   @@index([configItemId])
   @@map("sd_monitor_host_aliases")
+}
 
 // nov: s2-major-incident
 
