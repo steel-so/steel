@@ -30,6 +30,17 @@ export const CrmPersonNewsletterSubscriptionDTO = dto(
     canUnsubscribe: z
       .boolean()
       .meta({ description: '`ACTIVE` ou `PENDING`: pode descadastrar.' }),
+    welcome: z
+      .object({
+        sent: z.number().int(),
+        opened: z.number().int(),
+        clicked: z.number().int(),
+      })
+      .nullable()
+      .meta({
+        description:
+          'E-mails da série de boas-vindas enviados, abertos e clicados; `null` quando nenhum foi enviado.',
+      }),
   }),
 )
 

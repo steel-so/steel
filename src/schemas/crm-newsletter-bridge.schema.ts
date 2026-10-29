@@ -38,6 +38,9 @@ export type CrmPersonNewsletterSubscriptionDTO = {
   lastClickedAt: string | null
   /** ACTIVE or PENDING: the card offers "Descadastrar". */
   canUnsubscribe: boolean
+  /** Welcome series e-mails sent / opened / clicked (slice
+   * nl3-welcome-bridge); null when none was sent. */
+  welcome: { sent: number; opened: number; clicked: number } | null
 }
 
 export type CrmPersonNewslettersDTO = {
