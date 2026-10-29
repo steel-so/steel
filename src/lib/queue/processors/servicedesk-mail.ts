@@ -1,6 +1,10 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { SdMailInboundService } from '@/src/services/sd-mail-inbound.service'
+import {
+  type SdStatusNotifyResult,
+  SdStatusNotifyService,
+} from '@/src/services/sd-status-notify.service'
 import type { SdMailboxSyncDTO } from '@/types/sd-mailbox'
 import { ServicedeskMailJob } from '../jobs'
 
@@ -12,7 +16,11 @@ import { ServicedeskMailJob } from '../jobs'
  */
 export async function processServicedeskMail(
   job: Job,
-): Promise<(SdMailboxSyncDTO & { mailboxes?: number }) | SdMailboxSyncDTO> {
+): Promise<
+  | (SdMailboxSyncDTO & { mailboxes?: number })
+  | SdMailboxSyncDTO
+  | SdStatusNotifyResult
+> {
   switch (job.name) {
     case ServicedeskMailJob.PollMailboxes: {
       const result = await SdMailInboundService.runTick()
@@ -40,6 +48,27 @@ export async function processServicedeskMail(
         component: 'Worker',
         jobId: job.id,
         mailboxId,
+        ...result.value,
+      })
+      return result.value
+    }
+    case ServicedeskMailJob.NotifyStatusUpdate: {
+      const { updateId } = job.data as { updateId?: string }
+      if (!updateId) {
+        throw new Error(
+          `servicedesk-mail notify-status-update without updateId (id=${job.id ?? 'unknown'})`,
+        )
+      }
+      const result = await SdStatusNotifyService.deliver(updateId)
+      if (!result.ok) {
+        throw new Error(
+          `Failed to notify status update ${updateId}: ${result.error.code}`,
+        )
+      }
+      logger.info('queue.servicedesk_mail.status_update_notified', {
+        component: 'Worker',
+        jobId: job.id,
+        updateId,
         ...result.value,
       })
       return result.value
