@@ -13,6 +13,7 @@ import {
   LeftToRightListBulletIcon,
   Mail01Icon,
   Menu01Icon,
+  News01Icon,
   QuoteDownIcon,
   Share08Icon,
   ShoppingBag01Icon,
@@ -52,6 +53,7 @@ import {
   signatureDefinition,
   socialDefinition,
 } from './components/brand'
+import { postsDefinition } from './components/content'
 import {
   BODY,
   bodyDefaults,
@@ -115,6 +117,7 @@ const BLOCKS = [
   eventDefinition,
   videoDefinition,
   htmlDefinition,
+  postsDefinition,
 ]
 
 /** Types a column accepts (every block). */
@@ -143,6 +146,7 @@ const ICONS = {
   event: Calendar03Icon,
   video: Video01Icon,
   html: SourceCodeIcon,
+  posts: News01Icon,
 }
 
 /** Marker swapped for Outlook's font fallback after render. */

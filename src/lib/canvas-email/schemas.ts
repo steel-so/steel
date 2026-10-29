@@ -357,3 +357,26 @@ export const htmlSchema = z.object({
   html: text(50_000),
 })
 export type EmailHtmlProps = z.infer<typeof htmlSchema>
+
+// ─── content (newsletter2 nl2-digest-ai) ──────────────────────────────────
+
+export const postItemSchema = z.object({
+  title: text(200),
+  excerpt: text(400),
+  image: emailImageSchema,
+  link: emailLinkSchema,
+})
+export type EmailPostItem = z.infer<typeof postItemSchema>
+
+/** "Lista de posts": blog/RSS posts with title, excerpt, image and link —
+ * what the newsletter digest fills, also usable by hand. */
+export const postsSchema = z.object({
+  ...blockBase,
+  items: z.array(postItemSchema).min(1).max(12),
+  layout: z.enum(['horizontal', 'vertical']),
+  showImages: z.boolean(),
+  linkLabel: text(40),
+  accentColor: canvasColorSchema,
+  color: optionalColor,
+})
+export type EmailPostsProps = z.infer<typeof postsSchema>

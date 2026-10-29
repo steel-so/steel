@@ -76,6 +76,7 @@ describe('e-mail catalog', () => {
         'email.event',
         'email.video',
         'email.html',
+        'email.posts',
       ].sort(),
     )
   })
