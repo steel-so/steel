@@ -1418,6 +1418,19 @@ export const ERROR_CODES = {
     code: 'SD_STATUS_SUBSCRIBER_NOT_FOUND',
     status: 404,
   },
+  // c1-sales-cadences
+  CRM_CADENCE_NOT_FOUND: { code: 'CRM_CADENCE_NOT_FOUND', status: 404 },
+  CRM_CADENCE_ENROLLMENT_NOT_FOUND: {
+    code: 'CRM_CADENCE_ENROLLMENT_NOT_FOUND',
+    status: 404,
+  },
+  // The cadence setup cannot run (no steps, no sender, no connection...).
+  CRM_CADENCE_INVALID: { code: 'CRM_CADENCE_INVALID', status: 422 },
+  // Enrolling in a paused/archived cadence, or an impossible state change.
+  CRM_CADENCE_STATE_CONFLICT: {
+    code: 'CRM_CADENCE_STATE_CONFLICT',
+    status: 409,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES
