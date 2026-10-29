@@ -64,3 +64,6 @@ storybook-static
 # excalidraw fonts, copied from node_modules by next.config.ts
 /public/static/excalidraw/
 /public/static/excalidraw.tmp-*/
+
+# local-only roadmap (not versioned)
+/ROADMAP.md
