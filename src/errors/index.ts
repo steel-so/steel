@@ -272,6 +272,7 @@ export {
   sdMailboxNotFound,
   sdMessageForbidden,
   sdMessageNotFound,
+  sdMonitorAlertNotFound,
   sdMonitorPayloadInvalid,
   sdMonitorSourceNotFound,
   sdMonitorTokenInvalid,

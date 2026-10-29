@@ -1337,6 +1337,9 @@ export const sdMonitorSourceNotFound = (): AppError =>
     'Origem de monitoramento não encontrada',
   )
 
+export const sdMonitorAlertNotFound = (): AppError =>
+  appError('SD_MONITOR_ALERT_NOT_FOUND', 'Alerta não encontrado')
+
 export const sdMonitorTokenInvalid = (
   message = 'Token de monitoramento inválido',
 ): AppError => appError('SD_MONITOR_TOKEN_INVALID', message)

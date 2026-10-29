@@ -3,12 +3,22 @@ import { booleanQuery, sdId, sdName } from './sd-config.schema'
 import { SdTicketTypeEnum } from './sd-rule.schema'
 
 /**
- * Origens de monitoramento (Zabbix ou webhook genérico) e o corpo do alerta
+ * Origens de monitoramento (Zabbix, Grafana, PRTG ou webhook genérico) e o corpo do alerta
  * recebido na entrada pública `POST /api/servicedesk/monitoring/<token>`.
  */
 
-export const SdMonitorKindEnum = z.enum(['ZABBIX', 'WEBHOOK'])
+export const SdMonitorKindEnum = z.enum([
+  'ZABBIX',
+  'WEBHOOK',
+  'GRAFANA',
+  'PRTG',
+])
 export type SdMonitorKindInput = z.infer<typeof SdMonitorKindEnum>
+
+export const SdMonitorCorrelationModeEnum = z.enum(['OFF', 'HOST'])
+export type SdMonitorCorrelationModeInput = z.infer<
+  typeof SdMonitorCorrelationModeEnum
+>
 
 export const SdMonitorAlertStatusEnum = z.enum(['OPEN', 'RESOLVED', 'IGNORED'])
 
@@ -39,6 +49,12 @@ const flappingWindowMinutes = z
   .min(0, 'A janela não pode ser negativa')
   .max(1440, 'A janela vai até 1440 minutos (24 h)')
 
+const correlationWindowMinutes = z
+  .number()
+  .int()
+  .min(1, 'A janela de correlação precisa de ao menos 1 minuto')
+  .max(1440, 'A janela vai até 1440 minutos (24 h)')
+
 export const CreateSdMonitorSourceSchema = z.object({
   name: sdName,
   kind: SdMonitorKindEnum.default('ZABBIX'),
@@ -50,6 +66,8 @@ export const CreateSdMonitorSourceSchema = z.object({
   severityMap: SdMonitorSeverityMapSchema.default([]),
   autoResolve: z.boolean().default(true),
   flappingWindowMinutes: flappingWindowMinutes.default(30),
+  correlationMode: SdMonitorCorrelationModeEnum.default('HOST'),
+  correlationWindowMinutes: correlationWindowMinutes.default(60),
 })
 export type CreateSdMonitorSourceDTO = z.infer<
   typeof CreateSdMonitorSourceSchema
@@ -67,6 +85,8 @@ export const UpdateSdMonitorSourceSchema = z
     severityMap: SdMonitorSeverityMapSchema.optional(),
     autoResolve: z.boolean().optional(),
     flappingWindowMinutes: flappingWindowMinutes.optional(),
+    correlationMode: SdMonitorCorrelationModeEnum.optional(),
+    correlationWindowMinutes: correlationWindowMinutes.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Informe ao menos um campo',
@@ -84,6 +104,10 @@ export const ListSdMonitorAlertsSchema = z.object({
   sourceId: sdId.optional(),
   /** Alerta que abriu este chamado (bloco de origem na tela do chamado). */
   ticketId: sdId.optional(),
+  /** Alertas ligados a este item da CMDB. */
+  configItemId: sdId.optional(),
+  /** Só os alertas cujo host ainda não casou com nenhum item da CMDB. */
+  unmatched: booleanQuery,
   status: SdMonitorAlertStatusEnum.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 })
@@ -95,3 +119,11 @@ export const SdMonitorTokenSchema = z
   .min(20)
   .max(200)
   .regex(/^[A-Za-z0-9_-]+$/)
+
+/** Ligação manual de um alerta a um item da CMDB (ou desligamento). */
+export const LinkSdMonitorAlertSchema = z.object({
+  configItemId: sdId.nullable(),
+  /** Guarda host → item para os próximos alertas e os abertos de agora. */
+  remember: z.boolean().default(false),
+})
+export type LinkSdMonitorAlertDTO = z.infer<typeof LinkSdMonitorAlertSchema>

@@ -594,6 +594,7 @@ model Workspace {
   sdInventoryDevices        SdInventoryDevice[]
   sdInventorySnmpTargets    SdInventorySnmpTarget[]
   sdMonitorAlerts           SdMonitorAlert[]
+  sdMonitorHostAliases      SdMonitorHostAlias[]
   sdPortalAccesses          SdPortalAccess[]
   sdNotificationPreferences SdNotificationPreference[]
   sdContracts               SdContract[]
@@ -6110,6 +6111,7 @@ model SdConfigItem {
   createdBy        User                @relation("SdConfigItemCreatedBy", fields: [createdById], references: [id])
   tickets          SdTicket[]
   monitorAlerts    SdMonitorAlert[]
+  monitorHostAliases SdMonitorHostAlias[]
   recurringTickets SdRecurringTicket[]
   inventoryDevice  SdInventoryDevice?
 
@@ -7195,6 +7197,15 @@ model SdMailMessage {
 enum SdMonitorKind {
   ZABBIX
   WEBHOOK
+  GRAFANA
+  PRTG
+}
+
+/// Como alertas de uma mesma máquina se juntam num chamado só.
+enum SdMonitorCorrelationMode {
+  OFF
+  /// Mesmo item de configuração (ou, sem CI, o mesmo host) dentro da janela.
+  HOST
 }
 
 enum SdMonitorAlertStatus {
@@ -7224,6 +7235,9 @@ model SdMonitorSource {
   autoResolve           Boolean       @default(true) @map("auto_resolve")
   /// Reabre o chamado anterior se o mesmo alerta voltar dentro de N minutos.
   flappingWindowMinutes Int           @default(30) @map("flapping_window_minutes")
+  /// Correlação: novo alerta da mesma máquina entra no chamado aberto.
+  correlationMode          SdMonitorCorrelationMode @default(HOST) @map("correlation_mode")
+  correlationWindowMinutes Int                      @default(60) @map("correlation_window_minutes")
   lastEventAt           DateTime?     @map("last_event_at")
   createdById           String        @map("created_by_id")
   createdAt             DateTime      @default(now()) @map("created_at")
@@ -7256,6 +7270,13 @@ model SdMonitorAlert {
   startedAt    DateTime             @default(now()) @map("started_at")
   resolvedAt   DateTime?            @map("resolved_at")
   createdAt    DateTime             @default(now()) @map("created_at")
+  /// Chave de correlação (`ci:<id>` ou `host:<nome>`), calculada na chegada.
+  correlationKey String?            @map("correlation_key")
+  /// Alerta que entrou num chamado aberto por outro alerta.
+  correlated   Boolean              @default(false)
+  /// Quantas vezes o mesmo alerta chegou (deduplicação).
+  occurrences  Int                  @default(1)
+  lastSeenAt   DateTime             @default(now()) @map("last_seen_at")
 
   workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   source     SdMonitorSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
@@ -7265,6 +7286,8 @@ model SdMonitorAlert {
   @@unique([sourceId, externalId])
   @@index([workspaceId, status])
   @@index([ticketId])
+  @@index([workspaceId, correlationKey, status])
+  @@index([configItemId])
   @@map("sd_monitor_alerts")
 }
 
@@ -11184,4 +11207,26 @@ model SteelAgentVersion {
   @@unique([agentId, number])
   @@index([agentId, status])
   @@map("steel_agent_versions")
+}
+
+// nov: s3-monitoring-tickets
+
+/// Apelido de host → item de configuração, aprendido quando o agente liga um
+/// alerta à CMDB à mão ("lembrar"). Vale para qualquer origem da workspace e
+/// vem antes do casamento por nome/código/IP.
+model SdMonitorHostAlias {
+  id           String   @id @default(cuid())
+  workspaceId  String   @map("workspace_id")
+  /// Host como chega do alerta, em minúsculas.
+  host         String
+  configItemId String   @map("config_item_id")
+  createdById  String   @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  configItem SdConfigItem @relation(fields: [configItemId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, host])
+  @@index([configItemId])
+  @@map("sd_monitor_host_aliases")
 }

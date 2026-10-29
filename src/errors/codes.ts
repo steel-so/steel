@@ -793,6 +793,10 @@ export const ERROR_CODES = {
     code: 'SD_MONITOR_SOURCE_NOT_FOUND',
     status: 404,
   },
+  SD_MONITOR_ALERT_NOT_FOUND: {
+    code: 'SD_MONITOR_ALERT_NOT_FOUND',
+    status: 404,
+  },
   SD_MONITOR_TOKEN_INVALID: { code: 'SD_MONITOR_TOKEN_INVALID', status: 401 },
   SD_MONITOR_PAYLOAD_INVALID: {
     code: 'SD_MONITOR_PAYLOAD_INVALID',
