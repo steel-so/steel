@@ -1,0 +1,66 @@
+---
+title: Newsletter no CRM, enviada do domínio da sua empresa
+slug: newsletter-no-crm
+date: 2026-10-29
+summary: O CRM ganha newsletters com assinantes próprios, confirmação de inscrição, central de preferências, editor visual, relatório por link e um arquivo público com RSS, tudo enviado do domínio da sua empresa.
+tags: [CRM]
+cover: /changelog/2026-10-29/capa-newsletter.jpg
+---
+
+## Newsletters com assinantes próprios
+
+Em **CRM › Newsletters** você cria quantas publicações quiser — um boletim
+mensal para clientes, um aviso de novidades do produto — e cada uma tem os
+próprios assinantes, remetente e frequência. O cartão mostra quantas pessoas
+assinam, quantas ainda não confirmaram e quando saiu a última edição.
+
+![Lista de newsletters com o Boletim Smoke ativo, 5 assinantes, uma pessoa aguardando confirmação e o aviso de domínio não verificado](/changelog/2026-10-29/newsletters-lista.webp)
+
+## Assinantes com consentimento
+
+Assinantes entram pelo formulário do arquivo público, por um formulário do
+CRM, por importação de CSV ou à mão. Com a **confirmação dupla** (ligada por
+padrão), quem se inscreve recebe um e-mail para confirmar antes de entrar na
+lista. O Steel guarda a prova do consentimento: data, origem e o texto que a
+pessoa aceitou.
+
+Cada e-mail traz **Descadastrar** e **Preferências**. Na central de
+preferências o leitor escolhe de quais newsletters quer sair, ou sai de
+tudo. Endereços que retornam erro deixam de receber sozinhos, e quem marca
+como spam sai daquela newsletter.
+
+![Aba Assinantes com busca, filtros por situação e origem, exportação, importação e a lista de pessoas com situação, origem e data](/changelog/2026-10-29/newsletter-assinantes.webp)
+
+## Edições no editor visual
+
+Cada edição é montada no mesmo editor de arrastar e soltar dos e-mails do
+CRM. Dá para enviar um teste, enviar agora ou agendar. Antes do envio, o Steel
+confere remetente, conteúdo, assinantes e o saldo do mês. Depois, o relatório
+mostra entregas, aberturas, cliques por link e a lista de destinatários.
+
+![Editor da edição com a paleta de blocos à esquerda, o e-mail no centro e o painel do documento à direita, com Testar e Enviar no topo](/changelog/2026-10-29/newsletter-editor.webp)
+
+## Enviada do domínio da sua empresa
+
+As newsletters saem do domínio da sua empresa, não do Steel. Em **Ajustes ›
+Domínios de e-mail** você cadastra um subdomínio como
+`news.suaempresa.com.br`, copia os registros DNS e o Steel verifica sozinho.
+Assim os provedores reconhecem o remetente, a entrega melhora e um envio em
+massa nunca atrapalha o e-mail do dia a dia da equipe.
+
+![Janela Adicionar domínio de e-mail explicando por que usar um subdomínio dedicado e com a região de envio São Paulo recomendada](/changelog/2026-10-29/dominio-de-email.webp)
+
+## Arquivo público e RSS
+
+Cada newsletter tem uma página pública com descrição, frequência, formulário
+de inscrição e todas as edições enviadas, com feed RSS. No construtor de
+Sites, dois blocos novos levam a inscrição e as últimas edições para o site da
+empresa.
+
+![Página pública do Boletim Smoke com frequência mensal, descrição, formulário de inscrição com consentimento e a seção de edições](/changelog/2026-10-29/newsletter-arquivo.webp)
+
+## Limite mensal
+
+Cada plano tem um limite de e-mails de newsletter por mês: 3.000 no Free,
+30.000 no Pro, 150.000 no Business e sem limite no Enterprise. Envios de teste
+não contam, e o Steel avisa quando o uso chega a 50%, 80% e 100%.
