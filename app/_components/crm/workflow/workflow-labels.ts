@@ -23,6 +23,10 @@ export const WORKFLOW_TRIGGER_LABELS: Record<CrmWorkflowTriggerType, string> = {
   'launch-manually': 'Disparo manual',
   'on-a-schedule': 'Agendado',
   webhook: 'Webhook',
+  'newsletter-subscribed': 'Assinou newsletter',
+  'newsletter-unsubscribed': 'Saiu da newsletter',
+  'newsletter-link-clicked': 'Clicou em link da newsletter',
+  'newsletter-issue-opened': 'Abriu edição da newsletter',
 }
 
 export const WORKFLOW_NODE_LABELS: Record<CrmWorkflowNodeType, string> = {

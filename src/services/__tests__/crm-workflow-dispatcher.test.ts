@@ -8,7 +8,10 @@ import {
   CrmWorkflowRepository,
   CrmWorkflowRunRepository,
 } from '@/src/repositories/crm-workflow.repository'
-import { dispatchCrmWorkflowRecordEvent } from '../crm-workflow-dispatcher'
+import {
+  dispatchCrmWorkflowNewsletterEvent,
+  dispatchCrmWorkflowRecordEvent,
+} from '../crm-workflow-dispatcher'
 import { runCrmWorkflow } from '../crm-workflow-runner'
 
 const mockedWorkflowRepo = vi.mocked(CrmWorkflowRepository)
@@ -18,6 +21,7 @@ const mockedRun = vi.mocked(runCrmWorkflow)
 function activeWorkflow(trigger: Record<string, unknown>) {
   return {
     id: 'wf1',
+    createdById: 'owner1',
     activeVersion: {
       id: 'v1',
       definition: {
@@ -260,5 +264,149 @@ describe('dispatchCrmWorkflowRecordEvent() — matching and resilience', () => {
     // deixa a rejeição (e o `.catch`) assentarem sem unhandled rejection
     await new Promise((resolve) => setImmediate(resolve))
     expect(mockedRun).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('dispatchCrmWorkflowNewsletterEvent()', () => {
+  const payload = {
+    newsletter: { id: 'nl1', name: 'Novidades' },
+    record: {
+      id: 's1',
+      email: 'ana@x.com',
+      name: null,
+      status: 'ACTIVE',
+      personId: 'p1',
+    },
+    url: 'https://acme.com/Precos',
+  }
+
+  function workflows(...triggers: Array<Record<string, unknown> | null>) {
+    mockedWorkflowRepo.findActiveByWorkspace.mockResolvedValue(
+      ok(
+        triggers.map((trigger, index) =>
+          trigger
+            ? {
+                ...(activeWorkflow(trigger) as object),
+                id: `wf${index}`,
+              }
+            : { id: 'draft', activeVersion: null, createdById: 'x' },
+        ) as never,
+      ),
+    )
+    mockedRunRepo.create.mockResolvedValue(ok({ id: 'run1' } as never))
+    mockedRun.mockResolvedValue(undefined as never)
+  }
+
+  it('runs the matching workflows as their creator, with no starter', async () => {
+    mockedRunRepo.create.mockClear()
+    mockedRun.mockClear()
+    workflows(
+      { type: 'newsletter-link-clicked' },
+      { type: 'newsletter-link-clicked', newsletterId: 'nl1' },
+      { type: 'newsletter-link-clicked', urlContains: '/precos' },
+      { type: 'newsletter-link-clicked', newsletterId: 'other' },
+      { type: 'newsletter-link-clicked', urlContains: '/blog' },
+      { type: 'newsletter-subscribed' },
+      { type: 'record-is-created', entity: 'person' },
+      null,
+    )
+
+    const started = await dispatchCrmWorkflowNewsletterEvent({
+      workspaceId: 'ws1',
+      type: 'newsletter-link-clicked',
+      payload,
+    })
+
+    expect(started).toBe(3)
+    expect(mockedRunRepo.create).toHaveBeenCalledTimes(3)
+    expect(mockedRunRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerType: 'NEWSLETTER_LINK_CLICKED',
+        startedById: null,
+        triggerPayload: { event: 'newsletter-link-clicked', ...payload },
+      }),
+    )
+    expect(mockedRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actingUserId: 'owner1',
+        triggerType: 'newsletter-link-clicked',
+        testMode: false,
+      }),
+    )
+  })
+
+  it('skips the URL filter when the click has no URL and ignores empty triggers', async () => {
+    mockedRunRepo.create.mockClear()
+    workflows(
+      { type: 'newsletter-link-clicked', urlContains: '/precos' },
+      { type: 'newsletter-link-clicked' },
+    )
+    mockedWorkflowRepo.findActiveByWorkspace.mockResolvedValueOnce(
+      ok([
+        {
+          id: 'empty',
+          createdById: 'x',
+          activeVersion: {
+            id: 'v',
+            definition: {
+              trigger: { id: 'trigger', position: { x: 0, y: 0 }, data: null },
+              nodes: [],
+              edges: [],
+            },
+          },
+        },
+        ...[
+          { type: 'newsletter-link-clicked', urlContains: '/precos' },
+          { type: 'newsletter-link-clicked' },
+        ].map((t) => activeWorkflow(t)),
+      ] as never),
+    )
+    const { url: _url, ...noUrl } = payload
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-link-clicked',
+        payload: noUrl,
+      }),
+    ).toBe(1)
+  })
+
+  it('returns 0 when listing fails and skips failed run inserts', async () => {
+    mockedWorkflowRepo.findActiveByWorkspace.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'DATABASE_ERROR' },
+    } as never)
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-subscribed',
+        payload,
+      }),
+    ).toBe(0)
+
+    workflows({ type: 'newsletter-subscribed' })
+    mockedRunRepo.create.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'DATABASE_ERROR' },
+    } as never)
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-subscribed',
+        payload,
+      }),
+    ).toBe(0)
+  })
+
+  it('swallows runner rejections', async () => {
+    workflows({ type: 'newsletter-unsubscribed' })
+    mockedRun.mockRejectedValueOnce(new Error('boom'))
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-unsubscribed',
+        payload,
+      }),
+    ).toBe(1)
   })
 })

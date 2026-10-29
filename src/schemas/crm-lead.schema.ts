@@ -231,8 +231,27 @@ const LeadRuleOperatorEnum = z.enum([
   'is_not_empty',
 ])
 
+/**
+ * Engagement events a scoring rule may award points for (newsletter bridge,
+ * ADR 0054 phase 2). They are not lead fields: the points land when the
+ * event happens to a lead linked to the person/e-mail, once per event
+ * (`CrmLeadScoreEvent`). Only `newsletter_clicked` reads `value`, as an
+ * optional "URL contains" filter. Routing rules never use them.
+ */
+export const CRM_LEAD_EVENT_RULE_FIELDS = [
+  'newsletter_subscribed',
+  'newsletter_opened',
+  'newsletter_clicked',
+] as const
+export type CrmLeadEventRuleField = (typeof CRM_LEAD_EVENT_RULE_FIELDS)[number]
+
+const ScoringRuleFieldEnum = z.enum([
+  ...LeadRuleFieldEnum.options,
+  ...CRM_LEAD_EVENT_RULE_FIELDS,
+])
+
 export const CreateCrmLeadScoringRuleSchema = z.object({
-  field: LeadRuleFieldEnum,
+  field: ScoringRuleFieldEnum,
   operator: LeadRuleOperatorEnum,
   value: z.string().max(200).optional(),
   points: z.number().int().default(0),
@@ -244,7 +263,7 @@ export type CreateCrmLeadScoringRuleDTO = z.infer<
 >
 
 export const UpdateCrmLeadScoringRuleSchema = z.object({
-  field: LeadRuleFieldEnum.optional(),
+  field: ScoringRuleFieldEnum.optional(),
   operator: LeadRuleOperatorEnum.optional(),
   value: z.string().max(200).optional(),
   points: z.number().int().optional(),

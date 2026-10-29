@@ -129,7 +129,17 @@ export const CrmLeadScoringRuleDTO = dto(
   z.object({
     id: z.string(),
     workspaceId: z.string(),
-    field: z.enum(RULE_FIELDS),
+    field: z
+      .enum([
+        ...RULE_FIELDS,
+        'newsletter_subscribed',
+        'newsletter_opened',
+        'newsletter_clicked',
+      ])
+      .meta({
+        description:
+          'Campo do lead, ou evento de engajamento da newsletter (`newsletter_*`), que pontua uma vez por evento. Em `newsletter_clicked`, `value` é o filtro opcional "URL contém".',
+      }),
     operator: z.enum(RULE_OPERATORS),
     value: z.string().nullable(),
     points: z.number().int().meta({ example: 20 }),

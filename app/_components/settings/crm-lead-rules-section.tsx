@@ -66,6 +66,21 @@ const FIELD_LABEL: Record<string, string> = {
   city: 'Cidade',
 }
 
+/** Engagement events (newsletter bridge): scoring only, never routing. */
+const EVENT_FIELD_OPTIONS = [
+  'newsletter_subscribed',
+  'newsletter_opened',
+  'newsletter_clicked',
+] as const
+
+const EVENT_FIELD_LABEL: Record<string, string> = {
+  newsletter_subscribed: 'Assinou newsletter',
+  newsletter_opened: 'Abriu newsletter',
+  newsletter_clicked: 'Clicou em link da newsletter',
+}
+
+const isEventField = (field: string) => field in EVENT_FIELD_LABEL
+
 const OPERATOR_OPTIONS = [
   'equals',
   'not_equals',
@@ -93,12 +108,52 @@ function ConditionSummary({
   operator: string
   value: string | null
 }) {
+  if (isEventField(field)) {
+    return (
+      <span className='text-sm'>
+        {EVENT_FIELD_LABEL[field]}
+        {field === 'newsletter_clicked' && value
+          ? ` (URL contém "${value}")`
+          : ''}
+        <span className='text-muted-foreground'> · uma vez por evento</span>
+      </span>
+    )
+  }
   const needsValue = operator !== 'is_empty' && operator !== 'is_not_empty'
   return (
     <span className='text-sm'>
       {FIELD_LABEL[field] ?? field} {OPERATOR_LABEL[operator] ?? operator}
       {needsValue && value ? ` "${value}"` : ''}
     </span>
+  )
+}
+
+function EventRuleHint({
+  field,
+  value,
+  onValue,
+}: {
+  field: string
+  value: string
+  onValue: (value: string) => void
+}) {
+  return (
+    <>
+      {field === 'newsletter_clicked' ? (
+        <Field>
+          <FieldLabel>URL contém (opcional)</FieldLabel>
+          <Input
+            value={value}
+            onChange={(e) => onValue(e.target.value)}
+            placeholder='Ex.: /precos'
+          />
+        </Field>
+      ) : null}
+      <Muted>
+        Pontua os leads ligados à pessoa ou ao e-mail do assinante, uma vez por{' '}
+        {field === 'newsletter_subscribed' ? 'newsletter' : 'edição'}.
+      </Muted>
+    </>
   )
 }
 
@@ -115,13 +170,17 @@ function NewScoringRuleDialog({
   const [value, setValue] = useState('')
   const [points, setPoints] = useState('10')
   const [saving, setSaving] = useState(false)
+  const eventRule = isEventField(field)
 
   async function handleCreate() {
     setSaving(true)
     const result = await createCrmResource(workspaceId, 'lead-scoring-rules', {
       field,
-      operator,
-      value: value || undefined,
+      operator: eventRule ? 'contains' : operator,
+      value:
+        eventRule && field !== 'newsletter_clicked'
+          ? undefined
+          : value || undefined,
       points: Number(points) || 0,
       active: true,
     })
@@ -161,10 +220,20 @@ function NewScoringRuleDialog({
                     </SelectItem>
                   ))}
                 </SelectGroup>
+                <SelectGroup>
+                  {EVENT_FIELD_OPTIONS.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {EVENT_FIELD_LABEL[f]}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
-          <Field>
+          {eventRule ? (
+            <EventRuleHint field={field} value={value} onValue={setValue} />
+          ) : null}
+          <Field className={eventRule ? 'hidden' : undefined}>
             <FieldLabel>Operador</FieldLabel>
             <Select
               value={operator}
@@ -184,7 +253,9 @@ function NewScoringRuleDialog({
               </SelectContent>
             </Select>
           </Field>
-          {operator !== 'is_empty' && operator !== 'is_not_empty' ? (
+          {!eventRule &&
+          operator !== 'is_empty' &&
+          operator !== 'is_not_empty' ? (
             <Field>
               <FieldLabel>Valor</FieldLabel>
               <Input value={value} onChange={(e) => setValue(e.target.value)} />

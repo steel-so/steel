@@ -83,6 +83,10 @@ export const CRM_WORKFLOW_TRIGGER_TYPES = [
   'launch-manually',
   'on-a-schedule',
   'webhook',
+  'newsletter-subscribed',
+  'newsletter-unsubscribed',
+  'newsletter-link-clicked',
+  'newsletter-issue-opened',
 ] as const
 export type CrmWorkflowTriggerType = (typeof CRM_WORKFLOW_TRIGGER_TYPES)[number]
 
@@ -221,6 +225,44 @@ const TriggerWebhookSchema = z.object({
   token: z.string().trim().min(8).max(64),
 })
 
+/**
+ * Newsletter bridge triggers (ADR 0054 phase 2), dispatched by the
+ * newsletter subscriber and tracking services. `newsletterId` absent = any
+ * newsletter of the workspace.
+ */
+export const CRM_WORKFLOW_NEWSLETTER_TRIGGER_TYPES = [
+  'newsletter-subscribed',
+  'newsletter-unsubscribed',
+  'newsletter-link-clicked',
+  'newsletter-issue-opened',
+] as const
+export type CrmWorkflowNewsletterTriggerType =
+  (typeof CRM_WORKFLOW_NEWSLETTER_TRIGGER_TYPES)[number]
+
+const NewsletterFilter = z.string().trim().min(1).max(64).optional()
+
+const TriggerNewsletterSubscribedSchema = z.object({
+  type: z.literal('newsletter-subscribed'),
+  newsletterId: NewsletterFilter,
+})
+
+const TriggerNewsletterUnsubscribedSchema = z.object({
+  type: z.literal('newsletter-unsubscribed'),
+  newsletterId: NewsletterFilter,
+})
+
+const TriggerNewsletterLinkClickedSchema = z.object({
+  type: z.literal('newsletter-link-clicked'),
+  newsletterId: NewsletterFilter,
+  /** Only clicks on a URL containing this text (case-insensitive). */
+  urlContains: z.string().trim().max(500).optional(),
+})
+
+const TriggerNewsletterIssueOpenedSchema = z.object({
+  type: z.literal('newsletter-issue-opened'),
+  newsletterId: NewsletterFilter,
+})
+
 export const CrmWorkflowTriggerDataSchema = z.discriminatedUnion('type', [
   TriggerRecordCreatedSchema,
   TriggerRecordUpdatedSchema,
@@ -229,6 +271,10 @@ export const CrmWorkflowTriggerDataSchema = z.discriminatedUnion('type', [
   TriggerManualSchema,
   TriggerScheduleSchema,
   TriggerWebhookSchema,
+  TriggerNewsletterSubscribedSchema,
+  TriggerNewsletterUnsubscribedSchema,
+  TriggerNewsletterLinkClickedSchema,
+  TriggerNewsletterIssueOpenedSchema,
 ])
 
 export const CrmWorkflowTriggerSchema = z.object({

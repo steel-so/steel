@@ -5,12 +5,15 @@ import { databaseError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/crm-newsletter-delivery.repository')
+vi.mock('@/src/services/crm-newsletter-bridge.service')
 
 import { CrmNewsletterDeliveryRepository } from '@/src/repositories/crm-newsletter-delivery.repository'
 import type { ResendWebhookEvent } from '@/src/schemas/crm-campaign.schema'
+import { CrmNewsletterBridge } from '../crm-newsletter-bridge.service'
 import { CrmNewsletterTrackingService as Service } from '../crm-newsletter-tracking.service'
 
 const repo = vi.mocked(CrmNewsletterDeliveryRepository)
+const bridge = vi.mocked(CrmNewsletterBridge)
 const NOW = new Date('2026-10-28T13:00:00.000Z')
 const EARLIER = '2026-10-28T12:59:00.000Z'
 
@@ -142,6 +145,53 @@ describe('CrmNewsletterTrackingService.onEmailEvent', () => {
   it('takes complaints out of that newsletter', async () => {
     expectOk(await Service.onEmailEvent(event('email.complained'), NOW))
     expect(repo.complain).toHaveBeenCalledWith('s1', new Date(EARLIER))
+  })
+
+  describe('CRM bridge (ADR 0054 phase 2)', () => {
+    it('emits received and opened only on the first mark', async () => {
+      await Service.onEmailEvent(event('email.delivered'), NOW)
+      await Service.onEmailEvent(event('email.opened'), NOW)
+      expect(bridge.emit.mock.calls.map((c) => c[0])).toEqual([
+        { type: 'issue_received', subscriberId: 's1', issueId: 'is1' },
+        { type: 'issue_opened', subscriberId: 's1', issueId: 'is1' },
+      ])
+
+      bridge.emit.mockClear()
+      repo.markFirst.mockResolvedValue(ok(false))
+      await Service.onEmailEvent(event('email.delivered'), NOW)
+      await Service.onEmailEvent(event('email.opened'), NOW)
+      expect(bridge.emit).not.toHaveBeenCalled()
+    })
+
+    it('emits the implied open once and every click with its URL', async () => {
+      await Service.onEmailEvent(
+        event('email.clicked', { click: { link: 'https://acme.com/x' } }),
+        NOW,
+      )
+      expect(bridge.emit.mock.calls.map((c) => c[0])).toEqual([
+        { type: 'issue_opened', subscriberId: 's1', issueId: 'is1' },
+        {
+          type: 'link_clicked',
+          subscriberId: 's1',
+          issueId: 'is1',
+          recipientId: 'r1',
+          url: 'https://acme.com/x',
+        },
+      ])
+
+      bridge.emit.mockClear()
+      repo.markFirst.mockResolvedValue(ok(false))
+      await Service.onEmailEvent(event('email.clicked'), NOW)
+      expect(bridge.emit.mock.calls.map((c) => c[0])).toEqual([
+        {
+          type: 'link_clicked',
+          subscriberId: 's1',
+          issueId: 'is1',
+          recipientId: 'r1',
+          url: null,
+        },
+      ])
+    })
   })
 
   it('ignores other event types but claims the message', async () => {

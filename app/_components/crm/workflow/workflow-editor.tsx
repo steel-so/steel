@@ -8,6 +8,7 @@ import {
   Cancel01Icon,
   CheckmarkCircle02Icon,
   ClipboardIcon,
+  Cursor01Icon,
   Database01Icon,
   DatabaseSync01Icon,
   Delete01Icon,
@@ -15,6 +16,9 @@ import {
   FilterIcon,
   GitBranchIcon,
   Mail01Icon,
+  MailAdd01Icon,
+  MailOpen01Icon,
+  MailRemove01Icon,
   PlayIcon,
   PlusSignIcon,
   Search01Icon,
@@ -131,7 +135,30 @@ const TRIGGER_META: Record<
     description: 'Chamada POST em um endereço público',
     icon: WebhookIcon,
   },
+  'newsletter-subscribed': {
+    label: WORKFLOW_TRIGGER_LABELS['newsletter-subscribed'],
+    description: 'Inscrição ativa (ou confirmada) em uma newsletter',
+    icon: MailAdd01Icon,
+  },
+  'newsletter-unsubscribed': {
+    label: WORKFLOW_TRIGGER_LABELS['newsletter-unsubscribed'],
+    description: 'Saiu de uma newsletter',
+    icon: MailRemove01Icon,
+  },
+  'newsletter-issue-opened': {
+    label: WORKFLOW_TRIGGER_LABELS['newsletter-issue-opened'],
+    description: 'Primeira abertura de uma edição',
+    icon: MailOpen01Icon,
+  },
+  'newsletter-link-clicked': {
+    label: WORKFLOW_TRIGGER_LABELS['newsletter-link-clicked'],
+    description: 'Clique em um link de uma edição',
+    icon: Cursor01Icon,
+  },
 }
+
+const isNewsletterTrigger = (type: CrmWorkflowTriggerType) =>
+  type.startsWith('newsletter-')
 
 const NODE_META: Record<
   CrmWorkflowNodeType,
@@ -642,6 +669,7 @@ function WorkflowEditorInner({
           side='right'
         >
           <WorkflowConfigPanel
+            workspaceId={workspaceId}
             selectedId={selected}
             trigger={definition.trigger}
             node={selectedNode}
@@ -784,8 +812,9 @@ function AddMenu({
         {!triggerConfigured && (
           <DropdownMenuGroup>
             <DropdownMenuLabel>Gatilhos</DropdownMenuLabel>
-            {(Object.keys(TRIGGER_META) as CrmWorkflowTriggerType[]).map(
-              (type) => {
+            {(Object.keys(TRIGGER_META) as CrmWorkflowTriggerType[])
+              .filter((type) => !isNewsletterTrigger(type))
+              .map((type) => {
                 const meta = TRIGGER_META[type]
                 return (
                   <DropdownMenuItem
@@ -796,8 +825,27 @@ function AddMenu({
                     <span className='flex-1'>{meta.label}</span>
                   </DropdownMenuItem>
                 )
-              },
-            )}
+              })}
+            <DropdownMenuSeparator />
+          </DropdownMenuGroup>
+        )}
+        {!triggerConfigured && (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Gatilhos de newsletter</DropdownMenuLabel>
+            {(Object.keys(TRIGGER_META) as CrmWorkflowTriggerType[])
+              .filter(isNewsletterTrigger)
+              .map((type) => {
+                const meta = TRIGGER_META[type]
+                return (
+                  <DropdownMenuItem
+                    key={type}
+                    onClick={() => onPickTrigger(defaultTriggerData(type))}
+                  >
+                    <SteelIcon icon={meta.icon} strokeWidth={2} />
+                    <span className='flex-1'>{meta.label}</span>
+                  </DropdownMenuItem>
+                )
+              })}
             <DropdownMenuSeparator />
           </DropdownMenuGroup>
         )}
@@ -957,6 +1005,11 @@ function defaultTriggerData(
       return { type, cron: '0 9 * * *', timezone: 'America/Sao_Paulo' }
     case 'webhook':
       return { type, token: makeWebhookToken() }
+    case 'newsletter-subscribed':
+    case 'newsletter-unsubscribed':
+    case 'newsletter-issue-opened':
+    case 'newsletter-link-clicked':
+      return { type }
   }
 }
 

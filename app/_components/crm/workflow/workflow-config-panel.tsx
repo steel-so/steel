@@ -35,6 +35,10 @@ import {
   webhookTriggerPath,
   workflowNodeLabel,
 } from './workflow-labels'
+import {
+  isNewsletterTriggerData,
+  WorkflowNewsletterTriggerFields,
+} from './workflow-newsletter-trigger-fields'
 
 export function WorkflowConfigPanel({
   selectedId,
@@ -44,7 +48,9 @@ export function WorkflowConfigPanel({
   onUpdateNode,
   onDeleteNode,
   onClose,
+  workspaceId,
 }: {
+  workspaceId?: string
   selectedId: string | null
   trigger: CrmWorkflowTrigger
   node: CrmWorkflowNode | null
@@ -61,7 +67,11 @@ export function WorkflowConfigPanel({
         onDelete={trigger.data ? () => onUpdateTrigger(null) : undefined}
         deleteLabel='Limpar gatilho'
       >
-        <TriggerForm data={trigger.data} onChange={onUpdateTrigger} />
+        <TriggerForm
+          data={trigger.data}
+          onChange={onUpdateTrigger}
+          workspaceId={workspaceId}
+        />
       </PanelShell>
     )
   }
@@ -150,9 +160,11 @@ const LEAD_EVENT_LABELS: Record<CrmWorkflowLeadEvent, string> = {
 function TriggerForm({
   data,
   onChange,
+  workspaceId,
 }: {
   data: CrmWorkflowTriggerData | null
   onChange: (next: CrmWorkflowTriggerData | null) => void
+  workspaceId?: string
 }) {
   if (!data) {
     return (
@@ -258,6 +270,13 @@ function TriggerForm({
             />
           </Field>
         </>
+      )}
+      {isNewsletterTriggerData(data) && (
+        <WorkflowNewsletterTriggerFields
+          workspaceId={workspaceId}
+          data={data}
+          onChange={onChange}
+        />
       )}
       {data.type === 'webhook' && (
         <Field

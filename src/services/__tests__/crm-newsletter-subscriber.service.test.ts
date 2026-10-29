@@ -20,6 +20,7 @@ vi.mock('@/src/repositories/crm-newsletter-subscriber.repository')
 vi.mock('@/src/repositories/crm-email-opt-out.repository')
 vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/lib/axiom/audit')
+vi.mock('@/src/services/crm-newsletter-bridge.service')
 vi.mock('../crm-newsletter-confirmation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../crm-newsletter-confirmation')>()),
   sendNewsletterConfirmation: vi.fn(),
@@ -31,6 +32,7 @@ import { CrmNewsletterRepository } from '@/src/repositories/crm-newsletter.repos
 import { CrmNewsletterSubscriberRepository } from '@/src/repositories/crm-newsletter-subscriber.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
+import { CrmNewsletterBridge } from '../crm-newsletter-bridge.service'
 import { sendNewsletterConfirmation } from '../crm-newsletter-confirmation'
 import {
   CRM_NEWSLETTER_IMPORT_CONFIRM_MAX_ROWS,
@@ -46,6 +48,7 @@ const membershipRepo = vi.mocked(MembershipRepository)
 const workspaceRepo = vi.mocked(WorkspaceRepository)
 const sendConfirmation = vi.mocked(sendNewsletterConfirmation)
 const audit = vi.mocked(auditMutation)
+const bridge = vi.mocked(CrmNewsletterBridge)
 
 const WS = 'ws1'
 const NL = 'nl1'
@@ -141,6 +144,10 @@ describe('add', () => {
         action: 'create',
       }),
     )
+    expect(bridge.emit).toHaveBeenCalledWith({
+      type: 'subscribed',
+      subscriberId: expect.any(String),
+    })
   })
 
   it('sends the confirmation when asked', async () => {

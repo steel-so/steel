@@ -32,6 +32,7 @@ import type {
   ListCrmNewsletterSubscribersQuery,
 } from '@/src/schemas/crm-newsletter.schema'
 import { assertModuleMember } from './authz'
+import { CrmNewsletterBridge } from './crm-newsletter-bridge.service'
 import {
   confirmResendWaitSeconds,
   sendNewsletterConfirmation,
@@ -249,6 +250,10 @@ export const CrmNewsletterSubscriberService = {
         status: saved.value.status,
         reactivated: current !== null,
       },
+    })
+    await CrmNewsletterBridge.emit({
+      type: 'subscribed',
+      subscriberId: saved.value.id,
     })
 
     if (confirm) {

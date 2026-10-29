@@ -3,6 +3,7 @@ import { clickedLink, isPermanentBounce } from '@/src/lib/crm-newsletter/email'
 import { ok, type Result } from '@/src/lib/result'
 import { CrmNewsletterDeliveryRepository } from '@/src/repositories/crm-newsletter-delivery.repository'
 import type { ResendWebhookEvent } from '@/src/schemas/crm-campaign.schema'
+import { CrmNewsletterBridge } from './crm-newsletter-bridge.service'
 
 /**
  * Resend webhook events of newsletter issues (ADR 0054). The webhook route
@@ -35,6 +36,13 @@ export const CrmNewsletterTrackingService = {
       case 'email.delivered': {
         const marked = await R.markFirst(recipient.id, 'deliveredAt', at)
         if (!marked.ok) return marked
+        if (marked.value) {
+          await CrmNewsletterBridge.emit({
+            type: 'issue_received',
+            subscriberId: recipient.subscriberId,
+            issueId: recipient.issueId,
+          })
+        }
         break
       }
       case 'email.opened': {
@@ -46,6 +54,13 @@ export const CrmNewsletterTrackingService = {
           at,
         )
         if (!touched.ok) return touched
+        if (marked.value) {
+          await CrmNewsletterBridge.emit({
+            type: 'issue_opened',
+            subscriberId: recipient.subscriberId,
+            issueId: recipient.issueId,
+          })
+        }
         break
       }
       case 'email.clicked': {
@@ -69,6 +84,20 @@ export const CrmNewsletterTrackingService = {
           at,
         )
         if (!touched.ok) return touched
+        if (opened.value) {
+          await CrmNewsletterBridge.emit({
+            type: 'issue_opened',
+            subscriberId: recipient.subscriberId,
+            issueId: recipient.issueId,
+          })
+        }
+        await CrmNewsletterBridge.emit({
+          type: 'link_clicked',
+          subscriberId: recipient.subscriberId,
+          issueId: recipient.issueId,
+          recipientId: recipient.id,
+          url,
+        })
         break
       }
       case 'email.bounced': {

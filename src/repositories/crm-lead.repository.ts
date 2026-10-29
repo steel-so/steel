@@ -195,6 +195,9 @@ export const CrmLeadRepository = {
       source?: string
       channel?: string
       stage?: CrmLeadStage
+      /** Field-rules score; the points earned from engagement events
+       * (`crm_lead_score_events`) are added on top, so a recompute never
+       * drops them. */
       score?: number
       ownerId?: string | null
       convertedPersonId?: string
@@ -210,7 +213,18 @@ export const CrmLeadRepository = {
     },
   ): Promise<Result<CrmLead>> {
     try {
-      const lead = await prisma.crmLead.update({ where: { id }, data })
+      let score = data.score
+      if (score !== undefined) {
+        const earned = await prisma.crmLeadScoreEvent.aggregate({
+          where: { leadId: id },
+          _sum: { points: true },
+        })
+        score += earned._sum.points ?? 0
+      }
+      const lead = await prisma.crmLead.update({
+        where: { id },
+        data: { ...data, score },
+      })
       return ok(lead)
     } catch (error) {
       return err(dbError('Failed to update CRM lead', error))

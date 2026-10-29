@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   computeLeadScore,
   findLeadRoutingOwner,
+  isLeadEventRuleField,
+  matchesLeadEventRule,
   matchesLeadRule,
 } from '../crm-lead-rules'
 
@@ -141,5 +143,142 @@ describe('findLeadRoutingOwner()', () => {
       },
     ])
     expect(owner).toBeNull()
+  })
+})
+
+describe('newsletter event rules (ADR 0054 phase 2)', () => {
+  const eventRule = (
+    field: 'newsletter_subscribed' | 'newsletter_opened' | 'newsletter_clicked',
+    value: string | null = null,
+    active = true,
+  ) => ({ field, operator: 'contains' as const, value, active, points: 10 })
+
+  it('reads every lead field', () => {
+    const full = {
+      ...subject,
+      phones: ['119'],
+      jobTitle: 'CTO',
+      city: 'SP',
+    }
+    const read = (field: 'name' | 'phone' | 'jobTitle' | 'city') =>
+      matchesLeadRule(full, { field, operator: 'is_not_empty', value: null })
+    expect(
+      ['name', 'phone', 'jobTitle', 'city'].map((f) => read(f as never)),
+    ).toEqual([true, true, true, true])
+  })
+
+  it('treats a missing value as empty', () => {
+    const empty = { ...subject, city: null }
+    expect(
+      matchesLeadRule(empty, {
+        field: 'city',
+        operator: 'equals',
+        value: null,
+      }),
+    ).toBe(true)
+    expect(
+      matchesLeadRule(empty, {
+        field: 'city',
+        operator: 'not_equals',
+        value: null,
+      }),
+    ).toBe(false)
+    expect(
+      matchesLeadRule(empty, {
+        field: 'city',
+        operator: 'contains',
+        value: null,
+      }),
+    ).toBe(false)
+  })
+
+  it('tells event fields apart from lead fields', () => {
+    expect(isLeadEventRuleField('newsletter_opened')).toBe(true)
+    expect(isLeadEventRuleField('city')).toBe(false)
+  })
+
+  it('never matches an event rule against lead fields', () => {
+    for (const field of [
+      'newsletter_subscribed',
+      'newsletter_opened',
+      'newsletter_clicked',
+    ] as const) {
+      expect(
+        matchesLeadRule(subject, { field, operator: 'is_empty', value: null }),
+      ).toBe(true)
+    }
+    for (const field of ['phone', 'jobTitle', 'city'] as const) {
+      expect(
+        matchesLeadRule(
+          { ...subject, emails: [], company: null, source: null },
+          { field, operator: 'is_empty', value: null },
+        ),
+      ).toBe(true)
+    }
+    expect(
+      matchesLeadRule(
+        { ...subject, emails: [] },
+        { field: 'email', operator: 'is_empty', value: null },
+      ),
+    ).toBe(true)
+    expect(
+      matchesLeadRule(
+        { ...subject, company: null, source: null },
+        { field: 'company', operator: 'is_empty', value: null },
+      ),
+    ).toBe(true)
+    expect(
+      matchesLeadRule(
+        { ...subject, source: null },
+        { field: 'source', operator: 'is_empty', value: null },
+      ),
+    ).toBe(true)
+    expect(
+      computeLeadScore(subject, [eventRule('newsletter_opened', null)]),
+    ).toBe(0)
+    expect(
+      findLeadRoutingOwner(subject, [
+        { ...eventRule('newsletter_opened'), ownerId: 'u1' },
+      ]),
+    ).toBeNull()
+  })
+
+  it('matches the event type, and clicks by "URL contains"', () => {
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_opened'), {
+        field: 'newsletter_opened',
+      }),
+    ).toBe(true)
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_opened', null, false), {
+        field: 'newsletter_opened',
+      }),
+    ).toBe(false)
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_opened'), {
+        field: 'newsletter_clicked',
+      }),
+    ).toBe(false)
+    const click = {
+      field: 'newsletter_clicked' as const,
+      url: 'https://a.com/Precos',
+    }
+    expect(matchesLeadEventRule(eventRule('newsletter_clicked'), click)).toBe(
+      true,
+    )
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_clicked', ' '), click),
+    ).toBe(true)
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_clicked', '/precos'), click),
+    ).toBe(true)
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_clicked', '/blog'), click),
+    ).toBe(false)
+    expect(
+      matchesLeadEventRule(eventRule('newsletter_clicked', '/blog'), {
+        field: 'newsletter_clicked',
+      }),
+    ).toBe(false)
   })
 })

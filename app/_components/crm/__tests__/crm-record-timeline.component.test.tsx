@@ -104,6 +104,48 @@ describe('<CrmRecordTimeline />', () => {
     expect(screen.getByText('há 2d')).toBeTruthy()
   })
 
+  it('shows newsletter entries as the contact did them, without an actor', async () => {
+    mockFetch([
+      { match: '/calls', data: [] },
+      {
+        match: '/crm/activities',
+        data: [
+          activity({
+            id: 'n1',
+            actorUserId: null,
+            action: 'NEWSLETTER_ISSUE_OPENED',
+            entity: 'newsletter_issue',
+            summary: 'Abriu a edição nº 3 "Outubro" da newsletter "Novidades"',
+          }),
+          activity({
+            id: 'n2',
+            actorUserId: null,
+            action: 'NEWSLETTER_UNSUBSCRIBED',
+            entity: 'newsletter',
+            summary: null,
+          }),
+          activity({
+            id: 'x1',
+            actorUserId: null,
+            action: 'SOMETHING_NEW',
+            summary: null,
+          }),
+        ],
+      },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' personId='p1' />)
+
+    expect(
+      await screen.findByText(
+        'Abriu a edição nº 3 "Outubro" da newsletter "Novidades"',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByText('saiu de uma newsletter')).toBeTruthy()
+    // Unknown actions fall back instead of crashing; only they get "Sistema".
+    expect(screen.getByText(/registrou uma atividade/)).toBeTruthy()
+    expect(screen.getAllByText('Sistema')).toHaveLength(1)
+  })
+
   it('degrades to the empty state when the request fails', async () => {
     mockFetch([{ match: '/crm/activities', status: 500, error: 'boom' }])
     renderWithQuery(<CrmRecordTimeline workspaceId='ws1' companyId='c1' />)
