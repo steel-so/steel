@@ -175,6 +175,17 @@ const META_STATUS_MAP: Record<
   failed: 'FAILED',
 }
 
+/** Human detail of a failed status (`errors[0]`), e.g. "131026: Message undeliverable". */
+function metaStatusError(
+  errors: { code?: number; title?: string; message?: string }[] | undefined,
+): string | null {
+  const first = errors?.[0]
+  if (!first) return null
+  const text = first.message || first.title || ''
+  if (first.code === undefined) return text || null
+  return text ? `${first.code}: ${text}` : String(first.code)
+}
+
 export const GET = withAxiom(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('hub.mode')
@@ -297,6 +308,7 @@ export const POST = withAxiom(async (request: NextRequest) => {
         providerMessageId: status.id,
         status: mapped,
         module: connection.module,
+        error: metaStatusError(status.errors),
       })
     }
     return new Response('STATUS_RECEIVED', { status: 200 })

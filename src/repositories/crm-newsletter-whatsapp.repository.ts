@@ -33,7 +33,17 @@ const EMPTY_STATS: CrmNewsletterWhatsAppStatsDTO = {
   sent: 0,
   failed: 0,
   skipped: 0,
+  delivered: 0,
+  read: 0,
 }
+
+/** Provider receipt of a sent message (nl3-whatsapp-receipts). */
+export type WhatsAppReceipt = 'DELIVERED' | 'READ' | 'FAILED'
+
+export type WhatsAppReceiptTarget = Pick<
+  CrmNewsletterWhatsAppRecipient,
+  'id' | 'issueId' | 'workspaceId' | 'subscriberId'
+>
 
 /** People (not deleted) of the workspace with their phones, by id. */
 async function peopleById(workspaceId: string, personIds: string[]) {
@@ -356,14 +366,90 @@ export const CrmNewsletterWhatsAppRepository = {
     }
   },
 
+  /** Recipient row of a provider message id (nl3-whatsapp-receipts). */
+  async findByProviderMessageId(
+    providerMessageId: string,
+  ): Promise<Result<WhatsAppReceiptTarget | null>> {
+    try {
+      return ok(
+        await prisma.crmNewsletterWhatsAppRecipient.findFirst({
+          where: { providerMessageId },
+          select: {
+            id: true,
+            issueId: true,
+            workspaceId: true,
+            subscriberId: true,
+          },
+        }),
+      )
+    } catch (error) {
+      return err(
+        dbError('Failed to find CRM newsletter WhatsApp recipient', error),
+      )
+    }
+  },
+
+  /**
+   * Applies a provider receipt to a SENT row, forward only and once:
+   * DELIVERED stamps `deliveredAt`; READ stamps `readAt` (and `deliveredAt`
+   * when the delivered webhook never came); FAILED moves a row not yet
+   * delivered to FAILED with `failedAt` and the provider error. Returns
+   * whether the receipt changed the row (`false` = repeated or late).
+   */
+  async applyReceipt(
+    id: string,
+    receipt: WhatsAppReceipt,
+    at: Date,
+    error?: string | null,
+  ): Promise<Result<boolean>> {
+    const model = prisma.crmNewsletterWhatsAppRecipient
+    const sent = { id, status: 'SENT' as const }
+    try {
+      if (receipt === 'FAILED') {
+        const failed = await model.updateMany({
+          where: { ...sent, deliveredAt: null, readAt: null },
+          data: {
+            status: 'FAILED',
+            failedAt: at,
+            error: (error || 'Falha informada pelo WhatsApp').slice(0, 500),
+          },
+        })
+        return ok(failed.count > 0)
+      }
+      const delivered = await model.updateMany({
+        where: { ...sent, deliveredAt: null },
+        data: { deliveredAt: at },
+      })
+      if (receipt === 'DELIVERED') return ok(delivered.count > 0)
+      const read = await model.updateMany({
+        where: { ...sent, readAt: null },
+        data: { readAt: at },
+      })
+      return ok(read.count > 0)
+    } catch (cause) {
+      return err(
+        dbError('Failed to record CRM newsletter WhatsApp receipt', cause),
+      )
+    }
+  },
+
   async stats(issueId: string): Promise<Result<CrmNewsletterWhatsAppStatsDTO>> {
     try {
-      const rows = await prisma.crmNewsletterWhatsAppRecipient.groupBy({
-        by: ['status'],
-        where: { issueId },
-        _count: { _all: true },
-      })
-      const stats = { ...EMPTY_STATS }
+      const model = prisma.crmNewsletterWhatsAppRecipient
+      const [rows, delivered, read] = await Promise.all([
+        model.groupBy({
+          by: ['status'],
+          where: { issueId },
+          _count: { _all: true },
+        }),
+        model.count({
+          where: { issueId, status: 'SENT', deliveredAt: { not: null } },
+        }),
+        model.count({
+          where: { issueId, status: 'SENT', readAt: { not: null } },
+        }),
+      ])
+      const stats = { ...EMPTY_STATS, delivered, read }
       for (const row of rows) {
         const count = row._count._all
         stats.total += count

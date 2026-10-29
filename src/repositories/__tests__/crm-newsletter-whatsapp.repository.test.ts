@@ -162,6 +162,8 @@ describe('CrmNewsletterWhatsAppRepository', () => {
       sent: 1,
       failed: 1,
       skipped: 2,
+      delivered: 0,
+      read: 0,
     })
     const page = expectOk(
       await Repo.listRecipients(issue.id, { page: 1, pageSize: 2 }),

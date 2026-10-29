@@ -266,3 +266,18 @@ Manual: `content/docs/crm/newsletter-resumo-e-ia.mdx`.
 
 **Uso do mês**
 - A lista de newsletters mostra "X de Y e-mails usados neste mês" para todo membro do CRM; o cartão com a barra fica nas Configurações da newsletter.
+
+## Confirmações de entrega e leitura no WhatsApp (newsletter3 · `nl3-whatsapp-receipts`)
+
+Peças: `src/services/crm-newsletter-whatsapp-receipts.service.ts` (`CrmNewsletterWhatsAppReceiptsService.onWhatsAppStatus`), `CrmNewsletterWhatsAppRepository.findByProviderMessageId` / `applyReceipt`, migração `newsletter3_whatsapp_receipts_timestamps` (colunas `delivered_at`, `read_at`, `failed_at` e índice em `provider_message_id` de `crm_newsletter_whatsapp_recipients`).
+
+**Fluxo**
+- Os webhooks de status da Comunicação (`app/api/whatsapp/webhook/{meta,zapi}`) normalizam o status e chamam `WhatsAppWebhookService.ingestStatusUpdate`, que já repassava para as campanhas (`CrmCampaignTrackingService.onWhatsAppStatus`) e agora também chama `onWhatsAppStatus` da newsletter, pelo `providerMessageId` gravado no envio.
+- Mapeamento: Meta `delivered`/`read`/`failed`; Z-API `RECEIVED` → entregue, `READ`/`PLAYED` → lido. A Z-API não informa falha de entrega por webhook, então falha pós-envio só existe na Meta (detalhe = `errors[0]`, formato `"<código>: <mensagem>"`).
+- A rota da Z-API passou a aceitar o formato documentado `MessageStatusCallback` com `ids[]`, além do antigo `StatusCallback` com `messageId`. **Isso vale para toda a Comunicação**: os vistos das conversas e as confirmações das campanhas pela Z-API passam a chegar também.
+
+**Regras**
+- Só linha `SENT` muda, e só para a frente: `deliveredAt` e `readAt` são gravados uma vez (lido sem entregue antes grava os dois). Falha só vale para linha ainda não entregue: vira `FAILED`, com `failedAt` e o motivo em `error` (máx. 500 caracteres; sem detalhe, "Falha informada pelo WhatsApp"). Depois de falhar, entregue e lido são ignorados.
+- Nunca quebra o webhook: o serviço não lança nem devolve erro; falhas logam `crm.newsletter.whatsapp_receipt_failed` e falhas do provedor logam `crm.newsletter.whatsapp_failed_receipt`.
+- Relatório (`GET …/issues/{issueId}/whatsapp/recipients`): `stats` ganhou `delivered` e `read` (entre as `SENT`) e cada número ganhou `deliveredAt`, `readAt` e `failedAt`. A tela mostra Enviados, Entregues, Lidos, Taxa de leitura (lidos ÷ enviados), Falharam, Na fila e Não enviados, e a situação de cada número mostra a confirmação mais avançada (Lido > Entregue > Enviado).
+- Linha do tempo: a primeira leitura de cada edição emite o evento `issue_whatsapp_read` da ponte → `NEWSLETTER_WHATSAPP_READ` (`entity` `newsletter_issue`, uma entrada por edição). Não pontua nem dispara workflow: a leitura no WhatsApp depende da confirmação de leitura do contato e não é comparável à abertura do e-mail.

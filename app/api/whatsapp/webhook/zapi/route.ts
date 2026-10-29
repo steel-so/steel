@@ -48,6 +48,8 @@ interface ZapiPayload {
   referenceMessageId?: string
   // DisconnectedCallback: why the instance dropped.
   error?: string
+  // MessageStatusCallback (documented Z-API shape): the message ids.
+  ids?: string[]
 }
 
 function waIdFromVcard(vcard: string | undefined): string | undefined {
@@ -172,14 +174,22 @@ export const POST = withAxiom(async (request: NextRequest) => {
     return new Response('Muitas requisições', { status: 429 })
   }
 
-  if (body.type === 'StatusCallback') {
+  // Z-API documents `MessageStatusCallback` with an `ids` array; the legacy
+  // `StatusCallback` + `messageId` shape is still accepted.
+  if (body.type === 'StatusCallback' || body.type === 'MessageStatusCallback') {
     const mapped = ZAPI_STATUS_MAP[body.status ?? '']
-    if (mapped && body.messageId) {
-      await WhatsAppWebhookService.ingestStatusUpdate({
-        providerMessageId: body.messageId,
-        status: mapped,
-        module: connection.module,
-      })
+    const ids = [
+      ...(body.messageId ? [body.messageId] : []),
+      ...(Array.isArray(body.ids) ? body.ids : []),
+    ].filter((id): id is string => typeof id === 'string' && id.length > 0)
+    if (mapped) {
+      for (const providerMessageId of new Set(ids)) {
+        await WhatsAppWebhookService.ingestStatusUpdate({
+          providerMessageId,
+          status: mapped,
+          module: connection.module,
+        })
+      }
     }
     return new Response('STATUS_RECEIVED', { status: 200 })
   }

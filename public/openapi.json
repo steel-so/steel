@@ -13879,7 +13879,7 @@
         "tags": ["Comunicação · Tempo real e webhooks"],
         "summary": "Webhook de eventos (Z-API)",
         "operationId": "postWhatsappWebhookZapi",
-        "description": "Recebe os callbacks da Z-API (`ReceivedCallback` e `StatusCallback`; outros `type` são ignorados). Cadastre na Z-API a URL `https://<host>/api/whatsapp/webhook/zapi?secret=<webhookSecret>` — o segredo é **por conexão**, devolvido só na criação da conexão.\n\n**Verificação:** a conexão é localizada pelo `instanceId` do corpo e o `secret` da query precisa ser igual ao `webhookSecret` dela (comparação em tempo constante); senão `401`.\n\nMensagem recebida: cria/atualiza o contato, abre (ou reabre) a conversa, grava a mensagem (deduplicada pelo id do provedor), enfileira o download de mídia, a resposta da IA (se ativa na conversa) e a análise de sentimento, trata a palavra-chave de descadastro das transmissões e publica no SSE. Status (`sent`/`delivered`/`read`) e reações atualizam a mensagem original. Também processa mensagens de grupos (`isGroup`) e mensagens enviadas pelo próprio aparelho pareado (`fromMe`), que entram como saída na conversa. Cliques em botões (`buttonsResponseMessage.buttonId` e `listResponseMessage.selectedRowId`) viram mensagens `BUTTON` e, com payload do Steel, disparam as ações do botão. Respostas em texto puro (fora do envelope). A conexão precisa existir e o módulo Comunicação estar habilitado no workspace dela. Rate limit **por conexão** (120 eventos/min).",
+        "description": "Recebe os callbacks da Z-API (`ReceivedCallback` e `MessageStatusCallback` com `ids` — o formato antigo `StatusCallback` com `messageId` também é aceito; outros `type` são ignorados). Cadastre na Z-API a URL `https://<host>/api/whatsapp/webhook/zapi?secret=<webhookSecret>` — o segredo é **por conexão**, devolvido só na criação da conexão.\n\n**Verificação:** a conexão é localizada pelo `instanceId` do corpo e o `secret` da query precisa ser igual ao `webhookSecret` dela (comparação em tempo constante); senão `401`.\n\nMensagem recebida: cria/atualiza o contato, abre (ou reabre) a conversa, grava a mensagem (deduplicada pelo id do provedor), enfileira o download de mídia, a resposta da IA (se ativa na conversa) e a análise de sentimento, trata a palavra-chave de descadastro das transmissões e publica no SSE. Status (`sent`/`delivered`/`read`) e reações atualizam a mensagem original. Também processa mensagens de grupos (`isGroup`) e mensagens enviadas pelo próprio aparelho pareado (`fromMe`), que entram como saída na conversa. Cliques em botões (`buttonsResponseMessage.buttonId` e `listResponseMessage.selectedRowId`) viram mensagens `BUTTON` e, com payload do Steel, disparam as ações do botão. Respostas em texto puro (fora do envelope). A conexão precisa existir e o módulo Comunicação estar habilitado no workspace dela. Rate limit **por conexão** (120 eventos/min).",
         "requestBody": {
           "required": true,
           "content": {
@@ -13895,7 +13895,7 @@
                   "type": {
                     "type": "string",
                     "example": "ReceivedCallback",
-                    "description": "`ReceivedCallback` (mensagem/reação) ou `StatusCallback` (`SENT`, `RECEIVED`, `READ`, `PLAYED`)."
+                    "description": "`ReceivedCallback` (mensagem/reação) ou `MessageStatusCallback`/`StatusCallback` (`SENT`, `RECEIVED`, `READ`, `PLAYED`)."
                   },
                   "phone": {
                     "type": "string",
@@ -13903,6 +13903,13 @@
                   },
                   "messageId": {
                     "type": "string"
+                  },
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Ids das mensagens (`MessageStatusCallback`)."
                   },
                   "fromMe": {
                     "type": "boolean"
@@ -183816,9 +183823,21 @@
                 "type": "integer",
                 "minimum": -9007199254740991,
                 "maximum": 9007199254740991
+              },
+              "delivered": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Enviadas que o provedor confirmou como entregues."
+              },
+              "read": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Enviadas que o provedor confirmou como lidas."
               }
             },
-            "required": ["total", "pending", "sent", "failed", "skipped"]
+            "required": ["total", "pending", "sent", "failed", "skipped", "delivered", "read"]
           },
           "items": {
             "type": "array",
@@ -183880,9 +183899,55 @@
                       "type": "null"
                     }
                   ]
+                },
+                "deliveredAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "readAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "failedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Falha informada pelo provedor depois do envio."
                 }
               },
-              "required": ["id", "name", "phone", "personId", "status", "skipReason", "error", "sentAt"]
+              "required": [
+                "id",
+                "name",
+                "phone",
+                "personId",
+                "status",
+                "skipReason",
+                "error",
+                "sentAt",
+                "deliveredAt",
+                "readAt",
+                "failedAt"
+              ]
             }
           },
           "total": {

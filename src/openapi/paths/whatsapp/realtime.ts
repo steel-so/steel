@@ -267,7 +267,7 @@ ${WEBHOOK_EFFECTS} ${WEBHOOK_NOTE}`,
     path: '/whatsapp/webhook/zapi',
     tags: [TAG],
     summary: 'Webhook de eventos (Z-API)',
-    description: `Recebe os callbacks da Z-API (\`ReceivedCallback\` e \`StatusCallback\`; outros \`type\` são ignorados). Cadastre na Z-API a URL \`https://<host>/api/whatsapp/webhook/zapi?secret=<webhookSecret>\` — o segredo é **por conexão**, devolvido só na criação da conexão.
+    description: `Recebe os callbacks da Z-API (\`ReceivedCallback\` e \`MessageStatusCallback\` com \`ids\` — o formato antigo \`StatusCallback\` com \`messageId\` também é aceito; outros \`type\` são ignorados). Cadastre na Z-API a URL \`https://<host>/api/whatsapp/webhook/zapi?secret=<webhookSecret>\` — o segredo é **por conexão**, devolvido só na criação da conexão.
 
 **Verificação:** a conexão é localizada pelo \`instanceId\` do corpo e o \`secret\` da query precisa ser igual ao \`webhookSecret\` dela (comparação em tempo constante); senão \`401\`.
 
@@ -285,10 +285,15 @@ ${WEBHOOK_EFFECTS} Também processa mensagens de grupos (\`isGroup\`) e mensagen
             type: 'string',
             example: 'ReceivedCallback',
             description:
-              '`ReceivedCallback` (mensagem/reação) ou `StatusCallback` (`SENT`, `RECEIVED`, `READ`, `PLAYED`).',
+              '`ReceivedCallback` (mensagem/reação) ou `MessageStatusCallback`/`StatusCallback` (`SENT`, `RECEIVED`, `READ`, `PLAYED`).',
           },
           phone: { type: 'string', example: '5511987654321' },
           messageId: { type: 'string' },
+          ids: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Ids das mensagens (`MessageStatusCallback`).',
+          },
           fromMe: { type: 'boolean' },
           isGroup: { type: 'boolean' },
         },

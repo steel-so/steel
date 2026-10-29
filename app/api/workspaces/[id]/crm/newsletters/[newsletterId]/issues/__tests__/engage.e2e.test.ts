@@ -187,7 +187,7 @@ describe('newsletter issue polls and WhatsApp (nl2-engage)', () => {
     expect((await report.json()).data).toMatchObject({
       enabled: true,
       provider: 'ZAPI',
-      stats: { total: 0 },
+      stats: { total: 0, delivered: 0, read: 0 },
     })
     expect(
       (await getJson(`${base}/whatsapp/recipients?status=NOPE`, cookie)).status,

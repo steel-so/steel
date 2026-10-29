@@ -10195,11 +10195,20 @@ model CrmNewsletterWhatsAppRecipient {
   createdAt         DateTime                    @default(now()) @map("created_at")
   updatedAt         DateTime                    @updatedAt @map("updated_at")
 
+  // newsletter3 nl3-whatsapp-receipts: provider status webhooks (first time
+  // only; a read implies delivered). A provider failure moves SENT → FAILED
+  // with `failedAt` and the provider message in `error`.
+  deliveredAt DateTime? @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  failedAt    DateTime? @map("failed_at")
+
   issue      CrmNewsletterIssue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
   subscriber CrmNewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
 
   @@unique([issueId, waId])
   @@index([issueId, status])
+  // newsletter3 nl3-whatsapp-receipts
+  @@index([providerMessageId])
   @@map("crm_newsletter_whatsapp_recipients")
 }
 

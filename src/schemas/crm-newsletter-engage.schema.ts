@@ -168,6 +168,11 @@ export type CrmNewsletterWhatsAppStatsDTO = {
   sent: number
   failed: number
   skipped: number
+  // newsletter3 nl3-whatsapp-receipts: provider receipts among the sent.
+  /** Sent messages the provider reported as delivered (or read). */
+  delivered: number
+  /** Sent messages the provider reported as read. */
+  read: number
 }
 
 export const ListCrmNewsletterWhatsAppRecipientsQuerySchema = z.object({
@@ -189,6 +194,11 @@ export type CrmNewsletterWhatsAppRecipientDTO = {
   skipReason: string | null
   error: string | null
   sentAt: string | null
+  // newsletter3 nl3-whatsapp-receipts
+  deliveredAt: string | null
+  readAt: string | null
+  /** The provider reported the message as failed after sending. */
+  failedAt: string | null
 }
 
 export type CrmNewsletterWhatsAppReportDTO = {
