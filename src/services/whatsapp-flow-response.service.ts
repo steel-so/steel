@@ -1,4 +1,3 @@
-import { createId } from '@paralleldrive/cuid2'
 import type {
   Prisma,
   WhatsAppConnection,
@@ -10,7 +9,6 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
-  buildFlowToken,
   flowIdFromToken,
   type MappedAnswers,
   mapAnswers,
@@ -262,7 +260,8 @@ async function resolveResponse(
       flowId: flow.value.id,
       contactId: input.contact.id,
       conversationId: input.conversationId,
-      flowToken: flowToken ?? buildFlowToken(flow.value.id, createId()),
+      // No pending send means the flow id came out of the token itself.
+      flowToken: flowToken as string,
     })
     if (!created.ok) return created
     response = created.value
