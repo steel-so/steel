@@ -342,6 +342,7 @@ describe('CrmFormService', () => {
             value: null,
             points: 20,
             active: true,
+            includeWelcome: true,
             position: 0,
             createdAt: new Date(),
             updatedAt: new Date(),
