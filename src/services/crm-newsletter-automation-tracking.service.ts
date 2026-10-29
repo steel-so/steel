@@ -1,10 +1,14 @@
 import { logger } from '@/lib/axiom/logger'
-import { isPermanentBounce } from '@/src/lib/crm-newsletter/email'
+import { clickedLink, isPermanentBounce } from '@/src/lib/crm-newsletter/email'
 import { ok, type Result } from '@/src/lib/result'
 import { CrmNewsletterDeliveryRepository } from '@/src/repositories/crm-newsletter-delivery.repository'
 import { CrmNewsletterReengagementRepository } from '@/src/repositories/crm-newsletter-reengagement.repository'
-import { CrmNewsletterWelcomeRepository } from '@/src/repositories/crm-newsletter-welcome.repository'
+import {
+  CrmNewsletterWelcomeRepository,
+  type WelcomeDeliveryMark,
+} from '@/src/repositories/crm-newsletter-welcome.repository'
 import type { ResendWebhookEvent } from '@/src/schemas/crm-campaign.schema'
+import { CrmNewsletterBridge } from './crm-newsletter-bridge.service'
 
 /**
  * Resend webhook events of the newsletter automation e-mails (slice
@@ -17,6 +21,11 @@ import type { ResendWebhookEvent } from '@/src/schemas/crm-campaign.schema'
  * the re-engagement rule reads); a permanent bounce makes the address
  * BOUNCED in every newsletter of the workspace; a complaint takes the
  * subscriber out of that newsletter.
+ *
+ * Welcome e-mails also feed the CRM bridge (slice nl3-welcome-bridge):
+ * every click is stored with its URL, and the first delivery / open and
+ * every click go to `CrmNewsletterBridge` (timeline, lead scoring and
+ * workflows), which never fails this tracking.
  */
 
 type Kind = 'welcome' | 'reengagement'
@@ -83,12 +92,7 @@ async function onWelcome(
   if (!found.value) return ok(false)
   const row = found.value
   const marks: Partial<
-    Record<
-      ResendWebhookEvent['type'],
-      Array<
-        'deliveredAt' | 'openedAt' | 'clickedAt' | 'bouncedAt' | 'complainedAt'
-      >
-    >
+    Record<ResendWebhookEvent['type'], WelcomeDeliveryMark[]>
   > = {
     'email.delivered': ['deliveredAt'],
     'email.opened': ['openedAt'],
@@ -97,12 +101,40 @@ async function onWelcome(
     'email.bounced': ['bouncedAt'],
     'email.complained': ['complainedAt'],
   }
+  const first = new Set<WelcomeDeliveryMark>()
   for (const field of marks[event.type] ?? []) {
     const marked = await R.markFirst(row.id, field, at)
     if (!marked.ok) return marked
+    if (marked.value) first.add(field)
+  }
+  const url = event.type === 'email.clicked' ? clickedLink(event.data) : null
+  if (url) {
+    const recorded = await R.recordClick({
+      deliveryId: row.id,
+      stepId: row.stepId,
+      url,
+      clickedAt: at,
+    })
+    if (!recorded.ok) return recorded
   }
   const effects = await subscriberSideEffects('welcome', row, event, at)
   if (!effects.ok) return effects
+
+  const base = { subscriberId: row.subscriberId, stepId: row.stepId }
+  if (first.has('deliveredAt')) {
+    await CrmNewsletterBridge.emit({ type: 'welcome_received', ...base })
+  }
+  if (first.has('openedAt')) {
+    await CrmNewsletterBridge.emit({ type: 'welcome_opened', ...base })
+  }
+  if (event.type === 'email.clicked') {
+    await CrmNewsletterBridge.emit({
+      type: 'welcome_link_clicked',
+      ...base,
+      deliveryId: row.id,
+      url,
+    })
+  }
   return ok(true)
 }
 

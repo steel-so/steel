@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeBridgeSubscriber } from '@/src/__tests__/factories/newsletter2-crm-bridge.factory'
+import { createFakeBridgeWelcomeStep } from '@/src/__tests__/factories/newsletter3-welcome-bridge.factory'
 import { databaseError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
@@ -40,6 +41,8 @@ beforeEach(() => {
   repo.findPersonIdByEmail.mockResolvedValue(ok(null))
   repo.hasActivity.mockResolvedValue(ok(false))
   repo.countClicks.mockResolvedValue(ok(1))
+  repo.findWelcomeStep.mockResolvedValue(ok(createFakeBridgeWelcomeStep()))
+  repo.countWelcomeClicks.mockResolvedValue(ok(1))
   activities.record.mockResolvedValue(ok({} as never))
   scoring.applyEngagementEvent.mockResolvedValue(ok(1))
   dispatch.mockResolvedValue(1)
@@ -313,6 +316,169 @@ describe('CrmNewsletterBridge.emit — issue events', () => {
     expect(repo.countClicks).not.toHaveBeenCalled()
     const payload = dispatch.mock.calls[0][0].payload
     expect(payload).not.toHaveProperty('url')
+  })
+})
+
+describe('CrmNewsletterBridge.emit — issue source in the workflows', () => {
+  it('tells workflows an issue open/click came from an issue', async () => {
+    await CrmNewsletterBridge.emit({
+      type: 'issue_opened',
+      subscriberId: 's1',
+      issueId: 'is1',
+    })
+    const payload = dispatch.mock.calls[0][0].payload
+    expect(payload.source).toBe('issue')
+    expect(payload).not.toHaveProperty('welcomeStep')
+  })
+
+  it('leaves the source out of subscription workflows', async () => {
+    await CrmNewsletterBridge.emit({ type: 'subscribed', subscriberId: 's1' })
+    expect(dispatch.mock.calls[0][0].payload).not.toHaveProperty('source')
+  })
+})
+
+describe('CrmNewsletterBridge.emit — welcome series e-mails', () => {
+  const welcome = { subscriberId: 's1', stepId: 'st1' }
+
+  it('records the receipt once per step, without points or workflows', async () => {
+    await CrmNewsletterBridge.emit({ type: 'welcome_received', ...welcome })
+    expect(repo.findWelcomeStep).toHaveBeenCalledWith('st1')
+    expect(repo.findIssue).not.toHaveBeenCalled()
+    expect(repo.hasActivity).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      personId: 'p1',
+      action: 'NEWSLETTER_WELCOME_RECEIVED',
+      entityId: 'st1',
+    })
+    expect(activities.record).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      action: 'NEWSLETTER_WELCOME_RECEIVED',
+      entity: 'newsletter_welcome_step',
+      entityId: 'st1',
+      personId: 'p1',
+      summary:
+        'Recebeu o e-mail 1 "Bem-vindo!" da série de boas-vindas da newsletter "Novidades"',
+    })
+    expect(scoring.applyEngagementEvent).not.toHaveBeenCalled()
+    expect(dispatch).not.toHaveBeenCalled()
+
+    vi.clearAllMocks()
+    repo.hasActivity.mockResolvedValue(ok(true))
+    await CrmNewsletterBridge.emit({ type: 'welcome_received', ...welcome })
+    expect(activities.record).not.toHaveBeenCalled()
+  })
+
+  it('scores the open per step × subscriber and fires the open workflows', async () => {
+    await CrmNewsletterBridge.emit({ type: 'welcome_opened', ...welcome })
+    expect(activities.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'NEWSLETTER_WELCOME_OPENED',
+        summary:
+          'Abriu o e-mail 1 "Bem-vindo!" da série de boas-vindas da newsletter "Novidades"',
+      }),
+    )
+    expect(scoring.applyEngagementEvent).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      personId: 'p1',
+      email: 'ana@empresa.com.br',
+      field: 'newsletter_opened',
+      eventKey: 'welcome:st1:s1',
+      source: 'welcome',
+    })
+    expect(dispatch).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      type: 'newsletter-issue-opened',
+      payload: {
+        newsletter: { id: 'nl1', name: 'Novidades' },
+        record: {
+          id: 's1',
+          email: 'ana@empresa.com.br',
+          name: 'Ana',
+          status: 'ACTIVE',
+          personId: 'p1',
+        },
+        source: 'welcome',
+        welcomeStep: { id: 'st1', subject: 'Bem-vindo!', position: 1 },
+      },
+    })
+  })
+
+  it('scores the click with its URL and fires once per delivery × URL', async () => {
+    const click = {
+      type: 'welcome_link_clicked' as const,
+      ...welcome,
+      deliveryId: 'wd1',
+      url: 'https://acme.com/precos',
+    }
+    await CrmNewsletterBridge.emit(click)
+    expect(activities.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: NEWSLETTER_ACTIVITY_ACTIONS.welcome_link_clicked,
+        summary:
+          'Clicou em um link do e-mail 1 "Bem-vindo!" da série de boas-vindas da newsletter "Novidades"',
+      }),
+    )
+    expect(scoring.applyEngagementEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        field: 'newsletter_clicked',
+        eventKey: 'welcome:st1:s1',
+        url: 'https://acme.com/precos',
+        source: 'welcome',
+      }),
+    )
+    expect(repo.countWelcomeClicks).toHaveBeenCalledWith(
+      'wd1',
+      'https://acme.com/precos',
+    )
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'newsletter-link-clicked',
+        payload: expect.objectContaining({
+          source: 'welcome',
+          url: 'https://acme.com/precos',
+        }),
+      }),
+    )
+
+    vi.clearAllMocks()
+    repo.countWelcomeClicks.mockResolvedValue(ok(2))
+    await CrmNewsletterBridge.emit(click)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('fires a click without URL and falls back when the step is gone', async () => {
+    repo.findWelcomeStep.mockResolvedValue(ok(null))
+    await CrmNewsletterBridge.emit({
+      type: 'welcome_link_clicked',
+      ...welcome,
+      deliveryId: 'wd1',
+      url: null,
+    })
+    expect(repo.countWelcomeClicks).not.toHaveBeenCalled()
+    const payload = dispatch.mock.calls[0][0].payload
+    expect(payload).not.toHaveProperty('url')
+    expect(payload).not.toHaveProperty('welcomeStep')
+    expect(activities.record.mock.calls[0][0].summary).toBe(
+      'Clicou em um link de um e-mail da série de boas-vindas da newsletter "Novidades"',
+    )
+  })
+
+  it('logs failed step and click lookups without failing', async () => {
+    repo.findWelcomeStep.mockResolvedValueOnce(err(databaseError()))
+    await CrmNewsletterBridge.emit({ type: 'welcome_opened', ...welcome })
+    expect(dispatch).not.toHaveBeenCalled()
+
+    repo.countWelcomeClicks.mockResolvedValueOnce(err(databaseError()))
+    await CrmNewsletterBridge.emit({
+      type: 'welcome_link_clicked',
+      ...welcome,
+      deliveryId: 'wd1',
+      url: 'https://a',
+    })
+    expect(warn.mock.calls.map((c) => c[1]?.step)).toEqual([
+      'load',
+      'workflows',
+    ])
   })
 })
 
