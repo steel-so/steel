@@ -295,4 +295,139 @@ describe('public monitoring webhook', () => {
     })
     expect(ticket.priorityId).toBe(priority.id)
   })
+
+  it('reads a Grafana batch: dedupes by fingerprint and joins alerts of one machine', async () => {
+    const { token, ci } = await setup({ kind: 'GRAFANA' })
+    const batch = {
+      status: 'firing',
+      alerts: [
+        {
+          status: 'firing',
+          fingerprint: 'fp-cpu',
+          labels: {
+            alertname: 'CPU alta',
+            host: 'SRV-01',
+            severity: 'critical',
+          },
+          annotations: { summary: 'CPU acima de 90%' },
+        },
+        {
+          status: 'firing',
+          fingerprint: 'fp-disk',
+          labels: { alertname: 'Disco cheio', instance: 'srv-01:9100' },
+          annotations: { summary: 'Disco em 95%' },
+        },
+      ],
+    }
+    const res = await send(token, batch)
+    expect(res.status).toBe(200)
+    const data = (await res.json()).data
+    expect(data.outcome).toBe('ticket_created')
+    expect(data.alerts.map((a: { outcome: string }) => a.outcome)).toEqual([
+      'ticket_created',
+      'alert_correlated',
+    ])
+    expect(await prisma.sdTicket.count()).toBe(1)
+    const alerts = await prisma.sdMonitorAlert.findMany({
+      orderBy: { createdAt: 'asc' },
+    })
+    expect(alerts.map((a) => a.configItemId)).toEqual([ci.id, ci.id])
+    expect(alerts.map((a) => a.correlated)).toEqual([false, true])
+    expect(new Set(alerts.map((a) => a.ticketId)).size).toBe(1)
+
+    // O mesmo envio de novo: nada novo, só contadores.
+    const again = (await (await send(token, batch)).json()).data
+    expect(again.alerts.map((a: { outcome: string }) => a.outcome)).toEqual([
+      'alert_updated',
+      'alert_updated',
+    ])
+    const counted = await prisma.sdMonitorAlert.findMany({
+      orderBy: { createdAt: 'asc' },
+    })
+    expect(counted.map((a) => a.occurrences)).toEqual([2, 2])
+
+    // O chamado só resolve quando o último alerta normaliza.
+    const first = await send(token, {
+      alerts: [{ ...batch.alerts[0], status: 'resolved' }],
+    })
+    expect((await first.json()).data.outcome).toBe('alert_resolved')
+    const stillOpen = await prisma.sdTicket.findFirstOrThrow({
+      include: { phase: true },
+    })
+    expect(stillOpen.phase.category).not.toBe('RESOLVED')
+
+    const last = await send(token, {
+      alerts: [{ ...batch.alerts[1], status: 'resolved' }],
+    })
+    expect((await last.json()).data.outcome).toBe('ticket_resolved')
+    const closed = await prisma.sdTicket.findFirstOrThrow({
+      include: { phase: true },
+    })
+    expect(closed.phase.category).toBe('RESOLVED')
+  })
+
+  it('does not correlate when the source turned it off', async () => {
+    const { token } = await setup({ kind: 'GRAFANA', correlationMode: 'OFF' })
+    const res = await send(token, {
+      alerts: [
+        { fingerprint: 'a', labels: { alertname: 'A', host: 'SRV-01' } },
+        { fingerprint: 'b', labels: { alertname: 'B', host: 'SRV-01' } },
+      ],
+    })
+    const data = (await res.json()).data
+    expect(data.alerts.map((a: { outcome: string }) => a.outcome)).toEqual([
+      'ticket_created',
+      'ticket_created',
+    ])
+    expect(await prisma.sdTicket.count()).toBe(2)
+  })
+
+  it('reads a PRTG sensor and resolves it on Up', async () => {
+    const { token, ci } = await setup({ kind: 'PRTG' })
+    const down = {
+      sensorId: '2001',
+      device: 'SRV-01',
+      host: '10.0.0.4',
+      sensor: 'Ping',
+      status: 'Down',
+      message: 'Timeout',
+    }
+    const opened = (await (await send(token, down)).json()).data
+    expect(opened.outcome).toBe('ticket_created')
+    const ticket = await prisma.sdTicket.findUniqueOrThrow({
+      where: { id: opened.ticket.id },
+    })
+    expect(ticket.title).toBe('Ping em SRV-01')
+    expect(ticket.configItemId).toBe(ci.id)
+
+    const up = (await (await send(token, { ...down, status: 'Up' })).json())
+      .data
+    expect(up.outcome).toBe('ticket_resolved')
+  })
+
+  it('links the CI through the host alias learned from a manual link', async () => {
+    const { token, user, workspace, ci } = await setup()
+    await prisma.sdMonitorHostAlias.create({
+      data: {
+        workspaceId: workspace.id,
+        host: 'db-principal',
+        configItemId: ci.id,
+        createdById: user.id,
+      },
+    })
+    const opened = (
+      await (
+        await send(token, {
+          externalId: 'db-1',
+          status: 'PROBLEM',
+          host: 'DB-PRINCIPAL',
+          subject: 'Replicação atrasada',
+        })
+      ).json()
+    ).data
+    const ticket = await prisma.sdTicket.findUniqueOrThrow({
+      where: { id: opened.ticket.id },
+    })
+    expect(ticket.configItemId).toBe(ci.id)
+  })
 })

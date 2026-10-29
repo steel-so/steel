@@ -19,8 +19,9 @@ function clientIp(request: NextRequest): string {
 /**
  * Entrada pública do monitoramento — sem sessão, o token da origem é o
  * acesso (`/api/servicedesk/monitoring/<token>`, liberado em
- * `PUBLIC_ROUTES`). Aceita o corpo do tipo de mídia "Webhook" do Zabbix e o
- * formato genérico `{ externalId, status, severity, host, subject, body }`.
+ * `PUBLIC_ROUTES`). Aceita o corpo do tipo de mídia "Webhook" do Zabbix, o do Grafana/
+ * Alertmanager (`alerts[]`, vários por envio), o do PRTG e o formato genérico
+ * `{ externalId, status, severity, host, subject, body }`.
  *
  * Limites: rate limit por IP e corpo de até 64 KB (acima disso,
  * `SD_MONITOR_PAYLOAD_INVALID`, sem nem olhar o conteúdo).
@@ -55,18 +56,23 @@ export const POST = withAxiom(
     const result = await SdMonitorIngestService.ingest(token, json.value)
     if (!result.ok) return handleError(result.error)
 
-    const { alert, outcome, ticketCode } = result.value
-    return successResponse({
-      alertId: alert.id,
-      status: alert.status,
-      outcome,
-      ticket: alert.ticket
+    const toBody = (item: (typeof result.value)['results'][number]) => ({
+      alertId: item.alert.id,
+      status: item.alert.status,
+      outcome: item.outcome,
+      ticket: item.alert.ticket
         ? {
-            id: alert.ticket.id,
-            number: alert.ticket.number,
-            code: ticketCode,
+            id: item.alert.ticket.id,
+            number: item.alert.ticket.number,
+            code: item.ticketCode,
           }
         : null,
     })
+    const { results } = result.value
+    return successResponse(
+      results.length > 1
+        ? { ...toBody(results[0]), alerts: results.map(toBody) }
+        : toBody(results[0]),
+    )
   },
 )

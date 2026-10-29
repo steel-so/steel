@@ -4,7 +4,11 @@ import type { SdMonitorSeverityMapEntryDTO } from '@/src/schemas/sd-monitor-sour
 
 export {
   SD_GENERIC_PAYLOAD_EXAMPLE,
+  SD_GRAFANA_SEVERITIES,
+  SD_PRTG_PAYLOAD_EXAMPLE,
+  SD_PRTG_SEVERITIES,
   SD_ZABBIX_MEDIA_TYPE_FIELDS,
+  SD_ZABBIX_SEVERITIES,
   sdZabbixPayloadExample,
 } from './monitor-fields'
 
@@ -49,7 +53,17 @@ export interface SdMonitorEvent {
   tags: string[]
   /** Início informado pela origem (`null` = usa a hora do recebimento). */
   startedAt: Date | null
+  /**
+   * Outros nomes da mesma máquina no alerta (IP, FQDN, nome do dispositivo),
+   * tentados na CMDB depois do `host`.
+   */
+  hostAliases: string[]
+  /** O pedaço do corpo que originou este evento (guardado no alerta). */
+  raw: Record<string, unknown>
 }
+
+/** Teto de alertas aceitos num único envio (o Grafana agrupa vários). */
+export const SD_MONITOR_MAX_EVENTS = 50
 
 const MAX_SUBJECT = 200
 const MAX_BODY = 8000
@@ -63,6 +77,7 @@ const ID_KEYS = [
   'eventid',
   'alertId',
   'fingerprint',
+  'ruleId',
   'id',
 ]
 const STATUS_KEYS = [
@@ -95,6 +110,7 @@ const SUBJECT_KEYS = [
   'alert_subject',
   'eventName',
   'event_name',
+  'ruleName',
   'name',
   'title',
 ]
@@ -109,6 +125,10 @@ const BODY_KEYS = [
 ]
 const STARTED_KEYS = ['startedAt', 'started_at', 'timestamp', 'time', 'clock']
 const TAG_KEYS = ['tags', 'eventTags', 'event_tags']
+
+const HOST_ALIAS_KEYS = [...HOST_KEYS]
+
+const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/
 
 const RESOLVED_WORDS = new Set([
   'ok',
@@ -240,7 +260,239 @@ export function parseSdMonitorPayload(payload: unknown): SdMonitorEvent | null {
     body: bodyRaw ? bodyRaw.slice(0, MAX_BODY) : null,
     tags: readTags(record),
     startedAt: readStartedAt(record),
+    hostAliases: hostAliasesOf(record, host),
+    raw: record,
   }
+}
+
+/** Todos os nomes de host do corpo (sem repetir o principal). */
+function hostAliasesOf(
+  record: Record<string, unknown>,
+  main: string | null,
+): string[] {
+  const found = new Set<string>()
+  for (const key of HOST_ALIAS_KEYS) {
+    const value = pick(record, [key])
+    if (value && value !== main) found.add(value.slice(0, 200))
+  }
+  return [...found]
+}
+
+function stringOf(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim() !== '') return value.trim()
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return undefined
+}
+
+function stableHash(parts: string[]): string {
+  return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 32)
+}
+
+/** `srv-02:9100` → `srv-02` (não mexe em IPv6). */
+function stripPort(instance: string): string {
+  const match = /^([^:]+):\d{1,5}$/.exec(instance)
+  return match ? match[1] : instance
+}
+
+function recordOf(value: unknown): Record<string, string> {
+  const out: Record<string, string> = {}
+  const record = asRecord(value)
+  if (!record) return out
+  for (const [key, raw] of Object.entries(record)) {
+    const text = stringOf(raw)
+    if (text !== undefined) out[key] = text
+  }
+  return out
+}
+
+function validDate(value: string | undefined): Date | null {
+  if (!value || value.startsWith('0001-')) return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+/** Um item de `alerts[]` do Grafana (alertas unificados) ou do Alertmanager. */
+function parseGrafanaAlert(
+  item: Record<string, unknown>,
+  top: Record<string, unknown>,
+): SdMonitorEvent | null {
+  const labels = recordOf(item.labels)
+  const annotations = recordOf(item.annotations)
+  const alertname = labels.alertname ?? stringOf(top.title)
+  const subjectRaw =
+    annotations.summary ?? alertname ?? annotations.description ?? null
+  if (!subjectRaw) return null
+  const subject = subjectRaw.split('\n')[0].trim().slice(0, MAX_SUBJECT)
+  if (subject === '') return null
+
+  const hosts = [
+    labels.host,
+    labels.hostname,
+    labels.nodename,
+    labels.node,
+    labels.instance ? stripPort(labels.instance) : undefined,
+  ].filter((h): h is string => !!h)
+  const unique = [...new Set(hosts.map((h) => h.slice(0, 200)))]
+
+  const link = [item.panelURL, item.dashboardURL, item.generatorURL]
+    .map(stringOf)
+    .find((url) => url && /^https?:\/\//i.test(url))
+  const description =
+    annotations.description ?? annotations.message ?? stringOf(top.message)
+  const bodyParts = [description, link ? `Painel: ${link}` : undefined].filter(
+    (part): part is string => !!part,
+  )
+
+  const fingerprint = stringOf(item.fingerprint)
+  const labelPairs = Object.entries(labels)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+  const externalId = fingerprint
+    ? fingerprint.slice(0, 200)
+    : `auto:${stableHash([alertname ?? '', ...labelPairs])}`
+
+  const tags = Object.entries(labels)
+    .filter(([key]) => key !== 'alertname')
+    .map(([key, value]) => `${key}: ${value}`)
+    .slice(0, MAX_TAGS)
+
+  return {
+    externalId,
+    resolved: stringOf(item.status)?.toLowerCase() === 'resolved',
+    severity: (labels.severity ?? labels.priority)?.slice(0, 60) ?? null,
+    host: unique[0] ?? null,
+    subject,
+    body: bodyParts.length > 0 ? bodyParts.join('\n').slice(0, MAX_BODY) : null,
+    tags,
+    startedAt: validDate(stringOf(item.startsAt)),
+    hostAliases: unique.slice(1),
+    raw: item,
+  }
+}
+
+/** Sensor do PRTG, no corpo do exemplo `SD_PRTG_PAYLOAD_EXAMPLE`. */
+function parsePrtgAlert(
+  record: Record<string, unknown>,
+): SdMonitorEvent | null {
+  const sensorId = pick(record, ['sensorId', 'sensorid'])
+  const device = pick(record, ['device', 'deviceName'])
+  const hostField = pick(record, ['host', 'hostIp'])
+  const sensor = pick(record, ['sensor', 'sensorName', 'name'])
+  const status = pick(record, ['status', 'state']) ?? ''
+  if (!sensor && !device) return null
+
+  const subject = (
+    sensor && device ? `${sensor} em ${device}` : (sensor ?? device ?? '')
+  )
+    .trim()
+    .slice(0, MAX_SUBJECT)
+  const resolved = /^(up|ok|normal)\b/i.test(status)
+  const first = /^[A-Za-zÀ-ÿ]+/.exec(status)?.[0] ?? null
+
+  const bodyLines = [
+    pick(record, ['message']),
+    status ? `Status: ${status}` : undefined,
+    pick(record, ['lastValue', 'lastvalue'])
+      ? `Último valor: ${pick(record, ['lastValue', 'lastvalue'])}`
+      : undefined,
+  ].filter((line): line is string => !!line)
+
+  const tags = [
+    pick(record, ['group']) ? `grupo: ${pick(record, ['group'])}` : undefined,
+    pick(record, ['probe']) ? `probe: ${pick(record, ['probe'])}` : undefined,
+  ].filter((tag): tag is string => !!tag)
+
+  const externalId = sensorId
+    ? `sensor-${sensorId}`.slice(0, 200)
+    : `auto:${stableHash([device ?? '', sensor ?? ''])}`
+  const aliases = [hostField].filter(
+    (h): h is string => !!h && h !== (device ?? hostField),
+  )
+
+  return {
+    externalId,
+    resolved,
+    severity: resolved ? null : (first?.slice(0, 60) ?? null),
+    host: (device ?? hostField ?? null)?.slice(0, 200) ?? null,
+    subject,
+    body: bodyLines.length > 0 ? bodyLines.join('\n').slice(0, MAX_BODY) : null,
+    tags,
+    // O PRTG manda a hora no fuso do servidor dele: vale a do recebimento.
+    startedAt: null,
+    hostAliases: aliases,
+    raw: record,
+  }
+}
+
+/**
+ * Lê o corpo recebido como uma lista de eventos.
+ *
+ * - **Grafana** (e Alertmanager): `alerts[]` — um envio traz vários alertas,
+ *   cada um com `fingerprint`, `status` (`firing`/`resolved`), `labels` e
+ *   `annotations`. A presença de `alerts[]` vale para qualquer tipo de
+ *   origem, porque o webhook genérico costuma apontar para um Alertmanager.
+ * - **PRTG**: um sensor por envio (campos do `SD_PRTG_PAYLOAD_EXAMPLE`).
+ * - **Zabbix / genérico**: um alerta por envio (`parseSdMonitorPayload`).
+ *
+ * Lista vazia = corpo sem alerta reconhecível (`SD_MONITOR_PAYLOAD_INVALID`).
+ * Passa de `SD_MONITOR_MAX_EVENTS`, o excedente é descartado.
+ */
+export function parseSdMonitorEvents(
+  kind: string,
+  payload: unknown,
+): SdMonitorEvent[] {
+  const record = asRecord(payload)
+  if (!record) return []
+
+  if (Array.isArray(record.alerts)) {
+    return record.alerts
+      .slice(0, SD_MONITOR_MAX_EVENTS)
+      .map((item) => {
+        const alert = asRecord(item)
+        return alert ? parseGrafanaAlert(alert, record) : null
+      })
+      .filter((event): event is SdMonitorEvent => event !== null)
+  }
+  if (kind === 'PRTG') {
+    const event = parsePrtgAlert(record)
+    return event ? [event] : []
+  }
+  const event = parseSdMonitorPayload(record)
+  return event ? [event] : []
+}
+
+/**
+ * Nomes para procurar na CMDB, em ordem: os do alerta como vieram (em
+ * minúsculas, sem repetir) e, por último, o primeiro rótulo de cada FQDN
+ * (`srv-02.lan.exemplo` → `srv-02`; IPs ficam inteiros).
+ */
+export function sdMonitorHostCandidates(hosts: string[]): string[] {
+  const full = [
+    ...new Set(
+      hosts.map((h) => h.trim().toLowerCase()).filter((h) => h !== ''),
+    ),
+  ]
+  const short = full
+    .filter((h) => h.includes('.') && !IPV4.test(h))
+    .map((h) => h.split('.')[0])
+    .filter((h) => h !== '' && !full.includes(h))
+  return [...new Set([...full, ...short])]
+}
+
+/**
+ * Chave que junta alertas da mesma máquina: o item da CMDB quando o host
+ * casou, senão o nome do host (sem domínio, em minúsculas). `null` = o alerta
+ * não diz de qual máquina veio, então nada se correlaciona.
+ */
+export function sdMonitorCorrelationKey(
+  configItemId: string | null,
+  host: string | null,
+): string | null {
+  if (configItemId) return `ci:${configItemId}`
+  const name = host?.trim().toLowerCase() ?? ''
+  if (name === '') return null
+  const short = IPV4.test(name) ? name : name.split('.')[0]
+  return short === '' ? null : `host:${short}`
 }
 
 /** Prioridade configurada para a severidade do alerta (sem diferenciar caixa). */

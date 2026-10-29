@@ -3,13 +3,14 @@ import { dto } from '../../common'
 
 /**
  * DTOs do monitoramento do ServiceDesk (`types/sd-monitor.d.ts`): origens
- * (Zabbix / webhook genérico) e os alertas recebidos.
+ * (Zabbix, Grafana, PRTG / webhook genérico) e os alertas recebidos.
  */
 
 const dateTime = () => z.iso.datetime()
 const nullableDateTime = () => z.iso.datetime().nullable()
 
-const Kind = z.enum(['ZABBIX', 'WEBHOOK'])
+const Kind = z.enum(['ZABBIX', 'WEBHOOK', 'GRAFANA', 'PRTG'])
+const CorrelationMode = z.enum(['OFF', 'HOST'])
 const AlertStatus = z.enum(['OPEN', 'RESOLVED', 'IGNORED'])
 const TicketType = z.enum(['INCIDENT', 'SERVICE_REQUEST', 'CHANGE', 'PROBLEM'])
 
@@ -39,6 +40,15 @@ const sourceShape = {
     description:
       'O mesmo alerta voltando dentro desta janela reabre o chamado anterior em vez de abrir outro (0 desliga).',
     example: 30,
+  }),
+  correlationMode: CorrelationMode.meta({
+    description:
+      '`HOST`: alerta novo da mesma máquina (item da CMDB ou host) entra no chamado aberto em vez de abrir outro.',
+  }),
+  correlationWindowMinutes: z.number().int().meta({
+    description:
+      'Janela, em minutos, desde a última atividade do alerta aberto da mesma máquina.',
+    example: 60,
   }),
   lastEventAt: nullableDateTime(),
   createdAt: dateTime(),
@@ -70,6 +80,7 @@ export const SdMonitorAlertDTO = dto(
     id: z.string(),
     sourceId: z.string(),
     sourceName: z.string(),
+    sourceKind: Kind,
     status: AlertStatus,
     externalId: z.string().meta({
       description:
@@ -92,33 +103,49 @@ export const SdMonitorAlertDTO = dto(
         phase: z.string(),
       })
       .nullable(),
+    correlated: z.boolean().meta({
+      description: 'Entrou num chamado aberto por outro alerta (correlação).',
+    }),
+    occurrences: z.number().int().meta({
+      description: 'Quantas vezes o mesmo alerta chegou (deduplicação).',
+    }),
+    lastSeenAt: dateTime(),
     startedAt: dateTime(),
     resolvedAt: nullableDateTime(),
     createdAt: dateTime(),
   }),
 )
 
+const ingestShape = {
+  alertId: z.string(),
+  status: AlertStatus,
+  outcome: z
+    .enum([
+      'ticket_created',
+      'ticket_reopened',
+      'alert_updated',
+      'alert_correlated',
+      'ticket_resolved',
+      'alert_resolved',
+    ])
+    .meta({ description: 'O que o alerta provocou no ServiceDesk.' }),
+  ticket: z
+    .object({
+      id: z.string(),
+      number: z.number().int(),
+      code: z.string().nullable(),
+    })
+    .nullable(),
+}
+
 export const SdMonitorIngestDTO = dto(
   'SdMonitorIngest',
   z.object({
-    alertId: z.string(),
-    status: AlertStatus,
-    outcome: z
-      .enum([
-        'ticket_created',
-        'ticket_reopened',
-        'alert_updated',
-        'ticket_resolved',
-        'alert_resolved',
-      ])
-      .meta({ description: 'O que o alerta provocou no ServiceDesk.' }),
-    ticket: z
-      .object({
-        id: z.string(),
-        number: z.number().int(),
-        code: z.string().nullable(),
-      })
-      .nullable(),
+    ...ingestShape,
+    alerts: z.array(z.object(ingestShape)).optional().meta({
+      description:
+        'Todos os alertas do envio, em ordem (só quando o envio trouxe mais de um — Grafana/Alertmanager). Os campos acima são os do primeiro.',
+    }),
   }),
 )
 
@@ -146,6 +173,13 @@ export const SdMonitorAlertPayload = dto(
       hostName: z.string().optional(),
       hostIp: z.string().optional(),
       message: z.string().optional(),
+      alerts: z.array(z.object({}).loose()).optional().meta({
+        description:
+          'Grafana (alertas unificados) e Alertmanager: vários alertas por envio, cada um com `fingerprint`, `status` (`firing`/`resolved`), `labels` e `annotations`.',
+      }),
+      sensorId: z.string().optional(),
+      device: z.string().optional(),
+      sensor: z.string().optional(),
     })
     .loose(),
 )

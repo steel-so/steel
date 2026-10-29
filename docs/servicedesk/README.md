@@ -519,7 +519,7 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
 | whatsapp-ai | conexão WhatsApp do módulo, webhook → chamado, aba WhatsApp, `sd-ai*` (copiloto, pré-atendimento, triagem) |
 | notifications | `src/config/servicedesk-notifications.ts`, `sd-notification` (schema/mapper/repository/service = motor + preferências), `sd-ticket-follower.service.ts`, `sd-digest.service.ts`, `src/lib/servicedesk/notify.ts`, fila `servicedesk-digest`, aba "Notificações", botão Seguir, menções no composer |
 | dashboards-portal | fontes do dashboard, seeds Analítico/KPIs, modo TV, portal do solicitante |
-| monitoring | `sd-monitor-source`, `sd-monitor-alert`, `src/lib/servicedesk/{monitoring,monitor-fields}.ts`, entrada pública `servicedesk/monitoring/[token]`, aba Monitoramento das configurações, bloco de origem na tela do chamado |
+| monitoring | `sd-monitor-source`, `sd-monitor-alert`, `src/lib/servicedesk/{monitoring,monitor-fields}.ts`, entrada pública `servicedesk/monitoring/[token]`, aba Monitoramento das configurações, bloco de origem na tela do chamado, aba Monitoramento do item da CMDB, fila "Hosts sem item" (`monitor-alerts/[alertId]`) |
 | oncall | `sd-oncall` (schema/mapper/repository/service), `sd-oncall-resolver.ts`, `src/lib/servicedesk/oncall.ts`, API `servicedesk/oncall/**`, aba "Plantão", selo `SdOnCallBadge`, e as ações `notifyOnCall`/`reassignToOnCall` do escalonamento |
 | recurring | `sd-recurring-ticket` (schema/mapper/repository/service) + `sd-recurring-ticket-runner.ts`, `src/lib/servicedesk/recurrence.ts`, fila `servicedesk-recurring`, aba Configurações > Recorrentes, aba "Rotinas" do item de configuração |
 | change-cab | `sd-change-window`, `sd-change-schedule.ts` (gancho de congelamento/conflito no `SdTicketEngine.update`), `sd-cab-board`, `sd-approval-round`, `sd-approval-gate.ts` (fase com `requiresApproval` aceita rodada aprovada), `sd-ticket-change-schedule.service.ts`, `src/lib/servicedesk/change-calendar.ts` (expansão pura da recorrência), tela `/changes/calendar`, aba "Mudanças" das configurações e aba "Mudança" do chamado |
@@ -608,6 +608,41 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
   obrigatórios, aprovação, classificação da solução), o chamado recebe uma
   mensagem pública explicando em vez de ser encerrado. O mesmo alerta voltando
   dentro de `flappingWindowMinutes` reabre o chamado anterior.
+
+  **S3 — Grafana, PRTG, correlação e CMDB** (`SdMonitorKind` ganhou `GRAFANA`
+  e `PRTG`; manual em `content/docs/servicedesk/monitoramento.mdx`):
+  - *Formatos*: `parseSdMonitorEvents(kind, corpo)` devolve uma lista de
+    eventos. `alerts[]` (Grafana unificado e Alertmanager) vale para qualquer
+    tipo de origem e processa até 50 alertas por envio, em ordem; cada um
+    guarda no alerta só o seu pedaço do corpo. PRTG manda um sensor por envio
+    (`sensorId` é a chave; `Up`/`OK` normaliza; a hora do PRTG é ignorada
+    porque vem no fuso do servidor dele). A resposta tem o primeiro alerta nos
+    campos de sempre e `alerts[]` quando o envio trouxe mais de um. Um erro
+    interrompe o lote; reenviar é seguro (deduplicação).
+  - *Deduplicação*: `(origem, externalId)` continua único; o reenvio soma
+    `occurrences` e atualiza `lastSeenAt`. Grafana usa o `fingerprint`; sem
+    ele, o hash do `alertname` + rótulos ordenados.
+  - *Correlação* (`SdMonitorSource.correlationMode` = `HOST`, janela em
+    `correlationWindowMinutes`, padrão 60): a chave é `ci:<id>` quando o host
+    casou com a CMDB, senão `host:<primeiro rótulo em minúsculas>`. Alerta novo
+    sem linha anterior, com chave, procura um alerta **aberto** (qualquer
+    origem da workspace) com a mesma chave, atividade (`lastSeenAt`) dentro da
+    janela e chamado ainda não encerrado, e entra nesse chamado
+    (`correlated = true`, nota interna, evento `monitor.alert_correlated`,
+    resultado `alert_correlated`). O chamado só é resolvido quando o último
+    alerta aberto dele normaliza (`countOpenByTicket`); se a contagem falhar,
+    por segurança o chamado não é encerrado. Origens existentes ganharam
+    `HOST` na migração.
+  - *CMDB*: o casamento tenta, na ordem, o apelido guardado
+    (`SdMonitorHostAlias`, por workspace), nome/código/IP de cada nome do
+    alerta (`host` + `hostAliases`) e o primeiro rótulo de um FQDN. Alertas
+    sem item aparecem em "Hosts sem item na CMDB"; `PATCH
+    monitor-alerts/[alertId]` liga (com `remember`, guarda o apelido e liga os
+    abertos com o mesmo host) ou desliga, e o chamado herda o item se não
+    tinha. `GET monitor-alerts` filtra por `configItemId` e `unmatched`.
+  - *Fora do escopo*: o incidente maior (S2) usa estes alertas, mas a tela e
+    a lógica de incidente maior pertencem a S2; aqui não há elevação automática
+    de prioridade quando um alerta correlacionado é mais grave que o primeiro.
 - **Plantão**: Configurações > Plantão cria a escala (time, fuso, rodízio,
   início e hora da virada; opcionalmente um calendário de expediente, e aí a
   escala só vale **fora** dele), as camadas (1 = primeira chamada) e os
