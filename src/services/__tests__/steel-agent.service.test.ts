@@ -8,7 +8,7 @@ import {
   createFakeSteelAgentWithRelations,
 } from '@/src/__tests__/factories/steel-agent.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { databaseError, forbidden } from '@/src/errors'
+import { databaseError, forbidden, notFound } from '@/src/errors'
 import type { AnySteelAiTool } from '@/src/lib/ai/tools/types'
 import { SYSTEM_PROFILE_PERMISSIONS } from '@/src/lib/permissions'
 import { err, ok } from '@/src/lib/result'
@@ -508,6 +508,77 @@ describe('SteelAgentService.testRun', () => {
       await SteelAgentService.testRun('v1', 'ws1', 'agent1'),
       'FORBIDDEN',
     )
+  })
+})
+
+describe('SteelAgentService.rerunAsTest', () => {
+  const original = (over = {}) =>
+    createFakeSteelAgentRunDetail({
+      id: 'old1',
+      agentId: 'agent1',
+      triggerType: 'EVENT',
+      triggerPayload: { ticketId: 't1' },
+      ...over,
+    })
+
+  it('should replay the trigger and input of the original run as a test', async () => {
+    runs.findDetail.mockResolvedValue(ok(original()))
+    expectOk(
+      await SteelAgentService.rerunAsTest('admin1', 'ws1', 'agent1', 'old1'),
+    )
+    expect(runs.findDetail).toHaveBeenCalledWith('old1', 'ws1')
+    expect(runs.create).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      agentId: 'agent1',
+      triggerType: 'EVENT',
+      triggerPayload: { ticketId: 't1' },
+      startedById: 'admin1',
+      isTest: true,
+      rerunOfId: 'old1',
+    })
+    expect(enqueue).toHaveBeenCalledWith('run1')
+  })
+
+  it('should omit the payload when the original had none, even for a paused agent', async () => {
+    agents.findById.mockResolvedValue(ok({ ...AGENT, enabled: false }))
+    runs.findDetail.mockResolvedValue(
+      ok(original({ triggerType: 'SCHEDULE', triggerPayload: null })),
+    )
+    expectOk(
+      await SteelAgentService.rerunAsTest('admin1', 'ws1', 'agent1', 'old1'),
+    )
+    expect(runs.create).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      agentId: 'agent1',
+      triggerType: 'SCHEDULE',
+      startedById: 'admin1',
+      isTest: true,
+      rerunOfId: 'old1',
+    })
+  })
+
+  it('should keep the owner-or-manager gate', async () => {
+    runs.findDetail.mockResolvedValue(ok(original()))
+    member.mockResolvedValue(ok(VIEWER))
+    expectErr(
+      await SteelAgentService.rerunAsTest('v1', 'ws1', 'agent1', 'old1'),
+      'FORBIDDEN',
+    )
+    expect(runs.create).not.toHaveBeenCalled()
+  })
+
+  it('should refuse a run of another agent or workspace', async () => {
+    runs.findDetail.mockResolvedValue(ok(original({ agentId: 'other' })))
+    expectErr(
+      await SteelAgentService.rerunAsTest('admin1', 'ws1', 'agent1', 'old1'),
+      'STEEL_AGENT_RUN_NOT_FOUND',
+    )
+    runs.findDetail.mockResolvedValue(err(notFound('Run')))
+    expectErr(
+      await SteelAgentService.rerunAsTest('admin1', 'ws1', 'agent1', 'old1'),
+      'RESOURCE_NOT_FOUND',
+    )
+    expect(runs.create).not.toHaveBeenCalled()
   })
 })
 

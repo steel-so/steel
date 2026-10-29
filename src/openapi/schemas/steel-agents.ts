@@ -120,6 +120,10 @@ export const SteelAgentRunDTO = dto(
       description:
         '"Testar agente": leituras reais, escritas simuladas, sem aprovações.',
     }),
+    rerunOfId: z.string().nullable().meta({
+      description:
+        'Execução de origem quando este teste veio de "Reexecutar como teste".',
+    }),
     createdAt: dateTime(),
   }),
 )
@@ -135,7 +139,10 @@ export const SteelAgentRunDetailDTO = dto(
     steps: z.array(
       z.object({
         id: z.string(),
-        kind: z.enum(['MODEL', 'TOOL', 'APPROVAL']),
+        kind: z.enum(['MODEL', 'TOOL', 'APPROVAL', 'GUARDRAIL']).meta({
+          description:
+            'MODEL: raciocínio da rodada (`output.text`, `round`, tokens). TOOL: chamada com `input` e, nas consultas, `output.context` (trecho recuperado, só para responsável/admin). GUARDRAIL: regra acionada (`output.rule`, `title`, `detail`).',
+        }),
         toolName: z.string().nullable(),
         toolLabel: z.string().nullable(),
         pendingActionId: z.string().nullable(),

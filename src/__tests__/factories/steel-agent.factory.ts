@@ -96,6 +96,7 @@ export function createFakeSteelAgentRun(
     costUsd: new Prisma.Decimal(0),
     state: null,
     isTest: false,
+    rerunOfId: null,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
