@@ -81,6 +81,7 @@ import type {
 } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
+import { WhatsappAdReferralBanner } from './whatsapp-ad-referral-banner'
 import { WhatsappAiBanner } from './whatsapp-ai-banner'
 import { WhatsappCloseConversationDialog } from './whatsapp-close-conversation-dialog'
 import { CLOSE_OUTCOME_LABEL } from './whatsapp-close-outcome-badge'
@@ -706,6 +707,11 @@ export function WhatsappConversationView({
       )}
 
       <WhatsappPhoneCallBanner call={phoneCall.data} />
+
+      <WhatsappAdReferralBanner
+        workspaceId={workspaceId}
+        conversationId={conversation.id}
+      />
 
       {!isClosed && conversation.aiActive && (
         <WhatsappAiBanner
