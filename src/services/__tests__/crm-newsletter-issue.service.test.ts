@@ -607,6 +607,55 @@ describe('CrmNewsletterIssueService', () => {
     })
   })
 
+  // nl2-segments: the pre-flight counts the issue's segment.
+  describe('preflight with a segment', () => {
+    const segment = { conditions: [{ type: 'source', sources: ['FORM'] }] }
+
+    it('counts the segmented audience and says so', async () => {
+      withIssue({ segment })
+      issues.countAudience.mockResolvedValue(ok(4))
+      const result = expectOk(await Service.preflight(...A, 'is1', NOW))
+      expect(result).toMatchObject({ audience: 4, segmented: true })
+      expect(issues.countAudience).toHaveBeenCalledWith('ws1', 'nl1', {
+        AND: [{ source: { in: ['FORM'] } }],
+      })
+      issues.countAudience.mockResolvedValue(ok(0))
+      const empty = expectOk(await Service.preflight(...A, 'is1', NOW))
+      expect(empty.blockers).toEqual([
+        {
+          code: 'NO_SUBSCRIBERS',
+          message: 'Nenhum assinante ativo corresponde ao público escolhido',
+        },
+      ])
+    })
+
+    it('blocks an unreadable segment without counting', async () => {
+      withIssue({ segment: { conditions: 'x' } })
+      const result = expectOk(await Service.preflight(...A, 'is1', NOW))
+      expect(result.audience).toBe(0)
+      expect(result.segmented).toBe(true)
+      expect(result.blockers.map((b) => b.code)).toEqual(['SEGMENT_INVALID'])
+      expect(issues.countAudience).not.toHaveBeenCalled()
+    })
+
+    it('propagates database errors of the segment', async () => {
+      withIssue({
+        segment: {
+          conditions: [{ type: 'opened', op: 'any', lastIssues: 2 }],
+        },
+      })
+      const spy = vi
+        .spyOn(
+          (await import('@/src/repositories/crm-newsletter-segment.repository'))
+            .CrmNewsletterSegmentRepository,
+          'recentSentIssueIds',
+        )
+        .mockResolvedValueOnce(err(databaseError()))
+      expectErr(await Service.preflight(...A, 'is1', NOW), 'DATABASE_ERROR')
+      spy.mockRestore()
+    })
+  })
+
   describe('report, recipients, trend and summary', () => {
     it('returns the funnel (zeros before sending) and the links', async () => {
       withIssue()
