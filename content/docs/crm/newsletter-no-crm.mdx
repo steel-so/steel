@@ -6,8 +6,8 @@ order: 16
 ---
 
 A newsletter conversa com o resto do CRM. Quem assina, abre ou clica numa
-edição aparece na pessoa, pontua os leads dela e pode disparar um workflow —
-sem planilha nem integração.
+edição — ou num e-mail da série de boas-vindas — aparece na pessoa, pontua os
+leads dela e pode disparar um workflow, sem planilha nem integração.
 
 A ligação é pelo e-mail: o assinante fica ligado à pessoa do CRM que tem o
 mesmo e-mail (a mais antiga, se houver mais de uma). Quem ainda não é pessoa
@@ -21,16 +21,22 @@ mostrar:
 
 - **Assinou** a newsletter (ou **pediu para assinar**, quando falta confirmar
   pelo e-mail), **confirmou a inscrição** e **saiu da newsletter**;
-- **Recebeu**, **abriu** e **clicou em um link** de cada edição.
+- **Recebeu**, **abriu** e **clicou em um link** de cada edição;
+- **Recebeu**, **abriu** e **clicou em um link** de cada e-mail da
+  [série de boas-vindas](/docs/crm/newsletter-automacao), com o número e o
+  assunto do e-mail (por exemplo, "Abriu o e-mail 2 "Conheça a Acme" da série
+  de boas-vindas").
 
-Abertura e clique entram uma vez por edição: abrir a mesma edição cinco vezes
-gera uma entrada só.
+Abertura e clique entram uma vez por edição ou e-mail de boas-vindas: abrir a
+mesma edição cinco vezes gera uma entrada só.
 
 ## Cartão "Newsletters" da pessoa
 
 Acima da atividade, o cartão **Newsletters** lista as inscrições da pessoa,
 com a situação de cada uma (ativo, aguardando confirmação, descadastrado,
-retorno permanente, marcou como spam), desde quando e a última abertura.
+retorno permanente, marcou como spam), desde quando, a última abertura e, se a
+pessoa já recebeu a série de boas-vindas, quantos desses e-mails ela abriu e
+clicou (por exemplo, "boas-vindas: 2 de 3 abertos, 1 com clique").
 
 - **Inscrever** — escolha a newsletter e, se a pessoa tiver mais de um e-mail,
   qual deles. Inscreva só quem autorizou receber: a inscrição fica registrada
@@ -50,8 +56,12 @@ dos campos do lead, três eventos da newsletter:
 | Evento | Quando pontua |
 |---|---|
 | **Assinou newsletter** | Uma vez por newsletter, quando a inscrição fica ativa (na hora ou ao confirmar). |
-| **Abriu newsletter** | Uma vez por edição aberta. |
-| **Clicou em link da newsletter** | Uma vez por edição clicada. Preencha **URL contém** para pontuar só cliques em certos links (por exemplo, `/precos`). |
+| **Abriu newsletter** | Uma vez por edição aberta e por e-mail de boas-vindas aberto. |
+| **Clicou em link da newsletter** | Uma vez por edição clicada e por e-mail de boas-vindas clicado. Preencha **URL contém** para pontuar só cliques em certos links (por exemplo, `/precos`). |
+
+Nas regras de abertura e clique, **Incluir e-mails de boas-vindas** vem
+marcado. Desmarque para pontuar só as edições; a regra aparece na lista como
+"só edições".
 
 Os pontos vão para os leads ligados à pessoa: os que têm o mesmo e-mail e os
 que foram convertidos nela. Editar o lead depois não apaga esses pontos.
@@ -63,11 +73,18 @@ No editor de workflows, **Adicionar etapa › Gatilhos de newsletter** traz:
 
 - **Assinou newsletter** — inscrição ativa ou confirmada;
 - **Saiu da newsletter**;
-- **Abriu edição da newsletter** — a primeira abertura de cada edição;
+- **Abriu edição da newsletter** — a primeira abertura de cada edição ou
+  e-mail de boas-vindas;
 - **Clicou em link da newsletter** — uma vez por pessoa e link em cada
-  edição. Use **URL contém** para reagir só a certos links.
+  edição ou e-mail de boas-vindas. Use **URL contém** para reagir só a certos
+  links.
 
 Em todos dá para escolher uma newsletter ou deixar **Qualquer newsletter**.
+Na abertura e no clique, **Origem do e-mail** escolhe entre **Edições e
+e-mails de boas-vindas** (padrão), **Só edições** e **Só e-mails de
+boas-vindas**. A origem também chega ao workflow em
+`{{trigger.payload.source}}` (`issue` ou `welcome`); num e-mail de
+boas-vindas, `{{trigger.payload.welcomeStep.subject}}` traz o assunto.
 Nas etapas seguintes, use `{{trigger.record.email}}` e
 `{{trigger.record.name}}` para o assinante e
 `{{trigger.payload.newsletter.name}}` para a newsletter. O workflow roda em

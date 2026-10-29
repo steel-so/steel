@@ -266,3 +266,27 @@ Manual: `content/docs/crm/newsletter-resumo-e-ia.mdx`.
 
 **Uso do mês**
 - A lista de newsletters mostra "X de Y e-mails usados neste mês" para todo membro do CRM; o cartão com a barra fica nas Configurações da newsletter.
+
+## Série de boas-vindas na ponte com o CRM (nl3-welcome-bridge)
+
+Até aqui só as edições passavam por `CrmNewsletterBridge`; aberturas e cliques dos e-mails de boas-vindas só carimbavam `crm_newsletter_welcome_deliveries`. Agora o `CrmNewsletterAutomationTrackingService` também alimenta a ponte — e, como nas edições, falha da ponte só vira log (`crm.newsletter.bridge_failed`), nunca derruba o webhook.
+
+**Eventos novos da ponte**
+- `welcome_received` (primeiro `delivered`), `welcome_opened` (primeira abertura; clique implica abertura) e `welcome_link_clicked` (todo clique, com a URL quando o Resend manda).
+- Cliques são guardados em `crm_newsletter_welcome_link_clicks` (`delivery_id`, `step_id`, `url`, `clicked_at`; cascata pela entrega). Os links dos e-mails de boas-vindas não são reescritos pelo Steel: o rastreio de clique é o do domínio no Resend, igual às edições, e a URL vem em `data.click.link`.
+
+**Linha do tempo**
+- Ações `NEWSLETTER_WELCOME_RECEIVED`, `NEWSLETTER_WELCOME_OPENED`, `NEWSLETTER_WELCOME_LINK_CLICKED`, entidade `newsletter_welcome_step`, `entity_id` = passo. Uma entrada por tipo de evento por passo (mesma checagem `hasActivity` das edições).
+- Texto: `Abriu o e-mail 2 "Assunto" da série de boas-vindas da newsletter "Nome"` (posição 1-based); passo apagado → "um e-mail da série de boas-vindas".
+
+**Pontuação de leads**
+- `newsletter_opened` / `newsletter_clicked` contam e-mails de boas-vindas com `eventKey = welcome:<stepId>:<subscriberId>` — idempotente por passo × assinante (o `CrmLeadScoreEvent` único por regra × lead × chave).
+- Coluna nova `crm_lead_scoring_rules.include_welcome` (padrão `true`): desligada, a regra só pontua edições. Decisão: padrão ligado, porque abrir/clicar um e-mail de boas-vindas é engajamento com a newsletter e as regras existentes passam a contar sem configuração; quem quer separar desmarca **Incluir e-mails de boas-vindas** na criação da regra. Só vale para abertura e clique (assinatura não tem origem).
+
+**Workflows**
+- Os gatilhos `newsletter-issue-opened` e `newsletter-link-clicked` disparam também para e-mails de boas-vindas. O payload ganhou `source` (`issue` | `welcome`) nesses dois gatilhos e, nos de boas-vindas, `welcomeStep` (`id`, `subject`, `position` 1-based) no lugar de `issue`.
+- Filtro opcional `source` no gatilho (ausente = os dois), no editor como **Origem do e-mail**. Payload sem `source` (eventos antigos) conta como `issue`.
+- Clique de boas-vindas dispara uma vez por entrega × URL (contagem em `crm_newsletter_welcome_link_clicks`); clique sem URL sempre dispara.
+
+**Cartão "Newsletters" da pessoa**
+- Cada inscrição traz `welcome: { sent, opened, clicked } | null` (nulo sem e-mail de boas-vindas enviado); o cartão mostra "boas-vindas: 2 de 3 abertos, 1 com clique".
