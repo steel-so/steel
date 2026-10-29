@@ -9,6 +9,7 @@ import {
   Settings02Icon,
   Shapes01Icon,
   StarIcon,
+  Task01Icon,
   UserGroup03Icon,
   UserGroupIcon,
   UserMultipleIcon,
@@ -71,6 +72,9 @@ export default async function ZapLayout({
           </NavItem>
           <NavItem href={`${base}/chatbots`} icon={BotIcon}>
             Chatbots
+          </NavItem>
+          <NavItem href={`${base}/flows`} icon={Task01Icon}>
+            Formulários
           </NavItem>
         </NavGroup>
         <NavGroup>
