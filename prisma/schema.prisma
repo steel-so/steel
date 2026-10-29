@@ -2444,6 +2444,7 @@ model CrmPerson {
   calendarEvents                CrmCalendarEvent[]
   proposalsAsContact            CrmProposal[]       @relation("CrmProposalContact")
   phoneCalls                    WhatsAppPhoneCall[]
+  newsletterSubscriptions       CrmNewsletterSubscriber[]
 
   @@index([workspaceId])
   @@index([companyId])
@@ -9800,6 +9801,7 @@ model CrmNewsletter {
   subscribers   CrmNewsletterSubscriber[]
   issues        CrmNewsletterIssue[]
   forms         CrmForm[]
+  segments      CrmNewsletterSegment[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, deletedAt])
@@ -9859,6 +9861,8 @@ model CrmNewsletterSubscriber {
 
   newsletter CrmNewsletter                 @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
   deliveries CrmNewsletterIssueRecipient[]
+  /// Segments filter on the linked person (slice nl2-segments).
+  person     CrmPerson?                    @relation(fields: [personId], references: [id], onDelete: SetNull)
 
   @@unique([newsletterId, email])
   @@index([newsletterId, status])
@@ -10029,4 +10033,27 @@ model CrmLeadScoreEvent {
   @@index([leadId])
   @@index([workspaceId])
   @@map("crm_lead_score_events")
+}
+
+// ─── newsletter2 · nl2-segments ─────────────────────────────────────────────
+
+/// Saved audience segment of a newsletter, reusable across its issues. An
+/// issue stores a copy of the definition in `CrmNewsletterIssue.segment`.
+model CrmNewsletterSegment {
+  id           String   @id @default(cuid())
+  newsletterId String   @map("newsletter_id")
+  workspaceId  String   @map("workspace_id")
+  name         String
+  /// `NewsletterSegmentSchema` (src/schemas/crm-newsletter-segment.schema.ts).
+  definition   Json     @default("{}")
+  createdById  String   @map("created_by_id")
+  updatedById  String?  @map("updated_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  newsletter CrmNewsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+
+  @@unique([newsletterId, name])
+  @@index([workspaceId])
+  @@map("crm_newsletter_segments")
 }

@@ -4,6 +4,7 @@ import { ArrowLeft01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useState } from 'react'
 import { NewsletterIssuesTab } from '@/app/_components/crm/newsletters/issues/newsletter-issues-tab'
+import { NewsletterSegmentsButton } from '@/app/_components/crm/newsletters/segments/newsletter-segments-dialog'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,6 +96,10 @@ export function CrmNewsletterView({
           <NewsletterSenderBadge
             verified={data.senderVerified}
             workspaceSlug={slug}
+          />
+          <NewsletterSegmentsButton
+            workspaceId={workspaceId}
+            newsletterId={newsletterId}
           />
         </div>
       </div>

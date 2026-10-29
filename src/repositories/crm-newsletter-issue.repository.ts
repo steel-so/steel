@@ -6,6 +6,10 @@ import type {
 } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
+import {
+  segmentIdsSql,
+  segmentSubscriberIds,
+} from './crm-newsletter-segment.repository'
 import { dbError } from './db-error'
 
 /**
@@ -228,8 +232,18 @@ export const CrmNewsletterIssueRepository = {
   async countAudience(
     workspaceId: string,
     newsletterId: string,
+    /** nl2-segments: the issue's compiled segment (omitted = everyone). */
+    segmentWhere?: Prisma.CrmNewsletterSubscriberWhereInput,
   ): Promise<Result<number>> {
     try {
+      const ids = segmentWhere
+        ? await segmentSubscriberIds(
+            prisma,
+            workspaceId,
+            newsletterId,
+            segmentWhere,
+          )
+        : null
       const rows = await prisma.$queryRaw<{ count: bigint }[]>`
         SELECT COUNT(*)::bigint AS count
         FROM crm_newsletter_subscribers s
@@ -239,7 +253,8 @@ export const CrmNewsletterIssueRepository = {
           AND NOT EXISTS (
             SELECT 1 FROM crm_email_opt_outs o
             WHERE o.workspace_id = s.workspace_id AND o.email = s.email
-          )`
+          )
+          ${segmentIdsSql(ids)}`
       return ok(Number(rows[0].count))
     } catch (error) {
       return err(dbError('Failed to count CRM newsletter audience', error))
@@ -254,7 +269,13 @@ export const CrmNewsletterIssueRepository = {
    */
   async startSending(
     issueId: string,
-    input: { webHtml: string; excerpt: string; now: Date },
+    input: {
+      webHtml: string
+      excerpt: string
+      now: Date
+      /** nl2-segments: the issue's compiled segment (omitted = everyone). */
+      segmentWhere?: Prisma.CrmNewsletterSubscriberWhereInput
+    },
   ): Promise<Result<{ issue: CrmNewsletterIssue; recipients: number } | null>> {
     try {
       const result = await prisma.$transaction(async (tx) => {
@@ -284,6 +305,14 @@ export const CrmNewsletterIssueRepository = {
           },
         })
         if (started.count === 0) return null
+        const ids = input.segmentWhere
+          ? await segmentSubscriberIds(
+              tx,
+              current.workspaceId,
+              current.newsletterId,
+              input.segmentWhere,
+            )
+          : null
         const recipients = await tx.$executeRaw`
           INSERT INTO crm_newsletter_issue_recipients
             (id, issue_id, workspace_id, subscriber_id, email, name, status, created_at, updated_at)
@@ -297,6 +326,7 @@ export const CrmNewsletterIssueRepository = {
               SELECT 1 FROM crm_email_opt_outs o
               WHERE o.workspace_id = s.workspace_id AND o.email = s.email
             )
+            ${segmentIdsSql(ids)}
           ON CONFLICT (issue_id, subscriber_id) DO NOTHING`
         const issue = await tx.crmNewsletterIssue.findUniqueOrThrow({
           where: { id: issueId },

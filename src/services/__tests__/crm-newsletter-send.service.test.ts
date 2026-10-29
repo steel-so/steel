@@ -724,4 +724,52 @@ describe('CrmNewsletterSendService', () => {
       expectErr(await Service.startScheduled(due, NOW))
     })
   })
+
+  // nl2-segments: a segmented issue counts and snapshots only its audience.
+  describe('segmented audience', () => {
+    const segment = { conditions: [{ type: 'source', sources: ['FORM'] }] }
+
+    it('counts and snapshots with the compiled segment', async () => {
+      issues.findById.mockResolvedValue(
+        ok(createFakeNewsletterIssue({ segment })),
+      )
+      expectOk(await Service.send(...A, 'is1', {}, NOW))
+      const where = { AND: [{ source: { in: ['FORM'] } }] }
+      expect(issues.countAudience).toHaveBeenCalledWith('ws1', 'nl1', where)
+      expect(issues.startSending).toHaveBeenCalledWith('is1', {
+        webHtml: '<p>web</p>',
+        excerpt: 'Web',
+        now: NOW,
+        segmentWhere: where,
+      })
+    })
+
+    it('refuses an empty segment and an unreadable one', async () => {
+      const issue = createFakeNewsletterIssue({ segment })
+      issues.countAudience.mockResolvedValueOnce(ok(0))
+      const empty = expectErr(
+        await preSendChecks(issue, newsletter, NOW),
+        'CRM_NEWSLETTER_NO_SUBSCRIBERS',
+      )
+      expect(empty.message).toContain('público escolhido')
+      expectErr(
+        await preSendChecks(
+          createFakeNewsletterIssue({ segment: { conditions: 'x' } }),
+          newsletter,
+          NOW,
+        ),
+        'CRM_NEWSLETTER_SEGMENT_INVALID',
+      )
+    })
+
+    it('passes the segment to a scheduled start', async () => {
+      const due = createFakeNewsletterIssue({ status: 'SCHEDULED', segment })
+      issues.findByIdUnscoped.mockResolvedValueOnce(ok({ ...due, newsletter }))
+      expect(expectOk(await Service.startScheduled(due, NOW))).toBe('started')
+      expect(issues.startSending).toHaveBeenCalledWith(
+        'is1',
+        expect.objectContaining({ segmentWhere: expect.any(Object) }),
+      )
+    })
+  })
 })

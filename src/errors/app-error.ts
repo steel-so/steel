@@ -1857,3 +1857,31 @@ export const crmNewsletterNoSubscribers = (): AppError =>
 export const crmNewsletterLimitReached = (
   message = 'O limite mensal de e-mails de newsletter do workspace foi atingido',
 ): AppError => appError('CRM_NEWSLETTER_LIMIT_REACHED', message)
+
+// ─── newsletter2 · nl2-segments ─────────────────────────────────────────────
+
+export const crmNewsletterSegmentNotFound = (): AppError =>
+  appError('CRM_NEWSLETTER_SEGMENT_NOT_FOUND', 'Segmento não encontrado')
+
+export const crmNewsletterSegmentNameTaken = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_SEGMENT_NAME_TAKEN',
+    'Já existe um segmento com este nome nesta newsletter',
+  )
+
+export const crmNewsletterSegmentLimitReached = (limit: number): AppError =>
+  appError(
+    'CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED',
+    `Cada newsletter pode ter no máximo ${limit} segmentos salvos`,
+  )
+
+export const crmNewsletterSegmentInvalid = (
+  message = 'O público desta edição não é mais válido: revise as condições',
+): AppError => appError('CRM_NEWSLETTER_SEGMENT_INVALID', message)
+
+/** `CRM_NEWSLETTER_NO_SUBSCRIBERS` when a segment leaves nobody. */
+export const crmNewsletterSegmentEmpty = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_NO_SUBSCRIBERS',
+    'Nenhum assinante ativo corresponde ao público escolhido',
+  )

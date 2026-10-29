@@ -1,4 +1,4 @@
-import type { CrmNewsletterIssue } from '@prisma/client'
+import type { CrmNewsletterIssue, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
@@ -8,6 +8,7 @@ import {
   crmNewsletterIssueLocked,
   crmNewsletterLimitReached,
   crmNewsletterNoSubscribers,
+  crmNewsletterSegmentEmpty,
   validationError,
 } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
@@ -46,6 +47,7 @@ import {
   type CrmNewsletterIssueDTO,
   type SendCrmNewsletterIssueDTO,
 } from '@/src/schemas/crm-newsletter-issue.schema'
+import { issueAudienceWhere } from './crm-newsletter-audience'
 import {
   issueWebUrl,
   limitMessage,
@@ -89,7 +91,11 @@ export type IssueDispatchOutcome =
     }
   | { status: 'retry'; reason: string }
 
-export type PreSendCheck = { audience: number }
+export type PreSendCheck = {
+  audience: number
+  /** nl2-segments: the issue's compiled segment (undefined = everyone). */
+  segmentWhere?: Prisma.CrmNewsletterSubscriberWhereInput
+}
 
 /**
  * Checks of a send, in the contract's order: newsletter ACTIVE, verified
@@ -120,12 +126,25 @@ export async function preSendChecks(
   )
   if (error) return err(crmNewsletterIssueIncomplete(error.message))
 
-  const audience = await CrmNewsletterIssueRepository.countAudience(
-    issue.workspaceId,
-    issue.newsletterId,
-  )
+  const segment = await issueAudienceWhere(issue)
+  if (!segment.ok) return segment
+  const segmentWhere = segment.value
+  const audience = segmentWhere
+    ? await CrmNewsletterIssueRepository.countAudience(
+        issue.workspaceId,
+        issue.newsletterId,
+        segmentWhere,
+      )
+    : await CrmNewsletterIssueRepository.countAudience(
+        issue.workspaceId,
+        issue.newsletterId,
+      )
   if (!audience.ok) return audience
-  if (audience.value === 0) return err(crmNewsletterNoSubscribers())
+  if (audience.value === 0) {
+    return err(
+      segmentWhere ? crmNewsletterSegmentEmpty() : crmNewsletterNoSubscribers(),
+    )
+  }
 
   const usage = await CrmNewsletterUsageService.getUsage(issue.workspaceId, now)
   if (!usage.ok) return usage
@@ -137,7 +156,11 @@ export async function preSendChecks(
       ),
     )
   }
-  return ok({ audience: audience.value, base: base.value })
+  return ok({
+    audience: audience.value,
+    base: base.value,
+    ...(segmentWhere ? { segmentWhere } : {}),
+  })
 }
 
 async function enqueueDispatch(issueId: string, delay: number, now: Date) {
@@ -158,12 +181,14 @@ async function startSending(
   newsletter: NewsletterWithWorkspace,
   base: IssueRenderBase,
   now: Date,
+  segmentWhere?: Prisma.CrmNewsletterSubscriberWhereInput,
 ): Promise<Result<CrmNewsletterIssue | null>> {
   const web = webVersionOf(base, newsletter.name)
   const started = await CrmNewsletterIssueRepository.startSending(issue.id, {
     webHtml: web.html,
     excerpt: issueExcerpt(web.text),
     now,
+    ...(segmentWhere ? { segmentWhere } : {}),
   })
   if (!started.ok) return started
   if (!started.value) return ok(null)
@@ -282,6 +307,7 @@ export const CrmNewsletterSendService = {
         newsletter,
         checked.value.base,
         now,
+        checked.value.segmentWhere,
       )
       if (!started.ok) return started
       result = started.value
@@ -711,6 +737,7 @@ export const CrmNewsletterSendService = {
       newsletter,
       checked.value.base,
       now,
+      checked.value.segmentWhere,
     )
     if (!started.ok) return started
     return ok(started.value ? 'started' : 'lost')

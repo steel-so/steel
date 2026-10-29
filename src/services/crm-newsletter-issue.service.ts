@@ -8,6 +8,7 @@ import {
   crmNewsletterIssueLocked,
   crmNewsletterIssueNotFound,
   crmNewsletterNotFound,
+  crmNewsletterSegmentEmpty,
   mailError,
 } from '@/src/errors'
 import { openEmailDocument } from '@/src/lib/canvas-email/convert-v1'
@@ -52,6 +53,7 @@ import type {
   UpdateCrmNewsletterIssueDTO,
 } from '@/src/schemas/crm-newsletter-issue.schema'
 import { assertModuleMember, type MembershipContext } from './authz'
+import { issueAudienceWhere } from './crm-newsletter-audience'
 import {
   issueChecklist,
   personalizeIssue,
@@ -540,9 +542,29 @@ export const CrmNewsletterIssueService = {
     if (!issue.ok) return issue
     const { newsletter } = scope.value
 
+    // nl2-segments: the audience is the issue's segment (if any).
+    const segment = await issueAudienceWhere(issue.value)
+    const segmentWhere = segment.ok ? segment.value : undefined
+    if (
+      !segment.ok &&
+      segment.error.code !== 'CRM_NEWSLETTER_SEGMENT_INVALID'
+    ) {
+      return segment
+    }
     const [sender, audience, usage, base] = await Promise.all([
       resolveVerifiedSender(workspaceId, newsletter.fromEmail),
-      CrmNewsletterIssueRepository.countAudience(workspaceId, newsletterId),
+      segmentWhere
+        ? CrmNewsletterIssueRepository.countAudience(
+            workspaceId,
+            newsletterId,
+            segmentWhere,
+          )
+        : segment.ok
+          ? CrmNewsletterIssueRepository.countAudience(
+              workspaceId,
+              newsletterId,
+            )
+          : Promise.resolve(ok(0)),
       CrmNewsletterUsageService.getUsage(workspaceId, now),
       renderIssueBase(
         workspaceId,
@@ -578,10 +600,14 @@ export const CrmNewsletterIssueService = {
     if (firstError) {
       blockers.push({ code: 'CONTENT_INVALID', message: firstError })
     }
-    if (audience.value === 0) {
+    if (!segment.ok) {
+      blockers.push({ code: 'SEGMENT_INVALID', message: segment.error.message })
+    } else if (audience.value === 0) {
       blockers.push({
         code: 'NO_SUBSCRIBERS',
-        message: 'A newsletter ainda não tem assinantes ativos',
+        message: segmentWhere
+          ? crmNewsletterSegmentEmpty().message
+          : 'A newsletter ainda não tem assinantes ativos',
       })
     }
     const remaining = CrmNewsletterUsageService.remaining(usage.value)
@@ -594,6 +620,7 @@ export const CrmNewsletterIssueService = {
 
     return ok({
       audience: audience.value,
+      segmented: segmentWhere !== undefined || !segment.ok,
       usage: usage.value,
       remaining,
       senderVerified: sender.ok,
