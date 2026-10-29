@@ -1054,6 +1054,8 @@ export type CrmCnpjEnrichmentJob =
 
 export type CrmCnpjEnrichmentJobPayload = {
   [CrmCnpjEnrichmentJob.Run]: { runId: string }
+}
+
 /** NPS/CSAT/CES invitations (t1-nps-whatsapp): a delayed job per survey. */
 export const SatisfactionSurveyJob = {
   DeliverSurvey: 'deliver-survey',
