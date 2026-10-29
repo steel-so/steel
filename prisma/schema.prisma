@@ -10528,6 +10528,8 @@ model WhatsAppAdSpend {
   @@index([workspaceId, sourceId])
   @@index([workspaceId, periodStart, periodEnd])
   @@map("whatsapp_ad_spends")
+}
+
 // nov: t1-nps-whatsapp ─────────────────────────────────────────────────────
 
 enum SatisfactionSurveyKind {
