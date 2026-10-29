@@ -15,14 +15,10 @@ const Field = z.enum([
 ])
 
 const percent = () =>
-  z
-    .number()
-    .int()
-    .nullable()
-    .meta({
-      description: 'Percentual inteiro; `null` sem amostra.',
-      example: 82,
-    })
+  z.number().int().nullable().meta({
+    description: 'Percentual inteiro; `null` sem amostra.',
+    example: 82,
+  })
 
 const FieldStat = z.object({
   field: Field,
