@@ -2674,6 +2674,9 @@ enum CrmLeadRuleField {
   jobTitle
   source
   city
+  newsletter_subscribed
+  newsletter_opened
+  newsletter_clicked
 }
 
 enum CrmLeadRuleOperator {
@@ -2744,6 +2747,7 @@ model CrmLead {
   proposalPresentations CrmLeadProposalPresentation[]
   reopenings            CrmLeadReopening[]
   notes                 CrmNote[]
+  scoreEvents           CrmLeadScoreEvent[]
 
   @@unique([workspaceId, externalSource, externalId])
   @@index([workspaceId])
@@ -3864,6 +3868,10 @@ enum CrmWorkflowTriggerType {
   LAUNCH_MANUALLY
   ON_A_SCHEDULE
   WEBHOOK
+  NEWSLETTER_SUBSCRIBED
+  NEWSLETTER_UNSUBSCRIBED
+  NEWSLETTER_LINK_CLICKED
+  NEWSLETTER_ISSUE_OPENED
 }
 
 enum CrmWorkflowRunStatus {
@@ -9996,4 +10004,29 @@ model CrmNewsletterUsageMonthly {
 
   @@id([workspaceId, month])
   @@map("crm_newsletter_usage_monthly")
+}
+
+// --- newsletter2: nl2-crm-bridge ---
+
+/// Points a lead earned from an engagement event (newsletter subscribed,
+/// issue opened, link clicked) through an event scoring rule. One row per
+/// rule × lead × event key (`newsletter:<id>` or `issue:<id>`), so the same
+/// event never scores twice; `CrmLead.score` = field rules + the sum of these.
+/// `ruleId` has no foreign key on purpose: points already earned stay when
+/// the rule is deleted.
+model CrmLeadScoreEvent {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  leadId      String   @map("lead_id")
+  ruleId      String   @map("rule_id")
+  eventKey    String   @map("event_key")
+  points      Int
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  lead CrmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, leadId, eventKey])
+  @@index([leadId])
+  @@index([workspaceId])
+  @@map("crm_lead_score_events")
 }

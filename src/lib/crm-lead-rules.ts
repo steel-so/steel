@@ -32,7 +32,38 @@ function fieldValue(subject: LeadRuleSubject, field: CrmLeadRuleField): string {
       return subject.source ?? ''
     case 'city':
       return subject.city ?? ''
+    // Engagement events are not lead fields (see `isLeadEventRuleField`).
+    case 'newsletter_subscribed':
+    case 'newsletter_opened':
+    case 'newsletter_clicked':
+      return ''
   }
+}
+
+const EVENT_RULE_FIELDS: ReadonlySet<CrmLeadRuleField> = new Set([
+  'newsletter_subscribed',
+  'newsletter_opened',
+  'newsletter_clicked',
+])
+
+/** Event rules score engagement (newsletter bridge), not lead fields. */
+export function isLeadEventRuleField(field: CrmLeadRuleField): boolean {
+  return EVENT_RULE_FIELDS.has(field)
+}
+
+/**
+ * Whether an event rule matches an engagement event. `newsletter_clicked`
+ * with a value only matches a clicked URL containing it (case-insensitive).
+ */
+export function matchesLeadEventRule(
+  rule: LeadRule & { active: boolean },
+  event: { field: CrmLeadRuleField; url?: string | null },
+): boolean {
+  if (!rule.active || rule.field !== event.field) return false
+  if (rule.field !== 'newsletter_clicked') return true
+  const filter = rule.value?.trim().toLowerCase()
+  if (!filter) return true
+  return (event.url ?? '').toLowerCase().includes(filter)
 }
 
 export function matchesLeadRule(
@@ -59,7 +90,12 @@ export function computeLeadScore<
   T extends LeadRule & { points: number; active: boolean },
 >(subject: LeadRuleSubject, rules: T[]): number {
   return rules
-    .filter((rule) => rule.active && matchesLeadRule(subject, rule))
+    .filter(
+      (rule) =>
+        rule.active &&
+        !isLeadEventRuleField(rule.field) &&
+        matchesLeadRule(subject, rule),
+    )
     .reduce((total, rule) => total + rule.points, 0)
 }
 
@@ -67,7 +103,10 @@ export function findLeadRoutingOwner<
   T extends LeadRule & { ownerId: string; active: boolean },
 >(subject: LeadRuleSubject, rules: T[]): string | null {
   const match = rules.find(
-    (rule) => rule.active && matchesLeadRule(subject, rule),
+    (rule) =>
+      rule.active &&
+      !isLeadEventRuleField(rule.field) &&
+      matchesLeadRule(subject, rule),
   )
   return match?.ownerId ?? null
 }

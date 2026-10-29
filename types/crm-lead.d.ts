@@ -38,6 +38,9 @@ export type CrmLeadRuleFieldDTO =
   | 'jobTitle'
   | 'source'
   | 'city'
+  | 'newsletter_subscribed'
+  | 'newsletter_opened'
+  | 'newsletter_clicked'
 
 export type CrmLeadRuleOperatorDTO =
   | 'equals'

@@ -116,6 +116,14 @@ export function triggerTypeToDto(
       return 'on-a-schedule'
     case 'WEBHOOK':
       return 'webhook'
+    case 'NEWSLETTER_SUBSCRIBED':
+      return 'newsletter-subscribed'
+    case 'NEWSLETTER_UNSUBSCRIBED':
+      return 'newsletter-unsubscribed'
+    case 'NEWSLETTER_LINK_CLICKED':
+      return 'newsletter-link-clicked'
+    case 'NEWSLETTER_ISSUE_OPENED':
+      return 'newsletter-issue-opened'
   }
 }
 
@@ -138,5 +146,13 @@ export function triggerTypeToPrisma(
       return 'ON_A_SCHEDULE'
     case 'webhook':
       return 'WEBHOOK'
+    case 'newsletter-subscribed':
+      return 'NEWSLETTER_SUBSCRIBED'
+    case 'newsletter-unsubscribed':
+      return 'NEWSLETTER_UNSUBSCRIBED'
+    case 'newsletter-link-clicked':
+      return 'NEWSLETTER_LINK_CLICKED'
+    case 'newsletter-issue-opened':
+      return 'NEWSLETTER_ISSUE_OPENED'
   }
 }
