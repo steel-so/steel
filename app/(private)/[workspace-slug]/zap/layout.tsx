@@ -1,5 +1,6 @@
 import {
   AiMagicIcon,
+  BotIcon,
   ChartHistogramIcon,
   Chatting01Icon,
   DashboardSquare01Icon,
@@ -67,6 +68,9 @@ export default async function ZapLayout({
           </NavItem>
           <NavItem href={`${base}/campanhas-ia`} icon={AiMagicIcon}>
             Campanhas de IA
+          </NavItem>
+          <NavItem href={`${base}/chatbots`} icon={BotIcon}>
+            Chatbots
           </NavItem>
         </NavGroup>
         <NavGroup>

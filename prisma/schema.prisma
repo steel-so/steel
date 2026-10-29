@@ -79,6 +79,7 @@ model User {
   whatsappGroupMessagesSent           WhatsAppGroupMessage[]        @relation("WhatsAppGroupMessageSender")
   whatsappAiKnowledgeDocumentsCreated WhatsAppAiKnowledgeDocument[] @relation("WhatsAppAiKnowledgeDocumentCreatedBy")
   whatsappConversationEventsActed     WhatsAppConversationEvent[]   @relation("WhatsAppConversationEventActor")
+  whatsappChatbotsCreated             WhatsAppChatbot[]             @relation("WhatsAppChatbotCreator")
   whatsappAgentPresence               WhatsAppAgentPresence[]       @relation("WhatsAppAgentPresenceUser")
   whatsappPhoneCalls                  WhatsAppPhoneCall[]
   voiceAgentRunAs                     VoiceAgentSettings[]
@@ -460,6 +461,8 @@ model Workspace {
   voiceAgentRoutes             VoiceAgentRoute[]
   whatsappMessages             WhatsAppMessage[]
   whatsappQuickReplies         WhatsAppQuickReply[]
+  whatsappChatbots             WhatsAppChatbot[]
+  whatsappChatbotSessions      WhatsAppChatbotSession[]
   whatsappTeams                WhatsAppTeam[]
   whatsappBroadcastLists       WhatsAppBroadcastList[]
   whatsappTemplates            WhatsAppTemplate[]
@@ -1193,6 +1196,7 @@ model WhatsAppConnection {
   groups         WhatsAppGroup[]
   aiCampaigns    WhatsAppAiCampaign[]
   costEntries    WhatsAppCostEntry[]
+  chatbots       WhatsAppChatbot[]
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
@@ -1313,6 +1317,7 @@ model WhatsAppConversation {
   phoneCalls   WhatsAppPhoneCall[]
   sdTickets    SdTicket[]
   slaCycles    WhatsAppSlaCycle[]
+  chatbotSessions WhatsAppChatbotSession[]
 
   @@index([workspaceId, status, lastMessageAt])
   @@index([workspaceId, deletedAt, archivedAt, pinnedAt])
@@ -1504,6 +1509,9 @@ enum WhatsAppConversationEventKind {
   AI_ACTION
   /// SLA breached (ADR 0048); `reason` says which target.
   SLA_BREACHED
+  /// A chatbot flow handed the conversation to a person or to the AI;
+  /// `reason` carries the destination.
+  CHATBOT_HANDOFF
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1525,6 +1533,8 @@ enum WhatsAppConversationEventSource {
   DISTRIBUTION
   /// SLA engine (ADR 0048).
   SLA
+  /// Chatbot flow (Z2).
+  CHATBOT
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -10537,6 +10547,102 @@ model WhatsAppAdSpend {
   @@index([workspaceId, sourceId])
   @@index([workspaceId, periodStart, periodEnd])
   @@map("whatsapp_ad_spends")
+}
+
+// nov: z2-chatbot-builder
+
+enum WhatsAppChatbotStatus {
+  /// Never published, or unpublished: answers nothing.
+  DRAFT
+  /// Published and running on inbound conversations.
+  ACTIVE
+  /// Published but switched off; running sessions finish, no new ones start.
+  PAUSED
+}
+
+enum WhatsAppChatbotTrigger {
+  /// Every conversation that opens (new or reopened) without an assignee.
+  NEW_CONVERSATION
+  /// The first message contains one of the keywords.
+  KEYWORD
+  /// A conversation that opens outside the business hours of the workspace.
+  OUTSIDE_BUSINESS_HOURS
+}
+
+enum WhatsAppChatbotSessionStatus {
+  RUNNING
+  HANDED_OFF_HUMAN
+  HANDED_OFF_AI
+  COMPLETED
+  /// The contact stopped answering for longer than the bot's TTL.
+  EXPIRED
+  /// A person took the conversation over while the flow was running.
+  CANCELLED
+  /// The flow could not continue (loop guard, provider failure...).
+  FAILED
+}
+
+/// Visual chatbot (Z2): a no-code flow that answers WhatsApp conversations
+/// before a person or the AI does. `draft` is edited freely; `published` is
+/// the frozen copy the runtime reads (null until the first publish).
+model WhatsAppChatbot {
+  id                String                 @id @default(cuid())
+  workspaceId       String                 @map("workspace_id")
+  /// Null = the bot answers on every connection of the workspace.
+  connectionId      String?                @map("connection_id")
+  name              String
+  description       String?
+  status            WhatsAppChatbotStatus  @default(DRAFT)
+  triggerKind       WhatsAppChatbotTrigger @default(NEW_CONVERSATION) @map("trigger_kind")
+  keywords          String[]               @default([])
+  /// Minutes of silence after which a running session expires.
+  sessionTtlMinutes Int                    @default(720) @map("session_ttl_minutes")
+  draft             Json
+  published         Json?
+  publishedVersion  Int                    @default(0) @map("published_version")
+  publishedAt       DateTime?              @map("published_at")
+  createdByUserId   String?                @map("created_by_user_id")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  workspace  Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection WhatsAppConnection?      @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  createdBy  User?                    @relation("WhatsAppChatbotCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  sessions   WhatsAppChatbotSession[]
+
+  @@index([workspaceId, status])
+  @@index([connectionId])
+  @@map("whatsapp_chatbots")
+}
+
+/// One run of a chatbot over a conversation. A conversation has at most one
+/// RUNNING session (partial unique index created in the migration).
+model WhatsAppChatbotSession {
+  id             String                       @id @default(cuid())
+  workspaceId    String                       @map("workspace_id")
+  chatbotId      String                       @map("chatbot_id")
+  conversationId String                       @map("conversation_id")
+  status         WhatsAppChatbotSessionStatus @default(RUNNING)
+  /// Version of the published flow this session runs (a republish does not
+  /// change a session in flight).
+  botVersion     Int                          @map("bot_version")
+  /// Engine state: current node, what the bot waits for, variables.
+  state          Json
+  /// Frozen copy of the flow this session runs.
+  definition     Json
+  endReason      String?                      @map("end_reason")
+  startedAt      DateTime                     @default(now()) @map("started_at")
+  lastActivityAt DateTime                     @default(now()) @map("last_activity_at")
+  endedAt        DateTime?                    @map("ended_at")
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  chatbot      WhatsAppChatbot      @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, status])
+  @@index([chatbotId, status])
+  @@index([workspaceId, startedAt])
+  @@map("whatsapp_chatbot_sessions")
 }
 
 // nov: t1-nps-whatsapp ─────────────────────────────────────────────────────

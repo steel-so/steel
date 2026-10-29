@@ -4,6 +4,11 @@ import {
   AiCampaignVariablesSchema,
 } from '@/src/schemas/whatsapp-ai-campaign.schema'
 import { WhatsAppButtonSchema } from '@/src/schemas/whatsapp-button.schema'
+import {
+  CHATBOT_STATUSES,
+  CHATBOT_TRIGGERS,
+  ChatbotFlowSchema,
+} from '@/src/schemas/whatsapp-chatbot.schema'
 import { dto } from '../common'
 
 /**
@@ -172,6 +177,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_GUARDRAIL_HANDOFF',
         'AI_ACTION',
         'SLA_BREACHED',
+        'CHATBOT_HANDOFF',
       ]),
       source: z.enum([
         'AGENT',
@@ -183,6 +189,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_CAMPAIGN',
         'DISTRIBUTION',
         'SLA',
+        'CHATBOT',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -1422,5 +1429,146 @@ export const WhatsAppAdReportDTO = dto(
         sourceUrl: z.string().nullable(),
       }),
     ),
+  }),
+)
+
+/* --------------------------------- chatbots ------------------------------ */
+
+const ChatbotStats = z.object({
+  sessions: z
+    .number()
+    .int()
+    .meta({ description: 'Sessões dos últimos 30 dias.' }),
+  running: z.number().int(),
+  completed: z.number().int(),
+  handedOffHuman: z.number().int(),
+  handedOffAi: z.number().int(),
+  expired: z.number().int(),
+  cancelled: z.number().int(),
+  failed: z.number().int(),
+})
+
+const ChatbotBase = z.object({
+  id: id('cm0chatbot'),
+  workspaceId: z.string(),
+  connectionId: z
+    .string()
+    .nullable()
+    .meta({ description: 'Conexão do bot; `null` = todas as do workspace.' }),
+  name: z.string(),
+  description: z.string().nullable(),
+  status: z.enum(CHATBOT_STATUSES),
+  triggerKind: z.enum(CHATBOT_TRIGGERS),
+  keywords: z.array(z.string()),
+  sessionTtlMinutes: z.number().int(),
+  publishedVersion: z
+    .number()
+    .int()
+    .meta({ description: '0 = nunca publicado.' }),
+  publishedAt: nullableDateTime(),
+  hasUnpublishedChanges: z.boolean(),
+  createdAt: dateTime(),
+  updatedAt: dateTime(),
+})
+
+export const WhatsAppChatbotDTO = dto(
+  'WhatsAppChatbot',
+  ChatbotBase.extend({
+    flow: ChatbotFlowSchema.meta({
+      description:
+        'Rascunho do fluxo (grafo `nodes` + `edges` no formato do React Flow). O fluxo publicado é uma cópia congelada dele.',
+    }),
+  }),
+)
+
+export const WhatsAppChatbotListItemDTO = dto(
+  'WhatsAppChatbotListItem',
+  ChatbotBase.extend({
+    nodeCount: z.number().int(),
+    stats: ChatbotStats,
+  }),
+)
+
+export const WhatsAppChatbotFlowIssueDTO = dto(
+  'WhatsAppChatbotFlowIssue',
+  z.object({
+    severity: z.enum(['error', 'warning']),
+    nodeId: z.string().optional(),
+    message: z.string(),
+  }),
+)
+
+export const WhatsAppChatbotPublishDTO = dto(
+  'WhatsAppChatbotPublish',
+  z.object({
+    chatbot: WhatsAppChatbotDTO,
+    issues: z.array(WhatsAppChatbotFlowIssueDTO).meta({
+      description: 'Avisos que não impedem a publicação.',
+    }),
+  }),
+)
+
+export const WhatsAppChatbotSessionDTO = dto(
+  'WhatsAppChatbotSession',
+  z.object({
+    id: z.string(),
+    chatbotId: z.string(),
+    conversationId: z.string(),
+    contactName: z.string().nullable(),
+    contactPhone: z.string().nullable(),
+    status: z.enum([
+      'RUNNING',
+      'HANDED_OFF_HUMAN',
+      'HANDED_OFF_AI',
+      'COMPLETED',
+      'EXPIRED',
+      'CANCELLED',
+      'FAILED',
+    ]),
+    botVersion: z.number().int(),
+    endReason: z.string().nullable(),
+    variables: z.record(z.string(), z.string()),
+    startedAt: dateTime(),
+    lastActivityAt: dateTime(),
+    endedAt: nullableDateTime(),
+  }),
+)
+
+export const WhatsAppChatbotSimulationDTO = dto(
+  'WhatsAppChatbotSimulation',
+  z.object({
+    state: z
+      .unknown()
+      .meta({ description: 'Estado opaco: devolva-o no próximo passo.' }),
+    outputs: z.array(
+      z.discriminatedUnion('kind', [
+        z.object({ kind: z.literal('text'), text: z.string() }),
+        z.object({
+          kind: z.literal('menu'),
+          nodeId: z.string(),
+          text: z.string(),
+          buttons: z
+            .array(z.object({ id: z.string(), label: z.string() }))
+            .nullable(),
+          numbered: z.string(),
+        }),
+      ]),
+    ),
+    status: z.enum([
+      'WAITING',
+      'COMPLETED',
+      'HANDED_OFF_HUMAN',
+      'HANDED_OFF_AI',
+      'FAILED',
+    ]),
+    handoff: z
+      .object({
+        teamId: z.string().optional(),
+        userId: z.string().optional(),
+        instruction: z.string().optional(),
+        reason: z.string().optional(),
+      })
+      .nullable(),
+    closeConversation: z.boolean(),
   }),
 )

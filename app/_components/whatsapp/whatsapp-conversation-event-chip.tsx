@@ -34,6 +34,11 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
     // `reason` says which target: "Primeira resposta" or "Resolução".
     case 'SLA_BREACHED':
       return 'SLA estourado: responsáveis avisados'
+    // `reason` = destination: team, "Atendente", "Fila de atendimento" or "IA".
+    case 'CHATBOT_HANDOFF':
+      return event.reason
+        ? `Chatbot passou a conversa para: ${event.reason}`
+        : 'Chatbot passou a conversa adiante'
     case 'BUTTON_CLICKED':
       return event.reason
         ? `O contato clicou em “${event.reason}”`
@@ -51,6 +56,7 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       if (event.source === 'INACTIVITY') {
         return 'Conversa fechada automaticamente por inatividade'
       }
+      if (event.source === 'CHATBOT') return 'Conversa encerrada pelo chatbot'
       return `Conversa fechada${byActor(event)}${closeClassification(event)}`
     case 'REOPENED':
       if (event.source === 'CONTACT') {
@@ -68,6 +74,7 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   if (!event.reason) return null
   // The click's label is already in the headline.
   if (event.kind === 'BUTTON_CLICKED') return null
+  if (event.kind === 'CHATBOT_HANDOFF') return null
   if (event.kind === 'SENTIMENT_ALERT') return event.reason
   // The guardrail note says why the AI stopped.
   if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason

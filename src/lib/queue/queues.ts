@@ -96,6 +96,8 @@ import {
   type WhatsappBroadcastJobPayload,
   type WhatsappButtonActionsJob,
   type WhatsappButtonActionsJobPayload,
+  type WhatsappChatbotJob,
+  type WhatsappChatbotJobPayload,
   type WhatsappConversationLifecycleJob,
   type WhatsappConversationLifecycleJobPayload,
   type WhatsappMediaJob,
@@ -1238,6 +1240,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.SendingDomains]: getSendingDomainsQueue,
   [QueueName.CrmNewsletter]: getCrmNewsletterQueue,
   [QueueName.CrmNewsletterAutomation]: getCrmNewsletterAutomationQueue,
+  [QueueName.WhatsappChatbot]: getWhatsappChatbotQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1394,5 +1397,26 @@ export function getCrmNewsletterAutomationQueue(): Queue<
     CrmNewsletterAutomationJobPayload[CrmNewsletterAutomationJob],
     unknown,
     CrmNewsletterAutomationJob
+  >
+}
+
+let whatsappChatbotQueue: Queue | null = null
+
+/** Chatbot flow steps (Z2). */
+export function getWhatsappChatbotQueue(): Queue<
+  WhatsappChatbotJobPayload[WhatsappChatbotJob],
+  unknown,
+  WhatsappChatbotJob
+> {
+  if (!whatsappChatbotQueue) {
+    whatsappChatbotQueue = new Queue(QueueName.WhatsappChatbot, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return whatsappChatbotQueue as Queue<
+    WhatsappChatbotJobPayload[WhatsappChatbotJob],
+    unknown,
+    WhatsappChatbotJob
   >
 }

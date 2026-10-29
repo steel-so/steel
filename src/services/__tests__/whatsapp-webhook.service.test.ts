@@ -61,6 +61,10 @@ vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
 }))
 
+vi.mock('@/src/services/whatsapp-chatbot-runtime.service', () => ({
+  WhatsAppChatbotRuntimeService: { claimInbound: vi.fn() },
+}))
+
 const { mediaAdd, aiReplyAdd, sentimentAdd } = vi.hoisted(() => ({
   mediaAdd: vi.fn(async () => undefined),
   aiReplyAdd: vi.fn(async () => undefined),
@@ -81,6 +85,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppChatbotRuntimeService } from '@/src/services/whatsapp-chatbot-runtime.service'
 import { CrmNewsletterWhatsAppReceiptsService } from '../crm-newsletter-whatsapp-receipts.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppSlaService } from '../whatsapp-sla.service'
@@ -125,6 +130,90 @@ describe('WhatsAppWebhookService', () => {
     )
     // Padrão: contato sem conversa fechada para reabrir.
     mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(ok(null))
+    // Padrão: nenhum chatbot assume a mensagem.
+    vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockResolvedValue(
+      ok({ engaged: false }),
+    )
+  })
+
+  describe('visual chatbot (Z2)', () => {
+    function arrangeNewConversation() {
+      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+      mockedContactRepo.upsertByWaId.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1', workspaceId: 'ws1' })),
+      )
+      mockedAiConfigRepo.findByWorkspace.mockResolvedValue(
+        ok(createFakeWhatsAppAiConfig({ workspaceId: 'ws1', active: true })),
+      )
+      mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
+      const created = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        workspaceId: 'ws1',
+        contactId: 'contact1',
+        aiActive: true,
+      })
+      mockedConversationRepo.create.mockResolvedValue(ok(created))
+      mockedConversationRepo.findById.mockResolvedValue(ok(created))
+      mockedMessageRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppMessage({ id: 'msg1', conversationId: 'conv1' })),
+      )
+    }
+
+    beforeEach(() => {
+      aiReplyAdd.mockClear()
+      vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockClear()
+    })
+
+    it('should keep the AI quiet when a chatbot owns the message', async () => {
+      arrangeNewConversation()
+      vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockResolvedValue(
+        ok({ engaged: true }),
+      )
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(WhatsAppChatbotRuntimeService.claimInbound).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg1',
+          text: 'Olá!',
+          opening: true,
+        }),
+      )
+      expect(aiReplyAdd).not.toHaveBeenCalled()
+    })
+
+    it('should let the AI answer when no chatbot takes the message', async () => {
+      arrangeNewConversation()
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(aiReplyAdd).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not break the webhook when the chatbot claim fails', async () => {
+      arrangeNewConversation()
+      vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockResolvedValue(
+        err(databaseError('x')),
+      )
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(aiReplyAdd).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not offer the message to the chatbot on a ServiceDesk connection', async () => {
+      arrangeNewConversation()
+
+      expectOk(
+        await WhatsAppWebhookService.ingestInboundMessage(
+          baseInbound({
+            connection: { ...connection, module: 'SERVICE_DESK' },
+          }),
+        ),
+      )
+
+      expect(WhatsAppChatbotRuntimeService.claimInbound).not.toHaveBeenCalled()
+    })
   })
 
   describe('closed conversation reopening', () => {

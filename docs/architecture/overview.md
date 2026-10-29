@@ -395,6 +395,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 | `whatsapp-media` | baixa mídia recebida | por mensagem |
 | `whatsapp-ai-reply` | resposta automática por IA | por mensagem |
 | `whatsapp-sentiment` | análise de sentimento | por mensagem |
+| `whatsapp-chatbot` | passo de um fluxo do chatbot visual (concorrência 1) — ver [Chatbot visual](../whatsapp-chatbot.md) | por mensagem |
 | `whatsapp-broadcast` | envio de transmissões + tick de agendadas; também as **Campanhas de IA** — `send-ai-campaign-next` (um envio por vez, encadeado pelo intervalo da campanha e travado pelo `runToken`, espera o horário de atendimento) e `ai-campaign-follow-up` (ação "retomar depois" da IA) — ver [ADR 0045](../adr/0045-whatsapp-ai-campaigns-allowlisted-actions.md) | sob demanda + a cada 5 min |
 | `whatsapp-conversation-lifecycle` | `auto-close-inactive`: fecha conversas inativas (janela por workspace, padrão 24h) a cada 15 min; `distribution-tick`: entrega a fila sem responsável aos atendentes (workspaces com a distribuição ligada) e envia o lembrete "ainda sem atendente" — ver [ADR 0047](../adr/0047-whatsapp-queue-alerts-and-automatic-distribution.md) | a cada 15 min / a cada 1 min |
 | `whatsapp-conversation-lifecycle` | fecha conversas inativas (janela por workspace, padrão 24h) em `auto-close-inactive`; e `sla-tick`, que avisa e marca estouros do SLA de primeira resposta/resolução do atendimento ([ADR 0048](../adr/0048-whatsapp-sla-first-response-and-resolution.md)) | a cada 15 min / a cada 1 min |

@@ -51,6 +51,7 @@ export const QueueName = {
   SendingDomains: 'sending-domains',
   CrmNewsletter: 'crm-newsletter',
   CrmNewsletterAutomation: 'crm-newsletter-automation',
+  WhatsappChatbot: 'whatsapp-chatbot',
   CrmCnpjEnrichment: 'crm-cnpj-enrichment',
 } as const
 
@@ -1039,6 +1040,26 @@ export type CrmNewsletterAutomationJobPayload = {
   [CrmNewsletterAutomationJob.WelcomeTick]: Record<string, never>
   [CrmNewsletterAutomationJob.ReengagementMonthly]: Record<string, never>
   [CrmNewsletterAutomationJob.ReengagementResolve]: Record<string, never>
+}
+
+/**
+ * Chatbot flow step (Z2): one inbound message of a running session. The
+ * queue runs with concurrency 1 so two answers of the same contact never
+ * advance a session at the same time.
+ */
+export const WhatsappChatbotJob = {
+  RunStep: 'run-chatbot-step',
+} as const
+
+export type WhatsappChatbotJob =
+  (typeof WhatsappChatbotJob)[keyof typeof WhatsappChatbotJob]
+
+export type WhatsappChatbotJobPayload = {
+  [WhatsappChatbotJob.RunStep]: {
+    sessionId: string
+    /** The inbound message that triggered the step. */
+    messageId: string
+  }
 }
 
 /**
