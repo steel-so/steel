@@ -31,10 +31,11 @@ describe('chatbot editor model', () => {
     const xy = flowToXy(flow)
     const menu = xy.nodes.find((n) => n.id === 'menu')
     if (menu?.type === 'menu') {
+      const data = menu.data as { options: { id: string }[] }
       menu.data = {
         ...menu.data,
-        options: menu.data.options.filter((o) => o.id !== 'sales'),
-      }
+        options: data.options.filter((o) => o.id !== 'sales'),
+      } as typeof menu.data
     }
     const edges = [
       ...xy.edges,

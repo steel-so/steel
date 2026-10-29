@@ -335,7 +335,8 @@ describe('callChatbotWebhook', () => {
 
   it('posts JSON and parses the answer', async () => {
     const fetchMock = vi.fn(
-      async () => new Response('{"ok":true}', { status: 200 }),
+      async (..._args: unknown[]) =>
+        new Response('{"ok":true}', { status: 200 }),
     )
     vi.stubGlobal('fetch', fetchMock)
     const result = await callChatbotWebhook(request)
@@ -363,7 +364,9 @@ describe('callChatbotWebhook', () => {
   })
 
   it('posts without a body when none is configured', async () => {
-    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }))
+    const fetchMock = vi.fn(
+      async (..._args: unknown[]) => new Response('{}', { status: 200 }),
+    )
     vi.stubGlobal('fetch', fetchMock)
     await callChatbotWebhook({ ...request, body: undefined })
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit
