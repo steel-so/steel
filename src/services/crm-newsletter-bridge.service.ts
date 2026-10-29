@@ -80,7 +80,7 @@ function summaryOf(
     case 'issue_opened':
       return `Abriu ${issue ? issueLabel(issue) : 'uma edição'} da newsletter ${newsletter}`
     case 'link_clicked':
-      return `Clicou em um link d${issue ? issueLabel(issue) : 'uma edição'} da newsletter ${newsletter}`
+      return `Clicou em um link ${issue ? `d${issueLabel(issue)}` : 'de uma edição'} da newsletter ${newsletter}`
   }
 }
 

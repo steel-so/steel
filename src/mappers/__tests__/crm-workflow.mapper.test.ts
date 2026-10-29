@@ -74,6 +74,10 @@ describe('triggerType conversion', () => {
       'launch-manually',
       'on-a-schedule',
       'webhook',
+      'newsletter-subscribed',
+      'newsletter-unsubscribed',
+      'newsletter-link-clicked',
+      'newsletter-issue-opened',
     ] as const
     for (const type of types) {
       expect(triggerTypeToDto(triggerTypeToPrisma(type))).toBe(type)

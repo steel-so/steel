@@ -22,6 +22,7 @@ vi.mock('@/src/repositories/crm-newsletter-subscriber.repository')
 vi.mock('@/src/repositories/crm-email-opt-out.repository')
 vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/lib/axiom/audit')
+vi.mock('@/src/services/crm-newsletter-bridge.service')
 vi.mock('../crm-newsletter-confirmation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../crm-newsletter-confirmation')>()),
   sendNewsletterConfirmation: vi.fn(),
@@ -37,6 +38,7 @@ import {
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CRM_NEWSLETTER_DEFAULT_CONSENT_TEXT } from '@/src/schemas/crm-newsletter.schema'
+import { CrmNewsletterBridge } from '../crm-newsletter-bridge.service'
 import { sendNewsletterConfirmation } from '../crm-newsletter-confirmation'
 import {
   PREFERENCES_CONSENT_TEXT,
@@ -50,6 +52,7 @@ const workspaceRepo = vi.mocked(WorkspaceRepository)
 const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
 const sendConfirmation = vi.mocked(sendNewsletterConfirmation)
 const audit = vi.mocked(auditMutation)
+const bridge = vi.mocked(CrmNewsletterBridge)
 
 const WS = 'ws1'
 const now = new Date('2026-10-28T12:00:00.000Z')
@@ -142,6 +145,10 @@ describe('subscribe', () => {
     expect(audit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'opt_in', actorId: null }),
     )
+    expect(bridge.emit).toHaveBeenCalledWith({
+      type: 'subscribed',
+      subscriberId: 'new',
+    })
   })
 
   it('activates right away without double opt-in', async () => {
@@ -377,6 +384,10 @@ describe('confirm', () => {
     expect(audit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'confirm' }),
     )
+    expect(bridge.emit).toHaveBeenCalledWith({
+      type: 'confirmed',
+      subscriberId: 's1',
+    })
   })
 
   it('is idempotent for ACTIVE (also with an expired link)', async () => {
@@ -580,6 +591,10 @@ describe('unsubscribe', () => {
         meta: expect.objectContaining({ source: 'ONE_CLICK' }),
       }),
     )
+    expect(bridge.emit).toHaveBeenCalledWith({
+      type: 'unsubscribed',
+      subscriberId: 's1',
+    })
   })
 
   it('is idempotent and works without a recipient', async () => {
@@ -592,6 +607,7 @@ describe('unsubscribe', () => {
     )
     expect(result.alreadyUnsubscribed).toBe(true)
     expect(repo.update).not.toHaveBeenCalled()
+    expect(bridge.emit).not.toHaveBeenCalled()
     expect(repo.markRecipientUnsubscribed).not.toHaveBeenCalled()
   })
 
@@ -748,6 +764,8 @@ describe('preferences', () => {
     expect(audit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'update' }),
     )
+    expect(bridge.emitMany).toHaveBeenCalledWith('unsubscribed', ['sa'])
+    expect(bridge.emitMany).toHaveBeenCalledWith('subscribed', ['sb', 'new'])
   })
 
   it('lifts a previous "sair de tudo" when something is switched on', async () => {
