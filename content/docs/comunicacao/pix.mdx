@@ -1,0 +1,89 @@
+---
+title: Cobrança Pix na conversa
+description: Mande o Pix "copia e cola" para o contato direto na conversa, acompanhe o pagamento e veja a baixa na conversa e na oportunidade do CRM.
+section: comunicacao
+order: 12
+---
+
+Com o Pix ligado, você cobra o contato sem sair da conversa: ele recebe o
+valor e o código **Pix copia e cola** no WhatsApp, e quando o pagamento
+chega a própria conversa avisa.
+
+## Ligar o Pix
+
+Um administrador liga em **WhatsApp › Configurações › Atendimento › Cobrar
+via Pix na conversa**. O recurso vem **desligado** em todo workspace. Ali
+também se define a **validade padrão** da cobrança (60 minutos, se ninguém
+mudar).
+
+> O provedor de Pix (a instituição que emite e liquida a cobrança) ainda não
+> foi contratado. Por enquanto as cobranças usam um **provedor de teste**: o
+> código parece de verdade, mas nenhum banco o liquida. Um administrador
+> consegue testar o fluxo todo clicando em **Simular pagamento** na cobrança.
+> A tela de configurações avisa enquanto isso vale.
+
+## Cobrar
+
+1. Abra a conversa e clique no ícone de cobrança, no topo (**Cobrar via
+   Pix**).
+2. Informe o **valor** (por exemplo `1.234,50`), **o que está sendo
+   cobrado** (até 140 caracteres) e a **validade**.
+3. Se quiser, escolha a **oportunidade do CRM** a que a cobrança pertence.
+4. Clique em **Enviar cobrança**.
+
+O contato recebe duas mensagens: o resumo (valor, descrição e até quando
+vale) e, sozinho, o código **copia e cola**, para copiar com um toque e colar
+no app do banco.
+
+O botão fica desabilitado quando a conversa está fechada, quando a IA está
+atendendo ou fora do horário de atendimento — as mesmas regras do envio de
+mensagens. Você precisa da permissão de **criar** em conversas.
+
+## Acompanhar
+
+Cada cobrança aparece na conversa como um card, com o estado:
+
+| Estado | Quando |
+| --- | --- |
+| Aguardando pagamento | Foi enviada e ainda vale |
+| Pago | O pagamento chegou |
+| Vencida | Passou da validade sem pagamento |
+| Cancelada | Alguém cancelou |
+
+No card de uma cobrança que aguarda pagamento você pode **copiar o código**,
+ver o **QR** e **cancelar a cobrança** (o código deixa de funcionar). Só dá
+para cancelar o que ainda não foi pago.
+
+## A baixa do pagamento
+
+Quando o pagamento chega, em segundos:
+
+- o card vira **Pago**, com a data e o nome de quem pagou;
+- a conversa ganha o aviso **Pix recebido: R$ valor · descrição**;
+- se a cobrança está ligada a uma oportunidade do CRM, a oportunidade
+  recebe a anotação **Pix recebido** e mostra a cobrança paga na seção
+  **Cobranças Pix**.
+
+Se o contato pagar um valor diferente do cobrado, o aviso mostra os dois
+valores. Um pagamento que chega depois do vencimento ou do cancelamento
+também dá baixa. Avisos repetidos do mesmo pagamento não duplicam nada.
+
+## A IA cobrando
+
+Nas [campanhas de IA](/docs/comunicacao/campanhas-ia) existe a ação **Enviar
+cobrança Pix**. Você define o **valor** e a **descrição**, e escreve **quando**
+a IA pode usar (por exemplo, "o cliente aceitou a proposta"). A IA só decide
+se cobra; o valor nunca é ela quem escolhe. A cobrança aparece na conversa
+marcada como "enviada pela IA" e o Pix precisa estar ligado no workspace — do
+contrário a ação falha e o motivo fica em **Ações da IA**.
+
+## Quem faz o quê
+
+- **Ligar e desligar o Pix, simular pagamento**: proprietários e
+  administradores.
+- **Cobrar**: quem pode criar em conversas e enxerga a conversa.
+- **Cancelar**: quem pode editar conversas.
+- **Ver as cobranças de uma oportunidade**: quem enxerga oportunidades no
+  CRM.
+
+Cada cobrança, cancelamento e pagamento fica registrado na auditoria.
