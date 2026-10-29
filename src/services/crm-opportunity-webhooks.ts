@@ -7,6 +7,7 @@ import {
   crmOpportunityStageChangedData,
 } from '@/src/lib/webhooks/payloads'
 import { CrmPipelineStageRepository } from '@/src/repositories/crm-pipeline.repository'
+import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import { emitWebhookEvent } from './webhook-emitter'
 
 /**
@@ -46,6 +47,13 @@ export async function emitCrmOpportunityStageWebhooks(input: {
     const fromStage = from.ok ? stageRef(from.value) : null
     const toStage = stageRef(to.value)
 
+    void dispatchSteelAgentEvent(workspaceId, 'crm.opportunity.stage_changed', {
+      opportunityId: after.id,
+      name: after.name,
+      ownerId: after.ownerId,
+      fromStage,
+      toStage,
+    })
     await emitWebhookEvent(
       workspaceId,
       'crm.opportunity.stage_changed',

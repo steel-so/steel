@@ -8,6 +8,9 @@ import { databaseError, notFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/services/crm-notifications')
+vi.mock('@/src/services/steel-agent-dispatcher', () => ({
+  dispatchSteelAgentEvent: vi.fn(),
+}))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }))
@@ -41,6 +44,7 @@ import {
   notifyCrmProposalViewed,
 } from '../crm-notifications'
 import { CrmProposalService } from '../crm-proposal.service'
+import { dispatchSteelAgentEvent } from '../steel-agent-dispatcher'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
 const mockedProposalRepo = vi.mocked(CrmProposalRepository)
@@ -244,6 +248,11 @@ describe('CrmProposalService', () => {
         workspaceId: expect.any(String),
         proposal: expect.objectContaining({ id: 'p1' }),
       })
+      expect(dispatchSteelAgentEvent).toHaveBeenCalledWith(
+        expect.any(String),
+        'crm.proposal.viewed',
+        expect.objectContaining({ proposalId: 'p1' }),
+      )
     })
 
     it('should not notify on later views or when the status write fails', async () => {

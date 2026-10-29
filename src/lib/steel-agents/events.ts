@@ -53,6 +53,37 @@ export const STEEL_AGENT_EVENTS = [
     description:
       'Quando a IA proativa detecta que o sentimento de uma conversa caiu.',
   },
+  {
+    key: 'crm.opportunity.stage_changed',
+    module: 'CRM',
+    label: 'Oportunidade mudou de etapa',
+    description: 'Quando uma oportunidade do CRM avança ou volta de etapa.',
+  },
+  {
+    key: 'crm.proposal.viewed',
+    module: 'CRM',
+    label: 'Proposta visualizada',
+    description: 'Quando o cliente abre uma proposta pela primeira vez.',
+  },
+  {
+    key: 'sd.sla.at_risk',
+    module: 'SERVICE_DESK',
+    label: 'SLA perto de estourar',
+    description:
+      'Quando o prazo de 1ª resposta ou de resolução de um chamado entra na faixa de risco.',
+  },
+  {
+    key: 'sd.ticket.reopened',
+    module: 'SERVICE_DESK',
+    label: 'Chamado reaberto',
+    description: 'Quando um chamado resolvido ou fechado volta a ser atendido.',
+  },
+  {
+    key: 'zap.message.received',
+    module: 'COMMUNICATION',
+    label: 'Mensagem recebida',
+    description: 'Quando um contato envia uma mensagem no WhatsApp.',
+  },
 ] as const satisfies readonly {
   key: string
   module: ModuleKind

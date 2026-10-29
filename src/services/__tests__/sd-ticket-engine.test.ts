@@ -21,6 +21,9 @@ vi.mock('@/src/repositories/sd-approval-round.repository')
 vi.mock('@/src/repositories/sd-change-window.repository')
 vi.mock('@/src/repositories/sd-change-schedule.repository')
 vi.mock('@/src/lib/servicedesk/realtime')
+vi.mock('@/src/services/steel-agent-dispatcher', () => ({
+  dispatchSteelAgentEvent: vi.fn(),
+}))
 vi.mock('@/src/services/sd-notification.service', () => ({
   notifySdEvent: vi.fn(async () => ({ ok: true, value: {} })),
 }))
@@ -60,6 +63,7 @@ import {
   selectSdSlaPolicy,
 } from '../sd-ticket-engine'
 import { recordSdTicketEvent } from '../sd-ticket-event-recorder'
+import { dispatchSteelAgentEvent } from '../steel-agent-dispatcher'
 import { emitWebhookEvent } from '../webhook-emitter'
 
 const ctxRepo = vi.mocked(SdTicketContextRepository)
@@ -2132,6 +2136,11 @@ describe('changePhase', () => {
       'ticket.reopened',
     ])
     expect(events[0].actorKind).toBe('SYSTEM')
+    expect(dispatchSteelAgentEvent).toHaveBeenCalledWith(
+      t.workspaceId,
+      'sd.ticket.reopened',
+      expect.objectContaining({ ticketId: t.id, reopenCount: 2 }),
+    )
   })
 
   it('propagates repository update errors', async () => {
