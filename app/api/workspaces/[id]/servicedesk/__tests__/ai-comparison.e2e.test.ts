@@ -54,7 +54,7 @@ describe('ServiceDesk AI vs. technician panel', () => {
   it('rejects a period outside 7, 30 and 90 days', async () => {
     const { workspace, agent } = await setup()
     const res = await getJson(url(workspace.id, '?days=15'), agent.cookie)
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
     expect((await res.json()).error.code).toBe('VALIDATION_ERROR')
   })
 
