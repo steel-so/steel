@@ -225,6 +225,7 @@ const RUN: SteelAgentRunDTO = {
   costUsd: 0.01,
   isTest: true,
   rerunOfId: null,
+  versionId: null,
   createdAt: '2026-10-08T12:00:00.000Z',
 }
 
@@ -245,6 +246,10 @@ const AGENT: SteelAgentDTO = {
   lastRunAt: null,
   nextRunAt: null,
   tools: [],
+  evalSetId: null,
+  evalMinPassRate: 0.8,
+  publishedVersionId: null,
+  challengerVersionId: null,
   lastRun: null,
   createdAt: '2026-10-08T12:00:00.000Z',
   updatedAt: '2026-10-08T12:00:00.000Z',
