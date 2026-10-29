@@ -1891,3 +1891,16 @@ export const crmNewsletterPollNotFound = (): AppError =>
 export const crmNewsletterWhatsappUnavailable = (
   message = 'O envio no WhatsApp não está disponível para esta edição',
 ): AppError => appError('CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE', message)
+
+// newsletter2 nl2-automation: welcome series.
+export const crmNewsletterWelcomeStepNotFound = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND',
+    'Etapa de boas-vindas não encontrada',
+  )
+
+export const crmNewsletterWelcomeStepLimitReached = (max: number): AppError =>
+  appError(
+    'CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED',
+    `A série de boas-vindas aceita no máximo ${max} etapas`,
+  )

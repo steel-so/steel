@@ -49,6 +49,7 @@ export const QueueName = {
   WhatsappArchive: 'whatsapp-archive',
   SendingDomains: 'sending-domains',
   CrmNewsletter: 'crm-newsletter',
+  CrmNewsletterAutomation: 'crm-newsletter-automation',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1008,4 +1009,26 @@ export type CrmNewsletterJobPayload = {
   [CrmNewsletterJob.Tick]: Record<string, never>
   [CrmNewsletterJob.Dispatch]: { issueId: string }
   [CrmNewsletterJob.WhatsAppDispatch]: { issueId: string }
+}
+
+/**
+ * Newsletter automation (newsletter2, nl2-automation): `welcome-tick`
+ * (every 5 minutes) sends the due welcome-series e-mails;
+ * `reengagement-monthly` (1st of the month) mails the inactive subscribers;
+ * `reengagement-resolve` (daily) closes the attempts whose grace period
+ * ended.
+ */
+export const CrmNewsletterAutomationJob = {
+  WelcomeTick: 'welcome-tick',
+  ReengagementMonthly: 'reengagement-monthly',
+  ReengagementResolve: 'reengagement-resolve',
+} as const
+
+export type CrmNewsletterAutomationJob =
+  (typeof CrmNewsletterAutomationJob)[keyof typeof CrmNewsletterAutomationJob]
+
+export type CrmNewsletterAutomationJobPayload = {
+  [CrmNewsletterAutomationJob.WelcomeTick]: Record<string, never>
+  [CrmNewsletterAutomationJob.ReengagementMonthly]: Record<string, never>
+  [CrmNewsletterAutomationJob.ReengagementResolve]: Record<string, never>
 }

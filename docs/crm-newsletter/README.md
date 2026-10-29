@@ -172,3 +172,34 @@ Uma edição vai para todos os assinantes `ACTIVE` (fora do descadastro geral) o
 - Quando: só depois de a edição ficar `SENT` + 2 minutos (a versão web precisa existir; o arquivo guarda o 404 em cache por um minuto). `CANCELED`/`FAILED` → pendentes `STOPPED`.
 - Limites: o limite mensal de mensagens da Comunicação vale (`WhatsAppSend`); atingido, o restante fica `LIMIT_REACHED`. Meta: 1.000 conversas por número em 24 h somando campanhas e newsletters; acima disso, tenta de novo em 1 hora. Custos entram como `CRM_CAMPAIGN`.
 - Ritmo: Meta 10 por job (1 s entre lotes por mensagem), Z-API 1 por job a cada 4 s.
+
+## Boas-vindas e reengajamento (newsletter2, frente `nl2-automation`)
+
+| Onde | O quê |
+|---|---|
+| `prisma/schema.prisma` (fim do arquivo) | `CrmNewsletterWelcomeStep`, `CrmNewsletterWelcomeDelivery` (progresso por assinante × etapa, único), `CrmNewsletterReengagementSettings`, `CrmNewsletterReengagement` (tentativa por assinante × ciclo `YYYY-MM`); `NotificationKind.CRM_NEWSLETTER_REENGAGEMENT_SUMMARY` |
+| `src/schemas/crm-newsletter-automation.schema.ts` | Etapas (atraso em horas/dias, até 365 dias, até 10 etapas), reordenação, configuração do reengajamento (limites e padrões), prévia |
+| `src/lib/newsletter/reengage-token.ts` | Link assinado do botão "Quero continuar recebendo" (`/newsletter/continuar/<token>`, sem validade) |
+| `src/lib/crm-newsletter/reengagement-email.ts` | Layout fixo do e-mail de reengajamento com o texto editável, cor da marca e o rodapé obrigatório |
+| Fila `crm-newsletter-automation` | `welcome-tick` a cada 5 min; `reengagement-monthly` dia 1 às 09:00; `reengagement-resolve` todo dia às 08:30 (São Paulo) |
+| Aba **Boas-vindas** + `/crm/newsletters/<id>/welcome/<etapa>` | Lista de etapas e editor em tela cheia (Steel Canvas) |
+| **Configurações › Reengajamento de inativos** | Seção com prévia ao vivo |
+
+**Série de boas-vindas**
+- Cada etapa sai `confirmedAt + atraso` para assinantes `ACTIVE`, confirmados e que não vieram de importação (`source = IMPORT` nunca recebe).
+- Janela de 7 dias: etapa vencida há mais tempo não sai (criar/ligar uma série não dispara para a base antiga; uma queda do worker menor que isso só atrasa).
+- Antes de reivindicar: remetente verificado e saldo do mês; sem isso nada é reivindicado e o envio espera.
+- Reivindicação = `INSERT … ON CONFLICT DO NOTHING` em `crm_newsletter_welcome_deliveries` com status `SENDING`; linhas presas há 15 min são reivindicadas de novo e reenviadas com a mesma chave de idempotência do Resend. Falha transitória devolve a linha; falha definitiva vira `FAILED`.
+- Na hora do envio: descadastro geral, `UNSUBSCRIBED`/`BOUNCED`/`COMPLAINED` e etapa desligada viram `SKIPPED` com o motivo.
+- Mesmo From, Reply-To, rodapé, `List-Unsubscribe` e tags (`kind=newsletter`, `welcome=<etapa>`) de uma edição; conta no limite mensal. O token de descadastro não leva destinatário de edição.
+- Estatística por etapa: enviados, aberturas únicas e cliques únicos (webhook do Resend).
+
+**Reengajamento** (desligado por padrão; padrões: 3 edições, 90 dias, 30 dias de prazo, descadastrar)
+- Candidato: `ACTIVE`, fora do descadastro geral, recebeu ≥ N edições (`SENT`) nos últimos X dias, sem `lastOpenedAt`/`lastClickedAt` nesse período e sem tentativa em aberto nem criada nesse período.
+- Rodada mensal: cria a tentativa (`SENDING`, única por assinante × mês), envia em lotes de 100 e marca `WAITING`; conta no limite. Lote recusado vira `FAILED` (próximo mês tenta de novo). Resumo no inbox de quem criou a newsletter.
+- Rodada diária: tentativas `WAITING` com `sentAt + Y dias` vencido. Abriu, clicou ou usou o botão depois do e-mail (na tentativa ou no assinante) → `REENGAGED`; assinante que já saiu → `SKIPPED`; senão `UNSUBSCRIBED` (assinante vira `UNSUBSCRIBED` com motivo `inativo`, auditado) ou `FLAGGED`. Resumo no inbox.
+- Botão: página com GET só leitura e POST que marca `REENGAGED`, atualiza `lastClickedAt` e reativa quem tinha saído por inatividade (nunca quem saiu por conta própria ou teve retorno).
+
+**Webhook do Resend**: depois das edições e antes das campanhas, procura o `providerMessageId` nas entregas da série e nas tentativas de reengajamento. Abertura/clique marcam a primeira vez e atualizam o engajamento do assinante; retorno permanente e reclamação seguem as regras das edições.
+
+**Permissões**: as mesmas das edições (recurso `email`: `VIEW` lê, `CREATE` cria etapa, `EDIT` edita/reordena/configura, `DELETE` exclui etapa).

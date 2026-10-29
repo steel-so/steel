@@ -329,6 +329,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'hourglass',
     color: 'rose',
   },
+  CRM_NEWSLETTER_REENGAGEMENT_SUMMARY: {
+    module: 'CRM',
+    label: 'Resumo do reengajamento da newsletter',
+    icon: 'mail',
+    color: 'sky',
+  },
   MEMBER_JOINED: {
     module: 'OTHER',
     label: 'Novo membro',

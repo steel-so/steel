@@ -207,6 +207,11 @@ export const TAG_GROUPS = [
         description:
           'Enquetes das edições (resultado, votantes, CSV) e a versão da edição no WhatsApp (configuração e entrega por número).',
       },
+      {
+        name: 'CRM · Newsletter · Automação',
+        description:
+          'Série de boas-vindas (e-mails depois da confirmação, com estatística por etapa) e reengajamento de assinantes inativos.',
+      },
     ],
   },
   {

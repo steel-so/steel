@@ -6,6 +6,7 @@ import {
   AiUsageWeeklyEmailJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
+  CrmNewsletterAutomationJob,
   CrmNewsletterJob,
   CrmProposalExpiryJob,
   CrmScheduledSendJob,
@@ -43,6 +44,7 @@ import {
   getAiUsageWeeklyEmailQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
+  getCrmNewsletterAutomationQueue,
   getCrmNewsletterQueue,
   getCrmProposalExpiryQueue,
   getCrmScheduledSendQueue,
@@ -82,6 +84,7 @@ import {
   CommunicationWaitingCron,
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
+  CrmNewsletterAutomationCron,
   CrmNewsletterTickCron,
   CrmProposalExpiryCron,
   CrmScheduledSendCron,
@@ -753,6 +756,33 @@ export async function scheduleCrmNewsletterJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_newsletter_registered', {
     component: 'Worker',
     pattern: CrmNewsletterTickCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** Newsletter automation (nl2-automation): welcome, monthly, daily. */
+export async function scheduleCrmNewsletterAutomationJobs(): Promise<void> {
+  const queue = getCrmNewsletterAutomationQueue()
+  const cron = CrmNewsletterAutomationCron
+  await queue.upsertJobScheduler(
+    CrmNewsletterAutomationJob.WelcomeTick,
+    { pattern: cron.welcomeTick, tz: RetentionTimezone },
+    { name: CrmNewsletterAutomationJob.WelcomeTick, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    CrmNewsletterAutomationJob.ReengagementMonthly,
+    { pattern: cron.reengagementMonthly, tz: RetentionTimezone },
+    { name: CrmNewsletterAutomationJob.ReengagementMonthly, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    CrmNewsletterAutomationJob.ReengagementResolve,
+    { pattern: cron.reengagementResolve, tz: RetentionTimezone },
+    { name: CrmNewsletterAutomationJob.ReengagementResolve, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_newsletter_automation_registered', {
+    component: 'Worker',
+    ...cron,
     timezone: RetentionTimezone,
   })
 }

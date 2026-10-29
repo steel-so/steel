@@ -19,6 +19,8 @@ import {
   type CrmCampaignsJobPayload,
   type CrmCompetitorSyncJob,
   type CrmCompetitorSyncJobPayload,
+  type CrmNewsletterAutomationJob,
+  type CrmNewsletterAutomationJobPayload,
   type CrmNewsletterJob,
   type CrmNewsletterJobPayload,
   type CrmProposalExpiryJob,
@@ -1184,6 +1186,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WhatsappArchive]: getWhatsappArchiveQueue,
   [QueueName.SendingDomains]: getSendingDomainsQueue,
   [QueueName.CrmNewsletter]: getCrmNewsletterQueue,
+  [QueueName.CrmNewsletterAutomation]: getCrmNewsletterAutomationQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1319,5 +1322,26 @@ export function getCrmNewsletterQueue(): Queue<
     CrmNewsletterJobPayload[CrmNewsletterJob],
     unknown,
     CrmNewsletterJob
+  >
+}
+
+let crmNewsletterAutomationQueue: Queue | null = null
+
+/** Newsletter welcome series + re-engagement (newsletter2, nl2-automation). */
+export function getCrmNewsletterAutomationQueue(): Queue<
+  CrmNewsletterAutomationJobPayload[CrmNewsletterAutomationJob],
+  unknown,
+  CrmNewsletterAutomationJob
+> {
+  if (!crmNewsletterAutomationQueue) {
+    crmNewsletterAutomationQueue = new Queue(
+      QueueName.CrmNewsletterAutomation,
+      { connection: getQueueConnection(), defaultJobOptions },
+    )
+  }
+  return crmNewsletterAutomationQueue as Queue<
+    CrmNewsletterAutomationJobPayload[CrmNewsletterAutomationJob],
+    unknown,
+    CrmNewsletterAutomationJob
   >
 }

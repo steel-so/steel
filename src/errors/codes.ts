@@ -1226,6 +1226,16 @@ export const ERROR_CODES = {
     code: 'CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE',
     status: 422,
   },
+  // newsletter2 nl2-automation: welcome series.
+  CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND: {
+    code: 'CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND',
+    status: 404,
+  },
+  // The welcome series already has the maximum number of steps.
+  CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED: {
+    code: 'CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED',
+    status: 422,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

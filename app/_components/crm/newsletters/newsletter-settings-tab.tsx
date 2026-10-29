@@ -43,6 +43,7 @@ import type {
   UpdateCrmNewsletterDTO,
 } from '@/src/schemas/crm-newsletter.schema'
 import type { CrmEmailTemplateDTO } from '@/types/crm-email-marketing'
+import { NewsletterReengagementSection } from './automation/newsletter-reengagement-section'
 import { NEWSLETTER_LEGAL_BASIS_LABEL } from './newsletter-labels'
 import {
   emailDomainsHref,
@@ -441,6 +442,11 @@ export function NewsletterSettingsTab({
           </Button>
         </div>
       </form>
+
+      <NewsletterReengagementSection
+        workspaceId={workspaceId}
+        newsletterId={newsletter.id}
+      />
 
       <section className='flex flex-col gap-3 rounded-xl border border-destructive/40 p-4'>
         <h2 className='font-medium'>Zona de risco</h2>
