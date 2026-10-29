@@ -86,3 +86,28 @@ Ordem de merge: `nl-domains` → `nl-core` → `nl-issues` → `nl-archive`.
 | Enviar, agendar, cancelar | recurso `email`, `EDIT` |
 | Domínios de envio | OWNER/ADMIN do workspace |
 | Ajuste do limite mensal | admin da plataforma |
+
+## Ponte com o CRM (fase 2, `nl2-crm-bridge`)
+
+Peças: `src/services/crm-newsletter-bridge.service.ts` (`CrmNewsletterBridge.emit`), `src/repositories/crm-newsletter-bridge.repository.ts`, `src/services/crm-newsletter-person.service.ts`, `CrmLeadScoringRuleService.applyEngagementEvent`, `dispatchCrmWorkflowNewsletterEvent` (`crm-workflow-dispatcher.ts`), tabela `crm_lead_score_events`.
+
+**Eventos** — quem emite e o que cada um faz:
+
+| Evento | Emitido por | Linha do tempo | Pontuação | Workflow |
+|---|---|---|---|---|
+| `subscribed` | inscrição pública/formulário/Sites, central de preferências (ligar), adição manual, cartão da pessoa | `NEWSLETTER_SUBSCRIBED` (texto diz se aguarda confirmação) | `newsletter_subscribed` se `ACTIVE` | `newsletter-subscribed` se `ACTIVE` |
+| `confirmed` | link de confirmação | `NEWSLETTER_CONFIRMED` | `newsletter_subscribed` | `newsletter-subscribed` |
+| `unsubscribed` | link/um clique, central de preferências (desligar/sair de tudo), cartão da pessoa | `NEWSLETTER_UNSUBSCRIBED` | — | `newsletter-unsubscribed` |
+| `issue_received` | webhook `delivered` (primeira vez) | `NEWSLETTER_ISSUE_RECEIVED` | — | — |
+| `issue_opened` | webhook `opened`, ou `clicked` sem abertura antes (primeira vez) | `NEWSLETTER_ISSUE_OPENED` | `newsletter_opened` | `newsletter-issue-opened` |
+| `link_clicked` | webhook `clicked` (todo clique, depois de gravado) | `NEWSLETTER_LINK_CLICKED` | `newsletter_clicked` (+ "URL contém") | `newsletter-link-clicked`, só no 1º clique do destinatário naquela URL |
+
+**Regras**
+- Importação CSV **não** emite eventos (volume; decisão da frente). Retorno permanente e denúncia de spam também não.
+- Pessoa: `subscriber.personId`, senão a pessoa viva mais antiga com o e-mail (sem gravar o vínculo). Sem pessoa → sem linha do tempo; pontuação e workflow seguem pelo e-mail.
+- Linha do tempo: `CrmActivity` com `actorUserId` nulo, `entity` `newsletter` (`entityId` = newsletter) ou `newsletter_issue` (`entityId` = edição). Eventos de edição: uma entrada por tipo por edição (consulta antes de gravar). A tela mostra o texto sem "Sistema".
+- Pontuação: regras de pontuação com `field` `newsletter_*` (só pontuação; roteamento recusa), gravadas com `operator: contains`; `value` só vale em `newsletter_clicked` (URL contém, sem diferenciar maiúsculas). Leads ligados = vivos com o e-mail ou `convertedPersonId` = pessoa. Idempotência: `crm_lead_score_events` único por regra × lead × chave (`newsletter:<id>` ou `issue:<id>`); o `score` é incrementado na mesma transação. O recálculo das regras de campo (`CrmLeadRepository.update` com `score`) soma os pontos ganhos, então editar o lead não os perde. Apagar a regra mantém os pontos.
+- Workflows: gatilhos `newsletter-subscribed`, `newsletter-unsubscribed`, `newsletter-link-clicked` (`urlContains` opcional), `newsletter-issue-opened`, todos com `newsletterId` opcional. A execução não tem `startedById` e age como o criador do workflow (como o webhook). Payload: `{ event, newsletter: {id,name}, record: {id,email,name,status,personId}, issue?: {id,subject,number}, url? }`.
+- Falhas: `emit` nunca lança nem devolve erro; cada passo (carga, linha do tempo, pontuação, workflows) loga `crm.newsletter.bridge_failed` e o seguinte continua.
+
+**Cartão "Newsletters" da pessoa** — `GET/POST /api/workspaces/{id}/crm/people/{personId}/newsletters`, `DELETE …/{subscriberId}`. Lista inscrições ligadas à pessoa ou a um e-mail dela e as newsletters ativas disponíveis (sem inscrição ou descadastrada). Inscrever reaproveita a adição manual (consentimento declarado, `PENDING` para quem tinha saído, auditoria `create`). Descadastrar grava `UNSUBSCRIBED` com o motivo "Descadastrado por um membro do workspace." e audita `opt_out` com `source: CRM_PERSON`. Permissões: recurso `email` (`VIEW`/`CREATE`/`EDIT`).

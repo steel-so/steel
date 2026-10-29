@@ -168,6 +168,111 @@ describe('<CrmLeadRulesSection />', () => {
     })
   })
 
+  it('summarizes newsletter event rules', async () => {
+    setup({
+      scoring: [
+        {
+          id: 'e1',
+          field: 'newsletter_clicked',
+          operator: 'contains',
+          value: '/precos',
+          points: 20,
+          active: true,
+        },
+        {
+          id: 'e2',
+          field: 'newsletter_opened',
+          operator: 'contains',
+          value: '',
+          points: 5,
+          active: true,
+        },
+      ],
+    })
+    expect(
+      await screen.findByText(
+        /Clicou em link da newsletter \(URL contém "\/precos"\)/,
+      ),
+    ).toBeTruthy()
+    expect(screen.getByText(/^Abriu newsletter/)).toBeTruthy()
+  })
+
+  it('creates a newsletter click rule with the URL filter', async () => {
+    const spy = setup({
+      extra: [
+        {
+          method: 'POST',
+          match: `${CRM}/lead-scoring-rules`,
+          data: { id: 's9' },
+        },
+      ],
+    })
+    await screen.findByText('Nenhuma regra de pontuação ainda.')
+    fireEvent.click(
+      within(card('Pontuação de leads')).getByRole('button', {
+        name: /nova regra/i,
+      }),
+    )
+    await screen.findByRole('dialog')
+    const [fieldTrigger] = dialogTriggers()
+    await pick(fieldTrigger, 'Clicou em link da newsletter')
+
+    const dialog = screen.getByRole('dialog')
+    await waitFor(() =>
+      expect(within(dialog).getByText('URL contém (opcional)')).toBeTruthy(),
+    )
+    expect(within(dialog).queryByText('Valor')).toBeNull()
+    fireEvent.change(within(dialog).getByPlaceholderText('Ex.: /precos'), {
+      target: { value: '/precos' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Criar regra' }))
+
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Regra de pontuação criada'),
+    )
+    expect(fetchBody(spy, `${CRM}/lead-scoring-rules`)).toEqual({
+      field: 'newsletter_clicked',
+      operator: 'contains',
+      value: '/precos',
+      points: 10,
+      active: true,
+    })
+  })
+
+  it('drops the value of the other newsletter events', async () => {
+    const spy = setup({
+      extra: [
+        {
+          method: 'POST',
+          match: `${CRM}/lead-scoring-rules`,
+          data: { id: 's9' },
+        },
+      ],
+    })
+    await screen.findByText('Nenhuma regra de pontuação ainda.')
+    fireEvent.click(
+      within(card('Pontuação de leads')).getByRole('button', {
+        name: /nova regra/i,
+      }),
+    )
+    await screen.findByRole('dialog')
+    const [fieldTrigger] = dialogTriggers()
+    await pick(fieldTrigger, 'Assinou newsletter')
+    const dialog = screen.getByRole('dialog')
+    await waitFor(() =>
+      expect(within(dialog).getByText(/uma vez por/)).toBeTruthy(),
+    )
+    expect(within(dialog).queryByText('URL contém (opcional)')).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Criar regra' }))
+    await waitFor(() => expect(notify.success).toHaveBeenCalled())
+    const body = fetchBody(spy, `${CRM}/lead-scoring-rules`)
+    expect(body).toMatchObject({
+      field: 'newsletter_subscribed',
+      operator: 'contains',
+    })
+    expect(body).not.toHaveProperty('value')
+  })
+
   it('hides the value input for empty-check operators', async () => {
     setup()
     await screen.findByText('Nenhuma regra de pontuação ainda.')
