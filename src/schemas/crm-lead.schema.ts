@@ -256,6 +256,9 @@ export const CreateCrmLeadScoringRuleSchema = z.object({
   value: z.string().max(200).optional(),
   points: z.number().int().default(0),
   active: z.boolean().default(true),
+  /** `newsletter_opened` / `newsletter_clicked` only: also score the welcome
+   * series e-mails (default on; ignored by the other fields). */
+  includeWelcome: z.boolean().optional(),
 })
 
 export type CreateCrmLeadScoringRuleDTO = z.infer<
@@ -268,6 +271,7 @@ export const UpdateCrmLeadScoringRuleSchema = z.object({
   value: z.string().max(200).optional(),
   points: z.number().int().optional(),
   active: z.boolean().optional(),
+  includeWelcome: z.boolean().optional(),
 })
 
 export type UpdateCrmLeadScoringRuleDTO = z.infer<

@@ -89,6 +89,34 @@ describe('event rules — create/update normalization', () => {
     })
   })
 
+  it('passes "include welcome e-mails" through only when given', async () => {
+    expectOk(
+      await Service.create('u1', 'ws1', {
+        field: 'newsletter_opened',
+        operator: 'contains',
+        points: 5,
+        active: true,
+        includeWelcome: false,
+      }),
+    )
+    expect(rules.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ includeWelcome: false }),
+    )
+    expectOk(
+      await Service.create('u1', 'ws1', {
+        field: 'newsletter_opened',
+        operator: 'contains',
+        points: 5,
+        active: true,
+      }),
+    )
+    expect(rules.create.mock.lastCall?.[0]).not.toHaveProperty('includeWelcome')
+    expectOk(await Service.update('u1', 'ws1', 'r1', { includeWelcome: true }))
+    expect(rules.update).toHaveBeenLastCalledWith('r1', {
+      includeWelcome: true,
+    })
+  })
+
   it('leaves field rules untouched', async () => {
     expectOk(await Service.update('u1', 'ws1', 'r1', { points: 3 }))
     expect(rules.update).toHaveBeenLastCalledWith('r1', { points: 3 })
@@ -140,6 +168,31 @@ describe('applyEngagementEvent', () => {
     expect(logger.info).toHaveBeenCalledWith(
       'crm.lead.engagement_scored',
       expect.objectContaining({ awarded: 3 }),
+    )
+  })
+
+  it('skips rules that leave the welcome e-mails out', async () => {
+    rules.listActiveByWorkspace.mockResolvedValue(
+      ok([
+        rule({ id: 'all', field: 'newsletter_clicked', value: '' }),
+        rule({
+          id: 'issues',
+          field: 'newsletter_clicked',
+          value: '',
+          includeWelcome: false,
+        }),
+      ]),
+    )
+    bridge.findLinkedLeadIds.mockResolvedValue(ok(['l1']))
+    const welcome = {
+      ...event,
+      eventKey: 'welcome:st1:s1',
+      source: 'welcome' as const,
+    }
+    expect(expectOk(await Service.applyEngagementEvent(welcome))).toBe(1)
+    expect(bridge.awardScoreEvent).toHaveBeenCalledTimes(1)
+    expect(bridge.awardScoreEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ ruleId: 'all', eventKey: 'welcome:st1:s1' }),
     )
   })
 

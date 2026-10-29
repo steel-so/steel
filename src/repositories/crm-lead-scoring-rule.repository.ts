@@ -59,6 +59,7 @@ export const CrmLeadScoringRuleRepository = {
     value?: string
     points?: number
     active?: boolean
+    includeWelcome?: boolean
   }): Promise<Result<CrmLeadScoringRule>> {
     try {
       const position = await prisma.crmLeadScoringRule.count({
@@ -81,6 +82,7 @@ export const CrmLeadScoringRuleRepository = {
       value?: string
       points?: number
       active?: boolean
+      includeWelcome?: boolean
     },
   ): Promise<Result<CrmLeadScoringRule>> {
     try {

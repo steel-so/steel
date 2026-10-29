@@ -54,12 +54,19 @@ export function isLeadEventRuleField(field: CrmLeadRuleField): boolean {
 /**
  * Whether an event rule matches an engagement event. `newsletter_clicked`
  * with a value only matches a clicked URL containing it (case-insensitive).
+ * Welcome series e-mails (`source: 'welcome'`) only match rules that keep
+ * `includeWelcome` on (the default).
  */
 export function matchesLeadEventRule(
-  rule: LeadRule & { active: boolean },
-  event: { field: CrmLeadRuleField; url?: string | null },
+  rule: LeadRule & { active: boolean; includeWelcome?: boolean },
+  event: {
+    field: CrmLeadRuleField
+    url?: string | null
+    source?: 'issue' | 'welcome'
+  },
 ): boolean {
   if (!rule.active || rule.field !== event.field) return false
+  if (event.source === 'welcome' && rule.includeWelcome === false) return false
   if (rule.field !== 'newsletter_clicked') return true
   const filter = rule.value?.trim().toLowerCase()
   if (!filter) return true
