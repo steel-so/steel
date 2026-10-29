@@ -682,6 +682,8 @@ export type ServicedeskTaskRemindersJobPayload = {
 export const SteelAgentsJob = {
   Tick: 'tick',
   Run: 'run',
+  /** Persona simulation: whole conversations against the agent (A3). */
+  Simulate: 'simulate',
 } as const
 
 export type SteelAgentsJob =
@@ -690,6 +692,7 @@ export type SteelAgentsJob =
 export type SteelAgentsJobPayload = {
   [SteelAgentsJob.Tick]: Record<string, never>
   [SteelAgentsJob.Run]: { runId: string }
+  [SteelAgentsJob.Simulate]: { simulationId: string }
 }
 
 /**

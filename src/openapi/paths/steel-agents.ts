@@ -7,6 +7,11 @@ import {
   RestoreSteelAgentVersionSchema,
   UpdateSteelAgentSchema,
 } from '@/src/schemas/steel-agent.schema'
+import {
+  CreateSteelAgentSimulationSchema,
+  GenerateSteelAgentScenariosSchema,
+  ListSteelAgentSimulationsQuerySchema,
+} from '@/src/schemas/steel-agent-simulation.schema'
 import { WORKSPACE_MEMBER_ERRORS } from '../common'
 import type { ErrorEntry, OpenApiRegistry, RouteConfig } from '../registry'
 import {
@@ -15,6 +20,9 @@ import {
   SteelAgentDTO,
   SteelAgentRunDetailDTO,
   SteelAgentRunDTO,
+  SteelAgentSimulationDetailDTO,
+  SteelAgentSimulationDTO,
+  SteelAgentSimulationScenarioDraftDTO,
   SteelAgentUpdateResultDTO,
   SteelAgentVersionListDTO,
   SteelAgentVersionRefDTO,
@@ -70,6 +78,16 @@ const DECISION_ERRORS: ErrorEntry[] = [
   },
   'AI_PENDING_ACTION_NOT_PENDING',
 ]
+
+const SIMULATION_PARAM = { description: 'ID da simulação.' }
+const SIMULATION_NOT_FOUND: ErrorEntry = {
+  code: 'STEEL_AGENT_SIMULATION_NOT_FOUND',
+  when: 'Simulação inexistente ou de outro agente/workspace',
+}
+const SIMULATE_GATE: ErrorEntry = {
+  code: 'FORBIDDEN',
+  when: 'Nem responsável pelo agente nem admin (`steel-agents` EDIT)',
+}
 
 const routes: RouteConfig[] = [
   {
@@ -304,6 +322,151 @@ const routes: RouteConfig[] = [
         when: 'Já existe uma versão do agente em avaliação',
       },
       'STEEL_AGENT_EVAL_SET_INVALID',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/agents/{agentId}/simulations',
+    tags: [TAG],
+    summary: 'Listar simulações',
+    description:
+      'Simulações com personas do agente, mais recentes primeiro (padrão 20, máx. 100), com o placar de cada uma.',
+    params: { agentId: AGENT_PARAM },
+    query: ListSteelAgentSimulationsQuerySchema,
+    responses: {
+      200: {
+        description: 'Simulações.',
+        schema: z.array(SteelAgentSimulationDTO),
+      },
+    },
+    errors: [...WORKSPACE_MEMBER_ERRORS, AGENT_NOT_FOUND],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/simulations',
+    tags: [TAG],
+    summary: 'Simular conversas com personas',
+    description:
+      'Enfileira uma simulação: para cada cenário (1 a 10), uma IA interpreta a persona do cliente e conversa com o agente do começo ao fim (até `maxTurns` mensagens do cliente). As leituras rodam de verdade e toda escrita é simulada a partir da prévia — nada é gravado nem enviado. No fim, uma IA avaliadora dá uma nota de 0 a 100 e confere cada critério; o cenário passa com nota >= `passScore` e todos os critérios atendidos. Consome a cota de IA do workspace. Só uma simulação por agente roda por vez. Responsável ou admin; funciona com o agente pausado.',
+    consent: true,
+    params: { agentId: AGENT_PARAM },
+    body: {
+      schema: CreateSteelAgentSimulationSchema,
+      example: {
+        name: 'Antes de ativar',
+        passScore: 70,
+        scenarios: [
+          {
+            label: 'Cliente irritado com internet fora',
+            persona: 'Cliente que já tentou três vezes e está sem paciência.',
+            scenario: 'Internet fora desde ontem; quer saber quando volta.',
+            channel: 'WHATSAPP',
+            openingMessage: 'Já é a terceira vez que falo com vocês!',
+            criteria: [
+              'Reconhece o problema com empatia',
+              'Informa um próximo passo concreto',
+            ],
+            maxTurns: 6,
+          },
+        ],
+      },
+    },
+    responses: {
+      202: {
+        description: 'Simulação enfileirada.',
+        schema: SteelAgentSimulationDTO,
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      SIMULATE_GATE,
+      AGENT_NOT_FOUND,
+      {
+        code: 'STEEL_AGENT_SIMULATION_IN_PROGRESS',
+        when: 'O agente já tem uma simulação na fila ou em andamento',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/simulations/generate',
+    tags: [TAG],
+    summary: 'Gerar cenários com IA',
+    description:
+      'Pede à IA rascunhos de cenários (persona, situação, primeira mensagem e critérios) a partir das instruções e das ferramentas do agente. Nada é salvo: o admin edita e dispara a simulação em seguida. Consome a cota de IA.',
+    consent: true,
+    params: { agentId: AGENT_PARAM },
+    body: GenerateSteelAgentScenariosSchema,
+    responses: {
+      200: {
+        description: 'Rascunhos de cenários.',
+        schema: z.array(SteelAgentSimulationScenarioDraftDTO),
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      SIMULATE_GATE,
+      AGENT_NOT_FOUND,
+      'AI_DISABLED',
+      'AI_QUOTA_EXCEEDED',
+      'AI_PROVIDER_UNAVAILABLE',
+      'STEEL_AGENT_SIMULATION_GENERATION_FAILED',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/agents/{agentId}/simulations/{simulationId}',
+    tags: [TAG],
+    summary: 'Detalhar simulação',
+    description:
+      'Placar e cada cenário com a conversa completa, as ferramentas usadas (leituras e escritas simuladas), o resultado de cada critério e o resumo do avaliador. O cliente consulta a cada poucos segundos enquanto a simulação não terminou.',
+    params: { agentId: AGENT_PARAM, simulationId: SIMULATION_PARAM },
+    responses: {
+      200: {
+        description: 'Simulação.',
+        schema: SteelAgentSimulationDetailDTO,
+      },
+    },
+    errors: [...WORKSPACE_MEMBER_ERRORS, SIMULATION_NOT_FOUND],
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/agents/{agentId}/simulations/{simulationId}',
+    tags: [TAG],
+    summary: 'Excluir simulação',
+    consent: true,
+    params: { agentId: AGENT_PARAM, simulationId: SIMULATION_PARAM },
+    responses: {
+      200: {
+        description: 'Simulação excluída.',
+        schema: SteelAgentSimulationDTO,
+      },
+    },
+    errors: [...WORKSPACE_MEMBER_ERRORS, MANAGE, SIMULATION_NOT_FOUND],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/simulations/{simulationId}/rerun',
+    tags: [TAG],
+    summary: 'Repetir simulação',
+    description:
+      'Cria uma nova simulação com os mesmos cenários e a mesma nota mínima, útil depois de ajustar as instruções do agente para comparar os resultados.',
+    consent: true,
+    params: { agentId: AGENT_PARAM, simulationId: SIMULATION_PARAM },
+    responses: {
+      202: {
+        description: 'Nova simulação enfileirada.',
+        schema: SteelAgentSimulationDTO,
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      SIMULATE_GATE,
+      SIMULATION_NOT_FOUND,
+      {
+        code: 'STEEL_AGENT_SIMULATION_IN_PROGRESS',
+        when: 'O agente já tem uma simulação na fila ou em andamento',
+      },
     ],
   },
   {

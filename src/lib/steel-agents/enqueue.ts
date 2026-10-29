@@ -35,3 +35,33 @@ export async function enqueueSteelAgentRun(
     )
   }
 }
+
+/**
+ * Enqueues a persona simulation (worker job `steel-agents/simulate`). Never
+ * throws; on a Redis failure the caller marks the simulation FAILED.
+ */
+export async function enqueueSteelAgentSimulation(
+  simulationId: string,
+): Promise<Result<true>> {
+  try {
+    await getSteelAgentsQueue().add(SteelAgentsJob.Simulate, { simulationId })
+    return ok(true)
+  } catch (cause) {
+    logger.error(
+      'steel_agents.simulation_enqueue_failed',
+      logFields(
+        {
+          component: 'SteelAgents',
+          message: cause instanceof Error ? cause.message : String(cause),
+        },
+        { simulationId },
+      ),
+    )
+    return err(
+      appError(
+        'INTERNAL_SERVER_ERROR',
+        'Não foi possível agendar a simulação agora',
+      ),
+    )
+  }
+}

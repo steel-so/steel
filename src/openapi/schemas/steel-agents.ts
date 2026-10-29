@@ -283,3 +283,102 @@ export const SteelAgentAssignmentDTO = dto(
     assignedAt: dateTime().nullable(),
   }),
 )
+
+/* ------------------- Simulações com personas (A3) ------------------- */
+
+const SimulationStatus = z.enum([
+  'QUEUED',
+  'RUNNING',
+  'COMPLETED',
+  'FAILED',
+  'SKIPPED',
+])
+const SimulationChannel = z.enum(['WHATSAPP', 'EMAIL', 'PORTAL', 'CHAT'])
+
+export const SteelAgentSimulationDTO = dto(
+  'SteelAgentSimulation',
+  z.object({
+    id: z.string(),
+    agentId: z.string(),
+    name: z.string().meta({ example: 'Simulação de 2026-11-06' }),
+    status: SimulationStatus,
+    startedById: z.string().nullable(),
+    passScore: z.number().int().meta({
+      description: 'Nota mínima (0-100) do avaliador para um cenário passar.',
+    }),
+    totalCases: z.number().int(),
+    passedCases: z.number().int(),
+    failedCases: z.number().int(),
+    avgScore: z.number().int().nullable(),
+    inputTokens: z.number().int(),
+    outputTokens: z.number().int(),
+    costUsd: z.number(),
+    modelKey: z.string().nullable(),
+    error: z.string().nullable(),
+    startedAt: dateTime().nullable(),
+    finishedAt: dateTime().nullable(),
+    createdAt: dateTime(),
+  }),
+)
+
+const SimulationCase = z.object({
+  id: z.string(),
+  position: z.number().int(),
+  label: z.string(),
+  personaKey: z.string().nullable(),
+  persona: z.string(),
+  scenario: z.string(),
+  channel: SimulationChannel,
+  openingMessage: z.string(),
+  criteria: z.array(z.string()),
+  maxTurns: z.number().int(),
+  status: z.enum(['QUEUED', 'RUNNING', 'DONE', 'FAILED']),
+  verdict: z.enum(['PASS', 'FAIL']).nullable(),
+  score: z.number().int().nullable(),
+  transcript: z.array(
+    z.object({ role: z.enum(['customer', 'agent']), text: z.string() }),
+  ),
+  toolEvents: z.array(
+    z.object({
+      turn: z.number().int(),
+      toolName: z.string(),
+      kind: z.string(),
+      status: z.enum(['OK', 'SIMULATED', 'FAILED']),
+      title: z.string().nullable(),
+      error: z.string().nullable(),
+    }),
+  ),
+  criteriaResults: z.array(
+    z.object({
+      criterion: z.string(),
+      met: z.boolean(),
+      evidence: z.string(),
+    }),
+  ),
+  judgeSummary: z.string().nullable(),
+  endReason: z.string().nullable(),
+  error: z.string().nullable(),
+  costUsd: z.number(),
+  startedAt: dateTime().nullable(),
+  finishedAt: dateTime().nullable(),
+})
+
+export const SteelAgentSimulationDetailDTO = dto(
+  'SteelAgentSimulationDetail',
+  SteelAgentSimulationDTO.extend({
+    agentName: z.string(),
+    cases: z.array(SimulationCase),
+  }),
+)
+
+export const SteelAgentSimulationScenarioDraftDTO = dto(
+  'SteelAgentSimulationScenarioDraft',
+  z.object({
+    label: z.string(),
+    persona: z.string(),
+    scenario: z.string(),
+    channel: SimulationChannel,
+    openingMessage: z.string(),
+    criteria: z.array(z.string()),
+  }),
+)
