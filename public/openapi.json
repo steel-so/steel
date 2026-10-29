@@ -5930,7 +5930,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -5988,7 +5988,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -6110,7 +6110,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -6715,7 +6715,7 @@
             "$ref": "#/components/responses/404_CRM_WORKFLOW_WEBHOOK_INVALID"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16821,7 +16821,7 @@
             "$ref": "#/components/responses/415_AI_ATTACHMENT_UNSUPPORTED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_15"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16975,7 +16975,7 @@
             "$ref": "#/components/responses/404_AI_CONVERSATION_NOT_FOUND_AI_ATTACHMENT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20170,7 +20170,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20677,7 +20677,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_CONNECTION_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_23"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_24"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20747,7 +20747,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_47"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -20966,7 +20966,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -23557,7 +23557,7 @@
             "$ref": "#/components/responses/404_CRM_EMAIL_TEMPLATE_NOT_FOUND_CRM_CAMPAIGN_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_17"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -27630,7 +27630,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28099,7 +28099,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -28315,7 +28315,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -31912,7 +31912,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_20"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -34303,7 +34303,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_17"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_18"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36265,7 +36265,18 @@
                 "properties": {
                   "field": {
                     "type": "string",
-                    "enum": ["name", "email", "phone", "company", "jobTitle", "source", "city"]
+                    "enum": [
+                      "name",
+                      "email",
+                      "phone",
+                      "company",
+                      "jobTitle",
+                      "source",
+                      "city",
+                      "newsletter_subscribed",
+                      "newsletter_opened",
+                      "newsletter_clicked"
+                    ]
                   },
                   "operator": {
                     "type": "string",
@@ -36369,7 +36380,18 @@
                 "properties": {
                   "field": {
                     "type": "string",
-                    "enum": ["name", "email", "phone", "company", "jobTitle", "source", "city"]
+                    "enum": [
+                      "name",
+                      "email",
+                      "phone",
+                      "company",
+                      "jobTitle",
+                      "source",
+                      "city",
+                      "newsletter_subscribed",
+                      "newsletter_opened",
+                      "newsletter_clicked"
+                    ]
                   },
                   "operator": {
                     "type": "string",
@@ -40915,7 +40937,7 @@
             "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS"
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -41243,7 +41265,7 @@
             "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -43970,6 +43992,240 @@
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/people/{personId}/newsletters": {
+      "get": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Newsletters da pessoa",
+        "operationId": "getWorkspacesByIdCrmPeopleByPersonIdNewsletters",
+        "description": "Inscrições ligadas à pessoa ou a um dos e-mails dela, com a situação de cada uma, e as newsletters ativas em que ela pode entrar.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "personId",
+            "in": "path",
+            "required": true,
+            "description": "ID da pessoa do CRM.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscrições da pessoa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmPersonNewsletters"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Inscrever a pessoa",
+        "operationId": "postWorkspacesByIdCrmPeopleByPersonIdNewsletters",
+        "description": "Inscreve um e-mail da pessoa (o primeiro, se omitido) como na adição manual: `ACTIVE` na hora (o membro declara o consentimento) ou `PENDING` com `sendConfirmation`; quem tinha saído só volta confirmando. Auditado; entra na linha do tempo e dispara a pontuação e os workflows de inscrição.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "personId",
+            "in": "path",
+            "required": true,
+            "description": "ID da pessoa do CRM.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newsletterId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "sendConfirmation": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": ["newsletterId"]
+              },
+              "example": {
+                "newsletterId": "ckw1nl00000ab7d3k1e5xyz"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscrições atualizadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmPersonNewsletters"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_NEWSLETTER_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/people/{personId}/newsletters/{subscriberId}": {
+      "delete": {
+        "tags": ["CRM · Newsletters"],
+        "summary": "Descadastrar a pessoa",
+        "operationId": "deleteWorkspacesByIdCrmPeopleByPersonIdNewslettersBySubscriberId",
+        "description": "Tira a pessoa de uma newsletter (`UNSUBSCRIBED`, motivo \"Descadastrado por um membro do workspace.\"). Não apaga o histórico. Auditado; entra na linha do tempo e dispara os workflows de descadastro.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "personId",
+            "in": "path",
+            "required": true,
+            "description": "ID da pessoa do CRM.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriberId",
+            "in": "path",
+            "required": true,
+            "description": "ID do assinante.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscrições atualizadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmPersonNewsletters"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": [
@@ -47180,7 +47436,7 @@
             "$ref": "#/components/responses/409_CRM_PROPOSAL_EXPIRED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_24"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47332,7 +47588,7 @@
             "$ref": "#/components/responses/409_CONFLICT_8"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -49473,7 +49729,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_22"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_23"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -60812,7 +61068,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -61221,7 +61477,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -62828,6 +63084,70 @@
                                       }
                                     },
                                     "required": ["type", "token"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "newsletter-subscribed"
+                                      },
+                                      "newsletterId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 64
+                                      }
+                                    },
+                                    "required": ["type"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "newsletter-unsubscribed"
+                                      },
+                                      "newsletterId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 64
+                                      }
+                                    },
+                                    "required": ["type"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "newsletter-link-clicked"
+                                      },
+                                      "newsletterId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 64
+                                      },
+                                      "urlContains": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      }
+                                    },
+                                    "required": ["type"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "newsletter-issue-opened"
+                                      },
+                                      "newsletterId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 64
+                                      }
+                                    },
+                                    "required": ["type"]
                                   }
                                 ]
                               },
@@ -66725,7 +67045,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_46"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -69279,7 +69599,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_46"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -75767,7 +76087,7 @@
             "$ref": "#/components/responses/404_SD_CEP_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_15"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_16"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -79749,7 +80069,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -82161,7 +82481,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -83301,7 +83621,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -92918,7 +93238,7 @@
             "$ref": "#/components/responses/404_SD_PHASE_NOT_FOUND_SD_CONFIG_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_26"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -93233,7 +93553,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -93310,7 +93630,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_20"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_21"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -98874,7 +99194,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -113991,7 +114311,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -116772,7 +117092,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -120352,7 +120672,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_21"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_22"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -120891,7 +121211,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -121045,7 +121365,7 @@
             "$ref": "#/components/responses/409_WHATSAPP_TEAM_CONFLICT"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_26"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -122013,7 +122333,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_TEMPLATE_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_18"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_19"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -126444,7 +126764,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -141927,6 +142247,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Pessoa inexistente (ou excluída) no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_48": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Pessoa inexistente no workspace",
                 "value": {
                   "success": false,
@@ -141941,7 +142284,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_48": {
+      "404_RESOURCE_NOT_FOUND_49": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -141964,7 +142307,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_49": {
+      "404_RESOURCE_NOT_FOUND_50": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -141987,7 +142330,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_50": {
+      "404_RESOURCE_NOT_FOUND_51": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -142089,6 +142432,40 @@
           }
         }
       },
+      "404_RESOURCE_NOT_FOUND_CRM_NEWSLETTER_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_NEWSLETTER_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Pessoa inexistente (ou excluída) no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_NOT_FOUND": {
+                "summary": "CRM_NEWSLETTER_NOT_FOUND — Newsletter inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Newsletter não encontrada",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_RESOURCE_NOT_FOUND_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_ISSUE_NOT_FOUND": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_NEWSLETTER_NOT_FOUND`, `CRM_NEWSLETTER_ISSUE_NOT_FOUND`",
         "content": {
@@ -142127,6 +142504,40 @@
                   "message": "Edição não encontrada",
                   "error": {
                     "code": "CRM_NEWSLETTER_ISSUE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Pessoa inexistente (ou excluída) no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND": {
+                "summary": "CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND — Inscrição inexistente ou de outra pessoa",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Assinante não encontrado",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND"
                   }
                 }
               }
@@ -147784,6 +148195,40 @@
             },
             "examples": {
               "CRM_NEWSLETTER_ARCHIVED": {
+                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ARCHIVED"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_SUBSCRIBER_EXISTS": {
+                "summary": "CRM_NEWSLETTER_SUBSCRIBER_EXISTS — O e-mail já está ativo ou aguardando confirmação",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este e-mail já está na newsletter",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_SUBSCRIBER_EXISTS"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS_2": {
+        "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_SUBSCRIBER_EXISTS`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_ARCHIVED": {
                 "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada: reative para inscrever",
                 "value": {
                   "success": false,
@@ -151514,7 +151959,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Anexo já enviado numa mensagem",
+                "summary": "VALIDATION_ERROR — A inscrição já não está ativa",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -151544,7 +151989,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Anexos demais aguardando envio na conversa",
+                "summary": "VALIDATION_ERROR — Anexo já enviado numa mensagem",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -151574,7 +152019,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — CEP sem 8 dígitos",
+                "summary": "VALIDATION_ERROR — Anexos demais aguardando envio na conversa",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -151604,7 +152049,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Campanha sem visual de e-mail",
+                "summary": "VALIDATION_ERROR — CEP sem 8 dígitos",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -151634,6 +152079,36 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Campanha sem visual de e-mail",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_18": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — Content-Type fora da lista aceita",
                 "value": {
                   "success": false,
@@ -151648,7 +152123,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_18": {
+      "422_VALIDATION_ERROR_19": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151689,7 +152164,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_19": {
+      "422_VALIDATION_ERROR_20": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151730,7 +152205,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_20": {
+      "422_VALIDATION_ERROR_21": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151771,7 +152246,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_21": {
+      "422_VALIDATION_ERROR_22": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151845,7 +152320,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_22": {
+      "422_VALIDATION_ERROR_23": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151886,7 +152361,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_23": {
+      "422_VALIDATION_ERROR_24": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151927,7 +152402,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_24": {
+      "422_VALIDATION_ERROR_25": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -151968,7 +152443,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_25": {
+      "422_VALIDATION_ERROR_26": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152009,7 +152484,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_26": {
+      "422_VALIDATION_ERROR_27": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152050,7 +152525,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_27": {
+      "422_VALIDATION_ERROR_28": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152098,7 +152573,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_28": {
+      "422_VALIDATION_ERROR_29": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152139,7 +152614,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_29": {
+      "422_VALIDATION_ERROR_30": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152180,7 +152655,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_30": {
+      "422_VALIDATION_ERROR_31": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152221,7 +152696,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_31": {
+      "422_VALIDATION_ERROR_32": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152269,7 +152744,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_32": {
+      "422_VALIDATION_ERROR_33": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152310,7 +152785,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_33": {
+      "422_VALIDATION_ERROR_34": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152340,7 +152815,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_34": {
+      "422_VALIDATION_ERROR_35": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152370,7 +152845,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_35": {
+      "422_VALIDATION_ERROR_36": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152400,36 +152875,6 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_36": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "422_VALIDATION_ERROR_37": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
@@ -152439,18 +152884,7 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
+                "summary": "VALIDATION_ERROR — Query inválida ou kanban sem `type`",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -152491,7 +152925,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
+                "summary": "VALIDATION_ERROR — Código de chamado ilegível",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -152532,7 +152966,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -152554,6 +152988,47 @@
         }
       },
       "422_VALIDATION_ERROR_40": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_41": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152587,7 +153062,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_41": {
+      "422_VALIDATION_ERROR_42": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152621,7 +153096,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_42": {
+      "422_VALIDATION_ERROR_43": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152644,7 +153119,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_43": {
+      "422_VALIDATION_ERROR_44": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152674,7 +153149,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_44": {
+      "422_VALIDATION_ERROR_45": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152697,7 +153172,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_45": {
+      "422_VALIDATION_ERROR_46": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152720,7 +153195,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_46": {
+      "422_VALIDATION_ERROR_47": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -152743,7 +153218,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_47": {
+      "422_VALIDATION_ERROR_48": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -173947,7 +174422,19 @@
           },
           "field": {
             "type": "string",
-            "enum": ["name", "email", "phone", "company", "jobTitle", "source", "city"]
+            "enum": [
+              "name",
+              "email",
+              "phone",
+              "company",
+              "jobTitle",
+              "source",
+              "city",
+              "newsletter_subscribed",
+              "newsletter_opened",
+              "newsletter_clicked"
+            ],
+            "description": "Campo do lead, ou evento de engajamento da newsletter (`newsletter_*`), que pontua uma vez por evento. Em `newsletter_clicked`, `value` é o filtro opcional \"URL contém\"."
           },
           "operator": {
             "type": "string",
@@ -175648,6 +176135,147 @@
           "updatedAt"
         ],
         "description": "Pessoa (contato) do CRM."
+      },
+      "CrmPersonNewsletterSubscription": {
+        "type": "object",
+        "properties": {
+          "subscriberId": {
+            "type": "string"
+          },
+          "newsletterId": {
+            "type": "string"
+          },
+          "newsletterName": {
+            "type": "string",
+            "example": "Novidades da Acme"
+          },
+          "newsletterArchived": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string",
+            "example": "ana@empresa.com.br"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "ACTIVE", "UNSUBSCRIBED", "BOUNCED", "COMPLAINED"]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["FORM", "SITE", "PUBLIC_PAGE", "API", "IMPORT", "MANUAL"]
+          },
+          "consentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unsubscribedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastOpenedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastClickedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canUnsubscribe": {
+            "type": "boolean",
+            "description": "`ACTIVE` ou `PENDING`: pode descadastrar."
+          }
+        },
+        "required": [
+          "subscriberId",
+          "newsletterId",
+          "newsletterName",
+          "newsletterArchived",
+          "email",
+          "status",
+          "source",
+          "consentAt",
+          "confirmedAt",
+          "unsubscribedAt",
+          "lastOpenedAt",
+          "lastClickedAt",
+          "canUnsubscribe"
+        ]
+      },
+      "CrmPersonNewsletters": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "string"
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmPersonNewsletterSubscription"
+            }
+          },
+          "available": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "name"]
+            },
+            "description": "Newsletters ativas em que a pessoa pode entrar (sem inscrição ou descadastrada)."
+          }
+        },
+        "required": ["personId", "emails", "subscriptions", "available"]
       },
       "CrmPipeline": {
         "type": "object",
@@ -180350,7 +180978,11 @@
               "record-is-created-or-updated",
               "launch-manually",
               "on-a-schedule",
-              "webhook"
+              "webhook",
+              "newsletter-subscribed",
+              "newsletter-unsubscribed",
+              "newsletter-link-clicked",
+              "newsletter-issue-opened"
             ]
           },
           "triggerPayload": {},
@@ -180692,6 +181324,70 @@
                               }
                             },
                             "required": ["type", "token"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "newsletter-subscribed"
+                              },
+                              "newsletterId": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            },
+                            "required": ["type"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "newsletter-unsubscribed"
+                              },
+                              "newsletterId": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            },
+                            "required": ["type"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "newsletter-link-clicked"
+                              },
+                              "newsletterId": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              },
+                              "urlContains": {
+                                "type": "string",
+                                "maxLength": 500
+                              }
+                            },
+                            "required": ["type"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "newsletter-issue-opened"
+                              },
+                              "newsletterId": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            },
+                            "required": ["type"]
                           }
                         ]
                       },
