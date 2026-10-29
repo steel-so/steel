@@ -23,6 +23,7 @@ import {
   SdWarrantyBadge,
 } from '@/app/_components/servicedesk/directory/shared/sd-directory-widgets'
 import { SdInfoRow } from '@/app/_components/servicedesk/directory/shared/sd-form-bits'
+import { SdConfigItemAlerts } from '@/app/_components/servicedesk/monitoring/sd-monitor-alert-list'
 import { SdConfigItemRoutines } from '@/app/_components/servicedesk/recurring/sd-recurring-bits'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -158,6 +159,7 @@ export function SdConfigItemDetailSheet({
               </TabsTrigger>
               <TabsTrigger value='tickets'>Chamados</TabsTrigger>
               <TabsTrigger value='routines'>Rotinas</TabsTrigger>
+              <TabsTrigger value='monitoring'>Monitoramento</TabsTrigger>
             </TabsList>
             <div className='min-h-0 flex-1 overflow-y-auto px-6 py-4'>
               <TabsContent value='data'>
@@ -308,6 +310,14 @@ export function SdConfigItemDetailSheet({
                   workspaceId={workspaceId}
                   configItemId={item.id}
                   slug={slug}
+                />
+              </TabsContent>
+
+              <TabsContent value='monitoring'>
+                <SdConfigItemAlerts
+                  workspaceId={workspaceId}
+                  slug={slug}
+                  configItemId={item.id}
                 />
               </TabsContent>
             </div>

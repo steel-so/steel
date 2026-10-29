@@ -7,6 +7,11 @@ import {
   RefreshIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import {
+  formatMonitorDateTime,
+  SD_MONITOR_ALERT_STATUS_LABEL,
+} from '@/app/_components/servicedesk/monitoring/sd-monitor-format'
+import { SdMonitorUnmatchedPanel } from '@/app/_components/servicedesk/monitoring/sd-monitor-unmatched'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +34,10 @@ import {
 } from '@/src/hooks/use-sd-monitoring'
 import {
   SD_GENERIC_PAYLOAD_EXAMPLE,
+  SD_GRAFANA_SEVERITIES,
+  SD_PRTG_PAYLOAD_EXAMPLE,
+  SD_PRTG_SEVERITIES,
+  SD_ZABBIX_SEVERITIES,
   sdZabbixPayloadExample,
 } from '@/src/lib/servicedesk/monitor-fields'
 import type {
@@ -36,7 +45,7 @@ import type {
   SdMonitorSeverityMapEntryDTO,
 } from '@/src/schemas/sd-monitor-source.schema'
 import type {
-  SdMonitorAlertDTO,
+  SdMonitorCorrelationModeDTO,
   SdMonitorKindDTO,
   SdMonitorSourceDTO,
 } from '@/types/sd-monitor'
@@ -52,35 +61,30 @@ import {
   useSdSettingsContext,
 } from './sd-settings-kit'
 
-/** Severidades que o Zabbix manda em `{EVENT.SEVERITY}`. */
-const ZABBIX_SEVERITIES = [
-  'Disaster',
-  'High',
-  'Average',
-  'Warning',
-  'Information',
-  'Not classified',
-]
-
 export const SD_MONITOR_KIND_LABEL: Record<SdMonitorKindDTO, string> = {
   ZABBIX: 'Zabbix',
+  GRAFANA: 'Grafana',
+  PRTG: 'PRTG',
   WEBHOOK: 'Webhook genérico',
 }
 
-const ALERT_STATUS_LABEL: Record<SdMonitorAlertDTO['status'], string> = {
-  OPEN: 'Aberto',
-  RESOLVED: 'Normalizado',
-  IGNORED: 'Ignorado',
+/** Severidades que cada ferramenta costuma mandar (atalhos do mapa). */
+const SEVERITY_SUGGESTIONS: Record<SdMonitorKindDTO, string[]> = {
+  ZABBIX: SD_ZABBIX_SEVERITIES,
+  GRAFANA: SD_GRAFANA_SEVERITIES,
+  PRTG: SD_PRTG_SEVERITIES,
+  WEBHOOK: [],
 }
 
-const DATE_TIME = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-})
+const CORRELATION_OPTIONS: {
+  value: SdMonitorCorrelationModeDTO
+  label: string
+}[] = [
+  { value: 'HOST', label: 'Juntar alertas da mesma máquina' },
+  { value: 'OFF', label: 'Um chamado por alerta' },
+]
 
-function formatDateTime(value: string | null): string {
-  return value ? DATE_TIME.format(new Date(value)) : '—'
-}
+const formatDateTime = formatMonitorDateTime
 
 /** URL pública a colar na ferramenta de monitoramento. */
 export function sdMonitorWebhookUrl(path: string): string {
@@ -134,10 +138,12 @@ function CopyRow({
 /** O token em claro só existe neste momento — some ao fechar o diálogo. */
 function TokenDialog({
   source,
+  kind,
   token,
   onClose,
 }: {
   source: string
+  kind: SdMonitorKindDTO
   token: string
   onClose: () => void
 }) {
@@ -159,36 +165,7 @@ function TokenDialog({
             copyLabel='Copiar a URL do webhook'
             hint='Qualquer um com esta URL abre chamado nesta workspace. Trate como senha.'
           />
-          <div className='flex flex-col gap-1 rounded-lg bg-muted px-3 py-2'>
-            <span className='font-medium text-muted-foreground text-xs'>
-              Corpo do tipo de mídia do Zabbix
-            </span>
-            <pre className='overflow-x-auto text-[11px] leading-relaxed'>
-              <code>{sdZabbixPayloadExample()}</code>
-            </pre>
-            <div className='flex justify-end'>
-              <Button
-                size='xs'
-                variant='ghost'
-                onClick={() => void copyText(sdZabbixPayloadExample())}
-              >
-                <SteelIcon icon={Copy01Icon} strokeWidth={2} />
-                Copiar o corpo
-              </Button>
-            </div>
-            <p className='text-[11px] text-muted-foreground'>
-              No Zabbix: Alertas &gt; Tipos de mídia &gt; novo tipo{' '}
-              <strong>Webhook</strong>, URL acima, método POST e este JSON no
-              parâmetro do corpo. Um webhook genérico pode mandar assim:
-            </p>
-            <pre className='overflow-x-auto text-[11px] leading-relaxed'>
-              <code>{SD_GENERIC_PAYLOAD_EXAMPLE}</code>
-            </pre>
-            <p className='text-[11px] text-muted-foreground'>
-              <code>status</code> aceita <code>PROBLEM</code>/
-              <code>FIRING</code> e <code>OK</code>/<code>RESOLVED</code>.
-            </p>
-          </div>
+          <SetupGuide kind={kind} />
         </div>
         <DialogFooter>
           <Button size='sm' onClick={onClose}>
@@ -197,6 +174,93 @@ function TokenDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** Corpo para copiar e onde colar, conforme a ferramenta da origem. */
+function SetupGuide({ kind }: { kind: SdMonitorKindDTO }) {
+  const snippet =
+    kind === 'ZABBIX'
+      ? sdZabbixPayloadExample()
+      : kind === 'PRTG'
+        ? SD_PRTG_PAYLOAD_EXAMPLE
+        : SD_GENERIC_PAYLOAD_EXAMPLE
+  const title =
+    kind === 'ZABBIX'
+      ? 'Corpo do tipo de mídia do Zabbix'
+      : kind === 'PRTG'
+        ? 'Payload da ação HTTP do PRTG'
+        : kind === 'GRAFANA'
+          ? 'Corpo (opcional) do webhook'
+          : 'Corpo do webhook genérico'
+
+  return (
+    <div className='flex flex-col gap-1 rounded-lg bg-muted px-3 py-2'>
+      {kind === 'GRAFANA' ? (
+        <p className='text-[11px] text-muted-foreground'>
+          No Grafana: Alerting &gt; Contact points &gt; novo ponto de contato do
+          tipo <strong>Webhook</strong>, método POST e a URL acima. Não é
+          preciso mudar o corpo: o JSON padrão traz todos os alertas do envio e
+          cada um abre (ou entra em) um chamado. Use o rótulo <code>host</code>{' '}
+          (ou <code>instance</code>) nas regras para casar com a CMDB e{' '}
+          <code>severity</code> para a prioridade.
+        </p>
+      ) : null}
+      {kind === 'GRAFANA' ? null : (
+        <>
+          <span className='font-medium text-muted-foreground text-xs'>
+            {title}
+          </span>
+          <pre className='overflow-x-auto text-[11px] leading-relaxed'>
+            <code>{snippet}</code>
+          </pre>
+          <div className='flex justify-end'>
+            <Button
+              size='xs'
+              variant='ghost'
+              onClick={() => void copyText(snippet)}
+            >
+              <SteelIcon icon={Copy01Icon} strokeWidth={2} />
+              Copiar o corpo
+            </Button>
+          </div>
+        </>
+      )}
+      {kind === 'ZABBIX' ? (
+        <p className='text-[11px] text-muted-foreground'>
+          No Zabbix: Alertas &gt; Tipos de mídia &gt; novo tipo{' '}
+          <strong>Webhook</strong>, URL acima, método POST e este JSON no
+          parâmetro do corpo.
+        </p>
+      ) : null}
+      {kind === 'PRTG' ? (
+        <p className='text-[11px] text-muted-foreground'>
+          No PRTG: Configurações &gt; Notificações &gt; nova notificação{' '}
+          <strong>Executar ação HTTP</strong>, URL acima, método POST, tipo de
+          conteúdo <code>application/json</code> e este texto no campo de
+          payload. Use a mesma notificação para os gatilhos de estado{' '}
+          <em>Down</em>, <em>Warning</em> e <em>Up</em>: o status{' '}
+          <code>Up</code> normaliza o chamado.
+        </p>
+      ) : null}
+      {kind === 'WEBHOOK' || kind === 'ZABBIX' ? (
+        <>
+          <p className='text-[11px] text-muted-foreground'>
+            Um webhook genérico pode mandar assim (um Alertmanager, com{' '}
+            <code>alerts[]</code>, também funciona):
+          </p>
+          {kind === 'ZABBIX' ? (
+            <pre className='overflow-x-auto text-[11px] leading-relaxed'>
+              <code>{SD_GENERIC_PAYLOAD_EXAMPLE}</code>
+            </pre>
+          ) : null}
+          <p className='text-[11px] text-muted-foreground'>
+            <code>status</code> aceita <code>PROBLEM</code>/<code>FIRING</code>{' '}
+            e <code>OK</code>/<code>RESOLVED</code>.
+          </p>
+        </>
+      ) : null}
+    </div>
   )
 }
 
@@ -210,6 +274,8 @@ interface SourceValues {
   severityMap: SdMonitorSeverityMapEntryDTO[]
   autoResolve: boolean
   flappingWindowMinutes: number
+  correlationMode: SdMonitorCorrelationModeDTO
+  correlationWindowMinutes: number
 }
 
 function SourceDialog({
@@ -234,6 +300,8 @@ function SourceDialog({
     severityMap: source?.severityMap ?? [],
     autoResolve: source?.autoResolve ?? true,
     flappingWindowMinutes: source?.flappingWindowMinutes ?? 30,
+    correlationMode: source?.correlationMode ?? 'HOST',
+    correlationWindowMinutes: source?.correlationWindowMinutes ?? 60,
   })
 
   function set<K extends keyof SourceValues>(key: K, value: SourceValues[K]) {
@@ -252,12 +320,9 @@ function SourceDialog({
     value: p.id,
     label: p.name,
   }))
-  const suggestions =
-    values.kind === 'ZABBIX'
-      ? ZABBIX_SEVERITIES.filter(
-          (s) => !values.severityMap.some((e) => e.from === s),
-        )
-      : []
+  const suggestions = SEVERITY_SUGGESTIONS[values.kind].filter(
+    (s) => !values.severityMap.some((e) => e.from === s),
+  )
 
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
@@ -285,10 +350,12 @@ function SourceDialog({
               <SimpleSelect
                 value={values.kind}
                 onChange={(kind) => kind && set('kind', kind)}
-                options={[
-                  { value: 'ZABBIX', label: 'Zabbix' },
-                  { value: 'WEBHOOK', label: 'Webhook genérico' },
-                ]}
+                options={(
+                  Object.keys(SD_MONITOR_KIND_LABEL) as SdMonitorKindDTO[]
+                ).map((kind) => ({
+                  value: kind,
+                  label: SD_MONITOR_KIND_LABEL[kind],
+                }))}
               />
             </FieldBlock>
           </div>
@@ -447,6 +514,33 @@ function SourceDialog({
               suffix='min'
             />
           </FieldBlock>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+            <FieldBlock
+              label='Correlação'
+              hint='Alerta novo da mesma máquina (item da CMDB ou host) entra no chamado que já está aberto, em vez de abrir outro.'
+            >
+              <SimpleSelect
+                value={values.correlationMode}
+                onChange={(mode) => mode && set('correlationMode', mode)}
+                options={CORRELATION_OPTIONS}
+              />
+            </FieldBlock>
+            <FieldBlock
+              label='Janela de correlação (minutos)'
+              hint='Conta desde a última atividade do alerta aberto da máquina.'
+            >
+              <NumberInput
+                value={values.correlationWindowMinutes}
+                onCommit={(value) =>
+                  set('correlationWindowMinutes', Math.max(1, value ?? 60))
+                }
+                min={1}
+                max={1440}
+                suffix='min'
+                disabled={values.correlationMode === 'OFF'}
+              />
+            </FieldBlock>
+          </div>
         </div>
         <DialogFooter>
           <Button variant='outline' size='sm' onClick={onClose}>
@@ -517,7 +611,7 @@ function SourceAlerts({
                 <Badge
                   variant={alert.status === 'OPEN' ? 'destructive' : 'outline'}
                 >
-                  {ALERT_STATUS_LABEL[alert.status]}
+                  {SD_MONITOR_ALERT_STATUS_LABEL[alert.status]}
                 </Badge>
               </td>
               <td className='px-3 py-2'>
@@ -558,9 +652,11 @@ export function SdMonitoringTab() {
   const { data, isLoading, error } = useSdMonitorSources(workspaceId)
   const mutations = useSdMonitorSourceMutations(workspaceId)
   const [dialog, setDialog] = useState<DialogState>(null)
-  const [token, setToken] = useState<{ source: string; token: string } | null>(
-    null,
-  )
+  const [token, setToken] = useState<{
+    source: string
+    kind: SdMonitorKindDTO
+    token: string
+  } | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const sources = data ?? []
   const priorityName = (id: string) =>
@@ -579,7 +675,11 @@ export function SdMonitoringTab() {
           ...values,
           customerId: null,
         })
-        setToken({ source: created.name, token: created.token })
+        setToken({
+          source: created.name,
+          kind: created.kind,
+          token: created.token,
+        })
       }
       setDialog(null)
     } catch (err) {
@@ -590,7 +690,11 @@ export function SdMonitoringTab() {
   async function rotate(source: SdMonitorSourceDTO) {
     try {
       const rotated = await mutations.regenerateToken.mutateAsync(source.id)
-      setToken({ source: rotated.name, token: rotated.token })
+      setToken({
+        source: rotated.name,
+        kind: rotated.kind,
+        token: rotated.token,
+      })
     } catch (err) {
       notify.error(err)
     }
@@ -599,7 +703,7 @@ export function SdMonitoringTab() {
   return (
     <SettingsSection
       title='Origens de monitoramento'
-      description='Zabbix ou qualquer webhook: o alerta abre o chamado, o reenvio do mesmo alerta não abre outro e a normalização encerra (ou avisa) o chamado.'
+      description='Zabbix, Grafana, PRTG ou qualquer webhook: o alerta abre o chamado, o reenvio do mesmo alerta não abre outro, alertas da mesma máquina se juntam no mesmo chamado e a normalização encerra (ou avisa) o chamado.'
       actions={
         canEdit ? (
           <Button size='sm' onClick={() => setDialog({ mode: 'create' })}>
@@ -613,8 +717,8 @@ export function SdMonitoringTab() {
         <EmptyState>{error.message}</EmptyState>
       ) : !isLoading && sources.length === 0 ? (
         <EmptyState>
-          Nenhuma origem cadastrada. Crie uma para receber alertas do Zabbix ou
-          de um webhook próprio.
+          Nenhuma origem cadastrada. Crie uma para receber alertas do Zabbix,
+          Grafana, PRTG ou de um webhook próprio.
         </EmptyState>
       ) : (
         <ul className='flex flex-col gap-2'>
@@ -642,7 +746,10 @@ export function SdMonitoringTab() {
                     {source.autoResolve
                       ? 'encerra na normalização'
                       : 'não encerra sozinha'}{' '}
-                    · janela de {source.flappingWindowMinutes} min
+                    · instabilidade {source.flappingWindowMinutes} min ·{' '}
+                    {source.correlationMode === 'HOST'
+                      ? `correlaciona por ${source.correlationWindowMinutes} min`
+                      : 'sem correlação'}
                   </span>
                   {source.severityMap.length > 0 ? (
                     <span className='text-xs text-muted-foreground'>
@@ -707,6 +814,8 @@ export function SdMonitoringTab() {
         </ul>
       )}
 
+      <SdMonitorUnmatchedPanel workspaceId={workspaceId} canEdit={canEdit} />
+
       <p className='text-xs text-muted-foreground'>
         A URL com o token aparece uma única vez, na criação ou ao gerar um token
         novo. Guarde-a com o cuidado de uma senha.
@@ -723,6 +832,7 @@ export function SdMonitoringTab() {
       {token ? (
         <TokenDialog
           source={token.source}
+          kind={token.kind}
           token={token.token}
           onClose={() => setToken(null)}
         />

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CreateSdMonitorSourceDTO,
+  LinkSdMonitorAlertDTO,
   UpdateSdMonitorSourceDTO,
 } from '@/src/schemas/sd-monitor-source.schema'
 import type {
@@ -23,6 +24,10 @@ import { apiFetch, apiSend } from './_fetch'
 export interface SdMonitorAlertFilters {
   sourceId?: string
   ticketId?: string
+  /** Alertas ligados a este item da CMDB. */
+  configItemId?: string
+  /** Só os alertas cujo host não casou com a CMDB. */
+  unmatched?: boolean
   status?: SdMonitorAlertStatusDTO
   limit?: number
 }
@@ -95,7 +100,10 @@ export function useSdMonitorAlerts(
     queryKey: sdMonitoringKeys.alerts(workspaceId, filters),
     queryFn: () =>
       apiFetch<SdMonitorAlertDTO[]>(
-        withQuery(`${base(workspaceId)}/monitor-alerts`, { ...filters }),
+        withQuery(`${base(workspaceId)}/monitor-alerts`, {
+          ...filters,
+          unmatched: filters.unmatched ? 'true' : undefined,
+        }),
         undefined,
         'Erro ao carregar os alertas',
       ),
@@ -146,4 +154,24 @@ export function useSdMonitorSourceMutations(workspaceId: string) {
     onSuccess: invalidate,
   })
   return { create, update, regenerateToken, remove }
+}
+
+/** Liga (ou desliga) o item da CMDB de um alerta; com `remember`, guarda o host. */
+export function useLinkSdMonitorAlert(workspaceId: string) {
+  const invalidate = useInvalidate(workspaceId)
+  return useMutation({
+    mutationFn: ({
+      alertId,
+      data,
+    }: {
+      alertId: string
+      data: LinkSdMonitorAlertDTO
+    }) =>
+      apiFetch<SdMonitorAlertDTO>(
+        `${base(workspaceId)}/monitor-alerts/${alertId}`,
+        json('PATCH', data),
+        'Erro ao ligar o alerta ao item da CMDB',
+      ),
+    onSuccess: invalidate,
+  })
 }
