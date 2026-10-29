@@ -2007,6 +2007,8 @@ export const whatsappCopilotNoContext = (message?: string): AppError =>
   appError(
     'WHATSAPP_COPILOT_NO_CONTEXT',
     message ?? 'A conversa ainda não tem mensagens para o copiloto usar',
+  )
+
 export const sdSwarmNotFound = (): AppError =>
   appError('SD_SWARM_NOT_FOUND', 'Swarming não encontrado')
 
