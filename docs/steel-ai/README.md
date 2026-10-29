@@ -316,3 +316,39 @@ Manual: [IA proativa](../../content/docs/steel-ai/ia-proativa.mdx).
 Tipos: `types/ai-insight.d.ts`. Schemas: `src/schemas/ai-insight.schema.ts`.
 Hooks: `src/hooks/use-ai-insights.ts`.
 
+
+## Steel Agents: mais gatilhos e agente por menção (A1)
+
+Catálogo de eventos (`src/lib/steel-agents/events.ts`) ampliado, cada um com
+um `void dispatchSteelAgentEvent(...)` no ponto onde acontece:
+
+| Evento | Onde dispara |
+|---|---|
+| `crm.opportunity.stage_changed` | `emitCrmOpportunityStageWebhooks` (só quando a etapa muda) |
+| `crm.proposal.viewed` | primeira visualização pública da proposta (`CrmProposalService`) |
+| `sd.sla.at_risk` | `SdSlaMonitorService`, junto do claim único de `slaAtRisk` |
+| `sd.ticket.reopened` | `SdTicketEngine.changePhase` ao sair de RESOLVED/CLOSED |
+| `zap.message.received` | `WhatsAppWebhookService.ingestInboundMessage` (conversas fora do ServiceDesk) |
+
+**Atribuição ao agente.** Tabela `steel_agent_assignments` (um agente por
+registro; `entityType` `SD_TICKET` ou `CRM_LEAD`, sem FK do registro, com
+cascade pelo agente). `PUT/GET /api/workspaces/[id]/servicedesk/tickets/[ticketId]/agent`
+e `.../crm/leads/[leadId]/agent` (`AssignSteelAgentSchema`, `agentId: null`
+remove). Autorização no `SteelAgentAssignmentService`: ticket exige agente do
+ServiceDesk com `sd-tickets` EDIT (e chamado aberto); lead exige CRM com
+`leads` EDIT. Agente pausado devolve `STEEL_AGENT_DISABLED`.
+
+**Menção com @.** `mentionedAgentIds` (até 5) no corpo de
+`POST .../tickets/[ticketId]/messages` e de `POST .../crm/notes`. Agentes
+inexistentes, de outro workspace ou pausados são ignorados em silêncio.
+
+**Acionamento direto.** `dispatchSteelAgentDirect` cria um run `EVENT` com
+`triggerPayload.event` em `sd.ticket.agent_assigned`, `sd.ticket.agent_mentioned`,
+`crm.lead.agent_assigned` ou `crm.note.agent_mentioned` (não são selecionáveis
+no editor: valem para qualquer tipo de gatilho). A trava anti-laço
+(`run-context.ts`) vale também aqui: escritas de um agente nunca acordam outro.
+
+UI: `SteelAgentAssignSelect` (coluna do chamado e painel do lead; some quando
+não há agentes) e o `@` do compositor do histórico do chamado, que mistura
+pessoas e Steel Agents (rótulo "Agente de IA"). Hook:
+`src/hooks/use-steel-agent-assignment.ts`.
