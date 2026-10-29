@@ -260,6 +260,11 @@ export const TAG_GROUPS = [
           'Construtor visual de chatbot: fluxos de menus, perguntas, condições e integrações, com passagem para atendente ou para a IA, simulador e sessões.',
       },
       {
+        name: 'Comunicação · Formulários (Flows)',
+        description:
+          'WhatsApp Flows: telas nativas da Meta (cadastro, agendamento, pesquisa) montadas no Steel, publicadas na WABA e enviadas por mensagem ou template, com a resposta gravada no contato e no CRM.',
+      },
+      {
         name: 'Comunicação · Tempo real e webhooks',
         description: 'SSE de eventos e webhooks de entrada da Meta e da Z-API.',
       },

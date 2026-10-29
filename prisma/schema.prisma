@@ -468,6 +468,8 @@ model Workspace {
   whatsappQuickReplies         WhatsAppQuickReply[]
   whatsappChatbots             WhatsAppChatbot[]
   whatsappChatbotSessions      WhatsAppChatbotSession[]
+  whatsappFlows                WhatsAppFlow[]
+  whatsappFlowResponses        WhatsAppFlowResponse[]
   whatsappTeams                WhatsAppTeam[]
   whatsappBroadcastLists       WhatsAppBroadcastList[]
   whatsappTemplates            WhatsAppTemplate[]
@@ -1249,6 +1251,7 @@ model WhatsAppContact {
   conversations        WhatsAppConversation[]
   broadcastRecipients  WhatsAppBroadcastRecipient[]
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
+  flowResponses        WhatsAppFlowResponse[]
 
   @@unique([workspaceId, waId])
   @@unique([workspaceId, bsuid])
@@ -11300,6 +11303,111 @@ model SdMonitorHostAlias {
   @@unique([workspaceId, host])
   @@index([configItemId])
   @@map("sd_monitor_host_aliases")
+}
+
+// nov: z3-whatsapp-flows ───────────────────────────────────────────────────
+
+enum WhatsAppFlowStatus {
+  /// Never published to Meta (or saved there only as a draft).
+  DRAFT
+  /// Published at Meta: sendable to anyone.
+  PUBLISHED
+  /// Retired: kept for the answers it collected, no longer sendable.
+  DEPRECATED
+}
+
+enum WhatsAppFlowCrmAction {
+  NONE
+  LEAD
+  PERSON
+  COMPANY
+}
+
+enum WhatsAppFlowResponseStatus {
+  /// Sent, waiting for the contact to fill it in.
+  SENT
+  /// The contact submitted the form.
+  COMPLETED
+}
+
+/// WhatsApp Flow (Z3): native Meta screens (sign-up, booking, survey) built
+/// from `definition`, published to the WABA and sent by interactive message
+/// or template. The answer is stored and mapped to the contact and the CRM.
+model WhatsAppFlow {
+  id                  String                @id @default(cuid())
+  workspaceId         String                @map("workspace_id")
+  /// Meta connection whose WABA owns the flow at Meta.
+  connectionId        String                @map("connection_id")
+  name                String
+  description         String?
+  /// Meta flow category (SIGN_UP, APPOINTMENT_BOOKING, SURVEY...).
+  category            String                @default("OTHER")
+  status              WhatsAppFlowStatus    @default(DRAFT)
+  /// Screens and fields, edited freely.
+  definition          Json
+  /// Frozen copy of `definition` as last sent to Meta (null until then).
+  publishedDefinition Json?                 @map("published_definition")
+  publishedVersion    Int                   @default(0) @map("published_version")
+  publishedAt         DateTime?             @map("published_at")
+  metaFlowId          String?               @map("meta_flow_id")
+  /// Status Meta reports for the flow (DRAFT, PUBLISHED, DEPRECATED...).
+  metaStatus          String?               @map("meta_status")
+  /// Last refusal from Meta, shown in the editor.
+  publishError        String?               @map("publish_error") @db.Text
+  /// Body of the interactive message that carries the flow.
+  bodyText            String                @default("Preencha o formulário para continuar.") @map("body_text")
+  /// Label of the button that opens the flow (max 30 chars at Meta).
+  ctaLabel            String                @default("Preencher") @map("cta_label")
+  /// Text sent right after the contact submits (inside the 24h window).
+  confirmationText    String?               @map("confirmation_text")
+  crmAction           WhatsAppFlowCrmAction @default(NONE) @map("crm_action")
+  /// CRM form this flow was copied from, for reference only.
+  sourceCrmFormId     String?               @map("source_crm_form_id")
+  createdByUserId     String?               @map("created_by_user_id")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  responses WhatsAppFlowResponse[]
+
+  @@index([workspaceId, status])
+  @@index([connectionId])
+  @@index([metaFlowId])
+  @@map("whatsapp_flows")
+}
+
+/// One send of a flow to a contact and what came back. `flowToken` is the
+/// opaque token Meta echoes in the answer, so the reply finds this row.
+model WhatsAppFlowResponse {
+  id                String                     @id @default(cuid())
+  workspaceId       String                     @map("workspace_id")
+  flowId            String                     @map("flow_id")
+  contactId         String                     @map("contact_id")
+  conversationId    String?                    @map("conversation_id")
+  flowToken         String                     @unique @map("flow_token")
+  status            WhatsAppFlowResponseStatus @default(SENT)
+  sentByUserId      String?                    @map("sent_by_user_id")
+  /// Outbound message that carried the flow.
+  messageId         String?                    @map("message_id")
+  /// Answers by field key (flow_token stripped).
+  answers           Json?
+  createdLeadId     String?                    @map("created_lead_id")
+  createdPersonId   String?                    @map("created_person_id")
+  createdCompanyId  String?                    @map("created_company_id")
+  /// Why the CRM / contact mapping did not apply, when it did not.
+  mappingNote       String?                    @map("mapping_note")
+  sentAt            DateTime                   @default(now()) @map("sent_at")
+  respondedAt       DateTime?                  @map("responded_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  flow      WhatsAppFlow    @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([flowId, status])
+  @@index([workspaceId, sentAt])
+  @@index([contactId])
+  @@index([conversationId, status])
+  @@map("whatsapp_flow_responses")
 }
 
 // nov: s2-major-incident

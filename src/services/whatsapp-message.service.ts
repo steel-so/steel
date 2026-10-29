@@ -3,6 +3,7 @@ import {
   whatsappConnectionNotFound,
   whatsappContactNotFound,
   whatsappConversationAiHandling,
+  whatsappFlowNotSendable,
   whatsappMessageNotFound,
 } from '@/src/errors'
 import type { PermissionAction } from '@/src/lib/permissions'
@@ -173,6 +174,45 @@ async function finalizeOutboundMessage(input: {
   })
 
   return ok(dto)
+}
+
+/** What `sendFlow` puts on the wire (the flow service decides which). */
+export type WhatsAppFlowSendInput = (
+  | {
+      kind: 'INTERACTIVE'
+      flowId: string
+      flowToken: string
+      bodyText: string
+      ctaLabel: string
+      screen: string
+      draft: boolean
+      label: string
+    }
+  | {
+      kind: 'TEMPLATE'
+      templateName: string
+      language: string
+      flowToken: string
+      label: string
+    }
+) & {
+  /** Connection that owns the flow at Meta: the chat must be on it. */
+  connectionId: string
+}
+
+interface TemplateButtonsBlock {
+  type?: string
+  buttons?: { type?: string }[]
+}
+
+/** Position of the FLOW button in the template's BUTTONS block (send index). */
+function flowButtonIndex(components: unknown): number {
+  if (!Array.isArray(components)) return 0
+  const block = (components as TemplateButtonsBlock[]).find(
+    (c) => c?.type === 'BUTTONS',
+  )
+  const index = block?.buttons?.findIndex((b) => b?.type === 'FLOW') ?? -1
+  return index >= 0 ? index : 0
 }
 
 export const WhatsAppMessageService = {
@@ -353,6 +393,108 @@ export const WhatsAppMessageService = {
       providerMessageId: sendResult.value.providerMessageId,
       buttons: extras.buttons,
     })
+  },
+
+  /**
+   * Sends a WhatsApp Flow (interactive message, or an approved template with
+   * a FLOW button) and records it on the timeline. Returns the message plus
+   * the contact, so the caller can record the pending answer.
+   */
+  async sendFlow(
+    actorId: string,
+    workspaceId: string,
+    conversationId: string,
+    input: WhatsAppFlowSendInput,
+  ): Promise<Result<{ message: WhatsAppMessageDTO; contactId: string }>> {
+    const scope = await authorizeMessages(actorId, workspaceId, 'CREATE')
+    if (!scope.ok) return scope
+
+    const loaded = await loadSendableConversation(
+      scope.value,
+      workspaceId,
+      conversationId,
+    )
+    if (!loaded.ok) return loaded
+    const { connection, conversation } = loaded.value
+    if (connection.id !== input.connectionId) {
+      return err(
+        whatsappFlowNotSendable(
+          'Este formulário pertence a outra conexão. Abra a conversa na conexão do formulário.',
+        ),
+      )
+    }
+    const to = conversation.contact.waId
+    const cost = agentCost(actorId, conversationId)
+
+    if (input.kind === 'INTERACTIVE') {
+      const sent = await WhatsAppSend.flow(
+        connection,
+        {
+          to,
+          flowId: input.flowId,
+          flowToken: input.flowToken,
+          bodyText: input.bodyText,
+          ctaLabel: input.ctaLabel,
+          screen: input.screen,
+          draft: input.draft,
+        },
+        { cost },
+      )
+      if (!sent.ok) return sent
+      const message = await finalizeOutboundMessage({
+        workspaceId,
+        conversationId,
+        actorId,
+        type: 'TEXT',
+        text: `Formulário enviado: ${input.label}`,
+        providerMessageId: sent.value.providerMessageId,
+      })
+      if (!message.ok) return message
+      return ok({ message: message.value, contactId: conversation.contactId })
+    }
+
+    const template = await WhatsAppTemplateRepository.findByConnectionAndName(
+      connection.id,
+      input.templateName,
+      input.language,
+    )
+    if (!template.ok) return template
+    const index = String(flowButtonIndex(template.value?.components))
+    const sent = await WhatsAppSend.template(
+      connection,
+      {
+        to,
+        templateName: input.templateName,
+        language: input.language,
+        components: [
+          {
+            type: 'button',
+            sub_type: 'flow',
+            index,
+            parameters: [
+              { type: 'action', action: { flow_token: input.flowToken } },
+            ],
+          },
+        ],
+      },
+      {
+        cost: {
+          ...cost,
+          templateCategory: template.value?.category ?? null,
+        },
+      },
+    )
+    if (!sent.ok) return sent
+    const message = await finalizeOutboundMessage({
+      workspaceId,
+      conversationId,
+      actorId,
+      type: 'TEMPLATE',
+      text: input.templateName,
+      providerMessageId: sent.value.providerMessageId,
+    })
+    if (!message.ok) return message
+    return ok({ message: message.value, contactId: conversation.contactId })
   },
 
   async sendContact(

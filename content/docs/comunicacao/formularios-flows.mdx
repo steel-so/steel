@@ -1,0 +1,118 @@
+---
+title: Formulários (WhatsApp Flows)
+description: Envie telas nativas do WhatsApp para cadastro, agendamento ou pesquisa e guarde a resposta no contato e no CRM.
+section: comunicacao
+order: 13
+---
+
+Um **formulário** (o *WhatsApp Flow* da Meta) abre dentro do próprio WhatsApp
+telas nativas, com campos de texto, listas, datas e botões. O cliente preenche
+sem sair da conversa, e a resposta volta para o Steel: fica salva no
+formulário, aparece na conversa, atualiza o contato e, se você quiser, cria um
+**lead**, uma **pessoa** ou uma **empresa** no CRM.
+
+<Callout type='admin'>
+  Criar, editar, publicar e excluir formulários é de dono e administradores.
+  Qualquer membro do módulo vê a lista e as respostas, e quem pode enviar
+  mensagens envia o formulário nas conversas.
+</Callout>
+
+<Callout type='aviso'>
+  Os formulários só funcionam em conexões da **API oficial da Meta**. Conexões
+  Z-API não aceitam Flows.
+</Callout>
+
+## Criar um formulário
+
+Em **Formulários**, clique em **Novo formulário** e escolha:
+
+- **Nome** e uma descrição interna opcional.
+- **Conexão**: o número da API oficial da Meta que vai enviar. O formulário
+  pertence à conta (WABA) desse número, então só pode ser enviado em conversas
+  dele.
+- **Começar de**:
+  - **Em branco**.
+  - **Cadastro com criação de lead**: nome, e-mail, telefone, empresa e aceite,
+    em duas telas.
+  - **Agendamento**: serviço, data, período e observação.
+  - **Pesquisa de satisfação**: nota, pontos fortes e comentário.
+  - **Copiar de um formulário do CRM**: reaproveita os campos, o mapeamento e a
+    ação (lead, pessoa ou empresa) de um formulário que você já tem no CRM.
+    Rótulos longos são encurtados para o limite da Meta e formulários com mais
+    de 30 campos ou 8 telas são cortados no limite.
+
+O formulário nasce como **rascunho**: nada chega à Meta nem aos clientes até
+você enviar.
+
+## O editor
+
+A aba **Telas** monta o formulário. Cada tela tem título, uma chamada no topo,
+um texto explicativo opcional e o texto do botão ("Continuar" nas primeiras,
+"Enviar" na última). Em cada campo você define:
+
+- **Tipo**: texto curto, e-mail, telefone, número, texto longo, lista
+  suspensa, escolha única, múltipla escolha, aceite (sim/não) e data.
+- **Pergunta**: a Meta limita o tamanho por tipo (20 caracteres em campos de
+  texto, 30 em escolhas, 40 em data, 80 em aceite). O editor avisa.
+- **Opções**, nos campos de escolha (até 20, com 30 caracteres cada).
+- **Obrigatório** e um texto de ajuda opcional.
+- **Guardar a resposta em**: o contato do WhatsApp (nome) ou um atributo do
+  lead, da pessoa ou da empresa do CRM.
+
+Limites: 8 telas, 8 campos por tela e 30 campos no total. O botão **Ver JSON**
+mostra o que será enviado à Meta.
+
+A aba **Envio e CRM** define:
+
+- O **texto da mensagem** e o **botão** que abre o formulário.
+- O **agradecimento** enviado logo depois que o cliente responde (opcional).
+- O que fazer com a resposta: **não criar nada no CRM**, **criar um lead**,
+  **uma pessoa** ou **uma empresa**. Para criar lead é preciso mapear o e-mail
+  ou o telefone; pessoa pede nome ou e-mail; empresa pede o nome.
+
+## Enviar para a Meta
+
+- **Enviar rascunho à Meta** grava o formulário na sua conta como rascunho. Já
+  dá para testar o envio em uma conversa (a Meta marca a mensagem como de
+  teste), e **Pré-visualizar** abre a prévia da própria Meta.
+- **Publicar** envia e publica. Se a Meta recusar, o motivo aparece no topo do
+  editor e nada muda.
+
+<Callout type='aviso'>
+  Um formulário publicado não pode ser editado na Meta. Ao publicar de novo, o
+  Steel cria um novo Flow lá e passa a enviar o novo. Quem já recebeu o antigo
+  continua conseguindo responder, e a resposta cai no mesmo formulário.
+</Callout>
+
+## Enviar na conversa
+
+Na conversa, abra o menu de anexo (clipe) e escolha **Formulário (Flow)**. O
+cliente recebe a mensagem com o botão e preenche as telas. Isso só funciona
+**dentro das 24 horas** da última mensagem dele.
+
+Para falar com quem não escreve há mais de 24 horas, use um **template**: com o
+formulário publicado, clique em **Criar template** no editor. O Steel envia à
+Meta um template com o botão do formulário, que aparece em **Templates** e pode
+ser usado depois da aprovação.
+
+## O que acontece com a resposta
+
+Quando o cliente envia o formulário:
+
+1. A resposta é guardada na aba **Respostas** do formulário, com o contato, a
+   data e o que foi criado no CRM.
+2. A conversa mostra "Formulário respondido" com o resumo das respostas.
+3. Os campos mapeados para o contato atualizam o nome dele.
+4. Conforme a ação escolhida, o Steel cria o lead (com a mesma validação,
+   deduplicação e distribuição dos outros canais), a pessoa ou a empresa. Se o
+   CRM estiver desabilitado, ou o registro não puder ser criado, a resposta
+   fica só no WhatsApp e a aba **Respostas** diz o motivo.
+5. O agradecimento configurado é enviado, e nem a IA nem o chatbot respondem à
+   resposta do formulário.
+
+## Excluir e descontinuar
+
+Um formulário que nunca foi enviado pode ser excluído. Depois do primeiro envio
+ele só pode ser **descontinuado**: deixa de ser enviado (na Meta também), mas as
+respostas coletadas continuam guardadas. Os dados do contato seguem a regra da
+LGPD: ao excluir o contato, as respostas dele também são apagadas.

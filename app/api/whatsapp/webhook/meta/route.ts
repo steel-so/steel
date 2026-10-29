@@ -63,6 +63,8 @@ interface MetaMessage {
     type?: string
     button_reply?: { id?: string; title?: string }
     list_reply?: { id?: string; title?: string }
+    // WhatsApp Flow answer: `response_json` is a JSON string.
+    nfm_reply?: { name?: string; body?: string; response_json?: string }
   }
   contacts?: {
     name?: { formatted_name?: string }
@@ -101,6 +103,7 @@ function extractMessageContent(message: MetaMessage): {
   rawMediaUrl?: string
   contactPayload?: { name: string; waId: string }
   buttonPayload?: string
+  flowResponseJson?: string
 } {
   switch (message.type) {
     case 'text':
@@ -142,6 +145,14 @@ function extractMessageContent(message: MetaMessage): {
       }
     // Interactive reply button / list row: `id` is our payload.
     case 'interactive':
+      // A submitted WhatsApp Flow: the answers travel as a JSON string.
+      if (message.interactive?.type === 'nfm_reply') {
+        return {
+          type: 'TEXT',
+          text: '[Formulário respondido]',
+          flowResponseJson: message.interactive.nfm_reply?.response_json,
+        }
+      }
       return {
         type: 'BUTTON',
         text:

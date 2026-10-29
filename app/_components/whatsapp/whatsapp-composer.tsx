@@ -11,6 +11,7 @@ import {
   Mic01Icon,
   SentIcon,
   SmileIcon,
+  Task01Icon,
   Video01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { type ChangeEvent, useRef, useState } from 'react'
@@ -94,6 +95,7 @@ import type {
 import type { WhatsAppQuickReplyDTO } from '@/types/whatsapp-quick-reply'
 import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
 import { WhatsappButtonsSummary } from './buttons/whatsapp-buttons-editor'
+import { FlowSendDialog } from './flows/flow-send-dialog'
 import {
   QUICK_REPLY_LIST_ID,
   QuickReplyOption,
@@ -219,6 +221,7 @@ export function WhatsappComposer({
     useState<WhatsAppTemplateDTO | null>(null)
   const [variablesDialogOpen, setVariablesDialogOpen] = useState(false)
   const [shareContactOpen, setShareContactOpen] = useState(false)
+  const [flowOpen, setFlowOpen] = useState(false)
   // A quick reply with buttons goes as-is through its own endpoint (a text
   // send would drop the buttons), so it is staged instead of filling the box.
   const [stagedQuickReply, setStagedQuickReply] =
@@ -726,6 +729,10 @@ export function WhatsappComposer({
               <SteelIcon icon={Contact01Icon} size={16} />
               Contato
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFlowOpen(true)}>
+              <SteelIcon icon={Task01Icon} size={16} />
+              Formulário (Flow)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -811,6 +818,13 @@ export function WhatsappComposer({
             notify.error('Erro ao enviar template')
           }
         }}
+      />
+
+      <FlowSendDialog
+        workspaceId={workspaceId}
+        conversationId={conversationId}
+        open={flowOpen}
+        onOpenChange={setFlowOpen}
       />
 
       <Dialog open={shareContactOpen} onOpenChange={setShareContactOpen}>
