@@ -57,6 +57,8 @@ import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcas
 import { WhatsappNumberValidationProgress } from '../number-validation/whatsapp-number-validation-dialog'
 import { TemplateNameWithQuality } from '../template-quality-badge'
 import { BroadcastMediaPreview } from './broadcast-media-preview'
+import { WhatsappBroadcastMarketingMetrics } from './whatsapp-broadcast-marketing-metrics'
+import { WhatsappSettingsMarketingLite } from './whatsapp-settings-marketing-lite'
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Rascunho',
@@ -646,9 +648,11 @@ export function WhatsappSettingsBroadcasts({
   const canManage = useCan('broadcasts', 'CREATE')
   const canValidate = useCan('contacts', 'EDIT')
   const [validatingId, setValidatingId] = useState<string | null>(null)
+  const [metricsId, setMetricsId] = useState<string | null>(null)
 
   return (
     <div className='space-y-4'>
+      <WhatsappSettingsMarketingLite workspaceId={workspaceId} />
       <div className='flex items-center justify-between'>
         <div>
           <h3 className='font-medium text-sm'>Listas de transmissão</h3>
@@ -674,7 +678,7 @@ export function WhatsappSettingsBroadcasts({
               <TableHead>Nome</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Progresso</TableHead>
-              <TableHead className='w-44' />
+              <TableHead className='w-60' />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -720,6 +724,15 @@ export function WhatsappSettingsBroadcasts({
                       Validar base
                     </Button>
                   ) : null}
+                  {broadcast.status !== 'DRAFT' ? (
+                    <Button
+                      size='xs'
+                      variant='outline'
+                      onClick={() => setMetricsId(broadcast.id)}
+                    >
+                      Métricas
+                    </Button>
+                  ) : null}
                   {canManage && broadcast.status === 'DRAFT' && (
                     <Button
                       size='xs'
@@ -751,6 +764,14 @@ export function WhatsappSettingsBroadcasts({
           </TableBody>
         </Table>
       </div>
+
+      {metricsId ? (
+        <WhatsappBroadcastMarketingMetrics
+          workspaceId={workspaceId}
+          broadcastId={metricsId}
+          onClose={() => setMetricsId(null)}
+        />
+      ) : null}
 
       {validatingId ? (
         <WhatsappNumberValidationDialog

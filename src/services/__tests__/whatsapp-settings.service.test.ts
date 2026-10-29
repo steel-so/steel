@@ -181,6 +181,34 @@ describe('WhatsAppSettingsService', () => {
       )
     })
 
+    it('should keep Marketing Messages Lite off by default and save the toggles', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
+      expect(expectOk(await WhatsAppSettingsService.get('u1', 'ws1'))).toEqual(
+        expect.objectContaining({
+          marketingLiteEnabled: false,
+          marketingLiteCloudFallback: true,
+        }),
+      )
+
+      mockedSettingsRepo.upsert.mockResolvedValue(
+        ok(row({ marketingLiteEnabled: true })),
+      )
+      expectOk(
+        await WhatsAppSettingsService.update('u1', 'ws1', {
+          marketingLiteEnabled: true,
+          marketingLiteCloudFallback: false,
+        }),
+      )
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({
+          marketingLiteEnabled: true,
+          marketingLiteCloudFallback: false,
+        }),
+      )
+    })
+
     it('should reject business hours that start and end at the same time', async () => {
       asRole('ADMIN')
       mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))

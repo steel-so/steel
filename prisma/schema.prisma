@@ -1787,6 +1787,13 @@ model WhatsAppSettings {
   distributionLastAssignedUserId    String?                  @map("distribution_last_assigned_user_id")
   /// Dias até uma checagem "tem zap?" valer de novo (cache do contato).
   whatsappCheckTtlDays        Int      @default(30) @map("whatsapp_check_ttl_days")
+  /// Marketing Messages Lite API (Z11): marketing templates of Meta
+  /// connections go through `/marketing_messages` (optimized delivery, click
+  /// metrics). Off by default — Meta onboarding is per business account.
+  marketingLiteEnabled        Boolean  @default(false) @map("marketing_lite_enabled")
+  /// Lets Meta fall back to the regular Cloud API when the Lite API can't
+  /// deliver (`product_policy: CLOUD_API_FALLBACK`).
+  marketingLiteCloudFallback  Boolean  @default(true) @map("marketing_lite_cloud_fallback")
   /// Monthly cost budget (BRL) of the Comunicação module (ADR 0050). Only
   /// warns admins at 80% and 100%; never blocks a send. Null = no budget.
   monthlyCostBudget           Decimal? @map("monthly_cost_budget") @db.Decimal(12, 2)
@@ -1970,6 +1977,8 @@ model WhatsAppBroadcastRecipient {
   providerMessageId String?                          @map("provider_message_id")
   errorMessage      String?                          @map("error_message")
   sentAt            DateTime?                        @map("sent_at")
+  /// Sent through the Marketing Messages Lite API (Z11).
+  viaMarketingLite  Boolean                          @default(false) @map("via_marketing_lite")
   createdAt         DateTime                         @default(now()) @map("created_at")
 
   broadcastList WhatsAppBroadcastList @relation(fields: [broadcastListId], references: [id], onDelete: Cascade)

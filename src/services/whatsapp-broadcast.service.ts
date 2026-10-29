@@ -14,6 +14,10 @@ import {
   type BroadcastMediaKind,
   resolveBroadcastMediaKind,
 } from '@/src/lib/whatsapp/broadcast-media'
+import {
+  fetchMarketingLiteAnalytics,
+  metaCredentialsOf,
+} from '@/src/lib/whatsapp/marketing-lite'
 import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
@@ -40,9 +44,11 @@ import type {
   WhatsAppBroadcastListDetailDTO,
   WhatsAppBroadcastListDTO,
 } from '@/types/whatsapp-broadcast'
+import type { WhatsAppBroadcastMarketingMetricsDTO } from '@/types/whatsapp-broadcast-marketing'
 import { assertModuleMember } from './authz'
 import { assertFeature } from './feature-flag.service'
 import { notifyWhatsAppUsers } from './whatsapp-notify'
+import { WhatsAppSettingsService } from './whatsapp-settings.service'
 
 const STAGGER_DELAY_MS = 4000
 
@@ -222,6 +228,87 @@ export const WhatsAppBroadcastService = {
     if (!result.value) return err(whatsappBroadcastNotFound())
 
     return ok(toWhatsAppBroadcastListDetailDTO(result.value))
+  },
+
+  /**
+   * Marketing Messages Lite metrics (Z11): how many recipients went through
+   * the Lite API and, for those, Meta's sent / delivered / read / clicked
+   * totals for the template over the broadcast period. A Meta failure never
+   * fails the call: the counters still come back with a reason.
+   */
+  async marketingMetrics(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+  ): Promise<Result<WhatsAppBroadcastMarketingMetricsDTO>> {
+    const membership = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'broadcasts', action: 'VIEW' },
+    )
+    if (!membership.ok) return membership
+
+    const list = await WhatsAppBroadcastRepository.findByIdRaw(id)
+    if (!list.ok) return list
+    if (!list.value || list.value.workspaceId !== workspaceId) {
+      return err(whatsappBroadcastNotFound())
+    }
+
+    const settings = await WhatsAppSettingsService.getEffective(workspaceId)
+    if (!settings.ok) return settings
+    const summary = await WhatsAppBroadcastRepository.marketingLiteSummary(id)
+    if (!summary.ok) return summary
+
+    const base = {
+      enabled: settings.value.marketingLiteEnabled,
+      viaMarketingLiteCount: summary.value.count,
+    }
+    const unavailable = (reason: string) =>
+      ok({ ...base, analytics: null, unavailableReason: reason })
+
+    if (summary.value.count === 0 || !list.value.templateId) {
+      return unavailable('Esta transmissão não usou a Marketing Messages Lite.')
+    }
+
+    const template = await WhatsAppTemplateRepository.findById(
+      list.value.templateId,
+      workspaceId,
+    )
+    if (!template.ok) return template
+    const connection = await WhatsAppConnectionRepository.findById(
+      list.value.connectionId,
+      workspaceId,
+    )
+    if (!connection.ok) return connection
+    if (!template.value || !connection.value) {
+      return unavailable('O template ou a conexão não existe mais.')
+    }
+
+    try {
+      const credentials = await metaCredentialsOf(connection.value)
+      if (!credentials) {
+        return unavailable('A conexão não é da API oficial da Meta.')
+      }
+      const analytics = await fetchMarketingLiteAnalytics(
+        credentials,
+        { name: template.value.name, language: template.value.language },
+        {
+          from: summary.value.first ?? list.value.createdAt,
+          to: new Date(),
+        },
+      )
+      return ok({ ...base, analytics, unavailableReason: null })
+    } catch (error) {
+      logger.warn('whatsapp.broadcast.marketing_metrics_failed', {
+        component: 'WhatsAppBroadcastService',
+        broadcastId: id,
+        reason: error instanceof Error ? error.message : 'unknown',
+      })
+      return unavailable(
+        'Não foi possível consultar as métricas na Meta agora.',
+      )
+    }
   },
 
   async create(
@@ -461,6 +548,7 @@ export const WhatsAppBroadcastService = {
     }
 
     let sendResult: Result<WhatsAppSendResult>
+    let viaMarketingLite = false
     if (list.templateId) {
       const template = await WhatsAppTemplateRepository.findById(
         list.templateId,
@@ -486,6 +574,25 @@ export const WhatsAppBroadcastService = {
         buttons: values.buttons ?? {},
       })
 
+      // Marketing Messages Lite (Z11): only marketing templates on Meta
+      // connections, and only when the workspace turned it on.
+      let marketingLite: { cloudApiFallback: boolean } | undefined
+      if (
+        connection.value.provider === 'META' &&
+        template.value.category.toUpperCase() === 'MARKETING'
+      ) {
+        const settings = await WhatsAppSettingsService.getEffective(
+          list.workspaceId,
+        )
+        if (!settings.ok) return settings
+        if (settings.value.marketingLiteEnabled) {
+          marketingLite = {
+            cloudApiFallback: settings.value.marketingLiteCloudFallback,
+          }
+          viaMarketingLite = true
+        }
+      }
+
       sendResult = await WhatsAppSend.template(
         connection.value,
         {
@@ -494,6 +601,7 @@ export const WhatsAppBroadcastService = {
           language: template.value.language,
           components: applyTemplateSendExtras(template.value, components)
             .components,
+          ...(marketingLite ? { marketingLite } : {}),
         },
         {
           cost: {
@@ -533,6 +641,7 @@ export const WhatsAppBroadcastService = {
           status: 'SENT',
           providerMessageId: sendResult.value.providerMessageId,
           sentAt: new Date(),
+          ...(viaMarketingLite ? { viaMarketingLite } : {}),
         })
       : await WhatsAppBroadcastRepository.updateRecipientStatus(recipientId, {
           status: 'FAILED',

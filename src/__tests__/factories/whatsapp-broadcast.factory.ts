@@ -48,6 +48,7 @@ export function createFakeWhatsAppBroadcastRecipient(
     providerMessageId: null,
     errorMessage: null,
     sentAt: null,
+    viaMarketingLite: false,
     createdAt: new Date(),
     ...overrides,
   }

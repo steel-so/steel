@@ -193,6 +193,28 @@ export const WhatsAppBroadcastRepository = {
     }
   },
 
+  /** Recipients sent through the Marketing Messages Lite API and the span of
+   * their send times (Z11). */
+  async marketingLiteSummary(
+    broadcastListId: string,
+  ): Promise<Result<{ count: number; first: Date | null; last: Date | null }>> {
+    try {
+      const aggregate = await prisma.whatsAppBroadcastRecipient.aggregate({
+        where: { broadcastListId, viaMarketingLite: true, status: 'SENT' },
+        _count: { _all: true },
+        _min: { sentAt: true },
+        _max: { sentAt: true },
+      })
+      return ok({
+        count: aggregate._count._all,
+        first: aggregate._min.sentAt,
+        last: aggregate._max.sentAt,
+      })
+    } catch (error) {
+      return err(dbError('Failed to summarize marketing lite sends', error))
+    }
+  },
+
   async updateRecipientStatus(
     id: string,
     data: {
@@ -200,6 +222,7 @@ export const WhatsAppBroadcastRepository = {
       providerMessageId?: string
       errorMessage?: string
       sentAt?: Date
+      viaMarketingLite?: boolean
     },
   ): Promise<Result<void>> {
     try {
