@@ -325,6 +325,10 @@
       "description": "Risco de violação de SLA por heurística explicável (ADR 0016 — nada passa por LLM): a fila por risco, a previsão de um chamado com os fatores que pegaram e a frase do motivo de cada um, e os agrupamentos de incidentes repetidos como sugestão de problema (abrir o problema e descartar são ações do agente)."
     },
     {
+      "name": "ServiceDesk · IA vs. técnico",
+      "description": "Painel que compara o que a IA sugeriu (triagem automática e copiloto) com o que o técnico fez: precisão por campo da classificação, calibração da confiança, aproveitamento das respostas e soluções sugeridas, desfecho do pré-atendimento e o consumo da cota de IA do ServiceDesk. Só leitura, só agentes, nada chama a IA."
+    },
+    {
       "name": "ServiceDesk · Integrações",
       "description": "Integrações com Slack e GitHub: conexão por workspace (Slack por OAuth do app, GitHub por token do repositório, tudo cifrado e nunca devolvido), canal por time para os eventos escolhidos do catálogo de notificações, abertura de chamado a partir de uma mensagem do Slack com a thread espelhada no histórico, vínculo de issue/PR com chamados de problema e mudança e o espelhamento do estado (fechada, reaberta, mesclada) por webhook assinado, com reconciliação horária."
     },
@@ -528,6 +532,7 @@
         "ServiceDesk · Contratos e horas",
         "ServiceDesk · Relatórios de SLA",
         "ServiceDesk · Risco preditivo",
+        "ServiceDesk · IA vs. técnico",
         "ServiceDesk · Integrações",
         "ServiceDesk · CMDB"
       ]
@@ -20551,7 +20556,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -21128,7 +21133,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_49"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_50"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67345,7 +67350,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67754,7 +67759,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -73330,7 +73335,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_47"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -75887,7 +75892,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_48"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_49"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -78072,6 +78077,71 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/servicedesk/ai/comparison": {
+      "get": {
+        "tags": ["ServiceDesk · IA vs. técnico"],
+        "summary": "Painel IA vs. técnico",
+        "operationId": "getWorkspacesByIdServicedeskAiComparison",
+        "description": "Compara o que a IA sugeriu com o que o técnico fez no período (7, 30 ou 90 dias; padrão 30). **Triagem automática**: cada campo sugerido (categoria, subcategoria, serviço, impacto, urgência, prioridade, departamento e tags) é conferido com o valor final do chamado, só dos chamados já resolvidos ou fechados; a prioridade fica de fora quando a IA preencheu impacto ou urgência, pois a matriz a recalcula. **Copiloto**: respostas e soluções sugeridas são comparadas por similaridade de texto com o que o agente escreveu (adotada ≥ 80%, editada ≥ 35%, senão não usada; sem texto do agente a sugestão fica pendente por 24 h) e as classificações pedidas entram na precisão dos campos. Traz ainda a calibração da confiança, o desempenho por agente, o desfecho do pré-atendimento, as últimas divergências e o consumo da cota de IA do ServiceDesk. Só leitura: nada chama a IA. Acesso: sessão + **agente** do ServiceDesk com permissão de leitura de relatórios (`sd-reports`) e o módulo habilitado.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comparativo do período.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SdAiComparison"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_5"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -86357,7 +86427,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_46"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88769,7 +88839,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_46"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -99841,7 +99911,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -129910,7 +129980,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -162464,7 +162534,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
+                "summary": "VALIDATION_ERROR — Período fora de 7, 30 ou 90 dias",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -162505,7 +162575,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -162527,6 +162597,47 @@
         }
       },
       "422_VALIDATION_ERROR_42": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Query inválida",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Parâmetros inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — `view=user` fora do escopo `workspace`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_43": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162560,7 +162671,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_43": {
+      "422_VALIDATION_ERROR_44": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162594,7 +162705,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_44": {
+      "422_VALIDATION_ERROR_45": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162617,7 +162728,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_45": {
+      "422_VALIDATION_ERROR_46": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162647,7 +162758,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_46": {
+      "422_VALIDATION_ERROR_47": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162670,7 +162781,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_47": {
+      "422_VALIDATION_ERROR_48": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162693,7 +162804,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_48": {
+      "422_VALIDATION_ERROR_49": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -162716,7 +162827,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_49": {
+      "422_VALIDATION_ERROR_50": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -197430,6 +197541,435 @@
           "tags",
           "confidence",
           "reasoning"
+        ]
+      },
+      "SdAiComparison": {
+        "type": "object",
+        "properties": {
+          "periodDays": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "example": 30
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "triaged": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "settled": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "awaitingReview": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "accuracy": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Percentual inteiro; `null` sem amostra.",
+                "example": 82
+              },
+              "corrections": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "avgConfidence": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Percentual inteiro; `null` sem amostra.",
+                "example": 82
+              }
+            },
+            "required": ["triaged", "settled", "awaitingReview", "accuracy", "corrections", "avgConfidence"]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "category",
+                    "subcategory",
+                    "service",
+                    "impact",
+                    "urgency",
+                    "priority",
+                    "department",
+                    "tags"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "example": "Categoria"
+                },
+                "compared": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "matched": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "corrected": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "A IA preencheu e o técnico trocou depois."
+                },
+                "accuracy": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Percentual inteiro; `null` sem amostra.",
+                  "example": 82
+                }
+              },
+              "required": ["field", "label", "compared", "matched", "corrected", "accuracy"]
+            }
+          },
+          "calibration": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "band": {
+                  "type": "string",
+                  "enum": ["LOW", "MEDIUM", "HIGH"]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "tickets": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "accuracy": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Percentual inteiro; `null` sem amostra.",
+                  "example": 82
+                }
+              },
+              "required": ["band", "label", "tickets", "accuracy"]
+            }
+          },
+          "texts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["REPLY", "SOLUTION"]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "adopted": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "edited": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "notUsed": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "pending": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "usageRate": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Percentual inteiro; `null` sem amostra.",
+                  "example": 82
+                }
+              },
+              "required": ["kind", "label", "total", "adopted", "edited", "notUsed", "pending", "usageRate"]
+            }
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "suggestions": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "used": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "usageRate": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Percentual inteiro; `null` sem amostra.",
+                  "example": 82
+                }
+              },
+              "required": ["userId", "name", "suggestions", "used", "usageRate"]
+            }
+          },
+          "preService": {
+            "type": "object",
+            "properties": {
+              "conversations": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "resolvedByKb": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "ticketOpened": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "abandoned": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "open": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "deflectionRate": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Percentual inteiro; `null` sem amostra.",
+                "example": 82
+              }
+            },
+            "required": [
+              "conversations",
+              "resolvedByKb",
+              "ticketOpened",
+              "abandoned",
+              "open",
+              "deflectionRate"
+            ]
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "calls": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "costUsd": {
+                "type": "number"
+              },
+              "costPerUsedUsd": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "feature": {
+                      "type": "string",
+                      "example": "SERVICEDESK_TRIAGE"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "calls": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "costUsd": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["feature", "label", "calls", "costUsd"]
+                }
+              }
+            },
+            "required": ["calls", "costUsd", "costPerUsedUsd", "features"]
+          },
+          "divergences": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ticketId": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "INC-000123"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "category",
+                    "subcategory",
+                    "service",
+                    "impact",
+                    "urgency",
+                    "priority",
+                    "department",
+                    "tags"
+                  ]
+                },
+                "fieldLabel": {
+                  "type": "string"
+                },
+                "suggested": {
+                  "type": "string"
+                },
+                "final": {
+                  "type": "string"
+                },
+                "appliedByAi": {
+                  "type": "boolean"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "ticketId",
+                "code",
+                "title",
+                "field",
+                "fieldLabel",
+                "suggested",
+                "final",
+                "appliedByAi",
+                "at"
+              ]
+            }
+          }
+        },
+        "required": [
+          "periodDays",
+          "from",
+          "to",
+          "summary",
+          "fields",
+          "calibration",
+          "texts",
+          "agents",
+          "preService",
+          "usage",
+          "divergences"
         ]
       },
       "SdAiConversation": {

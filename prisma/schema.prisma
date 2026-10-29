@@ -580,6 +580,7 @@ model Workspace {
   sdSavedViews              SdSavedView[]
   sdKbArticles              SdKbArticle[]
   sdAiConversations         SdAiConversation[]
+  sdAiSuggestions           SdAiSuggestion[]
   sdMailboxes               SdMailbox[]
   sdMailMessages            SdMailMessage[]
   sdMonitorSources          SdMonitorSource[]
@@ -6623,6 +6624,7 @@ model SdTicket {
   template               SdTicketTemplate?       @relation(fields: [templateId], references: [id], onDelete: SetNull)
   parent                 SdTicket?               @relation("SdTicketTree", fields: [parentId], references: [id], onDelete: SetNull)
   children               SdTicket[]              @relation("SdTicketTree")
+  aiSuggestions          SdAiSuggestion[]
   whatsappConversation   WhatsAppConversation?   @relation(fields: [whatsappConversationId], references: [id], onDelete: SetNull)
   slaPolicy              SdSlaPolicy?            @relation(fields: [slaPolicyId], references: [id], onDelete: SetNull)
   contract               SdContract?             @relation(fields: [contractId], references: [id], onDelete: SetNull)
@@ -10547,6 +10549,33 @@ model WhatsAppAdSpend {
   @@index([workspaceId, sourceId])
   @@index([workspaceId, periodStart, periodEnd])
   @@map("whatsapp_ad_spends")
+}
+
+// nov: s9-ai-vs-technician
+
+/// Rascunho do copiloto de IA entregue a um agente (resposta, solução ou
+/// classificação). Guardado para o painel "IA vs. técnico" comparar o que a
+/// IA sugeriu com o que o técnico fez (texto final ou campos do chamado).
+model SdAiSuggestion {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  ticketId    String   @map("ticket_id")
+  /// Agente que pediu a sugestão (sem FK: o histórico sobrevive à conta).
+  userId      String?  @map("user_id")
+  /// REPLY | SOLUTION | CLASSIFICATION
+  kind        String
+  /// Texto sugerido (REPLY e SOLUTION).
+  text        String?
+  /// Classificação sugerida (CLASSIFICATION), no formato de `aiTriage`.
+  payload     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ticket    SdTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([ticketId])
+  @@map("sd_ai_suggestions")
 }
 
 // nov: z2-chatbot-builder

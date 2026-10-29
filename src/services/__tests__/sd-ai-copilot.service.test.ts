@@ -128,6 +128,7 @@ beforeEach(() => {
   )
   kb.suggest.mockResolvedValue(ok([createFakeSdKbSearchRow({ id: 'a1' })]))
   aiRepo.setTicketAi.mockResolvedValue(ok(undefined))
+  aiRepo.recordSuggestion.mockResolvedValue(ok(undefined))
   aiRepo.loadCatalog.mockResolvedValue(ok(createFakeSdAiCatalog()))
 })
 
@@ -209,6 +210,19 @@ describe('suggestReply', () => {
       'Orientação do agente: peça o print e ligue para [telefone]',
     )
     expect(aiRepo.setTicketAi).not.toHaveBeenCalled()
+    expect(aiRepo.recordSuggestion).toHaveBeenCalledWith({
+      workspaceId: WS,
+      ticketId: 't1',
+      userId: 'u1',
+      kind: 'REPLY',
+      text: 'resposta da IA',
+    })
+  })
+
+  it('entrega a sugestão mesmo quando o registro para o painel falha', async () => {
+    aiRepo.recordSuggestion.mockResolvedValue(err(databaseError()))
+    const result = expectOk(await SdAiService.suggestReply('u1', WS, 't1'))
+    expect(result.text).toBe('resposta da IA')
   })
 
   it('funciona sem orientação (padrão do DTO)', async () => {
@@ -222,6 +236,9 @@ describe('draftSolution', () => {
     const result = expectOk(await SdAiService.draftSolution('u1', WS, 't1'))
     expect(result.text).toBe('resposta da IA')
     expect(chat.mock.calls[0]?.[0].system).toContain('registro da solução')
+    expect(aiRepo.recordSuggestion).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'SOLUTION', text: 'resposta da IA' }),
+    )
   })
 })
 
@@ -329,6 +346,13 @@ describe('suggestClassification', () => {
     })
     expect(aiRepo.loadCatalog).toHaveBeenCalledWith(WS, { type: 'INCIDENT' })
     expect(chat.mock.calls[0]?.[0].jsonSchema?.name).toBe('sd_triage')
+    expect(aiRepo.recordSuggestion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'CLASSIFICATION',
+        ticketId: 't1',
+        payload: expect.objectContaining({ tags: ['vpn'], confidence: 0.9 }),
+      }),
+    )
   })
 
   it('propaga a falha ao carregar o catálogo', async () => {

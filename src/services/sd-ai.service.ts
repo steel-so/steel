@@ -289,6 +289,24 @@ async function ticketContext(
   })
 }
 
+/**
+ * Guarda o rascunho entregue ao agente para o painel "IA vs. técnico". É
+ * melhor esforço: falhar ao registrar nunca derruba a sugestão em si.
+ */
+async function rememberSuggestion(
+  input: Parameters<typeof SdAiRepository.recordSuggestion>[0],
+): Promise<void> {
+  const saved = await SdAiRepository.recordSuggestion(input)
+  if (!saved.ok) {
+    logger.warn('servicedesk.ai.suggestion_not_recorded', {
+      workspaceId: input.workspaceId,
+      ticketId: input.ticketId,
+      kind: input.kind,
+      reason: saved.error.code,
+    })
+  }
+}
+
 async function copilotText(
   actorId: string,
   workspaceId: string,
@@ -745,6 +763,13 @@ export const SdAiService = {
       dto.instructions,
     )
     if (!result.ok) return result
+    await rememberSuggestion({
+      workspaceId,
+      ticketId: result.value.loaded.ticket.id,
+      userId: actorId,
+      kind: 'REPLY',
+      text: result.value.text,
+    })
     return ok({ text: result.value.text })
   },
 
@@ -761,6 +786,13 @@ export const SdAiService = {
       'solution',
     )
     if (!result.ok) return result
+    await rememberSuggestion({
+      workspaceId,
+      ticketId: result.value.loaded.ticket.id,
+      userId: actorId,
+      kind: 'SOLUTION',
+      text: result.value.text,
+    })
     return ok({ text: result.value.text })
   },
 
@@ -801,7 +833,15 @@ export const SdAiService = {
     if (!response.ok) return response
     const output = parseSdAiJson(SdAiTriageOutputSchema, response.value.text)
     if (!output) return err(aiProviderUnavailable(PROVIDER_FAILED))
-    return ok(toSdAiClassification(output, catalog.value))
+    const suggestions = toSdAiClassification(output, catalog.value)
+    await rememberSuggestion({
+      workspaceId,
+      ticketId: ticket.id,
+      userId: actorId,
+      kind: 'CLASSIFICATION',
+      payload: suggestions as unknown as Prisma.InputJsonValue,
+    })
+    return ok(suggestions)
   },
 
   /** Conversa do copiloto do agente neste chamado (`null` = nenhuma). */
