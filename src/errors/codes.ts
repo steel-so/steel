@@ -1286,6 +1286,14 @@ export const ERROR_CODES = {
   SURVEY_ALREADY_ANSWERED: { code: 'SURVEY_ALREADY_ANSWERED', status: 409 },
   SURVEY_INVALID_SCORE: { code: 'SURVEY_INVALID_SCORE', status: 422 },
   SURVEY_NO_RECIPIENT: { code: 'SURVEY_NO_RECIPIENT', status: 422 },
+
+  // Z7 copilot: the AI provider failed or returned nothing usable.
+  WHATSAPP_COPILOT_FAILED: { code: 'WHATSAPP_COPILOT_FAILED', status: 502 },
+  // Z7 copilot: nothing in the conversation to work from.
+  WHATSAPP_COPILOT_NO_CONTEXT: {
+    code: 'WHATSAPP_COPILOT_NO_CONTEXT',
+    status: 422,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

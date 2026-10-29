@@ -102,6 +102,7 @@ import {
 } from './quick-reply-slash-menu'
 import { TemplateQualityBadge } from './template-quality-badge'
 import { TemplateVariablesDialog } from './template-variables-dialog'
+import { WhatsappCopilotMenu } from './whatsapp-copilot-menu'
 
 function mediaTypeFromMime(mime: string): WhatsAppMessageTypeDTO {
   if (mime.startsWith('image/')) return 'IMAGE'
@@ -686,6 +687,14 @@ export function WhatsappComposer({
             </EmojiPicker>
           </PopoverContent>
         </Popover>
+
+        <WhatsappCopilotMenu
+          workspaceId={workspaceId}
+          conversationId={conversationId}
+          text={text}
+          onTextChange={setText}
+          disabled={isDisabled}
+        />
 
         <DropdownMenu>
           <DropdownMenuTrigger
