@@ -86,3 +86,25 @@ Ordem de merge: `nl-domains` → `nl-core` → `nl-issues` → `nl-archive`.
 | Enviar, agendar, cancelar | recurso `email`, `EDIT` |
 | Domínios de envio | OWNER/ADMIN do workspace |
 | Ajuste do limite mensal | admin da plataforma |
+
+## Remetente verificado nas campanhas e acertos da fase 1 (nl2-followups)
+
+**Remetente das campanhas** ([ADR 0055](../adr/0055-remetente-verificado-nas-campanhas.md))
+- Campanhas multicanal (`CrmCampaign`) e campanhas de e-mail antigas (`CrmEmailCampaign`) só enviam de um endereço em domínio `VERIFIED` do workspace ou do endereço da plataforma (`PLATFORM_CAMPAIGN_SENDER` = `notificacoes@stratustelecom.com.br`, em `src/lib/sending-domain/platform-sender.ts`). A checagem é `checkCampaignSender` (`src/lib/sending-domain/campaign-sender.ts`), que reaproveita `resolveVerifiedSender`.
+- Multicanal: entra em `issues` (passo `content`) com `fix: 'SENDING_DOMAINS'`, bloqueando o lançamento; a revisão mostra o link para Ajustes › Domínios de e-mail. No disparo, cada e-mail com remetente bloqueado vira `FAILED` com o motivo (sem nova tentativa) e o criador recebe um aviso (`notifyCrmCampaignSenderBlocked`, uma vez por campanha).
+- Campanhas antigas: `send` recusa com `SENDING_DOMAIN_NOT_VERIFIED` (422) antes de mudar qualquer coisa; o worker marca a agendada como `FAILED` e avisa o criador.
+- `GET /api/workspaces/{id}/crm/email-senders` (recurso `email`, `VIEW`): `{ platformAddress, verifiedDomains }` — só nomes de domínio. Alimenta o `EmailSenderPicker` (parte local + domínio) dos dois assistentes.
+
+**Formulário do CRM no Sites**
+- O elemento `site.form` mostra a caixa de consentimento da newsletter quando o formulário tem `newsletterId` e a newsletter está `ACTIVE` (igual a `/f/<token>`), e envia `newsletterConsent` junto dos campos.
+
+**Edições**
+- Edição criada sem modelo começa do esqueleto `createNewsletterStarterDocument` (cabeçalho, título + introdução, conteúdo, assinatura, rodapé).
+- O rodapé do canvas é renderizado em modo assinatura (`subscription` no contexto de render): "Você recebe a newsletter <nome> porque se inscreveu para recebê-la." + **Preferências** · **Descadastrar**. Vale para o editor, a prévia, o teste, o envio e a versão web (sem os links). A faixa de rodapé extra que era anexada no envio saiu — antes a edição chegava com dois rodapés.
+- Relatório de edição em `DRAFT`/`SCHEDULED` mostra estado vazio em vez do funil zerado.
+
+**Arquivo público**
+- `/n/**` tem layout raiz próprio, sem o `Suspense` do layout do Steel: edição ou newsletter inexistente responde **HTTP 404** com página própria em pt-BR.
+
+**Uso do mês**
+- A lista de newsletters mostra "X de Y e-mails usados neste mês" para todo membro do CRM; o cartão com a barra fica nas Configurações da newsletter.
