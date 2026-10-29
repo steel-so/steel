@@ -1973,3 +1973,19 @@ export const crmCnpjRunActive = (): AppError =>
     'CRM_CNPJ_RUN_ACTIVE',
     'Já existe um reenriquecimento em andamento — aguarde terminar',
   )
+export const surveyNotFound = (): AppError =>
+  appError('SURVEY_NOT_FOUND', 'Pesquisa não encontrada')
+
+export const surveyExpired = (): AppError =>
+  appError('SURVEY_EXPIRED', 'Esta pesquisa expirou')
+
+export const surveyAlreadyAnswered = (): AppError =>
+  appError('SURVEY_ALREADY_ANSWERED', 'Esta pesquisa já foi respondida')
+
+export const surveyInvalidScore = (
+  message = 'Nota fora da escala da pesquisa',
+): AppError => appError('SURVEY_INVALID_SCORE', message)
+
+export const surveyNoRecipient = (
+  message = 'Sem WhatsApp ou e-mail para enviar a pesquisa',
+): AppError => appError('SURVEY_NO_RECIPIENT', message)

@@ -429,6 +429,35 @@ const BroadcastBase = z.object({
 
 export const WhatsAppBroadcastDTO = dto('WhatsAppBroadcast', BroadcastBase)
 
+export const WhatsAppBroadcastMarketingMetricsDTO = dto(
+  'WhatsAppBroadcastMarketingMetrics',
+  z.object({
+    enabled: z.boolean().meta({
+      description: 'A Marketing Messages Lite está ligada no workspace agora.',
+    }),
+    viaMarketingLiteCount: z.number().int().meta({
+      description: 'Destinatários enviados pela API Lite.',
+    }),
+    analytics: z
+      .object({
+        sent: z.number().int(),
+        delivered: z.number().int(),
+        read: z.number().int(),
+        clicked: z.number().int().meta({
+          description: 'Cliques em botões (URL e resposta rápida).',
+        }),
+      })
+      .nullable()
+      .meta({
+        description:
+          'Totais da Meta para o template no período da transmissão; `null` quando a transmissão não usou a Lite ou a Meta não respondeu.',
+      }),
+    unavailableReason: z.string().nullable().meta({
+      description: 'Motivo (pt-BR) de `analytics` ser nulo.',
+    }),
+  }),
+)
+
 export const WhatsAppBroadcastDetailDTO = dto(
   'WhatsAppBroadcastDetail',
   BroadcastBase.extend({
@@ -667,6 +696,14 @@ export const WhatsAppSettingsDTO = dto(
     whatsappCheckTtlDays: z.number().int().meta({
       description:
         'Dias até a checagem "tem WhatsApp?" de um contato valer de novo (1 a 365; padrão 30).',
+    }),
+    marketingLiteEnabled: z.boolean().meta({
+      description:
+        'Envia templates de marketing das conexões Meta pela Marketing Messages Lite API (padrão: desligado).',
+    }),
+    marketingLiteCloudFallback: z.boolean().meta({
+      description:
+        'Permite que a Meta use a Cloud API comum quando a Lite não consegue entregar (padrão: ligado).',
     }),
   }),
 )

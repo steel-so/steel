@@ -8,6 +8,7 @@ import {
   Megaphone01Icon,
   Settings02Icon,
   Shapes01Icon,
+  StarIcon,
   UserGroup03Icon,
   UserGroupIcon,
   UserMultipleIcon,
@@ -78,6 +79,9 @@ export default async function ZapLayout({
           </NavItem>
           <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
             Relatórios
+          </NavItem>
+          <NavItem href={`${base}/pesquisas`} icon={StarIcon}>
+            Pesquisas
           </NavItem>
         </NavGroup>
         <NavGroup>

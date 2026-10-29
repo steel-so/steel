@@ -55,6 +55,29 @@ WhatsApp. Ligue **Pular números sem WhatsApp** ao criar ou importar a lista:
 O recurso depende da Z-API: a API oficial da Meta não tem essa consulta. Veja
 mais em [Contatos](/docs/comunicacao/contatos-e-grupos#tem-whatsapp-validar-a-base).
 
+## Marketing Messages Lite (Meta)
+
+Para conexões da **API oficial da Meta**, as transmissões com template de
+categoria **Marketing** podem sair pela Marketing Messages Lite, a API que a
+Meta criou para campanhas: entrega otimizada e métricas de clique.
+
+<Callout type='admin'>
+  O recurso vem **desligado**. Dono e administradores ligam em **Transmissões**,
+  no cartão "Marketing Messages Lite (Meta)". Sua conta do WhatsApp Business
+  precisa ter aceitado os termos de mensagens de marketing no Gerenciador da
+  Meta.
+</Callout>
+
+- Só templates de categoria **Marketing** em conexões Meta mudam. Z-API e
+  templates de utilidade ou autenticação continuam como antes.
+- **Usar a API comum quando a Lite não entregar** (ligado por padrão) deixa a
+  Meta tentar a Cloud API comum, pelo preço dela, em vez de deixar a mensagem
+  sem envio.
+- Em listas já enviadas, **Métricas** mostra quantas mensagens foram pela Lite
+  e os totais enviados, entregues, lidos e cliques que a Meta guarda para o
+  template. Os totais são do template desde o primeiro envio da lista, então
+  outras listas com o mesmo template entram na conta.
+
 ## Descadastro (LGPD)
 
 Um contato que responde **exatamente** `SAIR`, `PARAR`, `STOP` ou

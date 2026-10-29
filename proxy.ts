@@ -57,6 +57,8 @@ const PUBLIC_ROUTES = [
   '/api/whatsapp/webhook', '/api/pabx/calls/webhook', '/api/pabx/voice-agent', '/api/crm/proposals', '/api/crm/forms',
   '/api/crm/integrations', '/api/crm/apollo/webhook', '/api/crm/workflows', '/api/crm/landing-pages',
   '/f', '/p', '/l', '/api/social/blob',
+  // Pesquisa de satisfação (NPS/CSAT/CES) por e-mail: link sem sessão (token)
+  '/pesquisa', '/api/surveys/public',
   // Descadastro LGPD de campanhas de e-mail: link sem sessão (token HMAC)
   '/unsubscribe', '/api/crm/unsubscribe',
   // CRM multichannel campaigns: click redirect + open pixel (signed token)

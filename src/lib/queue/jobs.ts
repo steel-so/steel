@@ -40,6 +40,7 @@ export const QueueName = {
   CrmCampaigns: 'crm-campaigns',
   CrmWorkflowDelay: 'crm-workflow-delay',
   WhatsappButtonActions: 'whatsapp-button-actions',
+  SatisfactionSurvey: 'satisfaction-survey',
   SitePosts: 'site-posts',
   WebhooksDelivery: 'webhooks-delivery',
   AiIndex: 'ai-index',
@@ -1074,4 +1075,18 @@ export type CrmCnpjEnrichmentJob =
 
 export type CrmCnpjEnrichmentJobPayload = {
   [CrmCnpjEnrichmentJob.Run]: { runId: string }
+}
+
+/** NPS/CSAT/CES invitations (t1-nps-whatsapp): a delayed job per survey. */
+export const SatisfactionSurveyJob = {
+  DeliverSurvey: 'deliver-survey',
+} as const
+
+export type SatisfactionSurveyJob =
+  (typeof SatisfactionSurveyJob)[keyof typeof SatisfactionSurveyJob]
+
+export type SatisfactionSurveyJobPayload = {
+  [SatisfactionSurveyJob.DeliverSurvey]: {
+    surveyId: string
+  }
 }

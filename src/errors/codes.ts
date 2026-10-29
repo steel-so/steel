@@ -1277,6 +1277,11 @@ export const ERROR_CODES = {
   CRM_CNPJ_RATE_LIMITED: { code: 'CRM_CNPJ_RATE_LIMITED', status: 429 },
   CRM_CNPJ_RUN_NOT_FOUND: { code: 'CRM_CNPJ_RUN_NOT_FOUND', status: 404 },
   CRM_CNPJ_RUN_ACTIVE: { code: 'CRM_CNPJ_RUN_ACTIVE', status: 409 },
+  SURVEY_NOT_FOUND: { code: 'SURVEY_NOT_FOUND', status: 404 },
+  SURVEY_EXPIRED: { code: 'SURVEY_EXPIRED', status: 410 },
+  SURVEY_ALREADY_ANSWERED: { code: 'SURVEY_ALREADY_ANSWERED', status: 409 },
+  SURVEY_INVALID_SCORE: { code: 'SURVEY_INVALID_SCORE', status: 422 },
+  SURVEY_NO_RECIPIENT: { code: 'SURVEY_NO_RECIPIENT', status: 422 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

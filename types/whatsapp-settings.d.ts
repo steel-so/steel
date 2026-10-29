@@ -42,4 +42,8 @@ export interface WhatsAppSettingsDTO {
   distributionRespectBusinessHours: boolean
   /** Dias até a checagem "tem zap?" de um contato valer de novo. */
   whatsappCheckTtlDays: number
+  /** Marketing Messages Lite API for marketing templates (Meta). */
+  marketingLiteEnabled: boolean
+  /** Allow Meta to fall back to the Cloud API when Lite can't deliver. */
+  marketingLiteCloudFallback: boolean
 }

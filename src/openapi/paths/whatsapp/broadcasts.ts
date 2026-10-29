@@ -6,6 +6,7 @@ import {
   WhatsAppBroadcastDetailDTO,
   WhatsAppBroadcastDTO,
   WhatsAppBroadcastImportResultDTO,
+  WhatsAppBroadcastMarketingMetricsDTO,
 } from '../../schemas/whatsapp'
 import { perm, permErrors } from './shared'
 
@@ -105,6 +106,24 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
     params: PARAMS,
     responses: {
       200: { description: 'Transmissão.', schema: WhatsAppBroadcastDetailDTO },
+    },
+    errors: [
+      ...permErrors('broadcasts', 'VIEW'),
+      'WHATSAPP_BROADCAST_NOT_FOUND',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/marketing-metrics',
+    tags: [TAG],
+    summary: 'Métricas da Marketing Messages Lite',
+    description: `Quantos destinatários da transmissão foram enviados pela Marketing Messages Lite API (templates de marketing de conexões Meta, com a opção ligada em Ajustes › Comunicação) e, para eles, os totais enviados/entregues/lidos/cliques que a Meta guarda para o template desde o primeiro envio. Os totais são do template no período, não só desta lista. Se a Meta não responder, os contadores voltam e \`analytics\` fica \`null\` com o motivo. ${perm('broadcasts', 'VIEW')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Métricas.',
+        schema: WhatsAppBroadcastMarketingMetricsDTO,
+      },
     },
     errors: [
       ...permErrors('broadcasts', 'VIEW'),

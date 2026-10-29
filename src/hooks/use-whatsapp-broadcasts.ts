@@ -4,6 +4,7 @@ import type {
   WhatsAppBroadcastListDTO,
 } from '@/types/whatsapp-broadcast'
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
+import type { WhatsAppBroadcastMarketingMetricsDTO } from '@/types/whatsapp-broadcast-marketing'
 import { apiFetch } from './_fetch'
 
 const BROADCASTS_KEY = (workspaceId: string) =>
@@ -115,5 +116,23 @@ export function useStartWhatsAppBroadcast(workspaceId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BROADCASTS_KEY(workspaceId) })
     },
+  })
+}
+
+/** Marketing Messages Lite metrics of a broadcast (Z11). */
+export function useWhatsAppBroadcastMarketingMetrics(
+  workspaceId: string,
+  broadcastId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['whatsapp-broadcast-marketing', workspaceId, broadcastId],
+    queryFn: () =>
+      apiFetch<WhatsAppBroadcastMarketingMetricsDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/broadcasts/${broadcastId}/marketing-metrics`,
+        undefined,
+        'Erro ao buscar as métricas da transmissão',
+      ),
+    enabled: Boolean(broadcastId),
+    staleTime: 60 * 1000,
   })
 }
