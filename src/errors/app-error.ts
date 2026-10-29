@@ -1345,6 +1345,30 @@ export const sdMonitorPayloadInvalid = (
   message = 'Alerta em formato inválido',
 ): AppError => appError('SD_MONITOR_PAYLOAD_INVALID', message)
 
+export const sdInventoryTokenNotFound = (): AppError =>
+  appError('SD_INVENTORY_TOKEN_NOT_FOUND', 'Token de inventário não encontrado')
+
+export const sdInventoryTokenInvalid = (
+  message = 'Token de inventário inválido ou revogado',
+): AppError => appError('SD_INVENTORY_TOKEN_INVALID', message)
+
+export const sdInventoryPayloadInvalid = (
+  message = 'Relatório de inventário em formato inválido',
+): AppError => appError('SD_INVENTORY_PAYLOAD_INVALID', message)
+
+export const sdInventoryTargetNotFound = (): AppError =>
+  appError(
+    'SD_INVENTORY_TARGET_NOT_FOUND',
+    'Alvo de varredura SNMP não encontrado',
+  )
+
+export const sdInventoryDeviceNotFound = (): AppError =>
+  appError('SD_INVENTORY_DEVICE_NOT_FOUND', 'Equipamento não encontrado')
+
+export const sdInventoryRangeInvalid = (
+  message = 'Faixa de endereços inválida',
+): AppError => appError('SD_INVENTORY_RANGE_INVALID', message)
+
 export const sdPortalLinkInvalid = (
   message = 'Link de acesso inválido ou já utilizado',
 ): AppError => appError('SD_PORTAL_LINK_INVALID', message)

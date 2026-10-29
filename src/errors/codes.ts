@@ -798,6 +798,31 @@ export const ERROR_CODES = {
     code: 'SD_MONITOR_PAYLOAD_INVALID',
     status: 422,
   },
+  // ServiceDesk — inventário e descoberta de ativos (S1)
+  SD_INVENTORY_TOKEN_NOT_FOUND: {
+    code: 'SD_INVENTORY_TOKEN_NOT_FOUND',
+    status: 404,
+  },
+  SD_INVENTORY_TOKEN_INVALID: {
+    code: 'SD_INVENTORY_TOKEN_INVALID',
+    status: 401,
+  },
+  SD_INVENTORY_PAYLOAD_INVALID: {
+    code: 'SD_INVENTORY_PAYLOAD_INVALID',
+    status: 422,
+  },
+  SD_INVENTORY_TARGET_NOT_FOUND: {
+    code: 'SD_INVENTORY_TARGET_NOT_FOUND',
+    status: 404,
+  },
+  SD_INVENTORY_DEVICE_NOT_FOUND: {
+    code: 'SD_INVENTORY_DEVICE_NOT_FOUND',
+    status: 404,
+  },
+  SD_INVENTORY_RANGE_INVALID: {
+    code: 'SD_INVENTORY_RANGE_INVALID',
+    status: 422,
+  },
   SD_PORTAL_LINK_INVALID: { code: 'SD_PORTAL_LINK_INVALID', status: 401 },
   SD_PORTAL_LINK_EXPIRED: { code: 'SD_PORTAL_LINK_EXPIRED', status: 410 },
   SD_PORTAL_SESSION_EXPIRED: { code: 'SD_PORTAL_SESSION_EXPIRED', status: 401 },
