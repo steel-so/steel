@@ -1,0 +1,128 @@
+---
+title: Nó do n8n
+description: Instale o nó oficial do Steel no n8n, conecte com um token de API, comece fluxos com os eventos do Steel (gatilho) e crie chamados, leads e mensagens de WhatsApp (ações).
+section: ferramentas
+order: 5
+---
+
+O pacote `@steel-so/n8n-nodes-steel` traz o Steel para dentro do
+[n8n](https://n8n.io) em dois nós e uma credencial. Ele é construído sobre o
+[`@steel-so/sdk`](/dev/sdk), então usa a mesma [API pública v1](/dev/api-v1) e
+os mesmos [limites](/dev/limites) do [CLI](/dev/cli).
+
+| Nó | Para quê |
+| --- | --- |
+| **Steel Trigger** | Inicia o fluxo quando algo acontece no Steel: chamado aberto ou resolvido, SLA em risco ou violado, lead novo, negócio ganho ou perdido, mensagem de WhatsApp recebida e os demais [eventos de webhook](/dev/webhooks#webhooks-que-o-steel-envia) |
+| **Steel** | Faz algo no Steel: criar, buscar, comentar e mudar a fase de chamados; criar e listar leads; listar e mover oportunidades; listar e enviar templates de WhatsApp; ver a fila de conversas |
+| **Steel API** (credencial) | O endereço do seu Steel e o token pessoal |
+
+O nó **Steel** também pode ser usado como ferramenta por um agente de IA do n8n
+(`usableAsTool`).
+
+## Instale
+
+Pelo n8n, em **Settings › Community nodes › Install**, informe o nome do pacote:
+
+```text
+@steel-so/n8n-nodes-steel
+```
+
+Em instalações que usam a linha de comando, rode `npm install
+@steel-so/n8n-nodes-steel` na pasta de dados do n8n (`~/.n8n/nodes`) e reinicie.
+Precisa do n8n com Node.js 22 ou mais novo.
+
+<Callout type='nota'>
+  Nós da comunidade ainda não passaram pela verificação do n8n. Se o seu n8n
+  só aceita nós verificados, peça ao administrador para ligar os nós da
+  comunidade (`N8N_COMMUNITY_PACKAGES_ENABLED=true`).
+</Callout>
+
+## Conecte
+
+1. No Steel, abra **Configurações › Segurança › Tokens de API** e crie um token
+   ([passo a passo](/docs/seguranca/tokens-de-api#criar-um-token)). Escolha o
+   workspace, os módulos que o fluxo usa e **Ler e alterar**.
+2. No n8n, crie a credencial **Steel API**: em **Steel URL**, o endereço do seu
+   Steel, sem barra no final; em **API Token**, o valor `stl_pat_...`.
+3. Clique em **Test**. O n8n chama `GET /api/v1/me` e confirma o token.
+
+| Quero usar | O token precisa de |
+| --- | --- |
+| Buscar e listar | **Somente ler** e o módulo do recurso |
+| Criar, comentar, mover, enviar template | **Ler e alterar** e o módulo do recurso |
+| **Steel Trigger** | **Ler e alterar**, e o token ser de **dono ou administrador** do workspace (é quem gerencia webhooks) |
+
+## Gatilho: Steel Trigger
+
+1. Adicione o **Steel Trigger** e escolha a credencial.
+2. Em **Events**, marque os eventos. **All Events** inclui os tipos que o Steel
+   passar a enviar no futuro.
+3. Ative o fluxo.
+
+Ao ativar, o nó cadastra sozinho um [endpoint de webhook](/docs/workspace/integracoes#webhooks)
+no Steel apontando para o n8n, com a descrição `n8n: <nome do fluxo>`, e guarda
+o segredo de assinatura. Ao desativar ou apagar o fluxo, o endpoint é removido.
+Você não copia URL nem segredo.
+
+- **O n8n precisa estar em HTTPS e público.** O Steel só entrega em `https://`
+  e recusa endereços internos (`localhost`, `10.x`, `192.168.x`). Para testar na
+  sua máquina, use um túnel HTTPS (por exemplo `WEBHOOK_URL` do n8n apontando
+  para o túnel).
+- **A assinatura é conferida.** O nó verifica o cabeçalho `Steel-Signature`
+  com o segredo do endpoint (e a janela de 5 minutos do
+  `Steel-Webhook-Timestamp`) e responde `401` ao que não bater. Dá para
+  desligar em **Options › Verify Signature**, mas não é recomendado.
+- **A saída** é o corpo do evento: `id`, `type`, `createdAt`, `workspaceId` e
+  `data`. O `id` também vem no cabeçalho `Steel-Webhook-Id`; use-o para ignorar
+  uma entrega repetida.
+- O limite é de **20 endpoints** por workspace. Cada fluxo com o gatilho usa um.
+
+Para ver o que chega sem esperar um evento real, use o botão **Enviar teste** em
+**Ajustes › Webhooks** ou `steel trigger <evento>` no [CLI](/dev/cli).
+
+## Ações: nó Steel
+
+| Recurso | Operações |
+| --- | --- |
+| Ticket (ServiceDesk) | Create, Get, Get Many, Add Comment (resposta pública ou nota interna), Change Phase |
+| Lead (CRM) | Create, Get Many |
+| Opportunity (CRM) | Get Many, Move to Stage |
+| WhatsApp Template | Get Many, Send |
+| WhatsApp Conversation | Get Waiting (a fila sem responsável) |
+| Custom API Call | Qualquer rota da API v1 que o nó ainda não cobre |
+
+- As listas têm **Return All** (percorre todas as páginas, 100 por vez) ou
+  **Limit**.
+- **Phase** e **Stage** vêm de listas carregadas do seu Steel; também dá para
+  informar o id por expressão.
+- **Send** aceita número em E.164, id de conversa ou id de contato, o nome e o
+  idioma do template aprovado e, em **Components**, as variáveis no formato da
+  Cloud API.
+- Erros do Steel aparecem com o código e uma dica (por exemplo
+  `API_TOKEN_MODULE_NOT_ALLOWED` pede um token com o módulo certo). Em
+  `RATE_LIMITED` (300 chamadas a cada 60 segundos por token), adicione um nó
+  **Wait**.
+- O nó respeita **Continue On Fail**.
+
+### Exemplo: abrir chamado a partir de um lead ganho
+
+1. **Steel Trigger** com o evento `crm.deal.won`.
+2. **Steel** › Ticket › Create: **Type** `SERVICE_REQUEST`, **Title** `Ativar
+   cliente {{ $json.data.deal.name }}`.
+3. **Steel** › Ticket › Add Comment com o resumo do negócio, como nota interna.
+
+## Make e Zapier
+
+O mesmo contrato (token pessoal, API v1 e webhooks assinados) serve ao Make e ao
+Zapier; os apps deles seguem este nó, em outra fatia.
+
+## Solução de problemas
+
+| Sintoma | O que fazer |
+| --- | --- |
+| **Test** da credencial falha com `UNAUTHORIZED` | O token venceu, foi revogado ou é de outro ambiente. Crie outro |
+| Ao ativar o fluxo: `A URL precisa começar com https://` | O n8n está em `http://` ou atrás de endereço interno. Defina `WEBHOOK_URL` com o endereço público em HTTPS |
+| Ao ativar: `FORBIDDEN` | O token é **Somente ler** ou não é de dono/administrador |
+| O fluxo não dispara | Veja **Ajustes › Webhooks › Entregas** no Steel: mostra a resposta do n8n a cada tentativa |
+| `401 invalid signature` nas entregas | O fluxo foi duplicado ou importado e perdeu o segredo. Desative e ative de novo para cadastrar outro endpoint |
+| Endpoint **Desativado por falhas** | O n8n ficou 3 dias sem responder `2xx`. Ative o fluxo de novo |

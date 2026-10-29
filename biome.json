@@ -12,8 +12,11 @@
 			"src/**/*",
 			"worker/**/*",
 			"scripts/**/*",
+			"integrations/**/*",
 			"!!**/.next",
 			"!!**/node_modules",
+			"!!**/integrations/**/dist",
+			"!!**/integrations/**/coverage",
 			"!!**/app/globals.css"
 		]
 	},

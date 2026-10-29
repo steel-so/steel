@@ -1,0 +1,28 @@
+# Own workspace root: this package is published on its own and has its own
+# lockfile, so the Steel app workspace above does not install it.
+packages: []
+
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+# chokidar@4.0.3 (tsup's file watcher, dev tooling only) was published without
+# provenance after attested releases; same exception the app workspace makes.
+trustPolicyExclude:
+  - 'chokidar@4.0.3'
+blockExoticSubdeps: true
+
+onlyBuiltDependencies:
+  - esbuild
+allowBuilds:
+  cpu-features: set this to true or false
+  esbuild: set this to true or false
+  isolated-vm: set this to true or false
+  ssh2: set this to true or false
+
+# Pulled in by n8n-workflow (types only here); none is needed to build or test.
+ignoredBuiltDependencies:
+  - cpu-features
+  - isolated-vm
+  - ssh2
+
+# Build scripts of the ignored packages above must not fail the install.
+strictDepBuilds: false
