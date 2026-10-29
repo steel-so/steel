@@ -17,6 +17,7 @@ import type {
   CrmCampaignEmailPreviewDTO,
   CrmCampaignOptionsDTO,
 } from '@/types/crm-campaign'
+import { EmailSenderPicker } from '../email-sender-picker'
 import type { CampaignDraft, DraftChange } from './campaign-draft'
 import { EmailTemplatePicker } from './campaign-email-template-picker'
 import { EmailPreview } from './campaign-previews'
@@ -141,6 +142,7 @@ export function ContentStep({
   onChange,
   options,
   workspaceId,
+  workspaceSlug,
   preview,
   previewLoading,
   checklist,
@@ -152,6 +154,7 @@ export function ContentStep({
   onChange: DraftChange
   options: CrmCampaignOptionsDTO
   workspaceId: string
+  workspaceSlug: string
   preview: CrmCampaignEmailPreviewDTO | undefined
   previewLoading: boolean
   /** Checklist of the saved template choice. */
@@ -165,16 +168,12 @@ export function ContentStep({
     <div className='flex flex-col gap-6'>
       <div className='grid gap-6 lg:grid-cols-2'>
         <div className='flex min-w-0 flex-col gap-4'>
-          <div className='flex flex-col gap-2'>
-            <Label htmlFor='email-from'>Remetente</Label>
-            <Input
-              id='email-from'
-              type='email'
-              value={draft.emailFrom ?? ''}
-              onChange={(e) => onChange({ emailFrom: e.target.value })}
-              placeholder='marketing@suaempresa.com.br'
-            />
-          </div>
+          <EmailSenderPicker
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
+            value={draft.emailFrom ?? ''}
+            onChange={(email) => onChange({ emailFrom: email })}
+          />
           <div className='flex flex-col gap-2'>
             <Label htmlFor='email-subject'>Assunto</Label>
             <Input

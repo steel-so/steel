@@ -55,6 +55,7 @@ import {
   formatRate,
   ISSUE_STATUS_LABEL,
   ISSUE_STATUS_VARIANT,
+  issueEditorHref,
   newsletterHref,
   RECIPIENT_FILTER_LABEL,
   SKIP_REASON_LABEL,
@@ -433,6 +434,8 @@ export function NewsletterIssueReport({
   }
   const current = issue.data
   const stats = report.data?.stats
+  // Nothing went out yet: an all-zero funnel would only mislead.
+  const unsent = current.status === 'DRAFT' || current.status === 'SCHEDULED'
 
   function stop() {
     action.mutate(
@@ -508,7 +511,22 @@ export function NewsletterIssueReport({
         </div>
       </div>
 
-      {!stats ? (
+      {unsent ? (
+        <div className='flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center sm:p-10'>
+          <p className='font-medium'>Esta edição ainda não foi enviada</p>
+          <p className='max-w-md text-muted-foreground text-sm'>
+            {current.status === 'SCHEDULED' && current.scheduledAt
+              ? `O envio está agendado para ${formatIssueDateTime(current.scheduledAt)}. O relatório aparece aqui assim que os e-mails começarem a sair.`
+              : 'O relatório de entregas, aberturas e cliques aparece aqui depois do envio.'}
+          </p>
+          <Link
+            href={issueEditorHref(slug, newsletterId, issueId)}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            Voltar ao editor
+          </Link>
+        </div>
+      ) : !stats ? (
         <Skeleton className='h-24 w-full' />
       ) : (
         <>
@@ -565,11 +583,13 @@ export function NewsletterIssueReport({
         issueId={issueId}
       />
 
-      <RecipientsSection
-        workspaceId={workspaceId}
-        newsletterId={newsletterId}
-        issueId={issueId}
-      />
+      {unsent ? null : (
+        <RecipientsSection
+          workspaceId={workspaceId}
+          newsletterId={newsletterId}
+          issueId={issueId}
+        />
+      )}
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
         <AlertDialogContent>

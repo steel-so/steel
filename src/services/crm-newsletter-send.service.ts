@@ -124,6 +124,7 @@ export async function preSendChecks(
     issue.workspaceId,
     issue.builderDocument,
     issue.subject,
+    newsletter.name,
   )
   if (!base.ok) return base
   const error = issueChecklist(base.value, issue.subject).find(
@@ -565,6 +566,7 @@ export const CrmNewsletterSendService = {
       issue.workspaceId,
       issue.builderDocument,
       issue.subject,
+      newsletter.name,
     )
     if (!base.ok) {
       if (base.error.code === 'DATABASE_ERROR') return base

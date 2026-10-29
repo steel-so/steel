@@ -128,6 +128,10 @@ export const CrmCampaignDetailDTO = dto(
         z.object({
           step: z.enum(['destination', 'content', 'audience']),
           message: z.string(),
+          fix: z.enum(['SENDING_DOMAINS']).optional().meta({
+            description:
+              'Onde resolver: `SENDING_DOMAINS` = Ajustes › Domínios de e-mail.',
+          }),
         }),
       )
       .meta({ description: 'O que ainda impede o envio, por passo.' }),

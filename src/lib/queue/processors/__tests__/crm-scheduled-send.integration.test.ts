@@ -28,6 +28,8 @@ describe('processCrmScheduledSend()', () => {
     const due = await seedCrmEmailCampaign(workspace.id, user.id, {
       status: 'SCHEDULED',
       scheduledAt: new Date(Date.now() - 60_000),
+      // Platform address: sends without a verified domain (ADR 0055).
+      fromAddress: 'notificacoes@stratustelecom.com.br',
     })
     await seedCrmEmailCampaignRecipient(due.id, { email: 'jane@example.com' })
 
@@ -65,6 +67,7 @@ describe('processCrmScheduledSend()', () => {
     const empty = await seedCrmEmailCampaign(workspace.id, user.id, {
       status: 'SCHEDULED',
       recipientScope: 'SELECTED',
+      fromAddress: 'notificacoes@stratustelecom.com.br',
       scheduledAt: new Date(Date.now() - 60_000),
     })
 
@@ -83,5 +86,31 @@ describe('processCrmScheduledSend()', () => {
         where: { campaignId: empty.id },
       }),
     ).toBe(0)
+  })
+
+  it('should fail a due campaign whose From is not on a verified domain', async () => {
+    const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
+    await seedMembership({ userId: user.id, workspaceId: workspace.id })
+    await seedWorkspaceModuleAccess(workspace.id, user.id, { module: 'CRM' })
+    const blocked = await seedCrmEmailCampaign(workspace.id, user.id, {
+      status: 'SCHEDULED',
+      scheduledAt: new Date(Date.now() - 60_000),
+      fromAddress: 'marketing@unverified-acme.com',
+    })
+    await seedCrmEmailCampaignRecipient(blocked.id, {
+      email: 'jane@example.com',
+    })
+
+    const result = await processCrmScheduledSend(tickJob())
+
+    expect(result).toEqual({ due: 1, sent: 0, failed: 1 })
+    const after = await prisma.crmEmailCampaign.findUniqueOrThrow({
+      where: { id: blocked.id },
+    })
+    expect(after.status).toBe('FAILED')
+    const recipient = await prisma.crmEmailCampaignRecipient.findFirstOrThrow({
+      where: { campaignId: blocked.id },
+    })
+    expect(recipient.status).toBe('PENDING')
   })
 })

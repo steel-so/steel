@@ -256,6 +256,7 @@ export function CrmCampaignWizard({
             onChange={change}
             options={options}
             workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
             preview={preview.data}
             previewLoading={preview.isLoading}
             checklist={dirty ? [] : campaign.emailChecklist}
@@ -277,6 +278,7 @@ export function CrmCampaignWizard({
             onChange={change}
             options={options}
             workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
             dirty={dirty}
             preview={preview.data}
             previewLoading={preview.isLoading}

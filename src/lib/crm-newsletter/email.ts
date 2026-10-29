@@ -2,10 +2,12 @@ import { escapeHtml } from '@/src/lib/crm-email-builder/variables'
 
 /**
  * Pure pieces of a newsletter e-mail (ADR 0054): the From header, the
+ * archive excerpt and the Resend tags. Issues and welcome steps carry the
  * mandatory footer (unsubscribe, preferences and the sender's address —
- * LGPD and the Gmail/Yahoo bulk sender rules), the archive excerpt and the
- * Resend tags. Rendering of the canvas document itself lives in
- * `crm-newsletter-send.service.ts`.
+ * LGPD and the Gmail/Yahoo bulk sender rules) as the canvas footer block
+ * rendered in subscription mode (`crm-newsletter-render.ts`); the HTML/text
+ * footer below is only for fixed-layout e-mails outside the canvas (the
+ * re-engagement e-mail).
  */
 
 /** `"Name" <email>`, with quotes/backslashes/line breaks of the name neutralized. */

@@ -59,6 +59,13 @@ vi.mock('@/src/lib/sending-domain/resolve-sender', () => ({
   resolveVerifiedSender: vi.fn(),
 }))
 vi.mock('@/src/lib/mail/send-batch', () => ({ sendEmailBatch: vi.fn() }))
+// nl2-engage: the WhatsApp version hooks of the send.
+vi.mock('@/src/services/crm-newsletter-whatsapp.service', () => ({
+  CrmNewsletterWhatsAppService: {
+    preSendCheck: vi.fn(async () => ({ ok: true, value: undefined })),
+    startForIssue: vi.fn(async () => {}),
+  },
+}))
 const add = vi.hoisted(() => vi.fn())
 vi.mock('@/src/lib/queue/queues', () => ({
   getCrmNewsletterQueue: () => ({ add }),

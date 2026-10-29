@@ -263,6 +263,21 @@ export function formDefinition(ctx: SiteRenderContext) {
               disabled={editing}
             />
           ))}
+          {live?.newsletter && (
+            <div className='s-field s-field-wide'>
+              <label className='s-check' htmlFor={`${node.id}-newsletter`}>
+                <input
+                  id={`${node.id}-newsletter`}
+                  name='newsletterConsent'
+                  type='checkbox'
+                  value='true'
+                  disabled={editing}
+                  data-newsletter-consent=''
+                />
+                <span>{live.newsletter.consentText}</span>
+              </label>
+            </div>
+          )}
           <div className='s-hp' aria-hidden='true'>
             <label htmlFor={honeypot}>Não preencha este campo</label>
             <input
@@ -304,6 +319,7 @@ export function formDefinition(ctx: SiteRenderContext) {
  * signed recipient token (`stc`) only when the site needs no consent or the
  * visitor accepted it (cookie banner choice). With the page's runtime config
  * (`#ss-config`) the site slug and page id go along, so the CRM records a
- * site-form conversion.
+ * site-form conversion. A form that subscribes to a newsletter sends the
+ * visitor's consent box as `newsletterConsent` (unticked by default).
  */
-export const SITE_FORM_SCRIPT = `(function(){document.addEventListener('submit',function(e){var f=e.target;if(!f||!f.hasAttribute||!f.hasAttribute('data-site-form'))return;e.preventDefault();if(f.getAttribute('data-busy'))return;var hp=f.querySelector('[name=company_website]');if(hp&&hp.value)return;var values={};f.querySelectorAll('[data-field]').forEach(function(el){if(el.type==='checkbox')values[el.name]=el.checked;else if(el.value!=='')values[el.name]=el.value});var q=new URLSearchParams(location.search),c={},g=null,cf=document.getElementById('ss-config');try{g=cf?JSON.parse(cf.textContent||''):null}catch(x){}var tk=q.get('stc')||q.get('ref'),ok=true;if(g&&(g.banner||(g.tracking&&(g.tracking.ga||g.tracking.gtm||g.tracking.pixel)))){try{ok=localStorage.getItem('steel-site-consent:'+g.slug)==='accepted'}catch(x){ok=false}}if(tk&&ok)c.ref=tk;if(q.get('utm_campaign'))c.utmCampaign=q.get('utm_campaign');if(q.get('utm_source'))c.utmSource=q.get('utm_source');if((c.ref||c.utmCampaign)&&g&&g.slug){c.siteSlug=g.slug;if(g.pageId)c.sitePageId=g.pageId}var s=f.querySelector('.s-form-status'),b=f.querySelector('[type=submit]');f.setAttribute('data-busy','1');if(b)b.disabled=true;fetch(f.action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:values,campaign:Object.keys(c).length?c:undefined})}).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||!j||!j.success)throw new Error((j&&(j.message||(j.error&&j.error.message)))||'');})}).then(function(){try{document.dispatchEvent(new CustomEvent('steel:site-form-submitted',{detail:{action:f.action}}))}catch(x){}var to=f.getAttribute('data-redirect');if(to){location.href=to;return}var m=document.createElement('p');m.className='s-form-status';m.setAttribute('role','status');m.textContent=f.getAttribute('data-success')||'Recebemos suas informações. Obrigado!';f.replaceWith(m)}).catch(function(err){if(s){s.hidden=false;s.setAttribute('data-state','error');s.textContent=(err&&err.message)||'Não foi possível enviar. Tente novamente.'}}).finally(function(){f.removeAttribute('data-busy');if(b)b.disabled=false})})})();`
+export const SITE_FORM_SCRIPT = `(function(){document.addEventListener('submit',function(e){var f=e.target;if(!f||!f.hasAttribute||!f.hasAttribute('data-site-form'))return;e.preventDefault();if(f.getAttribute('data-busy'))return;var hp=f.querySelector('[name=company_website]');if(hp&&hp.value)return;var values={};f.querySelectorAll('[data-field]').forEach(function(el){if(el.type==='checkbox')values[el.name]=el.checked;else if(el.value!=='')values[el.name]=el.value});var q=new URLSearchParams(location.search),c={},g=null,cf=document.getElementById('ss-config');try{g=cf?JSON.parse(cf.textContent||''):null}catch(x){}var tk=q.get('stc')||q.get('ref'),ok=true;if(g&&(g.banner||(g.tracking&&(g.tracking.ga||g.tracking.gtm||g.tracking.pixel)))){try{ok=localStorage.getItem('steel-site-consent:'+g.slug)==='accepted'}catch(x){ok=false}}if(tk&&ok)c.ref=tk;if(q.get('utm_campaign'))c.utmCampaign=q.get('utm_campaign');if(q.get('utm_source'))c.utmSource=q.get('utm_source');if((c.ref||c.utmCampaign)&&g&&g.slug){c.siteSlug=g.slug;if(g.pageId)c.sitePageId=g.pageId}var s=f.querySelector('.s-form-status'),b=f.querySelector('[type=submit]'),nc=f.querySelector('[data-newsletter-consent]');f.setAttribute('data-busy','1');if(b)b.disabled=true;fetch(f.action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:values,campaign:Object.keys(c).length?c:undefined,newsletterConsent:nc?nc.checked:undefined})}).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||!j||!j.success)throw new Error((j&&(j.message||(j.error&&j.error.message)))||'');})}).then(function(){try{document.dispatchEvent(new CustomEvent('steel:site-form-submitted',{detail:{action:f.action}}))}catch(x){}var to=f.getAttribute('data-redirect');if(to){location.href=to;return}var m=document.createElement('p');m.className='s-form-status';m.setAttribute('role','status');m.textContent=f.getAttribute('data-success')||'Recebemos suas informações. Obrigado!';f.replaceWith(m)}).catch(function(err){if(s){s.hidden=false;s.setAttribute('data-state','error');s.textContent=(err&&err.message)||'Não foi possível enviar. Tente novamente.'}}).finally(function(){f.removeAttribute('data-busy');if(b)b.disabled=false})})})();`

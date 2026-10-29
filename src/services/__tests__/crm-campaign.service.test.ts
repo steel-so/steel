@@ -22,6 +22,9 @@ vi.mock('@/src/lib/crm-campaign/email-renderer', () => ({
   renderCampaignEmail: vi.fn(),
 }))
 vi.mock('@/src/lib/mail/send', () => ({ sendEmail: vi.fn() }))
+vi.mock('@/src/repositories/sending-domain.repository', () => ({
+  SendingDomainRepository: { findVerifiedByName: vi.fn() },
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { renderCampaignEmail } from '@/src/lib/crm-campaign/email-renderer'
@@ -35,6 +38,7 @@ import {
 import { CrmCampaignAudienceRepository } from '@/src/repositories/crm-campaign-audience.repository'
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { SendingDomainRepository } from '@/src/repositories/sending-domain.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import {
   CrmCampaignService,
@@ -55,6 +59,7 @@ const audience = vi.mocked(CrmCampaignAudienceRepository)
 const lookup = vi.mocked(CrmCampaignLookupRepository)
 const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
 const send = vi.mocked(CrmCampaignSendService)
+const sendingDomains = vi.mocked(SendingDomainRepository)
 
 const WS = 'ws1'
 const ACTOR = 'u1'
@@ -145,6 +150,9 @@ function funnel(): CampaignFunnelCounts {
 
 beforeEach(() => {
   member()
+  sendingDomains.findVerifiedByName.mockResolvedValue(
+    ok({ id: 'dom1' } as never),
+  )
   lookup.findForm.mockResolvedValue(
     ok({ id: 'f1', token: 'ftok', published: true }),
   )
@@ -351,6 +359,40 @@ describe('CrmCampaignService.get() and issues', () => {
       'audience',
       'audience',
     ])
+  })
+
+  it('should block a From outside a verified domain (ADR 0055)', async () => {
+    sendingDomains.findVerifiedByName.mockResolvedValueOnce(ok(null))
+    const issues = expectOk(await computeCampaignIssues(readyCampaign()))
+    expect(issues).toEqual([
+      {
+        step: 'content',
+        message: expect.stringContaining('Ajustes › Domínios de e-mail'),
+        fix: 'SENDING_DOMAINS',
+      },
+    ])
+    expect(sendingDomains.findVerifiedByName).toHaveBeenCalledWith(
+      WS,
+      'example.com',
+    )
+  })
+
+  it('should accept any platform-domain address without a verified domain', async () => {
+    sendingDomains.findVerifiedByName.mockClear()
+    const issues = expectOk(
+      await computeCampaignIssues(
+        readyCampaign({ emailFrom: 'vendas@stratustelecom.com.br' }),
+      ),
+    )
+    expect(issues).toEqual([])
+    expect(sendingDomains.findVerifiedByName).not.toHaveBeenCalled()
+  })
+
+  it('should propagate a database error of the sender check', async () => {
+    sendingDomains.findVerifiedByName.mockResolvedValueOnce(
+      err(databaseError()),
+    )
+    expectErr(await computeCampaignIssues(readyCampaign()), 'DATABASE_ERROR')
   })
 
   it('should flag a missing, unpublished or removed destination/template', async () => {

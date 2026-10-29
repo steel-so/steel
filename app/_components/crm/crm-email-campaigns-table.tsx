@@ -8,6 +8,7 @@ import {
   type RecipientSelection,
 } from '@/app/_components/crm/crm-email-campaign-recipient-picker'
 import { EmailEditorShell } from '@/app/_components/crm/email-editor-shell'
+import { EmailSenderPicker } from '@/app/_components/crm/email-sender-picker'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import { SteelIcon } from '@/components/icon/icon'
@@ -166,6 +167,7 @@ export function CrmEmailCampaignsTable({
 
       <CampaignSheet
         workspaceId={workspaceId}
+        slug={slug}
         viewing={viewing}
         onClose={() => setViewing(null)}
         onSent={() => {
@@ -179,11 +181,13 @@ export function CrmEmailCampaignsTable({
 
 function CampaignSheet({
   workspaceId,
+  slug,
   viewing,
   onClose,
   onSent,
 }: {
   workspaceId: string
+  slug: string
   viewing: string | 'new' | null
   onClose: () => void
   onSent: () => void
@@ -196,11 +200,12 @@ function CampaignSheet({
       <SheetContent
         side='right'
         showCloseButton={false}
-        className='flex w-[640px] max-w-[640px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[640px] data-[side=right]:sm:max-w-[640px]'
+        className='flex w-full max-w-[640px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[640px] data-[side=right]:sm:max-w-[640px]'
       >
         {!open ? null : isNew ? (
           <CampaignComposer
             workspaceId={workspaceId}
+            slug={slug}
             onClose={onClose}
             onSent={onSent}
           />
@@ -258,10 +263,12 @@ function Field({
 
 function CampaignComposer({
   workspaceId,
+  slug,
   onClose,
   onSent,
 }: {
   workspaceId: string
+  slug: string
   onClose: () => void
   onSent: () => void
 }) {
@@ -416,14 +423,13 @@ function CampaignComposer({
             />
           </Field>
 
-          <Field label='Remetente'>
-            <Input
-              type='email'
-              value={fromAddress}
-              onChange={(e) => setFromAddress(e.target.value)}
-              placeholder='contato@suaempresa.com'
-            />
-          </Field>
+          <EmailSenderPicker
+            workspaceId={workspaceId}
+            workspaceSlug={slug}
+            id='email-campaign-from'
+            value={fromAddress}
+            onChange={setFromAddress}
+          />
 
           {templates.length > 0 ? (
             <Field label='Começar a partir de um modelo (opcional)'>

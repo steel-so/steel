@@ -20,6 +20,8 @@ export function useRenderedEmailOnce(
   brand: EmailBrand,
   products: Record<string, EmailProductData>,
   delay = 0,
+  /** Newsletter issue: render the subscription footer. */
+  newsletterName?: string,
 ): RenderedEmail | null {
   const [rendered, setRendered] = useState<RenderedEmail | null>(null)
 
@@ -27,7 +29,14 @@ export function useRenderedEmailOnce(
     if (!doc) return
     let cancelled = false
     const handle = setTimeout(() => {
-      renderEmailDocument(doc, { brand, subject, products })
+      renderEmailDocument(doc, {
+        brand,
+        subject,
+        products,
+        ...(newsletterName !== undefined
+          ? { subscription: { newsletterName } }
+          : {}),
+      })
         .then((email) => {
           if (!cancelled) setRendered(email)
         })
@@ -40,7 +49,7 @@ export function useRenderedEmailOnce(
       cancelled = true
       clearTimeout(handle)
     }
-  }, [doc, subject, brand, products, delay])
+  }, [doc, subject, brand, products, delay, newsletterName])
 
   return rendered
 }
@@ -51,7 +60,14 @@ export function useRenderedEmail(
   subject: string,
   delay = 150,
 ): RenderedEmail | null {
-  const { brand, products } = useEmailEditorData()
+  const { brand, products, newsletterName } = useEmailEditorData()
   const productData = useMemo(() => toProductData(products), [products])
-  return useRenderedEmailOnce(doc, subject, brand, productData, delay)
+  return useRenderedEmailOnce(
+    doc,
+    subject,
+    brand,
+    productData,
+    delay,
+    newsletterName,
+  )
 }

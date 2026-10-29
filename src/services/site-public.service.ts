@@ -12,8 +12,10 @@ import {
 import { parseSiteSnapshot, type SiteSnapshot } from '@/src/lib/sites/snapshot'
 import { referrerHost, siteVisitorHash } from '@/src/lib/sites/visitor'
 import { toCrmFormPublicDTO } from '@/src/mappers/crm-form.mapper'
+import { CrmNewsletterRepository } from '@/src/repositories/crm-newsletter.repository'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
+import { crmFormNewsletterConsentText } from '@/src/schemas/crm-newsletter.schema'
 import type { RecordSiteViewDTO } from '@/src/schemas/site-view.schema'
 import { assertModuleEnabled } from './authz'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
@@ -63,9 +65,23 @@ export const SitePublicService = {
   ): Promise<Result<Record<string, SiteLiveForm>>> {
     const forms = await SiteRepository.findPublishedForms(workspaceId, tokens)
     if (!forms.ok) return forms
+    // Forms that subscribe to a newsletter show the consent box only while
+    // the newsletter is ACTIVE (same rule as the public form page).
+    const activeNewsletters = new Map<string, string>()
+    if (forms.value.some((form) => form.newsletterId)) {
+      const newsletters =
+        await CrmNewsletterRepository.listActiveByWorkspace(workspaceId)
+      if (!newsletters.ok) return newsletters
+      for (const newsletter of newsletters.value) {
+        activeNewsletters.set(newsletter.id, newsletter.name)
+      }
+    }
     const byToken: Record<string, SiteLiveForm> = {}
     for (const form of forms.value) {
       const dto = toCrmFormPublicDTO(form)
+      const newsletterName = form.newsletterId
+        ? activeNewsletters.get(form.newsletterId)
+        : undefined
       byToken[form.publicToken] = {
         fields: dto.fields.map((field) => ({
           key: field.key,
@@ -77,6 +93,12 @@ export const SitePublicService = {
         })),
         successMessage: dto.successMessage,
         redirectUrl: dto.redirectUrl,
+        ...(newsletterName && {
+          newsletter: {
+            name: newsletterName,
+            consentText: crmFormNewsletterConsentText(newsletterName),
+          },
+        }),
       }
     }
     return ok(byToken)

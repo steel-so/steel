@@ -74,7 +74,9 @@ describe('crm-newsletter-render', () => {
 
   it('renders the base with the workspace brand and personalizes per subscriber', async () => {
     const { doc } = documentWithName()
-    const base = expectOk(await renderIssueBase('ws1', doc, 'Oi {{nome}}'))
+    const base = expectOk(
+      await renderIssueBase('ws1', doc, 'Oi {{nome}}', 'Novidades'),
+    )
     expect(base.brand.companyName).toBe('Acme')
 
     const email = personalizeIssue(base, {
@@ -86,13 +88,28 @@ describe('crm-newsletter-render', () => {
       },
     })
     expect(email.subject).toBe('Oi Ana Souza')
-    expect(email.html).toContain('https://x/pref/t')
-    expect(email.html).toContain('Novidades')
-    expect(email.text).toContain('Cancelar inscrição: https://x/sair/t')
+    // One footer: the newsletter subscription text with both links, never
+    // the campaign "base de contatos" sentence.
+    expect(email.html).toContain(
+      'Você recebe a newsletter Novidades porque se inscreveu para recebê-la.',
+    )
+    expect(email.html).not.toContain('base de contatos')
+    expect(email.html).toContain('href="https://x/pref/t"')
+    expect(email.html).toContain('href="https://x/sair/t"')
+    expect(email.html).toContain('Preferências')
+    expect(email.html).toContain('Descadastrar')
+    expect(email.html).not.toContain('%%steel_newsletter_preferences%%')
+    expect(email.text).toContain('https://x/sair/t')
+    expect(email.text).toContain('https://x/pref/t')
 
     const web = webVersionOf(base, 'Novidades')
     expect(web.html).not.toContain('https://x/')
     expect(web.html).not.toContain('Ana')
+    expect(web.html).toContain('Você recebe a newsletter Novidades')
+    // The archive has no subscriber links.
+    expect(web.html).not.toContain('Preferências')
+    expect(web.html).not.toContain('Descadastrar')
+    expect(web.html).not.toContain('data-newsletter-links')
 
     const checklist = issueChecklist(base, '')
     expect(checklist.some((item) => item.code === 'SUBJECT_EMPTY')).toBe(true)
@@ -100,21 +117,21 @@ describe('crm-newsletter-render', () => {
 
   it('reports invalid documents and repository failures', async () => {
     expectErr(
-      await renderIssueBase('ws1', {}, 's'),
+      await renderIssueBase('ws1', {}, 's', 'N'),
       'CRM_NEWSLETTER_ISSUE_INCOMPLETE',
     )
     const doc = createBlankEmailDocument()
     builder.findBrand.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await renderIssueBase('ws1', doc, 's'), 'DATABASE_ERROR')
+    expectErr(await renderIssueBase('ws1', doc, 's', 'N'), 'DATABASE_ERROR')
     builder.findWorkspaceIdentity.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await renderIssueBase('ws1', doc, 's'), 'DATABASE_ERROR')
+    expectErr(await renderIssueBase('ws1', doc, 's', 'N'), 'DATABASE_ERROR')
     builder.findProducts.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await renderIssueBase('ws1', doc, 's'), 'DATABASE_ERROR')
+    expectErr(await renderIssueBase('ws1', doc, 's', 'N'), 'DATABASE_ERROR')
   })
 
   it('loads CRM profiles and, when needed, list memberships of a batch', async () => {
     const base = expectOk(
-      await renderIssueBase('ws1', createBlankEmailDocument(), 's'),
+      await renderIssueBase('ws1', createBlankEmailDocument(), 's', 'N'),
     )
     builder.findContacts.mockResolvedValue(
       ok([

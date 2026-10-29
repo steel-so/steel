@@ -107,6 +107,8 @@ export type RenderEmailDocumentOptions = {
   subject: string
   /** CRM products referenced by `email.product` blocks, by id. */
   products?: Record<string, EmailProductData>
+  /** Newsletter issue: subscription footer (see `EmailRenderContext`). */
+  subscription?: { newsletterName: string }
 }
 
 /** Renders a validated v2 document to e-mail HTML + plain text. */
@@ -122,6 +124,7 @@ export async function renderEmailDocument(
     products: options.products,
     mobileCss: collectMobileCss(doc, rootProps.width),
     doc: () => doc,
+    subscription: options.subscription,
   })
   const catalog = createEmailCatalog({ context: ctx })
   const element = catalog.renderDocument({

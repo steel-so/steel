@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ import type {
   CrmCampaignEmailPreviewDTO,
   CrmCampaignOptionsDTO,
 } from '@/types/crm-campaign'
+import { emailDomainsHref } from '../newsletters/newsletter-sender-badge'
 import type { CampaignDraft } from './campaign-draft'
 import { EDITOR_LABEL } from './campaign-email-template-picker'
 import {
@@ -122,6 +124,7 @@ export function ReviewStep({
   onChange,
   options,
   workspaceId,
+  workspaceSlug,
   dirty,
   preview,
   previewLoading,
@@ -131,6 +134,8 @@ export function ReviewStep({
   onChange: (patch: Partial<CampaignDraft>) => void
   options: CrmCampaignOptionsDTO
   workspaceId: string
+  /** Links an issue to where it is fixed (Ajustes › Domínios de e-mail). */
+  workspaceSlug?: string
   dirty: boolean
   preview: CrmCampaignEmailPreviewDTO | undefined
   previewLoading: boolean
@@ -245,7 +250,20 @@ export function ReviewStep({
               ) : null}
               <ul className='list-disc pl-5 text-sm'>
                 {campaign.issues.map((issue) => (
-                  <li key={issue.message}>{issue.message}</li>
+                  <li key={issue.message}>
+                    {issue.message}
+                    {issue.fix === 'SENDING_DOMAINS' && workspaceSlug ? (
+                      <>
+                        {' '}
+                        <Link
+                          href={emailDomainsHref(workspaceSlug)}
+                          className='font-medium underline underline-offset-2'
+                        >
+                          Abrir Domínios de e-mail
+                        </Link>
+                      </>
+                    ) : null}
+                  </li>
                 ))}
               </ul>
             </div>

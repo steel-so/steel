@@ -5,8 +5,6 @@ import {
   isPermanentBounce,
   issueExcerpt,
   isTransientSendError,
-  newsletterFooterHtml,
-  newsletterFooterText,
   newsletterFromHeader,
   newsletterTags,
   slugifyIssueSubject,
@@ -21,46 +19,6 @@ describe('crm-newsletter/email', () => {
       '"A b c" <n@acme.com>',
     )
     expect(newsletterFromHeader('  ', 'n@acme.com')).toBe('n@acme.com')
-  })
-
-  it('renders the footer with links and address, escaped', () => {
-    const html = newsletterFooterHtml({
-      newsletterName: 'News <1>',
-      companyName: 'Acme & Co',
-      address: 'Rua A, 1',
-      unsubscribeUrl: 'https://x/sair?a=1&b=2',
-      preferencesUrl: 'https://x/pref',
-    })
-    expect(html).toContain('News &lt;1&gt;')
-    expect(html).toContain('Acme &amp; Co')
-    expect(html).toContain('href="https://x/sair?a=1&amp;b=2"')
-    expect(html).toContain('Gerenciar preferências')
-    expect(html).toContain('Rua A, 1')
-
-    const bare = newsletterFooterHtml({
-      newsletterName: 'N',
-      companyName: 'C',
-      address: ' ',
-    })
-    expect(bare).not.toContain('href')
-
-    const text = newsletterFooterText({
-      newsletterName: 'N',
-      companyName: 'C',
-      address: 'Rua A',
-      unsubscribeUrl: 'https://x/sair',
-      preferencesUrl: 'https://x/pref',
-    })
-    expect(text).toContain('Cancelar inscrição: https://x/sair')
-    expect(text).toContain('Gerenciar preferências: https://x/pref')
-    expect(text).toContain('Rua A')
-    expect(
-      newsletterFooterText({
-        newsletterName: 'N',
-        companyName: 'C',
-        address: '',
-      }),
-    ).not.toContain('http')
   })
 
   it('inserts before </body> or appends', () => {

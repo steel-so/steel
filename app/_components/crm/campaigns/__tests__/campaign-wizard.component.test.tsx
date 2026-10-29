@@ -23,6 +23,13 @@ function setup(
   const spy = mockFetch([
     ...extra,
     {
+      match: '/crm/email-senders',
+      data: {
+        platformDomain: 'stratustelecom.com.br',
+        verifiedDomains: ['news.acme.com.br'],
+      },
+    },
+    {
       method: 'PATCH',
       match: `/crm/campaigns/${c.id}`,
       handler: (_url, init) => ({

@@ -27,6 +27,7 @@ import {
 } from '@/src/lib/crm-email-unsubscribe'
 import { sendEmail } from '@/src/lib/mail/send'
 import { err, ok, type Result } from '@/src/lib/result'
+import { checkCampaignSender } from '@/src/lib/sending-domain/campaign-sender'
 import {
   toCrmEmailCampaignDTO,
   toCrmEmailCampaignRecipientDTO,
@@ -290,6 +291,25 @@ export const CrmEmailCampaignService = {
       campaign.value.status !== 'SCHEDULED'
     ) {
       return err(crmEmailCampaignAlreadySent())
+    }
+
+    // ADR 0055: verified domain of the workspace or the platform address.
+    // Checked before anything changes, so a refused send keeps the campaign
+    // as it was (the scheduler marks a SCHEDULED one as FAILED).
+    const sender = await checkCampaignSender(
+      workspaceId,
+      campaign.value.fromAddress,
+    )
+    if (!sender.ok) {
+      auditMutation({
+        entity: 'crm_email_campaign',
+        action: 'update',
+        actorId,
+        targetId: campaignId,
+        outcome: 'failure',
+        reason: sender.error.code,
+      })
+      return sender
     }
 
     const recipients =

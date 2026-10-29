@@ -35,6 +35,11 @@ import {
 } from '@/src/lib/sites/host'
 import { PATHNAME_REQUEST_HEADER } from '@/src/lib/request-path'
 import { isPublicTvPath, TV_REQUEST_HEADER } from '@/src/lib/tv-request'
+import {
+  newsletterArchivePage,
+  newsletterNotFoundHtml,
+} from '@/src/lib/newsletter/archive-route'
+import { CrmNewsletterArchiveService } from '@/src/services/crm-newsletter-archive.service'
 
 const PUBLIC_ROUTES = [
   '/', '/sign-in', '/sign-up', '/forget-password',
@@ -321,6 +326,37 @@ async function siteRouteResponse(
   )
 }
 
+/**
+ * Real HTTP 404 for an unknown page of the public newsletter archive
+ * (`/n/<ws>/<newsletter>[/<issue>]`), decided before rendering like the
+ * sites above. On any failure the page decides.
+ */
+async function newsletterArchiveResponse(
+  request: NextRequest,
+  pathname: string,
+  nonce: string,
+): Promise<NextResponse | null> {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return null
+  const page = newsletterArchivePage(pathname)
+  if (!page) return null
+  const exists = await CrmNewsletterArchiveService.pageExists(
+    page.workspaceSlug,
+    page.newsletterSlug,
+    page.issueSlug,
+  )
+  if (!exists.ok || exists.value) return null
+  return withSecurityHeaders(
+    new NextResponse(
+      request.method === 'HEAD' ? null : newsletterNotFoundHtml(),
+      {
+        status: 404,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      },
+    ),
+    nonce,
+  )
+}
+
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   event.waitUntil(logProxyRequest(request))
 
@@ -378,6 +414,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     })
     if (routed) return routed
   }
+
+  const archivePage = await newsletterArchiveResponse(request, pathname, nonce)
+  if (archivePage) return archivePage
 
   if (
     NODE_ENV === 'development' &&

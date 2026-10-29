@@ -45,6 +45,8 @@ import {
   type EmailViewProps,
   emailColor,
   emailFont,
+  NEWSLETTER_LINKS_ATTRIBUTE,
+  NEWSLETTER_PREFERENCES_URL,
 } from '../theme'
 
 /** `render` of a definition whose view takes the e-mail context (the
@@ -582,16 +584,39 @@ function FooterView({
           </Link>
         </Text>
       ) : null}
-      <Text style={{ ...line, margin: '12px 0 0' }}>
-        {`Você recebeu este e-mail porque está na base de contatos de ${brand.companyName}. Não quer mais receber? `}
-        <Link
-          href={UNSUBSCRIBE_URL}
-          style={{ color, textDecoration: 'underline' }}
-        >
-          {p.unsubscribeLabel}
-        </Link>
-        .
-      </Text>
+      {ctx.subscription ? (
+        <>
+          <Text style={{ ...line, margin: '12px 0 0' }}>
+            {`Você recebe a newsletter ${ctx.subscription.newsletterName} porque se inscreveu para recebê-la.`}
+          </Text>
+          <Text style={line} {...{ [NEWSLETTER_LINKS_ATTRIBUTE]: '' }}>
+            <Link
+              href={NEWSLETTER_PREFERENCES_URL}
+              style={{ color, textDecoration: 'underline' }}
+            >
+              Preferências
+            </Link>
+            {' · '}
+            <Link
+              href={UNSUBSCRIBE_URL}
+              style={{ color, textDecoration: 'underline' }}
+            >
+              {p.unsubscribeLabel}
+            </Link>
+          </Text>
+        </>
+      ) : (
+        <Text style={{ ...line, margin: '12px 0 0' }}>
+          {`Você recebeu este e-mail porque está na base de contatos de ${brand.companyName}. Não quer mais receber? `}
+          <Link
+            href={UNSUBSCRIBE_URL}
+            style={{ color, textDecoration: 'underline' }}
+          >
+            {p.unsubscribeLabel}
+          </Link>
+          .
+        </Text>
+      )}
     </EmailTable>
   )
 }

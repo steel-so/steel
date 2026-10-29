@@ -32,6 +32,7 @@ import {
   CrmEmailMessageDTO,
   CrmEmailOptOutDTO,
   CrmEmailRenderDTO,
+  CrmEmailSenderOptionsDTO,
   CrmEmailTemplateDTO,
   CrmEmailTemplatePreviewDTO,
   CrmEmailTestSendDTO,
@@ -452,6 +453,8 @@ export const crmEmailRoutes: RouteConfig[] = [
         'Dispara a campanha de forma **síncrona** (a resposta só volta ao fim do envio), usando apenas os destinatários gravados na criação.',
         '',
         'O opt-out é revalidado no disparo: quem se descadastrou nesse meio-tempo vira `SKIPPED`. Cada e-mail leva o rodapé com link de descadastro e os headers `List-Unsubscribe` (RFC 8058). Falhas individuais viram `FAILED` no destinatário; a campanha termina `SENT`, ou `FAILED` se todos os envios tentados falharem.',
+        '',
+        'O remetente (`fromAddress`) precisa ser de um domínio de envio **verificado** do workspace ou do domínio da plataforma (ADR 0055); senão nada é enviado e a campanha fica como estava (uma agendada vira `FAILED` no disparo do worker e o criador é avisado).',
       ].join('\n'),
       crmAccess('email', 'EDIT'),
     ),
@@ -470,6 +473,10 @@ export const crmEmailRoutes: RouteConfig[] = [
       {
         code: 'CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS',
         when: 'Campanha sem destinatários gravados',
+      },
+      {
+        code: 'SENDING_DOMAIN_NOT_VERIFIED',
+        when: 'Remetente fora dos domínios verificados do workspace e fora do domínio da plataforma',
       },
     ],
   },
@@ -725,5 +732,24 @@ export const crmEmailRoutes: RouteConfig[] = [
       ...CRM_ERRORS,
       notFoundError('CrmEmailMessage', 'E-mail inexistente no workspace'),
     ],
+  },
+
+  /* ------------------------------ remetentes ------------------------------ */
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/email-senders',
+    tags: TAGS,
+    summary: 'Remetentes permitidos para campanhas',
+    description: describe(
+      'Opções do seletor de remetente das campanhas (ADR 0055): os nomes dos domínios de envio verificados do workspace e o domínio da plataforma, aceito sem domínio próprio. Só nomes de domínio — registros DNS e ids ficam em Ajustes.',
+      crmAccess('email', 'VIEW'),
+    ),
+    responses: {
+      200: {
+        description: 'Remetentes permitidos.',
+        schema: CrmEmailSenderOptionsDTO,
+      },
+    },
+    errors: CRM_ERRORS,
   },
 ]

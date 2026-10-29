@@ -60,6 +60,9 @@ export interface CrmCampaignWhatsAppVariablesDTO {
 export interface CrmCampaignIssueDTO {
   step: CrmCampaignWizardStep
   message: string
+  /** Where the fix lives, when outside the wizard: `SENDING_DOMAINS` =
+   * Ajustes › Domínios de e-mail (unverified From, ADR 0055). */
+  fix?: 'SENDING_DOMAINS'
 }
 
 export interface CrmCampaignLinksDTO {

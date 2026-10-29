@@ -47,6 +47,21 @@ vi.mock('@/app/_components/crm/table/data-table', () => ({
   ),
 }))
 
+// The sender picker has its own test (email-sender-picker.component.test).
+vi.mock('@/app/_components/crm/email-sender-picker', () => ({
+  EmailSenderPicker: (props: {
+    value: string
+    onChange: (email: string) => void
+  }) => (
+    <input
+      aria-label='Remetente'
+      placeholder='contato@suaempresa.com'
+      value={props.value}
+      onChange={(e) => props.onChange(e.target.value)}
+    />
+  ),
+}))
+
 const editor = vi.hoisted(() => ({ html: '<p>Olá</p>' }))
 vi.mock('@/app/_components/crm/email-editor-shell', () => ({
   EmailEditorShell: forwardRef(function EditorStub(

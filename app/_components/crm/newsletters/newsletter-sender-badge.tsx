@@ -17,14 +17,27 @@ export function emailDomainsHref(workspaceSlug: string): string {
 export function NewsletterSenderBadge({
   verified,
   workspaceSlug,
+  linked = true,
 }: {
   verified: boolean
   workspaceSlug: string
+  /** `false` inside another link (the list card): no nested anchor. */
+  linked?: boolean
 }) {
   if (verified) {
     return (
       <Badge variant='secondary'>
         <SteelIcon icon={CheckmarkBadge01Icon} /> Remetente verificado
+      </Badge>
+    )
+  }
+  if (!linked) {
+    return (
+      <Badge
+        variant='destructive'
+        title='Verifique o domínio em Ajustes › Domínios de e-mail'
+      >
+        <SteelIcon icon={Alert02Icon} /> Domínio não verificado
       </Badge>
     )
   }

@@ -9,6 +9,13 @@ import { databaseError, notFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/services/crm-notifications')
+// ADR 0055 sender check: covered in crm-email-campaign.service.test.
+vi.mock('@/src/lib/sending-domain/campaign-sender', () => ({
+  checkCampaignSender: vi.fn(async () => ({
+    ok: true,
+    value: { platform: true },
+  })),
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-email-campaign.repository')
 vi.mock('@/src/repositories/crm-person.repository')

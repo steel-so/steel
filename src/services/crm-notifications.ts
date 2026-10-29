@@ -389,3 +389,29 @@ export function notifyCrmMultichannelCampaignFinished(input: {
     dedupeKey: `crm-multichannel-campaign-finished:${input.campaign.id}`,
   })
 }
+
+/**
+ * A campaign reached its send time with a From outside the workspace's
+ * verified domains (ADR 0055): its e-mails are not sent. Once per campaign.
+ */
+export function notifyCrmCampaignSenderBlocked(input: {
+  workspaceId: string
+  campaign: { id: string; title: string; createdById: string }
+  /** Multichannel (ADR 0025) or legacy e-mail campaign: picks the link. */
+  type: 'MULTICHANNEL' | 'EMAIL'
+  fromEmail: string
+}): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.campaign.createdById],
+    actorId: null,
+    kind: 'CRM_CAMPAIGN_FINISHED',
+    title: `E-mails da campanha bloqueados: ${input.campaign.title}`,
+    body: `O remetente ${input.fromEmail} não é de um domínio verificado. Verifique o domínio em Ajustes › Domínios de e-mail ou troque o remetente.`,
+    path:
+      input.type === 'MULTICHANNEL'
+        ? `/crm/campaigns/${input.campaign.id}`
+        : campaignPath(input.campaign.id),
+    dedupeKey: `crm-campaign-sender-blocked:${input.campaign.id}`,
+  })
+}

@@ -7,14 +7,15 @@ import { authenticatedOwner, getJson } from '@/src/__tests__/helpers/e2e'
 import { prisma } from '@/src/lib/prisma'
 
 /**
- * The root layout streams every page inside a Suspense boundary, so a
- * `notFound()` in the page body arrives as the not-found UI (and its
- * `NEXT_HTTP_ERROR_FALLBACK;404` digest) after the 200 status is sent.
+ * The proxy checks archive pages before rendering (the App Router answers
+ * 200 once it streams): an unknown, archived or hidden page is a real HTTP
+ * 404 with the archive's pt-BR not-found page.
  */
 async function expectNotFound(res: Response, hidden: string) {
   const html = await res.text()
-  expect([200, 404]).toContain(res.status)
-  expect(html).toContain('NEXT_HTTP_ERROR_FALLBACK;404')
+  expect(res.status).toBe(404)
+  expect(html).toContain('Newsletter não encontrada')
+  expect(html).not.toContain('Page not found')
   expect(html).not.toContain(hidden)
 }
 
@@ -120,6 +121,19 @@ describe('GET /n/[workspaceSlug]/[newsletterSlug]/[issueSlug]', () => {
     await expectNotFound(
       await getJson(`${base}/${draft.slug}`),
       'Agendada oculta',
+    )
+  })
+
+  it('answers a real 404 for an unknown issue or newsletter', async () => {
+    const { base } = await publishedNewsletter()
+    await expectNotFound(
+      await getJson(`${base}/edicao-que-nao-existe`),
+      'Primeira edição',
+    )
+    const workspaceBase = base.slice(0, base.lastIndexOf('/'))
+    await expectNotFound(
+      await getJson(`${workspaceBase}/newsletter-que-nao-existe`),
+      'Novidades E2E',
     )
   })
 })

@@ -86,6 +86,7 @@ export function NewsletterIssueCanvasEditor({
   workspaceId,
   slug,
   newsletterId,
+  newsletterName,
   issue,
   brand: savedBrand,
   initialDocument,
@@ -95,6 +96,8 @@ export function NewsletterIssueCanvasEditor({
   workspaceId: string
   slug: string
   newsletterId: string
+  /** The footer previews as the newsletter's subscription footer. */
+  newsletterName: string
   issue: CrmNewsletterIssueDTO
   brand: CrmEmailBrandDTO
   initialDocument: CanvasDocument
@@ -123,6 +126,8 @@ export function NewsletterIssueCanvasEditor({
         createEmailRenderContext({
           brand: live.current.brand,
           products: live.current.productData,
+          // Same footer the send renders (crm-newsletter-render.ts).
+          subscription: { newsletterName },
           doc: () =>
             storeRef.current?.getState().doc ?? (initialDocument as never),
         }),
@@ -313,8 +318,10 @@ export function NewsletterIssueCanvasEditor({
       flushDocument,
       applyTemplate: () => {},
       returnTo: null,
+      newsletterName,
     }),
     [
+      newsletterName,
       workspaceId,
       slug,
       issue.id,

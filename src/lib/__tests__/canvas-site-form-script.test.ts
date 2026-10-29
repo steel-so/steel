@@ -261,4 +261,73 @@ describe('SITE_FORM_SCRIPT', () => {
       })
     })
   })
+
+  describe('newsletter consent', () => {
+    const newsletter = {
+      name: 'Boletim',
+      consentText: 'Quero receber a newsletter Boletim por e-mail.',
+    }
+    const mountWithNewsletter = () => {
+      document.body.innerHTML = renderSite(
+        siteDoc([form({ formToken: 'tok', fields })]),
+        { forms: { tok: { fields, newsletter } } },
+      )
+      return document.querySelector('form') as HTMLFormElement
+    }
+    const sentBody = async (tick: boolean) => {
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify({ success: true }), { status: 201 }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      const element = mountWithNewsletter()
+      const box = element.querySelector(
+        '[data-newsletter-consent]',
+      ) as HTMLInputElement
+      box.checked = tick
+      submit(element)
+      await flush()
+      const [, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ]
+      return JSON.parse(init.body as string)
+    }
+
+    it('renders the unticked consent box with the newsletter text', () => {
+      const element = mountWithNewsletter()
+      const box = element.querySelector(
+        '[data-newsletter-consent]',
+      ) as HTMLInputElement
+      expect(box.checked).toBe(false)
+      expect(box.hasAttribute('data-field')).toBe(false)
+      expect(element.textContent).toContain(newsletter.consentText)
+    })
+
+    it('sends newsletterConsent apart from the form values', async () => {
+      const ticked = await sentBody(true)
+      expect(ticked.newsletterConsent).toBe(true)
+      expect(ticked.values).not.toHaveProperty('newsletterConsent')
+      expect((await sentBody(false)).newsletterConsent).toBe(false)
+    })
+
+    it('omits the consent when the form has no newsletter', async () => {
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify({ success: true }), { status: 201 }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      const element = mount()
+      expect(element.querySelector('[data-newsletter-consent]')).toBeNull()
+      submit(element)
+      await flush()
+      const [, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ]
+      expect(JSON.parse(init.body as string)).not.toHaveProperty(
+        'newsletterConsent',
+      )
+    })
+  })
 })

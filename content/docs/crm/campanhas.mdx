@@ -25,8 +25,12 @@ versão rastreada do link.
 
 ## 2. Conteúdo
 
-- **Remetente**, **Assunto** e **Pré-cabeçalho** (o texto que aparece ao lado
-  do assunto na caixa de entrada).
+- **Remetente**: escreva o começo do endereço (por exemplo, `marketing`) e
+  escolha um dos **domínios verificados** do workspace ou o domínio do Steel,
+  **stratustelecom.com.br**, que funciona sem domínio próprio. Só aparecem domínios verificados em **Ajustes › Domínios de
+  e-mail** (quem cadastra é o dono ou um administrador do workspace).
+- **Assunto** e **Pré-cabeçalho** (o texto que aparece ao lado do assunto na
+  caixa de entrada).
 - **Visual do e-mail**: escolha um dos visuais de **Templates**, ou use
   **Criar visual** / **Abrir no editor** para montar no editor visual (abre em
   outra aba). No botão, escolha **Link da campanha** (`{{campaign_link}}`) para
@@ -100,3 +104,18 @@ no momento do envio.
 
 As campanhas de e-mail simples continuam em **Marketing › E-mail avulso**
 (veja [Campanhas de e-mail](/docs/crm/campanhas-de-email)).
+
+## Remetente verificado
+
+Desde 28/10/2026, o e-mail de uma campanha só sai de um endereço em um
+**domínio verificado** do workspace ou do domínio do Steel
+(`@stratustelecom.com.br`). Isso
+protege a entrega: Gmail e Yahoo exigem que o remetente seja autenticado.
+
+- Na revisão, um remetente fora dessas opções aparece em **Antes de enviar**,
+  com o link **Abrir Domínios de e-mail**, e bloqueia o envio.
+- Uma campanha **agendada antes** dessa regra com outro remetente não envia os
+  e-mails na hora marcada: cada envio fica como falha com o motivo, e quem
+  criou a campanha recebe um aviso. Troque o remetente (ou verifique o
+  domínio) e crie a campanha de novo.
+

@@ -4,7 +4,10 @@ vi.mock('../notification-emitter', () => ({
   emitNotification: vi.fn(),
 }))
 
-import { notifyCrmMultichannelCampaignFinished } from '../crm-notifications'
+import {
+  notifyCrmCampaignSenderBlocked,
+  notifyCrmMultichannelCampaignFinished,
+} from '../crm-notifications'
 import { emitNotification } from '../notification-emitter'
 
 const mockedEmit = vi.mocked(emitNotification)
@@ -60,5 +63,34 @@ describe('notifyCrmMultichannelCampaignFinished', () => {
         body: 'Nenhuma mensagem da campanha pôde ser enviada.',
       }),
     )
+  })
+})
+
+describe('notifyCrmCampaignSenderBlocked', () => {
+  it('tells the owner why the e-mails did not go out, once per campaign', async () => {
+    await notifyCrmCampaignSenderBlocked({
+      workspaceId: 'ws1',
+      campaign: { id: 'c1', title: 'Black Friday', createdById: 'u1' },
+      type: 'MULTICHANNEL',
+      fromEmail: 'mkt@acme.com',
+    })
+    expect(lastCall()).toEqual(
+      expect.objectContaining({
+        recipients: ['u1'],
+        actorId: null,
+        kind: 'CRM_CAMPAIGN_FINISHED',
+        title: 'E-mails da campanha bloqueados: Black Friday',
+        body: expect.stringContaining('mkt@acme.com'),
+        path: '/crm/campaigns/c1',
+        dedupeKey: 'crm-campaign-sender-blocked:c1',
+      }),
+    )
+    await notifyCrmCampaignSenderBlocked({
+      workspaceId: 'ws1',
+      campaign: { id: 'e1', title: 'Oferta', createdById: 'u1' },
+      type: 'EMAIL',
+      fromEmail: 'mkt@acme.com',
+    })
+    expect(lastCall()?.path).toBe('/crm/email-campaigns?record=e1')
   })
 })

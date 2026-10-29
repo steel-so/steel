@@ -244,3 +244,25 @@ Manual: `content/docs/crm/newsletter-resumo-e-ia.mdx`.
 - Na fotografia da audiência, uma amostra aleatória do tamanho da parcela (mínimo 2) é dividida A/B (`ab_variant`); o resto fica `ab_held = true` e não é reivindicado pelo despacho — a edição continua `SENDING`.
 - `ab-tick`: passadas as horas desde `sending_started_at`, compara a taxa (abertos ou clicados ÷ enviados) da parcela; empate fica com A. Grava `ab_winner`/`ab_decided_at`, libera os retidos e enfileira o despacho, que manda o assunto vencedor.
 - O `subject` da edição continua sendo o A (arquivo público e lista); o relatório mostra as duas variantes. "Parar envio" também descarta os retidos.
+
+## Remetente verificado nas campanhas e acertos da fase 1 (nl2-followups)
+
+**Remetente das campanhas** ([ADR 0055](../adr/0055-remetente-verificado-nas-campanhas.md))
+- Campanhas multicanal (`CrmCampaign`) e campanhas de e-mail antigas (`CrmEmailCampaign`) só enviam de um endereço em domínio `VERIFIED` do workspace ou de qualquer endereço no domínio da plataforma (`PLATFORM_CAMPAIGN_DOMAIN` = `mailDomain`, `stratustelecom.com.br`, comparação exata, em `src/lib/sending-domain/platform-sender.ts`). A checagem é `checkCampaignSender` (`src/lib/sending-domain/campaign-sender.ts`), que reaproveita `resolveVerifiedSender`.
+- Multicanal: entra em `issues` (passo `content`) com `fix: 'SENDING_DOMAINS'`, bloqueando o lançamento; a revisão mostra o link para Ajustes › Domínios de e-mail. No disparo, cada e-mail com remetente bloqueado vira `FAILED` com o motivo (sem nova tentativa) e o criador recebe um aviso (`notifyCrmCampaignSenderBlocked`, uma vez por campanha).
+- Campanhas antigas: `send` recusa com `SENDING_DOMAIN_NOT_VERIFIED` (422) antes de mudar qualquer coisa; o worker marca a agendada como `FAILED` e avisa o criador.
+- `GET /api/workspaces/{id}/crm/email-senders` (recurso `email`, `VIEW`): `{ platformDomain, verifiedDomains }` — só nomes de domínio. Alimenta o `EmailSenderPicker` (parte local + domínio; o da plataforma aparece como "stratustelecom.com.br (Steel)") dos dois assistentes.
+
+**Formulário do CRM no Sites**
+- O elemento `site.form` mostra a caixa de consentimento da newsletter quando o formulário tem `newsletterId` e a newsletter está `ACTIVE` (igual a `/f/<token>`), e envia `newsletterConsent` junto dos campos.
+
+**Edições**
+- Edição criada sem modelo começa do esqueleto `createNewsletterStarterDocument` (cabeçalho, título + introdução, conteúdo, assinatura, rodapé).
+- O rodapé do canvas é renderizado em modo assinatura (`subscription` no contexto de render): "Você recebe a newsletter <nome> porque se inscreveu para recebê-la." + **Preferências** · **Descadastrar**. Vale para o editor, a prévia, o teste, o envio e a versão web (sem os links). A faixa de rodapé extra que era anexada no envio saiu — antes a edição chegava com dois rodapés.
+- Relatório de edição em `DRAFT`/`SCHEDULED` mostra estado vazio em vez do funil zerado.
+
+**Arquivo público**
+- `/n/**` tem layout raiz próprio, sem o `Suspense` do layout do Steel: edição ou newsletter inexistente responde **HTTP 404** com página própria em pt-BR.
+
+**Uso do mês**
+- A lista de newsletters mostra "X de Y e-mails usados neste mês" para todo membro do CRM; o cartão com a barra fica nas Configurações da newsletter.
