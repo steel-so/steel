@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
+import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 import { phoneCallsKey } from './use-phone-calls'
 
 type WhatsAppRealtimeEvent =
@@ -21,6 +22,11 @@ type WhatsAppRealtimeEvent =
   | { type: 'conversation.deleted'; conversationId: string }
   | { type: 'group-message.created'; groupId: string }
   | { type: 'phone-call.updated'; call: WhatsAppPhoneCallDTO }
+  | {
+      type: 'pix-charge.updated'
+      conversationId: string
+      charge: WhatsAppPixChargeDTO
+    }
 
 export function useWhatsAppRealtimeEvents(workspaceId: string) {
   const queryClient = useQueryClient()
@@ -82,6 +88,19 @@ export function useWhatsAppRealtimeEvents(workspaceId: string) {
         }
         // Recording / transcript / summary landed: refresh the call cards.
         queryClient.invalidateQueries({ queryKey: phoneCallsKey(workspaceId) })
+      }
+
+      if (parsed.type === 'pix-charge.updated') {
+        queryClient.invalidateQueries({
+          queryKey: ['whatsapp-pix-charges', workspaceId],
+        })
+        // A payment adds a PIX_PAID chip to the conversation timeline.
+        queryClient.invalidateQueries({
+          queryKey: ['whatsapp-conversation-events', workspaceId],
+        })
+        queryClient.invalidateQueries({
+          queryKey: ['crm-opportunity-pix', workspaceId],
+        })
       }
 
       if (parsed.type === 'group-message.created') {

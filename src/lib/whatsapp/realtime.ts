@@ -4,6 +4,7 @@ import { getQueueConnection } from '@/src/lib/queue/connection'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
+import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 
 export type WhatsAppRealtimeEvent =
   | {
@@ -21,6 +22,11 @@ export type WhatsAppRealtimeEvent =
   | { type: 'conversation.deleted'; conversationId: string }
   | { type: 'group-message.created'; groupId: string }
   | { type: 'phone-call.updated'; call: WhatsAppPhoneCallDTO }
+  | {
+      type: 'pix-charge.updated'
+      conversationId: string
+      charge: WhatsAppPixChargeDTO
+    }
 
 function channelForWorkspace(workspaceId: string): string {
   return `whatsapp:workspace:${workspaceId}`
