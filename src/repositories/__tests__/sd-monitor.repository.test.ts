@@ -38,6 +38,8 @@ describe('SdMonitorSourceRepository', () => {
     expect(created.kind).toBe('ZABBIX')
     expect(created.autoResolve).toBe(true)
     expect(created.flappingWindowMinutes).toBe(15)
+    expect(created.correlationMode).toBe('HOST')
+    expect(created.correlationWindowMinutes).toBe(60)
 
     await seedSdMonitorSource(workspace.id, user.id, {
       name: 'Webhook inativo',
@@ -308,42 +310,37 @@ describe('SdMonitorAlertRepository', () => {
     await seedSdConfigItem(other.id, user.id, { name: 'SRV-OUTRA' })
 
     const byName = expectOk(
-      await SdMonitorAlertRepository.findConfigItemByHost(
-        workspace.id,
+      await SdMonitorAlertRepository.findConfigItemByHosts(workspace.id, [
         'srv-01',
-      ),
+      ]),
     )
     expect(byName?.name).toBe('SRV-01')
     expect(
       expectOk(
-        await SdMonitorAlertRepository.findConfigItemByHost(
-          workspace.id,
+        await SdMonitorAlertRepository.findConfigItemByHosts(workspace.id, [
           'pat-900',
-        ),
+        ]),
       )?.name,
     ).toBe('SRV-01')
     expect(
       expectOk(
-        await SdMonitorAlertRepository.findConfigItemByHost(
-          workspace.id,
+        await SdMonitorAlertRepository.findConfigItemByHosts(workspace.id, [
           '10.0.0.4',
-        ),
+        ]),
       )?.name,
     ).toBe('SRV-01')
     expect(
       expectOk(
-        await SdMonitorAlertRepository.findConfigItemByHost(
-          workspace.id,
+        await SdMonitorAlertRepository.findConfigItemByHosts(workspace.id, [
           'SRV-DEL',
-        ),
+        ]),
       ),
     ).toBeNull()
     expect(
       expectOk(
-        await SdMonitorAlertRepository.findConfigItemByHost(
-          workspace.id,
+        await SdMonitorAlertRepository.findConfigItemByHosts(workspace.id, [
           'SRV-OUTRA',
-        ),
+        ]),
       ),
     ).toBeNull()
   })
@@ -392,5 +389,325 @@ describe('SdMonitorAlertRepository', () => {
         ),
       ),
     ).toBeNull()
+  })
+
+  it('keeps the dedupe counters and the correlation key', async () => {
+    const { workspace, user } = await setup()
+    const source = await seedSdMonitorSource(workspace.id, user.id)
+    const created = expectOk(
+      await SdMonitorAlertRepository.create({
+        workspaceId: workspace.id,
+        sourceId: source.id,
+        externalId: 'cnt',
+        subject: 'CPU',
+        correlationKey: 'host:srv-01',
+        correlated: true,
+      }),
+    )
+    expect(created.occurrences).toBe(1)
+    expect(created.correlated).toBe(true)
+    expect(created.source.kind).toBe('ZABBIX')
+
+    const bumped = expectOk(
+      await SdMonitorAlertRepository.update(created.id, {
+        occurrences: { increment: 2 },
+        lastSeenAt: new Date('2026-10-02T00:00:00.000Z'),
+      }),
+    )
+    expect(bumped.occurrences).toBe(3)
+    expect(bumped.lastSeenAt.toISOString()).toBe('2026-10-02T00:00:00.000Z')
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.update(created.id, { occurrences: 1 }),
+      ).occurrences,
+    ).toBe(1)
+  })
+
+  it('finds an alert by id only inside its workspace', async () => {
+    const { workspace, other, user } = await setup()
+    const source = await seedSdMonitorSource(workspace.id, user.id)
+    const alert = await seedSdMonitorAlert(workspace.id, source.id)
+    expect(
+      expectOk(await SdMonitorAlertRepository.findById(alert.id, workspace.id))
+        .id,
+    ).toBe(alert.id)
+    expectErr(
+      await SdMonitorAlertRepository.findById(alert.id, other.id),
+      'SD_MONITOR_ALERT_NOT_FOUND',
+    )
+  })
+
+  it('lists by config item and the ones with no config item', async () => {
+    const { workspace, user } = await setup()
+    const source = await seedSdMonitorSource(workspace.id, user.id)
+    const ci = await seedSdConfigItem(workspace.id, user.id, { name: 'SRV-01' })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: 'com-ci',
+      subject: 'Com CI',
+      configItemId: ci.id,
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: 'sem-ci',
+      subject: 'Sem CI',
+    })
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.list(workspace.id, {
+          configItemId: ci.id,
+        }),
+      ).map((a) => a.subject),
+    ).toEqual(['Com CI'])
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.list(workspace.id, { unmatched: true }),
+      ).map((a) => a.subject),
+    ).toEqual(['Sem CI'])
+  })
+
+  it('matches by the saved alias first, then by any candidate, then by the short name', async () => {
+    const { workspace, other, user } = await setup()
+    const byName = await seedSdConfigItem(workspace.id, user.id, {
+      name: 'SRV-02',
+    })
+    const byIp = await seedSdConfigItem(workspace.id, user.id, {
+      name: 'Switch',
+      ipAddress: '10.0.0.9',
+    })
+    const aliased = await seedSdConfigItem(workspace.id, user.id, {
+      name: 'Banco principal',
+    })
+    const foreign = await seedSdConfigItem(other.id, user.id, { name: 'X' })
+    const find = async (hosts: string[]) =>
+      expectOk(
+        await SdMonitorAlertRepository.findConfigItemByHosts(
+          workspace.id,
+          hosts,
+        ),
+      )
+
+    expect(await find([])).toBeNull()
+    expect(await find(['  '])).toBeNull()
+    // a ordem dos candidatos manda
+    expect((await find(['10.0.0.9', 'srv-02']))?.id).toBe(byIp.id)
+    expect((await find(['desconhecido', 'SRV-02']))?.id).toBe(byName.id)
+    // primeiro rótulo de um FQDN
+    expect((await find(['srv-02.lan.exemplo']))?.id).toBe(byName.id)
+    expect(await find(['10.0.0.200'])).toBeNull()
+
+    // apelido guardado vence o casamento por nome
+    expectOk(
+      await SdMonitorAlertRepository.upsertHostAlias(
+        workspace.id,
+        'SRV-02',
+        aliased.id,
+        user.id,
+      ),
+    )
+    expect((await find(['srv-02']))?.id).toBe(aliased.id)
+
+    // o mesmo host de novo troca o item em vez de duplicar
+    expectOk(
+      await SdMonitorAlertRepository.upsertHostAlias(
+        workspace.id,
+        ' srv-02 ',
+        byIp.id,
+        user.id,
+      ),
+    )
+    expect((await find(['srv-02']))?.id).toBe(byIp.id)
+    expect(await prisma.sdMonitorHostAlias.count()).toBe(1)
+
+    // item excluído deixa o apelido de lado
+    await prisma.sdConfigItem.update({
+      where: { id: byIp.id },
+      data: { deletedAt: new Date() },
+    })
+    expect((await find(['srv-02']))?.id).toBe(byName.id)
+    // apelido de outra workspace não vaza
+    expectOk(
+      await SdMonitorAlertRepository.upsertHostAlias(
+        other.id,
+        'banco',
+        foreign.id,
+        user.id,
+      ),
+    )
+    expect(await find(['banco'])).toBeNull()
+  })
+
+  it('checks that a config item exists in the workspace', async () => {
+    const { workspace, other, user } = await setup()
+    const ci = await seedSdConfigItem(workspace.id, user.id, { name: 'A' })
+    const gone = await seedSdConfigItem(workspace.id, user.id, {
+      name: 'B',
+      deletedAt: new Date(),
+    })
+    const exists = async (ws: string, id: string) =>
+      expectOk(await SdMonitorAlertRepository.configItemExists(ws, id))
+    expect(await exists(workspace.id, ci.id)).toBe(true)
+    expect(await exists(other.id, ci.id)).toBe(false)
+    expect(await exists(workspace.id, gone.id)).toBe(false)
+  })
+
+  it('finds the oldest open alert of the machine with an active ticket inside the window', async () => {
+    const { workspace, other, user } = await setup()
+    const source = await seedSdMonitorSource(workspace.id, user.id)
+    const flow = await seedSdPhaseFlow(workspace.id, 'INCIDENT')
+    const open = await seedSdTicket(workspace.id, flow.initial.id)
+    const done = await seedSdTicket(workspace.id, flow.resolved.id)
+    const deleted = await seedSdTicket(workspace.id, flow.initial.id, {
+      deletedAt: new Date(),
+    })
+    const now = Date.now()
+    const key = 'host:srv-01'
+    const base = { correlationKey: key, status: 'OPEN' as const }
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      ...base,
+      externalId: 'newer',
+      ticketId: open.id,
+      startedAt: new Date(now - 5 * 60_000),
+      lastSeenAt: new Date(now - 1 * 60_000),
+    })
+    const root = await seedSdMonitorAlert(workspace.id, source.id, {
+      ...base,
+      externalId: 'root',
+      ticketId: open.id,
+      startedAt: new Date(now - 20 * 60_000),
+      lastSeenAt: new Date(now - 2 * 60_000),
+    })
+    // ruído que não pode ser escolhido
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      ...base,
+      externalId: 'stale',
+      ticketId: open.id,
+      startedAt: new Date(now - 90 * 60_000),
+      lastSeenAt: new Date(now - 90 * 60_000),
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      ...base,
+      externalId: 'closed-ticket',
+      ticketId: done.id,
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      ...base,
+      externalId: 'deleted-ticket',
+      ticketId: deleted.id,
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      ...base,
+      externalId: 'no-ticket',
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      correlationKey: key,
+      status: 'RESOLVED',
+      externalId: 'resolved',
+      ticketId: open.id,
+    })
+    const otherSource = await seedSdMonitorSource(other.id, user.id)
+    await seedSdMonitorAlert(other.id, otherSource.id, {
+      ...base,
+      externalId: 'foreign',
+    })
+
+    const since = new Date(now - 30 * 60_000)
+    const found = expectOk(
+      await SdMonitorAlertRepository.findCorrelationTarget(
+        workspace.id,
+        key,
+        since,
+      ),
+    )
+    expect(found?.id).toBe(root.id)
+    expect(found?.ticket?.number).toBe(open.number)
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.findCorrelationTarget(
+          workspace.id,
+          'host:outro',
+          since,
+        ),
+      ),
+    ).toBeNull()
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.findCorrelationTarget(
+          workspace.id,
+          key,
+          new Date(now + 60_000),
+        ),
+      ),
+    ).toBeNull()
+  })
+
+  it('counts the other open alerts of a ticket', async () => {
+    const { workspace, user } = await setup()
+    const source = await seedSdMonitorSource(workspace.id, user.id)
+    const flow = await seedSdPhaseFlow(workspace.id, 'INCIDENT')
+    const ticket = await seedSdTicket(workspace.id, flow.initial.id)
+    const a = await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: 'a',
+      ticketId: ticket.id,
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: 'b',
+      ticketId: ticket.id,
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: 'c',
+      ticketId: ticket.id,
+      status: 'RESOLVED',
+    })
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.countOpenByTicket(ticket.id, a.id),
+      ),
+    ).toBe(1)
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.countOpenByTicket(ticket.id, 'x'),
+      ),
+    ).toBe(2)
+  })
+
+  it('links the unmatched alerts with the same host, ignoring case and others', async () => {
+    const { workspace, other, user } = await setup()
+    const source = await seedSdMonitorSource(workspace.id, user.id)
+    const ci = await seedSdConfigItem(workspace.id, user.id, { name: 'A' })
+    const otherSource = await seedSdMonitorSource(other.id, user.id)
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: '1',
+      host: 'SRV-01',
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: '2',
+      host: 'srv-01',
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: '3',
+      host: 'srv-99',
+    })
+    await seedSdMonitorAlert(workspace.id, source.id, {
+      externalId: '4',
+      host: 'srv-01',
+      configItemId: (
+        await seedSdConfigItem(workspace.id, user.id, { name: 'B' })
+      ).id,
+    })
+    await seedSdMonitorAlert(other.id, otherSource.id, {
+      externalId: '5',
+      host: 'srv-01',
+    })
+    expect(
+      expectOk(
+        await SdMonitorAlertRepository.linkUnmatchedByHost(
+          workspace.id,
+          'Srv-01',
+          ci.id,
+        ),
+      ),
+    ).toBe(2)
+    expect(
+      await prisma.sdMonitorAlert.count({ where: { configItemId: ci.id } }),
+    ).toBe(2)
   })
 })

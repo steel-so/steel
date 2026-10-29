@@ -15,6 +15,8 @@ export interface SdMonitorSourceData {
   severityMap?: Prisma.InputJsonValue
   autoResolve?: boolean
   flappingWindowMinutes?: number
+  correlationMode?: SdMonitorSource['correlationMode']
+  correlationWindowMinutes?: number
 }
 
 /**

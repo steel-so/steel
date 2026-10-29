@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { auditMutation } from '@/lib/axiom/audit'
 import { sdConfigNotFound } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
+import { sdMonitorCorrelationKey } from '@/src/lib/servicedesk/monitoring'
 import {
   toSdMonitorAlertDTO,
   toSdMonitorSourceDTO,
@@ -12,8 +14,10 @@ import {
   type SdMonitorSourceData,
   SdMonitorSourceRepository,
 } from '@/src/repositories/sd-monitor-source.repository'
+import { SdTicketRepository } from '@/src/repositories/sd-ticket.repository'
 import type {
   CreateSdMonitorSourceDTO,
+  LinkSdMonitorAlertDTO,
   ListSdMonitorAlertsDTO,
   ListSdMonitorSourcesDTO,
   UpdateSdMonitorSourceDTO,
@@ -25,9 +29,10 @@ import type {
 } from '@/types/sd-monitor'
 import { SdAccess } from './sd-access'
 import { assertSdRefs, sdAdminMutation } from './sd-config-support'
+import { recordSdTicketEvent } from './sd-ticket-event-recorder'
 
 /**
- * Origens de monitoramento (Zabbix e webhook genérico): CRUD só de admin do
+ * Origens de monitoramento (Zabbix, Grafana, PRTG e webhook genérico): CRUD só de admin do
  * módulo, no mesmo molde das demais coleções de configuração.
  *
  * O token da URL pública é sorteado na criação (32 bytes em base64url),
@@ -88,6 +93,12 @@ function toData(
   if (dto.flappingWindowMinutes !== undefined) {
     data.flappingWindowMinutes = dto.flappingWindowMinutes
   }
+  if (dto.correlationMode !== undefined) {
+    data.correlationMode = dto.correlationMode
+  }
+  if (dto.correlationWindowMinutes !== undefined) {
+    data.correlationWindowMinutes = dto.correlationWindowMinutes
+  }
   return data
 }
 
@@ -116,6 +127,101 @@ export const SdMonitorSourceService = {
     const rows = await SdMonitorAlertRepository.list(workspaceId, filters)
     if (!rows.ok) return rows
     return ok(rows.value.map(toSdMonitorAlertDTO))
+  },
+
+  /**
+   * Liga (ou desliga) à mão o item da CMDB de um alerta cujo host não casou.
+   * Com `remember`, guarda host → item para os próximos alertas e liga os
+   * abertos de agora com o mesmo host. O chamado do alerta herda o item se
+   * ainda não tinha um.
+   */
+  async linkAlert(
+    actorId: string,
+    workspaceId: string,
+    alertId: string,
+    dto: LinkSdMonitorAlertDTO,
+  ): Promise<Result<SdMonitorAlertDTO>> {
+    const ctx = await SdAccess.requireAgent(actorId, workspaceId)
+    if (!ctx.ok) return ctx
+    const alert = await SdMonitorAlertRepository.findById(alertId, workspaceId)
+    if (!alert.ok) return alert
+
+    if (dto.configItemId) {
+      const exists = await SdMonitorAlertRepository.configItemExists(
+        workspaceId,
+        dto.configItemId,
+      )
+      if (!exists.ok) return exists
+      if (!exists.value) {
+        return err({
+          ...sdConfigNotFound(),
+          message: 'Item de configuração não encontrado nesta workspace',
+        })
+      }
+    }
+
+    const updated = await SdMonitorAlertRepository.update(alertId, {
+      configItemId: dto.configItemId,
+      correlationKey: sdMonitorCorrelationKey(
+        dto.configItemId,
+        alert.value.host,
+      ),
+    })
+    if (!updated.ok) return updated
+
+    let linkedOthers = 0
+    if (dto.configItemId && dto.remember && alert.value.host) {
+      const saved = await SdMonitorAlertRepository.upsertHostAlias(
+        workspaceId,
+        alert.value.host,
+        dto.configItemId,
+        actorId,
+      )
+      if (!saved.ok) return saved
+      const others = await SdMonitorAlertRepository.linkUnmatchedByHost(
+        workspaceId,
+        alert.value.host,
+        dto.configItemId,
+      )
+      if (!others.ok) return others
+      linkedOthers = others.value
+    }
+
+    if (dto.configItemId && alert.value.ticketId) {
+      const ticket = await SdTicketRepository.findById(
+        alert.value.ticketId,
+        workspaceId,
+      )
+      if (ticket.ok && !ticket.value.configItemId) {
+        const set = await SdTicketRepository.update(ticket.value.id, {
+          configItemId: dto.configItemId,
+        })
+        if (set.ok) {
+          await recordSdTicketEvent({
+            workspaceId,
+            ticketId: ticket.value.id,
+            actorKind: 'AGENT',
+            actorUserId: actorId,
+            action: 'monitor.config_item_linked',
+            meta: { alertId, configItemId: dto.configItemId },
+          })
+        }
+      }
+    }
+
+    auditMutation({
+      entity: 'sd_monitor_alert',
+      action: 'update',
+      actorId,
+      targetId: alertId,
+      meta: {
+        workspaceId,
+        configItemId: dto.configItemId,
+        remember: dto.remember,
+        linkedOthers,
+      },
+    })
+    return ok(toSdMonitorAlertDTO(updated.value))
   },
 
   async create(

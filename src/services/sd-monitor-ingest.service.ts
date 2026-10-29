@@ -4,8 +4,9 @@ import { logger } from '@/lib/axiom/logger'
 import { sdMonitorPayloadInvalid, sdMonitorTokenInvalid } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
-  parseSdMonitorPayload,
+  parseSdMonitorEvents,
   type SdMonitorEvent,
+  sdMonitorCorrelationKey,
   sdMonitorPriorityId,
   sdMonitorSeverityMap,
   sdMonitorTicketBody,
@@ -55,6 +56,13 @@ import { recordSdTicketEvent } from './sd-ticket-event-recorder'
  *   chamado onde está.
  * - **Flapping**: o mesmo alerta voltando dentro de `flappingWindowMinutes`
  *   reabre o chamado anterior em vez de abrir outro.
+ * - **Correlação** (`correlationMode = HOST`): um alerta novo da mesma máquina
+ *   (item da CMDB ou, sem item, o mesmo host) que chega enquanto outro alerta
+ *   dela está aberto, dentro de `correlationWindowMinutes`, entra no chamado
+ *   desse alerta em vez de abrir outro. O chamado só encerra sozinho quando o
+ *   último alerta ligado a ele normaliza.
+ * - **Lotes**: o Grafana/Alertmanager manda vários alertas num envio; cada um
+ *   passa pelas regras acima, em ordem.
  *
  * Nada aqui lança: toda falha vira `Result` e é logada/auditada.
  */
@@ -66,10 +74,15 @@ const CATALOG_ERRORS = new Set([
   'SD_CONFIG_NOT_FOUND',
 ])
 
-export interface SdMonitorIngestResult {
+export interface SdMonitorIngestItem {
   alert: SdMonitorAlertDTO
   outcome: SdMonitorIngestDTO['outcome']
   ticketCode: string | null
+}
+
+/** O primeiro alerta do envio (compatível com o formato antigo) + todos. */
+export interface SdMonitorIngestResult extends SdMonitorIngestItem {
+  results: SdMonitorIngestItem[]
 }
 
 function audience(ticket: SdTicketWithRelations) {
@@ -97,15 +110,18 @@ async function publish(
   )
 }
 
-/** Item de configuração que corresponde ao host do alerta. */
+/** Item de configuração que corresponde ao host (ou aos nomes) do alerta. */
 async function matchConfigItem(
   workspaceId: string,
-  host: string | null,
+  event: SdMonitorEvent,
 ): Promise<string | null> {
-  if (!host) return null
-  const found = await SdMonitorAlertRepository.findConfigItemByHost(
+  const hosts = [event.host, ...event.hostAliases].filter(
+    (h): h is string => !!h,
+  )
+  if (hosts.length === 0) return null
+  const found = await SdMonitorAlertRepository.findConfigItemByHosts(
     workspaceId,
-    host,
+    hosts,
   )
   if (!found.ok) {
     logger.warn('servicedesk.monitor.ci_lookup_failed', {
@@ -161,12 +177,13 @@ async function openTicket(
 async function postSystemMessage(
   ticket: SdTicketWithRelations,
   body: string,
+  visibility: 'PUBLIC' | 'INTERNAL' = 'PUBLIC',
 ): Promise<void> {
   const posted = await SdAutomationRepository.insertSystemMessage({
     workspaceId: ticket.workspaceId,
     ticketId: ticket.id,
     body,
-    visibility: 'PUBLIC',
+    visibility,
   })
   if (!posted.ok) {
     logger.warn('servicedesk.monitor.message_failed', {
@@ -359,29 +376,68 @@ interface Handled {
   ticket: SdTicketWithRelations | null
 }
 
-/** PROBLEM: abre, deduplica ou reabre (flapping). */
+/**
+ * Chamado aberto de outro alerta da mesma máquina (mesma chave, atividade
+ * dentro da janela) onde o alerta novo deve entrar. `null` = não correlaciona.
+ */
+async function findCorrelatedTicket(
+  source: SdMonitorSource,
+  correlationKey: string | null,
+  now: Date,
+): Promise<{ ticket: SdTicketWithRelations; rootAlertId: string } | null> {
+  if (source.correlationMode === 'OFF' || !correlationKey) return null
+  const since = new Date(
+    now.getTime() - source.correlationWindowMinutes * 60_000,
+  )
+  const root = await SdMonitorAlertRepository.findCorrelationTarget(
+    source.workspaceId,
+    correlationKey,
+    since,
+  )
+  if (!root.ok || !root.value?.ticketId) {
+    if (!root.ok) {
+      logger.warn('servicedesk.monitor.correlation_lookup_failed', {
+        workspaceId: source.workspaceId,
+        reason: root.error.code,
+      })
+    }
+    return null
+  }
+  const ticket = await SdTicketRepository.findById(
+    root.value.ticketId,
+    source.workspaceId,
+  )
+  if (!ticket.ok) return null
+  return { ticket: ticket.value, rootAlertId: root.value.id }
+}
+
+/** PROBLEM: abre, deduplica, correlaciona ou reabre (flapping). */
 async function handleProblem(
   source: SdMonitorSource,
   event: SdMonitorEvent,
   existing: SdMonitorAlertWithRelations | null,
-  payload: Prisma.InputJsonValue,
   config: SdEngineConfig,
   now: Date,
 ): Promise<Result<Handled>> {
   const workspaceId = source.workspaceId
-  const configItemId = await matchConfigItem(workspaceId, event.host)
+  const configItemId = await matchConfigItem(workspaceId, event)
   const common = {
     subject: event.subject,
     body: event.body,
     severity: event.severity,
     host: event.host,
     configItemId,
-    payload,
+    payload: event.raw as Prisma.InputJsonValue,
+    correlationKey: sdMonitorCorrelationKey(configItemId, event.host),
+    lastSeenAt: now,
   }
 
   // Alerta já aberto: só atualiza (deduplicação).
   if (existing && existing.status === 'OPEN') {
-    const updated = await SdMonitorAlertRepository.update(existing.id, common)
+    const updated = await SdMonitorAlertRepository.update(existing.id, {
+      ...common,
+      occurrences: { increment: 1 },
+    })
     if (!updated.ok) return updated
     if (existing.ticketId) {
       await trace(existing.ticketId, workspaceId, 'monitor.alert_repeated', {
@@ -395,7 +451,10 @@ async function handleProblem(
 
   // Alerta ignorado: registra o recebimento e não abre nada.
   if (existing && existing.status === 'IGNORED') {
-    const updated = await SdMonitorAlertRepository.update(existing.id, common)
+    const updated = await SdMonitorAlertRepository.update(existing.id, {
+      ...common,
+      occurrences: { increment: 1 },
+    })
     if (!updated.ok) return updated
     return ok({ alert: updated.value, outcome: 'alert_updated', ticket: null })
   }
@@ -413,6 +472,7 @@ async function handleProblem(
         status: 'OPEN',
         resolvedAt: null,
         startedAt: event.startedAt ?? now,
+        occurrences: { increment: 1 },
       })
       if (!updated.ok) return updated
       await trace(ticket.value.id, workspaceId, 'monitor.alert_reopened', {
@@ -429,6 +489,55 @@ async function handleProblem(
     logger.warn('servicedesk.monitor.flapping_ticket_missing', {
       workspaceId,
       alertId: existing.id,
+    })
+  }
+
+  // Correlação: outro alerta da mesma máquina já tem chamado aberto.
+  const target = await findCorrelatedTicket(source, common.correlationKey, now)
+  if (target) {
+    const data = {
+      ...common,
+      status: 'OPEN' as const,
+      resolvedAt: null,
+      ticketId: target.ticket.id,
+      startedAt: event.startedAt ?? now,
+      correlated: true,
+      occurrences: 1,
+    }
+    const alert = existing
+      ? await SdMonitorAlertRepository.update(existing.id, data)
+      : await SdMonitorAlertRepository.create({
+          ...data,
+          workspaceId,
+          sourceId: source.id,
+          externalId: event.externalId,
+        })
+    if (!alert.ok) return alert
+
+    const where = event.host ? ` em ${escapeHtml(event.host)}` : ''
+    const severity = event.severity
+      ? ` (severidade ${escapeHtml(event.severity)})`
+      : ''
+    await postSystemMessage(
+      target.ticket,
+      `<p>Outro alerta${where} entrou neste chamado em vez de abrir um novo: "${escapeHtml(event.subject)}"${severity}, origem ${escapeHtml(source.name)}.</p>`,
+      'INTERNAL',
+    )
+    await trace(
+      target.ticket.id,
+      workspaceId,
+      'monitor.alert_correlated',
+      {
+        id: alert.value.id,
+        externalId: alert.value.externalId,
+        severity: event.severity,
+      },
+      { rootAlertId: target.rootAlertId },
+    )
+    return ok({
+      alert: alert.value,
+      outcome: 'alert_correlated',
+      ticket: target.ticket,
     })
   }
 
@@ -451,6 +560,8 @@ async function handleProblem(
     resolvedAt: null,
     ticketId: ticket.value.id,
     startedAt: event.startedAt ?? now,
+    correlated: false,
+    occurrences: 1,
   }
   const alert = existing
     ? await SdMonitorAlertRepository.update(existing.id, data)
@@ -475,12 +586,31 @@ async function handleProblem(
   })
 }
 
+/**
+ * Avisa que o alerta normalizou mas o chamado segue aberto porque outros
+ * alertas ligados a ele ainda não normalizaram.
+ */
+async function noteOthersStillOpen(
+  ticket: SdTicketWithRelations,
+  event: SdMonitorEvent,
+  remaining: number | null,
+): Promise<void> {
+  const left =
+    remaining === null
+      ? 'ainda há alertas abertos'
+      : `${remaining} ${remaining === 1 ? 'alerta segue aberto' : 'alertas seguem abertos'}`
+  await postSystemMessage(
+    ticket,
+    `<p>O alerta "${escapeHtml(event.subject)}" normalizou, mas ${left} neste chamado. Ele será encerrado quando o último normalizar.</p>`,
+    'INTERNAL',
+  )
+}
+
 /** OK/RESOLVED: fecha o alerta e, se configurado, resolve o chamado. */
 async function handleResolved(
   source: SdMonitorSource,
   event: SdMonitorEvent,
   existing: SdMonitorAlertWithRelations | null,
-  payload: Prisma.InputJsonValue,
   config: SdEngineConfig,
   now: Date,
 ): Promise<Result<Handled>> {
@@ -490,20 +620,22 @@ async function handleResolved(
     body: event.body,
     severity: event.severity,
     host: event.host,
-    payload,
+    payload: event.raw as Prisma.InputJsonValue,
     status: 'RESOLVED' as const,
     resolvedAt: now,
+    lastSeenAt: now,
   }
 
   if (!existing) {
     // Normalização de um alerta que nunca chegou como problema: só registra.
-    const configItemId = await matchConfigItem(workspaceId, event.host)
+    const configItemId = await matchConfigItem(workspaceId, event)
     const created = await SdMonitorAlertRepository.create({
       ...common,
       workspaceId,
       sourceId: source.id,
       externalId: event.externalId,
       configItemId,
+      correlationKey: sdMonitorCorrelationKey(configItemId, event.host),
       startedAt: event.startedAt ?? now,
     })
     if (!created.ok) return created
@@ -526,13 +658,27 @@ async function handleResolved(
   }
 
   let resolved = false
-  if (source.autoResolve && existing.status === 'OPEN') {
-    resolved = await resolveTicket(ticket.value, source, event, config)
-  } else if (existing.status === 'OPEN') {
-    await postSystemMessage(
-      ticket.value,
-      `<p>O alerta "${escapeHtml(event.subject)}" normalizou no monitoramento (${escapeHtml(source.name)}).</p>`,
+  if (existing.status === 'OPEN') {
+    // Com alertas correlacionados, o chamado só encerra no último.
+    const others = await SdMonitorAlertRepository.countOpenByTicket(
+      existing.ticketId,
+      existing.id,
     )
+    const stillOpen = !others.ok || others.value > 0
+    if (stillOpen) {
+      await noteOthersStillOpen(
+        ticket.value,
+        event,
+        others.ok ? others.value : null,
+      )
+    } else if (source.autoResolve) {
+      resolved = await resolveTicket(ticket.value, source, event, config)
+    } else {
+      await postSystemMessage(
+        ticket.value,
+        `<p>O alerta "${escapeHtml(event.subject)}" normalizou no monitoramento (${escapeHtml(source.name)}).</p>`,
+      )
+    }
   }
   await trace(
     ticket.value.id,
@@ -553,10 +699,74 @@ async function handleResolved(
   })
 }
 
+/** Um evento do envio: aplica as regras, publica, notifica e audita. */
+async function processEvent(
+  source: SdMonitorSource,
+  event: SdMonitorEvent,
+  config: SdEngineConfig,
+  now: Date,
+): Promise<Result<SdMonitorIngestItem>> {
+  const existing = await SdMonitorAlertRepository.findByExternalId(
+    source.id,
+    event.externalId,
+  )
+  if (!existing.ok) return existing
+
+  const handled = event.resolved
+    ? await handleResolved(source, event, existing.value, config, now)
+    : await handleProblem(source, event, existing.value, config, now)
+  if (!handled.ok) return handled
+
+  const { alert, outcome, ticket } = handled.value
+  if (ticket) await publish(ticket, 'ticket.updated')
+  if (
+    ticket &&
+    (outcome === 'ticket_created' || outcome === 'ticket_reopened')
+  ) {
+    await notifyOnCall(
+      ticket,
+      event,
+      config,
+      outcome === 'ticket_reopened',
+      now,
+    )
+  }
+
+  auditMutation({
+    entity: 'sd_monitor_alert',
+    action: event.resolved ? 'resolve' : 'alert',
+    actorId: null,
+    targetId: alert.id,
+    meta: {
+      workspaceId: source.workspaceId,
+      sourceId: source.id,
+      outcome,
+      ticketId: alert.ticketId,
+    },
+  })
+  logger.info('servicedesk.monitor.alert_received', {
+    workspaceId: source.workspaceId,
+    sourceId: source.id,
+    alertId: alert.id,
+    outcome,
+    resolved: event.resolved,
+  })
+
+  return ok({
+    alert: toSdMonitorAlertDTO(alert),
+    outcome,
+    ticketCode: alert.ticket
+      ? sdTicketCode(alert.ticket, config.prefixes)
+      : null,
+  })
+}
+
 export const SdMonitorIngestService = {
   /**
-   * Recebe um alerta pelo token público. Devolve o alerta gravado, o que
-   * ele provocou e o código do chamado (quando houver).
+   * Recebe um envio pelo token público (um alerta, ou vários no caso do
+   * Grafana/Alertmanager). Devolve o primeiro resultado (formato antigo) e
+   * a lista completa em `results`. Um erro interrompe o lote; reenviar é
+   * seguro porque a deduplicação por `externalId` repete sem efeito colateral.
    */
   async ingest(
     token: string,
@@ -575,8 +785,8 @@ export const SdMonitorIngestService = {
     )
     if (!enabled.ok) return enabled
 
-    const event = parseSdMonitorPayload(payload)
-    if (!event) {
+    const events = parseSdMonitorEvents(source.kind, payload)
+    if (events.length === 0) {
       logger.warn('servicedesk.monitor.payload_invalid', {
         workspaceId: source.workspaceId,
         sourceId: source.id,
@@ -588,77 +798,14 @@ export const SdMonitorIngestService = {
     if (!config.ok) return config
 
     const now = new Date()
-    const existing = await SdMonitorAlertRepository.findByExternalId(
-      source.id,
-      event.externalId,
-    )
-    if (!existing.ok) return existing
-
-    const json = (
-      typeof payload === 'object' && payload !== null ? payload : {}
-    ) as Prisma.InputJsonValue
-
-    const handled = event.resolved
-      ? await handleResolved(
-          source,
-          event,
-          existing.value,
-          json,
-          config.value,
-          now,
-        )
-      : await handleProblem(
-          source,
-          event,
-          existing.value,
-          json,
-          config.value,
-          now,
-        )
-    if (!handled.ok) return handled
-
-    await SdMonitorSourceRepository.touchLastEvent(source.id, now)
-    const { alert, outcome, ticket } = handled.value
-    if (ticket) await publish(ticket, 'ticket.updated')
-    if (
-      ticket &&
-      (outcome === 'ticket_created' || outcome === 'ticket_reopened')
-    ) {
-      await notifyOnCall(
-        ticket,
-        event,
-        config.value,
-        outcome === 'ticket_reopened',
-        now,
-      )
+    const results: SdMonitorIngestItem[] = []
+    for (const event of events) {
+      const item = await processEvent(source, event, config.value, now)
+      if (!item.ok) return item
+      results.push(item.value)
     }
 
-    auditMutation({
-      entity: 'sd_monitor_alert',
-      action: event.resolved ? 'resolve' : 'alert',
-      actorId: null,
-      targetId: alert.id,
-      meta: {
-        workspaceId: source.workspaceId,
-        sourceId: source.id,
-        outcome,
-        ticketId: alert.ticketId,
-      },
-    })
-    logger.info('servicedesk.monitor.alert_received', {
-      workspaceId: source.workspaceId,
-      sourceId: source.id,
-      alertId: alert.id,
-      outcome,
-      resolved: event.resolved,
-    })
-
-    return ok({
-      alert: toSdMonitorAlertDTO(alert),
-      outcome,
-      ticketCode: alert.ticket
-        ? sdTicketCode(alert.ticket, config.value.prefixes)
-        : null,
-    })
+    await SdMonitorSourceRepository.touchLastEvent(source.id, now)
+    return ok({ ...results[0], results })
   },
 }

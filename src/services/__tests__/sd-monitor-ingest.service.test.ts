@@ -104,10 +104,12 @@ beforeEach(() => {
   engine.create.mockResolvedValue(ok(ticket()))
   engine.changePhase.mockResolvedValue(ok(ticket()))
   alerts.findByExternalId.mockResolvedValue(ok(null))
-  alerts.findConfigItemByHost.mockResolvedValue(
+  alerts.findConfigItemByHosts.mockResolvedValue(
     ok({ id: 'ci-1', name: 'SRV-01' }),
   )
   alerts.findPhaseIdByCategory.mockResolvedValue(ok('phase-resolved'))
+  alerts.findCorrelationTarget.mockResolvedValue(ok(null))
+  alerts.countOpenByTicket.mockResolvedValue(ok(0))
   alerts.create.mockImplementation(async ({ payload: _p, ...data }) =>
     ok(
       createFakeSdMonitorAlert({
@@ -300,22 +302,22 @@ describe('PROBLEM', () => {
   })
 
   it('opens the ticket without a CI when no host matches', async () => {
-    alerts.findConfigItemByHost.mockResolvedValue(ok(null))
+    alerts.findConfigItemByHosts.mockResolvedValue(ok(null))
     expectOk(await SdMonitorIngestService.ingest(token, problem))
     expect(engine.create.mock.calls[0][1].configItemId).toBeUndefined()
 
-    alerts.findConfigItemByHost.mockResolvedValue(err(databaseError()))
+    alerts.findConfigItemByHosts.mockResolvedValue(err(databaseError()))
     expectOk(await SdMonitorIngestService.ingest(token, problem))
 
     // Alerta sem host nem consulta o CMDB.
-    alerts.findConfigItemByHost.mockClear()
+    alerts.findConfigItemByHosts.mockClear()
     expectOk(
       await SdMonitorIngestService.ingest(token, {
         externalId: 'sem-host',
         subject: 'Falha genérica',
       }),
     )
-    expect(alerts.findConfigItemByHost).not.toHaveBeenCalled()
+    expect(alerts.findConfigItemByHosts).not.toHaveBeenCalled()
   })
 
   it('deduplicates: the same alert again only updates the row', async () => {
@@ -772,5 +774,349 @@ describe('on-call notice', () => {
     onCall.mockResolvedValue(target('plantonista'))
     notify.mockResolvedValue(err(databaseError()))
     expectOk(await SdMonitorIngestService.ingest(token, problem))
+  })
+})
+
+describe('deduplication counters', () => {
+  it('counts the repetitions of an open alert and of an ignored one', async () => {
+    alerts.findByExternalId.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'a1', ticketId: 't1' })),
+    )
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(alerts.update).toHaveBeenCalledWith(
+      'a1',
+      expect.objectContaining({
+        occurrences: { increment: 1 },
+        lastSeenAt: expect.any(Date),
+      }),
+    )
+
+    alerts.update.mockClear()
+    alerts.findByExternalId.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'a2', status: 'IGNORED' })),
+    )
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(alerts.update).toHaveBeenCalledWith(
+      'a2',
+      expect.objectContaining({ occurrences: { increment: 1 } }),
+    )
+  })
+
+  it('stores the correlation key from the matched CI', async () => {
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(alerts.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        correlationKey: 'ci:ci-1',
+        correlated: false,
+        occurrences: 1,
+      }),
+    )
+  })
+
+  it('falls back to the host name for the key when the CI does not match', async () => {
+    alerts.findConfigItemByHosts.mockResolvedValue(ok(null))
+    expectOk(
+      await SdMonitorIngestService.ingest(token, {
+        ...problem,
+        hostName: 'SRV-01.lan',
+      }),
+    )
+    expect(alerts.create).toHaveBeenCalledWith(
+      expect.objectContaining({ correlationKey: 'host:srv-01' }),
+    )
+  })
+
+  it('passes every name of the machine to the CMDB lookup', async () => {
+    expectOk(
+      await SdMonitorIngestService.ingest(token, {
+        ...problem,
+        hostIp: '10.0.0.5',
+      }),
+    )
+    expect(alerts.findConfigItemByHosts).toHaveBeenCalledWith(WS, [
+      'SRV-01',
+      '10.0.0.5',
+    ])
+  })
+})
+
+describe('correlation', () => {
+  const root = () =>
+    createFakeSdMonitorAlert({
+      id: 'root',
+      ticketId: 't1',
+      correlationKey: 'ci:ci-1',
+      externalId: 'cpu-1',
+    })
+
+  beforeEach(() => {
+    alerts.findCorrelationTarget.mockResolvedValue(ok(root()))
+    tickets.findById.mockResolvedValue(ok(ticket()))
+  })
+
+  it('attaches a new alert of the same machine to the open ticket', async () => {
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('alert_correlated')
+    expect(engine.create).not.toHaveBeenCalled()
+    expect(fireSdAutomations).not.toHaveBeenCalled()
+    expect(alerts.findCorrelationTarget).toHaveBeenCalledWith(
+      WS,
+      'ci:ci-1',
+      expect.any(Date),
+    )
+    expect(alerts.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ticketId: 't1',
+        correlated: true,
+        status: 'OPEN',
+      }),
+    )
+    const message = automation.insertSystemMessage.mock.calls[0][0]
+    expect(message.visibility).toBe('INTERNAL')
+    expect(message.body).toContain('Sem resposta do agente no SRV-01')
+    expect(recordSdTicketEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'monitor.alert_correlated',
+        meta: expect.objectContaining({ rootAlertId: 'root' }),
+      }),
+    )
+    expect(publishSdTicketEvent).toHaveBeenCalledWith(
+      WS,
+      expect.objectContaining({ type: 'ticket.updated' }),
+      expect.anything(),
+    )
+    expect(onCallMock()).not.toHaveBeenCalled()
+  })
+
+  it('uses the configured window to bound the lookup', async () => {
+    sources.findByTokenHash.mockResolvedValue(
+      ok(createFakeSdMonitorSource({ correlationWindowMinutes: 10 })),
+    )
+    const before = Date.now()
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    const since = alerts.findCorrelationTarget.mock.calls[0][2]
+    expect(before - since.getTime()).toBeGreaterThanOrEqual(10 * 60_000 - 1000)
+    expect(before - since.getTime()).toBeLessThan(11 * 60_000)
+  })
+
+  it('reuses the row of a resolved alert that comes back outside the flapping window', async () => {
+    alerts.findByExternalId.mockResolvedValue(
+      ok(
+        createFakeSdMonitorAlert({
+          id: 'old',
+          status: 'RESOLVED',
+          ticketId: 't-old',
+          resolvedAt: new Date('2020-01-01T00:00:00Z'),
+        }),
+      ),
+    )
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('alert_correlated')
+    expect(alerts.update).toHaveBeenCalledWith(
+      'old',
+      expect.objectContaining({
+        ticketId: 't1',
+        correlated: true,
+        status: 'OPEN',
+      }),
+    )
+    expect(alerts.create).not.toHaveBeenCalled()
+  })
+
+  it('does not correlate when the source turned it off', async () => {
+    sources.findByTokenHash.mockResolvedValue(
+      ok(createFakeSdMonitorSource({ correlationMode: 'OFF' })),
+    )
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('ticket_created')
+    expect(alerts.findCorrelationTarget).not.toHaveBeenCalled()
+  })
+
+  it('does not correlate an alert that does not say which machine it came from', async () => {
+    alerts.findConfigItemByHosts.mockClear()
+    const result = expectOk(
+      await SdMonitorIngestService.ingest(token, {
+        externalId: 'x1',
+        status: 'PROBLEM',
+        subject: 'Fila cheia',
+      }),
+    )
+    expect(result.outcome).toBe('ticket_created')
+    expect(alerts.findConfigItemByHosts).not.toHaveBeenCalled()
+    expect(alerts.findCorrelationTarget).not.toHaveBeenCalled()
+  })
+
+  it('opens its own ticket when nothing is open for the machine', async () => {
+    alerts.findCorrelationTarget.mockResolvedValue(ok(null))
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('ticket_created')
+  })
+
+  it('opens its own ticket when the lookup fails or the root ticket is gone', async () => {
+    alerts.findCorrelationTarget.mockResolvedValue(err(databaseError()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('ticket_created')
+
+    alerts.findCorrelationTarget.mockResolvedValue(ok(root()))
+    tickets.findById.mockResolvedValue(err(sdTicketNotFound()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('ticket_created')
+  })
+
+  it('propagates a failure of the alert write', async () => {
+    alerts.create.mockResolvedValue(err(databaseError()))
+    expectErr(
+      await SdMonitorIngestService.ingest(token, problem),
+      'DATABASE_ERROR',
+    )
+  })
+})
+
+function onCallMock() {
+  return vi.mocked(sdOnCallEscalationTarget)
+}
+
+describe('resolving with correlated alerts', () => {
+  beforeEach(() => {
+    alerts.findByExternalId.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'a1', ticketId: 't1' })),
+    )
+    tickets.findById.mockResolvedValue(ok(ticket()))
+  })
+
+  it('keeps the ticket open while other alerts are still open', async () => {
+    alerts.countOpenByTicket.mockResolvedValue(ok(2))
+    const result = expectOk(
+      await SdMonitorIngestService.ingest(token, recovery),
+    )
+    expect(result.outcome).toBe('alert_resolved')
+    expect(engine.changePhase).not.toHaveBeenCalled()
+    expect(alerts.countOpenByTicket).toHaveBeenCalledWith('t1', 'a1')
+    const message = automation.insertSystemMessage.mock.calls[0][0]
+    expect(message.visibility).toBe('INTERNAL')
+    expect(message.body).toContain('2 alertas seguem abertos')
+    expect(recordSdTicketEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'monitor.alert_resolved',
+        meta: expect.objectContaining({ autoResolved: false }),
+      }),
+    )
+  })
+
+  it('uses the singular for a single remaining alert', async () => {
+    alerts.countOpenByTicket.mockResolvedValue(ok(1))
+    expectOk(await SdMonitorIngestService.ingest(token, recovery))
+    expect(automation.insertSystemMessage.mock.calls[0][0].body).toContain(
+      '1 alerta segue aberto',
+    )
+  })
+
+  it('does not close the ticket when it cannot count the open alerts', async () => {
+    alerts.countOpenByTicket.mockResolvedValue(err(databaseError()))
+    const result = expectOk(
+      await SdMonitorIngestService.ingest(token, recovery),
+    )
+    expect(result.outcome).toBe('alert_resolved')
+    expect(engine.changePhase).not.toHaveBeenCalled()
+    expect(automation.insertSystemMessage.mock.calls[0][0].body).toContain(
+      'ainda há alertas abertos',
+    )
+  })
+
+  it('closes the ticket together with the last alert', async () => {
+    alerts.countOpenByTicket.mockResolvedValue(ok(0))
+    const result = expectOk(
+      await SdMonitorIngestService.ingest(token, recovery),
+    )
+    expect(result.outcome).toBe('ticket_resolved')
+  })
+})
+
+describe('batches (Grafana / Alertmanager)', () => {
+  const grafana = {
+    status: 'firing',
+    alerts: [
+      {
+        status: 'firing',
+        fingerprint: 'fp-1',
+        labels: { alertname: 'CPU alta', host: 'srv-01', severity: 'critical' },
+        annotations: { summary: 'CPU acima de 90%' },
+      },
+      {
+        status: 'firing',
+        fingerprint: 'fp-2',
+        labels: { alertname: 'Disco cheio', host: 'srv-01' },
+        annotations: { summary: 'Disco em 95%' },
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    sources.findByTokenHash.mockResolvedValue(
+      ok(createFakeSdMonitorSource({ kind: 'GRAFANA' })),
+    )
+  })
+
+  it('processes every alert in order and returns them all', async () => {
+    const result = expectOk(await SdMonitorIngestService.ingest(token, grafana))
+    expect(result.results).toHaveLength(2)
+    expect(result.outcome).toBe('ticket_created')
+    expect(alerts.findByExternalId.mock.calls.map((c) => c[1])).toEqual([
+      'fp-1',
+      'fp-2',
+    ])
+    expect(sources.touchLastEvent).toHaveBeenCalledTimes(1)
+  })
+
+  it('stores only the alert that originated each row', async () => {
+    expectOk(await SdMonitorIngestService.ingest(token, grafana))
+    const payloads = alerts.create.mock.calls.map((c) => c[0].payload)
+    expect(payloads[0]).toMatchObject({ fingerprint: 'fp-1' })
+    expect(payloads[1]).toMatchObject({ fingerprint: 'fp-2' })
+  })
+
+  it('stops at the first failure so the sender can retry safely', async () => {
+    engine.create.mockResolvedValueOnce(err(databaseError()))
+    expectErr(
+      await SdMonitorIngestService.ingest(token, grafana),
+      'DATABASE_ERROR',
+    )
+    expect(engine.create).toHaveBeenCalledTimes(1)
+    expect(sources.touchLastEvent).not.toHaveBeenCalled()
+  })
+
+  it('refuses a batch without a readable alert', async () => {
+    expectErr(
+      await SdMonitorIngestService.ingest(token, { alerts: [] }),
+      'SD_MONITOR_PAYLOAD_INVALID',
+    )
+  })
+
+  it('reads a PRTG sensor and resolves on Up', async () => {
+    sources.findByTokenHash.mockResolvedValue(
+      ok(createFakeSdMonitorSource({ kind: 'PRTG' })),
+    )
+    const down = {
+      sensorId: '2001',
+      device: 'SRV-01',
+      sensor: 'Ping',
+      status: 'Down',
+      message: 'Timeout',
+    }
+    const result = expectOk(await SdMonitorIngestService.ingest(token, down))
+    expect(result.outcome).toBe('ticket_created')
+    expect(engine.create.mock.calls[0][1].title).toBe('Ping em SRV-01')
+    expect(alerts.findByExternalId).toHaveBeenCalledWith('src-1', 'sensor-2001')
+
+    alerts.findByExternalId.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'a1', ticketId: 't1' })),
+    )
+    tickets.findById.mockResolvedValue(ok(ticket()))
+    const up = expectOk(
+      await SdMonitorIngestService.ingest(token, { ...down, status: 'Up' }),
+    )
+    expect(up.outcome).toBe('ticket_resolved')
   })
 })
