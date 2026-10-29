@@ -241,6 +241,17 @@ export type CrmWorkflowNewsletterTriggerType =
 
 const NewsletterFilter = z.string().trim().min(1).max(64).optional()
 
+/**
+ * Where an open/click came from (slice nl3-welcome-bridge): a regular issue
+ * or a welcome series e-mail. The trigger filter absent = both.
+ */
+export const CRM_WORKFLOW_NEWSLETTER_SOURCES = ['issue', 'welcome'] as const
+export type CrmWorkflowNewsletterSource =
+  (typeof CRM_WORKFLOW_NEWSLETTER_SOURCES)[number]
+const NewsletterSourceFilter = z
+  .enum(CRM_WORKFLOW_NEWSLETTER_SOURCES)
+  .optional()
+
 const TriggerNewsletterSubscribedSchema = z.object({
   type: z.literal('newsletter-subscribed'),
   newsletterId: NewsletterFilter,
@@ -256,11 +267,13 @@ const TriggerNewsletterLinkClickedSchema = z.object({
   newsletterId: NewsletterFilter,
   /** Only clicks on a URL containing this text (case-insensitive). */
   urlContains: z.string().trim().max(500).optional(),
+  source: NewsletterSourceFilter,
 })
 
 const TriggerNewsletterIssueOpenedSchema = z.object({
   type: z.literal('newsletter-issue-opened'),
   newsletterId: NewsletterFilter,
+  source: NewsletterSourceFilter,
 })
 
 export const CrmWorkflowTriggerDataSchema = z.discriminatedUnion('type', [
