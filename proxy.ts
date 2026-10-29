@@ -73,6 +73,9 @@ const PUBLIC_ROUTES = [
   '/servicedesk/approval', '/api/servicedesk/approvals',
   // Abertura de chamado por monitoramento: webhook sem sessão (token na URL)
   '/api/servicedesk/monitoring',
+  // Página de status do cliente (incidente maior): pública, o endereço é o
+  // acesso; a inscrição por e-mail usa token (double opt-in)
+  '/status-page', '/api/status-page',
   // Agente de inventário de ativos: relatório sem sessão, token por workspace
   // no cabeçalho `Authorization: Bearer`
   '/api/servicedesk/inventory',
