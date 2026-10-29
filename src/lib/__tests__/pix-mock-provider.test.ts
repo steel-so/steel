@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 
 const env = vi.hoisted(() => ({
-  PIX_PROVIDER: 'mock',
+  PIX_PROVIDER: 'mock' as string | undefined,
   PIX_WEBHOOK_SECRET: 'secret-secret-secret' as string | undefined,
 }))
 vi.mock('@/lib/env/server', () => env)
@@ -134,6 +134,11 @@ describe('Pix provider registry', () => {
     const body = JSON.stringify({ providerChargeId: 't', paidAmount: 1 })
     const provider = expectOk(getPixProviderById('mock'))
     expectOk(provider.parseWebhook(signedHeaders(body), body))
+  })
+
+  it('falls back to the mock provider when validation was skipped', () => {
+    env.PIX_PROVIDER = undefined
+    expect(expectOk(getActivePixProvider()).id).toBe('mock')
   })
 
   it('rejects an unknown provider', () => {

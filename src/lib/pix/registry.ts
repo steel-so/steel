@@ -12,7 +12,11 @@ export function getPixProviderById(id: string): Result<PixProvider> {
   return err(pixProviderError('Provedor de Pix desconhecido'))
 }
 
-/** The provider the workspace's new charges go through. */
+/**
+ * The provider new charges go through. `PIX_PROVIDER` falls back to `mock`
+ * because env validation (and its zod defaults) is bypassed under
+ * `SKIP_ENV_VALIDATION` / `NODE_ENV=test`.
+ */
 export function getActivePixProvider(): Result<PixProvider> {
-  return getPixProviderById(PIX_PROVIDER)
+  return getPixProviderById(PIX_PROVIDER ?? MOCK_PIX_PROVIDER_ID)
 }
