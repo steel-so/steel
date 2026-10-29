@@ -1,0 +1,75 @@
+---
+title: Pesquisas de satisfação
+description: NPS, CSAT e CES enviados sozinhos ao encerrar uma conversa ou resolver um chamado, com nota por botão no WhatsApp e relatório por atendente, equipe, técnico e cliente.
+section: comunicacao
+order: 12
+---
+
+<Callout type='admin'>
+  As pesquisas vêm **desligadas**. O dono e os administradores ligam e ajustam
+  as regras em **Comunicação › Pesquisas › Regras**.
+</Callout>
+
+A **pesquisa de satisfação** pergunta ao cliente, logo depois do atendimento,
+como foi. O Steel envia a pergunta pelo mesmo WhatsApp da conversa (ou por
+e-mail), guarda a nota e monta o relatório.
+
+## Os três tipos
+
+| Tipo | Pergunta | Nota | Resultado |
+| ---- | -------- | ---- | --------- |
+| **CSAT** | Como foi o atendimento? | 1 a 5 | % de notas 4 e 5 |
+| **NPS** | Você nos recomendaria? | 0 a 10 | promotores (9–10) menos detratores (0–6) |
+| **CES** | Foi fácil resolver? | 1 a 7 | média (quanto maior, mais fácil) |
+
+No WhatsApp, o CSAT e o CES chegam com **três botões** (por exemplo
+*Ruim*, *Regular*, *Ótimo*). O NPS é respondido **digitando o número**; o
+cliente também pode digitar a nota no lugar de tocar no botão.
+
+## Quando a pesquisa é enviada
+
+Há uma regra para cada gatilho:
+
+- **Conversa encerrada**: quando um atendente (ou a inatividade) encerra uma
+  conversa em que o cliente escreveu. Conversas só de transmissão não recebem.
+- **Chamado resolvido**: quando um chamado do ServiceDesk é resolvido. Vai pelo
+  WhatsApp do chamado, se ele tiver um, ou por e-mail. A nota CSAT também
+  aparece no próprio chamado, junto com a avaliação do portal.
+
+Em cada regra você escolhe o tipo, o atraso depois do encerramento (padrão: 5
+minutos), por quanto tempo a resposta vale (padrão: 72 horas), o intervalo para
+**não perguntar de novo ao mesmo cliente** (padrão: 30 dias), a pergunta, o
+agradecimento e se o **e-mail** entra como alternativa.
+
+<Callout type='info'>
+  Clientes que pediram para sair das mensagens (descadastro) não recebem
+  pesquisas. Um chamado que já foi avaliado no portal também não recebe outra.
+</Callout>
+
+## Enviar uma pesquisa avulsa (pós-venda)
+
+Pela API (`POST /workspaces/{id}/surveys`) você envia uma pesquisa na hora a
+um contato do WhatsApp ou a um e-mail, sem atraso e sem o intervalo por
+cliente. Veja a referência em **/dev/api**.
+
+## O que o cliente vê
+
+- **WhatsApp**: a pergunta com os botões; ao responder, uma mensagem de
+  agradecimento convida a contar mais. A próxima mensagem de texto dele nos 30
+  minutos seguintes vira o **comentário** da pesquisa.
+- **E-mail**: a pergunta com as notas e um botão; a resposta só vale ao clicar
+  em *Enviar avaliação* na página.
+
+Se o WhatsApp não puder enviar (por exemplo, a conversa passou de 24 horas e a
+Meta não aceita mensagem com botões), a pesquisa vai por e-mail quando houver um
+endereço e a regra permitir.
+
+## Resultados
+
+Em **Comunicação › Pesquisas**:
+
+- **Resultados**: enviadas, respondidas, taxa de resposta, média e a métrica do
+  tipo, agrupadas por **atendente** (conversas), **técnico** (chamados),
+  **equipe** ou **cliente**, nos últimos 7, 30 ou 90 dias ou em todo o período.
+- **Envios**: cada convite com situação, nota e comentário.
+- **Regras**: a configuração acima.
