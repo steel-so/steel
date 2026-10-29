@@ -56,6 +56,36 @@ Um agente **não executa** quando está pausado, quando o responsável saiu do
 workspace, quando a cota de IA acabou, quando o limite mensal foi atingido ou
 quando os agentes estão desligados nos ajustes.
 
+## Entender o porquê de uma execução
+
+Abra uma execução para ver a **Linha do tempo: o porquê de cada passo**. Ela
+mostra, na ordem em que aconteceu:
+
+- **Raciocínio do modelo**: o que o agente pensou em cada rodada, quais
+  ferramentas decidiu chamar e quantos tokens gastou.
+- **Ferramentas**: os parâmetros enviados e o **contexto recuperado**, o trecho
+  que a consulta devolveu e que o agente usou para decidir. O contexto aparece
+  só para o responsável pelo agente e para quem pode editar agentes, porque pode
+  trazer dados que outras pessoas não têm acesso para ver.
+- **Regras de guardrail acionadas**: quando dados pessoais foram mascarados antes
+  de ir ao modelo, quando um texto de terceiros tentou dar ordens ao agente,
+  quando o modelo foi trocado por falha do provedor, quando uma escrita
+  automática foi mandada para aprovação, quando o limite de etapas foi atingido
+  ou quando o agente pediu uma ferramenta que não está na lista dele.
+- **Aprovações**: cada ação enviada para decisão humana.
+
+No alto da linha do tempo, um resumo conta as rodadas, as chamadas de ferramenta
+e as regras acionadas.
+
+### Reexecutar como teste
+
+Depois de ajustar as instruções ou as ferramentas, use **Reexecutar como teste**
+na execução. Ela cria uma execução de [teste](#testar-antes-de-ativar) com o
+**mesmo gatilho e os mesmos dados de entrada** da original: as consultas são
+reais e as ações só simuladas. A nova execução mostra um link para a original,
+e assim você compara se o agente agora decidiria diferente. Só o responsável e
+quem pode editar agentes veem o botão.
+
 ## Testar antes de ativar
 
 **Testar agente** roda o agente em [modo Teste](/docs/steel-ai/modos#teste):
