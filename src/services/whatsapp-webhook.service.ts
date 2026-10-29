@@ -47,6 +47,7 @@ import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.r
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { CrmNewsletterWhatsAppReceiptsService } from './crm-newsletter-whatsapp-receipts.service'
+import { SatisfactionSurveyService } from './satisfaction-survey.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppAdAttributionService } from './whatsapp-ad-attribution.service'
@@ -229,6 +230,24 @@ export const WhatsAppWebhookService = {
       avatarUrl: input.contactAvatarUrl,
     })
     if (!contact.ok) return contact
+
+    // Answer to an NPS/CSAT/CES invitation (button, typed score or the
+    // follow-up comment): recorded on the survey, no conversation touched.
+    const survey = await SatisfactionSurveyService.handleInbound({
+      workspaceId,
+      waId: input.waId,
+      type: input.type,
+      text: input.text,
+      buttonPayload: input.buttonPayload,
+    })
+    if (!survey.ok) {
+      logger.warn('whatsapp.webhook.survey_answer_failed', {
+        workspaceId,
+        reason: survey.error.code,
+      })
+    } else if (survey.value.handled) {
+      return ok(undefined)
+    }
 
     const serviceDesk = isServiceDesk(connection)
     const scope = conversationScope(connection)

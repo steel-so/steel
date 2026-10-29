@@ -61,6 +61,7 @@ import {
   assertModuleMember,
   type MembershipContext,
 } from './authz'
+import { SatisfactionSurveyService } from './satisfaction-survey.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import {
   type WhatsAppCloseClassification,
@@ -191,6 +192,17 @@ async function applyClose(
 
   // Ends the SLA cycle (ADR 0048); never fails the close.
   await WhatsAppSlaService.onClosed(conversation)
+
+  // NPS/CSAT/CES invitation (t1-nps-whatsapp); never fails the close.
+  const survey =
+    await SatisfactionSurveyService.onConversationClosed(conversation)
+  if (!survey.ok) {
+    logger.warn('whatsapp.conversation.survey_schedule_failed', {
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      reason: survey.error.code,
+    })
+  }
 
   auditMutation({
     entity: 'whatsapp_conversation',
