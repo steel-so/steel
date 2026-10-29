@@ -42,6 +42,8 @@ import { flowFromPreset } from '../whatsapp/flows/templates'
 import { flowCrmIssues } from '../whatsapp/flows/validate'
 import { buildMetaFlowMessage } from '../whatsapp/meta-client'
 
+const ref = (path: string) => `$${'{'}${path}}`
+
 const signUp = flowFromPreset('SIGN_UP').definition
 
 describe('flow presets', () => {
@@ -108,7 +110,7 @@ describe('buildMetaFlowJson', () => {
     expect(footer.label).toBe('Enviar')
     expect(footer['on-click-action']).toEqual({
       name: 'complete',
-      payload: { nome: '${form.nome}' },
+      payload: { nome: ref('form.nome') },
     })
   })
 
@@ -137,9 +139,9 @@ describe('buildMetaFlowJson', () => {
     expect(nav.name).toBe('navigate')
     expect(nav.next).toEqual({ type: 'screen', name: 'SCREEN_B' })
     expect(nav.payload).toEqual({
-      nome: '${form.nome}',
-      email: '${form.email}',
-      telefone: '${form.telefone}',
+      nome: ref('form.nome'),
+      email: ref('form.email'),
+      telefone: ref('form.telefone'),
     })
     expect(Object.keys(second.data ?? {})).toEqual([
       'nome',
@@ -154,8 +156,8 @@ describe('buildMetaFlowJson', () => {
       'on-click-action'
     ] as { name: string; payload: Record<string, string> }
     expect(complete.name).toBe('complete')
-    expect(complete.payload.nome).toBe('${data.nome}')
-    expect(complete.payload.empresa).toBe('${form.empresa}')
+    expect(complete.payload.nome).toBe(ref('data.nome'))
+    expect(complete.payload.empresa).toBe(ref('form.empresa'))
   })
 
   it('maps every field type to its Meta component', () => {

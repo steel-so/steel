@@ -168,7 +168,7 @@ describe('WhatsAppMessageService.sendFlow()', () => {
       await WhatsAppMessageService.sendFlow('u1', 'ws1', 'conv1', byTemplate),
     )
     expect(
-      (send.template.mock.calls[0][1].components?.[0] as { index: string })
+      (send.template.mock.calls[0][1].components as Array<{ index: string }>)[0]
         .index,
     ).toBe('0')
 
@@ -189,7 +189,7 @@ describe('WhatsAppMessageService.sendFlow()', () => {
       await WhatsAppMessageService.sendFlow('u1', 'ws1', 'conv1', byTemplate),
     )
     expect(
-      (send.template.mock.calls[2][1].components?.[0] as { index: string })
+      (send.template.mock.calls[2][1].components as Array<{ index: string }>)[0]
         .index,
     ).toBe('0')
   })
