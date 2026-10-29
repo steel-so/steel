@@ -1,0 +1,66 @@
+---
+title: Incidente maior e página de status
+description: Declare um incidente maior, agrupe os chamados filhos, abra uma sala de guerra e avise os clientes numa página de status pública, por e-mail e WhatsApp.
+section: servicedesk
+order: 14
+---
+
+Quando um mesmo problema derruba vários clientes, tratar cada chamado sozinho
+atrapalha. O **incidente maior** reúne os chamados num só lugar e mantém o
+cliente informado numa **página de status**.
+
+## Declarar o incidente
+
+Abra o chamado do incidente que vai comandar a resposta (o **chamado
+principal**) e, na aba **Incidente maior**, clique em **Declarar incidente
+maior**. Só chamados do tipo incidente podem virar incidente maior.
+
+- **Título e resumo** aparecem para o cliente nas páginas públicas. Escreva
+  como se fosse para ele.
+- **Impacto**: desempenho degradado, indisponibilidade parcial ou total.
+- **Comandante**: quem conduz a resposta (padrão: você).
+- **Páginas de status**: já vêm marcadas as páginas do cliente ou do serviço do
+  chamado, e as sem restrição.
+- **Primeira mensagem** e a opção de **publicar e avisar os assinantes** agora.
+- **Chamados filhos**: códigos como `INC-000123`. Dá para vincular depois.
+- **Sala de guerra**: chama especialistas para o chamado principal pelo
+  [swarming](/docs/servicedesk/swarming).
+
+O comandante, o responsável e os líderes do departamento são avisados.
+
+## Acompanhar e atualizar
+
+Em **Incidentes maiores** (menu do ServiceDesk) abra o incidente. Ali você:
+
+1. Publica **atualizações** (investigando, causa identificada, monitorando),
+   podendo mudar o impacto. Publicada, a mensagem aparece nas páginas e os
+   assinantes recebem por e-mail e WhatsApp; desligada, fica só no histórico.
+2. Vê, em cada atualização, quantos assinantes foram avisados.
+3. **Vincula** chamados filhos, inclusive os que o Steel sugere (abertos nas
+   últimas 24 horas com a mesma categoria, item de configuração ou cliente).
+4. **Resolve** o incidente com uma mensagem pública de encerramento e uma nota
+   interna do que resolveu.
+
+Os chamados filhos recebem uma entrada no histórico a cada atualização
+publicada. Resolver o incidente **não resolve** os filhos: feche cada um pelo
+fluxo normal.
+
+## Páginas de status
+
+Em **Páginas de status** o administrador cria uma página por cliente e/ou por
+conjunto de serviços. O endereço público é `/status-page/<endereço>`; sem
+endereço digitado, o Steel gera um com sufixo difícil de adivinhar. A página
+mostra o estado geral (o pior impacto entre os incidentes ativos), os
+incidentes em andamento com a linha do tempo e os resolvidos nos últimos 30
+dias. Ela só mostra o que foi escrito para o cliente, nunca dados do chamado.
+Despublicar fecha o endereço.
+
+### Assinantes
+
+- O cliente se inscreve **por e-mail** na própria página e confirma por um link
+  enviado a ele (confirmação em duas etapas). Cada aviso traz o link para
+  cancelar.
+- **WhatsApp** só é adicionado por um agente, em **Assinantes**. O número entra
+  já confirmado: inclua apenas contatos que aceitaram receber os avisos. O envio
+  usa a conexão de WhatsApp do ServiceDesk; sem ela, os avisos por WhatsApp
+  são contados como falha.

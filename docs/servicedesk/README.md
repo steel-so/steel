@@ -799,3 +799,36 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
   conhecimento.
 - **Modo TV**: `/[slug]/servicedesk/dashboards/[id]/tv` (tela cheia, atualiza
   sozinho; `?rotate=id1,id2&interval=60` alterna painéis).
+
+## Incidente maior e página de status do cliente (S2)
+
+Incidente maior declarado a partir de um chamado `INCIDENT` (o principal): agrupa
+os chamados filhos, abre uma sala de guerra (swarming do chamado principal,
+S6) e publica atualizações em páginas de status públicas por cliente ou
+serviço. Manual do usuário: `content/docs/servicedesk/incidente-maior.mdx`.
+
+- **Dados**: `SdMajorIncident` (título e resumo são texto para o cliente),
+  `SdMajorIncidentTicket` (filhos, com a origem `MANUAL`/`SUGGESTION`/
+  `MONITORING`/`AUTOMATION`), `SdMajorIncidentUpdate` (linha do tempo, com
+  `publish` e contadores de envio), `SdStatusPage`, `SdMajorIncidentPage` e
+  `SdStatusSubscriber`. Ids de usuário e `workspaceId` são texto sem FK
+  (como o swarming); as tabelas filhas de chamado cascateiam pelo chamado.
+- **API de vínculo genérica** (para monitoramento e automações):
+  `SdMajorIncidentLinker.attach({ workspaceId, incidentId, ticketId, source,
+  actorId })` em `src/services/sd-major-incident-link.ts` (sem checagem de
+  acesso, valida workspace, estado e chamado principal) e
+  `SdMajorIncidentLinker.findActiveFor(workspaceId, { configItemId,
+  categoryId, customerId })`.
+- **Avisos**: cada atualização publicada vira o job `notify-status-update` na
+  fila `servicedesk-mail`. O worker reivindica a atualização (`notifiedAt`)
+  antes de enviar: no máximo uma vez, sem reenvio em retry. E-mail pelo Resend e
+  WhatsApp pela conexão do ServiceDesk (texto livre; fora da janela de 24 h a
+  Meta pode recusar e o envio conta como falha).
+- **Página pública**: `/status-page/<slug>` e `/api/status-page/**`, sem sessão
+  (`proxy.ts`); `status-page` é slug reservado de workspace. Inscrição só por
+  e-mail, com confirmação em duas etapas; confirmar e cancelar são POST (o
+  clique), nunca GET.
+- **Fora do escopo**: componentes por serviço com estado próprio, agendamento
+  de manutenção, inscrição própria por WhatsApp, resolver os filhos em lote e
+  domínio próprio para a página.
+
