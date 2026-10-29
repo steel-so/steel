@@ -36,6 +36,9 @@ export type NewsletterBridgeEvent =
       recipientId: string
       url: string | null
     }
+  /** First read receipt of the issue's WhatsApp message (nl3). Timeline
+   * only: no scoring and no workflow trigger. */
+  | { type: 'issue_whatsapp_read'; subscriberId: string; issueId: string }
 
 /** Timeline actions of the bridge (`CrmActivity.action`). */
 export const NEWSLETTER_ACTIVITY_ACTIONS = {
@@ -45,6 +48,7 @@ export const NEWSLETTER_ACTIVITY_ACTIONS = {
   issue_received: 'NEWSLETTER_ISSUE_RECEIVED',
   issue_opened: 'NEWSLETTER_ISSUE_OPENED',
   link_clicked: 'NEWSLETTER_LINK_CLICKED',
+  issue_whatsapp_read: 'NEWSLETTER_WHATSAPP_READ',
 } as const satisfies Record<NewsletterBridgeEvent['type'], string>
 
 /** `CrmActivity.entity` of the bridge entries. */
@@ -81,6 +85,8 @@ function summaryOf(
       return `Abriu ${issue ? issueLabel(issue) : 'uma edição'} da newsletter ${newsletter}`
     case 'link_clicked':
       return `Clicou em um link ${issue ? `d${issueLabel(issue)}` : 'de uma edição'} da newsletter ${newsletter}`
+    case 'issue_whatsapp_read':
+      return `Leu no WhatsApp ${issue ? issueLabel(issue) : 'uma edição'} da newsletter ${newsletter}`
   }
 }
 
@@ -89,6 +95,7 @@ const ONCE_PER_ISSUE = new Set<NewsletterBridgeEvent['type']>([
   'issue_received',
   'issue_opened',
   'link_clicked',
+  'issue_whatsapp_read',
 ])
 
 function scoringOf(

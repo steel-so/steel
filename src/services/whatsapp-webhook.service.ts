@@ -45,6 +45,7 @@ import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-grou
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
+import { CrmNewsletterWhatsAppReceiptsService } from './crm-newsletter-whatsapp-receipts.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
@@ -749,6 +750,8 @@ export const WhatsAppWebhookService = {
     providerMessageId: string
     status: WhatsAppMessageStatus
     module?: ModuleKind
+    /** Provider failure detail (Meta `errors[0]`), for FAILED. */
+    error?: string | null
   }): Promise<Result<void>> {
     const result =
       await WhatsAppMessageRepository.updateStatusByProviderMessageId(
@@ -762,6 +765,13 @@ export const WhatsAppWebhookService = {
       input.status,
       new Date(),
     )
+    // Newsletter issues sent on WhatsApp (nl3): never fails the webhook.
+    await CrmNewsletterWhatsAppReceiptsService.onWhatsAppStatus({
+      providerMessageId: input.providerMessageId,
+      status: input.status,
+      at: new Date(),
+      error: input.error,
+    })
     if (!result.value) return ok(undefined)
     if (await notifyServiceDesk(input.module, result.value)) {
       return ok(undefined)

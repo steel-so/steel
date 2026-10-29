@@ -39,6 +39,9 @@ vi.mock('@/lib/axiom/logger', () => ({
 }))
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
 vi.mock('@/src/services/crm-campaign-tracking.service')
+vi.mock('@/src/services/crm-newsletter-whatsapp-receipts.service', () => ({
+  CrmNewsletterWhatsAppReceiptsService: { onWhatsAppStatus: vi.fn() },
+}))
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
@@ -73,6 +76,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { CrmNewsletterWhatsAppReceiptsService } from '../crm-newsletter-whatsapp-receipts.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppSlaService } from '../whatsapp-sla.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
@@ -850,6 +854,28 @@ describe('WhatsAppWebhookService', () => {
       })
 
       expectOk(result)
+    })
+
+    it('should hand every status to the newsletter receipts (nl3)', async () => {
+      mockedMessageRepo.updateStatusByProviderMessageId.mockResolvedValue(
+        ok(null),
+      )
+
+      const result = await WhatsAppWebhookService.ingestStatusUpdate({
+        providerMessageId: 'wamid.nl',
+        status: 'FAILED',
+        error: '131026: Message undeliverable',
+      })
+
+      expectOk(result)
+      expect(
+        CrmNewsletterWhatsAppReceiptsService.onWhatsAppStatus,
+      ).toHaveBeenCalledWith({
+        providerMessageId: 'wamid.nl',
+        status: 'FAILED',
+        at: expect.any(Date),
+        error: '131026: Message undeliverable',
+      })
     })
   })
 

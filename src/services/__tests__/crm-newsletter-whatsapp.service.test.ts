@@ -177,7 +177,15 @@ describe('CrmNewsletterWhatsAppService', () => {
     repo.countSentSince.mockResolvedValue(ok(0))
     repo.claimBatch.mockResolvedValue(ok([createFakeWhatsAppRecipient()]))
     repo.stats.mockResolvedValue(
-      ok({ total: 2, pending: 0, sent: 1, failed: 0, skipped: 1 }),
+      ok({
+        total: 2,
+        pending: 0,
+        sent: 1,
+        failed: 0,
+        skipped: 1,
+        delivered: 1,
+        read: 0,
+      }),
     )
     repo.listRecipients.mockResolvedValue(
       ok({
@@ -679,7 +687,9 @@ describe('CrmNewsletterWhatsAppService', () => {
       })
       expect(repo.markFailed).toHaveBeenCalledWith('w1', 'número inválido')
 
-      send.text.mockResolvedValueOnce(err(whatsappMessageLimitReached(1000, 1000)))
+      send.text.mockResolvedValueOnce(
+        err(whatsappMessageLimitReached(1000, 1000)),
+      )
       expect(expectOk(await Service.dispatch('is1', NOW))).toEqual({
         status: 'limit_reached',
         skipped: 4,
@@ -721,11 +731,15 @@ describe('CrmNewsletterWhatsAppService', () => {
           repo.markFailed.mockResolvedValueOnce(err(databaseError()))
         },
         () => {
-          send.text.mockResolvedValueOnce(err(whatsappMessageLimitReached(1000, 1000)))
+          send.text.mockResolvedValueOnce(
+            err(whatsappMessageLimitReached(1000, 1000)),
+          )
           repo.markSkipped.mockResolvedValueOnce(err(databaseError()))
         },
         () => {
-          send.text.mockResolvedValueOnce(err(whatsappMessageLimitReached(1000, 1000)))
+          send.text.mockResolvedValueOnce(
+            err(whatsappMessageLimitReached(1000, 1000)),
+          )
           repo.skipPending.mockResolvedValueOnce(err(databaseError()))
         },
       ]
