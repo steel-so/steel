@@ -9,6 +9,7 @@ import { connectionRoutes } from './whatsapp/connections'
 import { contactRoutes } from './whatsapp/contacts'
 import { conversationRoutes } from './whatsapp/conversations'
 import { dashboardRoutes } from './whatsapp/dashboards'
+import { flowRoutes } from './whatsapp/flows'
 import { groupRoutes } from './whatsapp/groups'
 import { phoneCallRoutes } from './whatsapp/phone-calls'
 import { pixRoutes } from './whatsapp/pix'
@@ -46,6 +47,7 @@ const routes: RouteConfig[] = [
   ...slaRoutes,
   ...archiveRoutes,
   ...chatbotRoutes,
+  ...flowRoutes,
   ...surveyRoutes,
   ...pixRoutes,
 ]
