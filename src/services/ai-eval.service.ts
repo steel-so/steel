@@ -340,6 +340,13 @@ export const AiEvalService = {
     const set = await loadSet(actorId, workspaceId, setId)
     if (!set.ok) return set
     if (set.value.caseCount === 0) return err(aiEvalSetEmpty())
+    if (set.value.target === 'STEEL_AGENT') {
+      return err(
+        validationError(
+          'Conjuntos de Steel Agents rodam sozinhos quando você edita um agente que usa o conjunto como trava',
+        ),
+      )
+    }
     if (input.promptOverride && set.value.target !== 'WHATSAPP_REPLY') {
       return err(
         validationError(

@@ -37,12 +37,17 @@ import {
   guardrailOutput,
   snapshotGuard,
 } from '@/src/lib/steel-agents/trace'
+import {
+  parseVersionTools,
+  pickVersionId,
+} from '@/src/lib/steel-agents/versions'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
 import {
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
   type SteelAgentRunWithAgent,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type { AiToolPreviewDTO } from '@/types/steel-ai'
@@ -283,12 +288,74 @@ async function promptContext(
   })
 }
 
+/**
+ * A2: a run executes the version recorded on it. A new real run is assigned
+ * on start (A/B split between the published version and the challenger) and
+ * the version's snapshot overlays the agent's instructions, tools and round
+ * cap. Test runs and agents without versions use the agent as it is. Never
+ * fails the run: a missing version falls back to the agent's own fields.
+ */
+async function withVersion(
+  run: SteelAgentRunWithAgent,
+  starting: boolean,
+): Promise<SteelAgentRunWithAgent> {
+  const { agent } = run
+  let versionId = run.versionId
+  if (!versionId && starting && !run.isTest) {
+    let challenger: { id: string; percent: number } | null = null
+    if (agent.challengerVersionId) {
+      const found = await SteelAgentVersionRepository.findByIdUnscoped(
+        agent.challengerVersionId,
+      )
+      if (
+        found.ok &&
+        found.value?.status === 'CHALLENGER' &&
+        found.value.rolloutPercent
+      ) {
+        challenger = {
+          id: found.value.id,
+          percent: found.value.rolloutPercent,
+        }
+      }
+    }
+    versionId = pickVersionId({
+      publishedId: agent.publishedVersionId,
+      challenger,
+    })
+    if (versionId) {
+      await SteelAgentRunRepository.update(run.id, { versionId })
+    }
+  }
+  if (!versionId) return run
+  if (versionId === agent.publishedVersionId) return { ...run, versionId }
+
+  const found = await SteelAgentVersionRepository.findByIdUnscoped(versionId)
+  if (!found.ok || !found.value) return { ...run, versionId }
+  const version = found.value
+  return {
+    ...run,
+    versionId,
+    agent: {
+      ...agent,
+      instructions: version.instructions,
+      maxToolRounds: version.maxToolRounds,
+      tools: parseVersionTools(version.tools).map((tool) => ({
+        id: `${version.id}:${tool.toolName}`,
+        agentId: agent.id,
+        toolName: tool.toolName,
+        mode: tool.mode,
+        createdAt: version.createdAt,
+      })),
+    },
+  }
+}
+
 export async function executeSteelAgentRun(
   runId: string,
 ): Promise<Result<SteelAgentRunOutcome>> {
   const loaded = await SteelAgentRunRepository.findForExecution(runId)
   if (!loaded.ok) return loaded
-  const run = loaded.value
+  const run = await withVersion(loaded.value, loaded.value.status === 'QUEUED')
   const { agent } = run
 
   let starting: boolean
