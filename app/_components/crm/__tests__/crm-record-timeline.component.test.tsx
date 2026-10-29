@@ -259,4 +259,49 @@ describe('<CrmRecordTimeline />', () => {
       fetchSpy.mock.calls.some((call) => String(call[0]).includes('/calls')),
     ).toBe(false)
   })
+
+  it('lists the Pix charges of an opportunity above the activity', async () => {
+    mockFetch([
+      { match: '/calls', data: [] },
+      {
+        match: '/crm/opportunities/o9/pix',
+        data: [
+          {
+            id: 'ch_1',
+            conversationId: 'cv_1',
+            opportunityId: 'o9',
+            createdById: 'u1',
+            createdByAi: false,
+            provider: 'mock',
+            amount: 150,
+            description: 'Mensalidade',
+            brCode: '000201',
+            status: 'PAID',
+            expiresAt: '2026-11-12T17:30:00.000Z',
+            paidAt: '2026-11-12T16:45:00.000Z',
+            paidAmount: 150,
+            payerName: null,
+            canceledAt: null,
+            createdAt: '2026-11-12T16:30:00.000Z',
+          },
+        ],
+      },
+      { match: '/crm/activities', data: [] },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' opportunityId='o9' />)
+
+    expect(await screen.findByText('Cobranças Pix')).toBeTruthy()
+    expect(screen.getByText('Pago')).toBeTruthy()
+  })
+
+  it('shows no Pix block when the opportunity has no charge', async () => {
+    mockFetch([
+      { match: '/calls', data: [] },
+      { match: '/crm/opportunities/o9/pix', data: [] },
+      { match: '/crm/activities', data: [] },
+    ])
+    renderWithQuery(<CrmRecordTimeline workspaceId='ws1' opportunityId='o9' />)
+    await screen.findByText('Sem atividade ainda.')
+    expect(screen.queryByText('Cobranças Pix')).toBeNull()
+  })
 })
