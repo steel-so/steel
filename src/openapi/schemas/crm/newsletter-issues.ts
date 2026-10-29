@@ -138,6 +138,10 @@ export const CrmNewsletterIssuePreflightDTO = dto(
       example: 1200,
       description: 'Assinantes ACTIVE fora do descadastro geral.',
     }),
+    segmented: z.boolean().meta({
+      description:
+        'A audiência está restrita pelo público (segmento) da edição.',
+    }),
     usage: CrmNewsletterUsageDTO,
     remaining: z.number().int().nullable(),
     senderVerified: z.boolean(),
@@ -156,6 +160,7 @@ export const CrmNewsletterIssuePreflightDTO = dto(
           'CONTENT_INVALID',
           'NO_SUBSCRIBERS',
           'LIMIT_REACHED',
+          'SEGMENT_INVALID',
         ]),
         message: z.string(),
       }),

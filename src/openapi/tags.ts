@@ -197,6 +197,11 @@ export const TAG_GROUPS = [
         description:
           'Edições da newsletter: editor, teste, envio e agendamento, relatório (funil, cliques por link, destinatários) e o limite mensal de e-mails.',
       },
+      {
+        name: 'CRM · Newsletter · Segmentos',
+        description:
+          'Público das edições: segmentos salvos por newsletter (condições de assinante, engajamento e pessoa do CRM), público da edição e prévia ao vivo da audiência.',
+      },
     ],
   },
   {
