@@ -9,6 +9,9 @@ vi.mock('@/lib/axiom/logger', () => ({
 vi.mock('@/src/services/crm-newsletter-send.service', () => ({
   CrmNewsletterSendService: { tick: vi.fn(), dispatch: vi.fn() },
 }))
+vi.mock('@/src/services/crm-newsletter-whatsapp.service', () => ({
+  CrmNewsletterWhatsAppService: { dispatch: vi.fn() },
+}))
 
 import { CrmNewsletterJob } from '@/src/lib/queue/jobs'
 import {
@@ -16,6 +19,7 @@ import {
   runCrmNewsletterJob,
 } from '@/src/lib/queue/processors/crm-newsletter'
 import { CrmNewsletterSendService } from '@/src/services/crm-newsletter-send.service'
+import { CrmNewsletterWhatsAppService } from '@/src/services/crm-newsletter-whatsapp.service'
 
 const send = vi.mocked(CrmNewsletterSendService)
 const NOW = new Date('2026-10-28T13:00:00.000Z')
@@ -61,6 +65,23 @@ describe('crm-newsletter processor', () => {
     send.dispatch.mockResolvedValueOnce(err(databaseError()))
     await expect(
       runCrmNewsletterJob(job(CrmNewsletterJob.Dispatch, data), NOW),
+    ).rejects.toThrow('DATABASE_ERROR')
+  })
+
+  it('dispatches the WhatsApp version (nl2-engage)', async () => {
+    const dispatch = vi.mocked(CrmNewsletterWhatsAppService.dispatch)
+    const data = { issueId: 'is1' }
+    dispatch.mockResolvedValueOnce(ok({ status: 'drained' }))
+    expect(
+      await runCrmNewsletterJob(
+        job(CrmNewsletterJob.WhatsAppDispatch, data),
+        NOW,
+      ),
+    ).toEqual({ status: 'drained' })
+    expect(dispatch).toHaveBeenCalledWith('is1', NOW)
+    dispatch.mockResolvedValueOnce(err(databaseError()))
+    await expect(
+      runCrmNewsletterJob(job(CrmNewsletterJob.WhatsAppDispatch, data), NOW),
     ).rejects.toThrow('DATABASE_ERROR')
   })
 

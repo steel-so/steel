@@ -6,6 +6,7 @@ import {
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import {
   crmNewsletterIssueIncomplete,
+  crmNewsletterWhatsappUnavailable,
   databaseError,
   forbidden,
   sendingDomainNotVerified,
@@ -64,6 +65,13 @@ vi.mock('@/src/lib/sending-domain/resolve-sender', () => ({
   resolveVerifiedSender: vi.fn(),
 }))
 vi.mock('@/src/lib/mail/send-batch', () => ({ sendEmailBatch: vi.fn() }))
+// nl2-engage: the WhatsApp version hooks of the send.
+vi.mock('@/src/services/crm-newsletter-whatsapp.service', () => ({
+  CrmNewsletterWhatsAppService: {
+    preSendCheck: vi.fn(async () => ({ ok: true, value: undefined })),
+    startForIssue: vi.fn(async () => {}),
+  },
+}))
 const add = vi.hoisted(() => vi.fn())
 vi.mock('@/src/lib/queue/queues', () => ({
   getCrmNewsletterQueue: () => ({ add }),
@@ -89,6 +97,7 @@ import {
   CrmNewsletterSendService as Service,
 } from '../crm-newsletter-send.service'
 import { CrmNewsletterUsageService } from '../crm-newsletter-usage.service'
+import { CrmNewsletterWhatsAppService } from '../crm-newsletter-whatsapp.service'
 
 const issues = vi.mocked(CrmNewsletterIssueRepository)
 const deliveries = vi.mocked(CrmNewsletterDeliveryRepository)
@@ -252,6 +261,18 @@ describe('CrmNewsletterSendService', () => {
       usage.getUsage.mockResolvedValueOnce(usageOf(1_000_000, null))
       expectOk(await preSendChecks(issue, newsletter, NOW))
     })
+
+    it('refuses when the enabled WhatsApp version is not ready', async () => {
+      vi.mocked(
+        CrmNewsletterWhatsAppService.preSendCheck,
+      ).mockResolvedValueOnce(
+        err(crmNewsletterWhatsappUnavailable('WhatsApp: x')),
+      )
+      expectErr(
+        await preSendChecks(createFakeNewsletterIssue(), newsletter, NOW),
+        'CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE',
+      )
+    })
   })
 
   describe('send', () => {
@@ -267,6 +288,10 @@ describe('CrmNewsletterSendService', () => {
         'dispatch',
         { issueId: 'is1' },
         expect.objectContaining({ delay: 0 }),
+      )
+      expect(CrmNewsletterWhatsAppService.startForIssue).toHaveBeenCalledWith(
+        'is1',
+        NOW,
       )
       expect(auditMutation).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -486,6 +511,12 @@ describe('CrmNewsletterSendService', () => {
       const calls = vi.mocked(personalizeIssue).mock.calls
       expect(calls[1][1].contact).toMatchObject({ city: 'Recife', name: 'P1' })
       expect(calls[0][1].listIds).toEqual(['l1'])
+      // nl2-engage: each delivery gets its own signed poll links.
+      const pollLink = calls[0][1].pollLink as (b: string, o: number) => string
+      expect(pollLink('b1', 2)).toMatch(/\/newsletter\/enquete\/[^/]+$/)
+      expect(pollLink('b1', 2)).not.toBe(
+        (calls[1][1].pollLink as (b: string, o: number) => string)('b1', 2),
+      )
       expect(deliveries.markSent).toHaveBeenCalled()
       expect(usage.record).toHaveBeenCalledWith('ws1', DISPATCH_BATCH, NOW)
       expect(add).toHaveBeenCalledWith(
