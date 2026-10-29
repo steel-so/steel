@@ -38,6 +38,7 @@ import {
   type SdTicketTabScope,
   sdTabAuthorKind,
 } from './sd-ticket-tab-support'
+import { dispatchSteelAgentMentions } from './steel-agent-assignment.service'
 
 /** Prévia do texto na notificação. */
 const PREVIEW_LENGTH = 140
@@ -255,6 +256,21 @@ export const SdTicketMessageService = {
     })
     await maybeReopen(scope)
     await notifyMessage(scope, message)
+    void dispatchSteelAgentMentions({
+      workspaceId,
+      actorId,
+      event: 'sd.ticket.agent_mentioned',
+      agentIds: dto.mentionedAgentIds,
+      payload: {
+        ticketId: ticket.id,
+        code: scope.code,
+        title: ticket.title,
+        messageId: message.id,
+        visibility: message.visibility,
+        message: preview(message.body, message.attachments.length),
+        authorId: actorId,
+      },
+    })
     await publishSdTicketTab(ticket, 'ticket.message', actorId, internal)
     if (!internal) {
       void fireSdAutomations('MESSAGE_RECEIVED', ticket.id, { actorId })

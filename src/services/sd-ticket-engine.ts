@@ -1411,6 +1411,14 @@ export const SdTicketEngine = {
     }
     await recordSdTicketEvent(events)
     await notifyPhaseChange(ticket, after, target, config, actor, reopened)
+    if (reopened) {
+      void dispatchSteelAgentEvent(after.workspaceId, 'sd.ticket.reopened', {
+        ticketId: after.id,
+        code: sdTicketCode(after, config.prefixes),
+        title: after.title,
+        reopenCount: after.reopenCount,
+      })
+    }
     await publish(after, 'ticket.phase_changed', actor, config)
     void indexSearchDocument('sd-ticket', after.workspaceId, after.id)
     if (

@@ -213,6 +213,10 @@ describe('SteelAgentService — read', () => {
       'crm.lead.created',
       'sd.insight.detected',
       'crm.insight.detected',
+      'crm.opportunity.stage_changed',
+      'crm.proposal.viewed',
+      'sd.sla.at_risk',
+      'sd.ticket.reopened',
     ])
     expect(catalog.agentModeEnabled).toBe(true)
     expect(catalog.canManage).toBe(true)

@@ -147,3 +147,13 @@ export interface SteelAgentRunDetailDTO extends SteelAgentRunDTO {
   /** Whether the caller may approve/reject this run's actions. */
   canApprove: boolean
 }
+
+export type SteelAgentAssignmentEntityDTO = 'SD_TICKET' | 'CRM_LEAD'
+
+/** Agent a ticket or lead was handed to (`null` = nobody). */
+export interface SteelAgentAssignmentDTO {
+  entityType: SteelAgentAssignmentEntityDTO
+  entityId: string
+  agent: { id: string; name: string; enabled: boolean } | null
+  assignedAt: string | null
+}

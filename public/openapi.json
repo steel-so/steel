@@ -6018,7 +6018,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -6140,7 +6140,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -14980,7 +14980,12 @@
                           "zap.ai.handoff",
                           "sd.insight.detected",
                           "crm.insight.detected",
-                          "zap.insight.detected"
+                          "zap.insight.detected",
+                          "crm.opportunity.stage_changed",
+                          "crm.proposal.viewed",
+                          "sd.sla.at_risk",
+                          "sd.ticket.reopened",
+                          "zap.message.received"
                         ]
                       },
                       {
@@ -15463,7 +15468,12 @@
                           "zap.ai.handoff",
                           "sd.insight.detected",
                           "crm.insight.detected",
-                          "zap.insight.detected"
+                          "zap.insight.detected",
+                          "crm.opportunity.stage_changed",
+                          "crm.proposal.viewed",
+                          "sd.sla.at_risk",
+                          "sd.ticket.reopened",
+                          "zap.message.received"
                         ]
                       },
                       {
@@ -21761,7 +21771,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_APOLLO_NOT_CONNECTED"
@@ -25207,7 +25217,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -28958,7 +28968,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -29174,7 +29184,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -37957,6 +37967,161 @@
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/leads/{leadId}/agent": {
+      "get": {
+        "tags": ["Steel Agents"],
+        "summary": "Agente atribuído ao lead",
+        "operationId": "getWorkspacesByIdCrmLeadsByLeadIdAgent",
+        "description": "Qual Steel Agent recebeu o lead (`agent: null` quando ninguém). Acesso: módulo **CRM** habilitado e a permissão `leads` (EDIT para atribuir, VIEW para ler).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "description": "Id do lead.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Atribuição atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelAgentAssignment"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["Steel Agents"],
+        "summary": "Atribuir o lead a um agente",
+        "operationId": "putWorkspacesByIdCrmLeadsByLeadIdAgent",
+        "description": "Entrega o lead a um Steel Agent do workspace (um por registro; trocar substitui o anterior) e enfileira uma execução do agente com o registro como contexto — o agente roda mesmo que o gatilho dele seja manual ou agendado. `agentId: null` remove a atribuição sem executar nada. Agente pausado responde `STEEL_AGENT_DISABLED`. Acesso: módulo **CRM** habilitado e a permissão `leads` (EDIT para atribuir, VIEW para ler).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "description": "Id do lead.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["agentId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Atribuição atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelAgentAssignment"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_STEEL_AGENT_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_STEEL_AGENT_DISABLED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47592,6 +47757,15 @@
                   },
                   "opportunityId": {
                     "type": "string"
+                  },
+                  "mentionedAgentIds": {
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
                   }
                 }
               }
@@ -49245,7 +49419,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -49323,7 +49497,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -50333,7 +50507,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -106646,7 +106820,7 @@
             "$ref": "#/components/responses/404_SD_TICKET_NOT_FOUND_SD_CATEGORY_NOT_FOUND_SD_DEPARTMENT_NOT_FOUND_SD_CUSTOMER_NOT_FOUND_SD_CONTACT_NOT_FOUND_SD_CONFIG_ITEM_NOT_FOUND_SD_CONFIG_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_SD_TICKET_CLOSED_2"
+            "$ref": "#/components/responses/409_SD_TICKET_CLOSED_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_SD_CATEGORY_LEVEL_INVALID_SD_CUSTOM_FIELD_INVALID"
@@ -106716,6 +106890,164 @@
           },
           "404": {
             "$ref": "#/components/responses/404_SD_TICKET_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/servicedesk/tickets/{ticketId}/agent": {
+      "get": {
+        "tags": ["Steel Agents"],
+        "summary": "Agente atribuído ao chamado",
+        "operationId": "getWorkspacesByIdServicedeskTicketsByTicketIdAgent",
+        "description": "Qual Steel Agent recebeu o chamado (`agent: null` quando ninguém). Acesso: agente do ServiceDesk com a permissão `sd-tickets` (EDIT para atribuir, VIEW para ler).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "description": "Id do chamado, número (`123`) ou código (`INC-000123`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Atribuição atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelAgentAssignment"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_SD_NOT_AGENT_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_SD_TICKET_NOT_FOUND_4"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_SD_TICKET_CLOSED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["Steel Agents"],
+        "summary": "Atribuir o chamado a um agente",
+        "operationId": "putWorkspacesByIdServicedeskTicketsByTicketIdAgent",
+        "description": "Entrega o chamado a um Steel Agent do workspace (um por registro; trocar substitui o anterior) e enfileira uma execução do agente com o registro como contexto — o agente roda mesmo que o gatilho dele seja manual ou agendado. `agentId: null` remove a atribuição sem executar nada. Agente pausado responde `STEEL_AGENT_DISABLED`. Acesso: agente do ServiceDesk com a permissão `sd-tickets` (EDIT para atribuir, VIEW para ler).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "description": "Id do chamado, número (`123`) ou código (`INC-000123`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["agentId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Atribuição atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelAgentAssignment"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_SD_NOT_AGENT"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_STEEL_AGENT_NOT_FOUND_SD_TICKET_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_STEEL_AGENT_DISABLED_SD_TICKET_CLOSED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -109418,6 +109750,15 @@
                   },
                   "mentionedUserIds": {
                     "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
+                  "mentionedAgentIds": {
+                    "maxItems": 5,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -147878,6 +148219,129 @@
           }
         }
       },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_SD_NOT_AGENT": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`, `SD_NOT_AGENT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Usuário não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "WORKSPACE_IP_NOT_ALLOWED": {
+                "summary": "WORKSPACE_IP_NOT_ALLOWED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace só pode ser acessado a partir da rede autorizada pela sua empresa.",
+                  "error": {
+                    "code": "WORKSPACE_IP_NOT_ALLOWED"
+                  }
+                }
+              },
+              "SD_NOT_AGENT": {
+                "summary": "SD_NOT_AGENT — Quem chama não é agente do ServiceDesk",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Apenas agentes (membros de um departamento) podem fazer isso",
+                  "error": {
+                    "code": "SD_NOT_AGENT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_SD_NOT_AGENT_2": {
+        "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`, `SD_NOT_AGENT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Usuário não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "WORKSPACE_IP_NOT_ALLOWED": {
+                "summary": "WORKSPACE_IP_NOT_ALLOWED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace só pode ser acessado a partir da rede autorizada pela sua empresa.",
+                  "error": {
+                    "code": "WORKSPACE_IP_NOT_ALLOWED"
+                  }
+                }
+              },
+              "SD_NOT_AGENT": {
+                "summary": "SD_NOT_AGENT — Quem chama não é agente do ServiceDesk",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Apenas agentes (membros de um departamento) podem fazer isso",
+                  "error": {
+                    "code": "SD_NOT_AGENT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_WHITEBOARD_DISABLED": {
         "description": "Acesso negado: `FORBIDDEN`, `WORKSPACE_SUSPENDED`, `WORKSPACE_IP_NOT_ALLOWED`, `WHITEBOARD_DISABLED`",
         "content": {
@@ -151485,6 +151949,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Lead inexistente",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_45": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Lista de destino inexistente",
                 "value": {
                   "success": false,
@@ -151499,7 +151986,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_45": {
+      "404_RESOURCE_NOT_FOUND_46": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151544,7 +152031,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_46": {
+      "404_RESOURCE_NOT_FOUND_47": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151578,7 +152065,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_47": {
+      "404_RESOURCE_NOT_FOUND_48": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151601,7 +152088,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_48": {
+      "404_RESOURCE_NOT_FOUND_49": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151624,7 +152111,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_49": {
+      "404_RESOURCE_NOT_FOUND_50": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151647,7 +152134,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_50": {
+      "404_RESOURCE_NOT_FOUND_51": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151670,7 +152157,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_51": {
+      "404_RESOURCE_NOT_FOUND_52": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -151693,7 +152180,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_52": {
+      "404_RESOURCE_NOT_FOUND_53": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -152318,6 +152805,40 @@
                   "message": "Workspace not found",
                   "error": {
                     "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_STEEL_AGENT_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `STEEL_AGENT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Lead inexistente",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "STEEL_AGENT_NOT_FOUND": {
+                "summary": "STEEL_AGENT_NOT_FOUND — Agente inexistente ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Agente não encontrado",
+                  "error": {
+                    "code": "STEEL_AGENT_NOT_FOUND"
                   }
                 }
               }
@@ -153978,6 +154499,29 @@
           }
         }
       },
+      "404_SD_TICKET_NOT_FOUND_4": {
+        "description": "Não encontrado: `SD_TICKET_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SD_TICKET_NOT_FOUND": {
+                "summary": "SD_TICKET_NOT_FOUND — Chamado inexistente",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Chamado não encontrado",
+                  "error": {
+                    "code": "SD_TICKET_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_SD_TICKET_NOT_FOUND_SD_APPROVAL_NOT_FOUND": {
         "description": "Não encontrado: `SD_TICKET_NOT_FOUND`, `SD_APPROVAL_NOT_FOUND`",
         "content": {
@@ -155410,6 +155954,40 @@
               "$ref": "#/components/schemas/ErrorResponse"
             },
             "examples": {
+              "STEEL_AGENT_NOT_FOUND": {
+                "summary": "STEEL_AGENT_NOT_FOUND — Agente inexistente ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Agente não encontrado",
+                  "error": {
+                    "code": "STEEL_AGENT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_STEEL_AGENT_NOT_FOUND_SD_TICKET_NOT_FOUND": {
+        "description": "Não encontrado: `STEEL_AGENT_NOT_FOUND`, `SD_TICKET_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SD_TICKET_NOT_FOUND": {
+                "summary": "SD_TICKET_NOT_FOUND — Chamado inexistente",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Chamado não encontrado",
+                  "error": {
+                    "code": "SD_TICKET_NOT_FOUND"
+                  }
+                }
+              },
               "STEEL_AGENT_NOT_FOUND": {
                 "summary": "STEEL_AGENT_NOT_FOUND — Agente inexistente ou de outro workspace",
                 "value": {
@@ -159046,6 +159624,29 @@
             },
             "examples": {
               "SD_TICKET_CLOSED": {
+                "summary": "SD_TICKET_CLOSED — Chamado fechado ou cancelado (só ao atribuir)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "O chamado está encerrado",
+                  "error": {
+                    "code": "SD_TICKET_CLOSED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_SD_TICKET_CLOSED_3": {
+        "description": "Conflito com o estado atual: `SD_TICKET_CLOSED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SD_TICKET_CLOSED": {
                 "summary": "SD_TICKET_CLOSED",
                 "value": {
                   "success": false,
@@ -160083,6 +160684,40 @@
               "$ref": "#/components/schemas/ErrorResponse"
             },
             "examples": {
+              "STEEL_AGENT_DISABLED": {
+                "summary": "STEEL_AGENT_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "O agente está pausado. Ative-o para executar.",
+                  "error": {
+                    "code": "STEEL_AGENT_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_STEEL_AGENT_DISABLED_SD_TICKET_CLOSED": {
+        "description": "Conflito com o estado atual: `STEEL_AGENT_DISABLED`, `SD_TICKET_CLOSED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "SD_TICKET_CLOSED": {
+                "summary": "SD_TICKET_CLOSED — Chamado fechado ou cancelado (só ao atribuir)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "O chamado está encerrado",
+                  "error": {
+                    "code": "SD_TICKET_CLOSED"
+                  }
+                }
+              },
               "STEEL_AGENT_DISABLED": {
                 "summary": "STEEL_AGENT_DISABLED",
                 "value": {
@@ -219139,6 +219774,54 @@
           "updatedAt"
         ],
         "description": "Agente autônomo do Steel AI."
+      },
+      "SteelAgentAssignment": {
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "enum": ["SD_TICKET", "CRM_LEAD"]
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "agent": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Triagem de chamados"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["id", "name", "enabled"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Agente atribuído; `null` = ninguém."
+          },
+          "assignedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["entityType", "entityId", "agent", "assignedAt"]
       },
       "SteelAgentCatalog": {
         "type": "object",

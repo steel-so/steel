@@ -43,6 +43,9 @@ vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
+vi.mock('@/src/services/steel-agent-dispatcher', () => ({
+  dispatchSteelAgentEvent: vi.fn(),
+}))
 vi.mock('@/src/services/crm-campaign-tracking.service')
 vi.mock('@/src/services/crm-newsletter-whatsapp-receipts.service', () => ({
   CrmNewsletterWhatsAppReceiptsService: { onWhatsAppStatus: vi.fn() },
@@ -86,6 +89,7 @@ import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repos
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WhatsAppChatbotRuntimeService } from '@/src/services/whatsapp-chatbot-runtime.service'
+import { dispatchSteelAgentEvent } from '@/src/services/steel-agent-dispatcher'
 import { CrmNewsletterWhatsAppReceiptsService } from '../crm-newsletter-whatsapp-receipts.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppSlaService } from '../whatsapp-sla.service'
@@ -276,6 +280,16 @@ describe('WhatsAppWebhookService', () => {
 
       expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
 
+      expect(dispatchSteelAgentEvent).toHaveBeenCalledWith(
+        'ws1',
+        'zap.message.received',
+        expect.objectContaining({
+          conversationId: 'closed1',
+          contactId: 'contact1',
+          type: 'TEXT',
+          text: 'Olá!',
+        }),
+      )
       expect(mockedConversationRepo.create).not.toHaveBeenCalled()
       expect(mockedConversationRepo.update).toHaveBeenCalledWith(
         'closed1',

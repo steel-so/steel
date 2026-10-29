@@ -2,6 +2,8 @@ import type {
   AiPendingAction,
   Prisma,
   SteelAgent,
+  SteelAgentAssignment,
+  SteelAgentAssignmentEntity,
   SteelAgentRun,
   SteelAgentRunStatus,
   SteelAgentRunStep,
@@ -172,6 +174,22 @@ export const SteelAgentRepository = {
       return ok(agents)
     } catch (error) {
       return err(dbError('Failed to list scheduled steel agents', error))
+    }
+  },
+
+  /** Enabled agents of the workspace among `ids` (mentions, assignment). */
+  async listEnabledByIds(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<SteelAgent[]>> {
+    if (ids.length === 0) return ok([])
+    try {
+      const agents = await prisma.steelAgent.findMany({
+        where: { workspaceId, enabled: true, id: { in: ids } },
+      })
+      return ok(agents)
+    } catch (error) {
+      return err(dbError('Failed to list steel agents by id', error))
     }
   },
 
@@ -409,6 +427,68 @@ export const SteelAgentRunStepRepository = {
       return ok(count)
     } catch (error) {
       return err(dbError('Failed to update steel agent approval step', error))
+    }
+  },
+}
+
+/** Tickets and leads handed to a Steel Agent (one agent per record). */
+export const SteelAgentAssignmentRepository = {
+  async find(
+    entityType: SteelAgentAssignmentEntity,
+    entityId: string,
+    workspaceId: string,
+  ): Promise<Result<SteelAgentAssignment | null>> {
+    try {
+      const row = await prisma.steelAgentAssignment.findFirst({
+        where: { entityType, entityId, workspaceId },
+      })
+      return ok(row)
+    } catch (error) {
+      return err(dbError('Failed to find steel agent assignment', error))
+    }
+  },
+
+  /** Hands the record to `agentId`; re-assigning replaces the previous one. */
+  async upsert(data: {
+    workspaceId: string
+    agentId: string
+    entityType: SteelAgentAssignmentEntity
+    entityId: string
+    assignedById: string | null
+  }): Promise<Result<SteelAgentAssignment>> {
+    try {
+      const row = await prisma.steelAgentAssignment.upsert({
+        where: {
+          entityType_entityId: {
+            entityType: data.entityType,
+            entityId: data.entityId,
+          },
+        },
+        create: data,
+        update: {
+          agentId: data.agentId,
+          assignedById: data.assignedById,
+          createdAt: new Date(),
+        },
+      })
+      return ok(row)
+    } catch (error) {
+      return err(dbError('Failed to assign steel agent', error))
+    }
+  },
+
+  async remove(
+    entityType: SteelAgentAssignmentEntity,
+    entityId: string,
+    workspaceId: string,
+  ): Promise<Result<number>> {
+    try {
+      const { count } = await prisma.steelAgentAssignment.deleteMany({
+        where: { entityType, entityId, workspaceId },
+      })
+      return ok(count)
+    } catch (error) {
+      return err(dbError('Failed to unassign steel agent', error))
     }
   },
 }

@@ -107,3 +107,16 @@ export const ListSteelAgentRunsQuerySchema = z.object({
 export type ListSteelAgentRunsQueryDTO = z.infer<
   typeof ListSteelAgentRunsQuerySchema
 >
+
+/** `PUT .../agent` of a ticket or lead: `agentId: null` removes the agent. */
+export const AssignSteelAgentSchema = z.object({
+  agentId: z.string().trim().min(1).max(64).nullable(),
+})
+export type AssignSteelAgentDTO = z.infer<typeof AssignSteelAgentSchema>
+
+/** Agents cited with `@` in a comment (ticket message, CRM note). */
+export const STEEL_AGENT_MAX_MENTIONS = 5
+export const SteelAgentMentionsSchema = z
+  .array(z.string().trim().min(1).max(64))
+  .max(STEEL_AGENT_MAX_MENTIONS, 'Agentes demais citados')
+  .optional()

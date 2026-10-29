@@ -31,6 +31,9 @@ vi.mock('../sd-ticket-event-recorder', () => ({ recordSdTicketEvent: vi.fn() }))
 vi.mock('@/src/services/sd-notification.service', () => ({
   notifySdEvent: vi.fn(async () => ({ ok: true, value: {} })),
 }))
+vi.mock('../steel-agent-assignment.service', () => ({
+  dispatchSteelAgentMentions: vi.fn(),
+}))
 vi.mock('../sd-automation-engine', () => ({
   fireSdAutomations: vi.fn(async () => undefined),
 }))
@@ -49,6 +52,7 @@ import { SdTicketEngine } from '../sd-ticket-engine'
 import { recordSdTicketEvent } from '../sd-ticket-event-recorder'
 import { SdTicketMessageService } from '../sd-ticket-message.service'
 import { loadSdTicketTab, publishSdTicketTab } from '../sd-ticket-tab-support'
+import { dispatchSteelAgentMentions } from '../steel-agent-assignment.service'
 
 const load = vi.mocked(loadSdTicketTab)
 const repo = vi.mocked(SdTicketMessageRepository)
@@ -278,6 +282,27 @@ describe('create', () => {
     expect(recordSdTicketEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         meta: expect.objectContaining({ mentions: 1 }),
+      }),
+    )
+  })
+
+  it('wakes the Steel Agents cited with @ using the ticket as context', async () => {
+    expectOk(
+      await SdTicketMessageService.create('u1', 'ws1', 't1', {
+        ...input,
+        mentionedAgentIds: ['sa1'],
+      }),
+    )
+    expect(dispatchSteelAgentMentions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws1',
+        actorId: 'u1',
+        event: 'sd.ticket.agent_mentioned',
+        agentIds: ['sa1'],
+        payload: expect.objectContaining({
+          code: 'INC-000007',
+          authorId: 'u1',
+        }),
       }),
     )
   })

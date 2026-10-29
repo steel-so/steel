@@ -59,6 +59,7 @@ import {
   CrmSettingsService,
   type ResolvedCrmSettings,
 } from './crm-settings.service'
+import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 
 function hashIp(ip: string): string {
   return createHash('sha256').update(ip).digest('hex')
@@ -440,6 +441,15 @@ export const CrmProposalService = {
           workspaceId: result.value.workspaceId,
           proposal: result.value,
         })
+        void dispatchSteelAgentEvent(
+          result.value.workspaceId,
+          'crm.proposal.viewed',
+          {
+            proposalId: result.value.id,
+            name: result.value.name,
+            responsibleId: result.value.responsibleId,
+          },
+        )
       }
     }
 

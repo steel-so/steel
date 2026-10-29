@@ -4,6 +4,9 @@ vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 vi.mock('@/src/repositories/crm-pipeline.repository')
+vi.mock('../steel-agent-dispatcher', () => ({
+  dispatchSteelAgentEvent: vi.fn(),
+}))
 
 import { logger } from '@/lib/axiom/logger'
 import { createFakeCrmOpportunity } from '@/src/__tests__/factories/crm-opportunity.factory'
@@ -12,6 +15,7 @@ import { databaseError, notFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 import { CrmPipelineStageRepository } from '@/src/repositories/crm-pipeline.repository'
 import { emitCrmOpportunityStageWebhooks } from '../crm-opportunity-webhooks'
+import { dispatchSteelAgentEvent } from '../steel-agent-dispatcher'
 import { emitWebhookEvent } from '../webhook-emitter'
 
 const stages = vi.mocked(CrmPipelineStageRepository)
@@ -75,6 +79,15 @@ describe('emitCrmOpportunityStageWebhooks', () => {
         fromStage: { id: 's1', name: 'Proposta', category: 'OPEN' },
         toStage: { id: 's4', name: 'Negociação', category: 'OPEN' },
         actorId: 'u1',
+      }),
+    )
+    expect(dispatchSteelAgentEvent).toHaveBeenCalledWith(
+      'w1',
+      'crm.opportunity.stage_changed',
+      expect.objectContaining({
+        opportunityId: 'o1',
+        fromStage: { id: 's1', name: 'Proposta', category: 'OPEN' },
+        toStage: { id: 's4', name: 'Negociação', category: 'OPEN' },
       }),
     )
   })

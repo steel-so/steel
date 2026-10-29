@@ -20,6 +20,9 @@ vi.mock('@/src/repositories/sd-ticket.repository')
 vi.mock('@/src/repositories/sd-ticket-context.repository')
 vi.mock('@/src/repositories/sd-ticket-escalation.repository')
 vi.mock('../sd-automation-engine', () => ({ runSdAutomations: vi.fn() }))
+vi.mock('../steel-agent-dispatcher', () => ({
+  dispatchSteelAgentEvent: vi.fn(),
+}))
 vi.mock('../sd-ticket-escalator', () => ({ runSdEscalationRule: vi.fn() }))
 vi.mock('../sd-ticket-event-recorder', () => ({ recordSdTicketEvent: vi.fn() }))
 vi.mock('@/src/services/sd-notification.service', () => ({
@@ -40,6 +43,7 @@ import { SdSlaMonitorService } from '../sd-sla-monitor.service'
 import { SdTicketEngine } from '../sd-ticket-engine'
 import { runSdEscalationRule } from '../sd-ticket-escalator'
 import { recordSdTicketEvent } from '../sd-ticket-event-recorder'
+import { dispatchSteelAgentEvent } from '../steel-agent-dispatcher'
 
 const NOW = new Date('2026-09-21T14:00:00Z')
 const ticketRepo = vi.mocked(SdTicketRepository)
@@ -154,6 +158,15 @@ describe('SdSlaMonitorService.runTick', () => {
     )
     expect(automations).toHaveBeenCalledWith('SLA_BREACHED', 't1')
     expect(automations).toHaveBeenCalledWith('SLA_AT_RISK', 't1')
+    expect(dispatchSteelAgentEvent).toHaveBeenCalledWith(
+      expect.any(String),
+      'sd.sla.at_risk',
+      expect.objectContaining({
+        ticketId: 't1',
+        code: 'INC-000009',
+        timers: ['resolução'],
+      }),
+    )
   })
 
   it('does not re-mark already flagged tickets; handles both breaches', async () => {

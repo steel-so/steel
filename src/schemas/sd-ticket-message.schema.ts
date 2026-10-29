@@ -1,6 +1,7 @@
 import z from 'zod'
 import { sdId } from './sd-config.schema'
 import { SdMessageMentionsSchema } from './sd-notification.schema'
+import { SteelAgentMentionsSchema } from './steel-agent.schema'
 
 /** Tamanho máximo do texto de uma mensagem do chamado. */
 export const SD_MESSAGE_MAX_LENGTH = 10_000
@@ -29,6 +30,8 @@ export const CreateSdTicketMessageSchema = z
       .default([]),
     /** Agentes citados com `@` (dispara `ticket.mentioned`). */
     mentionedUserIds: SdMessageMentionsSchema,
+    /** Steel Agents citados com `@` (acorda cada agente com o chamado). */
+    mentionedAgentIds: SteelAgentMentionsSchema,
   })
   .refine((data) => data.body.length > 0 || data.attachmentIds.length > 0, {
     message: 'Escreva uma mensagem ou anexe um arquivo',

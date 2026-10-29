@@ -19,6 +19,7 @@ import {
 } from '@/app/_components/crm/crm-lead-stage'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
+import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
@@ -665,6 +666,27 @@ function LeadContacts({ lead }: { lead: CrmLeadDTO }) {
   )
 }
 
+/** "Atribuir ao agente": hand the lead to a Steel Agent (hidden if none). */
+function LeadAgentRow({
+  workspaceId,
+  leadId,
+}: {
+  workspaceId: string
+  leadId: string
+}) {
+  return (
+    <div className='flex items-center gap-3 text-sm'>
+      <span className='text-muted-foreground'>Agente de IA</span>
+      <SteelAgentAssignSelect
+        workspaceId={workspaceId}
+        entityType='CRM_LEAD'
+        entityRef={leadId}
+        className='h-8 w-56'
+      />
+    </div>
+  )
+}
+
 function LeadPanelShortcuts({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLSpanElement | null>(null)
   useShortcut('crm.record.back', onClose, { ref })
@@ -707,6 +729,8 @@ function LeadStagePanel({
 
       <div className='flex flex-col gap-6 px-4'>
         <LeadContacts lead={lead} />
+
+        <LeadAgentRow workspaceId={workspaceId} leadId={lead.id} />
 
         {lead.stage === 'RECEIVED' || lead.stage === 'IN_CONTACT' ? (
           <ContactAttemptForm

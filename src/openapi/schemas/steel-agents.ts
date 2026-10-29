@@ -165,3 +165,20 @@ export const SteelAgentRunDetailDTO = dto(
     canApprove: z.boolean(),
   }),
 )
+
+export const SteelAgentAssignmentDTO = dto(
+  'SteelAgentAssignment',
+  z.object({
+    entityType: z.enum(['SD_TICKET', 'CRM_LEAD']),
+    entityId: z.string(),
+    agent: z
+      .object({
+        id: z.string(),
+        name: z.string().meta({ example: 'Triagem de chamados' }),
+        enabled: z.boolean(),
+      })
+      .nullable()
+      .meta({ description: 'Agente atribuído; `null` = ninguém.' }),
+    assignedAt: dateTime().nullable(),
+  }),
+)

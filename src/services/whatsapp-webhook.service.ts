@@ -49,6 +49,7 @@ import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { CrmNewsletterWhatsAppReceiptsService } from './crm-newsletter-whatsapp-receipts.service'
 import { SatisfactionSurveyService } from './satisfaction-survey.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
+import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppAdAttributionService } from './whatsapp-ad-attribution.service'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
@@ -467,6 +468,13 @@ export const WhatsAppWebhookService = {
         connectionId: connection.id,
       }),
     )
+    void dispatchSteelAgentEvent(workspaceId, 'zap.message.received', {
+      conversationId,
+      messageId: message.value.id,
+      contactId: contact.value.id,
+      type: input.type,
+      text: input.text?.slice(0, 500) ?? null,
+    })
     if (waiting) {
       emitWhatsAppConversationWaiting({
         ...waiting,

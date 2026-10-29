@@ -11,6 +11,7 @@ import { SdAiCopilotPanel } from '@/app/_components/servicedesk/ai/copilot-panel
 import { SdPortalAccessButton } from '@/app/_components/servicedesk/external-portal'
 import { SdTicketIntegrationLinks } from '@/app/_components/servicedesk/integrations/sd-ticket-integration-links'
 import { SdTicketMonitorBlock } from '@/app/_components/servicedesk/monitoring/sd-ticket-monitor-block'
+import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   Collapsible,
@@ -540,6 +541,15 @@ export function SdTicketSidebar({
 
       <SdSidebarSection title='Atendimento'>
         {field('assigneeId', 'Responsável')}
+        <div className={ROW}>
+          <span className={LABEL}>Agente de IA</span>
+          <SteelAgentAssignSelect
+            workspaceId={workspaceId}
+            entityType='SD_TICKET'
+            entityRef={ticket.id}
+            className='h-8 w-full'
+          />
+        </div>
         {field('departmentId', 'Departamento')}
         {field('requesterId', 'Solicitante')}
         <Participants

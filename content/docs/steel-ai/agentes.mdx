@@ -22,15 +22,43 @@ age com as permissões de um responsável.
 - **Gatilho**:
   - **Agenda**: opções prontas (todo dia às 8h, dias úteis às 8h…) ou uma
     expressão cron, com fuso horário.
-  - **Evento**: chamado aberto, lead criado, conversa atribuída, IA transferiu
-    a conversa ou um [alerta da IA proativa](/docs/steel-ai/ia-proativa) no
-    ServiceDesk, no CRM ou na Comunicação.
+  - **Evento**: chamado aberto, chamado reaberto, SLA perto de estourar, lead
+    criado, oportunidade que mudou de etapa, proposta visualizada, mensagem
+    recebida no WhatsApp, conversa atribuída, IA transferiu a conversa ou um
+    [alerta da IA proativa](/docs/steel-ai/ia-proativa) no ServiceDesk, no CRM
+    ou na Comunicação. Cada evento só aparece para os módulos ligados no
+    workspace.
   - **Manual**: só pelo botão **Executar agora**.
 - **Responsável**: o agente roda com as permissões dessa pessoa.
 - **Máximo de etapas** (8 por padrão, até 20) e **limite de execuções por mês**
   (opcional).
 - **Ferramentas permitidas**.
 - **Ativo** ou **Pausado**.
+
+## Atribuir um chamado ou lead a um agente
+
+Além dos gatilhos, você pode **entregar um registro direto a um agente**:
+
+- No chamado, na coluna lateral (**Atendimento**), escolha o agente em **Agente
+  de IA**. No lead, o mesmo campo fica no painel do lead.
+- Ao atribuir, o agente é acionado na hora com o chamado ou lead como contexto.
+  Trocar o agente aciona o novo; **Nenhum** remove a atribuição sem executar
+  nada.
+- Funciona com qualquer gatilho do agente, até com os manuais. Agentes
+  pausados não aparecem na lista.
+
+## Citar o agente com @
+
+No histórico do chamado, digite **@** e escolha um agente marcado como
+**Agente de IA**: ele recebe a mensagem (pública ou nota interna) e o chamado
+como contexto. Em notas do CRM vale o mesmo, citando o agente com `@` no texto.
+Até 5 agentes por comentário.
+
+<Callout type='nota'>
+  Para evitar laços, o que um agente escreve (comentários, atribuições) nunca
+  aciona outro agente. A execução continua dentro do limite mensal, da cota de
+  IA e das aprovações do agente.
+</Callout>
 
 ## Ferramentas e aprovação
 

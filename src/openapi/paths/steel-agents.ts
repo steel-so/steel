@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   ApproveSteelAgentActionSchema,
+  AssignSteelAgentSchema,
   CreateSteelAgentSchema,
   ListSteelAgentRunsQuerySchema,
   UpdateSteelAgentSchema,
@@ -8,6 +9,7 @@ import {
 import { WORKSPACE_MEMBER_ERRORS } from '../common'
 import type { ErrorEntry, OpenApiRegistry, RouteConfig } from '../registry'
 import {
+  SteelAgentAssignmentDTO,
   SteelAgentCatalogDTO,
   SteelAgentDTO,
   SteelAgentRunDetailDTO,
@@ -276,6 +278,84 @@ const routes: RouteConfig[] = [
     errors: DECISION_ERRORS,
   },
 ]
+
+function assignmentRoutes(input: {
+  path: string
+  param: string
+  paramDescription: string
+  what: string
+  access: string
+  errors: ErrorEntry[]
+}): RouteConfig[] {
+  const params = { [input.param]: input.paramDescription }
+  return [
+    {
+      method: 'get',
+      path: input.path,
+      tags: [TAG],
+      summary: `Agente atribuído ao ${input.what}`,
+      description: `Qual Steel Agent recebeu o ${input.what} (\`agent: null\` quando ninguém). ${input.access}`,
+      params,
+      responses: {
+        200: {
+          description: 'Atribuição atual.',
+          schema: SteelAgentAssignmentDTO,
+        },
+      },
+      errors: input.errors,
+    },
+    {
+      method: 'put',
+      path: input.path,
+      tags: [TAG],
+      summary: `Atribuir o ${input.what} a um agente`,
+      description: `Entrega o ${input.what} a um Steel Agent do workspace (um por registro; trocar substitui o anterior) e enfileira uma execução do agente com o registro como contexto — o agente roda mesmo que o gatilho dele seja manual ou agendado. \`agentId: null\` remove a atribuição sem executar nada. Agente pausado responde \`STEEL_AGENT_DISABLED\`. ${input.access}`,
+      consent: true,
+      params,
+      body: AssignSteelAgentSchema,
+      responses: {
+        200: {
+          description: 'Atribuição atualizada.',
+          schema: SteelAgentAssignmentDTO,
+        },
+      },
+      errors: [...input.errors, AGENT_NOT_FOUND, 'STEEL_AGENT_DISABLED'],
+    },
+  ]
+}
+
+routes.push(
+  ...assignmentRoutes({
+    path: '/workspaces/{id}/servicedesk/tickets/{ticketId}/agent',
+    param: 'ticketId',
+    paramDescription: 'Id do chamado, número (`123`) ou código (`INC-000123`).',
+    what: 'chamado',
+    access:
+      'Acesso: agente do ServiceDesk com a permissão `sd-tickets` (EDIT para atribuir, VIEW para ler).',
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      { code: 'SD_NOT_AGENT', when: 'Quem chama não é agente do ServiceDesk' },
+      { code: 'SD_TICKET_NOT_FOUND', when: 'Chamado inexistente' },
+      {
+        code: 'SD_TICKET_CLOSED',
+        when: 'Chamado fechado ou cancelado (só ao atribuir)',
+      },
+    ],
+  }),
+  ...assignmentRoutes({
+    path: '/workspaces/{id}/crm/leads/{leadId}/agent',
+    param: 'leadId',
+    paramDescription: 'Id do lead.',
+    what: 'lead',
+    access:
+      'Acesso: módulo **CRM** habilitado e a permissão `leads` (EDIT para atribuir, VIEW para ler).',
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      { code: 'FORBIDDEN', when: 'Sem a permissão `leads`' },
+      { code: 'RESOURCE_NOT_FOUND', when: 'Lead inexistente' },
+    ],
+  }),
+)
 
 export function registerSteelAgentsPaths(registry: OpenApiRegistry): void {
   for (const route of routes) registry.registerRoute(route)

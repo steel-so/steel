@@ -27,6 +27,7 @@ import {
 import { runSdEscalationRule } from './sd-ticket-escalator'
 import { recordSdTicketEvent } from './sd-ticket-event-recorder'
 import { sdTicketRowFacts } from './sd-ticket-rules'
+import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 
 /**
  * Tick de SLA do ServiceDesk (worker `servicedesk-sla`, 1×/min), para todo
@@ -204,6 +205,12 @@ async function processTicket(t: SdTicketWithRelations, run: WorkspaceRun) {
         'sla.at_risk',
         atRisk.map((i) => i.label).join(' e '),
       )
+      void dispatchSteelAgentEvent(t.workspaceId, 'sd.sla.at_risk', {
+        ticketId: t.id,
+        code: sdTicketCode(t, run.config.prefixes),
+        title: t.title,
+        timers: atRisk.map((i) => i.label),
+      })
     }
   }
 

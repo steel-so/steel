@@ -15,6 +15,7 @@ import type { CrmNoteDTO } from '@/types/crm-note'
 import { assertModuleMember } from './authz'
 import { recordCrmActivity } from './crm-activity-recorder'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
+import { dispatchSteelAgentMentions } from './steel-agent-assignment.service'
 
 export const CrmNoteService = {
   async list(
@@ -75,6 +76,21 @@ export const CrmNoteService = {
 
     const createdDto = toCrmNoteDTO(result.value)
     void scheduleKnowledgeIndex('crm-note', workspaceId, result.value.id)
+    void dispatchSteelAgentMentions({
+      workspaceId,
+      actorId,
+      event: 'crm.note.agent_mentioned',
+      agentIds: dto.mentionedAgentIds,
+      payload: {
+        noteId: result.value.id,
+        title: dto.title ?? null,
+        note: (dto.body ?? '').slice(0, 500),
+        opportunityId: dto.opportunityId ?? null,
+        personId: dto.personId ?? null,
+        companyId: dto.companyId ?? null,
+        authorId: actorId,
+      },
+    })
     void recordCrmActivity({
       workspaceId,
       actorUserId: actorId,

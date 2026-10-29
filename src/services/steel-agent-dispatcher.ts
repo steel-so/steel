@@ -181,3 +181,55 @@ export async function dispatchSteelAgentEvent(
     return 0
   }
 }
+
+/**
+ * Explicit hand-off to one agent: the record was assigned to it or it was
+ * cited with `@` in a comment. Works for any trigger type (a MANUAL agent can
+ * be mentioned), but paused agents are skipped and the loop guard applies
+ * (an agent's own writes never wake another agent). Never throws; returns
+ * whether a run was queued.
+ */
+export type SteelAgentDirectEvent =
+  | 'sd.ticket.agent_assigned'
+  | 'sd.ticket.agent_mentioned'
+  | 'crm.lead.agent_assigned'
+  | 'crm.note.agent_mentioned'
+
+export async function dispatchSteelAgentDirect(
+  workspaceId: string,
+  agentId: string,
+  event: SteelAgentDirectEvent,
+  payload: Record<string, unknown>,
+  startedById: string | null = null,
+): Promise<boolean> {
+  try {
+    if (currentSteelAgentContext()) return false
+    const agents = await SteelAgentRepository.listEnabledByIds(workspaceId, [
+      agentId,
+    ])
+    if (!agents.ok || agents.value.length === 0) return false
+    const run = await SteelAgentRunRepository.create({
+      workspaceId,
+      agentId,
+      triggerType: 'EVENT',
+      startedById,
+      triggerPayload: { event, ...payload } as Prisma.InputJsonValue,
+    })
+    if (!run.ok) return false
+    const queued = await enqueueSteelAgentRun(run.value.id)
+    return queued.ok
+  } catch (cause) {
+    logger.warn(
+      'steel_agents.direct_dispatch_failed',
+      logFields(
+        {
+          component: 'SteelAgentDispatcher',
+          workspaceId,
+          message: cause instanceof Error ? cause.message : String(cause),
+        },
+        { event, agentId },
+      ),
+    )
+    return false
+  }
+}

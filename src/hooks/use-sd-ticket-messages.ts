@@ -19,6 +19,8 @@ export interface SendSdTicketMessageInput {
   attachmentIds?: string[]
   /** Agentes citados com `@` (dispara `ticket.mentioned`). */
   mentionedUserIds?: string[]
+  /** Steel Agents citados com `@` (cada um é acionado com o chamado). */
+  mentionedAgentIds?: string[]
 }
 
 /**

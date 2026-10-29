@@ -20,6 +20,7 @@ import {
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
 import {
+  dispatchSteelAgentDirect,
   dispatchSteelAgentEvent,
   runSteelAgentTick,
 } from '../steel-agent-dispatcher'
@@ -255,5 +256,108 @@ describe('dispatchSteelAgentEvent', () => {
     expect(
       await dispatchSteelAgentEvent('ws1', 'zap.conversation.assigned', {}),
     ).toBe(0)
+  })
+})
+
+describe('dispatchSteelAgentDirect', () => {
+  beforeEach(() => {
+    agents.listEnabledByIds.mockResolvedValue(
+      ok([createFakeSteelAgent({ id: 'a1', triggerType: 'MANUAL' })]),
+    )
+  })
+
+  it('should queue a run for the targeted agent whatever its trigger type', async () => {
+    const queued = await dispatchSteelAgentDirect(
+      'ws1',
+      'a1',
+      'sd.ticket.agent_assigned',
+      { ticketId: 't1' },
+      'u1',
+    )
+    expect(queued).toBe(true)
+    expect(agents.listEnabledByIds).toHaveBeenCalledWith('ws1', ['a1'])
+    expect(runs.create).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      agentId: 'a1',
+      triggerType: 'EVENT',
+      startedById: 'u1',
+      triggerPayload: { event: 'sd.ticket.agent_assigned', ticketId: 't1' },
+    })
+    expect(enqueue).toHaveBeenCalledWith('run_a1')
+  })
+
+  it('should skip paused or foreign agents', async () => {
+    agents.listEnabledByIds.mockResolvedValue(ok([]))
+    expect(
+      await dispatchSteelAgentDirect(
+        'ws1',
+        'a1',
+        'crm.lead.agent_assigned',
+        {},
+      ),
+    ).toBe(false)
+    expect(runs.create).not.toHaveBeenCalled()
+
+    agents.listEnabledByIds.mockResolvedValue(err(databaseError('x')))
+    expect(
+      await dispatchSteelAgentDirect(
+        'ws1',
+        'a1',
+        'crm.lead.agent_assigned',
+        {},
+      ),
+    ).toBe(false)
+  })
+
+  it('should ignore hand-offs caused by an agent write (loop guard)', async () => {
+    const queued = await runInSteelAgentContext(
+      { agentId: 'a2', runId: 'r2' },
+      () =>
+        dispatchSteelAgentDirect('ws1', 'a1', 'crm.note.agent_mentioned', {}),
+    )
+    expect(queued).toBe(false)
+    expect(agents.listEnabledByIds).not.toHaveBeenCalled()
+  })
+
+  it('should report a run that could not be created or enqueued', async () => {
+    runs.create.mockResolvedValueOnce(err(databaseError('x')))
+    expect(
+      await dispatchSteelAgentDirect(
+        'ws1',
+        'a1',
+        'sd.ticket.agent_mentioned',
+        {},
+      ),
+    ).toBe(false)
+    enqueue.mockResolvedValueOnce(err(databaseError('redis')))
+    expect(
+      await dispatchSteelAgentDirect(
+        'ws1',
+        'a1',
+        'sd.ticket.agent_mentioned',
+        {},
+      ),
+    ).toBe(false)
+  })
+
+  it('should never throw', async () => {
+    agents.listEnabledByIds.mockRejectedValue(new Error('boom'))
+    expect(
+      await dispatchSteelAgentDirect(
+        'ws1',
+        'a1',
+        'sd.ticket.agent_mentioned',
+        {},
+      ),
+    ).toBe(false)
+    agents.listEnabledByIds.mockRejectedValue('boom')
+    expect(
+      await dispatchSteelAgentDirect(
+        'ws1',
+        'a1',
+        'sd.ticket.agent_mentioned',
+        {},
+      ),
+    ).toBe(false)
   })
 })
