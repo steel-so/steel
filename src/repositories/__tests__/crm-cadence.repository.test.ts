@@ -645,61 +645,67 @@ describe('database failures', () => {
   const C = CrmCadenceRepository
   const L = CrmCadenceLookupRepository
 
+  // Loosely typed on purpose: spying on the generated Prisma delegates one by
+  // one makes the whole-project typecheck much heavier.
+  type Spyable = Record<string, (...args: unknown[]) => unknown>
+  const spy = (target: object, method: string) =>
+    vi.spyOn(target as Spyable, method)
+
   const cases: [string, () => unknown, () => Promise<{ ok: boolean }>][] = [
-    ['list', () => vi.spyOn(prisma.crmCadence, 'findMany'), () => C.list('w')],
+    ['list', () => spy(prisma.crmCadence, 'findMany'), () => C.list('w')],
     [
       'findById',
-      () => vi.spyOn(prisma.crmCadence, 'findFirst'),
+      () => spy(prisma.crmCadence, 'findFirst'),
       () => C.findById('c', 'w'),
     ],
     [
       'create',
-      () => vi.spyOn(prisma, '$transaction'),
+      () => spy(prisma, '$transaction'),
       () => C.create('w', 'u', fields, [step()]),
     ],
     [
       'update',
-      () => vi.spyOn(prisma, '$transaction'),
+      () => spy(prisma, '$transaction'),
       () => C.update('c', 'w', 'u', {}),
     ],
     [
       'archive',
-      () => vi.spyOn(prisma.crmCadence, 'update'),
+      () => spy(prisma.crmCadence, 'update'),
       () => C.archive('c', 'u'),
     ],
     [
       'enrollmentCounts',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'groupBy'),
+      () => spy(prisma.crmCadenceEnrollment, 'groupBy'),
       () => C.enrollmentCounts(['c']),
     ],
     [
       'runCounts',
-      () => vi.spyOn(prisma.crmCadenceRun, 'groupBy'),
+      () => spy(prisma.crmCadenceRun, 'groupBy'),
       () => C.runCounts(['c']),
     ],
     [
       'byEmail',
-      () => vi.spyOn(prisma, '$queryRaw'),
+      () => spy(prisma, '$queryRaw'),
       () => C.stopOnReplyEnrollmentIdsByEmail('w', ['a@b.com']),
     ],
     [
       'byPhone',
-      () => vi.spyOn(prisma, '$queryRaw'),
+      () => spy(prisma, '$queryRaw'),
       () => C.stopOnReplyEnrollmentIdsByPhone('w', '5511999990000'),
     ],
     [
       'enrollment list',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'findMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'findMany'),
       () => R.list('w', {}),
     ],
     [
       'enrollment findById',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'findFirst'),
+      () => spy(prisma.crmCadenceEnrollment, 'findFirst'),
       () => R.findById('e', 'w'),
     ],
     [
       'enroll',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'findUnique'),
+      () => spy(prisma.crmCadenceEnrollment, 'findUnique'),
       () =>
         R.enroll({
           workspaceId: 'w',
@@ -711,17 +717,17 @@ describe('database failures', () => {
     ],
     [
       'claimDue',
-      () => vi.spyOn(prisma, '$queryRaw'),
+      () => spy(prisma, '$queryRaw'),
       () => R.claimDue(when, when, 1),
     ],
     [
       'reschedule',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'updateMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'updateMany'),
       () => R.reschedule('e', when),
     ],
     [
       'completeStep',
-      () => vi.spyOn(prisma, '$transaction'),
+      () => spy(prisma, '$transaction'),
       () =>
         R.completeStep({
           enrollmentId: 'e',
@@ -737,32 +743,32 @@ describe('database failures', () => {
     ],
     [
       'complete',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'updateMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'updateMany'),
       () => R.complete('e', when),
     ],
     [
       'finish',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'updateMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'updateMany'),
       () => R.finish(['e'], 'STOPPED', 'MANUAL', null, when),
     ],
     [
       'openIdsByCadence',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'findMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'findMany'),
       () => R.openIdsByCadence('c'),
     ],
     [
       'pause',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'updateMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'updateMany'),
       () => R.pause('e'),
     ],
     [
       'resume',
-      () => vi.spyOn(prisma.crmCadenceEnrollment, 'updateMany'),
+      () => spy(prisma.crmCadenceEnrollment, 'updateMany'),
       () => R.resume('e', when),
     ],
     [
       'recordRun',
-      () => vi.spyOn(prisma.crmCadenceRun, 'create'),
+      () => spy(prisma.crmCadenceRun, 'create'),
       () =>
         R.recordRun({
           workspaceId: 'w',
@@ -775,17 +781,17 @@ describe('database failures', () => {
     ],
     [
       'emailOptedOut',
-      () => vi.spyOn(prisma.crmEmailOptOut, 'findUnique'),
+      () => spy(prisma.crmEmailOptOut, 'findUnique'),
       () => L.emailOptedOut('w', 'a@b.com'),
     ],
     [
       'whatsappOptedOut',
-      () => vi.spyOn(prisma.whatsAppContact, 'findUnique'),
+      () => spy(prisma.whatsAppContact, 'findUnique'),
       () => L.whatsappOptedOut('w', '5511'),
     ],
     [
       'findLeads',
-      () => vi.spyOn(prisma.crmLead, 'findMany'),
+      () => spy(prisma.crmLead, 'findMany'),
       () => L.findLeads('w', ['l']),
     ],
   ]
