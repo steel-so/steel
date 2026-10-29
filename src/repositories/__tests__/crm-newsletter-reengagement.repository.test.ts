@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { seedCrmPerson } from '@/src/__tests__/factories/crm-person.factory'
 import { seedNewsletterScope } from '@/src/__tests__/factories/newsletter-nl-issues.factory'
 import {
   seedConfirmedSubscriber,
@@ -56,11 +57,12 @@ describe('CrmNewsletterReengagementRepository — settings', () => {
 describe('CrmNewsletterReengagementRepository — candidates', () => {
   it('counts and claims only the inactive subscribers, once per cycle', async () => {
     const { newsletter, userId } = await seedNewsletterScope()
+    const person = await seedCrmPerson(newsletter.workspaceId, userId)
     const recent = daysAgo(10)
     const inactive = await seedConfirmedSubscriber(
       newsletter,
       'inactive@example.com',
-      { personId: 'p1' },
+      { personId: person.id },
     )
     await seedSentIssues(newsletter, userId, inactive, 3, recent)
 
@@ -110,7 +112,7 @@ describe('CrmNewsletterReengagementRepository — candidates', () => {
         subscriberId: inactive.id,
         email: 'inactive@example.com',
         name: 'inactive',
-        personId: 'p1',
+        personId: person.id,
       }),
     ])
     // Claimed (SENDING): not a candidate anymore, a rerun adds nothing.

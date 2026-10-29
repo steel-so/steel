@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { describe, expect, it, vi } from 'vitest'
+import { seedCrmPerson } from '@/src/__tests__/factories/crm-person.factory'
 import { seedNewsletterScope } from '@/src/__tests__/factories/newsletter-nl-issues.factory'
 import {
   seedConfirmedSubscriber,
@@ -108,6 +109,7 @@ describe('CrmNewsletterWelcomeRepository — worker', () => {
 
   it('claims each due (step, subscriber) once, following the rules', async () => {
     const { newsletter, userId } = await seedNewsletterScope()
+    const person = await seedCrmPerson(newsletter.workspaceId, userId)
     const now0 = await seedWelcomeStep(newsletter, userId, { delayValue: 0 })
     const twoDays = await seedWelcomeStep(newsletter, userId, {
       delayValue: 2,
@@ -127,7 +129,7 @@ describe('CrmNewsletterWelcomeRepository — worker', () => {
     const fresh = await seedConfirmedSubscriber(
       newsletter,
       'fresh@example.com',
-      { confirmedAt: new Date(NOW.getTime() - HOUR), personId: 'p1' },
+      { confirmedAt: new Date(NOW.getTime() - HOUR), personId: person.id },
     )
     // Never: stale, imported, pending, unconfirmed, opted out.
     await seedConfirmedSubscriber(newsletter, 'stale@example.com', {
@@ -163,7 +165,7 @@ describe('CrmNewsletterWelcomeRepository — worker', () => {
     )
     const freshRow = claimed.find((row) => row.subscriberId === fresh.id)
     expect(freshRow).toMatchObject({
-      personId: 'p1',
+      personId: person.id,
       subscriberStatus: 'ACTIVE',
       name: 'fresh',
     })
