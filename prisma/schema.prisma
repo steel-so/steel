@@ -2918,6 +2918,9 @@ model CrmLeadScoringRule {
   points      Int                 @default(0)
   active      Boolean             @default(true)
   position    Int                 @default(0)
+  /// Newsletter event rules only (opened/clicked): also count the welcome
+  /// series e-mails (slice nl3-welcome-bridge).
+  includeWelcome Boolean          @default(true) @map("include_welcome")
   createdAt   DateTime            @default(now()) @map("created_at")
   updatedAt   DateTime            @updatedAt @map("updated_at")
 
@@ -10262,6 +10265,7 @@ model CrmNewsletterWelcomeDelivery {
 
   step       CrmNewsletterWelcomeStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
   subscriber CrmNewsletterSubscriber  @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  linkClicks CrmNewsletterWelcomeLinkClick[]
 
   @@unique([stepId, subscriberId])
   @@index([status, updatedAt])
@@ -10410,4 +10414,24 @@ model CrmNewsletterDigest {
   @@index([enabled, nextRunAt])
   @@index([workspaceId])
   @@map("crm_newsletter_digests")
+}
+
+// ─── newsletter3 · nl3-welcome-bridge ─────────────────────────────────────
+
+/// Every click on a link of a welcome series e-mail, with its URL (Resend
+/// click tracking), so the bridge can fire "link clicked" workflows once per
+/// delivery × URL and the "URL contains" filters work like on an issue.
+model CrmNewsletterWelcomeLinkClick {
+  id         String   @id @default(cuid())
+  deliveryId String   @map("delivery_id")
+  stepId     String   @map("step_id")
+  url        String
+  clickedAt  DateTime @map("clicked_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  delivery CrmNewsletterWelcomeDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, url])
+  @@index([stepId, url])
+  @@map("crm_newsletter_welcome_link_clicks")
 }
