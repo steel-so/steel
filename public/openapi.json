@@ -36509,6 +36509,9 @@
                   "active": {
                     "default": true,
                     "type": "boolean"
+                  },
+                  "includeWelcome": {
+                    "type": "boolean"
                   }
                 },
                 "required": ["field", "operator"]
@@ -36621,6 +36624,9 @@
                     "maximum": 9007199254740991
                   },
                   "active": {
+                    "type": "boolean"
+                  },
+                  "includeWelcome": {
                     "type": "boolean"
                   }
                 }
@@ -68629,6 +68635,10 @@
                                       "urlContains": {
                                         "type": "string",
                                         "maxLength": 500
+                                      },
+                                      "source": {
+                                        "type": "string",
+                                        "enum": ["issue", "welcome"]
                                       }
                                     },
                                     "required": ["type"]
@@ -68644,6 +68654,10 @@
                                         "type": "string",
                                         "minLength": 1,
                                         "maxLength": 64
+                                      },
+                                      "source": {
+                                        "type": "string",
+                                        "enum": ["issue", "welcome"]
                                       }
                                     },
                                     "required": ["type"]
@@ -180635,6 +180649,10 @@
           "active": {
             "type": "boolean"
           },
+          "includeWelcome": {
+            "type": "boolean",
+            "description": "Só para `newsletter_opened` e `newsletter_clicked`: também pontua os e-mails da série de boas-vindas (padrão: ligado)."
+          },
           "position": {
             "type": "number"
           },
@@ -180655,6 +180673,7 @@
           "value",
           "points",
           "active",
+          "includeWelcome",
           "position",
           "createdAt",
           "updatedAt"
@@ -184456,6 +184475,35 @@
           "canUnsubscribe": {
             "type": "boolean",
             "description": "`ACTIVE` ou `PENDING`: pode descadastrar."
+          },
+          "welcome": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sent": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "opened": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "clicked": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": ["sent", "opened", "clicked"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "E-mails da série de boas-vindas enviados, abertos e clicados; `null` quando nenhum foi enviado."
           }
         },
         "required": [
@@ -184471,7 +184519,8 @@
           "unsubscribedAt",
           "lastOpenedAt",
           "lastClickedAt",
-          "canUnsubscribe"
+          "canUnsubscribe",
+          "welcome"
         ]
       },
       "CrmPersonNewsletters": {
@@ -189604,6 +189653,10 @@
                               "urlContains": {
                                 "type": "string",
                                 "maxLength": 500
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": ["issue", "welcome"]
                               }
                             },
                             "required": ["type"]
@@ -189619,6 +189672,10 @@
                                 "type": "string",
                                 "minLength": 1,
                                 "maxLength": 64
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": ["issue", "welcome"]
                               }
                             },
                             "required": ["type"]
