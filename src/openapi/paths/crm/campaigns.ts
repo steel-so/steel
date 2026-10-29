@@ -170,7 +170,7 @@ export const crmCampaignRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Enviar ou agendar',
     description: describe(
-      'Valida os passos, tira o retrato do público (excluindo descadastrados), grava a base legal confirmada e enfileira o envio no worker (`crm-campaigns`): agora, ou em `scheduledAt` se futuro. O WhatsApp sai `whatsappDelayHours` depois do e-mail.',
+      'Valida os passos, tira o retrato do público (excluindo descadastrados), grava a base legal confirmada e enfileira o envio no worker (`crm-campaigns`): agora, ou em `scheduledAt` se futuro. O WhatsApp sai `whatsappDelayHours` depois do e-mail. O remetente do e-mail precisa ser de um domínio de envio verificado do workspace ou o endereço da plataforma (ADR 0055): fora disso entra em `issues` com `fix: SENDING_DOMAINS`, e uma campanha já agendada falha os e-mails no disparo, com aviso ao criador.',
       crmAccess('email', 'EDIT'),
     ),
     params: { campaignId: CAMPAIGN_ID },

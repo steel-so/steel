@@ -240,3 +240,19 @@ export const CrmEmailMessageDTO = dto(
     })
     .meta({ description: 'E-mail registrado manualmente no CRM.' }),
 )
+
+export const CrmEmailSenderOptionsDTO = dto(
+  'CrmEmailSenderOptions',
+  z.object({
+    platformAddress: z.email().meta({
+      description:
+        'Endereço da plataforma, aceito sem domínio próprio verificado.',
+      example: 'notificacoes@stratustelecom.com.br',
+    }),
+    verifiedDomains: z.array(z.string()).meta({
+      description:
+        'Domínios de envio VERIFIED do workspace, em ordem alfabética.',
+      example: ['news.acme.com.br'],
+    }),
+  }),
+)
