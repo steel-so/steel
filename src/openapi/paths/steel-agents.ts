@@ -4,6 +4,7 @@ import {
   AssignSteelAgentSchema,
   CreateSteelAgentSchema,
   ListSteelAgentRunsQuerySchema,
+  RestoreSteelAgentVersionSchema,
   UpdateSteelAgentSchema,
 } from '@/src/schemas/steel-agent.schema'
 import { WORKSPACE_MEMBER_ERRORS } from '../common'
@@ -14,6 +15,9 @@ import {
   SteelAgentDTO,
   SteelAgentRunDetailDTO,
   SteelAgentRunDTO,
+  SteelAgentUpdateResultDTO,
+  SteelAgentVersionListDTO,
+  SteelAgentVersionRefDTO,
 } from '../schemas/steel-agents'
 import { AiPendingActionDTO } from '../schemas/steel-ai'
 
@@ -42,7 +46,17 @@ const VALIDATION: ErrorEntry[] = [
   'STEEL_AGENT_INVALID_TOOL',
   'STEEL_AGENT_INVALID_TRIGGER',
   'STEEL_AGENT_INVALID_OWNER',
+  'STEEL_AGENT_EVAL_SET_INVALID',
 ]
+const VERSION_PARAM = { description: 'ID da versão do agente.' }
+const VERSION_NOT_FOUND: ErrorEntry = {
+  code: 'STEEL_AGENT_VERSION_NOT_FOUND',
+  when: 'Versão inexistente ou de outro agente/workspace',
+}
+const VERSION_STATE: ErrorEntry = {
+  code: 'STEEL_AGENT_VERSION_INVALID_STATE',
+  when: 'A versão não está num estado em que a ação vale',
+}
 const DECISION_ERRORS: ErrorEntry[] = [
   ...WORKSPACE_MEMBER_ERRORS,
   {
@@ -125,18 +139,29 @@ const routes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Atualizar agente',
     description:
-      'Atualização parcial; `tools`, quando enviado, substitui a lista inteira. `enabled: false` pausa o agente. O gatilho é revalidado sobre o resultado.',
+      'Atualização parcial; `tools`, quando enviado, substitui a lista inteira. `enabled: false` pausa o agente. O gatilho é revalidado sobre o resultado. Mudar `instructions`, `tools` ou `maxToolRounds` cria uma **versão** (campo `version` da resposta): com `evalSetId` configurado ela fica `PENDING_EVAL` até a avaliação terminar (os campos do agente seguem na versão publicada) e só é publicada se a taxa de aprovação atingir `evalMinPassRate`; sem conjunto, é publicada na hora. `rolloutPercent` (1 a 99) manda a versão nova para essa parcela das execuções (teste A/B) em vez de substituir a publicada. `changeNote` descreve a alteração no histórico.',
     consent: true,
     params: { agentId: AGENT_PARAM },
     body: UpdateSteelAgentSchema,
     responses: {
-      200: { description: 'Agente atualizado.', schema: SteelAgentDTO },
+      200: {
+        description: 'Agente atualizado e a versão criada, se houve.',
+        schema: SteelAgentUpdateResultDTO,
+      },
     },
     errors: [
       ...WORKSPACE_MEMBER_ERRORS,
       MANAGE,
       AGENT_NOT_FOUND,
       ...VALIDATION,
+      {
+        code: 'STEEL_AGENT_VERSION_PENDING',
+        when: 'Já existe uma versão do agente em avaliação',
+      },
+      {
+        code: 'AI_DISABLED',
+        when: 'Há trava de avaliação e o Steel AI está desligado',
+      },
     ],
   },
   {
@@ -191,6 +216,94 @@ const routes: RouteConfig[] = [
       ...WORKSPACE_MEMBER_ERRORS,
       { code: 'FORBIDDEN', when: 'Nem responsável nem admin' },
       AGENT_NOT_FOUND,
+    ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/agents/{agentId}/versions',
+    tags: [TAG],
+    summary: 'Versões do agente',
+    description:
+      'Histórico de versões (mais nova primeiro) com o resultado da avaliação que travou cada uma e as métricas das execuções reais (sucesso, custo médio, taxa de aprovação das ações) usadas na comparação A/B. Execuções de teste não contam.',
+    params: { agentId: AGENT_PARAM },
+    responses: {
+      200: { description: 'Versões.', schema: SteelAgentVersionListDTO },
+    },
+    errors: [...WORKSPACE_MEMBER_ERRORS, AGENT_NOT_FOUND],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/versions/{versionId}/promote',
+    tags: [TAG],
+    summary: 'Promover versão do teste A/B',
+    description:
+      'Publica a versão `CHALLENGER` para 100% das execuções; a publicada vira `SUPERSEDED` e os campos do agente passam a espelhar a nova.',
+    consent: true,
+    params: { agentId: AGENT_PARAM, versionId: VERSION_PARAM },
+    responses: {
+      200: {
+        description: 'Versão publicada.',
+        schema: SteelAgentVersionRefDTO,
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      MANAGE,
+      AGENT_NOT_FOUND,
+      VERSION_NOT_FOUND,
+      VERSION_STATE,
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/versions/{versionId}/discard',
+    tags: [TAG],
+    summary: 'Descartar versão',
+    description:
+      'Encerra uma versão `PENDING_EVAL` ou `CHALLENGER` sem publicá-la (no A/B, o tráfego volta todo para a publicada).',
+    consent: true,
+    params: { agentId: AGENT_PARAM, versionId: VERSION_PARAM },
+    responses: {
+      200: {
+        description: 'Versão descartada.',
+        schema: SteelAgentVersionRefDTO,
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      MANAGE,
+      AGENT_NOT_FOUND,
+      VERSION_NOT_FOUND,
+      VERSION_STATE,
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/agents/{agentId}/versions/{versionId}/restore',
+    tags: [TAG],
+    summary: 'Restaurar versão antiga',
+    description:
+      'Cria uma **nova** versão com o conteúdo de uma `SUPERSEDED`, `REJECTED` ou `DISCARDED`. Ela passa pela mesma trava de avaliação (e A/B opcional) de qualquer edição — reverter também não é cego.',
+    consent: true,
+    params: { agentId: AGENT_PARAM, versionId: VERSION_PARAM },
+    body: { schema: RestoreSteelAgentVersionSchema, required: false },
+    responses: {
+      201: {
+        description: 'Nova versão criada.',
+        schema: SteelAgentVersionRefDTO,
+      },
+    },
+    errors: [
+      ...WORKSPACE_MEMBER_ERRORS,
+      MANAGE,
+      AGENT_NOT_FOUND,
+      VERSION_NOT_FOUND,
+      VERSION_STATE,
+      {
+        code: 'STEEL_AGENT_VERSION_PENDING',
+        when: 'Já existe uma versão do agente em avaliação',
+      },
+      'STEEL_AGENT_EVAL_SET_INVALID',
     ],
   },
   {
