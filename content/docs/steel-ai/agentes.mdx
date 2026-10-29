@@ -122,3 +122,53 @@ O teste funciona com o agente pausado e não conta no limite mensal. A execuçã
 mostra o selo **Teste** e a seção *O que o agente faria*.
 
 Para começar rápido, veja os [modelos prontos](/docs/steel-ai/modelos-prontos).
+
+## Versões, avaliação e teste A/B
+
+Toda mudança nas **instruções**, nas **ferramentas** ou no **máximo de etapas**
+vira uma **versão** numerada (v1, v2…). Mudar nome, gatilho, responsável ou
+pausar o agente não cria versão. A aba **Versões** do agente guarda o histórico,
+com a nota de cada alteração, o resultado da avaliação e o conteúdo completo.
+
+### Trava por avaliação
+
+Em **Configuração › Versões e avaliação**, escolha um **conjunto de avaliação**
+do tipo *Steel Agents (trava de versão)* — criado em
+[Steel AI › Avaliações](/docs/steel-ai/qualidade-e-avaliacoes) — e a
+**aprovação mínima** (80% por padrão). Aí funciona assim:
+
+1. Você salva a edição. A versão nova fica **Em avaliação** e o agente continua
+   rodando a versão publicada.
+2. O Steel responde a cada caso do conjunto com as instruções da versão nova
+   (sem ferramentas) e um juiz confere o resultado.
+3. Se a parcela de casos aprovados chegar ao mínimo, a versão é **Publicada**.
+   Se não chegar, fica **Reprovada**, com o motivo, e nada muda no agente.
+
+Só uma versão fica em avaliação por vez. A avaliação gasta a cota de IA do
+workspace, como qualquer conjunto de teste. Sem conjunto configurado, as edições
+são publicadas na hora.
+
+### Teste A/B com tráfego real
+
+Ao salvar uma edição, ligue **Testar em paralelo (A/B)** e escolha a parcela das
+execuções (de 1% a 99%) que vai para a versão nova. O resto segue na publicada.
+Com a trava ligada, o teste A/B só começa depois que a versão passa na avaliação.
+
+Na aba **Versões** você compara as duas lado a lado com as execuções reais
+(testes não contam): número de execuções, taxa de sucesso, custo médio e taxa de
+aprovação das ações propostas. Então:
+
+- **Promover para 100%**: a versão nova passa a ser a publicada.
+- **Descartar**: encerra o experimento e todo o tráfego volta para a publicada.
+
+### Voltar a uma versão antiga
+
+**Restaurar como nova versão** cria uma versão nova com o conteúdo da antiga. Ela
+passa pela mesma avaliação (e pelo A/B, se você quiser) de qualquer edição:
+reverter também não é às cegas.
+
+<Callout type='aviso'>
+  Execuções que já começaram terminam na versão com que começaram, mesmo que
+  outra seja publicada no meio.
+</Callout>
+

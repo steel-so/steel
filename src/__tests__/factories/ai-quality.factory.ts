@@ -84,6 +84,7 @@ export function createFakeAiEvalRun(overrides?: Partial<AiEvalRun>): AiEvalRun {
     skillId: null,
     promptOverride: null,
     reason: 'manual',
+    agentVersionId: null,
     startedById: createId(),
     caseCount: 1,
     passedCount: 0,

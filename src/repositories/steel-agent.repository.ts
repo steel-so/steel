@@ -74,6 +74,9 @@ export interface SteelAgentWriteInput {
   maxToolRounds: number
   monthlyRunCap: number | null
   nextRunAt: Date | null
+  /** A2: eval set that gates new versions (null = none). */
+  evalSetId?: string | null
+  evalMinPassRate?: number
 }
 
 /** Steel Agents and their allowed tools. */

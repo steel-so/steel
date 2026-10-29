@@ -2,6 +2,7 @@ import type { AiEvalCase, AiSkill, ModuleKind } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
+import { appError } from '@/src/errors/app-error'
 import {
   AI_EVAL_JUDGE_SYSTEM,
   averageScore,
@@ -13,15 +14,18 @@ import {
 } from '@/src/lib/ai/eval-grading'
 import { buildSteelAiSystemPrompt } from '@/src/lib/ai/steel-ai-prompt'
 import type { AiUsageTokens } from '@/src/lib/ai/types'
-import { ok, type Result } from '@/src/lib/result'
+import { err, ok, type Result } from '@/src/lib/result'
+import { buildSteelAgentSystemPrompt } from '@/src/lib/steel-agents/prompt'
 import {
   type AiEvalClaimedRun,
   AiEvalRepository,
   type AiEvalResultData,
 } from '@/src/repositories/ai-eval.repository'
 import { AiSkillRepository } from '@/src/repositories/ai-skill.repository'
+import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { AI_EVAL_JUDGE_JSON_SCHEMA } from '@/src/schemas/ai-eval.schema'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
+import { SteelAgentVersionService } from './steel-agent-version.service'
 import {
   buildWhatsAppAiReplySystem,
   WHATSAPP_AI_HANDOFF_MARKER,
@@ -52,6 +56,37 @@ function skillSection(skill: AiSkill): string {
   return `Skill invocada pelo usuário: /${skill.slug} (${skill.name}). Siga estas instruções nesta resposta:\n${skill.instructions}`
 }
 
+/** STEEL_AGENT sets: the instructions of the version under evaluation. */
+async function agentVersionSystem(
+  run: AiEvalClaimedRun,
+  context: { name: string; modules: ModuleKind[] },
+  now: Date,
+): Promise<Result<string>> {
+  const version = run.agentVersionId
+    ? await SteelAgentVersionRepository.findByIdUnscoped(run.agentVersionId)
+    : ok(null)
+  if (!version.ok) return version
+  if (!version.value) {
+    return err(
+      appError(
+        'STEEL_AGENT_VERSION_NOT_FOUND',
+        'Esta avaliação não está ligada a uma versão de agente.',
+      ),
+    )
+  }
+  return ok(
+    `${buildSteelAgentSystemPrompt({
+      agentName: 'Agente em avaliação',
+      instructions: version.value.instructions,
+      workspaceName: context.name,
+      ownerName: 'Avaliação automática',
+      now,
+      timezone: EVAL_TIMEZONE,
+      modules: context.modules,
+    })}\n\n${NO_TOOLS_SECTION}`,
+  )
+}
+
 async function systemPromptFor(
   run: AiEvalClaimedRun,
   context: {
@@ -68,6 +103,9 @@ async function systemPromptFor(
         run.promptOverride ?? context.whatsappPrompt ?? '',
       ),
     )
+  }
+  if (run.set.target === 'STEEL_AGENT') {
+    return agentVersionSystem(run, context, now)
   }
   const skillId = run.skillId ?? run.set.skillId
   let skill: AiSkill | null = null
@@ -286,6 +324,16 @@ async function finish(
       },
     ),
   )
+  if (run.agentVersionId) {
+    await SteelAgentVersionService.onEvalFinished({
+      versionId: run.agentVersionId,
+      evalRunId: run.id,
+      status: extra.status,
+      passed: totals.passed,
+      failed: totals.failed,
+      error: extra.error,
+    })
+  }
   return ok(
     extra.status === 'DONE'
       ? { status: 'done', passed: totals.passed, failed: totals.failed }

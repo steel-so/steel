@@ -1,4 +1,9 @@
-import type { ModuleKind, Prisma, SteelAgentTriggerType } from '@prisma/client'
+import type {
+  ModuleKind,
+  Prisma,
+  SteelAgentTriggerType,
+  SteelAgentVersion,
+} from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
@@ -21,10 +26,12 @@ import {
   steelAgentTriggerProblem,
 } from '@/src/lib/steel-agents/schedule'
 import { effectiveToolMode } from '@/src/lib/steel-agents/tool-mode'
+import { versionContentChanged } from '@/src/lib/steel-agents/versions'
 import {
   toSteelAgentDTO,
   toSteelAgentRunDetailDTO,
   toSteelAgentRunDTO,
+  toSteelAgentVersionRefDTO,
 } from '@/src/mappers/steel-agent.mapper'
 import { WorkspaceAiSettingsRepository } from '@/src/repositories/ai-settings.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -44,8 +51,10 @@ import type {
   SteelAgentDTO,
   SteelAgentRunDetailDTO,
   SteelAgentRunDTO,
+  SteelAgentUpdateResultDTO,
 } from '@/types/steel-agent'
 import { assertMember, type MembershipContext } from './authz'
+import { SteelAgentVersionService } from './steel-agent-version.service'
 
 /**
  * Steel Agents CRUD, catalog, run history and "Executar agora". RBAC
@@ -276,6 +285,15 @@ export const SteelAgentService = {
     const tools = await validateTools(workspaceId, dto.tools)
     if (!tools.ok) return tools
 
+    if (dto.evalSetId) {
+      const set = await SteelAgentVersionService.checkEvalSet(
+        workspaceId,
+        dto.evalSetId,
+        { requireCases: false },
+      )
+      if (!set.ok) return set
+    }
+
     const trigger = normalizeSteelAgentTrigger(dto)
     const created = await SteelAgentRepository.create({
       workspaceId,
@@ -289,9 +307,26 @@ export const SteelAgentService = {
       ownerId: dto.ownerId,
       maxToolRounds: dto.maxToolRounds,
       monthlyRunCap: dto.monthlyRunCap ?? null,
+      evalSetId: dto.evalSetId ?? null,
+      evalMinPassRate: dto.evalMinPassRate,
       tools: tools.value,
     })
     if (!created.ok) return created
+
+    // v1 = the agent as created; a failure here is retried on the first edit.
+    const baseline = await SteelAgentVersionService.ensureBaseline(
+      created.value,
+      actorId,
+    )
+    if (!baseline.ok) {
+      logger.warn(
+        'steel_agents.baseline_version_failed',
+        logFields(
+          { component: 'SteelAgentService', workspaceId },
+          { agentId: created.value.id, code: baseline.error.code },
+        ),
+      )
+    }
 
     auditMutation({
       entity: 'steel_agent',
@@ -313,7 +348,7 @@ export const SteelAgentService = {
     workspaceId: string,
     agentId: string,
     dto: UpdateSteelAgentDTO,
-  ): Promise<Result<SteelAgentDTO>> {
+  ): Promise<Result<SteelAgentUpdateResultDTO>> {
     const membership = await assertMember(actorId, workspaceId, {
       resource: RESOURCE,
       action: 'EDIT',
@@ -344,12 +379,62 @@ export const SteelAgentService = {
     const problem = steelAgentTriggerProblem(merged)
     if (problem) return err(steelAgentInvalidTrigger(problem))
 
-    const { tools: _tools, ...fields } = dto
-    const updated = await SteelAgentRepository.update(
-      agentId,
-      { ...fields, ...normalizeSteelAgentTrigger(merged) },
-      tools,
-    )
+    const evalSetId =
+      dto.evalSetId !== undefined ? dto.evalSetId : current.value.evalSetId
+    if (dto.evalSetId) {
+      const set = await SteelAgentVersionService.checkEvalSet(
+        workspaceId,
+        dto.evalSetId,
+        { requireCases: false },
+      )
+      if (!set.ok) return set
+    }
+
+    // Instructions, tools and the round cap are versioned: they reach the
+    // agent through `SteelAgentVersionService` (gate eval, optional A/B).
+    const {
+      tools: _tools,
+      changeNote,
+      rolloutPercent,
+      instructions,
+      maxToolRounds,
+      ...fields
+    } = dto
+    const currentContent = {
+      instructions: current.value.instructions,
+      maxToolRounds: current.value.maxToolRounds,
+      tools: current.value.tools.map((t) => ({
+        toolName: t.toolName,
+        mode: t.mode,
+      })),
+    }
+    const nextContent = {
+      instructions: instructions ?? currentContent.instructions,
+      maxToolRounds: maxToolRounds ?? currentContent.maxToolRounds,
+      tools: tools ?? currentContent.tools,
+    }
+    let version: SteelAgentVersion | null = null
+    if (versionContentChanged(currentContent, nextContent)) {
+      const submitted = await SteelAgentVersionService.submit({
+        actorId,
+        agent: current.value,
+        content: nextContent,
+        changeNote: changeNote ?? null,
+        rolloutPercent: rolloutPercent ?? null,
+        evalSetId,
+      })
+      if (!submitted.ok) return submitted
+      version = submitted.value
+    }
+
+    const updated = await SteelAgentRepository.update(agentId, {
+      ...fields,
+      ...(version === null && {
+        ...(instructions !== undefined && { instructions }),
+        ...(maxToolRounds !== undefined && { maxToolRounds }),
+      }),
+      ...normalizeSteelAgentTrigger(merged),
+    })
     if (!updated.ok) return updated
 
     auditMutation({
@@ -361,9 +446,16 @@ export const SteelAgentService = {
         workspaceId,
         fields: Object.keys(dto),
         ...(tools && { tools: tools.map((t) => `${t.toolName}:${t.mode}`) }),
+        ...(version && {
+          versionId: version.id,
+          versionNumber: version.number,
+        }),
       },
     })
-    return ok(toSteelAgentDTO(updated.value, kindOf))
+    return ok({
+      ...toSteelAgentDTO(updated.value, kindOf),
+      version: version ? toSteelAgentVersionRefDTO(version) : null,
+    })
   },
 
   async delete(

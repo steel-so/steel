@@ -33,6 +33,10 @@ export function createFakeSteelAgent(
     createdById: createId(),
     maxToolRounds: 8,
     monthlyRunCap: null,
+    evalSetId: null,
+    evalMinPassRate: 0.8,
+    publishedVersionId: null,
+    challengerVersionId: null,
     lastRunAt: null,
     nextRunAt: null,
     createdAt: NOW,
@@ -97,6 +101,7 @@ export function createFakeSteelAgentRun(
     state: null,
     isTest: false,
     rerunOfId: null,
+    versionId: null,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
@@ -182,6 +187,8 @@ export async function seedSteelAgentRun(data: {
   triggerType?: SteelAgentRun['triggerType']
   createdAt?: Date
   isTest?: boolean
+  versionId?: string | null
+  rounds?: number
 }) {
   return prisma.steelAgentRun.create({
     data: { triggerType: 'MANUAL', ...data },

@@ -119,7 +119,9 @@ export function AiEvalSetForm({
         <p className='text-muted-foreground text-xs'>
           {target === 'STEEL_ASSISTANT'
             ? 'Responde com o prompt do Steel AI, sem consultar dados do workspace.'
-            : 'Responde com o prompt e os documentos de conhecimento da IA do WhatsApp.'}
+            : target === 'STEEL_AGENT'
+              ? 'Responde com as instruções da versão do agente em avaliação, sem ferramentas. Vincule o conjunto a um agente para travar a publicação das versões.'
+              : 'Responde com o prompt e os documentos de conhecimento da IA do WhatsApp.'}
         </p>
       </div>
       {target === 'STEEL_ASSISTANT' ? (

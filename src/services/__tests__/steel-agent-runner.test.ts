@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import {
   createFakeSteelAgentRunWithAgent,
   createFakeSteelAgentTool,
@@ -49,6 +50,7 @@ vi.mock('@/src/lib/ai/tools/registry', async (importOriginal) => {
   }
 })
 vi.mock('@/src/repositories/steel-agent.repository')
+vi.mock('@/src/repositories/steel-agent-version.repository')
 vi.mock('@/src/repositories/ai-action-log.repository')
 vi.mock('@/src/repositories/ai-pending-action.repository')
 vi.mock('@/src/repositories/user.repository')
@@ -64,6 +66,7 @@ import {
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import {
@@ -1191,5 +1194,128 @@ describe('executeSteelAgentRun() — trace (A4: the "why" of a run)', () => {
         }),
       }),
     ])
+  })
+})
+
+describe('executeSteelAgentRun — versions (A/B)', () => {
+  const versions = vi.mocked(SteelAgentVersionRepository)
+  const challenger = createFakeSteelAgentVersion({
+    id: 'v2',
+    agentId: 'agent1',
+    number: 2,
+    status: 'CHALLENGER',
+    rolloutPercent: 50,
+    instructions: 'Instruções da versão desafiante.',
+    maxToolRounds: 3,
+    tools: [{ toolName: 'sd_list_tickets', mode: 'AUTO' }],
+  })
+
+  beforeEach(() => {
+    versions.findByIdUnscoped.mockResolvedValue(ok(challenger))
+  })
+
+  it('should record the published version on a new run and use the agent as it is', async () => {
+    const { fake } = setup({
+      agent: { publishedVersionId: 'v1' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(runs.update).toHaveBeenCalledWith('run1', { versionId: 'v1' })
+    expect(versions.findByIdUnscoped).not.toHaveBeenCalled()
+    expect(fake.requests[0].system).toContain('Classifique cada chamado novo.')
+  })
+
+  it('should send the challenger share of runs to the challenger snapshot', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.1)
+    const { fake } = setup({
+      agent: { publishedVersionId: 'v1', challengerVersionId: 'v2' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+    random.mockRestore()
+    expect(runs.update).toHaveBeenCalledWith('run1', { versionId: 'v2' })
+    expect(fake.requests[0].system).toContain(
+      'Instruções da versão desafiante.',
+    )
+    expect(fake.requests[0].tools?.map((t) => t.name)).toEqual([
+      'sd_list_tickets',
+    ])
+  })
+
+  it('should keep the rest of the runs on the published version', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.9)
+    const { fake } = setup({
+      agent: { publishedVersionId: 'v1', challengerVersionId: 'v2' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+    random.mockRestore()
+    expect(runs.update).toHaveBeenCalledWith('run1', { versionId: 'v1' })
+    expect(fake.requests[0].system).not.toContain(
+      'Instruções da versão desafiante.',
+    )
+  })
+
+  it('should ignore a challenger pointer that is no longer a live experiment', async () => {
+    versions.findByIdUnscoped.mockResolvedValue(
+      ok({ ...challenger, status: 'DISCARDED' }),
+    )
+    setup({
+      agent: { publishedVersionId: 'v1', challengerVersionId: 'v2' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+    expect(runs.update).toHaveBeenCalledWith('run1', { versionId: 'v1' })
+
+    versions.findByIdUnscoped.mockResolvedValue(ok(null))
+    setup({
+      agent: { publishedVersionId: 'v1', challengerVersionId: 'v2' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+
+    versions.findByIdUnscoped.mockResolvedValue(err(databaseError('x')))
+    setup({
+      agent: { publishedVersionId: 'v1', challengerVersionId: 'v2' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+  })
+
+  it('should keep the version already recorded on the run', async () => {
+    const { fake } = setup({
+      run: { versionId: 'v2' },
+      agent: { publishedVersionId: 'v1' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+    expect(runs.update).not.toHaveBeenCalledWith('run1', {
+      versionId: expect.anything(),
+    })
+    expect(fake.requests[0].system).toContain(
+      'Instruções da versão desafiante.',
+    )
+  })
+
+  it('should fall back to the agent when the recorded version is gone', async () => {
+    versions.findByIdUnscoped.mockResolvedValue(ok(null))
+    const { fake } = setup({
+      run: { versionId: 'gone' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+    expect(fake.requests[0].system).toContain('Classifique cada chamado novo.')
+  })
+
+  it('should not assign a version to test runs', async () => {
+    setup({
+      run: { isTest: true },
+      agent: { publishedVersionId: 'v1', challengerVersionId: 'v2' },
+      rounds: [{ text: 'Ok.' }],
+    })
+    expectOk(await executeSteelAgentRun('run1'))
+    expect(runs.update).not.toHaveBeenCalledWith('run1', {
+      versionId: expect.anything(),
+    })
   })
 })

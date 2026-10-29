@@ -4,6 +4,10 @@ import {
   STEEL_AGENT_DEFAULT_TIMEZONE,
   steelAgentTriggerProblem,
 } from '@/src/lib/steel-agents/schedule'
+import {
+  MAX_ROLLOUT_PERCENT,
+  MIN_ROLLOUT_PERCENT,
+} from '@/src/lib/steel-agents/versions'
 
 export const SteelAgentTriggerTypeSchema = z.enum([
   'SCHEDULE',
@@ -57,6 +61,28 @@ const baseFields = {
   maxToolRounds: z.number().int().min(1).max(STEEL_AGENT_MAX_TOOL_ROUNDS),
   monthlyRunCap: z.number().int().min(1).max(100_000).nullable(),
   tools: toolsField,
+  /** A2: eval set (target STEEL_AGENT) that gates new versions. */
+  evalSetId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[A-Za-z0-9_-]+$/, 'Identificador inválido')
+    .nullable(),
+  /** A2: minimum share of passing cases to publish a version (0.1 to 1). */
+  evalMinPassRate: z.number().min(0.1).max(1),
+}
+
+/** Fields of an edit that describe the version it creates, not the agent. */
+const versionFields = {
+  changeNote: z.string().trim().max(500).nullable(),
+  /** A2: send the new version to this % of the runs instead of replacing. */
+  rolloutPercent: z
+    .number()
+    .int()
+    .min(MIN_ROLLOUT_PERCENT)
+    .max(MAX_ROLLOUT_PERCENT)
+    .nullable(),
 }
 
 export const CreateSteelAgentSchema = z
@@ -70,6 +96,8 @@ export const CreateSteelAgentSchema = z
     maxToolRounds: baseFields.maxToolRounds.default(8),
     monthlyRunCap: baseFields.monthlyRunCap.optional(),
     tools: toolsField.default([]),
+    evalSetId: baseFields.evalSetId.optional(),
+    evalMinPassRate: baseFields.evalMinPassRate.default(0.8),
   })
   .superRefine((value, ctx) => {
     const problem = steelAgentTriggerProblem(value)
@@ -85,7 +113,7 @@ export type CreateSteelAgentDTO = z.infer<typeof CreateSteelAgentSchema>
 
 /** Partial update; the trigger is re-validated on the merged result. */
 export const UpdateSteelAgentSchema = z
-  .object(baseFields)
+  .object({ ...baseFields, ...versionFields })
   .partial()
   .refine((value) => Object.keys(value).length > 0, {
     message: 'Informe ao menos um campo',
@@ -120,3 +148,9 @@ export const SteelAgentMentionsSchema = z
   .array(z.string().trim().min(1).max(64))
   .max(STEEL_AGENT_MAX_MENTIONS, 'Agentes demais citados')
   .optional()
+
+/** Restores an old version as a new one (it goes through the gate again). */
+export const RestoreSteelAgentVersionSchema = z.object(versionFields).partial()
+export type RestoreSteelAgentVersionDTO = z.infer<
+  typeof RestoreSteelAgentVersionSchema
+>

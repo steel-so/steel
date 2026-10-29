@@ -47,6 +47,7 @@ import {
   TEST_RUN_LABEL,
   TRIGGER_LABEL,
 } from './steel-agent-labels'
+import { SteelAgentVersions } from './steel-agent-versions'
 
 export const TEST_AGENT_HINT =
   'Roda o agente uma vez em modo teste: consulta os dados de verdade, mas só simula as alterações — nada é gravado, enviado ou mandado para aprovação.'
@@ -253,6 +254,7 @@ export function SteelAgentDetail({
           <Tabs defaultValue='runs'>
             <TabsList>
               <TabsTrigger value='runs'>Execuções</TabsTrigger>
+              <TabsTrigger value='versions'>Versões</TabsTrigger>
               <TabsTrigger value='config'>Configuração</TabsTrigger>
             </TabsList>
             <TabsContent value='runs' className='pt-3'>
@@ -297,6 +299,13 @@ export function SteelAgentDetail({
                   ))}
                 </ul>
               )}
+            </TabsContent>
+            <TabsContent value='versions' className='pt-3'>
+              <SteelAgentVersions
+                workspaceId={workspaceId}
+                agentId={agentId}
+                timezone={data.timezone}
+              />
             </TabsContent>
             <TabsContent value='config' className='pt-3'>
               <SteelAgentEditor

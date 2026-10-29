@@ -422,6 +422,24 @@ describe('cases', () => {
 })
 
 describe('runs', () => {
+  it('refuses to run a Steel Agent gate set by hand', async () => {
+    repo.findSet.mockResolvedValueOnce(
+      ok(
+        createFakeAiEvalSetWithCases({
+          id: SET,
+          workspaceId: WS,
+          caseCount: 2,
+          target: 'STEEL_AGENT',
+        }),
+      ),
+    )
+    expectErr(
+      await AiEvalService.startRun(ACTOR, WS, SET, runInput()),
+      'VALIDATION_ERROR',
+    )
+    expect(repo.createRun).not.toHaveBeenCalled()
+  })
+
   it('queues a run with a candidate model and audits', async () => {
     const run = expectOk(
       await AiEvalService.startRun(

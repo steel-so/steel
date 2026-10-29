@@ -1,6 +1,15 @@
-import type { SteelAgentRun, SteelAgentRunStep } from '@prisma/client'
+import type {
+  SteelAgentRun,
+  SteelAgentRunStep,
+  SteelAgentVersion,
+} from '@prisma/client'
 import type { AiToolKind } from '@/src/lib/ai/tools/types'
 import { effectiveToolMode } from '@/src/lib/steel-agents/tool-mode'
+import {
+  emptyVersionStats,
+  parseVersionTools,
+  type VersionStats,
+} from '@/src/lib/steel-agents/versions'
 import type {
   SteelAgentRunDetail,
   SteelAgentWithRelations,
@@ -10,6 +19,8 @@ import type {
   SteelAgentRunDetailDTO,
   SteelAgentRunDTO,
   SteelAgentRunStepDTO,
+  SteelAgentVersionDTO,
+  SteelAgentVersionRefDTO,
 } from '@/types/steel-agent'
 import { toAiPendingActionDTO } from './ai-pending-action.mapper'
 
@@ -63,9 +74,53 @@ export function toSteelAgentDTO(
           finishedAt: iso(lastRun.finishedAt),
         }
       : null,
+    evalSetId: agent.evalSetId,
+    evalMinPassRate: agent.evalMinPassRate,
+    publishedVersionId: agent.publishedVersionId,
+    challengerVersionId: agent.challengerVersionId,
     createdAt: agent.createdAt.toISOString(),
     updatedAt: agent.updatedAt.toISOString(),
   }
+}
+
+export function toSteelAgentVersionDTO(
+  version: SteelAgentVersion,
+  stats: VersionStats | undefined,
+  kindOf: ToolKindLookup,
+): SteelAgentVersionDTO {
+  return {
+    id: version.id,
+    agentId: version.agentId,
+    number: version.number,
+    status: version.status,
+    instructions: version.instructions,
+    maxToolRounds: version.maxToolRounds,
+    tools: parseVersionTools(version.tools).map((tool) => ({
+      toolName: tool.toolName,
+      mode: effectiveToolMode(kindOf(tool.toolName), tool.mode),
+    })),
+    changeNote: version.changeNote,
+    rolloutPercent: version.rolloutPercent,
+    evalRunId: version.evalRunId,
+    evalPassed: version.evalPassed,
+    evalTotal: version.evalTotal,
+    evalPassRate:
+      version.evalTotal && version.evalPassed !== null
+        ? version.evalPassed / version.evalTotal
+        : null,
+    evalNote: version.evalNote,
+    createdById: version.createdById,
+    publishedAt: iso(version.publishedAt),
+    resolvedAt: iso(version.resolvedAt),
+    createdAt: version.createdAt.toISOString(),
+    stats: stats ?? emptyVersionStats(),
+  }
+}
+
+export function toSteelAgentVersionRefDTO(
+  version: SteelAgentVersion,
+): SteelAgentVersionRefDTO {
+  return { id: version.id, number: version.number, status: version.status }
 }
 
 export function toSteelAgentRunDTO(run: SteelAgentRun): SteelAgentRunDTO {
@@ -87,6 +142,7 @@ export function toSteelAgentRunDTO(run: SteelAgentRun): SteelAgentRunDTO {
     costUsd: Number(run.costUsd),
     isTest: run.isTest,
     rerunOfId: run.rerunOfId,
+    versionId: run.versionId,
     createdAt: run.createdAt.toISOString(),
   }
 }

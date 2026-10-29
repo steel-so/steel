@@ -67,10 +67,107 @@ export const SteelAgentDTO = dto(
           finishedAt: dateTime().nullable(),
         })
         .nullable(),
+      evalSetId: z.string().nullable().meta({
+        description:
+          'Conjunto de avaliação (`target: STEEL_AGENT`) que trava a publicação de versões. `null` = edições publicam na hora.',
+      }),
+      evalMinPassRate: z.number().meta({
+        description: 'Parcela mínima (0 a 1) de casos aprovados para publicar.',
+        example: 0.8,
+      }),
+      publishedVersionId: z.string().nullable().meta({
+        description:
+          'Versão que o agente executa; os campos `instructions`, `tools` e `maxToolRounds` espelham essa versão.',
+      }),
+      challengerVersionId: z.string().nullable().meta({
+        description: 'Versão em teste A/B dividindo o tráfego com a publicada.',
+      }),
       createdAt: dateTime(),
       updatedAt: dateTime(),
     })
     .meta({ description: 'Agente autônomo do Steel AI.' }),
+)
+
+const VersionStatus = z.enum([
+  'PENDING_EVAL',
+  'REJECTED',
+  'PUBLISHED',
+  'CHALLENGER',
+  'SUPERSEDED',
+  'DISCARDED',
+])
+
+export const SteelAgentVersionRefDTO = dto(
+  'SteelAgentVersionRef',
+  z.object({
+    id: z.string(),
+    number: z.number().int(),
+    status: VersionStatus,
+  }),
+)
+
+export const SteelAgentUpdateResultDTO = dto(
+  'SteelAgentUpdateResult',
+  SteelAgentDTO.extend({
+    version: SteelAgentVersionRefDTO.nullable().meta({
+      description:
+        'Versão criada pela edição; `null` quando nada versionado mudou (nome, gatilho, pausa...).',
+    }),
+  }),
+)
+
+const VersionStats = z.object({
+  runs: z.number().int(),
+  succeeded: z.number().int(),
+  failed: z.number().int(),
+  skipped: z.number().int(),
+  successRate: z.number().nullable(),
+  avgCostUsd: z.number().nullable(),
+  avgRounds: z.number().nullable(),
+  approvalsDecided: z.number().int(),
+  approvalsApproved: z.number().int(),
+  approvalRate: z.number().nullable(),
+})
+
+export const SteelAgentVersionDTO = dto(
+  'SteelAgentVersion',
+  z.object({
+    id: z.string(),
+    agentId: z.string(),
+    number: z.number().int().meta({ description: 'Sequencial por agente.' }),
+    status: VersionStatus,
+    instructions: z.string(),
+    maxToolRounds: z.number().int(),
+    tools: z.array(z.object({ toolName: z.string(), mode: ToolMode })),
+    changeNote: z.string().nullable(),
+    rolloutPercent: z.number().int().nullable().meta({
+      description: 'Parcela (1 a 99) das execuções do teste A/B.',
+    }),
+    evalRunId: z.string().nullable(),
+    evalPassed: z.number().int().nullable(),
+    evalTotal: z.number().int().nullable(),
+    evalPassRate: z.number().nullable(),
+    evalNote: z.string().nullable(),
+    createdById: z.string().nullable(),
+    publishedAt: dateTime().nullable(),
+    resolvedAt: dateTime().nullable(),
+    createdAt: dateTime(),
+    stats: VersionStats.meta({
+      description: 'Métricas das execuções reais (testes não contam).',
+    }),
+  }),
+)
+
+export const SteelAgentVersionListDTO = dto(
+  'SteelAgentVersionList',
+  z.object({
+    versions: z.array(SteelAgentVersionDTO),
+    publishedVersionId: z.string().nullable(),
+    challengerVersionId: z.string().nullable(),
+    evalSetId: z.string().nullable(),
+    evalMinPassRate: z.number(),
+    canManage: z.boolean(),
+  }),
 )
 
 export const SteelAgentCatalogDTO = dto(
@@ -123,6 +220,10 @@ export const SteelAgentRunDTO = dto(
     rerunOfId: z.string().nullable().meta({
       description:
         'Execução de origem quando este teste veio de "Reexecutar como teste".',
+    }),
+    versionId: z.string().nullable().meta({
+      description:
+        'Versão do agente que atendeu a execução (`null` em testes e execuções anteriores às versões).',
     }),
     createdAt: dateTime(),
   }),

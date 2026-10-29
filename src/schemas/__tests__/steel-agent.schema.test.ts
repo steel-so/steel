@@ -4,6 +4,7 @@ import {
   AssignSteelAgentSchema,
   CreateSteelAgentSchema,
   ListSteelAgentRunsQuerySchema,
+  RestoreSteelAgentVersionSchema,
   STEEL_AGENT_MAX_MENTIONS,
   SteelAgentMentionsSchema,
   UpdateSteelAgentSchema,
@@ -140,5 +141,61 @@ describe('SteelAgentMentionsSchema', () => {
     )
     expect(SteelAgentMentionsSchema.safeParse(tooMany).success).toBe(false)
     expect(SteelAgentMentionsSchema.safeParse(['']).success).toBe(false)
+  })
+})
+
+describe('version fields (A2)', () => {
+  it('should default the gate to none with an 80% minimum on create', () => {
+    const parsed = CreateSteelAgentSchema.parse(base)
+    expect(parsed.evalSetId).toBeUndefined()
+    expect(parsed.evalMinPassRate).toBe(0.8)
+  })
+
+  it('should accept the gate, the note and a rollout on update', () => {
+    expect(
+      UpdateSteelAgentSchema.parse({
+        evalSetId: 'set_1',
+        evalMinPassRate: 0.5,
+        changeNote: '  Mais direto ',
+        rolloutPercent: 30,
+      }),
+    ).toEqual({
+      evalSetId: 'set_1',
+      evalMinPassRate: 0.5,
+      changeNote: 'Mais direto',
+      rolloutPercent: 30,
+    })
+    expect(UpdateSteelAgentSchema.parse({ evalSetId: null })).toEqual({
+      evalSetId: null,
+    })
+  })
+
+  it('should reject out-of-range rollouts, rates and bad set ids', () => {
+    for (const rolloutPercent of [0, 100, 1.5]) {
+      expect(UpdateSteelAgentSchema.safeParse({ rolloutPercent }).success).toBe(
+        false,
+      )
+    }
+    for (const evalMinPassRate of [0, 0.05, 1.1]) {
+      expect(
+        UpdateSteelAgentSchema.safeParse({ evalMinPassRate }).success,
+      ).toBe(false)
+    }
+    expect(
+      UpdateSteelAgentSchema.safeParse({ evalSetId: 'a b!' }).success,
+    ).toBe(false)
+  })
+
+  it('should parse the restore body, which may be empty', () => {
+    expect(RestoreSteelAgentVersionSchema.parse({})).toEqual({})
+    expect(
+      RestoreSteelAgentVersionSchema.parse({
+        changeNote: null,
+        rolloutPercent: 10,
+      }),
+    ).toEqual({ changeNote: null, rolloutPercent: 10 })
+    expect(
+      RestoreSteelAgentVersionSchema.safeParse({ rolloutPercent: 100 }).success,
+    ).toBe(false)
   })
 })

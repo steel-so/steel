@@ -74,8 +74,87 @@ export interface SteelAgentDTO {
   tools: SteelAgentToolDTO[]
   /** Most recent run, if any. */
   lastRun: SteelAgentRunSummaryDTO | null
+  /** A2: eval set that gates new versions (null = edits publish at once). */
+  evalSetId: string | null
+  /** A2: minimum share (0..1) of passing eval cases to publish a version. */
+  evalMinPassRate: number
+  /** A2: version the agent runs (its fields mirror it). */
+  publishedVersionId: string | null
+  /** A2: version splitting the traffic with the published one. */
+  challengerVersionId: string | null
   createdAt: string
   updatedAt: string
+}
+
+export type SteelAgentVersionStatusDTO =
+  | 'PENDING_EVAL'
+  | 'REJECTED'
+  | 'PUBLISHED'
+  | 'CHALLENGER'
+  | 'SUPERSEDED'
+  | 'DISCARDED'
+
+/** Short form returned by `PATCH` when the edit created a version. */
+export interface SteelAgentVersionRefDTO {
+  id: string
+  number: number
+  status: SteelAgentVersionStatusDTO
+}
+
+/** `PATCH .../agents/:agentId` — the agent plus the version the edit made. */
+export interface SteelAgentUpdateResultDTO extends SteelAgentDTO {
+  /** null when the edit changed nothing versioned (name, trigger, pause...). */
+  version: SteelAgentVersionRefDTO | null
+}
+
+/** Real-run metrics of one version (test runs excluded). */
+export interface SteelAgentVersionStatsDTO {
+  runs: number
+  succeeded: number
+  failed: number
+  skipped: number
+  successRate: number | null
+  avgCostUsd: number | null
+  avgRounds: number | null
+  approvalsDecided: number
+  approvalsApproved: number
+  approvalRate: number | null
+}
+
+export interface SteelAgentVersionDTO {
+  id: string
+  agentId: string
+  /** Sequential per agent (v1, v2...). */
+  number: number
+  status: SteelAgentVersionStatusDTO
+  instructions: string
+  maxToolRounds: number
+  tools: SteelAgentToolDTO[]
+  changeNote: string | null
+  /** Challenger traffic share (1..99); null when not an experiment. */
+  rolloutPercent: number | null
+  evalRunId: string | null
+  evalPassed: number | null
+  evalTotal: number | null
+  /** evalPassed / evalTotal, 0..1. */
+  evalPassRate: number | null
+  evalNote: string | null
+  createdById: string | null
+  publishedAt: string | null
+  resolvedAt: string | null
+  createdAt: string
+  stats: SteelAgentVersionStatsDTO
+}
+
+/** `GET .../agents/:agentId/versions` */
+export interface SteelAgentVersionListDTO {
+  versions: SteelAgentVersionDTO[]
+  publishedVersionId: string | null
+  challengerVersionId: string | null
+  evalSetId: string | null
+  evalMinPassRate: number
+  /** Whether the caller can publish, restore and stop experiments. */
+  canManage: boolean
 }
 
 /** A registry tool the editor can offer (enabled modules only). */
@@ -123,6 +202,8 @@ export interface SteelAgentRunDTO {
   isTest: boolean
   /** Run this test re-executed ("Reexecutar como teste"), when it is one. */
   rerunOfId: string | null
+  /** A2: version that served the run (null for tests and older runs). */
+  versionId: string | null
   createdAt: string
 }
 
