@@ -242,7 +242,9 @@ describe('SdSwarmService.start', () => {
         openSlackChannel: true,
       }),
     )
-    expect(slack.open.mock.calls[0][0].ticketUrl).not.toContain('/servicedesk/')
+    expect(String(slack.open.mock.calls[0][0].ticketUrl)).not.toContain(
+      '/servicedesk/',
+    )
   })
 
   it('denies non-agents and rejects closed tickets', async () => {
