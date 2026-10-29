@@ -6,8 +6,9 @@ import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCrmEmailBrand } from '@/src/hooks/use-crm-email-builder'
 import { useCrmNewsletterIssue } from '@/src/hooks/use-crm-newsletter-issues'
+import { useCrmNewsletter } from '@/src/hooks/use-crm-newsletters'
 import { openEmailDocument } from '@/src/lib/canvas-email/convert-v1'
-import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
+import { createNewsletterStarterDocument } from '@/src/lib/crm-newsletter/starter'
 import { issueReportHref, newsletterHref } from '../issue-format'
 import { NewsletterIssueCanvasEditor } from './newsletter-issue-canvas-editor'
 
@@ -52,24 +53,27 @@ export function NewsletterIssueEditorPage({
 }) {
   const issue = useCrmNewsletterIssue(workspaceId, newsletterId, issueId)
   const brand = useCrmEmailBrand(workspaceId)
+  const newsletter = useCrmNewsletter(workspaceId, newsletterId)
+  const newsletterName = newsletter.data?.name
   const stored = issue.data?.builderDocument
   const doc = useMemo(
     () =>
-      issue.data
-        ? (openEmailDocument(stored) ?? createBlankEmailDocument())
+      issue.data && newsletterName !== undefined
+        ? (openEmailDocument(stored) ??
+          createNewsletterStarterDocument(newsletterName))
         : null,
     // Opened once per load: the editor keeps its own state afterwards.
-    [issue.data?.id],
+    [issue.data?.id, newsletterName !== undefined],
   )
 
-  if (issue.isError || brand.isError) {
+  if (issue.isError || brand.isError || newsletter.isError) {
     return (
       <Message href={newsletterHref(slug, newsletterId)} label='Voltar'>
         Não foi possível carregar a edição. Tente de novo em instantes.
       </Message>
     )
   }
-  if (!issue.data || !brand.data || !doc) {
+  if (!issue.data || !brand.data || !newsletter.data || !doc) {
     return (
       <div className='flex h-full flex-col gap-3 p-3' aria-busy='true'>
         <Skeleton className='h-10 w-full' />
@@ -97,6 +101,7 @@ export function NewsletterIssueEditorPage({
       workspaceId={workspaceId}
       slug={slug}
       newsletterId={newsletterId}
+      newsletterName={newsletter.data.name}
       issue={issue.data}
       brand={brand.data}
       initialDocument={doc}

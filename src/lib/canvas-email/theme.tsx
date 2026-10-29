@@ -170,7 +170,20 @@ export type EmailRenderContext = {
    * column its siblings' widths. The editor passes a reader over the
    * store (`() => store.getState().doc`). */
   doc?: () => CanvasDocument
+  /** Set for a newsletter issue (ADR 0054): the footer says the reader
+   * subscribed to this newsletter and links preferences + unsubscribe,
+   * instead of the campaign "base de contatos" sentence. */
+  subscription?: { newsletterName: string }
 }
+
+/** Href of the footer's "Preferências" link in a newsletter issue; the
+ * send replaces it per subscriber (not a `{{variable}}`, which the
+ * personalization would blank). */
+export const NEWSLETTER_PREFERENCES_URL = '%%steel_newsletter_preferences%%'
+
+/** Attribute of the footer paragraph holding the subscriber links: the web
+ * version (public archive) drops it. */
+export const NEWSLETTER_LINKS_ATTRIBUTE = 'data-newsletter-links'
 
 /**
  * Props of an e-mail component view: the engine's render props plus the
@@ -200,6 +213,7 @@ export function createEmailRenderContext(
     subject: partial.subject ?? '',
     mobileCss: partial.mobileCss ?? '',
     doc: partial.doc,
+    ...(partial.subscription ? { subscription: partial.subscription } : {}),
   }
 }
 

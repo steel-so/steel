@@ -231,7 +231,7 @@ describe('CrmNewsletterIssueService', () => {
       )
     })
 
-    it('starts blank with a free slug derived from the subject', async () => {
+    it('starts from the newsletter starter with a free slug derived from the subject', async () => {
       issues.slugTaken
         .mockResolvedValueOnce(ok(true))
         .mockResolvedValueOnce(ok(false))
@@ -242,6 +242,12 @@ describe('CrmNewsletterIssueService', () => {
       expect(issues.create).toHaveBeenCalledWith(
         expect.objectContaining({ createdById: 'u1', preheader: null }),
       )
+      // Not an empty column: header, title, content and signature.
+      const stored = JSON.stringify(
+        issues.create.mock.lastCall?.[0].builderDocument,
+      )
+      expect(stored).toContain('Título da edição')
+      expect(stored).toContain('Assunto principal')
     })
 
     it('falls back to a timestamped slug after many collisions', async () => {
@@ -300,7 +306,7 @@ describe('CrmNewsletterIssueService', () => {
         'RESOURCE_NOT_FOUND',
       )
 
-      // The newsletter's template was removed → blank issue.
+      // The newsletter's template was removed → starter document.
       issues.findNewsletter.mockResolvedValue(
         ok(createFakeNewsletter({ templateId: 'gone' })),
       )
@@ -308,7 +314,7 @@ describe('CrmNewsletterIssueService', () => {
         err(notFound('CrmEmailTemplate')),
       )
       expectOk(await Service.create(...A, { subject: 'Oi' }))
-      // A legacy HTML template cannot open → blank issue too.
+      // A legacy HTML template cannot open → starter document too.
       templates.findById.mockResolvedValueOnce(
         ok({ builderDocument: null } as never),
       )

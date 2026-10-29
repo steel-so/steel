@@ -1,11 +1,9 @@
-import { escapeHtml } from '@/src/lib/crm-email-builder/variables'
-
 /**
  * Pure pieces of a newsletter e-mail (ADR 0054): the From header, the
- * mandatory footer (unsubscribe, preferences and the sender's address —
- * LGPD and the Gmail/Yahoo bulk sender rules), the archive excerpt and the
- * Resend tags. Rendering of the canvas document itself lives in
- * `crm-newsletter-send.service.ts`.
+ * archive excerpt and the Resend tags. The mandatory footer (unsubscribe,
+ * preferences and the sender's address — LGPD and the Gmail/Yahoo bulk
+ * sender rules) is the canvas footer block rendered in subscription mode
+ * (`crm-newsletter-render.ts`).
  */
 
 /** `"Name" <email>`, with quotes/backslashes/line breaks of the name neutralized. */
@@ -18,58 +16,6 @@ export function newsletterFromHeader(
     .replace(/[\\"]/g, '')
     .trim()
   return name ? `"${name}" <${fromEmail}>` : fromEmail
-}
-
-export type NewsletterFooterInput = {
-  newsletterName: string
-  companyName: string
-  address: string
-  /** Footer links; omitted on the public web version. */
-  unsubscribeUrl?: string
-  preferencesUrl?: string
-}
-
-const FOOTER_STYLE =
-  'margin:32px auto 0;max-width:600px;padding:16px 24px 24px;border-top:1px solid #e5e7eb;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6b7280;text-align:center'
-const LINK_STYLE = 'color:#6b7280;text-decoration:underline'
-
-/** Footer appended to every issue, inside `<body>`. */
-export function newsletterFooterHtml(input: NewsletterFooterInput): string {
-  const lines: string[] = []
-  lines.push(
-    `Você recebe a newsletter <strong>${escapeHtml(input.newsletterName)}</strong> de ${escapeHtml(input.companyName)} porque se inscreveu para recebê-la.`,
-  )
-  const links: string[] = []
-  if (input.preferencesUrl) {
-    links.push(
-      `<a href="${escapeHtml(input.preferencesUrl)}" style="${LINK_STYLE}">Gerenciar preferências</a>`,
-    )
-  }
-  if (input.unsubscribeUrl) {
-    links.push(
-      `<a href="${escapeHtml(input.unsubscribeUrl)}" style="${LINK_STYLE}">Cancelar inscrição</a>`,
-    )
-  }
-  if (links.length > 0) lines.push(links.join(' · '))
-  if (input.address.trim()) lines.push(escapeHtml(input.address.trim()))
-  return `<div style="${FOOTER_STYLE}">${lines.map((line) => `<p style="margin:0 0 6px">${line}</p>`).join('')}</div>`
-}
-
-/** Plain-text twin of `newsletterFooterHtml`. */
-export function newsletterFooterText(input: NewsletterFooterInput): string {
-  const lines = [
-    '',
-    '---',
-    `Você recebe a newsletter ${input.newsletterName} de ${input.companyName} porque se inscreveu para recebê-la.`,
-  ]
-  if (input.preferencesUrl) {
-    lines.push(`Gerenciar preferências: ${input.preferencesUrl}`)
-  }
-  if (input.unsubscribeUrl) {
-    lines.push(`Cancelar inscrição: ${input.unsubscribeUrl}`)
-  }
-  if (input.address.trim()) lines.push(input.address.trim())
-  return lines.join('\n')
 }
 
 /** Inserts `snippet` right before `</body>` (or at the end of a fragment). */

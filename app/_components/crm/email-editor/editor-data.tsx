@@ -41,6 +41,9 @@ export interface EmailEditorData {
   /** Opened from a campaign wizard ("Criar novo template"): where "Usar na
    * campanha" goes back to (an in-app path), `null` otherwise. */
   returnTo?: string | null
+  /** Newsletter issue editor: the preview renders the subscription footer
+   * of this newsletter, as the send does. */
+  newsletterName?: string
 }
 
 /** Wizard URL with the template to select (`emailTemplate=<id>`). */

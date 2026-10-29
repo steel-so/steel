@@ -10,6 +10,10 @@ import {
 } from '@/src/lib/canvas-email/conditions'
 import { renderEmailDocument } from '@/src/lib/canvas-email/render'
 import {
+  NEWSLETTER_LINKS_ATTRIBUTE,
+  NEWSLETTER_PREFERENCES_URL,
+} from '@/src/lib/canvas-email/theme'
+import {
   normalizeEmailDocument,
   productIdsOf,
   validateEmailDocument,
@@ -19,15 +23,14 @@ import {
   resolveEmailBrand,
 } from '@/src/lib/crm-email-builder/brand'
 import {
+  emailHtmlToText,
   personalizeEmail,
   type RenderedEmail,
 } from '@/src/lib/crm-email-builder/render'
-import { contactToVariables } from '@/src/lib/crm-email-builder/variables'
 import {
-  insertBeforeBodyClose,
-  newsletterFooterHtml,
-  newsletterFooterText,
-} from '@/src/lib/crm-newsletter/email'
+  contactToVariables,
+  escapeHtml,
+} from '@/src/lib/crm-email-builder/variables'
 import { err, ok, type Result } from '@/src/lib/result'
 import { toEmailProductData } from '@/src/mappers/crm-email-builder.mapper'
 import { CrmEmailBuilderRepository } from '@/src/repositories/crm-email-builder.repository'
@@ -39,9 +42,9 @@ import { personToContact } from './crm-email-builder.service'
  * Rendering of a newsletter issue (ADR 0054). The canvas document is
  * rendered once per batch with the workspace brand ("base", variables
  * intact); each subscriber then gets the "Mostrar se" conditions, a string
- * substitution of the variables and the newsletter footer strip (reason,
- * preferences and one-click unsubscribe — the canvas footer block, which is
- * mandatory, already carries the brand address and `{{unsubscribe_url}}`).
+ * substitution of the variables and the subscriber's links in the canvas
+ * footer (rendered as the newsletter's subscription footer: reason,
+ * "Preferências" and "Descadastrar", plus the brand address).
  */
 
 export type IssueRenderBase = {
@@ -71,6 +74,7 @@ export async function renderIssueBase(
   workspaceId: string,
   builderDocument: unknown,
   subject: string,
+  newsletterName: string,
 ): Promise<Result<IssueRenderBase>> {
   const doc = validateIssueDocument(builderDocument)
   if (!doc.ok) return doc
@@ -90,6 +94,7 @@ export async function renderIssueBase(
     brand,
     subject,
     products: toEmailProductData(products.value),
+    subscription: { newsletterName },
   })
   return ok({ email, brand, doc: doc.value })
 }
@@ -107,7 +112,18 @@ export type IssueRecipientLinks = {
   preferencesUrl?: string
 }
 
-/** The issue as one subscriber gets it. */
+const LINKS_PARAGRAPH = new RegExp(
+  `<p\\b[^>]*\\b${NEWSLETTER_LINKS_ATTRIBUTE}\\b[^>]*>[\\s\\S]*?</p>`,
+  'gi',
+)
+
+/**
+ * The issue as one subscriber gets it. The canvas footer (rendered with the
+ * newsletter's name) already says why the reader gets it and links
+ * "Preferências" and "Descadastrar": the preferences placeholder becomes
+ * this subscriber's link and `{{unsubscribe_url}}` the unsubscribe page.
+ * Without links (web version) the links paragraph is dropped.
+ */
 export function personalizeIssue(
   base: IssueRenderBase,
   input: {
@@ -120,25 +136,19 @@ export function personalizeIssue(
   const values = contactToVariables(input.contact, {
     unsubscribeUrl: input.links.unsubscribeUrl ?? '',
   })
-  const conditioned = applyEmailConditions(base.email, {
-    values,
-    listIds: input.listIds ?? [],
-  })
-  const personalized = personalizeEmail(conditioned, values)
-  const footer = {
-    newsletterName: input.newsletterName,
-    companyName: base.brand.companyName,
-    address: '',
-    ...input.links,
-  }
-  return {
-    subject: personalized.subject,
-    html: insertBeforeBodyClose(
-      personalized.html,
-      newsletterFooterHtml(footer),
-    ),
-    text: `${personalized.text}\n${newsletterFooterText(footer)}`,
-  }
+  const hasLinks = Boolean(
+    input.links.unsubscribeUrl || input.links.preferencesUrl,
+  )
+  const html = hasLinks
+    ? base.email.html
+        .split(NEWSLETTER_PREFERENCES_URL)
+        .join(escapeHtml(input.links.preferencesUrl ?? ''))
+    : base.email.html.replace(LINKS_PARAGRAPH, '')
+  const conditioned = applyEmailConditions(
+    { ...base.email, html, text: emailHtmlToText(html) },
+    { values, listIds: input.listIds ?? [] },
+  )
+  return personalizeEmail(conditioned, values)
 }
 
 /**

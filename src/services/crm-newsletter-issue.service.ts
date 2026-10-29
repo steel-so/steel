@@ -11,13 +11,13 @@ import {
   mailError,
 } from '@/src/errors'
 import { openEmailDocument } from '@/src/lib/canvas-email/convert-v1'
-import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
 import { changesHtmlBlocks } from '@/src/lib/canvas-email/validate'
 import { SAMPLE_CONTACT } from '@/src/lib/crm-email-builder/variables'
 import {
   newsletterFromHeader,
   slugifyIssueSubject,
 } from '@/src/lib/crm-newsletter/email'
+import { createNewsletterStarterDocument } from '@/src/lib/crm-newsletter/starter'
 import { newsletterTestSendLimiter } from '@/src/lib/crm-newsletter/test-send-limiter'
 import { defaultFrom } from '@/src/lib/mail/client'
 import { sendEmail } from '@/src/lib/mail/send'
@@ -196,7 +196,7 @@ async function startingContent(
       templateId,
       workspaceId,
     )
-    // A template removed from the newsletter falls back to a blank issue;
+    // A template removed from the newsletter falls back to the starter;
     // an explicit `templateId` that does not exist is an error.
     if (!template.ok && dto.templateId) return template
     const doc = template.ok
@@ -204,7 +204,10 @@ async function startingContent(
       : null
     if (doc) return ok({ document: doc, preheader: null })
   }
-  return ok({ document: createBlankEmailDocument(), preheader: null })
+  return ok({
+    document: createNewsletterStarterDocument(newsletter.name),
+    preheader: null,
+  })
 }
 
 export const CrmNewsletterIssueService = {
@@ -465,14 +468,15 @@ export const CrmNewsletterIssueService = {
     const limited = await consume(newsletterTestSendLimiter, `issue:${issueId}`)
     if (!limited.ok) return limited
 
+    const { newsletter } = scope.value
     const base = await renderIssueBase(
       workspaceId,
       issue.value.builderDocument,
       issue.value.subject,
+      newsletter.name,
     )
     if (!base.ok) return base
 
-    const { newsletter } = scope.value
     const sender = await resolveVerifiedSender(
       workspaceId,
       newsletter.fromEmail,
@@ -548,6 +552,7 @@ export const CrmNewsletterIssueService = {
         workspaceId,
         issue.value.builderDocument,
         issue.value.subject,
+        newsletter.name,
       ),
     ])
     if (!audience.ok) return audience
