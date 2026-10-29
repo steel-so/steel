@@ -9,6 +9,7 @@ import { crmFormsRoutes } from './crm/forms'
 import { crmHookVaultRoutes } from './crm/hook-vault'
 import { crmIntegrationsRoutes } from './crm/integrations'
 import { crmLeadsRoutes } from './crm/leads'
+import { crmNewsletterEngageRoutes } from './crm/newsletter-engage'
 import { crmNewsletterIssueRoutes } from './crm/newsletter-issues'
 import { crmNewsletterRoutes } from './crm/newsletters'
 import { crmOpportunitiesRoutes } from './crm/opportunities'
@@ -62,6 +63,7 @@ const routes: RouteConfig[] = [
   ...crmWorkflowsRoutes,
   ...crmNewsletterRoutes,
   ...crmNewsletterIssueRoutes,
+  ...crmNewsletterEngageRoutes,
 ]
 
 export function registerCrmPaths(registry: OpenApiRegistry): void {
