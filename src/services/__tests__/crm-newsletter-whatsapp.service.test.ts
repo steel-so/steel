@@ -686,7 +686,7 @@ describe('CrmNewsletterWhatsAppService', () => {
       })
       expect(repo.markSkipped).toHaveBeenCalledWith(['w1'], 'LIMIT_REACHED')
 
-      send.text.mockResolvedValueOnce(err(rateLimited()))
+      send.text.mockResolvedValueOnce(err(rateLimited(5)))
       expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({
         status: 'waiting',
       })
