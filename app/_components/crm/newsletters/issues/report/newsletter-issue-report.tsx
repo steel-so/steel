@@ -59,6 +59,8 @@ import {
   RECIPIENT_FILTER_LABEL,
   SKIP_REASON_LABEL,
 } from '../issue-format'
+import { IssuePollsSection } from './issue-polls-section'
+import { IssueWhatsAppSection } from './issue-whatsapp-section'
 
 function Tile({
   label,
@@ -540,6 +542,21 @@ export function NewsletterIssueReport({
           </div>
         </>
       )}
+
+      {/* nl2-engage: poll results and the WhatsApp version. */}
+      <IssuePollsSection
+        workspaceId={workspaceId}
+        slug={slug}
+        newsletterId={newsletterId}
+        issueId={issueId}
+        live={live}
+      />
+      <IssueWhatsAppSection
+        workspaceId={workspaceId}
+        slug={slug}
+        newsletterId={newsletterId}
+        issueId={issueId}
+      />
 
       <RecipientsSection
         workspaceId={workspaceId}

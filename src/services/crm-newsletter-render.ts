@@ -28,6 +28,10 @@ import {
   newsletterFooterHtml,
   newsletterFooterText,
 } from '@/src/lib/crm-newsletter/email'
+import {
+  applyPollLinks,
+  type PollLinkBuilder,
+} from '@/src/lib/newsletter/poll-links'
 import { err, ok, type Result } from '@/src/lib/result'
 import { toEmailProductData } from '@/src/mappers/crm-email-builder.mapper'
 import { CrmEmailBuilderRepository } from '@/src/repositories/crm-email-builder.repository'
@@ -115,6 +119,9 @@ export function personalizeIssue(
     contact: EmailBuilderContact
     links: IssueRecipientLinks
     listIds?: readonly string[]
+    /** nl2-engage: signed vote link of each poll option; omitted = the
+     * options stay static (web version, test send). */
+    pollLink?: PollLinkBuilder
   },
 ): RenderedEmail {
   const values = contactToVariables(input.contact, {
@@ -124,7 +131,10 @@ export function personalizeIssue(
     values,
     listIds: input.listIds ?? [],
   })
-  const personalized = personalizeEmail(conditioned, values)
+  const personalized = applyPollLinks(
+    personalizeEmail(conditioned, values),
+    input.pollLink,
+  )
   const footer = {
     newsletterName: input.newsletterName,
     companyName: base.brand.companyName,

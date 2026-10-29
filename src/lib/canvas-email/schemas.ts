@@ -68,7 +68,7 @@ export const showIfSchema = emailConditionSchema.optional()
 
 /** Props every block carries: outer padding, per-device visibility and the
  * optional per-recipient condition. */
-const blockBase = {
+export const blockBase = {
   padding: responsiveSpacing,
   visibility: canvasVisibilitySchema,
   showIf: showIfSchema,
