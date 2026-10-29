@@ -1198,6 +1198,15 @@ export const ERROR_CODES = {
     code: 'CRM_NEWSLETTER_LIMIT_REACHED',
     status: 402,
   },
+  // nl2-engage: poll of an issue and its WhatsApp version.
+  CRM_NEWSLETTER_POLL_NOT_FOUND: {
+    code: 'CRM_NEWSLETTER_POLL_NOT_FOUND',
+    status: 404,
+  },
+  CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE: {
+    code: 'CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE',
+    status: 422,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

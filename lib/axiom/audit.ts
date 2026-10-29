@@ -250,6 +250,9 @@ export type AuditEntity =
   // CRM newsletter issues and the monthly quota override (ADR 0054)
   | 'crm_newsletter_issue'
   | 'crm_newsletter_settings'
+  // Newsletter polls (CSV of voters) and the WhatsApp version (nl2-engage)
+  | 'crm_newsletter_poll'
+  | 'crm_newsletter_issue_whatsapp'
 
 export type AuditAction =
   | 'create'

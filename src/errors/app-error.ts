@@ -1857,3 +1857,10 @@ export const crmNewsletterNoSubscribers = (): AppError =>
 export const crmNewsletterLimitReached = (
   message = 'O limite mensal de e-mails de newsletter do workspace foi atingido',
 ): AppError => appError('CRM_NEWSLETTER_LIMIT_REACHED', message)
+
+export const crmNewsletterPollNotFound = (): AppError =>
+  appError('CRM_NEWSLETTER_POLL_NOT_FOUND', 'Enquete não encontrada')
+
+export const crmNewsletterWhatsappUnavailable = (
+  message = 'O envio no WhatsApp não está disponível para esta edição',
+): AppError => appError('CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE', message)
