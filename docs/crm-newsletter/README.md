@@ -111,6 +111,7 @@ Peças: `src/services/crm-newsletter-bridge.service.ts` (`CrmNewsletterBridge.em
 - Falhas: `emit` nunca lança nem devolve erro; cada passo (carga, linha do tempo, pontuação, workflows) loga `crm.newsletter.bridge_failed` e o seguinte continua.
 
 **Cartão "Newsletters" da pessoa** — `GET/POST /api/workspaces/{id}/crm/people/{personId}/newsletters`, `DELETE …/{subscriberId}`. Lista inscrições ligadas à pessoa ou a um e-mail dela e as newsletters ativas disponíveis (sem inscrição ou descadastrada). Inscrever reaproveita a adição manual (consentimento declarado, `PENDING` para quem tinha saído, auditoria `create`). Descadastrar grava `UNSUBSCRIBED` com o motivo "Descadastrado por um membro do workspace." e audita `opt_out` com `source: CRM_PERSON`. Permissões: recurso `email` (`VIEW`/`CREATE`/`EDIT`).
+
 ## Público e segmentos (newsletter2 · `nl2-segments`)
 
 Uma edição vai para todos os assinantes `ACTIVE` (fora do descadastro geral) ou só para um **segmento**. O segmento nunca amplia essa base: só restringe.
