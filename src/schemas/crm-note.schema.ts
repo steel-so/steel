@@ -1,5 +1,6 @@
 import z from 'zod'
 import { clearableText } from '@/src/schemas/clearable.schema'
+import { SteelAgentMentionsSchema } from '@/src/schemas/steel-agent.schema'
 
 export const CreateCrmNoteSchema = z.object({
   title: z.string().max(200).optional(),
@@ -7,6 +8,8 @@ export const CreateCrmNoteSchema = z.object({
   companyId: z.string().optional(),
   personId: z.string().optional(),
   opportunityId: z.string().optional(),
+  /** Steel Agents citados com `@` na nota (acorda cada agente). */
+  mentionedAgentIds: SteelAgentMentionsSchema,
 })
 
 export type CreateCrmNoteDTO = z.infer<typeof CreateCrmNoteSchema>

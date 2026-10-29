@@ -8174,6 +8174,7 @@ model SteelAgent {
   createdBy User?            @relation("SteelAgentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   tools     SteelAgentTool[]
   runs      SteelAgentRun[]
+  assignments SteelAgentAssignment[]
 
   @@index([workspaceId])
   @@index([triggerType, enabled])
@@ -10811,4 +10812,31 @@ model CrmCnpjEnrichmentRun {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status])
   @@map("crm_cnpj_enrichment_runs")
+}
+
+// nov: a1-agent-triggers
+
+enum SteelAgentAssignmentEntity {
+  SD_TICKET
+  CRM_LEAD
+}
+
+/// A ticket or lead handed to a Steel Agent ("atribuir ao agente"). One agent
+/// per record; assigning (or re-assigning) fires a run for that agent. The
+/// record id is polymorphic (no FK): orphans are harmless; the agent's
+/// deletion cascades.
+model SteelAgentAssignment {
+  id           String                     @id @default(cuid())
+  workspaceId  String                     @map("workspace_id")
+  agentId      String                     @map("agent_id")
+  entityType   SteelAgentAssignmentEntity @map("entity_type")
+  entityId     String                     @map("entity_id")
+  assignedById String?                    @map("assigned_by_id")
+  createdAt    DateTime                   @default(now()) @map("created_at")
+
+  agent SteelAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId])
+  @@index([workspaceId, agentId])
+  @@map("steel_agent_assignments")
 }

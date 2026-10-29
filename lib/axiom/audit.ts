@@ -177,6 +177,7 @@ export type AuditEntity =
   // Steel Agents
   | 'steel_agent'
   | 'steel_agent_run'
+  | 'steel_agent_assignment'
   // Workspace-level integrations (Slack, GitHub, GitLab — ADR 0024)
   | 'workspace_integration'
   // CRM: Apollo.io lead import runs

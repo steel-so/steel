@@ -10,6 +10,9 @@ vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-note.repository')
 vi.mock('@/src/repositories/crm-activity.repository')
 vi.mock('@/src/services/crm-workflow-dispatcher')
+vi.mock('@/src/services/steel-agent-assignment.service', () => ({
+  dispatchSteelAgentMentions: vi.fn(),
+}))
 vi.mock('@/lib/axiom/audit')
 
 import { auditMutation } from '@/lib/axiom/audit'
@@ -23,6 +26,7 @@ import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CrmNoteService } from '../crm-note.service'
 import { dispatchCrmWorkflowRecordEvent } from '../crm-workflow-dispatcher'
+import { dispatchSteelAgentMentions } from '../steel-agent-assignment.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
 const mockedNoteRepo = vi.mocked(CrmNoteRepository)
@@ -159,6 +163,32 @@ describe('CrmNoteService', () => {
         'ws1',
         'n1',
       )
+    })
+
+    it('should wake the Steel Agents cited in the note', async () => {
+      asRole('MEMBER')
+      mockedNoteRepo.create.mockResolvedValue(
+        ok(createFakeCrmNote({ id: 'n1' })),
+      )
+      expectOk(
+        await CrmNoteService.create('u1', 'ws1', {
+          title: 'Ligar',
+          body: 'Peça ao agente',
+          opportunityId: 'o1',
+          mentionedAgentIds: ['sa1'],
+        }),
+      )
+      expect(dispatchSteelAgentMentions).toHaveBeenCalledWith({
+        workspaceId: 'ws1',
+        actorId: 'u1',
+        event: 'crm.note.agent_mentioned',
+        agentIds: ['sa1'],
+        payload: expect.objectContaining({
+          noteId: 'n1',
+          note: 'Peça ao agente',
+          opportunityId: 'o1',
+        }),
+      })
     })
 
     it('should audit a failure and skip side effects on repository error', async () => {

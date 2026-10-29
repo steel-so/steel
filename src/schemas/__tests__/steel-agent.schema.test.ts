@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   ApproveSteelAgentActionSchema,
+  AssignSteelAgentSchema,
   CreateSteelAgentSchema,
   ListSteelAgentRunsQuerySchema,
+  STEEL_AGENT_MAX_MENTIONS,
+  SteelAgentMentionsSchema,
   UpdateSteelAgentSchema,
 } from '../steel-agent.schema'
 
@@ -106,5 +109,36 @@ describe('other steel agent schemas', () => {
     expect(
       ListSteelAgentRunsQuerySchema.safeParse({ limit: '0' }).success,
     ).toBe(false)
+  })
+})
+
+describe('AssignSteelAgentSchema', () => {
+  it('should accept an agent id or null (remove)', () => {
+    expect(AssignSteelAgentSchema.parse({ agentId: ' ag1 ' })).toEqual({
+      agentId: 'ag1',
+    })
+    expect(AssignSteelAgentSchema.parse({ agentId: null })).toEqual({
+      agentId: null,
+    })
+  })
+
+  it('should reject a missing or empty agent id', () => {
+    expect(AssignSteelAgentSchema.safeParse({}).success).toBe(false)
+    expect(AssignSteelAgentSchema.safeParse({ agentId: '  ' }).success).toBe(
+      false,
+    )
+  })
+})
+
+describe('SteelAgentMentionsSchema', () => {
+  it('should be optional and cap the number of cited agents', () => {
+    expect(SteelAgentMentionsSchema.parse(undefined)).toBeUndefined()
+    expect(SteelAgentMentionsSchema.parse(['a', 'b'])).toEqual(['a', 'b'])
+    const tooMany = Array.from(
+      { length: STEEL_AGENT_MAX_MENTIONS + 1 },
+      (_, i) => `a${i}`,
+    )
+    expect(SteelAgentMentionsSchema.safeParse(tooMany).success).toBe(false)
+    expect(SteelAgentMentionsSchema.safeParse(['']).success).toBe(false)
   })
 })
