@@ -192,6 +192,11 @@ export const TAG_GROUPS = [
         description:
           'Newsletters do CRM (ADR 0054): publicações com remetente no domínio do cliente, assinantes com prova de consentimento, importação e exportação em CSV.',
       },
+      {
+        name: 'CRM · Newsletter · Edições',
+        description:
+          'Edições da newsletter: editor, teste, envio e agendamento, relatório (funil, cliques por link, destinatários) e o limite mensal de e-mails.',
+      },
     ],
   },
   {

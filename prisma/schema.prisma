@@ -5505,6 +5505,12 @@ enum NotificationKind {
   CRM_SENDING_DOMAIN_VERIFIED
   /// CRM newsletter (ADR 0054): a VERIFIED sending domain stopped verifying.
   CRM_SENDING_DOMAIN_FAILED
+  /// CRM newsletter (ADR 0054): an issue finished sending (SENT or FAILED).
+  CRM_NEWSLETTER_ISSUE_FINISHED
+  /// CRM newsletter: the monthly e-mail quota reached 50% or 80%.
+  CRM_NEWSLETTER_USAGE_WARNING
+  /// CRM newsletter: the monthly e-mail quota was used up.
+  CRM_NEWSLETTER_USAGE_LIMIT_REACHED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).

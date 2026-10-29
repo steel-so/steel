@@ -311,6 +311,24 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'competitor',
     color: 'orange',
   },
+  CRM_NEWSLETTER_ISSUE_FINISHED: {
+    module: 'CRM',
+    label: 'Edição da newsletter enviada',
+    icon: 'mail',
+    color: 'sky',
+  },
+  CRM_NEWSLETTER_USAGE_WARNING: {
+    module: 'CRM',
+    label: 'Limite mensal da newsletter em 50% / 80%',
+    icon: 'hourglass',
+    color: 'amber',
+  },
+  CRM_NEWSLETTER_USAGE_LIMIT_REACHED: {
+    module: 'CRM',
+    label: 'Limite mensal da newsletter atingido',
+    icon: 'hourglass',
+    color: 'rose',
+  },
   MEMBER_JOINED: {
     module: 'OTHER',
     label: 'Novo membro',

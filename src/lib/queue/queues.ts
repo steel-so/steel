@@ -19,6 +19,8 @@ import {
   type CrmCampaignsJobPayload,
   type CrmCompetitorSyncJob,
   type CrmCompetitorSyncJobPayload,
+  type CrmNewsletterJob,
+  type CrmNewsletterJobPayload,
   type CrmProposalExpiryJob,
   type CrmProposalExpiryJobPayload,
   type CrmScheduledSendJob,
@@ -1181,6 +1183,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.AiProactive]: getAiProactiveQueue,
   [QueueName.WhatsappArchive]: getWhatsappArchiveQueue,
   [QueueName.SendingDomains]: getSendingDomainsQueue,
+  [QueueName.CrmNewsletter]: getCrmNewsletterQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1295,5 +1298,26 @@ export function getSendingDomainsQueue(): Queue<
     SendingDomainsJobPayload[SendingDomainsJob],
     unknown,
     SendingDomainsJob
+  >
+}
+
+let crmNewsletterQueue: Queue | null = null
+
+/** CRM newsletter issues (ADR 0054): tick + batch dispatch. */
+export function getCrmNewsletterQueue(): Queue<
+  CrmNewsletterJobPayload[CrmNewsletterJob],
+  unknown,
+  CrmNewsletterJob
+> {
+  if (!crmNewsletterQueue) {
+    crmNewsletterQueue = new Queue(QueueName.CrmNewsletter, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmNewsletterQueue as Queue<
+    CrmNewsletterJobPayload[CrmNewsletterJob],
+    unknown,
+    CrmNewsletterJob
   >
 }

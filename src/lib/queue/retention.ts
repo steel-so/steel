@@ -201,3 +201,5 @@ export const WhatsappArchiveRetention = {
 
 /** Sending domains (ADR 0054): re-check tick every 10 minutes, off :00. */
 export const SendingDomainsCheckCron = '4,14,24,34,44,54 * * * *' as const
+/** CRM newsletter (ADR 0054): due scheduled issues and the send safety net. */
+export const CrmNewsletterTickCron = '* * * * *' as const

@@ -33,7 +33,11 @@ export const CRM_NEWSLETTER_SKIP_REASONS = [
   'BOUNCED',
   'COMPLAINED',
   'LIMIT_REACHED',
+  /** "Parar envio" during SENDING (nl-issues). */
+  'STOPPED',
 ] as const
+export type CrmNewsletterSkipReason =
+  (typeof CRM_NEWSLETTER_SKIP_REASONS)[number]
 
 /** Test sends per issue per hour (they do not count toward the quota). */
 export const CRM_NEWSLETTER_TEST_SENDS_PER_HOUR = 10
@@ -164,5 +168,102 @@ export type PublicNewsletterArchiveDTO = {
     slug: string
     excerpt: string | null
     sentAt: string
+  }[]
+}
+
+// ─── Issue report and send dialog (nl-issues) ──────────────────────────────
+
+/** Recipient filters of the issue report. */
+export const CRM_NEWSLETTER_RECIPIENT_FILTERS = [
+  'all',
+  'delivered',
+  'opened',
+  'not_opened',
+  'clicked',
+  'bounced',
+  'complained',
+  'unsubscribed',
+  'failed',
+  'skipped',
+] as const
+export type CrmNewsletterRecipientFilter =
+  (typeof CRM_NEWSLETTER_RECIPIENT_FILTERS)[number]
+
+export const ListCrmNewsletterIssueRecipientsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  filter: z.enum(CRM_NEWSLETTER_RECIPIENT_FILTERS).default('all'),
+  search: z.string().trim().max(120).optional(),
+})
+
+export type ListCrmNewsletterIssueRecipientsQuery = z.infer<
+  typeof ListCrmNewsletterIssueRecipientsQuerySchema
+>
+
+export type CrmNewsletterIssueRecipientDTO = {
+  id: string
+  email: string
+  name: string | null
+  status: (typeof CRM_NEWSLETTER_DELIVERY_STATUSES)[number]
+  skipReason: string | null
+  error: string | null
+  sentAt: string | null
+  deliveredAt: string | null
+  openedAt: string | null
+  clickedAt: string | null
+  bouncedAt: string | null
+  complainedAt: string | null
+  unsubscribedAt: string | null
+}
+
+export type CrmNewsletterIssueReportDTO = {
+  stats: CrmNewsletterIssueStatsDTO
+  links: CrmNewsletterIssueLinkStatDTO[]
+}
+
+/** One pre-send check of the send dialog. */
+export type CrmNewsletterPreflightCheckDTO = {
+  code:
+    | 'NEWSLETTER_ARCHIVED'
+    | 'SENDER_NOT_VERIFIED'
+    | 'CONTENT_INVALID'
+    | 'NO_SUBSCRIBERS'
+    | 'LIMIT_REACHED'
+  message: string
+}
+
+/** What the send/schedule dialog shows before confirming. */
+export type CrmNewsletterIssuePreflightDTO = {
+  /** ACTIVE subscribers minus the workspace-wide opt-out. */
+  audience: number
+  usage: {
+    month: string
+    emailsSent: number
+    limit: number | null
+    limitSource: 'PLAN' | 'OVERRIDE'
+  }
+  /** Null = unlimited. */
+  remaining: number | null
+  senderVerified: boolean
+  /** Editor checklist (errors block the send, warnings do not). */
+  checklist: {
+    code: string
+    level: 'error' | 'warning'
+    message: string
+  }[]
+  /** Empty = ready to send. In the order the send checks them. */
+  blockers: CrmNewsletterPreflightCheckDTO[]
+}
+
+/** Newsletter overview: the last sent issues, oldest first. */
+export type CrmNewsletterIssueTrendDTO = {
+  issues: {
+    id: string
+    number: number | null
+    subject: string
+    sentAt: string | null
+    recipients: number
+    openRate: number | null
+    clickRate: number | null
   }[]
 }

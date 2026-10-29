@@ -24,6 +24,7 @@ import {
   WorkspaceBackupsSection,
 } from '@/app/_components/admin/workspaces/workspace-backups-section'
 import { WorkspaceLifecyclePanel } from '@/app/_components/admin/workspaces/workspace-lifecycle-panel'
+import { WorkspaceNewsletterLimitSection } from '@/app/_components/admin/workspaces/workspace-newsletter-limit-section'
 import { WorkspaceWhatsappArchiveSection } from '@/app/_components/admin/workspaces/workspace-whatsapp-archive-section'
 import { CrmMembersSection } from '@/app/_components/settings/crm-members-section'
 import { CrmProfilesSection } from '@/app/_components/settings/crm-profiles-section'
@@ -164,6 +165,11 @@ export default async function AdminWorkspaceDetailPage({
       />
 
       <WorkspaceWhatsappArchiveSection
+        workspaceId={workspace.id}
+        disabled={deleting}
+      />
+
+      <WorkspaceNewsletterLimitSection
         workspaceId={workspace.id}
         disabled={deleting}
       />

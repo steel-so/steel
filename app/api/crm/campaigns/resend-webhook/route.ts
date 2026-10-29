@@ -4,6 +4,7 @@ import { RESEND_WEBHOOK_SECRET } from '@/lib/env/server'
 import { verifyResendSignature } from '@/src/lib/crm-campaign/resend-webhook'
 import { ResendWebhookEventSchema } from '@/src/schemas/crm-campaign.schema'
 import { CrmCampaignTrackingService } from '@/src/services/crm-campaign-tracking.service'
+import { CrmNewsletterTrackingService } from '@/src/services/crm-newsletter-tracking.service'
 import {
   handleError,
   standardError,
@@ -12,7 +13,7 @@ import {
 
 /**
  * Resend webhook (delivered / bounced / complained / opened / clicked) for
- * CRM multichannel campaigns. No session: verified by the Svix signature
+ * CRM newsletter issues and multichannel campaigns. No session: verified by the Svix signature
  * with `RESEND_WEBHOOK_SECRET`; inert (503) when the secret is not set.
  */
 export const POST = withAxiom(async (request: NextRequest) => {
@@ -49,10 +50,16 @@ export const POST = withAxiom(async (request: NextRequest) => {
     )
   }
 
-  const result = await CrmCampaignTrackingService.onEmailEvent(
+  // Newsletter issues first (ADR 0054), then the campaigns.
+  const now = new Date()
+  const newsletter = await CrmNewsletterTrackingService.onEmailEvent(
     parsed.data,
-    new Date(),
+    now,
   )
+  if (!newsletter.ok) return handleError(newsletter.error)
+  if (newsletter.value) return successResponse({ tracked: true })
+
+  const result = await CrmCampaignTrackingService.onEmailEvent(parsed.data, now)
   if (!result.ok) return handleError(result.error)
 
   return successResponse({ tracked: result.value })

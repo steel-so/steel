@@ -247,6 +247,9 @@ export type AuditEntity =
   // CRM newsletter (ADR 0054): newsletters and their subscribers
   | 'crm_newsletter'
   | 'crm_newsletter_subscriber'
+  // CRM newsletter issues and the monthly quota override (ADR 0054)
+  | 'crm_newsletter_issue'
+  | 'crm_newsletter_settings'
 
 export type AuditAction =
   | 'create'
