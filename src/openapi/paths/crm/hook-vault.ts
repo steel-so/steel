@@ -4,10 +4,12 @@ import {
   ReorderCrmHookVaultItemsSchema,
   UpdateCrmHookVaultItemSchema,
 } from '@/src/schemas/crm-hook-vault.schema'
+import { CrmNlSearchSchema } from '@/src/schemas/crm-nl-search.schema'
 import { CrmTextAiAssistSchema } from '@/src/schemas/crm-text-ai.schema'
 import type { RouteConfig } from '../../registry'
 import { CrmTextAiReplyDTO } from '../../schemas/crm/forms'
 import { CrmHookVaultItemDTO } from '../../schemas/crm/hook-vault'
+import { CrmNlSearchResultDTO } from '../../schemas/crm/opportunities'
 import { CRM_ERRORS, crmAccess, describe, notFoundError } from './shared'
 
 /**
@@ -129,6 +131,48 @@ export const crmHookVaultRoutes: RouteConfig[] = [
         code: 'VALIDATION_ERROR',
         message: 'Dados inválidos',
         when: '`surface` desconhecida, histórico vazio, longo demais ou sem terminar no usuário',
+      },
+    ],
+  },
+  /* ------------------------ Busca em linguagem natural ------------------------ */
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/opportunities/search',
+    tags: ['CRM · IA'],
+    summary: 'Buscar oportunidades por pergunta livre',
+    description: describe(
+      'Converte uma pergunta em português ("negócios parados há 15 dias acima de 10 mil") em um filtro estruturado e validado e devolve as oportunidades que o atendem (até 200; `truncated` indica que havia mais). A IA só recebe a pergunta, nunca dados do CRM, e o filtro roda no repositório do workspace, então o resultado nunca passa do que o usuário já vê. `interpretation` traz como a pergunta foi lida, em frases curtas. Usa a IA do workspace e consome a cota mensal de IA.',
+      crmAccess('opportunities', 'VIEW'),
+    ),
+    body: CrmNlSearchSchema,
+    responses: {
+      200: {
+        description: 'Filtro interpretado e oportunidades encontradas.',
+        schema: CrmNlSearchResultDTO,
+      },
+    },
+    errors: [
+      ...CRM_ERRORS,
+      {
+        code: 'FEATURE_NOT_ENABLED',
+        when: 'Feature `crm.aiAssistant` desligada para o workspace',
+      },
+      {
+        code: 'AI_QUOTA_EXCEEDED',
+        when: 'Cota mensal de IA do workspace esgotada',
+      },
+      {
+        code: 'AI_PROVIDER_UNAVAILABLE',
+        when: 'Nenhum modelo habilitado com provedor configurado',
+      },
+      {
+        code: 'CRM_NL_SEARCH_FAILED',
+        when: 'Falha do provedor ou resposta fora do formato',
+      },
+      {
+        code: 'VALIDATION_ERROR',
+        message: 'Dados inválidos',
+        when: 'Pergunta vazia ou com mais de 300 caracteres',
       },
     ],
   },

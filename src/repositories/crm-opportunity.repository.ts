@@ -2,6 +2,7 @@ import type {
   CrmBillingType,
   CrmOpportunity,
   CrmOpportunityLineItem,
+  Prisma,
 } from '@prisma/client'
 import { notFound } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
@@ -34,6 +35,24 @@ export const CrmOpportunityRepository = {
       return ok(opportunities)
     } catch (error) {
       return err(dbError('Failed to list CRM opportunities', error))
+    }
+  },
+
+  /** Natural-language search (C10): a prebuilt `where`/`orderBy`, capped. */
+  async search(
+    where: Prisma.CrmOpportunityWhereInput,
+    orderBy: Prisma.CrmOpportunityOrderByWithRelationInput[],
+    take: number,
+  ): Promise<Result<CrmOpportunity[]>> {
+    try {
+      const opportunities = await prisma.crmOpportunity.findMany({
+        where,
+        orderBy,
+        take,
+      })
+      return ok(opportunities)
+    } catch (error) {
+      return err(dbError('Failed to search CRM opportunities', error))
     }
   },
 

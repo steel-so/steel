@@ -757,6 +757,12 @@ export const crmTextAiFailed = (): AppError =>
     'A IA não conseguiu responder agora — tente de novo em instantes',
   )
 
+export const crmNlSearchFailed = (): AppError =>
+  appError(
+    'CRM_NL_SEARCH_FAILED',
+    'Não consegui entender a busca agora — reformule a pergunta ou tente de novo em instantes',
+  )
+
 export const crmLandingPageNotFound = (): AppError =>
   appError('CRM_LANDING_PAGE_NOT_FOUND', 'Landing page não encontrada')
 
