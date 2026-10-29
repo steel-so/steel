@@ -47,6 +47,8 @@ import type { EmailCanvasDocument } from '@/src/schemas/crm-email-builder.schema
 import type { CrmNewsletterIssueDTO } from '@/src/schemas/crm-newsletter-issue.schema'
 import type { CrmEmailBrandDTO } from '@/types/crm-email-marketing'
 import type { CrmProductDTO } from '@/types/crm-product'
+import { IssueAbTestButton } from './issue-ab-test-button'
+import { IssueAiButton } from './issue-ai-button'
 import {
   type IssueEditorContext,
   IssueEditorProvider,
@@ -63,6 +65,8 @@ function renderActions() {
     <div className='flex items-center gap-1'>
       <ChecklistButton />
       <PreviewButton />
+      <IssueAiButton />
+      <IssueAbTestButton />
       <IssueTestSendButton />
       <IssueSendButton />
     </div>

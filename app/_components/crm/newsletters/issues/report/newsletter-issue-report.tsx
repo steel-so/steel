@@ -59,6 +59,7 @@ import {
   RECIPIENT_FILTER_LABEL,
   SKIP_REASON_LABEL,
 } from '../issue-format'
+import { IssueAbTestCard } from './issue-ab-test-card'
 
 function Tile({
   label,
@@ -540,6 +541,13 @@ export function NewsletterIssueReport({
           </div>
         </>
       )}
+
+      <IssueAbTestCard
+        workspaceId={workspaceId}
+        newsletterId={newsletterId}
+        issueId={issueId}
+        live={live}
+      />
 
       <RecipientsSection
         workspaceId={workspaceId}
