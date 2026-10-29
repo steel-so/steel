@@ -1,0 +1,102 @@
+---
+title: Newsletter — público e segmentos
+description: Envie uma edição só para parte dos assinantes — por origem, data de inscrição, engajamento nas últimas edições ou dados da pessoa no CRM — e salve os públicos que você usa sempre.
+section: crm
+order: 13
+---
+
+Por padrão, uma edição vai para **todos os assinantes ativos** da newsletter.
+Com um **segmento**, ela vai só para quem atende às condições que você
+escolher: quem abriu as últimas edições, quem se inscreveu pelo formulário,
+quem trabalha numa empresa do CRM, quem tem uma oportunidade em aberto…
+
+Quem cancelou a inscrição, teve o e-mail devolvido, marcou como spam ou saiu
+de todos os e-mails do workspace **nunca** recebe, com ou sem segmento — o
+segmento só restringe.
+
+## Escolher o público de uma edição
+
+No editor da edição, clique em **Enviar**. A seção **Público** aparece logo
+abaixo dos números:
+
+- **Todos os assinantes** — o comportamento de sempre;
+- **Um segmento** — monte as condições ali mesmo ou escolha um segmento
+  salvo na lista.
+
+O contador ao lado de **Público** mostra, ao vivo, quantos assinantes recebem
+("420 de 1.200 assinantes"). Em **Ver quem recebe**, aparecem até 10 exemplos.
+O público é salvo na edição assim que as condições ficam completas; enquanto
+houver uma condição incompleta, o botão de enviar fica bloqueado.
+
+A conferência do envio, o número em **Enviar para…** e o **limite do mês**
+passam a contar só o público escolhido. Se nenhum assinante atender às
+condições, o envio é recusado com o aviso "Nenhum assinante ativo corresponde
+ao público escolhido".
+
+Uma edição agendada também pode ter o público trocado até a hora do envio. A
+lista de quem recebe é fechada no momento em que o envio começa.
+
+## Montar as condições
+
+Cada linha é uma condição. As linhas soltas valem **todas juntas** ("e"). Para
+aceitar **qualquer uma** de várias condições ("ou"), use **Adicionar grupo
+"qualquer uma"** e coloque as opções dentro do grupo.
+
+Exemplo: _abriu alguma das últimas 3 edições_ **e** (_cidade é Campinas_
+**ou** _cargo contém Diretor_).
+
+### Assinante
+
+| Condição | O que faz |
+|---|---|
+| Origem da inscrição | Formulário, site, página pública, API, importação ou manual |
+| Data de inscrição | Inscrito antes de / a partir de um dia (horário de Brasília) |
+| Confirmação dupla | Confirmou (ou não) o e-mail de confirmação |
+
+### Engajamento
+
+| Condição | O que faz |
+|---|---|
+| Abriu edições | Abriu alguma (ou nenhuma) das últimas N edições enviadas (até 50) |
+| Clicou em edições | Clicou em algum link de alguma (ou nenhuma) das últimas N edições |
+| Nunca abriu uma edição | Nenhuma abertura registrada |
+| Última abertura antes de | Já abriu, mas a última abertura foi antes do dia escolhido |
+
+Aberturas dependem do provedor de e-mail do assinante: o Apple Mail, por
+exemplo, marca e-mails como abertos sozinho. Para medir interesse com mais
+segurança, prefira **Clicou em edições**.
+
+### Pessoa do CRM
+
+Quando o e-mail do assinante é o de uma pessoa do CRM, a newsletter guarda o
+vínculo. Estas condições olham para essa pessoa (pessoas excluídas não
+contam):
+
+| Condição | O que faz |
+|---|---|
+| Pessoa do CRM ligada | Tem (ou não tem) uma pessoa do CRM |
+| Empresa | A pessoa é de uma das empresas escolhidas |
+| Cargo / Cidade | É igual a ou contém um texto (maiúsculas e acentos como digitados) |
+| Campo personalizado | Um campo personalizado de **pessoa** é igual a, contém, está preenchido ou está vazio |
+| Oportunidade em aberto | A pessoa (ou a empresa dela) tem uma oportunidade numa etapa em aberto |
+| Etapa do lead | Um lead convertido nessa pessoa está numa das etapas escolhidas |
+
+As condições "não tem" e "está vazio" incluem os assinantes sem pessoa do CRM.
+
+## Segmentos salvos
+
+Na página da newsletter, clique em **Segmentos** para ver, criar, editar e
+excluir os públicos que você usa sempre (até 50 por newsletter). Também dá
+para salvar as condições montadas no envio com **Salvar como segmento**.
+
+Ao escolher um segmento salvo, a edição guarda uma **cópia** das condições:
+editar ou excluir o segmento depois não muda edições que já o usaram.
+
+## Quem pode
+
+| Ação | Quem |
+|---|---|
+| Ver segmentos e o público de uma edição | membro do CRM com permissão de ver e-mails |
+| Criar segmentos | permissão de criar e-mails |
+| Editar segmentos e o público de uma edição | permissão de editar e-mails |
+| Excluir segmentos | permissão de excluir e-mails |

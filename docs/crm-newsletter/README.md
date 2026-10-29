@@ -86,3 +86,33 @@ Ordem de merge: `nl-domains` → `nl-core` → `nl-issues` → `nl-archive`.
 | Enviar, agendar, cancelar | recurso `email`, `EDIT` |
 | Domínios de envio | OWNER/ADMIN do workspace |
 | Ajuste do limite mensal | admin da plataforma |
+
+## Público e segmentos (newsletter2 · `nl2-segments`)
+
+Uma edição vai para todos os assinantes `ACTIVE` (fora do descadastro geral) ou só para um **segmento**. O segmento nunca amplia essa base: só restringe.
+
+| Onde | O quê |
+|---|---|
+| `src/schemas/crm-newsletter-segment.schema.ts` | `NewsletterSegmentSchema` (E de `conditions` + grupos OU em `groups`), segmento salvo, público da edição, prévia, opções do construtor |
+| `src/lib/crm-newsletter/segment-where.ts` | Compilador puro segmento → `Prisma.CrmNewsletterSubscriberWhereInput`; `segmentNeeds` (o que resolver antes) e `parseStoredSegment` |
+| `src/services/crm-newsletter-audience.ts` | `resolveSegmentWhere` (valida campos personalizados, busca as últimas edições e os ids de pessoa por campo) e `issueAudienceWhere(issue)` |
+| `prisma/schema.prisma` (fim do arquivo) | `CrmNewsletterSegment` (nome único por newsletter); relação `CrmNewsletterSubscriber.person` → `CrmPerson` (`SET NULL`) |
+| Rotas | `GET/POST …/newsletters/:id/segments`, `PATCH/DELETE …/segments/:segmentId`, `GET …/segments/options`, `GET/PUT …/issues/:issueId/segment`, `POST …/issues/:issueId/audience-preview` |
+| UI | Seção **Público** do diálogo de envio (`segments/issue-audience-section.tsx`); botão **Segmentos** na página da newsletter (`segments/newsletter-segments-dialog.tsx`) |
+
+**Condições**
+- Assinante: `source` (origens), `subscribed` (`before` / `onOrAfter` de um dia), `confirmed` (`confirmedAt`).
+- Engajamento: `opened` / `clicked` em alguma (`any`) ou nenhuma (`none`) das últimas N edições `SENT` (1–50, por `sentAt`), `neverOpened` (`lastOpenedAt` nulo), `lastOpenedBefore` (já abriu e a última abertura foi antes do dia).
+- Pessoa do CRM (não excluída): `linkedPerson`, `company`, `jobTitle` / `city` (`equals` / `contains`, sem diferenciar maiúsculas), `customField` (campo de **pessoa**: `equals`, `contains` — só texto —, `isSet`, `isNotSet`), `openOpportunity` (como ponto de contato ou pela empresa, etapa `OPEN`), `leadStage` (lead convertido na pessoa).
+- Negações (`linkedPerson: false`, `openOpportunity: false`, `isNotSet`) incluem quem não tem pessoa.
+- Datas são dias em America/Sao_Paulo (início do dia, -03:00).
+- O CRM não tem etiquetas (tags) em pessoas: não há condição de etiqueta.
+- Limites: 20 condições, 5 grupos, 10 opções por grupo, 50 segmentos salvos por newsletter.
+
+**Regras**
+- `CrmNewsletterIssue.segment` guarda uma **cópia** da definição (+ `savedSegmentId` de origem); `{}` = todos. Editar ou excluir o segmento salvo não muda edições.
+- Público editável só em `DRAFT`/`SCHEDULED` (`CRM_NEWSLETTER_ISSUE_LOCKED`).
+- O envio usa o segmento em todos os pontos: conferência (`preflight.audience` + `segmented`), `CRM_NEWSLETTER_NO_SUBSCRIBERS` ("Nenhum assinante ativo corresponde ao público escolhido"), limite do mês e a fotografia da audiência (os ids do segmento entram no `INSERT … SELECT` como um único parâmetro `text[]`).
+- Segmento gravado que não é mais válido (tipo de condição removido, campo personalizado excluído) recusa o envio com `CRM_NEWSLETTER_SEGMENT_INVALID` — nunca cai para "todos".
+- A migração limpa `person_id` de assinantes que apontavam para pessoas inexistentes antes de criar a chave estrangeira.
+- Auditoria: `crm_newsletter_segment` (`create` / `update` / `delete`) e `crm_newsletter_issue` `update` com `audience: 'segment'`.
