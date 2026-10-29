@@ -9,11 +9,11 @@ export const metadata = steelRootMetadata
 
 /**
  * Root layout of the public newsletter archive (`/n/**`, ADR 0054). Its own
- * document, apart from `SteelRootLayout`, so nothing wraps the pages in a
- * Suspense boundary: an unknown newsletter or issue calls `notFound()`
- * before the response starts streaming and answers a real HTTP 404 (same
- * approach as the published sites in `app/(sites)`). The archive needs no
- * Steel providers, trackers or cookie banner — it is the customer's brand.
+ * document, apart from `SteelRootLayout`: the archive is the customer's
+ * brand and needs no Steel providers, trackers or cookie banner, and its
+ * not-found page is the archive's own (pt-BR). The HTTP 404 status of an
+ * unknown newsletter or issue is decided by the proxy before rendering
+ * (`newsletterArchiveResponse`), as for the published sites.
  */
 export const instant = false
 

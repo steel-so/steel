@@ -7,9 +7,9 @@ import { authenticatedOwner, getJson } from '@/src/__tests__/helpers/e2e'
 import { prisma } from '@/src/lib/prisma'
 
 /**
- * The archive has its own root layout without a Suspense boundary, so a
- * `notFound()` in the page body runs before streaming: a real HTTP 404 with
- * the archive's pt-BR not-found page.
+ * The proxy checks archive pages before rendering (the App Router answers
+ * 200 once it streams): an unknown, archived or hidden page is a real HTTP
+ * 404 with the archive's pt-BR not-found page.
  */
 async function expectNotFound(res: Response, hidden: string) {
   const html = await res.text()

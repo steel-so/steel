@@ -66,7 +66,40 @@ async function loadPublicNewsletter(
   })
 }
 
+const ARCHIVE_NOT_FOUND = new Set([
+  'CRM_NEWSLETTER_NOT_FOUND',
+  'CRM_NEWSLETTER_ISSUE_NOT_FOUND',
+])
+
 export const CrmNewsletterArchiveService = {
+  /**
+   * Whether an archive page exists, for the proxy to answer a real 404
+   * before rendering (the App Router answers 200 once it starts streaming).
+   * Same rules as `getArchive`/`getIssue`; any other failure is an error,
+   * and the proxy then lets the page decide.
+   */
+  async pageExists(
+    workspaceSlug: string,
+    newsletterSlug: string,
+    issueSlug?: string,
+  ): Promise<Result<boolean>> {
+    const newsletter = await loadPublicNewsletter(workspaceSlug, newsletterSlug)
+    if (!newsletter.ok) {
+      return ARCHIVE_NOT_FOUND.has(newsletter.error.code)
+        ? ok(false)
+        : newsletter
+    }
+    if (!issueSlug) return ok(true)
+    const issue = await CrmNewsletterArchiveRepository.findSentIssue(
+      newsletter.value.row.id,
+      issueSlug,
+    )
+    if (!issue.ok) {
+      return ARCHIVE_NOT_FOUND.has(issue.error.code) ? ok(false) : issue
+    }
+    return ok(Boolean(issue.value.webHtml?.trim()))
+  },
+
   /** Archive home: the newsletter and one page of its SENT issues. A page
    * past the end is empty (the page shows a link back to the first). */
   async getArchive(

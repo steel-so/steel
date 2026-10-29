@@ -201,6 +201,6 @@ describe('POST /api/workspaces/[id]/crm/email-campaigns/[campaignId]/send', () =
     expect(res.status).toBe(422)
     const body = await res.json()
     expect(body.error.code).toBe('SENDING_DOMAIN_NOT_VERIFIED')
-    expect(body.error.message).toContain('Domínios de e-mail')
+    expect(body.message).toContain('Domínios de e-mail')
   })
 })

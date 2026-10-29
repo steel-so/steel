@@ -102,6 +102,63 @@ describe('CrmNewsletterArchiveService', () => {
     })
   })
 
+  describe('pageExists()', () => {
+    const issue = {
+      ...createFakeArchiveIssueRow({ number: 2, slug: 'dois' }),
+      preheader: null,
+      webHtml: '<p>Oi</p>',
+    }
+
+    it('should say whether the archive home exists', async () => {
+      expect(
+        expectOk(await CrmNewsletterArchiveService.pageExists('acme', 'n')),
+      ).toBe(true)
+      repo.findPublicNewsletter.mockResolvedValue(err(crmNewsletterNotFound()))
+      expect(
+        expectOk(await CrmNewsletterArchiveService.pageExists('acme', 'n')),
+      ).toBe(false)
+      moduleGate.mockResolvedValue(err(moduleDisabled()))
+      expect(
+        expectOk(await CrmNewsletterArchiveService.pageExists('acme', 'n')),
+      ).toBe(false)
+    })
+
+    it('should say whether a sent issue with a web version exists', async () => {
+      repo.findSentIssue.mockResolvedValue(ok(issue))
+      expect(
+        expectOk(
+          await CrmNewsletterArchiveService.pageExists('acme', 'n', 'dois'),
+        ),
+      ).toBe(true)
+      expect(repo.findSentIssue).toHaveBeenCalledWith('nl1', 'dois')
+      repo.findSentIssue.mockResolvedValue(ok({ ...issue, webHtml: '  ' }))
+      expect(
+        expectOk(
+          await CrmNewsletterArchiveService.pageExists('acme', 'n', 'dois'),
+        ),
+      ).toBe(false)
+      repo.findSentIssue.mockResolvedValue(err(crmNewsletterIssueNotFound()))
+      expect(
+        expectOk(
+          await CrmNewsletterArchiveService.pageExists('acme', 'n', 'x'),
+        ),
+      ).toBe(false)
+    })
+
+    it('should propagate database errors (the proxy lets the page decide)', async () => {
+      repo.findSentIssue.mockResolvedValue(err(databaseError()))
+      expectErr(
+        await CrmNewsletterArchiveService.pageExists('acme', 'n', 'x'),
+        'DATABASE_ERROR',
+      )
+      repo.findPublicNewsletter.mockResolvedValue(err(databaseError()))
+      expectErr(
+        await CrmNewsletterArchiveService.pageExists('acme', 'n'),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+
   describe('getIssue()', () => {
     const issue = {
       ...createFakeArchiveIssueRow({ number: 2, slug: 'dois' }),
