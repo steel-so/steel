@@ -1,0 +1,98 @@
+---
+title: Newsletter — enquetes e envio no WhatsApp
+description: Faça uma pergunta dentro da edição com o bloco Enquete e veja quem votou em cada opção, e mande a edição também pelo WhatsApp para os assinantes que têm o número no CRM.
+section: crm
+order: 13
+---
+
+Duas formas de ouvir e alcançar os assinantes além do e-mail: a **Enquete**,
+um bloco do editor de edições, e o **envio no WhatsApp**, que manda o link da
+edição com um resumo pela Comunicação.
+
+## Enquete
+
+No editor da edição, arraste o bloco **Enquete** (categoria
+**Relacionamento**). Ele tem:
+
+- **Pergunta** — o que você quer saber;
+- **Opções** — de 2 a 5 botões, um embaixo do outro;
+- **Mostrar o resultado parcial depois do voto** — ligado, quem vota vê como
+  está a votação; desligado, vê só o agradecimento.
+
+Cada assinante recebe botões com um link só dele. Um clique abre a página de
+agradecimento e registra o voto; clicar em outra opção depois **troca** o
+voto (vale o último). Não é preciso entrar em conta nenhuma.
+
+> O voto é registrado quando a página termina de abrir no navegador. Assim,
+> os robôs de segurança que alguns provedores de e-mail usam para conferir
+> links não votam no lugar do assinante.
+
+A versão web da edição e o arquivo público mostram a enquete sem links (os
+botões não votam ali), e o e-mail de teste também — os votos valem só para
+quem recebeu a edição.
+
+A Enquete aparece só no editor de edições da newsletter, porque o voto
+depende do envio para cada assinante.
+
+### Resultado
+
+No relatório da edição, a seção **Enquetes** mostra, para cada enquete:
+
+- barras com os votos de cada opção e o percentual;
+- **Quem votou** — os 200 votos mais recentes, com o nome ligado à pessoa do
+  CRM quando o assinante tem cadastro;
+- **Exportar votos (CSV)** — todos os votos, com pergunta, opção, e-mail,
+  nome e data (horário de São Paulo). A exportação fica registrada na
+  auditoria, porque traz dados pessoais.
+
+## Enviar também no WhatsApp
+
+No editor da edição, clique em **WhatsApp** na barra de cima e ligue
+**Enviar também no WhatsApp**. Quando o envio por e-mail terminar, os
+assinantes que têm uma pessoa no CRM com telefone de WhatsApp recebem o link
+da versão web da edição e um resumo.
+
+É preciso:
+
+- o módulo **Comunicação** ativo no workspace, com uma conexão conectada;
+- o **arquivo público** da newsletter ligado (a mensagem leva o link da
+  versão web);
+- declarar a **base legal** do envio (consentimento, legítimo interesse ou
+  execução de contrato) e confirmar a declaração.
+
+O diálogo mostra quantos assinantes recebem hoje, quantos não têm telefone
+válido e quantos pediram para não receber transmissões.
+
+### A mensagem
+
+- **Conexão da Meta** — fora da janela de 24 horas a Meta só aceita
+  **templates aprovados**. Escolha o template e diga de onde vem cada
+  variável: primeiro nome, nome, assunto da edição, resumo da edição, link da
+  versão web, fim do link (para botões com URL) ou um texto fixo.
+- **Conexão Z-API** — escreva o texto. Use `{primeiro_nome}`, `{nome}`,
+  `{assunto}`, `{resumo}` e `{link}` (obrigatório).
+
+O resumo é o começo do texto da edição (até cerca de 280 caracteres).
+
+### O que é respeitado
+
+- Quem respondeu **SAIR** ou **PARAR** às transmissões nunca recebe —
+  conferido na hora de montar a lista e de novo antes de cada mensagem.
+- Os **limites mensais** de mensagens da Comunicação valem também aqui;
+  atingido o limite, o restante fica como "Limite mensal da Comunicação
+  atingido".
+- Em conexões da Meta, o envio respeita o limite de 1.000 conversas
+  iniciadas pela empresa a cada 24 horas por número (somando campanhas e
+  newsletters) e continua depois.
+- Se o envio por e-mail for interrompido em **Parar envio**, o WhatsApp
+  também para.
+
+Se algo impedir o WhatsApp (conexão desconectada, template sem aprovação,
+base legal não declarada), o botão **Enviar** da edição avisa antes de o
+e-mail sair: corrija ou desligue o WhatsApp.
+
+### Relatório
+
+No relatório da edição, a seção **WhatsApp** mostra quantas mensagens foram
+enviadas, quantas falharam, quantas não foram enviadas (e por quê) e a
+situação de cada número, com o nome ligado à pessoa do CRM.
