@@ -10,7 +10,7 @@ import { dbError } from './db-error'
 
 export type WhatsAppAdReferralInput = Omit<
   Prisma.WhatsAppAdReferralUncheckedCreateInput,
-  'id' | 'leadId' | 'receivedAt'
+  'id' | 'leadId'
 >
 
 export interface AdLeadOutcome {

@@ -128,7 +128,7 @@ describe('settings', () => {
       ok(createFakeWhatsAppAdSettings({ enabled: true, leadSource: 'Meta' })),
     )
     repo.upsertSettings.mockImplementation(async (workspaceId, data) =>
-      ok(createFakeWhatsAppAdSettings({ workspaceId, ...data })),
+      ok(createFakeWhatsAppAdSettings({ workspaceId, ...data } as never)),
     )
 
     const value = expectOk(
@@ -161,7 +161,7 @@ describe('settings', () => {
       ok(createFakeWhatsAppAdSettings({ leadOwnerId: 'u2' })),
     )
     repo.upsertSettings.mockImplementation(async (workspaceId, data) =>
-      ok(createFakeWhatsAppAdSettings({ workspaceId, ...data })),
+      ok(createFakeWhatsAppAdSettings({ workspaceId, ...data } as never)),
     )
 
     const cleared = expectOk(
