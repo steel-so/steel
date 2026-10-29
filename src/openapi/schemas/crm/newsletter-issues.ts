@@ -4,6 +4,7 @@ import {
   CRM_NEWSLETTER_ISSUE_STATUSES,
 } from '@/src/schemas/crm-newsletter-issue.schema'
 import { dto } from '../../common'
+import { CrmNewsletterAbTestDTO } from './newsletter2-digest-ai'
 
 /**
  * DTOs das edições da newsletter do CRM (ADR 0054, frente nl-issues):
@@ -62,6 +63,12 @@ export const CrmNewsletterIssueDTO = dto(
     }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+    abTest: CrmNewsletterAbTestDTO.nullable().optional().meta({
+      description: 'Teste A/B de assunto (null = sem teste).',
+    }),
+    digestId: z.string().nullable().optional().meta({
+      description: 'Resumo automático que criou a edição.',
+    }),
   }),
 )
 
@@ -156,6 +163,7 @@ export const CrmNewsletterIssuePreflightDTO = dto(
           'CONTENT_INVALID',
           'NO_SUBSCRIBERS',
           'LIMIT_REACHED',
+          'AB_AUDIENCE_TOO_SMALL',
         ]),
         message: z.string(),
       }),
