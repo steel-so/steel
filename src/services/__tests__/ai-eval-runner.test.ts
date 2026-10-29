@@ -6,6 +6,7 @@ import {
   createFakeAiEvalRun,
 } from '@/src/__tests__/factories/ai-quality.factory'
 import { createFakeAiSkill } from '@/src/__tests__/factories/ai-skill-memory.factory'
+import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
 import { aiQuotaExceeded, aiSkillNotFound } from '@/src/errors/app-error'
@@ -13,6 +14,10 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/ai-eval.repository')
 vi.mock('@/src/repositories/ai-skill.repository')
+vi.mock('@/src/repositories/steel-agent-version.repository')
+vi.mock('@/src/services/steel-agent-version.service', () => ({
+  SteelAgentVersionService: { onEvalFinished: vi.fn() },
+}))
 vi.mock('@/src/services/ai-usage.service', () => ({
   AiUsageService: { prepare: vi.fn(), record: vi.fn(), price: vi.fn() },
 }))
@@ -25,7 +30,9 @@ vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 import { auditMutation } from '@/lib/axiom/audit'
 import { AiEvalRepository } from '@/src/repositories/ai-eval.repository'
 import { AiSkillRepository } from '@/src/repositories/ai-skill.repository'
+import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { AiUsageService } from '@/src/services/ai-usage.service'
+import { SteelAgentVersionService } from '@/src/services/steel-agent-version.service'
 import { buildWhatsAppAiReplySystem } from '@/src/services/whatsapp-ai-reply.service'
 import { executeAiEvalRun } from '../ai-eval-runner'
 
@@ -218,6 +225,78 @@ describe('executeAiEvalRun', () => {
         passed: true,
       }),
     )
+  })
+
+  describe('Steel Agent gate sets', () => {
+    const agentSet = (over: Record<string, unknown> = {}) =>
+      createFakeAiEvalClaimedRun(
+        { id: 'r1', agentVersionId: 'ver1', ...over },
+        { target: 'STEEL_AGENT' },
+        [createFakeAiEvalCase({ expected: null, mustContain: ['feito'] })],
+      )
+
+    it('answers with the version instructions and reports the outcome to the gate', async () => {
+      repo.claimRun.mockResolvedValueOnce(ok(agentSet()))
+      vi.mocked(
+        SteelAgentVersionRepository.findByIdUnscoped,
+      ).mockResolvedValueOnce(
+        ok(
+          createFakeSteelAgentVersion({
+            instructions: 'Instruções candidatas do agente.',
+          }),
+        ),
+      )
+      chat.mockResolvedValueOnce(reply('Feito.'))
+
+      expect(expectOk(await executeAiEvalRun('r1', clock))).toEqual({
+        status: 'done',
+        passed: 1,
+        failed: 0,
+      })
+      expect(chat.mock.calls[0][0].system).toContain(
+        'Instruções candidatas do agente.',
+      )
+      expect(chat.mock.calls[0][0].system).toContain('não tem ferramentas')
+      expect(SteelAgentVersionService.onEvalFinished).toHaveBeenCalledWith({
+        versionId: 'ver1',
+        evalRunId: 'r1',
+        status: 'DONE',
+        passed: 1,
+        failed: 0,
+        error: null,
+      })
+    })
+
+    it('fails the run, and tells the gate, when the version is missing', async () => {
+      repo.claimRun.mockResolvedValueOnce(ok(agentSet()))
+      vi.mocked(
+        SteelAgentVersionRepository.findByIdUnscoped,
+      ).mockResolvedValueOnce(ok(null))
+      expect(expectOk(await executeAiEvalRun('r1', clock)).status).toBe(
+        'failed',
+      )
+      expect(SteelAgentVersionService.onEvalFinished).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'FAILED', passed: 0 }),
+      )
+
+      repo.claimRun.mockResolvedValueOnce(
+        ok(agentSet({ agentVersionId: null })),
+      )
+      expect(expectOk(await executeAiEvalRun('r1', clock)).status).toBe(
+        'failed',
+      )
+      expect(SteelAgentVersionService.onEvalFinished).toHaveBeenCalledTimes(1)
+    })
+
+    it('fails the run when the version cannot be loaded', async () => {
+      repo.claimRun.mockResolvedValueOnce(ok(agentSet()))
+      vi.mocked(
+        SteelAgentVersionRepository.findByIdUnscoped,
+      ).mockResolvedValueOnce(err(databaseError('x')))
+      expect(expectOk(await executeAiEvalRun('r1', clock)).status).toBe(
+        'failed',
+      )
+    })
   })
 
   it('falls back to the saved WhatsApp prompt, or none', async () => {

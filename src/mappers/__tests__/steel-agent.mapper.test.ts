@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
+import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import {
   createFakeSteelAgentRun,
   createFakeSteelAgentRunDetail,
@@ -8,11 +9,14 @@ import {
   createFakeSteelAgentWithRelations,
 } from '@/src/__tests__/factories/steel-agent.factory'
 import { createFakeAiPendingAction } from '@/src/__tests__/factories/steel-ai.factory'
+import { emptyVersionStats } from '@/src/lib/steel-agents/versions'
 import {
   toSteelAgentDTO,
   toSteelAgentRunDetailDTO,
   toSteelAgentRunDTO,
   toSteelAgentRunStepDTO,
+  toSteelAgentVersionDTO,
+  toSteelAgentVersionRefDTO,
 } from '../steel-agent.mapper'
 
 const kindOf = (name: string) =>
@@ -143,5 +147,74 @@ describe('steel agent mapper', () => {
     expect(dto.steps).toHaveLength(1)
     expect(dto.pendingActions[0].id).toBe('p1')
     expect(dto.canApprove).toBe(true)
+  })
+
+  it('should expose the version pointers and the gate settings on the agent', () => {
+    const dto = toSteelAgentDTO(
+      createFakeSteelAgentWithRelations({
+        evalSetId: 'set1',
+        evalMinPassRate: 0.9,
+        publishedVersionId: 'v1',
+        challengerVersionId: 'v2',
+      }),
+      kindOf,
+    )
+    expect(dto).toMatchObject({
+      evalSetId: 'set1',
+      evalMinPassRate: 0.9,
+      publishedVersionId: 'v1',
+      challengerVersionId: 'v2',
+    })
+    expect(
+      toSteelAgentRunDTO(createFakeSteelAgentRun({ versionId: 'v1' }))
+        .versionId,
+    ).toBe('v1')
+  })
+
+  it('should map a version with effective tool modes, eval rate and stats', () => {
+    const version = createFakeSteelAgentVersion({
+      id: 'v3',
+      number: 3,
+      status: 'CHALLENGER',
+      rolloutPercent: 20,
+      evalPassed: 8,
+      evalTotal: 10,
+      tools: [
+        { toolName: 'crm_delete_task', mode: 'AUTO' },
+        { toolName: 'crm_create_task', mode: 'AUTO' },
+      ],
+    })
+    const dto = toSteelAgentVersionDTO(
+      version,
+      { ...emptyVersionStats(), runs: 4 },
+      kindOf,
+    )
+    expect(dto).toMatchObject({
+      id: 'v3',
+      number: 3,
+      status: 'CHALLENGER',
+      rolloutPercent: 20,
+      evalPassRate: 0.8,
+      stats: { runs: 4 },
+    })
+    expect(dto.tools).toEqual([
+      { toolName: 'crm_create_task', mode: 'AUTO' },
+      { toolName: 'crm_delete_task', mode: 'APPROVAL' },
+    ])
+    expect(dto.publishedAt).toBe('2026-10-29T12:00:00.000Z')
+  })
+
+  it('should default the stats and leave the pass rate empty without an eval', () => {
+    const dto = toSteelAgentVersionDTO(
+      createFakeSteelAgentVersion({ publishedAt: null }),
+      undefined,
+      kindOf,
+    )
+    expect(dto.evalPassRate).toBeNull()
+    expect(dto.publishedAt).toBeNull()
+    expect(dto.stats.runs).toBe(0)
+    expect(
+      toSteelAgentVersionRefDTO(createFakeSteelAgentVersion({ number: 5 })),
+    ).toMatchObject({ number: 5, status: 'PUBLISHED' })
   })
 })

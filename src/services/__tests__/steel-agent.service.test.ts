@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
+import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import {
   createFakeSteelAgentRun,
   createFakeSteelAgentRunDetail,
@@ -9,6 +10,7 @@ import {
 } from '@/src/__tests__/factories/steel-agent.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden, notFound } from '@/src/errors'
+import { appError } from '@/src/errors/app-error'
 import type { AnySteelAiTool } from '@/src/lib/ai/tools/types'
 import { SYSTEM_PROFILE_PERMISSIONS } from '@/src/lib/permissions'
 import { err, ok } from '@/src/lib/result'
@@ -47,6 +49,7 @@ vi.mock('@/src/services/authz', async (importOriginal) => ({
 vi.mock('@/src/repositories/steel-agent.repository')
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/ai-settings.repository')
+vi.mock('@/src/services/steel-agent-version.service')
 vi.mock('@/src/lib/steel-agents/enqueue')
 
 import { enqueueSteelAgentRun } from '@/src/lib/steel-agents/enqueue'
@@ -58,6 +61,7 @@ import {
 } from '@/src/repositories/steel-agent.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { assertMember } from '@/src/services/authz'
+import { SteelAgentVersionService } from '@/src/services/steel-agent-version.service'
 import { SteelAgentService } from '../steel-agent.service'
 
 const member = vi.mocked(assertMember)
@@ -67,6 +71,7 @@ const memberships = vi.mocked(MembershipRepository)
 const settings = vi.mocked(WorkspaceAiSettingsRepository)
 const modules = vi.mocked(WorkspaceModuleAccessRepository)
 const enqueue = vi.mocked(enqueueSteelAgentRun)
+const versions = vi.mocked(SteelAgentVersionService)
 
 const tool = (
   name: string,
@@ -164,6 +169,17 @@ beforeEach(() => {
   )
   runs.update.mockResolvedValue(ok(createFakeSteelAgentRun()))
   enqueue.mockResolvedValue(ok(true))
+  versions.ensureBaseline.mockResolvedValue(ok(true))
+  versions.checkEvalSet.mockResolvedValue(ok({ caseCount: 3 }))
+  versions.submit.mockImplementation(async (input) =>
+    ok(
+      createFakeSteelAgentVersion({
+        agentId: input.agent.id,
+        number: 2,
+        status: input.evalSetId ? 'PENDING_EVAL' : 'PUBLISHED',
+      }),
+    ),
+  )
 })
 
 describe('SteelAgentService — read', () => {
@@ -269,6 +285,37 @@ describe('SteelAgentService.create', () => {
       }),
     )
     expect(dto.name).toBe('Triagem')
+    expect(versions.ensureBaseline).toHaveBeenCalledTimes(1)
+  })
+
+  it('should validate the gate set and still create when the baseline fails', async () => {
+    expectOk(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...baseCreate(),
+        evalSetId: 'set1',
+        evalMinPassRate: 0.9,
+      }),
+    )
+    expect(versions.checkEvalSet).toHaveBeenCalledWith('ws1', 'set1', {
+      requireCases: false,
+    })
+    expect(agents.create.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ evalSetId: 'set1', evalMinPassRate: 0.9 }),
+    )
+
+    versions.ensureBaseline.mockResolvedValue(err(databaseError('x')))
+    expectOk(await SteelAgentService.create('admin1', 'ws1', baseCreate()))
+
+    versions.checkEvalSet.mockResolvedValue(
+      err(appError('STEEL_AGENT_EVAL_SET_INVALID', 'x')),
+    )
+    expectErr(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...baseCreate(),
+        evalSetId: 'set1',
+      }),
+      'STEEL_AGENT_EVAL_SET_INVALID',
+    )
   })
 
   it('should forbid members and viewers', async () => {
@@ -334,12 +381,24 @@ describe('SteelAgentService.update', () => {
   const update = (dto: UpdateSteelAgentDTO) =>
     SteelAgentService.update('admin1', 'ws1', 'agent1', dto)
 
-  it('should merge the trigger and replace tools', async () => {
-    expectOk(
+  it('should merge the trigger and send the new tools through a version', async () => {
+    const result = expectOk(
       await update({
         triggerType: 'EVENT',
         eventKey: 'sd.ticket.created',
         tools: [{ toolName: 'sd_list_tickets', mode: 'AUTO' }],
+        changeNote: 'Só leitura',
+        rolloutPercent: 25,
+      }),
+    )
+    expect(versions.submit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: 'admin1',
+        changeNote: 'Só leitura',
+        rolloutPercent: 25,
+        content: expect.objectContaining({
+          tools: [{ toolName: 'sd_list_tickets', mode: 'AUTO' }],
+        }),
       }),
     )
     expect(agents.update).toHaveBeenCalledWith(
@@ -350,7 +409,63 @@ describe('SteelAgentService.update', () => {
         cron: null,
         nextRunAt: null,
       }),
-      [{ toolName: 'sd_list_tickets', mode: 'AUTO' }],
+    )
+    expect(result.version).toEqual(
+      expect.objectContaining({ number: 2, status: 'PUBLISHED' }),
+    )
+  })
+
+  it('should keep the agent fields out of a gated edit and write them when no version is made', async () => {
+    agents.findById.mockResolvedValue(ok({ ...AGENT, evalSetId: 'set1' }))
+    const gated = expectOk(await update({ instructions: 'Novo texto' }))
+    expect(versions.submit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        evalSetId: 'set1',
+        content: expect.objectContaining({ instructions: 'Novo texto' }),
+      }),
+    )
+    expect(gated.version?.status).toBe('PENDING_EVAL')
+    expect(agents.update.mock.calls[0][1]).not.toHaveProperty('instructions')
+
+    vi.clearAllMocks()
+    agents.findById.mockResolvedValue(ok(AGENT))
+    agents.update.mockImplementation(async (_id, data) =>
+      ok({ ...AGENT, ...data } as never),
+    )
+    const same = expectOk(
+      await update({
+        instructions: AGENT.instructions,
+        maxToolRounds: AGENT.maxToolRounds,
+      }),
+    )
+    expect(versions.submit).not.toHaveBeenCalled()
+    expect(same.version).toBeNull()
+    expect(agents.update.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ instructions: AGENT.instructions }),
+    )
+  })
+
+  it('should validate a new gate set and propagate version errors', async () => {
+    expectOk(await update({ evalSetId: 'set9' }))
+    expect(versions.checkEvalSet).toHaveBeenCalledWith('ws1', 'set9', {
+      requireCases: false,
+    })
+    expect(versions.submit).not.toHaveBeenCalled()
+
+    versions.checkEvalSet.mockResolvedValue(
+      err(appError('STEEL_AGENT_EVAL_SET_INVALID', 'x')),
+    )
+    expectErr(
+      await update({ evalSetId: 'set9' }),
+      'STEEL_AGENT_EVAL_SET_INVALID',
+    )
+
+    versions.submit.mockResolvedValue(
+      err(appError('STEEL_AGENT_VERSION_PENDING', 'x')),
+    )
+    expectErr(
+      await update({ instructions: 'Outro texto' }),
+      'STEEL_AGENT_VERSION_PENDING',
     )
   })
 
