@@ -2,7 +2,11 @@
 
 import {
   Activity01Icon,
+  Cursor01Icon,
   Delete02Icon,
+  Mail01Icon,
+  MailOpen01Icon,
+  MailRemove01Icon,
   PencilEdit02Icon,
   PlusSignIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -11,10 +15,9 @@ import { SteelIcon } from '@/components/icon/icon'
 import { useCrmTimeline } from '@/src/hooks/use-crm-timeline'
 import type { CrmActivityDTO } from '@/types/crm-activity'
 
-const ACTION_META: Record<
-  CrmActivityDTO['action'],
-  { icon: typeof Activity01Icon; color: string; verb: string }
-> = {
+type ActionMeta = { icon: typeof Activity01Icon; color: string; verb: string }
+
+const ACTION_META: Record<CrmActivityDTO['action'], ActionMeta> = {
   CREATED: { icon: PlusSignIcon, color: 'text-emerald-600', verb: 'criou' },
   UPDATED: {
     icon: PencilEdit02Icon,
@@ -22,7 +25,48 @@ const ACTION_META: Record<
     verb: 'atualizou',
   },
   DELETED: { icon: Delete02Icon, color: 'text-rose-600', verb: 'removeu' },
+  // Newsletter bridge (ADR 0054 phase 2): the person did it, not a member,
+  // so the summary is shown on its own.
+  NEWSLETTER_SUBSCRIBED: {
+    icon: Mail01Icon,
+    color: 'text-primary',
+    verb: 'assinou uma newsletter',
+  },
+  NEWSLETTER_CONFIRMED: {
+    icon: Mail01Icon,
+    color: 'text-primary',
+    verb: 'confirmou a inscrição',
+  },
+  NEWSLETTER_UNSUBSCRIBED: {
+    icon: MailRemove01Icon,
+    color: 'text-muted-foreground',
+    verb: 'saiu de uma newsletter',
+  },
+  NEWSLETTER_ISSUE_RECEIVED: {
+    icon: Mail01Icon,
+    color: 'text-muted-foreground',
+    verb: 'recebeu uma edição',
+  },
+  NEWSLETTER_ISSUE_OPENED: {
+    icon: MailOpen01Icon,
+    color: 'text-primary',
+    verb: 'abriu uma edição',
+  },
+  NEWSLETTER_LINK_CLICKED: {
+    icon: Cursor01Icon,
+    color: 'text-primary',
+    verb: 'clicou em um link',
+  },
 }
+
+const FALLBACK_META: ActionMeta = {
+  icon: Activity01Icon,
+  color: 'text-muted-foreground',
+  verb: 'registrou uma atividade',
+}
+
+/** Entries the contact did (newsletter), with no member as actor. */
+const isContactAction = (action: string) => action.startsWith('NEWSLETTER_')
 
 function formatRelative(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -94,7 +138,8 @@ export function CrmRecordTimeline({
       ) : (
         <ol className='flex flex-col gap-3'>
           {items.map((item) => {
-            const meta = ACTION_META[item.action]
+            const meta = ACTION_META[item.action] ?? FALLBACK_META
+            const byContact = isContactAction(item.action)
             const actor = item.actorUserId
               ? (userMap[item.actorUserId] ?? 'Alguém')
               : 'Sistema'
@@ -110,10 +155,14 @@ export function CrmRecordTimeline({
                   />
                 </div>
                 <div className='min-w-0 flex-1'>
-                  <p className='text-sm'>
-                    <span className='font-medium'>{actor}</span>{' '}
-                    {item.summary ?? meta.verb}
-                  </p>
+                  {byContact ? (
+                    <p className='text-sm'>{item.summary ?? meta.verb}</p>
+                  ) : (
+                    <p className='text-sm'>
+                      <span className='font-medium'>{actor}</span>{' '}
+                      {item.summary ?? meta.verb}
+                    </p>
+                  )}
                   <p className='text-muted-foreground text-xs'>
                     {formatRelative(item.createdAt)}
                   </p>

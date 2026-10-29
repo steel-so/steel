@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
+import { CrmPersonNewslettersCard } from '@/app/_components/crm/newsletters/bridge/crm-person-newsletters-card'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import {
@@ -112,11 +113,17 @@ export function CrmPeopleTable({
       searchPlaceholder='Buscar pessoas…'
       refetch={refetch}
       renderRecordExtra={(record) => (
-        <CrmRecordTimeline
-          workspaceId={workspaceId}
-          personId={record.id}
-          userMap={lookups.maps.users}
-        />
+        <div className='flex flex-col gap-6'>
+          <CrmPersonNewslettersCard
+            workspaceId={workspaceId}
+            personId={record.id}
+          />
+          <CrmRecordTimeline
+            workspaceId={workspaceId}
+            personId={record.id}
+            userMap={lookups.maps.users}
+          />
+        </div>
       )}
     />
   )
