@@ -1884,4 +1884,15 @@ export const crmNewsletterSegmentEmpty = (): AppError =>
   appError(
     'CRM_NEWSLETTER_NO_SUBSCRIBERS',
     'Nenhum assinante ativo corresponde ao público escolhido',
+// newsletter2 nl2-automation: welcome series.
+export const crmNewsletterWelcomeStepNotFound = (): AppError =>
+  appError(
+    'CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND',
+    'Etapa de boas-vindas não encontrada',
+  )
+
+export const crmNewsletterWelcomeStepLimitReached = (max: number): AppError =>
+  appError(
+    'CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED',
+    `A série de boas-vindas aceita no máximo ${max} etapas`,
   )

@@ -18,6 +18,7 @@ import { processCrmApolloImport } from '../src/lib/queue/processors/crm-apollo-i
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
 import { processCrmNewsletter } from '../src/lib/queue/processors/crm-newsletter'
+import { processCrmNewsletterAutomation } from '../src/lib/queue/processors/crm-newsletter-automation'
 import { processCrmProposalExpiry } from '../src/lib/queue/processors/crm-proposal-expiry'
 import { processCrmScheduledSend } from '../src/lib/queue/processors/crm-scheduled-send'
 import { processCrmSocialPostsTick } from '../src/lib/queue/processors/crm-social-posts-tick'
@@ -63,6 +64,7 @@ import {
   scheduleAiUsageWeeklyEmailJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
+  scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
   scheduleCrmProposalExpiryJobs,
   scheduleCrmScheduledSendJobs,
@@ -291,6 +293,12 @@ async function main(): Promise<void> {
   )
   workers.push(registerWorker(QueueName.SendingDomains, processSendingDomains))
   workers.push(registerWorker(QueueName.CrmNewsletter, processCrmNewsletter))
+  workers.push(
+    registerWorker(
+      QueueName.CrmNewsletterAutomation,
+      processCrmNewsletterAutomation,
+    ),
+  )
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -332,6 +340,7 @@ async function main(): Promise<void> {
   await scheduleWhatsappArchiveJobs()
   await scheduleSendingDomainsJobs()
   await scheduleCrmNewsletterJobs()
+  await scheduleCrmNewsletterAutomationJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

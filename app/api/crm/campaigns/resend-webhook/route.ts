@@ -4,6 +4,7 @@ import { RESEND_WEBHOOK_SECRET } from '@/lib/env/server'
 import { verifyResendSignature } from '@/src/lib/crm-campaign/resend-webhook'
 import { ResendWebhookEventSchema } from '@/src/schemas/crm-campaign.schema'
 import { CrmCampaignTrackingService } from '@/src/services/crm-campaign-tracking.service'
+import { CrmNewsletterAutomationTrackingService } from '@/src/services/crm-newsletter-automation-tracking.service'
 import { CrmNewsletterTrackingService } from '@/src/services/crm-newsletter-tracking.service'
 import {
   handleError,
@@ -58,6 +59,14 @@ export const POST = withAxiom(async (request: NextRequest) => {
   )
   if (!newsletter.ok) return handleError(newsletter.error)
   if (newsletter.value) return successResponse({ tracked: true })
+
+  // Welcome series and re-engagement e-mails (newsletter2, nl2-automation).
+  const automation = await CrmNewsletterAutomationTrackingService.onEmailEvent(
+    parsed.data,
+    now,
+  )
+  if (!automation.ok) return handleError(automation.error)
+  if (automation.value) return successResponse({ tracked: true })
 
   const result = await CrmCampaignTrackingService.onEmailEvent(parsed.data, now)
   if (!result.ok) return handleError(result.error)

@@ -202,6 +202,11 @@ export const TAG_GROUPS = [
         description:
           'Público das edições: segmentos salvos por newsletter (condições de assinante, engajamento e pessoa do CRM), público da edição e prévia ao vivo da audiência.',
       },
+      {
+        name: 'CRM · Newsletter · Automação',
+        description:
+          'Série de boas-vindas (e-mails depois da confirmação, com estatística por etapa) e reengajamento de assinantes inativos.',
+      },
     ],
   },
   {

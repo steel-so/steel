@@ -5520,6 +5520,8 @@ enum NotificationKind {
   CRM_NEWSLETTER_USAGE_WARNING
   /// CRM newsletter: the monthly e-mail quota was used up.
   CRM_NEWSLETTER_USAGE_LIMIT_REACHED
+  /// CRM newsletter (nl2-automation): re-engagement run summary for the creator.
+  CRM_NEWSLETTER_REENGAGEMENT_SUMMARY
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -9802,6 +9804,10 @@ model CrmNewsletter {
   issues        CrmNewsletterIssue[]
   forms         CrmForm[]
   segments      CrmNewsletterSegment[]
+  // newsletter2 nl2-automation
+  welcomeSteps         CrmNewsletterWelcomeStep[]
+  reengagementSettings CrmNewsletterReengagementSettings?
+  reengagements        CrmNewsletterReengagement[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, deletedAt])
@@ -9863,6 +9869,9 @@ model CrmNewsletterSubscriber {
   deliveries CrmNewsletterIssueRecipient[]
   /// Segments filter on the linked person (slice nl2-segments).
   person     CrmPerson?                    @relation(fields: [personId], references: [id], onDelete: SetNull)
+  // newsletter2 nl2-automation
+  welcomeDeliveries CrmNewsletterWelcomeDelivery[]
+  reengagements     CrmNewsletterReengagement[]
 
   @@unique([newsletterId, email])
   @@index([newsletterId, status])
@@ -10056,4 +10065,146 @@ model CrmNewsletterSegment {
   @@unique([newsletterId, name])
   @@index([workspaceId])
   @@map("crm_newsletter_segments")
+// ─── newsletter2 · nl2-automation: welcome series + re-engagement ─────────
+
+enum CrmNewsletterDelayUnit {
+  HOURS
+  DAYS
+}
+
+/// One e-mail of the welcome series of a newsletter, sent `delay` after the
+/// subscriber's confirmation. Content is a Steel Canvas e-mail document.
+model CrmNewsletterWelcomeStep {
+  id              String                 @id @default(cuid())
+  newsletterId    String                 @map("newsletter_id")
+  workspaceId     String                 @map("workspace_id")
+  /// Order in the series (0, 1, 2…), shown in the "Boas-vindas" tab.
+  position        Int
+  delayValue      Int                    @map("delay_value")
+  delayUnit       CrmNewsletterDelayUnit @default(DAYS) @map("delay_unit")
+  subject         String
+  preheader       String?
+  builderDocument Json                   @default("{}") @map("builder_document")
+  enabled         Boolean                @default(true)
+  createdById     String                 @map("created_by_id")
+  updatedById     String?                @map("updated_by_id")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  newsletter CrmNewsletter                  @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  deliveries CrmNewsletterWelcomeDelivery[]
+
+  @@index([newsletterId, position])
+  @@index([enabled])
+  @@map("crm_newsletter_welcome_steps")
+}
+
+/// Progress of the welcome series: one row per (step, subscriber), created
+/// when the step is claimed for sending — the unique key makes the send
+/// idempotent.
+model CrmNewsletterWelcomeDelivery {
+  id                String                      @id @default(cuid())
+  stepId            String                      @map("step_id")
+  newsletterId      String                      @map("newsletter_id")
+  workspaceId       String                      @map("workspace_id")
+  subscriberId      String                      @map("subscriber_id")
+  email             String
+  status            CrmNewsletterDeliveryStatus @default(SENDING)
+  skipReason        String?                     @map("skip_reason")
+  providerMessageId String?                     @unique @map("provider_message_id")
+  error             String?
+  sentAt            DateTime?                   @map("sent_at")
+  deliveredAt       DateTime?                   @map("delivered_at")
+  openedAt          DateTime?                   @map("opened_at")
+  clickedAt         DateTime?                   @map("clicked_at")
+  bouncedAt         DateTime?                   @map("bounced_at")
+  complainedAt      DateTime?                   @map("complained_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+
+  step       CrmNewsletterWelcomeStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  subscriber CrmNewsletterSubscriber  @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, subscriberId])
+  @@index([status, updatedAt])
+  @@index([subscriberId])
+  @@map("crm_newsletter_welcome_deliveries")
+}
+
+enum CrmNewsletterReengagementAction {
+  /// The inactive subscriber leaves the newsletter (reason "inativo").
+  UNSUBSCRIBE
+  /// Only recorded as inactive; keeps receiving.
+  FLAG
+}
+
+/// Re-engagement of inactive subscribers of a newsletter (off by default).
+model CrmNewsletterReengagementSettings {
+  newsletterId String                          @id @map("newsletter_id")
+  workspaceId  String                          @map("workspace_id")
+  enabled      Boolean                         @default(false)
+  /// N: issues received in the window.
+  minIssues    Int                             @default(3) @map("min_issues")
+  /// X: window without opens or clicks.
+  inactiveDays Int                             @default(90) @map("inactive_days")
+  /// Y: time to answer the re-engagement e-mail.
+  graceDays    Int                             @default(30) @map("grace_days")
+  action       CrmNewsletterReengagementAction @default(UNSUBSCRIBE)
+  subject      String
+  heading      String
+  body         String                          @db.Text
+  buttonLabel  String                          @map("button_label")
+  updatedById  String?                         @map("updated_by_id")
+  createdAt    DateTime                        @default(now()) @map("created_at")
+  updatedAt    DateTime                        @updatedAt @map("updated_at")
+
+  newsletter CrmNewsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+
+  @@index([enabled])
+  @@map("crm_newsletter_reengagement_settings")
+}
+
+enum CrmNewsletterReengagementStatus {
+  /// Claimed by the monthly run, e-mail on its way.
+  SENDING
+  /// E-mail sent; waiting `graceDays` for an open, click or the button.
+  WAITING
+  REENGAGED
+  /// Inactive after the grace period: left the newsletter.
+  UNSUBSCRIBED
+  /// Inactive after the grace period: only flagged (setting FLAG).
+  FLAGGED
+  /// Left the newsletter (or bounced) before the end of the grace period.
+  SKIPPED
+  FAILED
+}
+
+/// One re-engagement attempt: subscriber × monthly cycle.
+model CrmNewsletterReengagement {
+  id                String                          @id @default(cuid())
+  newsletterId      String                          @map("newsletter_id")
+  workspaceId       String                          @map("workspace_id")
+  subscriberId      String                          @map("subscriber_id")
+  email             String
+  /// "YYYY-MM" (America/Sao_Paulo) of the run that sent it.
+  cycle             String
+  status            CrmNewsletterReengagementStatus @default(SENDING)
+  providerMessageId String?                         @unique @map("provider_message_id")
+  error             String?
+  sentAt            DateTime?                       @map("sent_at")
+  openedAt          DateTime?                       @map("opened_at")
+  clickedAt         DateTime?                       @map("clicked_at")
+  /// "Quero continuar recebendo" pressed.
+  reengagedAt       DateTime?                       @map("reengaged_at")
+  resolvedAt        DateTime?                       @map("resolved_at")
+  createdAt         DateTime                        @default(now()) @map("created_at")
+  updatedAt         DateTime                        @updatedAt @map("updated_at")
+
+  newsletter CrmNewsletter           @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  subscriber CrmNewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, cycle])
+  @@index([newsletterId, status])
+  @@index([status, sentAt])
+  @@map("crm_newsletter_reengagements")
 }

@@ -99,6 +99,8 @@ export {
   crmNewsletterSubscriberExists,
   crmNewsletterSubscriberNotFound,
   crmNewsletterTokenInvalid,
+  crmNewsletterWelcomeStepLimitReached,
+  crmNewsletterWelcomeStepNotFound,
   crmNoteNotFound,
   crmOpportunityLineItemNotFound,
   crmOpportunityNotFound,
