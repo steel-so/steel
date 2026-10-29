@@ -45,13 +45,14 @@ export function toCrmCompanyEnrichmentDTO(
     tradeName: row.tradeName,
     cnaeCode: row.cnaeCode,
     cnaeDescription: row.cnaeDescription,
-    secondaryCnaes: (row.secondaryCnaes as CrmCnpjSecondaryCnaeDTO[]) ?? [],
+    secondaryCnaes:
+      (row.secondaryCnaes as unknown as CrmCnpjSecondaryCnaeDTO[]) ?? [],
     size: row.size as CrmCnpjSizeDTO | null,
     legalNature: row.legalNature,
     registrationStatus: row.registrationStatus,
     openedAt: row.openedAt ? row.openedAt.toISOString().slice(0, 10) : null,
     shareCapital: row.shareCapital ? Number(row.shareCapital) : null,
-    partners: (row.partners as CrmCnpjPartnerDTO[]) ?? [],
+    partners: (row.partners as unknown as CrmCnpjPartnerDTO[]) ?? [],
     source: row.source,
     fetchedAt: row.fetchedAt.toISOString(),
   }
