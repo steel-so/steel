@@ -8,6 +8,7 @@ import {
 } from '@/src/repositories/crm-workflow.repository'
 import type {
   CrmWorkflowLeadEvent,
+  CrmWorkflowNewsletterTriggerType,
   CrmWorkflowTriggerEntity,
   CrmWorkflowTriggerType,
 } from '@/src/schemas/crm-workflow.schema'
@@ -102,4 +103,80 @@ export async function dispatchCrmWorkflowRecordEvent(params: {
       // erros já persistidos no CrmWorkflowRun pelo próprio runner.
     })
   }
+}
+
+/** Payload of a newsletter trigger: `record` is the subscriber, so
+ * `{{trigger.record.email}}` works like in the record triggers. */
+export type CrmWorkflowNewsletterPayload = {
+  newsletter: { id: string; name: string }
+  record: {
+    id: string
+    email: string
+    name: string | null
+    status: string
+    personId: string | null
+  }
+  issue?: { id: string; subject: string; number: number | null }
+  url?: string
+}
+
+/**
+ * Newsletter bridge (ADR 0054 phase 2): fires the ACTIVE workflows whose
+ * trigger is `type` and whose filters (newsletter, "URL contains") match.
+ * The event comes from the public side (visitor, Resend webhook), so the run
+ * has no starter and acts as the workflow's creator, like the webhook
+ * trigger. Best-effort like `dispatchCrmWorkflowRecordEvent`: never throws.
+ */
+export async function dispatchCrmWorkflowNewsletterEvent(params: {
+  workspaceId: string
+  type: CrmWorkflowNewsletterTriggerType
+  payload: CrmWorkflowNewsletterPayload
+}): Promise<number> {
+  const wfList = await CrmWorkflowRepository.findActiveByWorkspace(
+    params.workspaceId,
+  )
+  if (!wfList.ok) return 0
+
+  let started = 0
+  for (const wf of wfList.value) {
+    if (!wf.activeVersion) continue
+    const definition = parseCrmWorkflowDefinition(wf.activeVersion.definition)
+    const trigger = definition.trigger.data
+    if (!trigger || trigger.type !== params.type) continue
+    if (
+      'newsletterId' in trigger &&
+      trigger.newsletterId &&
+      trigger.newsletterId !== params.payload.newsletter.id
+    ) {
+      continue
+    }
+    if ('urlContains' in trigger && trigger.urlContains) {
+      const url = (params.payload.url ?? '').toLowerCase()
+      if (!url.includes(trigger.urlContains.toLowerCase())) continue
+    }
+
+    const payload = { event: params.type, ...params.payload }
+    const run = await CrmWorkflowRunRepository.create({
+      workflowId: wf.id,
+      versionId: wf.activeVersion.id,
+      triggerType: triggerTypeToPrisma(trigger.type),
+      triggerPayload: payload as object,
+      startedById: null,
+    })
+    if (!run.ok) continue
+    started++
+
+    void runCrmWorkflow({
+      runId: run.value.id,
+      workspaceId: params.workspaceId,
+      actingUserId: wf.createdById,
+      definition,
+      triggerType: trigger.type,
+      triggerPayload: payload,
+      testMode: false,
+    }).catch(() => {
+      // errors are persisted on the CrmWorkflowRun by the runner.
+    })
+  }
+  return started
 }

@@ -33,6 +33,7 @@ import {
   type UpdateNewsletterPreferencesDTO,
 } from '@/src/schemas/crm-newsletter.schema'
 import { assertModuleEnabled } from './authz'
+import { CrmNewsletterBridge } from './crm-newsletter-bridge.service'
 import {
   type ConfirmationNewsletter,
   confirmResendWaitSeconds,
@@ -152,6 +153,10 @@ async function subscribeCore(input: SubscribeInput): Promise<Result<void>> {
       source: input.source,
       status: saved.value.status,
     },
+  })
+  await CrmNewsletterBridge.emit({
+    type: 'subscribed',
+    subscriberId: saved.value.id,
   })
 
   if (!pending) return ok(undefined)
@@ -373,6 +378,10 @@ export const CrmNewsletterPublicService = {
           newsletterId: subscriber.newsletterId,
         },
       })
+      await CrmNewsletterBridge.emit({
+        type: 'confirmed',
+        subscriberId: subscriber.id,
+      })
     } else if (subscriber.status !== 'ACTIVE') {
       // Left (or bounced) after asking: an old link never brings them back.
       return err(crmNewsletterTokenInvalid())
@@ -483,6 +492,10 @@ export const CrmNewsletterPublicService = {
           source: input.oneClick ? 'ONE_CLICK' : 'LINK',
         },
       })
+      await CrmNewsletterBridge.emit({
+        type: 'unsubscribed',
+        subscriberId: subscriber.id,
+      })
     }
     if (recipientId) {
       const marked =
@@ -568,7 +581,7 @@ export const CrmNewsletterPublicService = {
       if (!lifted.ok) return lifted
     }
 
-    let joined = 0
+    const joinedIds: string[] = []
     if (join.length > 0) {
       const people = await CrmNewsletterSubscriberRepository.personIdsByEmails(
         workspaceId,
@@ -602,9 +615,10 @@ export const CrmNewsletterPublicService = {
               sourceRef: 'preferences',
             })
         if (!saved.ok) return saved
-        joined++
+        joinedIds.push(saved.value.id)
       }
     }
+    const joined = joinedIds.length
 
     if (dto.unsubscribeAll) {
       const optOut = await CrmEmailOptOutRepository.upsert({
@@ -629,6 +643,11 @@ export const CrmNewsletterPublicService = {
         },
       })
     }
+    await CrmNewsletterBridge.emitMany(
+      'unsubscribed',
+      leave.map((s) => s.id),
+    )
+    await CrmNewsletterBridge.emitMany('subscribed', joinedIds)
 
     return preferencesOf(workspaceId, email)
   },
