@@ -1,0 +1,103 @@
+---
+title: Inventário e descoberta de ativos
+description: Agente para Windows e Linux e varredura SNMP que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
+section: servicedesk
+order: 13
+---
+
+O **Inventário** descobre os equipamentos sozinho e mantém os **Itens de
+configuração** em dia, sem cadastro manual. Há dois caminhos que se somam:
+
+- o **agente**, instalado em computadores Windows e Linux: envia hardware,
+  sistema, rede, discos, memória e os programas instalados;
+- a **varredura SNMP**, que percorre faixas de rede e descobre switches,
+  impressoras, firewalls e servidores sem instalar nada neles.
+
+<Callout type='admin'>
+  A configuração fica em **ServiceDesk › Configurações › Inventário** e é
+  exclusiva de administradores do módulo. Agentes de atendimento consultam o
+  inventário em **ServiceDesk › Inventário**.
+</Callout>
+
+## Instalar o agente
+
+1. Em **Configurações › Inventário**, clique em **Novo token** e dê um nome que
+   diga onde ele será usado (por exemplo, "Matriz — estações").
+2. Copie o token e os comandos de instalação. **O token aparece uma única vez**;
+   se perder, revogue e crie outro.
+3. Baixe o binário do seu sistema operacional com a equipe de TI e execute o
+   comando mostrado:
+
+| Sistema | Comando |
+| --- | --- |
+| Linux (como root) | `sudo ./steel-inventory-agent install --url https://seu-steel --token <token>` |
+| Windows (PowerShell como administrador) | `.\steel-inventory-agent.exe install --url https://seu-steel --token <token>` |
+
+No Linux o agente vira um serviço (`steel-inventory-agent`); no Windows, uma
+tarefa agendada que roda a cada 6 horas. Em ambos o primeiro relatório sai na
+hora. Para ver o que seria enviado, sem enviar, rode `steel-inventory-agent
+collect`.
+
+<Callout type='aviso'>
+  Um token vale para todas as máquinas que o usarem, e quem o tem consegue
+  enviar inventário para o workspace. Trate como uma senha e crie tokens
+  separados por site ou lote de máquinas: revogar um não afeta os outros.
+</Callout>
+
+Para tirar o agente de uma máquina, rode `steel-inventory-agent uninstall`.
+
+## Varredura SNMP
+
+Em **Configurações › Inventário › Varredura SNMP**, crie um **alvo** com:
+
+- as **faixas de endereço**, uma por linha (`10.0.0.0/24` ou um IP avulso), com
+  até 1.024 endereços no total;
+- a **community** somente leitura do SNMP v2c (ela é guardada cifrada e nunca é
+  exibida de novo) e a porta;
+- a **frequência**: de hora em hora até uma vez por semana.
+
+A primeira varredura roda em poucos minutos; **Varrer agora** força outra. A
+lista mostra o resultado da última (concluída, parcial ou falhou), quantos
+equipamentos foram encontrados e o motivo quando algo deu errado. Endereços sem
+equipamento não são erro.
+
+## O que aparece no inventário
+
+A tela **ServiceDesk › Inventário** tem três abas:
+
+- **Equipamentos**: nome, origem (agente ou SNMP), sistema, IP, memória, pior
+  disco, alertas e último contato. Clique para ver o hardware completo, os
+  discos, o software instalado e o item da CMDB. Filtre por origem, só com
+  alerta aberto ou só **sem sinal**.
+- **Alertas**: discos e memória que passaram do limiar.
+- **Software**: todos os programas, agrupados por nome e versão, com quantos
+  equipamentos têm cada um.
+
+## Alertas de disco e memória
+
+Quando o uso de um volume ou da memória chega ao limiar, o inventário abre um
+alerta; quando o equipamento volta ao normal, o alerta é encerrado sozinho (e
+reabre se o problema voltar). Os limiares ficam em **Configurações ›
+Inventário** — o padrão é 90%, de 50% a 100%. Um equipamento que não envia
+relatório há mais de **7 dias** (ajustável) aparece como **Sem sinal**.
+
+## A CMDB acompanha o inventário
+
+Com **Manter a CMDB atualizada** ligado (o padrão), cada equipamento descoberto
+vira um item de configuração:
+
+- se já existe um item cadastrado à mão com o mesmo **número de série**, ele é
+  aproveitado em vez de duplicado;
+- senão, é criado um item no tipo **Computador** (agente) ou **Equipamento de
+  rede** (SNMP) — ou no tipo que você escolher;
+- depois disso, o inventário mantém **série, fabricante, modelo e IP**. Nome,
+  status, responsável e criticidade continuam sendo seus.
+
+<Callout type='nota'>
+  Se você excluir o item na CMDB, o próximo relatório do equipamento cria outro.
+  Para deixar de acompanhar um equipamento, desligue a sincronização ou revogue
+  o token do agente.
+</Callout>
+
+Veja também [Catálogo e cadastros](/docs/servicedesk/catalogo-e-cadastros) e
+[Canais, automações e plantão](/docs/servicedesk/canais-e-automacoes).
