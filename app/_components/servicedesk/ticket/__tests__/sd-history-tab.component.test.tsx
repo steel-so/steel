@@ -263,6 +263,7 @@ describe('SdTicketHistoryTab — agent', () => {
         visibility: 'INTERNAL',
         attachmentIds: ['up1'],
         mentionedUserIds: [],
+        mentionedAgentIds: [],
       }),
     )
     await waitFor(() =>
@@ -332,6 +333,33 @@ describe('SdTicketHistoryTab — agent', () => {
     )
   })
 
+  it('mentions a Steel Agent with "@" and sends it as mentionedAgentIds', async () => {
+    const spy = routes([
+      {
+        match: /\/workspaces\/[^/]+\/agents$/,
+        data: [
+          { id: 'sa-1', name: 'Triagem IA', enabled: true },
+          { id: 'sa-2', name: 'Triagem antiga', enabled: false },
+        ],
+      },
+    ])
+    renderWithQuery(<SdTicketHistoryTab {...tabProps('agent')} />)
+    await screen.findByText('O servidor caiu de novo')
+    const box = screen.getByLabelText('Mensagem')
+    fireEvent.change(box, { target: { value: 'Pode ver @Tri' } })
+    expect(screen.queryByRole('option', { name: /Triagem antiga/ })).toBeNull()
+    fireEvent.click(await screen.findByRole('option', { name: /Triagem IA/ }))
+    expect((box as HTMLTextAreaElement).value).toBe('Pode ver @Triagem IA ')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar mensagem' }))
+    await waitFor(() =>
+      expect(fetchBody(spy, `${TAB_URL}/messages`)).toMatchObject({
+        mentionedAgentIds: ['sa-1'],
+        mentionedUserIds: [],
+      }),
+    )
+  })
+
   it('drops a mention the agent erased before sending', async () => {
     const spy = routes()
     renderWithQuery(<SdTicketHistoryTab {...tabProps('agent')} />)
@@ -345,6 +373,7 @@ describe('SdTicketHistoryTab — agent', () => {
     await waitFor(() =>
       expect(fetchBody(spy, `${TAB_URL}/messages`)).toMatchObject({
         mentionedUserIds: [],
+        mentionedAgentIds: [],
       }),
     )
   })
@@ -468,6 +497,7 @@ describe('SdTicketHistoryTab — requester / closed', () => {
         visibility: 'PUBLIC',
         attachmentIds: [],
         mentionedUserIds: [],
+        mentionedAgentIds: [],
       }),
     )
     expect(

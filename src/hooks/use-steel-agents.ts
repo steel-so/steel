@@ -45,8 +45,9 @@ export interface SteelAgentInput {
 /** Run states that will change on their own (poll while visible). */
 const LIVE = new Set(['QUEUED', 'RUNNING'])
 
-export function useSteelAgents(workspaceId: string) {
+export function useSteelAgents(workspaceId: string, enabled = true) {
   return useQuery({
+    enabled: enabled && Boolean(workspaceId),
     queryKey: [...STEEL_AGENTS_KEY(workspaceId), 'list'],
     queryFn: () =>
       apiFetch<SteelAgentDTO[]>(

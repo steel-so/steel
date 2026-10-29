@@ -38,6 +38,7 @@ import {
   useSendSdTicketMessage,
   useUploadSdTicketAttachment,
 } from '@/src/hooks/use-sd-ticket-messages'
+import { useSteelAgents } from '@/src/hooks/use-steel-agents'
 import type { SdCannedResponseDTO } from '@/types/sd-config'
 import type {
   SdMessageVisibilityDTO,
@@ -102,6 +103,13 @@ export function sdResolveMentions(
 
 let pendingSeq = 0
 
+/** Quem foi citado com `@`: pessoa do atendimento ou Steel Agent (IA). */
+interface PickedMention {
+  id: string
+  name: string
+  kind: 'user' | 'agent'
+}
+
 export function SdMessageComposer({
   workspaceId,
   ticketRef,
@@ -120,7 +128,7 @@ export function SdMessageComposer({
   const [text, setText] = useState('')
   const [visibility, setVisibility] = useState<SdMessageVisibilityDTO>('PUBLIC')
   const [pending, setPending] = useState<PendingFile[]>([])
-  const [picked, setPicked] = useState<{ id: string; name: string }[]>([])
+  const [picked, setPicked] = useState<PickedMention[]>([])
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [cannedOpen, setCannedOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -128,6 +136,7 @@ export function SdMessageComposer({
 
   const config = useSdConfig(isAgent ? workspaceId : '')
   const agents = useSdAgents(workspaceId, { enabled: isAgent })
+  const steelAgents = useSteelAgents(workspaceId, isAgent)
   const send = useSendSdTicketMessage(workspaceId, ticketRef)
   const upload = useUploadSdTicketAttachment(workspaceId, ticketRef)
   const removeAttachment = useDeleteSdTicketAttachment(workspaceId, ticketRef)
@@ -143,10 +152,14 @@ export function SdMessageComposer({
   const mentionMatches = useMemo(() => {
     if (mention === null) return []
     const q = mention.toLowerCase()
-    return (agents.data ?? [])
+    const people: PickedMention[] = (agents.data ?? [])
       .filter((a) => a.isAgent && a.name.toLowerCase().includes(q))
-      .slice(0, 6)
-  }, [agents.data, mention])
+      .map((a) => ({ id: a.id, name: a.name, kind: 'user' }))
+    const bots: PickedMention[] = (steelAgents.data ?? [])
+      .filter((a) => a.enabled && a.name.toLowerCase().includes(q))
+      .map((a) => ({ id: a.id, name: a.name, kind: 'agent' }))
+    return [...people, ...bots].slice(0, 8)
+  }, [agents.data, steelAgents.data, mention])
 
   const uploading = pending.some((p) => p.status === 'uploading')
   const readyIds = pending
@@ -202,7 +215,14 @@ export function SdMessageComposer({
         body: text.trim(),
         visibility: isAgent ? visibility : 'PUBLIC',
         attachmentIds: readyIds,
-        mentionedUserIds: sdResolveMentions(text, picked),
+        mentionedUserIds: sdResolveMentions(
+          text,
+          picked.filter((p) => p.kind === 'user'),
+        ),
+        mentionedAgentIds: sdResolveMentions(
+          text,
+          picked.filter((p) => p.kind === 'agent'),
+        ),
       })
       setText('')
       setPending([])
@@ -217,14 +237,12 @@ export function SdMessageComposer({
     setCannedOpen(false)
   }
 
-  function applyMention(agent: { id: string; name: string }) {
+  function applyMention(agent: PickedMention) {
     setText((current) =>
       current.replace(/@[\p{L}\p{N}._-]*$/u, `@${agent.name} `),
     )
     setPicked((current) =>
-      current.some((a) => a.id === agent.id)
-        ? current
-        : [...current, { id: agent.id, name: agent.name }],
+      current.some((a) => a.id === agent.id) ? current : [...current, agent],
     )
   }
 
@@ -379,15 +397,20 @@ export function SdMessageComposer({
               className='absolute bottom-full left-0 z-20 mb-1 w-64 rounded-md border border-border bg-popover p-1 shadow-md'
             >
               {mentionMatches.map((a) => (
-                <div key={a.id}>
+                <div key={`${a.kind}:${a.id}`}>
                   <button
                     type='button'
                     role='option'
                     aria-selected={false}
                     onClick={() => applyMention(a)}
-                    className='w-full rounded px-2 py-1.5 text-left text-sm hover:bg-muted'
+                    className='flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted'
                   >
-                    {a.name}
+                    <span className='truncate'>{a.name}</span>
+                    {a.kind === 'agent' ? (
+                      <span className='shrink-0 text-muted-foreground text-xs'>
+                        Agente de IA
+                      </span>
+                    ) : null}
                   </button>
                 </div>
               ))}
