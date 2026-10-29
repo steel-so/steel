@@ -37,6 +37,35 @@ Nada é alterado no chamado sem você clicar.
 A IA do ServiceDesk usa a cota mensal de IA do workspace (veja
 [Uso e análises](/docs/steel-ai/uso-e-analises)).
 
+## Painel IA vs. técnico
+
+A tela **IA vs. técnico** (só agentes, no menu do ServiceDesk) compara o que a
+IA sugeriu com o que o técnico fez, para você medir a precisão e justificar o
+gasto com IA. Escolha o período (7, 30 ou 90 dias):
+
+- **Precisão por campo**: categoria, subcategoria, serviço, impacto, urgência,
+  prioridade, departamento e tags sugeridos pela triagem automática e pelo
+  copiloto, conferidos com o valor final do chamado. Só entram chamados
+  **resolvidos ou fechados**, porque antes disso o técnico ainda pode corrigir.
+  A coluna **Corrigidos** mostra quantas vezes a IA preencheu e o técnico trocou.
+- **Confiança × acerto**: mostra se a IA acerta mais quando declara mais
+  confiança. Se a faixa alta não for a mais precisa, vale revisar o catálogo.
+- **Copiloto**: quanto das respostas e soluções sugeridas o agente aproveitou.
+  *Adotada* é o texto quase igual ao sugerido, *editada* é o reaproveitamento
+  com ajustes e *não usada* é quando o agente escreveu outra coisa. Sugestões
+  recentes ficam *pendentes* por até 24 horas. Também há o aproveitamento por
+  agente.
+- **Pré-atendimento por IA**: conversas do portal e do WhatsApp, quantas foram
+  resolvidas pela base de conhecimento sem abrir chamado (taxa de desvio).
+- **Consumo da cota**: chamadas e custo da IA do ServiceDesk no período e o
+  custo por sugestão aproveitada.
+- **Divergências recentes**: os campos em que o técnico discordou da IA, com
+  link para o chamado.
+
+Quando a IA preenche impacto ou urgência, a prioridade é recalculada pela
+matriz do ServiceDesk e por isso não entra na comparação. O painel só lê dados
+que já existem: nada nele chama a IA nem consome a cota.
+
 ## Análise de risco
 
 A tela **Análise de risco** (só agentes) estima quais chamados abertos têm mais

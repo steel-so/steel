@@ -188,4 +188,21 @@ export const SdAiRepository = {
       await prisma.sdTicket.update({ where: { id: ticketId }, data })
     })
   },
+
+  /**
+   * Guarda um rascunho do copiloto (resposta, solução ou classificação) para
+   * o painel "IA vs. técnico" comparar com o que o técnico fez depois.
+   */
+  async recordSuggestion(input: {
+    workspaceId: string
+    ticketId: string
+    userId: string
+    kind: 'REPLY' | 'SOLUTION' | 'CLASSIFICATION'
+    text?: string
+    payload?: Prisma.InputJsonValue
+  }): Promise<Result<void>> {
+    return sdDb('Failed to store ServiceDesk AI suggestion', async () => {
+      await prisma.sdAiSuggestion.create({ data: input })
+    })
+  },
 }

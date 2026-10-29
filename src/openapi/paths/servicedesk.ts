@@ -1,4 +1,5 @@
 import type { OpenApiRegistry, RouteConfig } from '../registry'
+import { sdAiComparisonRoutes } from './servicedesk/ai-comparison'
 import { sdChangeCabRoutes } from './servicedesk/change-cab'
 import { sdConfigRoutes } from './servicedesk/config'
 import { sdContractRoutes } from './servicedesk/contracts'
@@ -40,6 +41,7 @@ const routes: RouteConfig[] = [
   ...sdContractRoutes,
   ...sdRiskRoutes,
   ...sdKcsRoutes,
+  ...sdAiComparisonRoutes,
   ...sdIntegrationRoutes,
 ]
 

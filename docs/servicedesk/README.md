@@ -255,6 +255,35 @@ de canal vira log e o resto segue; só erro de banco vira `err`.
   preferência de cada destinatário (o valor da regra vai para o log como
   `ruleEmail`).
 
+## Painel IA vs. técnico (S9)
+
+Compara o que a IA sugeriu com o que o técnico fez, para medir a precisão e
+justificar a cota de IA. Só leitura: nada chama a IA.
+
+- **Fontes.** A triagem automática já grava `SdTicket.aiTriage` (sugestões +
+  campos aplicados). O copiloto passou a gravar cada rascunho entregue em
+  `sd_ai_suggestions` (`SdAiSuggestion`: `REPLY`, `SOLUTION` ou
+  `CLASSIFICATION`, com texto ou payload) via `SdAiRepository.recordSuggestion`,
+  em melhor esforço: falhar ao gravar nunca derruba a sugestão. Consumo vem de
+  `ai_usage` (`SERVICEDESK_*`) e o pré-atendimento de `sd_ai_conversations`.
+- **Regras** (`src/lib/servicedesk/ai-comparison.ts`, puras): campo sugerido ×
+  valor final do chamado (`APPLIED_KEPT`, `APPLIED_CHANGED`, `AGREED`,
+  `DISAGREED`); só chamados `RESOLVED`/`CLOSED` entram na precisão (cancelados
+  ficam fora, em andamento contam como "aguardando o técnico"); a prioridade é
+  ignorada quando a IA aplicou impacto ou urgência (a matriz a recalcula);
+  texto por similaridade de Sørensen-Dice sobre palavras (sem acento, sem HTML):
+  `>= 0,8` adotada, `>= 0,35` editada, abaixo disso não usada; sem texto do
+  agente a sugestão fica pendente por 24 h (solução: enquanto o chamado estiver
+  aberto). Uma classificação conta como aproveitada quando metade dos campos
+  coincide.
+- **Camadas.** `GET /api/workspaces/[id]/servicedesk/ai/comparison?days=7|30|90`
+  → `SdAiComparisonService.overview` → `SdAiComparisonRepository`. Permissão
+  `sd-reports` (VIEW) e só agente. Tela `/ai-comparison`
+  (`SdAiComparisonPanel`, hook `useSdAiComparison`).
+- **Limites conhecidos.** A amostra de cada leitura é limitada a 5.000 linhas
+  por consulta; sugestões anteriores à migração não existem (só a triagem tem
+  histórico); similaridade de texto é uma heurística, não um juízo semântico.
+
 ## Risco preditivo (contrato para as outras fatias)
 
 Heurística explicável, **sem LLM** ([ADR 0016](../adr/0016-predictive-risk-explainable-heuristic.md)):
@@ -373,6 +402,7 @@ unitário em `src/lib/__tests__/servicedesk-risk-backtest.test.ts`.
 | `/tickets/[number]` | tela do chamado (abas: Histórico, WhatsApp, Tarefas, Horas, Custos, Aprovação, Peças, Itens filhos, Escalonamento, Rastreabilidade, Assinatura, Conhecimento) |
 | `/customers`, `/companies`, `/contacts`, `/config-items` | cadastros (o cliente tem a aba Contrato, com o consumo do período) |
 | `/knowledge`, `/knowledge/[articleId]` | base de conhecimento |
+| `/ai-comparison` | painel IA vs. técnico: precisão da triagem e do copiloto, aproveitamento por agente, pré-atendimento e consumo da cota |
 | `/risk` | análise de risco: fila por risco (faixa alta/média/baixa) e sugestões de problema a partir de incidentes repetidos |
 | `/dashboards`, `/dashboards/[id]`, `/dashboards/[id]/tv` | painéis |
 | `/settings` | configurações (abas; "Recorrentes" = rotinas preventivas) |

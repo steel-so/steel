@@ -1,4 +1,5 @@
 import {
+  AiMagicIcon,
   Alert02Icon,
   AlertDiamondIcon,
   ArrowDataTransferHorizontalIcon,
@@ -101,6 +102,9 @@ export default async function ServiceDeskLayout({
             </NavItem>
             <NavItem href={`${base}/risk`} icon={AlertDiamondIcon}>
               Análise de risco
+            </NavItem>
+            <NavItem href={`${base}/ai-comparison`} icon={AiMagicIcon}>
+              IA vs. técnico
             </NavItem>
           </NavGroup>
           <NavGroup>
