@@ -67,6 +67,7 @@ import {
 import { SdConditionsSchema } from '@/src/schemas/sd-rule.schema'
 import type { CreateSdTicketDTO } from '@/src/schemas/sd-ticket.schema'
 import type { SdChangeWarningDTO } from '@/types/sd-change'
+import { SatisfactionSurveyService } from './satisfaction-survey.service'
 import type { SdAccessContext } from './sd-access'
 import { sdTicketApprovalSatisfied } from './sd-approval-gate'
 import { sdAssertChangeSchedule } from './sd-change-schedule'
@@ -1412,6 +1413,20 @@ export const SdTicketEngine = {
     await notifyPhaseChange(ticket, after, target, config, actor, reopened)
     await publish(after, 'ticket.phase_changed', actor, config)
     void indexSearchDocument('sd-ticket', after.workspaceId, after.id)
+    if (
+      (target.category === 'RESOLVED' || target.category === 'CLOSED') &&
+      !isFinal(ticket.phase.category)
+    ) {
+      // NPS/CSAT/CES invitation (t1-nps-whatsapp); never fails the transition.
+      const survey = await SatisfactionSurveyService.onTicketResolved(after)
+      if (!survey.ok) {
+        logger.warn('servicedesk.ticket.survey_schedule_failed', {
+          workspaceId: after.workspaceId,
+          ticketId: after.id,
+          reason: survey.error.code,
+        })
+      }
+    }
     return ok(after)
   },
 

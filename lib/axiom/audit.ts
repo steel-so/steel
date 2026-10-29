@@ -260,6 +260,9 @@ export type AuditEntity =
   | 'crm_newsletter_issue_whatsapp'
   // newsletter2 nl2-digest-ai: automatic digest settings
   | 'crm_newsletter_digest'
+  // t1-nps-whatsapp: satisfaction surveys (NPS/CSAT/CES)
+  | 'satisfaction_survey'
+  | 'satisfaction_survey_config'
 
 export type AuditAction =
   | 'create'

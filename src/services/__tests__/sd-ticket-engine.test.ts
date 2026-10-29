@@ -24,6 +24,11 @@ vi.mock('@/src/lib/servicedesk/realtime')
 vi.mock('@/src/services/sd-notification.service', () => ({
   notifySdEvent: vi.fn(async () => ({ ok: true, value: {} })),
 }))
+vi.mock('@/src/services/satisfaction-survey.service', () => ({
+  SatisfactionSurveyService: {
+    onTicketResolved: vi.fn(async () => ({ ok: true, value: null })),
+  },
+}))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -41,6 +46,7 @@ import { SdChangeScheduleRepository } from '@/src/repositories/sd-change-schedul
 import { SdChangeWindowRepository } from '@/src/repositories/sd-change-window.repository'
 import { SdTicketRepository } from '@/src/repositories/sd-ticket.repository'
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
+import { SatisfactionSurveyService } from '../satisfaction-survey.service'
 import { notifySdEvent } from '../sd-notification.service'
 import {
   type SdActor,
@@ -1871,6 +1877,43 @@ describe('changePhase', () => {
         'solution',
         'solutionClassificationId',
       ])
+    })
+
+    it('schedules the satisfaction survey when the ticket is resolved, never failing the move', async () => {
+      vi.mocked(SatisfactionSurveyService.onTicketResolved).mockResolvedValue(
+        ok(null),
+      )
+      expectOk(
+        await SdTicketEngine.changePhase(
+          ticket(),
+          'ph-target',
+          agent,
+          config(),
+          {
+            solution: 'Reiniciado',
+            solutionClassificationId: 'sc',
+          },
+        ),
+      )
+      expect(SatisfactionSurveyService.onTicketResolved).toHaveBeenCalledTimes(
+        1,
+      )
+
+      vi.mocked(SatisfactionSurveyService.onTicketResolved).mockResolvedValue(
+        err(databaseError()),
+      )
+      expectOk(
+        await SdTicketEngine.changePhase(
+          ticket(),
+          'ph-target',
+          agent,
+          config(),
+          {
+            solution: 'Reiniciado',
+            solutionClassificationId: 'sc',
+          },
+        ),
+      )
     })
 
     it('rejects an invalid solution classification', async () => {

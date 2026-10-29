@@ -259,6 +259,11 @@ export const TAG_GROUPS = [
         description: 'SSE de eventos e webhooks de entrada da Meta e da Z-API.',
       },
       {
+        name: 'Comunicação · Pesquisas',
+        description:
+          'Pesquisas de satisfação NPS, CSAT e CES por WhatsApp e e-mail: regras de envio, envio avulso, relatórios e o link público do e-mail.',
+      },
+      {
         name: 'Comunicação · Equipes',
         description:
           'Equipes de atendimento (líderes e agentes) e a visibilidade das conversas.',

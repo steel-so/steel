@@ -621,6 +621,8 @@ model Workspace {
   whatsappAdSpends          WhatsAppAdSpend[]
   sendingDomains            WorkspaceSendingDomain[]
   crmNewsletters            CrmNewsletter[]
+  satisfactionSurveyConfigs SatisfactionSurveyConfig[]
+  satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
   crmNewsletterUsage        CrmNewsletterUsageMonthly[]
 
@@ -10535,6 +10537,109 @@ model WhatsAppAdSpend {
   @@index([workspaceId, sourceId])
   @@index([workspaceId, periodStart, periodEnd])
   @@map("whatsapp_ad_spends")
+}
+
+// nov: t1-nps-whatsapp ─────────────────────────────────────────────────────
+
+enum SatisfactionSurveyKind {
+  NPS
+  CSAT
+  CES
+}
+
+enum SatisfactionSurveyTrigger {
+  CONVERSATION_CLOSED
+  TICKET_RESOLVED
+  MANUAL
+}
+
+enum SatisfactionSurveyChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum SatisfactionSurveyStatus {
+  SCHEDULED
+  SENT
+  ANSWERED
+  SKIPPED
+  FAILED
+}
+
+/// Per-workspace rule that decides when a satisfaction survey goes out
+/// (one per trigger). Off by default: nothing is sent until an admin enables it.
+model SatisfactionSurveyConfig {
+  id             String                    @id @default(cuid())
+  workspaceId    String                    @map("workspace_id")
+  trigger        SatisfactionSurveyTrigger
+  kind           SatisfactionSurveyKind    @default(CSAT)
+  enabled        Boolean                   @default(false)
+  /// Minutes between the closing/resolution and the invitation.
+  delayMinutes   Int                       @default(5) @map("delay_minutes")
+  /// Hours the invitation stays answerable.
+  expiresInHours Int                       @default(72) @map("expires_in_hours")
+  /// Days before the same recipient is surveyed again.
+  cooldownDays   Int                       @default(30) @map("cooldown_days")
+  /// Falls back to e-mail when WhatsApp is not possible or fails.
+  emailFallback  Boolean                   @default(true) @map("email_fallback")
+  questionText   String?                   @map("question_text")
+  thankYouText   String?                   @map("thank_you_text")
+  createdAt      DateTime                  @default(now()) @map("created_at")
+  updatedAt      DateTime                  @updatedAt @map("updated_at")
+
+  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  surveys   SatisfactionSurvey[]
+
+  @@unique([workspaceId, trigger])
+  @@map("satisfaction_survey_configs")
+}
+
+/// One invitation and (once answered) its response. Names are snapshots so
+/// the reports survive renames and removals.
+model SatisfactionSurvey {
+  id                String                    @id @default(cuid())
+  workspaceId       String                    @map("workspace_id")
+  configId          String?                   @map("config_id")
+  kind              SatisfactionSurveyKind
+  trigger           SatisfactionSurveyTrigger
+  channel           SatisfactionSurveyChannel
+  status            SatisfactionSurveyStatus  @default(SCHEDULED)
+  /// Opaque token of the public e-mail link.
+  token             String                    @unique
+  conversationId    String?                   @map("conversation_id")
+  ticketId          String?                   @map("ticket_id")
+  connectionId      String?                   @map("connection_id")
+  recipientPhone    String?                   @map("recipient_phone")
+  recipientEmail    String?                   @map("recipient_email")
+  recipientName     String?                   @map("recipient_name")
+  /// Grouping key of the customer (company id, contact id or phone).
+  customerKey       String?                   @map("customer_key")
+  customerName      String?                   @map("customer_name")
+  /// Agent (conversation) or technician (ticket) who handled it.
+  assigneeUserId    String?                   @map("assignee_user_id")
+  assigneeName      String?                   @map("assignee_name")
+  teamId            String?                   @map("team_id")
+  teamName          String?                   @map("team_name")
+  score             Int?
+  comment           String?
+  providerMessageId String?                   @map("provider_message_id")
+  failureReason     String?                   @map("failure_reason")
+  scheduledFor      DateTime                  @map("scheduled_for")
+  sentAt            DateTime?                 @map("sent_at")
+  answeredAt        DateTime?                 @map("answered_at")
+  expiresAt         DateTime                  @map("expires_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  workspace Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  config    SatisfactionSurveyConfig? @relation(fields: [configId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, answeredAt])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, recipientPhone, status])
+  @@index([ticketId])
+  @@index([conversationId])
+  @@map("satisfaction_surveys")
 }
 
 // ─── nov: c2-cnpj-enrichment ──────────────────────────────────────────────

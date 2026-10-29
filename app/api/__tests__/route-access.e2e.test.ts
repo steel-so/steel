@@ -56,6 +56,7 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/campaigns/o': 'signed open-pixel token',
   '/api/crm/campaigns/resend-webhook': 'Svix signature',
   '/api/servicedesk/approvals': 'approval link token',
+  '/api/surveys/public': 'survey link token',
   '/api/servicedesk/monitoring': 'monitoring source token',
   '/api/servicedesk/integrations/slack': 'Slack signature',
   '/api/servicedesk/integrations/github': 'GitHub signature',

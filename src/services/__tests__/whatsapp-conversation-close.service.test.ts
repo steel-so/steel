@@ -27,6 +27,11 @@ vi.mock('@/src/repositories/whatsapp-close-status.repository', () => ({
     listActive: vi.fn(async () => ({ ok: true, value: [] })),
   },
 }))
+vi.mock('@/src/services/satisfaction-survey.service', () => ({
+  SatisfactionSurveyService: {
+    onConversationClosed: vi.fn(async () => ({ ok: true, value: null })),
+  },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
@@ -41,7 +46,7 @@ vi.mock('@/src/services/whatsapp-distribution.service', () => ({
 
 import type { WhatsAppConversationEvent } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
-import { whatsappConversationLimitReached } from '@/src/errors'
+import { databaseError, whatsappConversationLimitReached } from '@/src/errors'
 import { err } from '@/src/lib/result'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -49,6 +54,7 @@ import { WhatsAppCloseStatusRepository } from '@/src/repositories/whatsapp-close
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
+import { SatisfactionSurveyService } from '../satisfaction-survey.service'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
@@ -144,6 +150,24 @@ describe('WhatsAppConversationService.close()', () => {
     expect(WhatsAppSlaService.onClosed).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'conv1' }),
     )
+  })
+
+  it('should invite the contact to the survey on close and survive a scheduling failure', async () => {
+    asRole('MEMBER')
+    arrangeConversation({ status: 'IN_PROGRESS' })
+    vi.mocked(SatisfactionSurveyService.onConversationClosed).mockResolvedValue(
+      ok(null),
+    )
+    expectOk(await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {}))
+    expect(SatisfactionSurveyService.onConversationClosed).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'conv1' }),
+    )
+
+    arrangeConversation({ status: 'IN_PROGRESS' })
+    vi.mocked(SatisfactionSurveyService.onConversationClosed).mockResolvedValue(
+      err(databaseError()),
+    )
+    expectOk(await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {}))
   })
 
   it('should return WHATSAPP_CONVERSATION_ALREADY_CLOSED for a closed conversation', async () => {

@@ -10,13 +10,18 @@ import { createFakeWhatsAppGroupWithParticipants } from '@/src/__tests__/factori
 import { createFakeWhatsAppGroupMessage } from '@/src/__tests__/factories/whatsapp-group-message.factory'
 import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-message.factory'
 import { expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { ok } from '@/src/lib/result'
+import { databaseError } from '@/src/errors'
+import { err, ok } from '@/src/lib/result'
+import { SatisfactionSurveyService } from '../satisfaction-survey.service'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
 vi.mock('@/src/repositories/whatsapp-ai-campaign.repository', () => ({
   WhatsAppAiCampaignRepository: {
     markReplied: vi.fn(async () => ({ ok: true, value: 0 })),
   },
+}))
+vi.mock('@/src/services/satisfaction-survey.service', () => ({
+  SatisfactionSurveyService: { handleInbound: vi.fn() },
 }))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
@@ -115,6 +120,9 @@ function baseInbound(
 
 describe('WhatsAppWebhookService', () => {
   beforeEach(() => {
+    vi.mocked(SatisfactionSurveyService.handleInbound).mockResolvedValue(
+      ok({ handled: false }),
+    )
     // Padrão: contato sem conversa fechada para reabrir.
     mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(ok(null))
   })
@@ -316,6 +324,45 @@ describe('WhatsAppWebhookService', () => {
 
       expectOk(result)
       expect(mockedContactRepo.upsertByWaId).not.toHaveBeenCalled()
+    })
+
+    it('should stop at a satisfaction survey answer without touching conversations', async () => {
+      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+      mockedContactRepo.upsertByWaId.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1' })),
+      )
+      vi.mocked(SatisfactionSurveyService.handleInbound).mockResolvedValue(
+        ok({ handled: true }),
+      )
+
+      expectOk(
+        await WhatsAppWebhookService.ingestInboundMessage(
+          baseInbound({ text: '9' }),
+        ),
+      )
+      expect(mockedMessageRepo.create).not.toHaveBeenCalled()
+      expect(mockedConversationRepo.findActiveByContact).not.toHaveBeenCalled()
+    })
+
+    it('should go on as a normal message when the survey lookup fails', async () => {
+      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+      mockedContactRepo.upsertByWaId.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1' })),
+      )
+      vi.mocked(SatisfactionSurveyService.handleInbound).mockResolvedValue(
+        err(databaseError()),
+      )
+      mockedAiConfigRepo.findByWorkspace.mockResolvedValue(ok(null))
+      mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
+      mockedConversationRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppConversation({ id: 'conv-new' })),
+      )
+      mockedMessageRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppMessage({ id: 'msg1' })),
+      )
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+      expect(mockedMessageRepo.create).toHaveBeenCalled()
     })
 
     it('should create a new conversation with AI active when the workspace AI config is active', async () => {
