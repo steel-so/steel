@@ -2068,3 +2068,29 @@ export const sdSwarmLimitReached = (max: number): AppError =>
     'SD_SWARM_LIMIT_REACHED',
     `Um swarming comporta no máximo ${max} especialistas`,
   )
+
+// ─── Z1 · Pix in the conversation ───────────────────────────────────────────
+
+export const pixDisabled = (): AppError =>
+  appError(
+    'PIX_DISABLED',
+    'O Pix na conversa está desligado. Um administrador pode ativá-lo em Comunicação › Configurações.',
+  )
+
+export const pixChargeNotFound = (): AppError =>
+  appError('PIX_CHARGE_NOT_FOUND', 'Cobrança Pix não encontrada')
+
+export const pixChargeNotPending = (): AppError =>
+  appError(
+    'PIX_CHARGE_NOT_PENDING',
+    'Só uma cobrança Pix aguardando pagamento pode ser cancelada',
+  )
+
+export const pixProviderError = (message?: string): AppError =>
+  appError(
+    'PIX_PROVIDER_ERROR',
+    message ?? 'O provedor de Pix não respondeu. Tente de novo em instantes.',
+  )
+
+export const pixWebhookInvalid = (): AppError =>
+  appError('PIX_WEBHOOK_INVALID', 'Assinatura do webhook de Pix inválida')

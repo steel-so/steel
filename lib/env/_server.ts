@@ -40,6 +40,8 @@ const serverEnv = {
   PABX_ENDPOINT_TEMPLATE: process.env.PABX_ENDPOINT_TEMPLATE,
   PABX_WEBPHONE_ENDPOINT_TEMPLATE: process.env.PABX_WEBPHONE_ENDPOINT_TEMPLATE,
   PABX_CALLBACK_URL: process.env.PABX_CALLBACK_URL,
+  PIX_PROVIDER: process.env.PIX_PROVIDER,
+  PIX_WEBHOOK_SECRET: process.env.PIX_WEBHOOK_SECRET,
   VOICE_AGENT_AUDIOSOCKET_PORT: process.env.VOICE_AGENT_AUDIOSOCKET_PORT,
   VOICE_AGENT_AUDIOSOCKET_HOST: process.env.VOICE_AGENT_AUDIOSOCKET_HOST,
   VOICE_AGENT_REALTIME_MODEL: process.env.VOICE_AGENT_REALTIME_MODEL,
@@ -262,6 +264,15 @@ export const serverEnvSchema = z.object({
   PABX_CALLBACK_URL: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z.url().optional(),
+  ),
+  // Pix in the conversation (Z1): which PSP issues the charges. Only the
+  // `mock` provider exists until the PSP is chosen (see src/lib/pix).
+  PIX_PROVIDER: z.enum(['mock']).default('mock'),
+  // HMAC-SHA256 secret that signs the Pix payment webhooks. Unset = the
+  // webhook refuses every call.
+  PIX_WEBHOOK_SECRET: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(16).optional(),
   ),
   // IVR voice attendant (ADR 0046): TCP port of the Asterisk AudioSocket
   // server inside the worker. Unset = the attendant is not served.
@@ -508,6 +519,8 @@ export const {
   PABX_ENDPOINT_TEMPLATE,
   PABX_WEBPHONE_ENDPOINT_TEMPLATE,
   PABX_CALLBACK_URL,
+  PIX_PROVIDER,
+  PIX_WEBHOOK_SECRET,
   VOICE_AGENT_AUDIOSOCKET_PORT,
   VOICE_AGENT_AUDIOSOCKET_HOST,
   VOICE_AGENT_REALTIME_MODEL,
