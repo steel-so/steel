@@ -119725,6 +119725,41 @@
                             }
                           },
                           "required": ["id", "label", "when", "kind", "url"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "when": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "SEND_PIX"
+                            },
+                            "amount": {
+                              "type": "number",
+                              "minimum": 0.01,
+                              "maximum": 999999.99
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 140
+                            }
+                          },
+                          "required": ["id", "label", "when", "kind", "amount", "description"]
                         }
                       ]
                     }
@@ -227099,6 +227134,37 @@
                     }
                   },
                   "required": ["id", "label", "when", "kind", "url", "fields"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "when": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "kind": {
+                      "type": "string",
+                      "const": "SEND_PIX"
+                    },
+                    "amount": {},
+                    "description": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 140
+                    }
+                  },
+                  "required": ["id", "label", "when", "kind", "amount", "description"]
                 }
               ]
             }

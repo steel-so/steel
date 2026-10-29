@@ -153,3 +153,41 @@ describe('buildAiCampaignSystemSection()', () => {
     ).not.toContain('acao_campanha_')
   })
 })
+
+describe('SEND_PIX action', () => {
+  const pix: AiCampaignAction = {
+    id: 'p1',
+    kind: 'SEND_PIX',
+    label: 'Cobrar adesão',
+    when: 'O cliente aceitou a proposta',
+    amount: 99.9,
+    description: 'Taxa de adesão',
+  }
+
+  it('is a tool the AI only has to justify: amount and text are fixed', () => {
+    const [tool] = buildAiCampaignActionTools([pix])
+    expect(tool.description).toContain('Enviar cobrança Pix')
+    expect(tool.description).toContain('Use quando: O cliente aceitou')
+    expect(tool.parameters).toEqual(
+      expect.objectContaining({ required: ['motivo'] }),
+    )
+  })
+
+  it('is not terminal: the AI keeps the conversation after charging', () => {
+    const requests = selectAiCampaignActionRequests([
+      { action: pix, reason: 'Aceitou', fields: {} },
+      {
+        action: {
+          id: 'c1',
+          kind: 'CLOSE',
+          label: 'Fechar',
+          when: 'x',
+          statusIds: [],
+        },
+        reason: 'Fim',
+        fields: {},
+      },
+    ])
+    expect(requests.map((r) => r.action.id)).toEqual(['p1', 'c1'])
+  })
+})

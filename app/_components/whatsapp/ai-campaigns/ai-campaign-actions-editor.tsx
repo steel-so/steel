@@ -43,6 +43,9 @@ export interface AiCampaignActionDraft {
   url?: string
   secret?: string
   fields?: { key: string; description: string }[]
+  /** SEND_PIX: reais, as typed (validated on save). */
+  amount?: number
+  description?: string
 }
 
 export const AI_CAMPAIGN_ACTION_HINT: Record<AiCampaignActionKind, string> = {
@@ -55,6 +58,8 @@ export const AI_CAMPAIGN_ACTION_HINT: Record<AiCampaignActionKind, string> = {
     'Se o contato não responder, a IA volta a falar depois de X horas.',
   CRM_WORKFLOW: 'Dispara um workflow do CRM (criar lead, tarefa, etapa...).',
   WEBHOOK: 'Envia os dados para o seu sistema (POST assinado).',
+  SEND_PIX:
+    'Envia uma cobrança Pix (copia e cola) com o valor e o texto que você definir. Exige o Pix ligado em Configurações › Atendimento.',
 }
 
 export function newActionId(): string {
@@ -82,6 +87,17 @@ export function actionDraftProblem(
       return action.workflowId
         ? null
         : `Escolha o workflow de "${action.label}"`
+    case 'SEND_PIX':
+      if (
+        !action.amount ||
+        action.amount < 0.01 ||
+        action.amount > 999_999.99
+      ) {
+        return `Informe um valor de R$ 0,01 a R$ 999.999,99 em "${action.label}"`
+      }
+      return action.description?.trim()
+        ? null
+        : `Descreva o que "${action.label}" cobra`
     case 'WEBHOOK':
       if (!action.url?.startsWith('https://')) {
         return `Informe uma URL https:// em "${action.label}"`
@@ -266,6 +282,39 @@ function ActionConfig({
             .map((w) => ({ value: w.id, label: w.name }))}
           onChange={(workflowId) => onChange({ workflowId })}
         />
+      )
+    case 'SEND_PIX':
+      return (
+        <div className='grid gap-3 sm:grid-cols-[10rem_1fr]'>
+          <div className='space-y-1.5'>
+            <Label htmlFor={`action-${action.id}-amount`}>Valor (R$)</Label>
+            <Input
+              id={`action-${action.id}-amount`}
+              type='number'
+              min={0.01}
+              max={999999.99}
+              step={0.01}
+              value={action.amount ?? ''}
+              onChange={(event) =>
+                onChange({ amount: Number(event.target.value) || undefined })
+              }
+            />
+          </div>
+          <div className='space-y-1.5'>
+            <Label htmlFor={`action-${action.id}-pix-description`}>
+              O que está sendo cobrado
+            </Label>
+            <Input
+              id={`action-${action.id}-pix-description`}
+              maxLength={140}
+              placeholder='Ex.: Taxa de adesão'
+              value={action.description ?? ''}
+              onChange={(event) =>
+                onChange({ description: event.target.value })
+              }
+            />
+          </div>
+        </div>
       )
     case 'WEBHOOK': {
       const fields = action.fields ?? []

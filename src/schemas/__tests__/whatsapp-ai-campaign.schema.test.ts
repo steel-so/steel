@@ -128,3 +128,38 @@ describe('AI_CAMPAIGN_PRESETS', () => {
     )
   })
 })
+
+describe('AiCampaignActionsSchema · SEND_PIX', () => {
+  const base = {
+    id: 'p1',
+    kind: 'SEND_PIX',
+    label: 'Cobrar adesão',
+    when: 'O cliente aceitou',
+  }
+
+  it('should accept a fixed amount and description, rounding to the cent', () => {
+    const parsed = AiCampaignActionsSchema.parse([
+      { ...base, amount: 99.999, description: ' Taxa de adesão ' },
+    ])
+    expect(parsed[0]).toMatchObject({
+      kind: 'SEND_PIX',
+      amount: 100,
+      description: 'Taxa de adesão',
+    })
+    expect(AI_CAMPAIGN_ACTION_KINDS).toContain('SEND_PIX')
+  })
+
+  it('should refuse a missing, tiny or huge amount and a bad description', () => {
+    for (const patch of [
+      { description: 'x' },
+      { amount: 0, description: 'x' },
+      { amount: 1_000_000, description: 'x' },
+      { amount: 10, description: '  ' },
+      { amount: 10, description: 'a'.repeat(141) },
+    ]) {
+      expect(
+        AiCampaignActionsSchema.safeParse([{ ...base, ...patch }]).success,
+      ).toBe(false)
+    }
+  })
+})
