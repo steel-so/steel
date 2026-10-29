@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import { useEmailEditorData } from '@/app/_components/crm/email-editor/editor-data'
+import { IssueAudienceSection } from '@/app/_components/crm/newsletters/segments/issue-audience-section'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -149,6 +150,8 @@ function SendBody({ onDone }: { onDone: () => void }) {
     ),
   )
   const whenId = useId()
+  // nl2-segments: unsaved or invalid audience changes block the send.
+  const [audienceBusy, setAudienceBusy] = useState(false)
 
   // Save pending edits first (once): the checks run on the saved issue.
   const started = useRef(false)
@@ -181,7 +184,7 @@ function SendBody({ onDone }: { onDone: () => void }) {
     (!scheduledIso ||
       new Date(scheduledIso).getTime() <
         Date.now() + CRM_NEWSLETTER_MIN_SCHEDULE_MINUTES * 60_000)
-  const blocked = (preflight.data?.blockers.length ?? 1) > 0
+  const blocked = (preflight.data?.blockers.length ?? 1) > 0 || audienceBusy
 
   function confirm() {
     if (blocked || tooSoon) return
@@ -241,6 +244,12 @@ function SendBody({ onDone }: { onDone: () => void }) {
       ) : (
         <div className='grid gap-4'>
           <Summary preflight={preflight.data} />
+          <IssueAudienceSection
+            workspaceId={issue.workspaceId}
+            newsletterId={issue.newsletterId}
+            issueId={issue.issueId}
+            onBusyChange={setAudienceBusy}
+          />
           <Checklist preflight={preflight.data} />
           <RadioGroup
             value={mode}
@@ -344,7 +353,7 @@ export function IssueSendButton() {
         {label}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className='sm:max-w-lg'>
+        <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-2xl'>
           {open ? <SendBody onDone={() => setOpen(false)} /> : null}
         </DialogContent>
       </Dialog>
