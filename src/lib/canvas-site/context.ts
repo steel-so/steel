@@ -30,6 +30,9 @@ export interface SiteLiveForm {
   fields: SiteFormField[]
   successMessage?: string | null
   redirectUrl?: string | null
+  /** Set when the form subscribes to an ACTIVE newsletter (ADR 0054): the
+   * element shows the optional consent box, like the public form page. */
+  newsletter?: { name: string; consentText: string } | null
 }
 
 export interface SiteRenderContext {

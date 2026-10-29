@@ -10,6 +10,7 @@ import { appError } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/site.repository')
+vi.mock('@/src/repositories/crm-newsletter.repository')
 vi.mock('@/src/services/crm-campaign-tracking.service', () => ({
   CrmCampaignTrackingService: { attribute: vi.fn() },
 }))
@@ -28,14 +29,17 @@ vi.mock('@/src/cache/site-route.cache', () => ({
 }))
 
 import { siteRouteCache } from '@/src/cache/site-route.cache'
+import { CrmNewsletterRepository } from '@/src/repositories/crm-newsletter.repository'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteRedirectRepository } from '@/src/repositories/site-redirect.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import { crmFormNewsletterConsentText } from '@/src/schemas/crm-newsletter.schema'
 import { SiteBlogPublicService } from '@/src/services/site-blog-public.service'
 import { CrmCampaignTrackingService } from '../crm-campaign-tracking.service'
 import { SitePublicService } from '../site-public.service'
 
 const sites = vi.mocked(SiteRepository)
+const newsletters = vi.mocked(CrmNewsletterRepository)
 const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
 
 const createdAt = new Date('2026-10-14T12:00:00Z')
@@ -134,6 +138,48 @@ describe('SitePublicService.getForms', () => {
       await SitePublicService.getForms('ws1', ['tok']),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('SitePublicService.getForms — newsletter consent', () => {
+  it('adds the consent text only for forms of an ACTIVE newsletter', async () => {
+    sites.findPublishedForms.mockResolvedValue(
+      ok([
+        createFakeCrmForm({ publicToken: 'a', newsletterId: 'n1' }),
+        createFakeCrmForm({ publicToken: 'b', newsletterId: 'n-paused' }),
+        createFakeCrmForm({ publicToken: 'c', newsletterId: null }),
+      ]),
+    )
+    newsletters.listActiveByWorkspace.mockResolvedValue(
+      ok([{ id: 'n1', name: 'Boletim' }] as never),
+    )
+    const forms = expectOk(
+      await SitePublicService.getForms('ws1', ['a', 'b', 'c']),
+    )
+    expect(newsletters.listActiveByWorkspace).toHaveBeenCalledWith('ws1')
+    expect(forms.a.newsletter).toEqual({
+      name: 'Boletim',
+      consentText: crmFormNewsletterConsentText('Boletim'),
+    })
+    expect(forms.b).not.toHaveProperty('newsletter')
+    expect(forms.c).not.toHaveProperty('newsletter')
+  })
+
+  it('skips the newsletter lookup when no form has one', async () => {
+    newsletters.listActiveByWorkspace.mockClear()
+    sites.findPublishedForms.mockResolvedValue(
+      ok([createFakeCrmForm({ publicToken: 'c', newsletterId: null })]),
+    )
+    expectOk(await SitePublicService.getForms('ws1', ['c']))
+    expect(newsletters.listActiveByWorkspace).not.toHaveBeenCalled()
+  })
+
+  it('propagates a database error of the newsletter lookup', async () => {
+    sites.findPublishedForms.mockResolvedValue(
+      ok([createFakeCrmForm({ publicToken: 'a', newsletterId: 'n1' })]),
+    )
+    newsletters.listActiveByWorkspace.mockResolvedValue(err(databaseError()))
+    expectErr(await SitePublicService.getForms('ws1', ['a']), 'DATABASE_ERROR')
   })
 })
 
