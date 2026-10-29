@@ -37,3 +37,36 @@ export const SD_GENERIC_PAYLOAD_EXAMPLE = `{
   "subject": "CPU acima de 90%",
   "body": "Média de 5 minutos em 94%"
 }`
+
+/** Severidades que o Zabbix manda em `{EVENT.SEVERITY}`. */
+export const SD_ZABBIX_SEVERITIES = [
+  'Disaster',
+  'High',
+  'Average',
+  'Warning',
+  'Information',
+  'Not classified',
+]
+
+/** Valores comuns do rótulo `severity` nas regras do Grafana. */
+export const SD_GRAFANA_SEVERITIES = ['critical', 'high', 'warning', 'info']
+
+/** Primeira palavra do `%status` do PRTG para alerta ativo. */
+export const SD_PRTG_SEVERITIES = ['Down', 'Warning', 'Unusual']
+
+/**
+ * Corpo do "Executar ação HTTP" do PRTG (Configurações > Notificações):
+ * método POST, tipo de conteúdo `application/json`, e este texto no campo
+ * "Payload". Os `%…` são os placeholders do PRTG.
+ */
+export const SD_PRTG_PAYLOAD_EXAMPLE = `{
+  "sensorId": "%sensorid",
+  "device": "%device",
+  "host": "%host",
+  "sensor": "%name",
+  "status": "%status",
+  "message": "%message",
+  "lastValue": "%lastvalue",
+  "group": "%group",
+  "probe": "%probe"
+}`

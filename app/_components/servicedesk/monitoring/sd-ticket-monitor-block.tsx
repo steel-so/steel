@@ -17,6 +17,7 @@ const STATUS_LABEL: Record<SdMonitorAlertDTO['status'], string> = {
 const DATE_TIME = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'short',
   timeStyle: 'short',
+  timeZone: 'America/Sao_Paulo',
 })
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -46,11 +47,13 @@ export function SdTicketMonitorBlock({
 }) {
   const { data } = useSdMonitorAlerts(
     workspaceId,
-    { ticketId: ticket.id, limit: 1 },
+    { ticketId: ticket.id, limit: 20 },
     { enabled: ticket.channel === 'API' },
   )
-  const alert = data?.[0]
+  // A raiz é o alerta que abriu o chamado; os demais entraram por correlação.
+  const alert = data?.find((a) => !a.correlated) ?? data?.[0]
   if (!alert) return null
+  const correlated = (data ?? []).filter((a) => a.id !== alert.id)
 
   return (
     <section
@@ -80,6 +83,9 @@ export function SdTicketMonitorBlock({
           <Row label='Severidade' value={alert.severity} />
         ) : null}
         <Row label='Evento' value={alert.externalId} />
+        {alert.occurrences > 1 ? (
+          <Row label='Recebido' value={`${alert.occurrences} vezes`} />
+        ) : null}
         <Row
           label='Disparou'
           value={DATE_TIME.format(new Date(alert.startedAt))}
@@ -91,6 +97,36 @@ export function SdTicketMonitorBlock({
           />
         ) : null}
       </div>
+      {correlated.length > 0 ? (
+        <div className='flex flex-col gap-1.5 border-border border-t pt-2'>
+          <span className='font-medium text-muted-foreground text-xs'>
+            Alertas correlacionados ({correlated.length})
+          </span>
+          <ul className='flex flex-col gap-1.5'>
+            {correlated.map((item) => (
+              <li
+                key={item.id}
+                className='flex items-start justify-between gap-2 text-xs'
+              >
+                <span className='min-w-0 break-words'>
+                  {item.subject}
+                  {item.severity ? (
+                    <span className='text-muted-foreground'>
+                      {' '}
+                      · {item.severity}
+                    </span>
+                  ) : null}
+                </span>
+                <Badge
+                  variant={item.status === 'OPEN' ? 'destructive' : 'outline'}
+                >
+                  {item.status === 'OPEN' ? 'Aberto' : 'Normalizado'}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   )
 }

@@ -4,7 +4,8 @@
  * leitura — só aparece uma vez, na criação e na regeração.
  */
 
-export type SdMonitorKindDTO = 'ZABBIX' | 'WEBHOOK'
+export type SdMonitorKindDTO = 'ZABBIX' | 'WEBHOOK' | 'GRAFANA' | 'PRTG'
+export type SdMonitorCorrelationModeDTO = 'OFF' | 'HOST'
 export type SdMonitorAlertStatusDTO = 'OPEN' | 'RESOLVED' | 'IGNORED'
 
 export interface SdMonitorSeverityMapEntry {
@@ -24,6 +25,9 @@ export interface SdMonitorSourceDTO {
   severityMap: SdMonitorSeverityMapEntry[]
   autoResolve: boolean
   flappingWindowMinutes: number
+  /** `HOST`: alerta da mesma máquina entra no chamado aberto. */
+  correlationMode: SdMonitorCorrelationModeDTO
+  correlationWindowMinutes: number
   /** Último alerta recebido (`null` = nunca recebeu nada). */
   lastEventAt: string | null
   /** Caminho público do webhook, sem o domínio (só na criação/regeração). */
@@ -42,6 +46,7 @@ export interface SdMonitorAlertDTO {
   id: string
   sourceId: string
   sourceName: string
+  sourceKind: SdMonitorKindDTO
   status: SdMonitorAlertStatusDTO
   externalId: string
   severity: string | null
@@ -55,6 +60,11 @@ export interface SdMonitorAlertDTO {
     title: string
     phase: string
   } | null
+  /** Entrou num chamado aberto por outro alerta (correlação). */
+  correlated: boolean
+  /** Quantas vezes o mesmo alerta chegou (deduplicação). */
+  occurrences: number
+  lastSeenAt: string
   startedAt: string
   resolvedAt: string | null
   createdAt: string
@@ -69,7 +79,13 @@ export interface SdMonitorIngestDTO {
     | 'ticket_created'
     | 'ticket_reopened'
     | 'alert_updated'
+    | 'alert_correlated'
     | 'ticket_resolved'
     | 'alert_resolved'
   ticket: { id: string; number: number; code: string } | null
+}
+
+/** Resposta do webhook com vários alertas (Grafana e Alertmanager agrupam). */
+export interface SdMonitorIngestBatchDTO extends SdMonitorIngestDTO {
+  alerts: SdMonitorIngestDTO[]
 }

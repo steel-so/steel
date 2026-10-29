@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CreateSdMonitorSourceSchema,
+  LinkSdMonitorAlertSchema,
   ListSdMonitorAlertsSchema,
   ListSdMonitorSourcesSchema,
   SdMonitorSeverityMapSchema,
@@ -19,6 +20,8 @@ describe('CreateSdMonitorSourceSchema', () => {
       severityMap: [],
       autoResolve: true,
       flappingWindowMinutes: 30,
+      correlationMode: 'HOST',
+      correlationWindowMinutes: 60,
     })
   })
 
@@ -128,7 +131,10 @@ describe('list schemas', () => {
     expect(
       ListSdMonitorSourcesSchema.parse({ includeInactive: 'true' }),
     ).toEqual({ includeInactive: true })
-    expect(ListSdMonitorAlertsSchema.parse({})).toEqual({ limit: 20 })
+    expect(ListSdMonitorAlertsSchema.parse({})).toEqual({
+      limit: 20,
+      unmatched: false,
+    })
     expect(
       ListSdMonitorAlertsSchema.parse({
         sourceId: 'src-1',
@@ -141,7 +147,14 @@ describe('list schemas', () => {
       ticketId: 't1',
       status: 'RESOLVED',
       limit: 50,
+      unmatched: false,
     })
+    expect(
+      ListSdMonitorAlertsSchema.parse({
+        configItemId: 'ci-1',
+        unmatched: 'true',
+      }),
+    ).toEqual({ configItemId: 'ci-1', unmatched: true, limit: 20 })
     expect(ListSdMonitorAlertsSchema.safeParse({ limit: '500' }).success).toBe(
       false,
     )
@@ -159,5 +172,60 @@ describe('SdMonitorTokenSchema', () => {
       false,
     )
     expect(SdMonitorTokenSchema.safeParse('a'.repeat(201)).success).toBe(false)
+  })
+})
+
+describe('correlation and the new kinds', () => {
+  it('accepts Grafana and PRTG sources with their correlation settings', () => {
+    for (const kind of ['GRAFANA', 'PRTG']) {
+      expect(
+        CreateSdMonitorSourceSchema.parse({
+          name: 'x',
+          kind,
+          correlationMode: 'OFF',
+          correlationWindowMinutes: 120,
+        }),
+      ).toMatchObject({
+        kind,
+        correlationMode: 'OFF',
+        correlationWindowMinutes: 120,
+      })
+    }
+  })
+
+  it('bounds the correlation window and the mode', () => {
+    for (const bad of [0, 1441, 1.5]) {
+      expect(
+        CreateSdMonitorSourceSchema.safeParse({
+          name: 'x',
+          correlationWindowMinutes: bad,
+        }).success,
+      ).toBe(false)
+    }
+    expect(
+      CreateSdMonitorSourceSchema.safeParse({
+        name: 'x',
+        correlationMode: 'ALL',
+      }).success,
+    ).toBe(false)
+    expect(
+      UpdateSdMonitorSourceSchema.parse({ correlationMode: 'HOST' }),
+    ).toEqual({ correlationMode: 'HOST' })
+  })
+})
+
+describe('LinkSdMonitorAlertSchema', () => {
+  it('links, remembers or unlinks', () => {
+    expect(LinkSdMonitorAlertSchema.parse({ configItemId: 'ci-1' })).toEqual({
+      configItemId: 'ci-1',
+      remember: false,
+    })
+    expect(
+      LinkSdMonitorAlertSchema.parse({ configItemId: null, remember: true }),
+    ).toEqual({ configItemId: null, remember: true })
+    expect(LinkSdMonitorAlertSchema.safeParse({}).success).toBe(false)
+    expect(
+      LinkSdMonitorAlertSchema.safeParse({ configItemId: '' }).success,
+    ).toBe(false)
   })
 })

@@ -51,6 +51,8 @@ function source(
     severityMap: [{ from: 'Disaster', priorityId: 'p-alta' }],
     autoResolve: true,
     flappingWindowMinutes: 30,
+    correlationMode: 'HOST',
+    correlationWindowMinutes: 60,
     lastEventAt: '2026-10-01T12:00:00.000Z',
     createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-01T10:00:00.000Z',
@@ -63,6 +65,7 @@ function alert(overrides: Partial<SdMonitorAlertDTO> = {}): SdMonitorAlertDTO {
     id: 'a1',
     sourceId: 'src-1',
     sourceName: 'Zabbix matriz',
+    sourceKind: 'ZABBIX',
     status: 'OPEN',
     externalId: '31415',
     severity: 'Disaster',
@@ -71,6 +74,9 @@ function alert(overrides: Partial<SdMonitorAlertDTO> = {}): SdMonitorAlertDTO {
     body: null,
     configItem: { id: 'ci-1', name: 'SRV-01' },
     ticket: { id: 't1', number: 42, title: 'Servidor fora', phase: 'Novo' },
+    correlated: false,
+    occurrences: 1,
+    lastSeenAt: '2026-10-01T12:00:00.000Z',
     startedAt: '2026-10-01T12:00:00.000Z',
     resolvedAt: null,
     createdAt: '2026-10-01T12:00:00.000Z',
@@ -105,6 +111,8 @@ describe('SD_SETTINGS_TABS', () => {
   it('labels both kinds in pt-BR and builds the public url', () => {
     expect(SD_MONITOR_KIND_LABEL.ZABBIX).toBe('Zabbix')
     expect(SD_MONITOR_KIND_LABEL.WEBHOOK).toBe('Webhook genérico')
+    expect(SD_MONITOR_KIND_LABEL.GRAFANA).toBe('Grafana')
+    expect(SD_MONITOR_KIND_LABEL.PRTG).toBe('PRTG')
     expect(sdMonitorWebhookUrl('/api/servicedesk/monitoring/abc')).toMatch(
       /\/api\/servicedesk\/monitoring\/abc$/,
     )
@@ -132,7 +140,8 @@ describe('<SdMonitoringTab />', () => {
     expect(screen.getByText('Zabbix')).toBeTruthy()
     expect(screen.getByText('Inativa')).toBeTruthy()
     expect(screen.getByText('Disaster → Alta')).toBeTruthy()
-    expect(screen.getByText(/janela de 30 min/)).toBeTruthy()
+    expect(screen.getByText(/instabilidade 30 min/)).toBeTruthy()
+    expect(screen.getByText(/correlaciona por 60 min/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Nova origem/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Gerar token/ })).toBeNull()
   })
@@ -168,6 +177,8 @@ describe('<SdMonitoringTab />', () => {
     ])
     expect(body.autoResolve).toBe(true)
     expect(body.flappingWindowMinutes).toBe(30)
+    expect(body.correlationMode).toBe('HOST')
+    expect(body.correlationWindowMinutes).toBe(60)
 
     expect(
       screen.getByText(/\/api\/servicedesk\/monitoring\/tok-123/),
@@ -330,5 +341,119 @@ describe('<SdMonitoringTab />', () => {
     expect(
       screen.getByRole('button', { name: 'Salvar' }).hasAttribute('disabled'),
     ).toBe(true)
+  })
+
+  it.each([
+    ['PRTG', /Payload da ação HTTP do PRTG/, /Executar ação HTTP/],
+    [
+      'GRAFANA',
+      /Corpo \(opcional\) do webhook|Contact points/,
+      /Contact points/,
+    ],
+    ['WEBHOOK', /Corpo do webhook genérico/, /Alertmanager/],
+    ['ZABBIX', /Corpo do tipo de mídia do Zabbix/, /Tipos de mídia/],
+  ] as const)(
+    'guides the %s setup after rotating the token',
+    async (kind, title, hint) => {
+      mockFetch([
+        { match: SOURCES, data: [source({ kind })] },
+        {
+          method: 'POST',
+          match: `${SOURCES}/src-1/token`,
+          data: {
+            ...source({ kind }),
+            token: 'tok-novo',
+            webhookPath: '/api/servicedesk/monitoring/tok-novo',
+          },
+        },
+      ])
+      renderTab()
+      fireEvent.click(
+        await screen.findByRole('button', { name: /Gerar token/ }),
+      )
+      expect(await screen.findByText(hint)).toBeTruthy()
+      if (kind === 'GRAFANA') {
+        // O corpo padrão do Grafana não precisa de snippet.
+        expect(
+          screen.queryByRole('button', { name: /Copiar o corpo/ }),
+        ).toBeNull()
+      } else {
+        expect(screen.getByText(title)).toBeTruthy()
+        expect(
+          screen.getByRole('button', { name: /Copiar o corpo/ }),
+        ).toBeTruthy()
+      }
+      if (kind === 'PRTG') expect(screen.getByText(/%sensorid/)).toBeTruthy()
+    },
+  )
+
+  it('copies the PRTG payload', async () => {
+    mockFetch([
+      { match: SOURCES, data: [source({ kind: 'PRTG' })] },
+      {
+        method: 'POST',
+        match: `${SOURCES}/src-1/token`,
+        data: {
+          ...source({ kind: 'PRTG' }),
+          token: 'tok-novo',
+          webhookPath: '/api/servicedesk/monitoring/tok-novo',
+        },
+      },
+    ])
+    renderTab()
+    fireEvent.click(await screen.findByRole('button', { name: /Gerar token/ }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Copiar o corpo/ }),
+    )
+    await waitFor(() =>
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining('"%sensorid"'),
+      ),
+    )
+  })
+
+  it('suggests the Grafana severities and keeps the correlation settings on edit', async () => {
+    const spy = mockFetch([
+      {
+        match: SOURCES,
+        data: [
+          source({
+            kind: 'GRAFANA',
+            severityMap: [],
+            correlationMode: 'OFF',
+            correlationWindowMinutes: 15,
+          }),
+        ],
+      },
+      { method: 'PATCH', match: `${SOURCES}/src-1`, data: source() },
+    ])
+    renderTab()
+    expect(await screen.findByText(/sem correlação/)).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Editar Zabbix matriz' }),
+    )
+    expect(screen.getByRole('button', { name: '+ critical' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '+ Disaster' })).toBeNull()
+    expect(screen.getByText('Janela de correlação (minutos)')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() =>
+      expect(fetchBody(spy, `${SOURCES}/src-1`, 'PATCH')).toMatchObject({
+        kind: 'GRAFANA',
+        correlationMode: 'OFF',
+        correlationWindowMinutes: 15,
+      }),
+    )
+  })
+
+  it('suggests the PRTG severities and none for a generic webhook', async () => {
+    mockFetch([
+      { match: SOURCES, data: [source({ kind: 'PRTG', severityMap: [] })] },
+    ])
+    renderTab()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Editar Zabbix matriz' }),
+    )
+    expect(screen.getByRole('button', { name: '+ Down' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '+ Unusual' })).toBeTruthy()
   })
 })

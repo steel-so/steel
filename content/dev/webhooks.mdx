@@ -10,7 +10,7 @@ order: 1
 | URL | Quem chama | Verificação | Reenvio seguro por |
 | --- | --- | --- | --- |
 | `POST /api/crm/workflows/<token>/trigger` | O seu sistema | Token na URL | Não há: cada chamada é uma execução |
-| `POST /api/servicedesk/monitoring/<token>` | Zabbix ou o seu sistema | Token na URL | `externalId` do alerta |
+| `POST /api/servicedesk/monitoring/<token>` | Zabbix, Grafana, PRTG ou o seu sistema | Token na URL | `externalId` do alerta (`fingerprint` no Grafana, `sensorId` no PRTG) |
 | `POST /api/crm/forms/<token>/submit` | O seu site | Token público do formulário | Leads em aberto com o mesmo contato |
 | `POST /api/integrations/github/webhook` | GitHub | HMAC `X-Hub-Signature-256` | `X-GitHub-Delivery` |
 | `POST /api/integrations/gitlab/webhook` | GitLab | `X-Gitlab-Token` | `X-Gitlab-Event-UUID` ou `Idempotency-Key` |
@@ -34,11 +34,15 @@ Passo a passo e exemplos: [Disparar workflow do CRM](/dev/guias/disparar-workflo
 
 ### Monitoramento do ServiceDesk
 
-Uma origem de monitoramento (Zabbix ou webhook genérico) abre um chamado quando
-um alerta chega com problema e encerra quando o alerta normaliza. O mesmo
-`externalId` nunca abre dois chamados. A resposta diz o que aconteceu em
-`outcome`: `ticket_created`, `ticket_reopened`, `alert_updated`,
+Uma origem de monitoramento (Zabbix, Grafana, PRTG ou webhook genérico) abre um
+chamado quando um alerta chega com problema e encerra quando o alerta
+normaliza. O mesmo `externalId` nunca abre dois chamados. A resposta diz o que
+aconteceu em `outcome`: `ticket_created`, `ticket_reopened`, `alert_updated`,
+`alert_correlated` (o alerta entrou num chamado já aberto da mesma máquina),
 `ticket_resolved` ou `alert_resolved`.
+
+O Grafana e o Alertmanager mandam vários alertas por envio (`alerts[]`, até
+50): a resposta traz o primeiro nos campos de sempre e todos em `alerts`.
 
 Passo a passo e exemplos: [Abrir chamado a partir do seu sistema](/dev/guias/abrir-chamado).
 

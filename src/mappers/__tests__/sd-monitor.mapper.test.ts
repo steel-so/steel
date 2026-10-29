@@ -27,6 +27,21 @@ describe('toSdMonitorSourceDTO', () => {
     expect(dto.createdAt).toBe('2026-10-01T12:00:00.000Z')
   })
 
+  it('exposes the correlation settings', () => {
+    const dto = toSdMonitorSourceDTO(
+      createFakeSdMonitorSource({
+        kind: 'GRAFANA',
+        correlationMode: 'OFF',
+        correlationWindowMinutes: 15,
+      }),
+    )
+    expect(dto).toMatchObject({
+      kind: 'GRAFANA',
+      correlationMode: 'OFF',
+      correlationWindowMinutes: 15,
+    })
+  })
+
   it('keeps a source that never received an alert as null', () => {
     expect(toSdMonitorSourceDTO(createFakeSdMonitorSource()).lastEventAt).toBe(
       null,
@@ -73,6 +88,23 @@ describe('toSdMonitorAlertDTO', () => {
       phase: 'Em andamento',
     })
     expect(dto.resolvedAt).toBe('2026-10-01T13:00:00.000Z')
+  })
+
+  it('maps the source kind and the deduplication / correlation counters', () => {
+    const dto = toSdMonitorAlertDTO(
+      createFakeSdMonitorAlert({
+        correlated: true,
+        occurrences: 4,
+        lastSeenAt: new Date('2026-10-01T14:00:00.000Z'),
+        source: { id: 'src-2', name: 'PRTG', kind: 'PRTG' },
+      }),
+    )
+    expect(dto).toMatchObject({
+      sourceKind: 'PRTG',
+      correlated: true,
+      occurrences: 4,
+      lastSeenAt: '2026-10-01T14:00:00.000Z',
+    })
   })
 
   it('maps an alert with no ticket and no CI', () => {
