@@ -9,8 +9,10 @@ import {
   ContactBookIcon,
   CustomerService01Icon,
   DashboardSquare01Icon,
+  FireIcon,
   HardDriveIcon,
   Home01Icon,
+  Megaphone01Icon,
   ServerStack01Icon,
   Settings02Icon,
   Ticket01Icon,
@@ -100,6 +102,12 @@ export default async function ServiceDeskLayout({
             </NavItem>
             <NavItem href={`${base}/problems`} icon={Bug01Icon}>
               Problemas
+            </NavItem>
+            <NavItem href={`${base}/major-incidents`} icon={FireIcon}>
+              Incidentes maiores
+            </NavItem>
+            <NavItem href={`${base}/status-pages`} icon={Megaphone01Icon}>
+              Páginas de status
             </NavItem>
             <NavItem href={`${base}/risk`} icon={AlertDiamondIcon}>
               Análise de risco
