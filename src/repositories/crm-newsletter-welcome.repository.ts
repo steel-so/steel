@@ -443,4 +443,21 @@ export const CrmNewsletterWelcomeRepository = {
       return err(dbError('Failed to mark CRM newsletter welcome send', error))
     }
   },
+
+  /** Stores one click with its URL (slice nl3-welcome-bridge). */
+  async recordClick(input: {
+    deliveryId: string
+    stepId: string
+    url: string
+    clickedAt: Date
+  }): Promise<Result<void>> {
+    try {
+      await prisma.crmNewsletterWelcomeLinkClick.create({ data: input })
+      return ok(undefined)
+    } catch (error) {
+      return err(
+        dbError('Failed to record CRM newsletter welcome click', error),
+      )
+    }
+  },
 }

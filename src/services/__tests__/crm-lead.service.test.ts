@@ -84,6 +84,7 @@ describe('CrmLeadService', () => {
             value: null,
             points: 10,
             active: true,
+            includeWelcome: true,
             position: 0,
             createdAt: new Date(),
             updatedAt: new Date(),

@@ -64,6 +64,22 @@ const ACTION_META: Record<CrmActivityDTO['action'], ActionMeta> = {
     color: 'text-primary',
     verb: 'leu uma edição no WhatsApp',
   },
+  // Welcome series e-mails (slice nl3-welcome-bridge).
+  NEWSLETTER_WELCOME_RECEIVED: {
+    icon: Mail01Icon,
+    color: 'text-muted-foreground',
+    verb: 'recebeu um e-mail de boas-vindas',
+  },
+  NEWSLETTER_WELCOME_OPENED: {
+    icon: MailOpen01Icon,
+    color: 'text-primary',
+    verb: 'abriu um e-mail de boas-vindas',
+  },
+  NEWSLETTER_WELCOME_LINK_CLICKED: {
+    icon: Cursor01Icon,
+    color: 'text-primary',
+    verb: 'clicou em um link de boas-vindas',
+  },
 }
 
 const FALLBACK_META: ActionMeta = {

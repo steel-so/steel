@@ -147,12 +147,12 @@ const TRIGGER_META: Record<
   },
   'newsletter-issue-opened': {
     label: WORKFLOW_TRIGGER_LABELS['newsletter-issue-opened'],
-    description: 'Primeira abertura de uma edição',
+    description: 'Primeira abertura de uma edição ou e-mail de boas-vindas',
     icon: MailOpen01Icon,
   },
   'newsletter-link-clicked': {
     label: WORKFLOW_TRIGGER_LABELS['newsletter-link-clicked'],
-    description: 'Clique em um link de uma edição',
+    description: 'Clique em um link de uma edição ou e-mail de boas-vindas',
     icon: Cursor01Icon,
   },
 }

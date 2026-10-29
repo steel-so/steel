@@ -107,6 +107,8 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   siteExperimentEvent: (ws) => ({
     experiment: { site: { workspaceId: ws } },
   }),
+  // nl3-welcome-bridge: welcome e-mail clicks hang from the delivery.
+  crmNewsletterWelcomeLinkClick: (ws) => ({ delivery: { workspaceId: ws } }),
 }
 
 /**

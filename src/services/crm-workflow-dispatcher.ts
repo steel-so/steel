@@ -8,6 +8,7 @@ import {
 } from '@/src/repositories/crm-workflow.repository'
 import type {
   CrmWorkflowLeadEvent,
+  CrmWorkflowNewsletterSource,
   CrmWorkflowNewsletterTriggerType,
   CrmWorkflowTriggerEntity,
   CrmWorkflowTriggerType,
@@ -117,12 +118,17 @@ export type CrmWorkflowNewsletterPayload = {
     personId: string | null
   }
   issue?: { id: string; subject: string; number: number | null }
+  /** Opens and clicks: a regular issue or a welcome series e-mail. */
+  source?: CrmWorkflowNewsletterSource
+  /** Welcome series e-mail (`source: 'welcome'`); `position` is 1-based. */
+  welcomeStep?: { id: string; subject: string; position: number }
   url?: string
 }
 
 /**
  * Newsletter bridge (ADR 0054 phase 2): fires the ACTIVE workflows whose
- * trigger is `type` and whose filters (newsletter, "URL contains") match.
+ * trigger is `type` and whose filters (newsletter, "URL contains", issue vs
+ * welcome series) match.
  * The event comes from the public side (visitor, Resend webhook), so the run
  * has no starter and acts as the workflow's creator, like the webhook
  * trigger. Best-effort like `dispatchCrmWorkflowRecordEvent`: never throws.
@@ -147,6 +153,13 @@ export async function dispatchCrmWorkflowNewsletterEvent(params: {
       'newsletterId' in trigger &&
       trigger.newsletterId &&
       trigger.newsletterId !== params.payload.newsletter.id
+    ) {
+      continue
+    }
+    if (
+      'source' in trigger &&
+      trigger.source &&
+      trigger.source !== (params.payload.source ?? 'issue')
     ) {
       continue
     }

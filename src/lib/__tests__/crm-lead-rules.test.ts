@@ -281,4 +281,26 @@ describe('newsletter event rules (ADR 0054 phase 2)', () => {
       }),
     ).toBe(false)
   })
+
+  it('counts welcome e-mails unless the rule leaves them out', () => {
+    const opened = { field: 'newsletter_opened' as const }
+    const rule = eventRule('newsletter_opened')
+    expect(matchesLeadEventRule(rule, { ...opened, source: 'welcome' })).toBe(
+      true,
+    )
+    expect(
+      matchesLeadEventRule(
+        { ...rule, includeWelcome: true },
+        { ...opened, source: 'welcome' },
+      ),
+    ).toBe(true)
+    const issuesOnly = { ...rule, includeWelcome: false }
+    expect(
+      matchesLeadEventRule(issuesOnly, { ...opened, source: 'welcome' }),
+    ).toBe(false)
+    expect(
+      matchesLeadEventRule(issuesOnly, { ...opened, source: 'issue' }),
+    ).toBe(true)
+    expect(matchesLeadEventRule(issuesOnly, opened)).toBe(true)
+  })
 })

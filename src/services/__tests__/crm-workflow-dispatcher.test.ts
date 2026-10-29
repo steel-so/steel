@@ -335,6 +335,49 @@ describe('dispatchCrmWorkflowNewsletterEvent()', () => {
     )
   })
 
+  it('filters opens and clicks by issue vs welcome series', async () => {
+    mockedRunRepo.create.mockClear()
+    workflows(
+      { type: 'newsletter-issue-opened' },
+      { type: 'newsletter-issue-opened', source: 'issue' },
+      { type: 'newsletter-issue-opened', source: 'welcome' },
+    )
+    const { url: _url, ...open } = payload
+    const welcome = {
+      ...open,
+      source: 'welcome' as const,
+      welcomeStep: { id: 'st1', subject: 'Oi', position: 1 },
+    }
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-issue-opened',
+        payload: welcome,
+      }),
+    ).toBe(2)
+    expect(mockedRunRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf2',
+        triggerPayload: { event: 'newsletter-issue-opened', ...welcome },
+      }),
+    )
+    // No source = an issue (events from before the welcome bridge).
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-issue-opened',
+        payload: open,
+      }),
+    ).toBe(2)
+    expect(
+      await dispatchCrmWorkflowNewsletterEvent({
+        workspaceId: 'ws1',
+        type: 'newsletter-issue-opened',
+        payload: { ...open, source: 'issue' },
+      }),
+    ).toBe(2)
+  })
+
   it('skips the URL filter when the click has no URL and ignores empty triggers', async () => {
     mockedRunRepo.create.mockClear()
     workflows(

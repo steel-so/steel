@@ -3,10 +3,14 @@ import { CrmActivityRepository } from '@/src/repositories/crm-activity.repositor
 import {
   type BridgeIssue,
   type BridgeSubscriber,
+  type BridgeWelcomeStep,
   CrmNewsletterBridgeRepository,
 } from '@/src/repositories/crm-newsletter-bridge.repository'
 import type { CrmLeadEventRuleField } from '@/src/schemas/crm-lead.schema'
-import type { CrmWorkflowNewsletterTriggerType } from '@/src/schemas/crm-workflow.schema'
+import type {
+  CrmWorkflowNewsletterSource,
+  CrmWorkflowNewsletterTriggerType,
+} from '@/src/schemas/crm-workflow.schema'
 import { CrmLeadScoringRuleService } from './crm-lead-scoring-rule.service'
 import { dispatchCrmWorkflowNewsletterEvent } from './crm-workflow-dispatcher'
 
@@ -14,7 +18,8 @@ import { dispatchCrmWorkflowNewsletterEvent } from './crm-workflow-dispatcher'
  * Newsletter ↔ CRM bridge (ADR 0054 phase 2). The subscriber and tracking
  * services emit what happened; the bridge turns it into a CRM timeline
  * entry on the person, engagement points on their leads and newsletter
- * workflow runs. It never fails the caller: tracking and subscribing must
+ * workflow runs — for issues and, since slice nl3-welcome-bridge, for the
+ * welcome series e-mails too. It never fails the caller: tracking and subscribing must
  * work even if the CRM side is down, so errors are only logged.
  */
 export type NewsletterBridgeEvent =
@@ -39,6 +44,19 @@ export type NewsletterBridgeEvent =
   /** First read receipt of the issue's WhatsApp message (nl3). Timeline
    * only: no scoring and no workflow trigger. */
   | { type: 'issue_whatsapp_read'; subscriberId: string; issueId: string }
+  /** Welcome series e-mail (slice nl3-welcome-bridge): first `delivered`. */
+  | { type: 'welcome_received'; subscriberId: string; stepId: string }
+  /** First open of a welcome e-mail (a click implies one). */
+  | { type: 'welcome_opened'; subscriberId: string; stepId: string }
+  /** A click on a welcome e-mail, already stored in
+   * `crm_newsletter_welcome_link_clicks` when it has a URL. */
+  | {
+      type: 'welcome_link_clicked'
+      subscriberId: string
+      stepId: string
+      deliveryId: string
+      url: string | null
+    }
 
 /** Timeline actions of the bridge (`CrmActivity.action`). */
 export const NEWSLETTER_ACTIVITY_ACTIONS = {
@@ -49,12 +67,16 @@ export const NEWSLETTER_ACTIVITY_ACTIONS = {
   issue_opened: 'NEWSLETTER_ISSUE_OPENED',
   link_clicked: 'NEWSLETTER_LINK_CLICKED',
   issue_whatsapp_read: 'NEWSLETTER_WHATSAPP_READ',
+  welcome_received: 'NEWSLETTER_WELCOME_RECEIVED',
+  welcome_opened: 'NEWSLETTER_WELCOME_OPENED',
+  welcome_link_clicked: 'NEWSLETTER_WELCOME_LINK_CLICKED',
 } as const satisfies Record<NewsletterBridgeEvent['type'], string>
 
 /** `CrmActivity.entity` of the bridge entries. */
 export const NEWSLETTER_ACTIVITY_ENTITY = {
   newsletter: 'newsletter',
   issue: 'newsletter_issue',
+  welcomeStep: 'newsletter_welcome_step',
 } as const
 
 type Step = 'load' | 'timeline' | 'scoring' | 'workflows'
@@ -64,10 +86,19 @@ function issueLabel(issue: BridgeIssue): string {
   return `a edição ${number}"${issue.subject}"`
 }
 
+function welcomeLabel(welcome: BridgeWelcomeStep | null): string {
+  return welcome
+    ? `o e-mail ${welcome.position} "${welcome.subject}" da série de boas-vindas`
+    : 'um e-mail da série de boas-vindas'
+}
+
+/** What the event is about: an issue, a welcome step or none. */
+type Subject = { issue: BridgeIssue | null; step: BridgeWelcomeStep | null }
+
 function summaryOf(
   event: NewsletterBridgeEvent,
   subscriber: BridgeSubscriber,
-  issue: BridgeIssue | null,
+  { issue, step: welcomeStep }: Subject,
 ): string {
   const newsletter = `"${subscriber.newsletter.name}"`
   switch (event.type) {
@@ -87,16 +118,47 @@ function summaryOf(
       return `Clicou em um link ${issue ? `d${issueLabel(issue)}` : 'de uma edição'} da newsletter ${newsletter}`
     case 'issue_whatsapp_read':
       return `Leu no WhatsApp ${issue ? issueLabel(issue) : 'uma edição'} da newsletter ${newsletter}`
+    case 'welcome_received':
+      return `Recebeu ${welcomeLabel(welcomeStep)} da newsletter ${newsletter}`
+    case 'welcome_opened':
+      return `Abriu ${welcomeLabel(welcomeStep)} da newsletter ${newsletter}`
+    case 'welcome_link_clicked':
+      return `Clicou em um link ${welcomeStep ? `d${welcomeLabel(welcomeStep)}` : 'de um e-mail da série de boas-vindas'} da newsletter ${newsletter}`
   }
 }
 
-/** Issue events: one timeline entry per event type per issue. */
-const ONCE_PER_ISSUE = new Set<NewsletterBridgeEvent['type']>([
+/** Issue and welcome e-mail events: one timeline entry per event type per
+ * issue / welcome step. */
+const ONCE_PER_EMAIL = new Set<NewsletterBridgeEvent['type']>([
   'issue_received',
   'issue_opened',
   'link_clicked',
   'issue_whatsapp_read',
+  'welcome_received',
+  'welcome_opened',
+  'welcome_link_clicked',
 ])
+
+/** The timeline record of an event: the issue, the welcome step or the
+ * newsletter itself. */
+function entityOf(
+  event: NewsletterBridgeEvent,
+  subscriber: BridgeSubscriber,
+): { entity: string; entityId: string } {
+  if ('issueId' in event) {
+    return { entity: NEWSLETTER_ACTIVITY_ENTITY.issue, entityId: event.issueId }
+  }
+  if ('stepId' in event) {
+    return {
+      entity: NEWSLETTER_ACTIVITY_ENTITY.welcomeStep,
+      entityId: event.stepId,
+    }
+  }
+  return {
+    entity: NEWSLETTER_ACTIVITY_ENTITY.newsletter,
+    entityId: subscriber.newsletterId,
+  }
+}
 
 function scoringOf(
   event: NewsletterBridgeEvent,
@@ -105,7 +167,11 @@ function scoringOf(
   field: CrmLeadEventRuleField
   eventKey: string
   url?: string | null
+  source?: 'issue' | 'welcome'
 } | null {
+  // Welcome e-mails: once per step × subscriber (the lead may have several
+  // subscriptions, each with its own series).
+  const welcomeKey = (stepId: string) => `welcome:${stepId}:${subscriber.id}`
   switch (event.type) {
     case 'subscribed':
     case 'confirmed':
@@ -122,6 +188,19 @@ function scoringOf(
         field: 'newsletter_clicked',
         eventKey: `issue:${event.issueId}`,
         url: event.url,
+      }
+    case 'welcome_opened':
+      return {
+        field: 'newsletter_opened',
+        eventKey: welcomeKey(event.stepId),
+        source: 'welcome',
+      }
+    case 'welcome_link_clicked':
+      return {
+        field: 'newsletter_clicked',
+        eventKey: welcomeKey(event.stepId),
+        url: event.url,
+        source: 'welcome',
       }
     default:
       return null
@@ -149,6 +228,17 @@ async function triggerOf(
       if (!event.url) return 'newsletter-link-clicked'
       const clicks = await CrmNewsletterBridgeRepository.countClicks(
         event.recipientId,
+        event.url,
+      )
+      if (!clicks.ok) throw clicks.error
+      return clicks.value <= 1 ? 'newsletter-link-clicked' : null
+    }
+    case 'welcome_opened':
+      return 'newsletter-issue-opened'
+    case 'welcome_link_clicked': {
+      if (!event.url) return 'newsletter-link-clicked'
+      const clicks = await CrmNewsletterBridgeRepository.countWelcomeClicks(
+        event.deliveryId,
         event.url,
       )
       if (!clicks.ok) throw clicks.error
@@ -194,13 +284,12 @@ async function recordTimeline(
   event: NewsletterBridgeEvent,
   subscriber: BridgeSubscriber,
   personId: string,
-  issue: BridgeIssue | null,
+  subject: Subject,
 ): Promise<void> {
   const action = NEWSLETTER_ACTIVITY_ACTIONS[event.type]
-  const isIssueEvent = 'issueId' in event
-  const entityId = isIssueEvent ? event.issueId : subscriber.newsletterId
+  const { entity, entityId } = entityOf(event, subscriber)
 
-  if (ONCE_PER_ISSUE.has(event.type)) {
+  if (ONCE_PER_EMAIL.has(event.type)) {
     const seen = await CrmNewsletterBridgeRepository.hasActivity({
       workspaceId: subscriber.workspaceId,
       personId,
@@ -214,12 +303,10 @@ async function recordTimeline(
   const recorded = await CrmActivityRepository.record({
     workspaceId: subscriber.workspaceId,
     action,
-    entity: isIssueEvent
-      ? NEWSLETTER_ACTIVITY_ENTITY.issue
-      : NEWSLETTER_ACTIVITY_ENTITY.newsletter,
+    entity,
     entityId,
     personId,
-    summary: summaryOf(event, subscriber, issue),
+    summary: summaryOf(event, subscriber, subject),
   })
   if (!recorded.ok) throw recorded.error
 }
@@ -244,10 +331,21 @@ async function dispatchWorkflows(
   event: NewsletterBridgeEvent,
   subscriber: BridgeSubscriber,
   personId: string | null,
-  issue: BridgeIssue | null,
+  { issue, step: welcomeStep }: Subject,
 ): Promise<void> {
   const type = await triggerOf(event, subscriber)
   if (!type) return
+  const source: CrmWorkflowNewsletterSource | null =
+    type === 'newsletter-issue-opened' || type === 'newsletter-link-clicked'
+      ? 'stepId' in event
+        ? 'welcome'
+        : 'issue'
+      : null
+  const url =
+    (event.type === 'link_clicked' || event.type === 'welcome_link_clicked') &&
+    event.url
+      ? event.url
+      : null
   await dispatchCrmWorkflowNewsletterEvent({
     workspaceId: subscriber.workspaceId,
     type,
@@ -261,7 +359,9 @@ async function dispatchWorkflows(
         personId,
       },
       ...(issue ? { issue } : {}),
-      ...(event.type === 'link_clicked' && event.url ? { url: event.url } : {}),
+      ...(source ? { source } : {}),
+      ...(welcomeStep ? { welcomeStep } : {}),
+      ...(url ? { url } : {}),
     },
   })
 }
@@ -290,27 +390,34 @@ export const CrmNewsletterBridge = {
       const subscriber = found.value
       if (!subscriber) return
 
-      let issue: BridgeIssue | null = null
+      const subject: Subject = { issue: null, step: null }
       if ('issueId' in event) {
         const loaded = await CrmNewsletterBridgeRepository.findIssue(
           event.issueId,
         )
         if (!loaded.ok) throw loaded.error
-        issue = loaded.value
+        subject.issue = loaded.value
+      }
+      if ('stepId' in event) {
+        const loaded = await CrmNewsletterBridgeRepository.findWelcomeStep(
+          event.stepId,
+        )
+        if (!loaded.ok) throw loaded.error
+        subject.step = loaded.value
       }
 
       const personId = await resolvePersonId(subscriber)
 
       if (personId) {
         await step('timeline', event, () =>
-          recordTimeline(event, subscriber, personId, issue),
+          recordTimeline(event, subscriber, personId, subject),
         )
       }
       await step('scoring', event, () =>
         applyScoring(event, subscriber, personId),
       )
       await step('workflows', event, () =>
-        dispatchWorkflows(event, subscriber, personId, issue),
+        dispatchWorkflows(event, subscriber, personId, subject),
       )
     } catch (error) {
       logFailure('load', event, error)

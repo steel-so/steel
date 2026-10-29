@@ -63,6 +63,7 @@ const scoringRule = {
   value: null,
   points: 7,
   active: true,
+  includeWelcome: true,
   position: 0,
   createdAt: new Date(),
   updatedAt: new Date(),

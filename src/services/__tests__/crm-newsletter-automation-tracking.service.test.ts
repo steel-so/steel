@@ -11,6 +11,7 @@ vi.mock('@/src/repositories/crm-newsletter-welcome.repository', () => ({
   CrmNewsletterWelcomeRepository: {
     findByProviderMessageId: vi.fn(),
     markFirst: vi.fn(),
+    recordClick: vi.fn(),
   },
 }))
 vi.mock('@/src/repositories/crm-newsletter-reengagement.repository', () => ({
@@ -26,15 +27,20 @@ vi.mock('@/src/repositories/crm-newsletter-delivery.repository', () => ({
     complain: vi.fn(),
   },
 }))
+vi.mock('@/src/services/crm-newsletter-bridge.service', () => ({
+  CrmNewsletterBridge: { emit: vi.fn() },
+}))
 
 import { CrmNewsletterDeliveryRepository } from '@/src/repositories/crm-newsletter-delivery.repository'
 import { CrmNewsletterReengagementRepository } from '@/src/repositories/crm-newsletter-reengagement.repository'
 import { CrmNewsletterWelcomeRepository } from '@/src/repositories/crm-newsletter-welcome.repository'
 import { CrmNewsletterAutomationTrackingService as Service } from '../crm-newsletter-automation-tracking.service'
+import { CrmNewsletterBridge } from '../crm-newsletter-bridge.service'
 
 const welcome = vi.mocked(CrmNewsletterWelcomeRepository)
 const reengagement = vi.mocked(CrmNewsletterReengagementRepository)
 const deliveries = vi.mocked(CrmNewsletterDeliveryRepository)
+const bridge = vi.mocked(CrmNewsletterBridge)
 const NOW = new Date('2026-10-28T13:00:00.000Z')
 const EARLIER = new Date('2026-10-28T12:00:00.000Z')
 
@@ -52,6 +58,8 @@ describe('CrmNewsletterAutomationTrackingService', () => {
     welcome.findByProviderMessageId.mockResolvedValue(ok(null))
     reengagement.findByProviderMessageId.mockResolvedValue(ok(null))
     welcome.markFirst.mockResolvedValue(ok(true))
+    welcome.recordClick.mockResolvedValue(ok(undefined))
+    bridge.emit.mockResolvedValue(undefined)
     reengagement.markFirst.mockResolvedValue(ok(true))
     deliveries.touchSubscriber.mockResolvedValue(ok(undefined))
     deliveries.bounceEverywhere.mockResolvedValue(ok(2))
@@ -107,6 +115,80 @@ describe('CrmNewsletterAutomationTrackingService', () => {
       )
 
       await Service.onEmailEvent(event('email.sent', {}, 'not a date'), NOW)
+    })
+
+    it('feeds the CRM bridge on the first delivery and open', async () => {
+      await Service.onEmailEvent(event('email.delivered'), NOW)
+      expect(bridge.emit).toHaveBeenCalledWith({
+        type: 'welcome_received',
+        subscriberId: 's1',
+        stepId: 'st1',
+      })
+      bridge.emit.mockClear()
+      await Service.onEmailEvent(event('email.opened'), NOW)
+      expect(bridge.emit).toHaveBeenCalledWith({
+        type: 'welcome_opened',
+        subscriberId: 's1',
+        stepId: 'st1',
+      })
+
+      // Repeats: the row was already stamped, nothing new to tell.
+      bridge.emit.mockClear()
+      welcome.markFirst.mockResolvedValue(ok(false))
+      await Service.onEmailEvent(event('email.delivered'), NOW)
+      await Service.onEmailEvent(event('email.opened'), NOW)
+      await Service.onEmailEvent(event('email.bounced'), NOW)
+      expect(bridge.emit).not.toHaveBeenCalled()
+    })
+
+    it('stores every click with its URL and tells the bridge', async () => {
+      const link = { click: { link: 'https://acme.com/precos' } }
+      await Service.onEmailEvent(event('email.clicked', link), NOW)
+      expect(welcome.recordClick).toHaveBeenCalledWith({
+        deliveryId: 'wd1',
+        stepId: 'st1',
+        url: 'https://acme.com/precos',
+        clickedAt: NOW,
+      })
+      // A click implies the open (images blocked).
+      expect(bridge.emit.mock.calls.map((c) => c[0])).toEqual([
+        { type: 'welcome_opened', subscriberId: 's1', stepId: 'st1' },
+        {
+          type: 'welcome_link_clicked',
+          subscriberId: 's1',
+          stepId: 'st1',
+          deliveryId: 'wd1',
+          url: 'https://acme.com/precos',
+        },
+      ])
+
+      // A later click: no new open, the click still goes to the bridge.
+      bridge.emit.mockClear()
+      welcome.recordClick.mockClear()
+      welcome.markFirst.mockResolvedValue(ok(false))
+      await Service.onEmailEvent(event('email.clicked'), NOW)
+      expect(welcome.recordClick).not.toHaveBeenCalled()
+      expect(bridge.emit.mock.calls.map((c) => c[0])).toEqual([
+        {
+          type: 'welcome_link_clicked',
+          subscriberId: 's1',
+          stepId: 'st1',
+          deliveryId: 'wd1',
+          url: null,
+        },
+      ])
+    })
+
+    it('fails the webhook when the click cannot be stored', async () => {
+      welcome.recordClick.mockResolvedValue(err(databaseError()))
+      expectErr(
+        await Service.onEmailEvent(
+          event('email.clicked', { click: { link: 'https://a' } }),
+          NOW,
+        ),
+        'DATABASE_ERROR',
+      )
+      expect(bridge.emit).not.toHaveBeenCalled()
     })
 
     it('handles bounces and complaints like an issue', async () => {

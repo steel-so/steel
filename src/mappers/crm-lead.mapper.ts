@@ -63,6 +63,7 @@ export function toCrmLeadScoringRuleDTO(
     value: rule.value,
     points: rule.points,
     active: rule.active,
+    includeWelcome: rule.includeWelcome,
     position: rule.position,
     createdAt: rule.createdAt.toISOString(),
     updatedAt: rule.updatedAt.toISOString(),

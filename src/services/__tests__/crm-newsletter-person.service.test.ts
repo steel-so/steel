@@ -77,6 +77,14 @@ beforeEach(() => {
   )
   repo.findSubscription.mockResolvedValue(ok(active))
   repo.unsubscribe.mockResolvedValue(ok(true))
+  repo.welcomeStatsBySubscriber.mockResolvedValue(
+    ok(
+      new Map([
+        ['s1', { sent: 2, opened: 1, clicked: 1 }],
+        ['s2', { sent: 0, opened: 0, clicked: 0 }],
+      ]),
+    ),
+  )
   subscribers.add.mockResolvedValue(ok({} as never))
 })
 
@@ -102,6 +110,17 @@ describe('get', () => {
     ])
     // Unsubscribed can rejoin; active and bounced are not offered.
     expect(data.available.map((n) => n.id)).toEqual(['b', 'd'])
+    // Welcome series engagement: null when nothing was sent.
+    expect(repo.welcomeStatsBySubscriber).toHaveBeenCalledWith([
+      's1',
+      's2',
+      's3',
+    ])
+    expect(data.subscriptions.map((s) => s.welcome)).toEqual([
+      { sent: 2, opened: 1, clicked: 1 },
+      null,
+      null,
+    ])
   })
 
   it('denies a non-member and a missing person', async () => {
@@ -117,6 +136,8 @@ describe('get', () => {
     repo.listPersonSubscriptions.mockResolvedValueOnce(err(databaseError()))
     expectErr(await Service.get('u1', WS, 'p1'), 'DATABASE_ERROR')
     repo.listActiveNewsletters.mockResolvedValueOnce(err(databaseError()))
+    expectErr(await Service.get('u1', WS, 'p1'), 'DATABASE_ERROR')
+    repo.welcomeStatsBySubscriber.mockResolvedValueOnce(err(databaseError()))
     expectErr(await Service.get('u1', WS, 'p1'), 'DATABASE_ERROR')
   })
 })

@@ -1,7 +1,8 @@
-import type {
-  CrmNewsletterStatus,
-  CrmNewsletterSubscriber,
-  CrmNewsletterSubscriberStatus,
+import {
+  type CrmNewsletterStatus,
+  type CrmNewsletterSubscriber,
+  type CrmNewsletterSubscriberStatus,
+  Prisma,
 } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -26,6 +27,20 @@ export type BridgeIssue = {
   id: string
   subject: string
   number: number | null
+}
+
+/** A welcome series e-mail; `position` is 1-based (as shown to people). */
+export type BridgeWelcomeStep = {
+  id: string
+  subject: string
+  position: number
+}
+
+/** Welcome series engagement of one subscriber (person card). */
+export type SubscriberWelcomeStats = {
+  sent: number
+  opened: number
+  clicked: number
 }
 
 export type PersonSubscriptionRow = CrmNewsletterSubscriber & {
@@ -65,6 +80,70 @@ export const CrmNewsletterBridgeRepository = {
       return ok(issue)
     } catch (error) {
       return err(dbError('Failed to load the newsletter issue', error))
+    }
+  },
+
+  async findWelcomeStep(
+    stepId: string,
+  ): Promise<Result<BridgeWelcomeStep | null>> {
+    try {
+      const step = await prisma.crmNewsletterWelcomeStep.findUnique({
+        where: { id: stepId },
+        select: { id: true, subject: true, position: true },
+      })
+      return ok(step ? { ...step, position: step.position + 1 } : null)
+    } catch (error) {
+      return err(dbError('Failed to load the newsletter welcome step', error))
+    }
+  },
+
+  /** Clicks of this welcome delivery on this URL (the current one included). */
+  async countWelcomeClicks(
+    deliveryId: string,
+    url: string,
+  ): Promise<Result<number>> {
+    try {
+      const count = await prisma.crmNewsletterWelcomeLinkClick.count({
+        where: { deliveryId, url },
+      })
+      return ok(count)
+    } catch (error) {
+      return err(dbError('Failed to count newsletter welcome clicks', error))
+    }
+  },
+
+  /** sent / opened / clicked welcome e-mails per subscriber. */
+  async welcomeStatsBySubscriber(
+    subscriberIds: string[],
+  ): Promise<Result<Map<string, SubscriberWelcomeStats>>> {
+    const stats = new Map<string, SubscriberWelcomeStats>()
+    if (subscriberIds.length === 0) return ok(stats)
+    try {
+      const rows = await prisma.$queryRaw<
+        {
+          subscriber_id: string
+          sent: bigint
+          opened: bigint
+          clicked: bigint
+        }[]
+      >`
+        SELECT subscriber_id,
+          COUNT(*) FILTER (WHERE status = 'SENT')::bigint AS sent,
+          COUNT(opened_at)::bigint AS opened,
+          COUNT(clicked_at)::bigint AS clicked
+        FROM crm_newsletter_welcome_deliveries
+        WHERE subscriber_id IN (${Prisma.join(subscriberIds)})
+        GROUP BY subscriber_id`
+      for (const row of rows) {
+        stats.set(row.subscriber_id, {
+          sent: Number(row.sent),
+          opened: Number(row.opened),
+          clicked: Number(row.clicked),
+        })
+      }
+      return ok(stats)
+    } catch (error) {
+      return err(dbError('Failed to compute the welcome series stats', error))
     }
   },
 

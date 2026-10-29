@@ -59,8 +59,14 @@ async function overview(
   ])
   if (!rows.ok) return rows
   if (!newsletters.ok) return newsletters
+  const welcome = await CrmNewsletterBridgeRepository.welcomeStatsBySubscriber(
+    rows.value.map((row) => row.id),
+  )
+  if (!welcome.ok) return welcome
 
-  const subscriptions = rows.value.map(toCrmPersonNewsletterSubscriptionDTO)
+  const subscriptions = rows.value.map((row) =>
+    toCrmPersonNewsletterSubscriptionDTO(row, welcome.value.get(row.id)),
+  )
   // Joined (or blocked: bounced/complained) newsletters are not offered.
   const taken = new Set(
     subscriptions

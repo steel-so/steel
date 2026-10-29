@@ -39,9 +39,13 @@ export type LeadEngagementEvent = {
   personId: string | null
   email: string
   field: CrmLeadEventRuleField
-  /** Idempotency key: `newsletter:<id>` or `issue:<id>`. */
+  /** Idempotency key: `newsletter:<id>`, `issue:<id>` or
+   * `welcome:<stepId>:<subscriberId>`. */
   eventKey: string
   url?: string | null
+  /** Where an open/click came from; rules with `includeWelcome` off skip
+   * `welcome`. Absent = an issue. */
+  source?: 'issue' | 'welcome'
 }
 
 export const CrmLeadScoringRuleService = {
@@ -81,6 +85,9 @@ export const CrmLeadScoringRuleService = {
       value: rule.value,
       points: rule.points,
       active: rule.active,
+      ...(rule.includeWelcome !== undefined
+        ? { includeWelcome: rule.includeWelcome }
+        : {}),
     })
 
     if (!result.ok) {
@@ -182,7 +189,11 @@ export const CrmLeadScoringRuleService = {
     )
     if (!rules.ok) return rules
     const matching = rules.value.filter((rule) =>
-      matchesLeadEventRule(rule, { field: event.field, url: event.url }),
+      matchesLeadEventRule(rule, {
+        field: event.field,
+        url: event.url,
+        source: event.source,
+      }),
     )
     if (matching.length === 0) return ok(0)
 

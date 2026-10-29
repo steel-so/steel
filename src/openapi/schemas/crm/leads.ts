@@ -144,6 +144,10 @@ export const CrmLeadScoringRuleDTO = dto(
     value: z.string().nullable(),
     points: z.number().int().meta({ example: 20 }),
     active: z.boolean(),
+    includeWelcome: z.boolean().meta({
+      description:
+        'Só para `newsletter_opened` e `newsletter_clicked`: também pontua os e-mails da série de boas-vindas (padrão: ligado).',
+    }),
     position: z.number(),
     createdAt: dateTime(),
     updatedAt: dateTime(),

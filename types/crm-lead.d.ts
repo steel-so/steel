@@ -139,6 +139,8 @@ export interface CrmLeadScoringRuleDTO {
   value: string | null
   points: number
   active: boolean
+  /** Newsletter opened/clicked rules: welcome series e-mails count too. */
+  includeWelcome: boolean
   position: number
   createdAt: string
   updatedAt: string
