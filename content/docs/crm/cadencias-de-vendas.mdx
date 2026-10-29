@@ -1,0 +1,110 @@
+---
+title: Cadências de vendas
+description: Sequências de e-mail, WhatsApp e tarefas por lead, com intervalos, que param sozinhas quando o lead responde.
+section: crm
+order: 17
+---
+
+Uma **cadência** é uma sequência de passos que o Steel executa para cada lead,
+um depois do outro, com um intervalo entre eles. Ela serve para a prospecção
+que ninguém lembra de fazer: o e-mail de apresentação, o WhatsApp dois dias
+depois, a tarefa de ligar na semana seguinte.
+
+Diferente das [campanhas](/docs/crm/campanhas), que saem em massa para um
+público de uma vez, cada lead tem o **seu próprio relógio**: quem entra hoje
+recebe o primeiro passo hoje, quem entra na semana que vem começa na semana
+que vem.
+
+## Criar uma cadência
+
+Abra **CRM › Cadências** e clique em **Nova cadência**.
+
+1. Dê um **nome** (e, se quiser, uma descrição).
+2. Monte os **passos**. Cada passo tem um tipo, um intervalo e o conteúdo:
+   - **E-mail**: assunto e texto.
+   - **WhatsApp**: o texto da mensagem. Em conexões da **Meta**, o passo usa um
+     **template aprovado** (a Meta só entrega template a quem não falou com
+     você nas últimas 24 horas) e você preenche as variáveis do template.
+   - **Tarefa**: um título e uma descrição. A tarefa é criada para o
+     responsável pelo lead (ou, se não houver, para quem inscreveu o lead) e
+     aparece em **Tarefas**.
+3. O **intervalo** do primeiro passo conta a partir da inscrição; o dos
+   seguintes, a partir do passo anterior. Intervalo zero executa na hora.
+4. Escolha o **remetente** do e-mail (um domínio verificado em
+   [domínios de e-mail](/docs/crm/dominios-de-email) ou o endereço do Steel) e,
+   se houver passos de WhatsApp, a **conexão**.
+5. Salve.
+
+Você pode reordenar os passos com as setas e usar os campos que o Steel
+preenche com os dados do lead: `{{nome}}`, `{{primeiro_nome}}`, `{{empresa}}`,
+`{{cargo}}`, `{{cidade}}` e `{{responsavel}}`.
+
+<Callout type='info'>
+  Editar os passos de uma cadência em andamento vale para todos: quem já está
+  nela segue pela posição do passo em que estava.
+</Callout>
+
+## Horário de envio
+
+Por padrão a cadência só envia e-mails e mensagens **das 9h às 18h, em dias
+úteis** (horário de Brasília). Se um passo vence fora da janela, ele espera a
+janela abrir. Você pode mudar as horas, liberar os fins de semana ou desligar a
+janela. **Tarefas não esperam**: são criadas na hora.
+
+## Inscrever leads
+
+No painel lateral do lead, na seção **Cadências**, escolha a cadência e clique
+em **Inscrever**. Ali também aparece em que ponto o lead está, o histórico de
+cada passo (executado, pulado ou com falha) e os botões **Pausar**, **Retomar**,
+**Respondeu** e **Parar**.
+
+Não entram na cadência: leads já fechados, leads sem e-mail e sem telefone e
+leads que já estão nela. Quem terminou ou foi encerrado pode entrar de novo.
+
+## Quando a cadência para sozinha
+
+A inscrição termina, sem você fazer nada, quando:
+
+- o lead **responde no WhatsApp**: o Steel reconhece o número mesmo escrito de
+  outro jeito (com ou sem DDI, com máscara);
+- chega um **e-mail do lead** registrado no CRM (e-mail recebido em
+  **E-mail e agenda**, ou lançado pela API);
+- o lead é **fechado** (ganho ou perdido) ou **excluído**;
+- a cadência é **arquivada**.
+
+Se preferir que a cadência continue mesmo com resposta, desligue **Parar quando
+o lead responder** na cadência. Quando a resposta chega por outro caminho (uma
+ligação, por exemplo), use **Respondeu** na inscrição.
+
+## Quando um passo é pulado ou falha
+
+- **Pulado**: o lead não tem e-mail ou telefone para aquele canal, o e-mail está
+  descadastrado ou o contato pediu para não receber mensagens no WhatsApp. A
+  cadência segue para o próximo passo.
+- **Falha**: o remetente deixou de ser verificado, o template da Meta não está
+  aprovado, o provedor recusou o envio. O passo é registrado com o motivo no
+  histórico e a cadência segue.
+- Problemas temporários (limite de envios, conexão do WhatsApp fora do ar) não
+  contam como falha: o Steel tenta de novo mais tarde, no mesmo passo.
+
+Cada e-mail leva um aviso no rodapé de que basta responder para parar de
+receber. Cada contato por e-mail ou WhatsApp também aparece no histórico do
+lead como uma tentativa de contato.
+
+## Acompanhar os números
+
+Cada cartão da lista mostra quantos leads foram **inscritos**, quantos estão
+**em andamento** e quantos **responderam** (e o percentual). Ao abrir a
+cadência você vê, passo a passo, quantos foram feitos e quantos falharam, e a
+lista dos inscritos com o estado de cada um.
+
+## Pausar e arquivar
+
+**Pausar** congela a cadência inteira: nenhum passo roda e novas inscrições são
+recusadas até você **Ativar** de novo. **Arquivar** encerra todas as inscrições
+em andamento; o histórico fica.
+
+<Callout type='admin'>
+  Membros criam e editam cadências e inscrevem leads, mas só administradores
+  arquivam. Um visualizador só consulta.
+</Callout>
