@@ -213,3 +213,8 @@ export const CrmNewsletterAutomationCron = {
   reengagementMonthly: '0 9 1 * *',
   reengagementResolve: '30 8 * * *',
 } as const
+/** newsletter2 nl2-digest-ai: digests run at whole hours (SP), so a tick
+ * every 5 minutes starts them by HH:05. */
+export const CrmNewsletterDigestTickCron = '*/5 * * * *' as const
+/** newsletter2 nl2-digest-ai: subject A/B decisions, off the digest tick. */
+export const CrmNewsletterAbTickCron = '2-59/5 * * * *' as const

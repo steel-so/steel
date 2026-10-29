@@ -20,7 +20,7 @@ Blocos por categoria da paleta:
 | Básicos | Seção, Coluna, Título, Texto (rico), Botão, Imagem, Divisor, Espaço, Lista |
 | Marca | Logo, Redes sociais, Menu, Assinatura |
 | Vendas | Produto (produto do CRM → nome, descrição e preço), Cupom |
-| Relacionamento | Depoimento, Pesquisa NPS, Evento, Vídeo (capa + link) |
+| Relacionamento | Depoimento, Pesquisa NPS, Evento, Vídeo (capa + link), Lista de posts (título, resumo, imagem e link; o resumo automático da newsletter preenche) |
 | Avançado | HTML (só OWNER/ADMIN, sanitizado) |
 
 ## Regras

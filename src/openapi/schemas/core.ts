@@ -555,6 +555,8 @@ export const NotificationListDTO = dto(
           'CRM_NEWSLETTER_USAGE_WARNING',
           'CRM_NEWSLETTER_USAGE_LIMIT_REACHED',
           'CRM_NEWSLETTER_REENGAGEMENT_SUMMARY',
+          'CRM_NEWSLETTER_DIGEST_READY',
+          'CRM_NEWSLETTER_DIGEST_SKIPPED',
         ]),
         title: z.string(),
         body: z.string(),

@@ -5522,6 +5522,10 @@ enum NotificationKind {
   CRM_NEWSLETTER_USAGE_LIMIT_REACHED
   /// CRM newsletter (nl2-automation): re-engagement run summary for the creator.
   CRM_NEWSLETTER_REENGAGEMENT_SUMMARY
+  /// CRM newsletter (nl2-digest-ai): the automatic digest created a draft.
+  CRM_NEWSLETTER_DIGEST_READY
+  /// CRM newsletter (nl2-digest-ai): the digest was skipped or not sent.
+  CRM_NEWSLETTER_DIGEST_SKIPPED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -8584,6 +8588,8 @@ model Site {
   authors          SiteAuthor[]
   collections      SiteCollection[]
   experiments      SiteExperiment[]
+  /// newsletter2 nl2-digest-ai: newsletter digests that read this blog.
+  nlDigests        CrmNewsletterDigest[]
 
   @@index([workspaceId])
   @@index([deletedAt])
@@ -9808,6 +9814,8 @@ model CrmNewsletter {
   welcomeSteps         CrmNewsletterWelcomeStep[]
   reengagementSettings CrmNewsletterReengagementSettings?
   reengagements        CrmNewsletterReengagement[]
+  /// newsletter2 nl2-digest-ai: automatic digest settings.
+  digest        CrmNewsletterDigest?
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, deletedAt])
@@ -9931,6 +9939,20 @@ model CrmNewsletterIssue {
   whatsapp           CrmNewsletterIssueWhatsApp?
   whatsappRecipients CrmNewsletterWhatsAppRecipient[]
 
+  // newsletter2 nl2-digest-ai: subject A/B test and the digest that made it.
+  /// Subject of variant B; null = no A/B test.
+  abSubjectB    String?                @map("ab_subject_b")
+  /// Share of the audience in the test (half A, half B), 10..50 %.
+  abTestPercent Int?                   @map("ab_test_percent")
+  abMetric      CrmNewsletterAbMetric? @map("ab_metric")
+  /// Hours after the start of sending until the winner is picked.
+  abWaitHours   Int?                   @map("ab_wait_hours")
+  /// "A" or "B" once decided; the held rest of the audience gets it.
+  abWinner      String?                @map("ab_winner")
+  abDecidedAt   DateTime?              @map("ab_decided_at")
+  digestId      String?                @map("digest_id")
+  digest        CrmNewsletterDigest?   @relation(fields: [digestId], references: [id], onDelete: SetNull)
+
   @@unique([newsletterId, slug])
   @@unique([newsletterId, number])
   @@index([workspaceId, deletedAt])
@@ -9974,6 +9996,12 @@ model CrmNewsletterIssueRecipient {
   clicks     CrmNewsletterLinkClick[]
   /// nl2-engage: poll votes cast from this delivery.
   pollVotes  CrmNewsletterPollVote[]
+
+  // newsletter2 nl2-digest-ai: subject A/B test.
+  /// "A"/"B" for the rows in the test share; null for the rest.
+  abVariant String? @map("ab_variant")
+  /// Rest of the audience, waiting for the A/B winner (not claimed).
+  abHeld    Boolean @default(false) @map("ab_held")
 
   @@unique([issueId, subscriberId])
   @@index([issueId, status])
@@ -10317,4 +10345,69 @@ model CrmNewsletterReengagement {
   @@index([newsletterId, status])
   @@index([status, sentAt])
   @@map("crm_newsletter_reengagements")
+}
+
+// ─── newsletter2 · nl2-digest-ai ────────────────────────────────────────────
+
+enum CrmNewsletterAbMetric {
+  OPENS
+  CLICKS
+}
+
+enum CrmNewsletterDigestCadence {
+  WEEKLY
+  MONTHLY
+}
+
+enum CrmNewsletterDigestMode {
+  /// Creates a draft issue and notifies the creator.
+  DRAFT
+  /// Sends when there are new items and the pre-send checks pass.
+  AUTO_SEND
+}
+
+/// "Resumo automático" of a newsletter: on a weekly/monthly cadence
+/// (America/Sao_Paulo) the worker gathers the new posts of a Site blog
+/// and/or an external RSS/Atom feed into an issue (draft or sent).
+model CrmNewsletterDigest {
+  id           String                     @id @default(cuid())
+  workspaceId  String                     @map("workspace_id")
+  newsletterId String                     @unique @map("newsletter_id")
+  enabled      Boolean                    @default(true)
+  /// Site of the workspace whose published blog posts are read.
+  siteId       String?                    @map("site_id")
+  /// External RSS 2.0 / Atom feed (HTTPS, public host).
+  rssUrl       String?                    @map("rss_url")
+  cadence      CrmNewsletterDigestCadence @default(WEEKLY)
+  /// 0 = Sunday … 6 = Saturday (weekly).
+  weekday      Int?
+  /// 1..28 (monthly).
+  monthDay     Int?                       @map("month_day")
+  /// 0..23, São Paulo time.
+  hour         Int                        @default(9)
+  mode         CrmNewsletterDigestMode    @default(DRAFT)
+  maxItems     Int                        @default(5) @map("max_items")
+  /// Issue subject; `{data}` becomes the date of the run.
+  subject      String
+  intro        String?                    @db.Text
+  nextRunAt    DateTime?                  @map("next_run_at")
+  lastRunAt    DateTime?                  @map("last_run_at")
+  /// Newest item already used: the next digest only takes newer ones.
+  lastItemAt   DateTime?                  @map("last_item_at")
+  lastIssueId  String?                    @map("last_issue_id")
+  /// DRAFT_CREATED | SENT | SKIPPED | FAILED
+  lastOutcome  String?                    @map("last_outcome")
+  lastMessage  String?                    @map("last_message")
+  createdById  String                     @map("created_by_id")
+  updatedById  String?                    @map("updated_by_id")
+  createdAt    DateTime                   @default(now()) @map("created_at")
+  updatedAt    DateTime                   @updatedAt @map("updated_at")
+
+  newsletter CrmNewsletter        @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  site       Site?                @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  issues     CrmNewsletterIssue[]
+
+  @@index([enabled, nextRunAt])
+  @@index([workspaceId])
+  @@map("crm_newsletter_digests")
 }

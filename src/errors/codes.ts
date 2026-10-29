@@ -1236,6 +1236,18 @@ export const ERROR_CODES = {
     code: 'CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED',
     status: 422,
   },
+  // newsletter2 nl2-digest-ai: digest source (site/RSS) not usable.
+  CRM_NEWSLETTER_DIGEST_SOURCE_INVALID: {
+    code: 'CRM_NEWSLETTER_DIGEST_SOURCE_INVALID',
+    status: 422,
+  },
+  // "Escrever com IA" / "Sugerir assuntos": provider failed or bad output.
+  CRM_NEWSLETTER_AI_FAILED: { code: 'CRM_NEWSLETTER_AI_FAILED', status: 502 },
+  // Subject A/B test needs a minimum audience.
+  CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL: {
+    code: 'CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL',
+    status: 422,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

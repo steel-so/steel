@@ -84,7 +84,9 @@ import {
   CommunicationWaitingCron,
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
+  CrmNewsletterAbTickCron,
   CrmNewsletterAutomationCron,
+  CrmNewsletterDigestTickCron,
   CrmNewsletterTickCron,
   CrmProposalExpiryCron,
   CrmScheduledSendCron,
@@ -751,6 +753,16 @@ export async function scheduleCrmNewsletterJobs(): Promise<void> {
     CrmNewsletterJob.Tick,
     { pattern: CrmNewsletterTickCron, tz: RetentionTimezone },
     { name: CrmNewsletterJob.Tick, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    CrmNewsletterJob.DigestTick,
+    { pattern: CrmNewsletterDigestTickCron, tz: RetentionTimezone },
+    { name: CrmNewsletterJob.DigestTick, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    CrmNewsletterJob.AbTick,
+    { pattern: CrmNewsletterAbTickCron, tz: RetentionTimezone },
+    { name: CrmNewsletterJob.AbTick, data: {} },
   )
 
   logger.info('queue.scheduler.crm_newsletter_registered', {

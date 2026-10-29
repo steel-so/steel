@@ -203,3 +203,44 @@ Uma edição vai para todos os assinantes `ACTIVE` (fora do descadastro geral) o
 **Webhook do Resend**: depois das edições e antes das campanhas, procura o `providerMessageId` nas entregas da série e nas tentativas de reengajamento. Abertura/clique marcam a primeira vez e atualizam o engajamento do assinante; retorno permanente e reclamação seguem as regras das edições.
 
 **Permissões**: as mesmas das edições (recurso `email`: `VIEW` lê, `CREATE` cria etapa, `EDIT` edita/reordena/configura, `DELETE` exclui etapa).
+
+## Resumo automático, IA e teste A/B de assunto (fase 2, frente `nl2-digest-ai`)
+
+Manual: `content/docs/crm/newsletter-resumo-e-ia.mdx`.
+
+**Peças**
+
+| Onde | O quê |
+|---|---|
+| `prisma/schema.prisma` (fim do arquivo) | `CrmNewsletterDigest` (1 por newsletter), enums `CrmNewsletterDigestCadence`, `CrmNewsletterDigestMode`, `CrmNewsletterAbMetric`; colunas `ab_*` e `digest_id` em `crm_newsletter_issues`; `ab_variant`/`ab_held` em `crm_newsletter_issue_recipients`; avisos `CRM_NEWSLETTER_DIGEST_READY`/`_SKIPPED` |
+| `src/schemas/crm-newsletter-{digest,ai,ab}.schema.ts` | Contratos das três funções |
+| `src/services/crm-newsletter-digest.service.ts` | Configuração, prévia, "Gerar rascunho agora" e o `tick` do worker |
+| `src/services/crm-newsletter-ai.service.ts` | Fontes, "Escrever com IA", "Sugerir assuntos" |
+| `src/services/crm-newsletter-ab.service.ts` | Teste A/B: configuração, relatório por variante e decisão do worker |
+| `src/lib/crm-newsletter/feed*.ts` | Leitor RSS 2.0/Atom e o fetch protegido |
+| `src/lib/canvas-email/components/content.tsx` | Bloco `email.posts` ("Lista de posts") do catálogo de e-mail |
+| Fila `crm-newsletter` | Jobs `digest-tick` (a cada 5 min) e `ab-tick` (a cada 5 min, deslocado 2 min) |
+| Rotas | `…/newsletters/{id}/digest` (GET/PUT/DELETE), `/digest/preview`, `/digest/run`, `/ai/sources`, `…/issues/{issueId}/ai/draft`, `/ai/subjects`, `…/issues/{issueId}/ab-test` (GET/PUT/DELETE) |
+| UI | Aba **Resumo** da newsletter; botões **IA** e **A/B** no editor da edição; cartão do teste A/B no relatório |
+
+**Resumo automático**
+- Fontes: blog de um site do workspace (posts `PUBLISHED` ou `SCHEDULED` vencidos, links `<site>/blog/<slug>`; site nunca publicado vira aviso) e/ou feed RSS/Atom externo.
+- Feed: só `https://`, sem usuário/senha, host público (o guarda de URL dos webhooks — literal e todos os endereços resolvidos); redirecionamentos seguidos à mão, no máximo 3, cada um conferido de novo; 8 s de tempo total e 1 MB de corpo. Entradas sem data ficam de fora.
+- Agenda: semanal (dia da semana) ou mensal (dia 1–28) em hora cheia de America/Sao_Paulo (`croner`). O worker pega os resumos vencidos e "reivindica" a rodada trocando `next_run_at` de forma condicional (dois workers não rodam o mesmo resumo).
+- "Novo" = publicado depois de `last_item_at` (no primeiro resumo: 7 dias no semanal, 31 no mensal). A rodada agendada move `last_item_at` para o post mais novo usado — também quando o envio automático foi recusado (o rascunho guarda esses posts). "Gerar rascunho agora" não move.
+- Sem posts novos: nada é criado; resultado `SKIPPED` e aviso para quem configurou.
+- `DRAFT`: cria a edição (`digest_id` preenchido, autor = quem configurou) e avisa (`CRM_NEWSLETTER_DIGEST_READY`). `AUTO_SEND`: cria e envia por `CrmNewsletterSendService.sendNowAsSystem` (mesmas conferências do envio); recusado → rascunho fica, resultado `FAILED` e aviso com o motivo.
+- Documento: corpo e rodapé do modelo da newsletter (quando há), logo, título (assunto com `{data}` trocado pela data em pt-BR), texto de abertura e a "Lista de posts".
+
+**IA no editor**
+- Mesma porta das outras IAs do CRM: recurso `email` (`EDIT`), edição em `DRAFT`/`SCHEDULED`, feature `crm.aiAssistant`, provedor/modelo do workspace e cota mensal (`AiUsageService`, ADR 0007/0019).
+- Vai para o provedor só o que o membro escolheu: o pedido e, de cada fonte marcada (até 6 por tipo), o título e ~700 caracteres. Artigos da base de conhecimento: só `PUBLISHED`, visíveis no portal e não arquivados, e só para quem é membro do ServiceDesk. Nenhum dado de assinante/pessoa/negócio.
+- "Escrever com IA" devolve assunto, pré-visualização e até 5 seções do catálogo (validadas por `buildAiSection`); os posts marcados fecham a edição numa "Lista de posts" com os links e imagens reais (nunca vindos do modelo). Nada é salvo: o editor troca o conteúdo num passo só (Ctrl+Z desfaz) e o salvamento automático grava.
+- "Sugerir assuntos" lê o texto da própria edição (variáveis como `{{…}}`) e devolve 5 pares assunto + pré-visualização, sem repetição.
+
+**Teste A/B de assunto**
+- Configurado na edição (`DRAFT`/`SCHEDULED`): assunto B (diferente do A), parcela de teste 10–50 %, métrica (`OPENS`/`CLICKS`) e espera de 1–72 h.
+- Envio exige audiência ≥ 20 (`CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL`; bloqueio `AB_AUDIENCE_TOO_SMALL` na conferência).
+- Na fotografia da audiência, uma amostra aleatória do tamanho da parcela (mínimo 2) é dividida A/B (`ab_variant`); o resto fica `ab_held = true` e não é reivindicado pelo despacho — a edição continua `SENDING`.
+- `ab-tick`: passadas as horas desde `sending_started_at`, compara a taxa (abertos ou clicados ÷ enviados) da parcela; empate fica com A. Grava `ab_winner`/`ab_decided_at`, libera os retidos e enfileira o despacho, que manda o assunto vencedor.
+- O `subject` da edição continua sendo o A (arquivo público e lista); o relatório mostra as duas variantes. "Parar envio" também descarta os retidos.

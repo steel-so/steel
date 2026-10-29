@@ -1,0 +1,92 @@
+---
+title: Newsletter — resumo automático, IA e teste A/B
+description: Monte edições sozinho a partir do blog do seu site ou de um feed RSS, escreva a edição e sugira assuntos com IA, e teste dois assuntos para mandar o melhor ao resto da lista.
+section: crm
+order: 13
+---
+
+Três ajudas para quem publica uma newsletter com frequência: o **resumo
+automático**, que junta os posts novos numa edição; a **IA no editor**, que
+escreve a edição ou sugere assuntos; e o **teste A/B de assunto**, que manda
+dois assuntos para uma parte da lista e o vencedor para o resto.
+
+## Resumo automático
+
+Em **CRM › Newsletters**, abra a newsletter e vá à aba **Resumo**.
+
+1. **Fontes** — escolha o **blog de um site** do workspace (posts publicados
+   no Sites), um **feed RSS ou Atom** de fora (endereço `https://`) ou os dois.
+   O botão **Ver posts do próximo resumo** mostra o que entraria agora.
+2. **Quando** — semanal (dia da semana) ou mensal (dia 1 a 28), numa hora
+   cheia do **horário de Brasília**, e quantos posts no máximo (até 12).
+3. **O que acontece**:
+   - **Criar rascunho** — a edição fica em rascunho e você recebe um aviso
+     para revisar e enviar;
+   - **Enviar automaticamente** — se houver posts novos e o envio passar nas
+     conferências de sempre (remetente verificado, assinantes, limite do mês),
+     a edição sai sozinha. Se alguma conferência falhar, o rascunho fica salvo
+     e você é avisado do motivo.
+4. **Assunto** e **texto de abertura** — no assunto, `{data}` vira a data do
+   resumo (ex.: "Resumo de 3 de novembro de 2026").
+
+Só entram posts **publicados depois do último resumo** (no primeiro, os
+últimos 7 dias no semanal ou 31 no mensal). Sem posts novos, nada é criado nem
+enviado, e você recebe um aviso. Posts de feed sem data são ignorados.
+
+A edição sai com o logo da marca, o título, o texto de abertura e o bloco
+**Lista de posts** — título, resumo, imagem e link de cada post. Esse bloco
+também está na paleta do editor (categoria Relacionamento) para usar à mão.
+
+**Gerar rascunho agora** cria um rascunho com a configuração salva, sem
+enviar e sem mudar o que conta como "novo" para o próximo resumo agendado.
+
+## Escrever com IA
+
+No editor da edição, abra **IA › Escrever com IA**:
+
+- descreva em uma ou duas frases o que a edição deve dizer e escolha o tom;
+- marque, se quiser, até 6 itens de cada fonte: **posts do blog**, artigos da
+  **base de conhecimento** (só os publicados e visíveis no portal, e só para
+  quem tem acesso ao ServiceDesk) e **produtos do CRM**.
+
+A IA escreve o assunto, o texto de pré-visualização e o conteúdo, e substitui
+o que estava no editor (o rodapé fica). Os posts marcados entram no fim, numa
+lista com os links e as imagens reais. Não gostou? **Ctrl+Z** desfaz.
+
+**Só vai para a IA o que você escreveu e marcou**: o pedido e o título com um
+trecho de cada fonte escolhida. Nenhum dado de assinante, contato ou negócio
+é enviado.
+
+## Sugerir assuntos
+
+Em **IA › Sugerir assuntos**, a IA lê o texto da edição (ela é salva antes) e
+sugere 5 assuntos, cada um com um texto de pré-visualização. Dá para pedir um
+estilo ("mais curto", "em forma de pergunta"). Clique numa sugestão para
+aplicar.
+
+As duas ações usam o provedor de IA do workspace e contam na cota mensal de
+IA do CRM, como as outras IAs do CRM.
+
+## Teste A/B de assunto
+
+No editor, clique em **A/B**:
+
+- escreva o **assunto B** (diferente do assunto atual, que é o A);
+- escolha a **parcela de teste** (10 % a 50 % da lista — metade recebe A,
+  metade recebe B);
+- escolha como o vencedor é decidido: **taxa de abertura** ou **taxa de
+  clique**;
+- escolha **quanto esperar** (1 a 72 horas) depois do início do envio.
+
+Ao enviar, a parcela de teste recebe os dois assuntos na hora; o resto da
+lista espera. Passado o tempo, o assunto com a melhor taxa vai para os
+demais (empate fica com o A). O relatório da edição mostra os números de cada
+variante e o vencedor.
+
+O teste precisa de pelo menos **20 assinantes ativos** — abaixo disso, a
+conferência do envio avisa e o envio fica bloqueado até você desligar o teste.
+
+<Callout type='nota'>
+A taxa de abertura é inflada pela proteção de privacidade do Apple Mail. Para
+uma decisão mais confiável, prefira decidir por cliques.
+</Callout>

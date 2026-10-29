@@ -14,6 +14,7 @@ import {
   LeftToRightListBulletIcon,
   Mail01Icon,
   Menu01Icon,
+  News01Icon,
   QuoteDownIcon,
   Share08Icon,
   ShoppingBag01Icon,
@@ -53,6 +54,7 @@ import {
   signatureDefinition,
   socialDefinition,
 } from './components/brand'
+import { postsDefinition } from './components/content'
 import {
   BODY,
   bodyDefaults,
@@ -119,6 +121,7 @@ const BLOCKS = [
   htmlDefinition,
   // nl2-engage: newsletter issues only (see `allowPoll`).
   pollDefinition,
+  postsDefinition,
 ]
 
 /** Types a column accepts (every block). */
@@ -148,6 +151,7 @@ const ICONS = {
   video: Video01Icon,
   html: SourceCodeIcon,
   poll: CheckListIcon,
+  posts: News01Icon,
 }
 
 /** Marker swapped for Outlook's font fallback after render. */

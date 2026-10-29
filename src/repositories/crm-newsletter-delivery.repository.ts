@@ -19,7 +19,12 @@ import { dbError } from './db-error'
 export type ClaimedRecipient = Pick<
   CrmNewsletterIssueRecipient,
   'id' | 'subscriberId' | 'email' | 'name'
-> & { personId: string | null; subscriberStatus: string }
+> & {
+  personId: string | null
+  subscriberStatus: string
+  /** Subject A/B test (nl2-digest-ai): "A"/"B" in the test share. */
+  abVariant?: string | null
+}
 
 export type RecipientWithIssue = CrmNewsletterIssueRecipient & {
   issue: { id: string; workspaceId: string; newsletterId: string }
@@ -91,6 +96,7 @@ export const CrmNewsletterDeliveryRepository = {
         WHERE id IN (
           SELECT id FROM crm_newsletter_issue_recipients
           WHERE issue_id = ${issueId} AND status = 'PENDING'::"CrmNewsletterDeliveryStatus"
+            AND ab_held = false
           ORDER BY created_at, id
           LIMIT ${limit}
           FOR UPDATE SKIP LOCKED
@@ -104,6 +110,7 @@ export const CrmNewsletterDeliveryRepository = {
           subscriberId: true,
           email: true,
           name: true,
+          abVariant: true,
           subscriber: { select: { personId: true, status: true } },
         },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

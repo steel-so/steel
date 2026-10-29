@@ -1904,3 +1904,21 @@ export const crmNewsletterWelcomeStepLimitReached = (max: number): AppError =>
     'CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED',
     `A série de boas-vindas aceita no máximo ${max} etapas`,
   )
+
+// ─── newsletter2 · nl2-digest-ai ────────────────────────────────────────────
+
+export const crmNewsletterDigestSourceInvalid = (message: string): AppError =>
+  appError('CRM_NEWSLETTER_DIGEST_SOURCE_INVALID', message)
+
+export const crmNewsletterAiFailed = (message?: string): AppError =>
+  appError(
+    'CRM_NEWSLETTER_AI_FAILED',
+    message ??
+      'A IA não conseguiu responder agora — tente de novo em instantes',
+  )
+
+export const crmNewsletterAbAudienceTooSmall = (minimum: number): AppError =>
+  appError(
+    'CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL',
+    `O teste A/B de assunto precisa de pelo menos ${minimum} assinantes ativos`,
+  )

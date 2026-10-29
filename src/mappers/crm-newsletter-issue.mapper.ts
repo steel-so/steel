@@ -11,6 +11,7 @@ import type {
   CrmNewsletterIssueStatsDTO,
   CrmNewsletterIssueTrendDTO,
 } from '@/src/schemas/crm-newsletter-issue.schema'
+import { toCrmNewsletterAbTestDTO } from './crm-newsletter-ab.mapper'
 
 const iso = (value: Date | null): string | null =>
   value ? value.toISOString() : null
@@ -43,6 +44,8 @@ export function toCrmNewsletterIssueDTO(
     webUrl: extra.webUrl ?? null,
     createdAt: issue.createdAt.toISOString(),
     updatedAt: issue.updatedAt.toISOString(),
+    abTest: toCrmNewsletterAbTestDTO(issue),
+    digestId: issue.digestId ?? null,
   }
 }
 

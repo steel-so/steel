@@ -3,6 +3,7 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { BETTER_AUTH_URL } from '@/lib/env/server'
 import {
+  crmNewsletterAbAudienceTooSmall,
   crmNewsletterArchived,
   crmNewsletterIssueIncomplete,
   crmNewsletterIssueLocked,
@@ -12,6 +13,7 @@ import {
   validationError,
 } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
+import { abShareSize } from '@/src/lib/crm-newsletter/ab-test'
 import {
   issueExcerpt,
   isTransientSendError,
@@ -42,6 +44,7 @@ import {
   EDITABLE_ISSUE_STATUSES,
   type NewsletterWithWorkspace,
 } from '@/src/repositories/crm-newsletter-issue.repository'
+import { CRM_NEWSLETTER_AB_MIN_AUDIENCE } from '@/src/schemas/crm-newsletter-ab.schema'
 import {
   CRM_NEWSLETTER_MIN_SCHEDULE_MINUTES,
   type CrmNewsletterIssueDTO,
@@ -154,6 +157,9 @@ export async function preSendChecks(
       segmentWhere ? crmNewsletterSegmentEmpty() : crmNewsletterNoSubscribers(),
     )
   }
+  if (issue.abSubjectB && audience.value < CRM_NEWSLETTER_AB_MIN_AUDIENCE) {
+    return err(crmNewsletterAbAudienceTooSmall(CRM_NEWSLETTER_AB_MIN_AUDIENCE))
+  }
 
   const usage = await CrmNewsletterUsageService.getUsage(issue.workspaceId, now)
   if (!usage.ok) return usage
@@ -193,11 +199,15 @@ async function startSending(
   segmentWhere?: Prisma.CrmNewsletterSubscriberWhereInput,
 ): Promise<Result<CrmNewsletterIssue | null>> {
   const web = webVersionOf(base, newsletter.name)
+  const percent = issue.abSubjectB ? issue.abTestPercent : null
   const started = await CrmNewsletterIssueRepository.startSending(issue.id, {
     webHtml: web.html,
     excerpt: issueExcerpt(web.text),
     now,
     ...(segmentWhere ? { segmentWhere } : {}),
+    ...(percent
+      ? { abShare: (audience: number) => abShareSize(audience, percent) }
+      : {}),
   })
   if (!started.ok) return started
   if (!started.value) return ok(null)
@@ -562,12 +572,19 @@ export const CrmNewsletterSendService = {
     }
     const facts = await loadRecipientFacts(issue.workspaceId, base.value, rows)
     if (!facts.ok) return facts
+    // Subject A/B test: the test share has its variant, the rest the winner.
+    const subjectB = issue.abSubjectB
+    const baseB = subjectB
+      ? { ...base.value, email: { ...base.value.email, subject: subjectB } }
+      : null
+    const baseOf = (row: ClaimedRecipient) =>
+      baseB && (row.abVariant ?? issue.abWinner) === 'B' ? baseB : base.value
 
     const from = newsletterFromHeader(newsletter.fromName, newsletter.fromEmail)
     const emails: BatchEmail[] = rows.map((row) => {
       const links = unsubscribeLinks(issue.workspaceId, row)
       const person = row.personId ? facts.value.people.get(row.personId) : null
-      const email = personalizeIssue(base.value, {
+      const email = personalizeIssue(baseOf(row), {
         newsletterName: newsletter.name,
         contact: {
           ...person,
@@ -754,6 +771,53 @@ export const CrmNewsletterSendService = {
     )
     if (!started.ok) return started
     return ok(started.value ? 'started' : 'lost')
+  },
+
+  /**
+   * Sends a DRAFT right away on behalf of the system (the digest in
+   * AUTO_SEND mode, nl2-digest-ai): same pre-send checks as a member's
+   * send. `refused` carries the pt-BR reason when a check fails.
+   */
+  async sendNowAsSystem(
+    issueId: string,
+    now: Date,
+  ): Promise<Result<{ started: true } | { started: false; refused: string }>> {
+    const found = await CrmNewsletterIssueRepository.findByIdUnscoped(issueId)
+    if (!found.ok) return found
+    if (found.value?.status !== 'DRAFT') {
+      return ok({ started: false, refused: crmNewsletterIssueLocked().message })
+    }
+    const { newsletter, ...issue } = found.value
+    const checked = await preSendChecks(issue, newsletter, now)
+    if (!checked.ok) {
+      if (checked.error.code === 'DATABASE_ERROR') return checked
+      return ok({ started: false, refused: checked.error.message })
+    }
+    const started = await startSending(
+      issue,
+      newsletter,
+      checked.value.base,
+      now,
+      checked.value.segmentWhere,
+    )
+    if (!started.ok) return started
+    if (!started.value) {
+      return ok({ started: false, refused: crmNewsletterIssueLocked().message })
+    }
+    auditMutation({
+      entity: 'crm_newsletter_issue',
+      action: 'send',
+      actorId: null,
+      targetId: issueId,
+      meta: {
+        workspaceId: issue.workspaceId,
+        newsletterId: issue.newsletterId,
+        audience: checked.value.audience,
+        actor: 'system',
+        reason: 'digest',
+      },
+    })
+    return ok({ started: true })
   },
 
   /**

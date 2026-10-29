@@ -255,6 +255,8 @@ export type AuditEntity =
   // Newsletter polls (CSV of voters) and the WhatsApp version (nl2-engage)
   | 'crm_newsletter_poll'
   | 'crm_newsletter_issue_whatsapp'
+  // newsletter2 nl2-digest-ai: automatic digest settings
+  | 'crm_newsletter_digest'
 
 export type AuditAction =
   | 'create'

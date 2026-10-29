@@ -4,6 +4,7 @@ import { ArrowLeft01Icon } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useState } from 'react'
 import { NewsletterWelcomeTab } from '@/app/_components/crm/newsletters/automation/newsletter-welcome-tab'
+import { NewsletterDigestTab } from '@/app/_components/crm/newsletters/digest/newsletter-digest-tab'
 import { NewsletterIssuesTab } from '@/app/_components/crm/newsletters/issues/newsletter-issues-tab'
 import { NewsletterSegmentsButton } from '@/app/_components/crm/newsletters/segments/newsletter-segments-dialog'
 import { SteelIcon } from '@/components/icon/icon'
@@ -16,7 +17,13 @@ import { NewsletterSenderBadge } from './newsletter-sender-badge'
 import { NewsletterSettingsTab } from './newsletter-settings-tab'
 import { NewsletterSubscribersTab } from './newsletter-subscribers-tab'
 
-const TABS = ['edicoes', 'assinantes', 'configuracoes', 'boas-vindas'] as const
+const TABS = [
+  'edicoes',
+  'assinantes',
+  'configuracoes',
+  'boas-vindas',
+  'resumo',
+] as const
 type Tab = (typeof TABS)[number]
 
 function initialTab(): Tab {
@@ -116,6 +123,7 @@ export function CrmNewsletterView({
           </TabsTrigger>
           <TabsTrigger value='boas-vindas'>Boas-vindas</TabsTrigger>
           <TabsTrigger value='configuracoes'>Configurações</TabsTrigger>
+          <TabsTrigger value='resumo'>Resumo</TabsTrigger>
         </TabsList>
         <TabsContent value='edicoes' className='pt-4'>
           <NewsletterIssuesTab
@@ -144,6 +152,14 @@ export function CrmNewsletterView({
             workspaceId={workspaceId}
             slug={slug}
             newsletter={data}
+          />
+        </TabsContent>
+        <TabsContent value='resumo' className='pt-4'>
+          <NewsletterDigestTab
+            workspaceId={workspaceId}
+            workspaceSlug={slug}
+            newsletterId={newsletterId}
+            archived={data.status === 'ARCHIVED'}
           />
         </TabsContent>
       </Tabs>

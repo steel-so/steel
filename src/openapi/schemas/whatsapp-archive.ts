@@ -22,11 +22,9 @@ export const WhatsAppArchiveDTO = dto(
       description:
         'Fim (inclusive): 23:59:59.999 do último dia, horário de São Paulo.',
     }),
-    fileName: z
-      .string()
-      .meta({
-        example: 'FIDELIZZAMAIS-whatsapp-semanal-2026-10-19-a-2026-10-25.zip',
-      }),
+    fileName: z.string().meta({
+      example: 'FIDELIZZAMAIS-whatsapp-semanal-2026-10-19-a-2026-10-25.zip',
+    }),
     sizeBytes: z.number().int().nullable(),
     sha256: z
       .string()
@@ -51,11 +49,9 @@ export const WhatsAppArchiveDTO = dto(
     createdAt: dateTime(),
     completedAt: dateTime().nullable(),
     expiresAt: dateTime().nullable(),
-    expired: z
-      .boolean()
-      .meta({
-        description: 'Passou do prazo de guarda; o arquivo foi apagado.',
-      }),
+    expired: z.boolean().meta({
+      description: 'Passou do prazo de guarda; o arquivo foi apagado.',
+    }),
     downloadUrl: z.string().nullable().meta({
       description:
         'Rota autenticada de download; `null` fora de `DONE` ou após expirar.',

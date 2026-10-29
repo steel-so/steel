@@ -14,6 +14,7 @@ import { crmNewsletterBridgeRoutes } from './crm/newsletter-bridge'
 import { crmNewsletterEngageRoutes } from './crm/newsletter-engage'
 import { crmNewsletterIssueRoutes } from './crm/newsletter-issues'
 import { crmNewsletterSegmentRoutes } from './crm/newsletter-segments'
+import { crmNewsletterDigestAiRoutes } from './crm/newsletter2-digest-ai'
 import { crmNewsletterRoutes } from './crm/newsletters'
 import { crmOpportunitiesRoutes } from './crm/opportunities'
 import { crmPeopleRoutes } from './crm/people'
@@ -70,6 +71,7 @@ const routes: RouteConfig[] = [
   ...crmNewsletterSegmentRoutes,
   ...crmNewsletterEngageRoutes,
   ...crmNewsletterAutomationRoutes,
+  ...crmNewsletterDigestAiRoutes,
 ]
 
 export function registerCrmPaths(registry: OpenApiRegistry): void {

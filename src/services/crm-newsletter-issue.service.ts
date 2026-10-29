@@ -4,6 +4,7 @@ import { BETTER_AUTH_URL } from '@/lib/env/server'
 import {
   conflict,
   crmEmailCanvasHtmlForbidden,
+  crmNewsletterAbAudienceTooSmall,
   crmNewsletterArchived,
   crmNewsletterIssueLocked,
   crmNewsletterIssueNotFound,
@@ -39,6 +40,7 @@ import {
   EDITABLE_ISSUE_STATUSES,
   type NewsletterWithWorkspace,
 } from '@/src/repositories/crm-newsletter-issue.repository'
+import { CRM_NEWSLETTER_AB_MIN_AUDIENCE } from '@/src/schemas/crm-newsletter-ab.schema'
 import type {
   CreateCrmNewsletterIssueDTO,
   CrmNewsletterIssueDTO,
@@ -608,6 +610,17 @@ export const CrmNewsletterIssueService = {
         message: segmentWhere
           ? crmNewsletterSegmentEmpty().message
           : 'A newsletter ainda não tem assinantes ativos',
+      })
+    }
+    if (
+      issue.value.abSubjectB &&
+      audience.value > 0 &&
+      audience.value < CRM_NEWSLETTER_AB_MIN_AUDIENCE
+    ) {
+      blockers.push({
+        code: 'AB_AUDIENCE_TOO_SMALL',
+        message: crmNewsletterAbAudienceTooSmall(CRM_NEWSLETTER_AB_MIN_AUDIENCE)
+          .message,
       })
     }
     const remaining = CrmNewsletterUsageService.remaining(usage.value)

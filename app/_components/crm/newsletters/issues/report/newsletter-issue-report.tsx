@@ -59,6 +59,7 @@ import {
   RECIPIENT_FILTER_LABEL,
   SKIP_REASON_LABEL,
 } from '../issue-format'
+import { IssueAbTestCard } from './issue-ab-test-card'
 import { IssuePollsSection } from './issue-polls-section'
 import { IssueWhatsAppSection } from './issue-whatsapp-section'
 
@@ -543,6 +544,12 @@ export function NewsletterIssueReport({
         </>
       )}
 
+      <IssueAbTestCard
+        workspaceId={workspaceId}
+        newsletterId={newsletterId}
+        issueId={issueId}
+        live={live}
+      />
       {/* nl2-engage: poll results and the WhatsApp version. */}
       <IssuePollsSection
         workspaceId={workspaceId}
