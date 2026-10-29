@@ -6,6 +6,7 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
+import type { WhatsAppFlowDTO } from '@/types/whatsapp-flow'
 import { FlowEditor } from '../flow-editor'
 
 vi.setConfig({ testTimeout: 30_000 })
@@ -15,7 +16,7 @@ vi.mock('@/lib/notify', () => ({ notify }))
 
 const BASE = '/api/workspaces/ws_1/whatsapp/flows'
 
-const baseFlow = {
+const baseFlow: WhatsAppFlowDTO = {
   id: 'flow_1',
   workspaceId: 'ws_1',
   connectionId: 'conn_1',

@@ -11387,8 +11387,8 @@ model WhatsAppFlowResponse {
   flowToken         String                     @unique @map("flow_token")
   status            WhatsAppFlowResponseStatus @default(SENT)
   sentByUserId      String?                    @map("sent_by_user_id")
-  /// Provider id of the outbound message that carried the flow.
-  providerMessageId String?                    @map("provider_message_id")
+  /// Outbound message that carried the flow.
+  messageId         String?                    @map("message_id")
   /// Answers by field key (flow_token stripped).
   answers           Json?
   createdLeadId     String?                    @map("created_lead_id")

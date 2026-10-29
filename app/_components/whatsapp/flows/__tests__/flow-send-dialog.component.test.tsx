@@ -57,7 +57,7 @@ describe('<FlowSendDialog />', () => {
     // The one that is not sendable is not offered.
     expect(screen.queryByRole('option', { name: /Rascunho/ })).toBeNull()
     fireEvent.click(await screen.findByRole('option', { name: 'Cadastro' }))
-    expect(screen.getByText(/Preencha o cadastro/)).toBeTruthy()
+    expect(await screen.findByText(/Preencha o cadastro/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar formulário' }))
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))

@@ -9,6 +9,7 @@ import {
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { createFakeWhatsAppTemplate } from '@/src/__tests__/factories/whatsapp-template.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import { notFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 import { flowFromPreset } from '@/src/lib/whatsapp/flows/templates'
 import type { FlowDefinition } from '@/src/schemas/whatsapp-flow.schema'
@@ -366,9 +367,7 @@ describe('create()', () => {
         'MODULE_DISABLED',
       )
       moduleAccess.isEnabled.mockResolvedValue(ok(true))
-      crmFormRepo.findById.mockResolvedValue(
-        err({ code: 'NOT_FOUND' as const, message: 'x' }),
-      )
+      crmFormRepo.findById.mockResolvedValue(err(notFound('CrmForm')))
       expectErr(
         await WhatsAppFlowService.create('u', 'ws', crmInput),
         'NOT_FOUND',

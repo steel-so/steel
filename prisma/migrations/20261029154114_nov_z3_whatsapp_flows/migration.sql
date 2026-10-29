@@ -45,7 +45,7 @@ CREATE TABLE "whatsapp_flow_responses" (
     "flow_token" TEXT NOT NULL,
     "status" "WhatsAppFlowResponseStatus" NOT NULL DEFAULT 'SENT',
     "sent_by_user_id" TEXT,
-    "provider_message_id" TEXT,
+    "message_id" TEXT,
     "answers" JSONB,
     "created_lead_id" TEXT,
     "created_person_id" TEXT,
