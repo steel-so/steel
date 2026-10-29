@@ -50,6 +50,7 @@ export const QueueName = {
   SendingDomains: 'sending-domains',
   CrmNewsletter: 'crm-newsletter',
   CrmNewsletterAutomation: 'crm-newsletter-automation',
+  CrmCnpjEnrichment: 'crm-cnpj-enrichment',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1037,4 +1038,19 @@ export type CrmNewsletterAutomationJobPayload = {
   [CrmNewsletterAutomationJob.WelcomeTick]: Record<string, never>
   [CrmNewsletterAutomationJob.ReengagementMonthly]: Record<string, never>
   [CrmNewsletterAutomationJob.ReengagementResolve]: Record<string, never>
+}
+
+/**
+ * On-demand bulk CNPJ re-enrichment (enqueued by the API, never scheduled):
+ * one job per run, walking the workspace's companies in pages.
+ */
+export const CrmCnpjEnrichmentJob = {
+  Run: 'run-enrichment',
+} as const
+
+export type CrmCnpjEnrichmentJob =
+  (typeof CrmCnpjEnrichmentJob)[keyof typeof CrmCnpjEnrichmentJob]
+
+export type CrmCnpjEnrichmentJobPayload = {
+  [CrmCnpjEnrichmentJob.Run]: { runId: string }
 }

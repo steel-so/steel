@@ -1,9 +1,15 @@
 'use client'
 
 import { useMemo } from 'react'
+import { CnpjBulkDialog } from '@/app/_components/crm/cnpj/cnpj-bulk-dialog'
+import { CompanyEnrichmentPanel } from '@/app/_components/crm/cnpj/company-enrichment-panel'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import {
+  useCan,
+  useIsPrivileged,
+} from '@/app/_components/workspace/workspace-permissions'
 import {
   customFieldColumns,
   useCrmCustomFields,
@@ -86,6 +92,8 @@ export function CrmCompaniesTable({
   )
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const { data: customFields } = useCrmCustomFields(workspaceId, 'COMPANY')
+  const canEdit = useCan('companies', 'EDIT')
+  const isPrivileged = useIsPrivileged()
 
   const columns = useMemo(
     () => [...COLUMNS, ...customFieldColumns(customFields ?? [])],
@@ -110,12 +118,26 @@ export function CrmCompaniesTable({
       isLoading={isLoading}
       searchPlaceholder='Buscar empresas…'
       refetch={refetch}
+      headerExtra={
+        isPrivileged ? (
+          <CnpjBulkDialog workspaceId={workspaceId} onFinished={refetch} />
+        ) : null
+      }
       renderRecordExtra={(record) => (
-        <CrmRecordTimeline
-          workspaceId={workspaceId}
-          companyId={record.id}
-          userMap={lookups.maps.users}
-        />
+        <div className='flex flex-col gap-4'>
+          <CompanyEnrichmentPanel
+            workspaceId={workspaceId}
+            companyId={record.id}
+            cnpj={record.cnpj}
+            canEdit={canEdit}
+            onApplied={refetch}
+          />
+          <CrmRecordTimeline
+            workspaceId={workspaceId}
+            companyId={record.id}
+            userMap={lookups.maps.users}
+          />
+        </div>
       )}
     />
   )
