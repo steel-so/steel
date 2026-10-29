@@ -321,6 +321,7 @@ export {
   webhookEndpointNotFound,
   webhookEventUnknown,
   webhookUrlNotAllowed,
+  whatsappAdSpendNotFound,
   whatsappAiCampaignNotFound,
   whatsappAiCampaignNotReady,
   whatsappAiCampaignRunning,

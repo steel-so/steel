@@ -1,5 +1,9 @@
 import { z } from 'zod'
 import {
+  CreateWhatsAppAdSpendSchema,
+  UpdateWhatsAppAdSettingsSchema,
+} from '@/src/schemas/whatsapp-ad.schema'
+import {
   CreateWhatsAppCloseStatusSchema,
   UpdateWhatsAppCloseStatusSchema,
 } from '@/src/schemas/whatsapp-close-status.schema'
@@ -13,6 +17,9 @@ import type { RouteConfig } from '../../registry'
 import { MediaUrlDTO } from '../../schemas/core'
 import {
   DeletedIdDTO,
+  WhatsAppAdReportDTO,
+  WhatsAppAdSettingsDTO,
+  WhatsAppAdSpendDTO,
   WhatsAppAssignableMemberDTO,
   WhatsAppBusinessHoursStatusDTO,
   WhatsAppCloseStatusDTO,
@@ -359,5 +366,110 @@ export const settingsRoutes: RouteConfig[] = [
       },
     },
     errors: [...PRIVILEGED_ERRORS, 'RESOURCE_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/ads',
+    tags: [TAG],
+    summary: 'Anúncios Click-to-WhatsApp: funil e ROI',
+    description: `Agrupa por anúncio (id da Meta) as mensagens que chegaram com o bloco \`referral\` de um anúncio Click-to-WhatsApp no período (padrão: mês corrente, America/Sao_Paulo): cliques, conversas, contatos, leads abertos, leads ganhos, receita (valor fechado dos leads ganhos), gasto digitado (proporcional aos dias do período), custo por conversa e por lead e ROI. Um anúncio com gasto e sem cliques também aparece. ${PRIVILEGED}`,
+    query: z.object({
+      from: z.string().optional().meta({
+        description: 'Início (AAAA-MM-DD, inclusivo).',
+        example: '2026-10-01',
+      }),
+      to: z.string().optional().meta({
+        description: 'Fim (AAAA-MM-DD, inclusivo). Máximo de 400 dias.',
+        example: '2026-10-29',
+      }),
+    }),
+    responses: {
+      200: {
+        description: 'Relatório por anúncio.',
+        schema: WhatsAppAdReportDTO,
+      },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/ads/export',
+    tags: [TAG],
+    summary: 'Exportar anúncios (CSV)',
+    description: `Mesma tabela da tela em CSV (UTF-8 com BOM). Aceita os mesmos filtros de \`GET .../whatsapp/ads\`. ${PRIVILEGED}`,
+    query: z.object({
+      from: z.string().optional(),
+      to: z.string().optional(),
+    }),
+    responses: {
+      200: {
+        description: 'Arquivo CSV.',
+        envelope: false,
+        contentType: 'text/csv',
+        schema: { type: 'string' },
+      },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/ads/settings',
+    tags: [TAG],
+    summary: 'Configuração da atribuição de anúncios',
+    description: `Chave geral (desligada por padrão) e regras de criação de lead. ${PRIVILEGED}`,
+    responses: {
+      200: { description: 'Configuração.', schema: WhatsAppAdSettingsDTO },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/whatsapp/ads/settings',
+    tags: [TAG],
+    summary: 'Definir a atribuição de anúncios',
+    description: `Upsert parcial (omitido = mantém; \`leadOwnerId: null\` limpa o responsável). Com \`enabled\` ligado o webhook da Meta guarda a origem de cada conversa que veio de um anúncio; com \`createLeads\` também abre (ou reaproveita, pelo telefone) um lead no CRM com \`channel = WhatsApp\` e a origem contendo o título do anúncio. O \`leadOwnerId\` precisa ser membro do workspace. Auditado. ${PRIVILEGED}`,
+    body: UpdateWhatsAppAdSettingsSchema,
+    responses: {
+      200: {
+        description: 'Configuração salva.',
+        schema: WhatsAppAdSettingsDTO,
+      },
+    },
+    errors: [...PRIVILEGED_ERRORS, 'VALIDATION_ERROR'],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/ads/spends',
+    tags: [TAG],
+    summary: 'Gastos com anúncios',
+    description: `Lançamentos de gasto digitados por anúncio e período (a Meta Ads não está conectada). ${PRIVILEGED}`,
+    responses: {
+      200: { description: 'Gastos.', schema: z.array(WhatsAppAdSpendDTO) },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/ads/spends',
+    tags: [TAG],
+    summary: 'Lançar gasto de um anúncio',
+    description: `Registra quanto foi gasto num anúncio (ou publicação) entre duas datas. O relatório divide o valor igualmente pelos dias do lançamento e soma só os dias que caem no período consultado. Auditado. ${PRIVILEGED}`,
+    body: CreateWhatsAppAdSpendSchema,
+    responses: {
+      201: { description: 'Gasto registrado.', schema: WhatsAppAdSpendDTO },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/whatsapp/ads/spends/{spendId}',
+    tags: [TAG],
+    summary: 'Excluir gasto de anúncio',
+    description: `Remove um lançamento de gasto. Auditado. ${PRIVILEGED}`,
+    params: { spendId: 'Id do lançamento de gasto.' },
+    responses: {
+      200: { description: 'Gasto excluído.', schema: DeletedIdDTO },
+    },
+    errors: [...PRIVILEGED_ERRORS, 'WHATSAPP_AD_SPEND_NOT_FOUND'],
   },
 ]

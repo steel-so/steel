@@ -24,6 +24,7 @@ import {
   type ConversationWaitingReason,
   communicationMessageReceivedData,
 } from '@/src/lib/webhooks/payloads'
+import type { InboundAdReferral } from '@/src/lib/whatsapp/ad-referral'
 import {
   isWhatsAppOptOutKeyword,
   WHATSAPP_OPT_OUT_CONFIRMATION,
@@ -48,6 +49,7 @@ import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
 import { CrmNewsletterWhatsAppReceiptsService } from './crm-newsletter-whatsapp-receipts.service'
 import { SdWhatsappInboundService } from './sd-whatsapp-inbound.service'
 import { emitWebhookEvent } from './webhook-emitter'
+import { WhatsAppAdAttributionService } from './whatsapp-ad-attribution.service'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
@@ -71,6 +73,8 @@ export interface InboundWhatsAppMessage {
   contactPayload?: { name: string; waId: string }
   /** Button click (type BUTTON): the raw payload/id of the clicked button. */
   buttonPayload?: string
+  /** Click-to-WhatsApp ad that opened the chat (Meta `referral` block). */
+  referral?: InboundAdReferral
 }
 
 /**
@@ -373,6 +377,26 @@ export const WhatsAppWebhookService = {
           component: 'WhatsAppWebhookService',
           conversationId,
           reason: replied.error.code,
+        })
+      }
+    }
+
+    // Click-to-WhatsApp ad attribution: log-only on failure, the message is
+    // already saved and Meta must not retry the webhook for it.
+    if (input.referral && !serviceDesk) {
+      const attributed = await WhatsAppAdAttributionService.onInboundReferral({
+        workspaceId,
+        contact: contact.value,
+        conversationId,
+        providerMessageId: input.providerMessageId,
+        referral: input.referral,
+      })
+      if (!attributed.ok) {
+        logger.warn('whatsapp.ad.attribution_failed', {
+          component: 'WhatsAppWebhookService',
+          workspaceId,
+          conversationId,
+          reason: attributed.error.code,
         })
       }
     }

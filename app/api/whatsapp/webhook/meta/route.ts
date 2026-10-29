@@ -6,6 +6,7 @@ import {
   WHATSAPP_META_VERIFY_TOKEN,
 } from '@/lib/env/server'
 import { consume, whatsappWebhookLimiter } from '@/src/lib/rate-limit'
+import { parseMetaReferral } from '@/src/lib/whatsapp/ad-referral'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { assertModuleEnabled } from '@/src/services/authz'
 import {
@@ -69,6 +70,8 @@ interface MetaMessage {
   }[]
   // Present when this message is a reply/quote to another one.
   context?: { id?: string }
+  // Present on the first message of a Click-to-WhatsApp ad (or post) click.
+  referral?: unknown
 }
 
 interface MetaWebhookValue {
@@ -361,6 +364,7 @@ export const POST = withAxiom(async (request: NextRequest) => {
     contactName,
     providerMessageId: message.id,
     quotedProviderMessageId: message.context?.id,
+    referral: parseMetaReferral(message.referral) ?? undefined,
     ...content,
   })
   if (!result.ok) {

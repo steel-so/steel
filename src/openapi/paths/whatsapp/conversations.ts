@@ -15,6 +15,7 @@ import { SetWhatsAppConversationTeamSchema } from '@/src/schemas/whatsapp-team.s
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   DeletedIdDTO,
+  WhatsAppAdReferralDTO,
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
   WhatsAppMessageDTO,
@@ -613,6 +614,24 @@ export const conversationRoutes: RouteConfig[] = [
         code: 'WHATSAPP_MESSAGE_NOT_FOUND',
         when: 'Mensagem não existe nesta conversa ou ainda não tem id no provedor',
       },
+    ],
+  },
+  {
+    method: 'get',
+    path: `${BASE}/ad-referral`,
+    tags: [TAG],
+    summary: 'Anúncio que originou a conversa',
+    description: `Devolve o anúncio Click-to-WhatsApp (título, texto, mídia, id da Meta e lead atribuído) que abriu a conversa, ou \`null\` quando ela não veio de anúncio ou a atribuição está desligada. ${VISIBILITY} ${perm('conversations', 'VIEW')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Origem da conversa (ou `null`).',
+        schema: WhatsAppAdReferralDTO.nullable(),
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'VIEW'),
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
     ],
   },
 ]

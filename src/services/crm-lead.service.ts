@@ -83,7 +83,7 @@ export type CrmLeadIntakeActor =
   | {
       kind: 'system'
       createdById: string
-      via: 'integration_api_key' | 'form' | 'apollo'
+      via: 'integration_api_key' | 'form' | 'apollo' | 'whatsapp_ad'
       refId: string
     }
 

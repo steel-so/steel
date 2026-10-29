@@ -209,6 +209,7 @@ describe('<SteelAiChat /> — Teste', () => {
 
 const RUN: SteelAgentRunDTO = {
   id: 'run_1',
+  rerunOfId: null,
   agentId: 'ag_1',
   status: 'SUCCEEDED',
   triggerType: 'MANUAL',
