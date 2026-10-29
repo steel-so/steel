@@ -39,6 +39,7 @@ import { processServicedeskAi } from '../src/lib/queue/processors/servicedesk-ai
 import { processServicedeskBilling } from '../src/lib/queue/processors/servicedesk-billing'
 import { processServicedeskDigest } from '../src/lib/queue/processors/servicedesk-digest'
 import { processServicedeskIntegrations } from '../src/lib/queue/processors/servicedesk-integrations'
+import { processServicedeskInventory } from '../src/lib/queue/processors/servicedesk-inventory'
 import { processServicedeskMail } from '../src/lib/queue/processors/servicedesk-mail'
 import { processServicedeskRecurring } from '../src/lib/queue/processors/servicedesk-recurring'
 import { processServicedeskReports } from '../src/lib/queue/processors/servicedesk-reports'
@@ -82,6 +83,7 @@ import {
   scheduleServicedeskBillingJobs,
   scheduleServicedeskDigestJobs,
   scheduleServicedeskIntegrationsJobs,
+  scheduleServicedeskInventoryJobs,
   scheduleServicedeskMailJobs,
   scheduleServicedeskRecurringJobs,
   scheduleServicedeskReportsJobs,
@@ -260,6 +262,7 @@ async function main(): Promise<void> {
     registerWorker(QueueName.ServicedeskBilling, processServicedeskBilling),
     registerWorker(QueueName.ServicedeskReports, processServicedeskReports),
     registerWorker(QueueName.ServicedeskRisk, processServicedeskRisk),
+    registerWorker(QueueName.ServicedeskInventory, processServicedeskInventory),
     registerWorker(
       QueueName.ServicedeskIntegrations,
       processServicedeskIntegrations,
@@ -335,6 +338,7 @@ async function main(): Promise<void> {
   await scheduleServicedeskBillingJobs()
   await scheduleServicedeskReportsJobs()
   await scheduleServicedeskRiskJobs()
+  await scheduleServicedeskInventoryJobs()
   await scheduleServicedeskIntegrationsJobs()
   await scheduleCrmTaskRemindersJobs()
   await scheduleServicedeskTaskRemindersJobs()

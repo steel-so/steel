@@ -73,6 +73,9 @@ const PUBLIC_ROUTES = [
   '/servicedesk/approval', '/api/servicedesk/approvals',
   // Abertura de chamado por monitoramento: webhook sem sessão (token na URL)
   '/api/servicedesk/monitoring',
+  // Agente de inventário de ativos: relatório sem sessão, token por workspace
+  // no cabeçalho `Authorization: Bearer`
+  '/api/servicedesk/inventory',
   // Integrações do ServiceDesk: webhooks sem sessão, verificados por
   // assinatura (Slack: X-Slack-Signature; GitHub: X-Hub-Signature-256). O
   // callback OAuth (`/oauth/slack`) fica de fora de propósito: ele exige a

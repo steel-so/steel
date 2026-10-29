@@ -10868,6 +10868,7 @@ model CrmCnpjEnrichmentRun {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status])
   @@map("crm_cnpj_enrichment_runs")
+}
 
 // nov: s1-asset-inventory
 

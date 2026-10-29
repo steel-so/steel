@@ -80,6 +80,7 @@ export const ServicedeskReportsCron = '10 * * * *' as const
  * minutos, não de segundos.
  */
 export const ServicedeskRiskCron = '*/10 * * * *' as const
+export const ServicedeskInventoryCron = '*/5 * * * *' as const
 
 /**
  * Agrupamento de incidentes repetidos (candidatos a problema): de hora em
