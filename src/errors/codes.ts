@@ -1215,6 +1215,8 @@ export const ERROR_CODES = {
   // (custom field of another entity) or a stored segment no longer parses.
   CRM_NEWSLETTER_SEGMENT_INVALID: {
     code: 'CRM_NEWSLETTER_SEGMENT_INVALID',
+    status: 422,
+  },
   // newsletter2 nl2-automation: welcome series.
   CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND: {
     code: 'CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND',
