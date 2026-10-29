@@ -255,6 +255,11 @@ export const TAG_GROUPS = [
           'Configurações de atendimento, mídia e membros atribuíveis.',
       },
       {
+        name: 'Comunicação · Chatbots',
+        description:
+          'Construtor visual de chatbot: fluxos de menus, perguntas, condições e integrações, com passagem para atendente ou para a IA, simulador e sessões.',
+      },
+      {
         name: 'Comunicação · Tempo real e webhooks',
         description: 'SSE de eventos e webhooks de entrada da Meta e da Z-API.',
       },
