@@ -25,7 +25,7 @@ const alerts = vi.mocked(SdInventoryAlertRepository)
 const settings = vi.mocked(SdInventorySettingsRepository)
 const WS = 'ws1'
 const NOW = new Date('2026-10-20T12:00:00.000Z')
-const query = { page: 1, pageSize: 25 }
+const query = { page: 1, pageSize: 25, hasAlert: false, stale: false }
 
 beforeEach(() => {
   actAs('agent')
