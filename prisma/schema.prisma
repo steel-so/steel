@@ -8103,6 +8103,8 @@ enum SteelAgentRunStepKind {
   MODEL
   TOOL
   APPROVAL
+  /// nov: a4-run-trace — a guardrail rule that fired during the run.
+  GUARDRAIL
 }
 
 enum SteelAgentRunStepStatus {
@@ -8191,6 +8193,9 @@ model SteelAgentRun {
   /// "Testar agente": reads real, writes simulated, no approvals, never
   /// counts against the monthly cap nor shows as the agent's last run.
   isTest         Boolean               @default(false) @map("is_test")
+  /// nov: a4-run-trace — the run this test was re-executed from ("Reexecutar
+  /// como teste"). Plain id, no FK: the trace outlives a purged source.
+  rerunOfId      String?               @map("rerun_of_id")
   createdAt      DateTime              @default(now()) @map("created_at")
   updatedAt      DateTime              @updatedAt @map("updated_at")
 
