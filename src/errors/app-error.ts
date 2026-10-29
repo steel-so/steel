@@ -1074,6 +1074,21 @@ export const steelAgentDisabled = (): AppError =>
     'O agente está pausado. Ative-o para executar.',
   )
 
+export const steelAgentVersionNotFound = (): AppError =>
+  appError('STEEL_AGENT_VERSION_NOT_FOUND', 'Versão do agente não encontrada')
+
+export const steelAgentVersionPending = (): AppError =>
+  appError(
+    'STEEL_AGENT_VERSION_PENDING',
+    'Já existe uma versão deste agente em avaliação. Aguarde o resultado ou descarte-a antes de editar de novo.',
+  )
+
+export const steelAgentVersionInvalidState = (message: string): AppError =>
+  appError('STEEL_AGENT_VERSION_INVALID_STATE', message)
+
+export const steelAgentEvalSetInvalid = (message: string): AppError =>
+  appError('STEEL_AGENT_EVAL_SET_INVALID', message)
+
 /** Workspace suspenso ou em exclusão pelo admin global. */
 export const workspaceSuspended = (
   message = 'Este workspace está suspenso. Fale com o suporte da Stratus Telecom.',

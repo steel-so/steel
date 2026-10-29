@@ -60,12 +60,17 @@ export const SD_COPILOT_VARIANTS = [
 ] as const
 export type SdCopilotVariant = (typeof SD_COPILOT_VARIANTS)[number]
 
-export const AI_EVAL_TARGETS = ['STEEL_ASSISTANT', 'WHATSAPP_REPLY'] as const
+export const AI_EVAL_TARGETS = [
+  'STEEL_ASSISTANT',
+  'WHATSAPP_REPLY',
+  'STEEL_AGENT',
+] as const
 export type AiEvalTargetKey = (typeof AI_EVAL_TARGETS)[number]
 
 export const AI_EVAL_TARGET_LABELS: Record<AiEvalTargetKey, string> = {
   STEEL_ASSISTANT: 'Steel AI (assistente)',
   WHATSAPP_REPLY: 'Resposta automática do WhatsApp',
+  STEEL_AGENT: 'Steel Agents (trava de versão)',
 }
 
 export const AI_EVAL_RUN_REASONS = [

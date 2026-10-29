@@ -261,6 +261,8 @@ export const AiEvalRepository = {
     reason: string
     startedById: string
     caseCount: number
+    /** Steel Agent version under evaluation (A2 gate). */
+    agentVersionId?: string | null
   }): Promise<Result<AiEvalRunWithUser>> {
     try {
       return ok(await prisma.aiEvalRun.create({ data, include: RUN_INCLUDE }))

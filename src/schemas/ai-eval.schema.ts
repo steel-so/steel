@@ -27,7 +27,7 @@ const checks = z
 
 export const AiEvalTargetSchema = z.enum(AI_EVAL_TARGETS).meta({
   description:
-    '`STEEL_ASSISTANT` = o assistente Steel AI (com skill opcional); `WHATSAPP_REPLY` = a resposta automática do WhatsApp (prompt + documentos de conhecimento).',
+    '`STEEL_ASSISTANT` = o assistente Steel AI (com skill opcional); `WHATSAPP_REPLY` = a resposta automática do WhatsApp (prompt + documentos de conhecimento); `STEEL_AGENT` = trava de publicação das versões de um Steel Agent.',
 })
 
 const setFields = {

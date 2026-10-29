@@ -5310,6 +5310,8 @@ model AiFeedback {
 enum AiEvalTarget {
   STEEL_ASSISTANT
   WHATSAPP_REPLY
+  /// Steel Agent edits: the set gates the publication of a new version.
+  STEEL_AGENT
 }
 
 /// A workspace's test set: questions with the expected answer/criteria.
@@ -5378,6 +5380,8 @@ model AiEvalRun {
   promptOverride String?         @map("prompt_override") @db.Text
   /// Why it ran (`manual` | `model_change` | `prompt_change` | `skill_change`).
   reason         String          @default("manual")
+  /// Steel Agent version under evaluation (STEEL_AGENT sets); no FK on purpose.
+  agentVersionId String?         @map("agent_version_id")
   startedById    String?         @map("started_by_id")
   caseCount      Int             @default(0) @map("case_count")
   passedCount    Int             @default(0) @map("passed_count")
@@ -8169,6 +8173,14 @@ model SteelAgent {
   maxToolRounds Int                   @default(8) @map("max_tool_rounds")
   /// Optional cap of runs per calendar month (null = unlimited).
   monthlyRunCap Int?                  @map("monthly_run_cap")
+  /// A2: eval set that gates new versions (null = edits publish at once).
+  evalSetId           String?  @map("eval_set_id")
+  /// A2: minimum share (0..1) of passing cases to publish a version.
+  evalMinPassRate     Float    @default(0.8) @map("eval_min_pass_rate")
+  /// A2: version the agent currently runs (its columns mirror it).
+  publishedVersionId  String?  @map("published_version_id")
+  /// A2: version splitting the traffic with the published one (A/B).
+  challengerVersionId String?  @map("challenger_version_id")
   /// Last cron occurrence already dispatched (schedule dedupe).
   lastRunAt     DateTime?             @map("last_run_at")
   nextRunAt     DateTime?             @map("next_run_at")
@@ -8181,6 +8193,7 @@ model SteelAgent {
   tools     SteelAgentTool[]
   runs      SteelAgentRun[]
   assignments SteelAgentAssignment[]
+  versions  SteelAgentVersion[]
 
   @@index([workspaceId])
   @@index([triggerType, enabled])
@@ -8228,6 +8241,8 @@ model SteelAgentRun {
   /// nov: a4-run-trace — the run this test was re-executed from ("Reexecutar
   /// como teste"). Plain id, no FK: the trace outlives a purged source.
   rerunOfId      String?               @map("rerun_of_id")
+  /// A2: version that served this run (null = test runs and pre-A2 runs).
+  versionId      String?               @map("version_id")
   createdAt      DateTime              @default(now()) @map("created_at")
   updatedAt      DateTime              @updatedAt @map("updated_at")
 
@@ -8239,6 +8254,7 @@ model SteelAgentRun {
 
   @@index([agentId, createdAt])
   @@index([workspaceId, status])
+  @@index([agentId, versionId])
   @@map("steel_agent_runs")
 }
 
@@ -10934,4 +10950,57 @@ model SteelAgentAssignment {
   @@unique([entityType, entityId])
   @@index([workspaceId, agentId])
   @@map("steel_agent_assignments")
+}
+
+// nov: a2-agent-versions
+
+enum SteelAgentVersionStatus {
+  /// Waiting for the eval run that gates its publication.
+  PENDING_EVAL
+  /// The eval run failed or scored under the minimum.
+  REJECTED
+  /// The version the agent runs for everyone (or the majority).
+  PUBLISHED
+  /// Passed the gate and receives `rolloutPercent` of the real traffic.
+  CHALLENGER
+  /// Was published, replaced by a newer one.
+  SUPERSEDED
+  /// Discarded by a human (or replaced as challenger) before publishing.
+  DISCARDED
+}
+
+/// Immutable snapshot of what an edit changes in a Steel Agent: instructions,
+/// tools and the tool-round cap. Every such edit creates one; it is published
+/// only after the gate eval set passes (A2).
+model SteelAgentVersion {
+  id             String                  @id @default(cuid())
+  workspaceId    String                  @map("workspace_id")
+  agentId        String                  @map("agent_id")
+  /// Sequential per agent (1, 2, 3...).
+  number         Int
+  status         SteelAgentVersionStatus
+  instructions   String                  @db.Text
+  maxToolRounds  Int                     @map("max_tool_rounds")
+  /// `[{ toolName, mode }]` snapshot.
+  tools          Json
+  changeNote     String?                 @map("change_note") @db.Text
+  /// 1..99 = go live as challenger with this traffic share; null = replaces
+  /// the published version.
+  rolloutPercent Int?                    @map("rollout_percent")
+  /// Eval run that gated this version, with its outcome.
+  evalRunId      String?                 @map("eval_run_id")
+  evalPassed     Int?                    @map("eval_passed")
+  evalTotal      Int?                    @map("eval_total")
+  evalNote       String?                 @map("eval_note") @db.Text
+  createdById    String?                 @map("created_by_id")
+  publishedAt    DateTime?               @map("published_at")
+  resolvedAt     DateTime?               @map("resolved_at")
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+
+  agent SteelAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, number])
+  @@index([agentId, status])
+  @@map("steel_agent_versions")
 }
