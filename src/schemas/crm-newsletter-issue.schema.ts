@@ -229,6 +229,8 @@ export type CrmNewsletterPreflightCheckDTO = {
     | 'CONTENT_INVALID'
     | 'NO_SUBSCRIBERS'
     | 'LIMIT_REACHED'
+    /** nl2-segments: the stored segment no longer parses or resolves. */
+    | 'SEGMENT_INVALID'
   message: string
 }
 
@@ -236,6 +238,8 @@ export type CrmNewsletterPreflightCheckDTO = {
 export type CrmNewsletterIssuePreflightDTO = {
   /** ACTIVE subscribers minus the workspace-wide opt-out. */
   audience: number
+  /** nl2-segments: `audience` is narrowed by the issue's segment. */
+  segmented: boolean
   usage: {
     month: string
     emailsSent: number

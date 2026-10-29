@@ -1198,6 +1198,25 @@ export const ERROR_CODES = {
     code: 'CRM_NEWSLETTER_LIMIT_REACHED',
     status: 402,
   },
+  // newsletter2 · nl2-segments: saved audience segments of a newsletter.
+  CRM_NEWSLETTER_SEGMENT_NOT_FOUND: {
+    code: 'CRM_NEWSLETTER_SEGMENT_NOT_FOUND',
+    status: 404,
+  },
+  CRM_NEWSLETTER_SEGMENT_NAME_TAKEN: {
+    code: 'CRM_NEWSLETTER_SEGMENT_NAME_TAKEN',
+    status: 409,
+  },
+  CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED: {
+    code: 'CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED',
+    status: 422,
+  },
+  // A condition points at something that is not valid in the workspace
+  // (custom field of another entity) or a stored segment no longer parses.
+  CRM_NEWSLETTER_SEGMENT_INVALID: {
+    code: 'CRM_NEWSLETTER_SEGMENT_INVALID',
+    status: 422,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

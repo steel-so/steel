@@ -250,6 +250,8 @@ export type AuditEntity =
   // CRM newsletter issues and the monthly quota override (ADR 0054)
   | 'crm_newsletter_issue'
   | 'crm_newsletter_settings'
+  // Saved audience segments of a newsletter (newsletter2, nl2-segments)
+  | 'crm_newsletter_segment'
 
 export type AuditAction =
   | 'create'
