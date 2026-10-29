@@ -203,3 +203,8 @@ export const WhatsappArchiveRetention = {
 export const SendingDomainsCheckCron = '4,14,24,34,44,54 * * * *' as const
 /** CRM newsletter (ADR 0054): due scheduled issues and the send safety net. */
 export const CrmNewsletterTickCron = '* * * * *' as const
+/** newsletter2 nl2-digest-ai: digests run at whole hours (SP), so a tick
+ * every 5 minutes starts them by HH:05. */
+export const CrmNewsletterDigestTickCron = '*/5 * * * *' as const
+/** newsletter2 nl2-digest-ai: subject A/B decisions, off the digest tick. */
+export const CrmNewsletterAbTickCron = '2-59/5 * * * *' as const

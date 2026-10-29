@@ -997,6 +997,10 @@ export type SendingDomainsJobPayload = {
 export const CrmNewsletterJob = {
   Tick: 'tick',
   Dispatch: 'dispatch',
+  /** newsletter2 nl2-digest-ai: due automatic digests (every 5 min). */
+  DigestTick: 'digest-tick',
+  /** newsletter2 nl2-digest-ai: due subject A/B decisions (every 5 min). */
+  AbTick: 'ab-tick',
 } as const
 
 export type CrmNewsletterJob =
@@ -1005,4 +1009,6 @@ export type CrmNewsletterJob =
 export type CrmNewsletterJobPayload = {
   [CrmNewsletterJob.Tick]: Record<string, never>
   [CrmNewsletterJob.Dispatch]: { issueId: string }
+  [CrmNewsletterJob.DigestTick]: Record<string, never>
+  [CrmNewsletterJob.AbTick]: Record<string, never>
 }

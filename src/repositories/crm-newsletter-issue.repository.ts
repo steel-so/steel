@@ -254,7 +254,13 @@ export const CrmNewsletterIssueRepository = {
    */
   async startSending(
     issueId: string,
-    input: { webHtml: string; excerpt: string; now: Date },
+    input: {
+      webHtml: string
+      excerpt: string
+      now: Date
+      /** Subject A/B test (nl2-digest-ai): rows in the test share. */
+      abShare?: (audience: number) => number
+    },
   ): Promise<Result<{ issue: CrmNewsletterIssue; recipients: number } | null>> {
     try {
       const result = await prisma.$transaction(async (tx) => {
@@ -298,6 +304,25 @@ export const CrmNewsletterIssueRepository = {
               WHERE o.workspace_id = s.workspace_id AND o.email = s.email
             )
           ON CONFLICT (issue_id, subscriber_id) DO NOTHING`
+        if (input.abShare && recipients > 0) {
+          // A random test share split A/B; the rest waits for the winner.
+          const share = input.abShare(recipients)
+          await tx.$executeRaw`
+            WITH ranked AS (
+              SELECT id, row_number() OVER (ORDER BY random()) AS rn
+              FROM crm_newsletter_issue_recipients
+              WHERE issue_id = ${issueId}
+            )
+            UPDATE crm_newsletter_issue_recipients r
+            SET ab_variant = CASE
+                  WHEN ranked.rn > ${share} THEN NULL
+                  WHEN ranked.rn % 2 = 1 THEN 'A'
+                  ELSE 'B'
+                END,
+                ab_held = ranked.rn > ${share}
+            FROM ranked
+            WHERE r.id = ranked.id`
+        }
         const issue = await tx.crmNewsletterIssue.findUniqueOrThrow({
           where: { id: issueId },
         })

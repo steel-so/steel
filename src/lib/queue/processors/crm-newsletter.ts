@@ -1,5 +1,7 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
+import { CrmNewsletterAbService } from '@/src/services/crm-newsletter-ab.service'
+import { CrmNewsletterDigestService } from '@/src/services/crm-newsletter-digest.service'
 import { CrmNewsletterSendService } from '@/src/services/crm-newsletter-send.service'
 import { CrmNewsletterJob, type CrmNewsletterJobPayload } from '../jobs'
 
@@ -43,6 +45,30 @@ export async function runCrmNewsletterJob(
       logger.info('queue.crm_newsletter.dispatched', {
         ...base,
         issueId: data.issueId,
+        ...result.value,
+      })
+      return result.value
+    }
+    case CrmNewsletterJob.DigestTick: {
+      const result = await CrmNewsletterDigestService.tick(now)
+      if (!result.ok) {
+        throw new Error(
+          `CRM newsletter digest tick failed: ${result.error.code}`,
+        )
+      }
+      logger.info('queue.crm_newsletter.digest_tick_completed', {
+        ...base,
+        ...result.value,
+      })
+      return result.value
+    }
+    case CrmNewsletterJob.AbTick: {
+      const result = await CrmNewsletterAbService.decideDue(now)
+      if (!result.ok) {
+        throw new Error(`CRM newsletter A/B tick failed: ${result.error.code}`)
+      }
+      logger.info('queue.crm_newsletter.ab_tick_completed', {
+        ...base,
         ...result.value,
       })
       return result.value
