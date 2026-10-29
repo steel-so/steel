@@ -323,16 +323,19 @@ export function AiEvalSetPage({
       <SteelAiTopBar
         title={data.name}
         actions={
-          <Button
-            size='sm'
-            disabled={data.caseCount === 0 || busyRun}
-            onClick={() => setRunning(true)}
-          >
-            <SteelIcon icon={PlayIcon} strokeWidth={2} />
-            <span className='hidden sm:inline'>
-              {busyRun ? 'Rodando…' : 'Rodar avaliação'}
-            </span>
-          </Button>
+          // Gate sets run on their own when an agent with the gate is edited.
+          data.target === 'STEEL_AGENT' ? null : (
+            <Button
+              size='sm'
+              disabled={data.caseCount === 0 || busyRun}
+              onClick={() => setRunning(true)}
+            >
+              <SteelIcon icon={PlayIcon} strokeWidth={2} />
+              <span className='hidden sm:inline'>
+                {busyRun ? 'Rodando…' : 'Rodar avaliação'}
+              </span>
+            </Button>
+          )
         }
       />
       <div className='min-h-0 flex-1 overflow-y-auto'>

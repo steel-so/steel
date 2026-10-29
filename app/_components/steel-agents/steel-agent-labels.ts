@@ -4,6 +4,7 @@ import type {
   SteelAgentRunStatusDTO,
   SteelAgentRunStepStatusDTO,
   SteelAgentTriggerTypeDTO,
+  SteelAgentVersionStatusDTO,
 } from '@/types/steel-agent'
 
 /** pt-BR labels shared by the Steel Agents screens. */
@@ -101,4 +102,42 @@ export function formatAgentDate(iso: string | null, timezone: string): string {
       timeStyle: 'short',
     }).format(new Date(iso))
   }
+}
+
+export const VERSION_STATUS_LABEL: Record<SteelAgentVersionStatusDTO, string> =
+  {
+    PENDING_EVAL: 'Em avaliação',
+    REJECTED: 'Reprovada',
+    PUBLISHED: 'Publicada',
+    CHALLENGER: 'Teste A/B',
+    SUPERSEDED: 'Substituída',
+    DISCARDED: 'Descartada',
+  }
+
+export const VERSION_STATUS_VARIANT: Record<
+  SteelAgentVersionStatusDTO,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  PENDING_EVAL: 'outline',
+  REJECTED: 'destructive',
+  PUBLISHED: 'default',
+  CHALLENGER: 'secondary',
+  SUPERSEDED: 'outline',
+  DISCARDED: 'outline',
+}
+
+/** "80%" from a 0..1 rate, "—" when there is none. */
+export function formatRate(rate: number | null): string {
+  return rate === null ? '—' : `${Math.round(rate * 100)}%`
+}
+
+/** USD with enough digits for fractions of a cent per run. */
+export function formatUsd(value: number | null): string {
+  if (value === null) return '—'
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(value)
 }

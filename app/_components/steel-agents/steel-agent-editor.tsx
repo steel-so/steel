@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
+import { useAiEvalSets } from '@/src/hooks/use-ai-evals'
 import {
   type SteelAgentInput,
   useCreateSteelAgent,
@@ -61,7 +62,25 @@ function initialState(
     maxToolRounds: agent?.maxToolRounds ?? 8,
     monthlyRunCap: agent?.monthlyRunCap ?? null,
     tools: agent?.tools ?? [],
+    evalSetId: agent?.evalSetId ?? null,
+    evalMinPassRate: agent?.evalMinPassRate ?? 0.8,
   }
+}
+
+const NO_GATE = '__none__'
+
+/** pt-BR toast for the version an edit created. */
+export function versionSavedMessage(
+  version: { number: number; status: string } | null,
+): string {
+  if (!version) return 'Agente salvo.'
+  if (version.status === 'PENDING_EVAL') {
+    return `Salvo. A v${version.number} está sendo avaliada e só vai ao ar se passar nos casos de teste.`
+  }
+  if (version.status === 'CHALLENGER') {
+    return `Salvo. A v${version.number} entrou em teste A/B com parte das execuções.`
+  }
+  return `Agente salvo. A v${version.number} está publicada.`
 }
 
 /** Create/edit form of a Steel Agent (pt-BR). */
@@ -84,9 +103,13 @@ export function SteelAgentEditor({
   const members = useSteelAgentMembers(workspaceId, canManage)
   const create = useCreateSteelAgent(workspaceId)
   const update = useUpdateSteelAgent(workspaceId, agent?.id ?? '')
+  const evalSets = useAiEvalSets(workspaceId, canManage)
   const [form, setForm] = useState<SteelAgentInput>(() =>
     initialState(agent, currentUserId, initial),
   )
+  const [changeNote, setChangeNote] = useState('')
+  const [abEnabled, setAbEnabled] = useState(false)
+  const [rollout, setRollout] = useState(20)
   const saving = create.isPending || update.isPending
   const set = <K extends keyof SteelAgentInput>(
     key: K,
@@ -127,10 +150,20 @@ export function SteelAgentEditor({
       eventKey: form.triggerType === 'EVENT' ? form.eventKey : null,
     }
     try {
-      const saved = agent
-        ? await update.mutateAsync(body)
-        : await create.mutateAsync(body)
-      notify.success(agent ? 'Agente salvo.' : 'Agente criado.')
+      if (agent) {
+        const saved = await update.mutateAsync({
+          ...body,
+          changeNote: changeNote.trim() || null,
+          rolloutPercent: abEnabled ? rollout : null,
+        })
+        notify.success(versionSavedMessage(saved.version))
+        setChangeNote('')
+        setAbEnabled(false)
+        onSaved(saved)
+        return
+      }
+      const saved = await create.mutateAsync(body)
+      notify.success('Agente criado.')
       onSaved(saved)
     } catch (error) {
       notify.error(error)
@@ -422,6 +455,140 @@ export function SteelAgentEditor({
           onChange={(next) => set('tools', next)}
           disabled={disabled}
         />
+      </section>
+
+      <section className='space-y-3' aria-label='Versões e avaliação'>
+        <div>
+          <h3 className='font-semibold text-sm'>Versões e avaliação</h3>
+          <p className='text-muted-foreground text-sm'>
+            Cada mudança nas instruções, nas ferramentas ou no máximo de etapas
+            vira uma versão. Com um conjunto de avaliação, a versão nova só vai
+            ao ar se passar nos casos de teste.
+          </p>
+        </div>
+        <div className='grid gap-4 sm:grid-cols-2'>
+          <Field>
+            <FieldLabel>Conjunto de avaliação</FieldLabel>
+            <Select
+              items={[
+                { value: NO_GATE, label: 'Sem trava (publicar direto)' },
+                ...(evalSets.data ?? [])
+                  .filter((s) => s.target === 'STEEL_AGENT')
+                  .map((s) => ({ value: s.id, label: s.name })),
+              ]}
+              value={form.evalSetId ?? NO_GATE}
+              disabled={disabled}
+              onValueChange={(next) =>
+                set('evalSetId', next && next !== NO_GATE ? next : null)
+              }
+            >
+              <SelectTrigger
+                aria-label='Conjunto de avaliação'
+                className='w-full'
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_GATE}>
+                  Sem trava (publicar direto)
+                </SelectItem>
+                {(evalSets.data ?? [])
+                  .filter((s) => s.target === 'STEEL_AGENT')
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} · {s.caseCount} casos
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <FieldDescription>
+              Crie o conjunto em Steel IA &gt; Avaliações, escolhendo o tipo
+              “Steel Agents (trava de versão)”.
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor='agent-min-pass'>
+              Aprovação mínima (%)
+            </FieldLabel>
+            <Input
+              id='agent-min-pass'
+              type='number'
+              min={10}
+              max={100}
+              value={Math.round((form.evalMinPassRate ?? 0.8) * 100)}
+              disabled={disabled || !form.evalSetId}
+              onChange={(e) =>
+                set(
+                  'evalMinPassRate',
+                  Math.min(
+                    1,
+                    Math.max(0.1, (Number(e.target.value) || 80) / 100),
+                  ),
+                )
+              }
+            />
+            <FieldDescription>
+              Parcela dos casos que precisa passar para publicar.
+            </FieldDescription>
+          </Field>
+        </div>
+        {agent ? (
+          <div className='space-y-3 rounded-lg border bg-muted/30 p-3'>
+            <Field>
+              <FieldLabel htmlFor='agent-change-note'>
+                Nota desta alteração
+              </FieldLabel>
+              <Input
+                id='agent-change-note'
+                value={changeNote}
+                maxLength={500}
+                disabled={disabled}
+                onChange={(e) => setChangeNote(e.target.value)}
+                placeholder='Ex.: tom mais direto na resposta ao cliente'
+              />
+              <FieldDescription>
+                Aparece no histórico de versões. Só vale se você mudar as
+                instruções, as ferramentas ou o máximo de etapas.
+              </FieldDescription>
+            </Field>
+            <Field orientation='horizontal'>
+              <Switch
+                id='agent-ab'
+                checked={abEnabled}
+                disabled={disabled}
+                onCheckedChange={setAbEnabled}
+              />
+              <FieldLabel htmlFor='agent-ab'>
+                Testar em paralelo (A/B) em vez de substituir
+              </FieldLabel>
+            </Field>
+            {abEnabled ? (
+              <Field>
+                <FieldLabel htmlFor='agent-ab-percent'>
+                  Parcela das execuções na versão nova (%)
+                </FieldLabel>
+                <Input
+                  id='agent-ab-percent'
+                  type='number'
+                  min={1}
+                  max={99}
+                  value={rollout}
+                  disabled={disabled}
+                  onChange={(e) =>
+                    setRollout(
+                      Math.min(99, Math.max(1, Number(e.target.value) || 1)),
+                    )
+                  }
+                  className='w-32'
+                />
+                <FieldDescription>
+                  O resto continua na versão publicada. Compare os resultados na
+                  aba Versões e promova a melhor.
+                </FieldDescription>
+              </Field>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {canManage ? (

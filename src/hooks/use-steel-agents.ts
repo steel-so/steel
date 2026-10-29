@@ -10,6 +10,9 @@ import type {
   SteelAgentRunDTO,
   SteelAgentToolModeDTO,
   SteelAgentTriggerTypeDTO,
+  SteelAgentUpdateResultDTO,
+  SteelAgentVersionListDTO,
+  SteelAgentVersionRefDTO,
 } from '@/types/steel-agent'
 import type { AiPendingActionDTO } from '@/types/steel-ai'
 import { apiFetch } from './_fetch'
@@ -40,6 +43,16 @@ export interface SteelAgentInput {
   maxToolRounds: number
   monthlyRunCap: number | null
   tools: { toolName: string; mode: SteelAgentToolModeDTO }[]
+  /** A2: eval set that gates new versions (null = none). */
+  evalSetId?: string | null
+  evalMinPassRate?: number
+}
+
+/** Extra fields of an edit that describe the version it creates. */
+export interface SteelAgentVersionEditInput {
+  changeNote?: string | null
+  /** 1..99: send the new version to this % of the runs (A/B). */
+  rolloutPercent?: number | null
 }
 
 /** Run states that will change on their own (poll while visible). */
@@ -150,13 +163,13 @@ export function useCreateSteelAgent(workspaceId: string) {
 export function useUpdateSteelAgent(workspaceId: string, agentId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<SteelAgentInput>) =>
-      apiFetch<SteelAgentDTO>(
+    mutationFn: (data: Partial<SteelAgentInput> & SteelAgentVersionEditInput) =>
+      apiFetch<SteelAgentUpdateResultDTO>(
         `${base(workspaceId)}/${agentId}`,
         { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(data) },
         'Erro ao salvar o agente',
       ),
-    onSuccess: (agent) => {
+    onSuccess: ({ version: _version, ...agent }) => {
       queryClient.setQueryData(AGENT_KEY(workspaceId, agentId), agent)
       return queryClient.invalidateQueries({
         queryKey: STEEL_AGENTS_KEY(workspaceId),
@@ -265,4 +278,68 @@ export function useDecideSteelAgentAction(workspaceId: string, runId: string) {
     onSuccess: refresh,
   })
   return { approve, reject }
+}
+
+const VERSIONS_KEY = (workspaceId: string, agentId: string) =>
+  [...STEEL_AGENTS_KEY(workspaceId), 'versions', agentId] as const
+
+/** Versions with A/B metrics; polls while one waits for its eval run. */
+export function useSteelAgentVersions(workspaceId: string, agentId: string) {
+  return useQuery({
+    queryKey: VERSIONS_KEY(workspaceId, agentId),
+    queryFn: () =>
+      apiFetch<SteelAgentVersionListDTO>(
+        `${base(workspaceId)}/${agentId}/versions`,
+        undefined,
+        'Erro ao carregar as versões',
+      ),
+    refetchInterval: (query) =>
+      query.state.data?.versions.some((v) => v.status === 'PENDING_EVAL')
+        ? 4_000
+        : false,
+  })
+}
+
+/** Promote / discard / restore of one version (all refresh the agent). */
+export function useSteelAgentVersionActions(
+  workspaceId: string,
+  agentId: string,
+) {
+  const queryClient = useQueryClient()
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: STEEL_AGENTS_KEY(workspaceId) })
+  const url = (versionId: string, action: string) =>
+    `${base(workspaceId)}/${agentId}/versions/${versionId}/${action}`
+
+  const promote = useMutation({
+    mutationFn: (versionId: string) =>
+      apiFetch<SteelAgentVersionRefDTO>(
+        url(versionId, 'promote'),
+        { method: 'POST' },
+        'Erro ao promover a versão',
+      ),
+    onSuccess: refresh,
+  })
+  const discard = useMutation({
+    mutationFn: (versionId: string) =>
+      apiFetch<SteelAgentVersionRefDTO>(
+        url(versionId, 'discard'),
+        { method: 'POST' },
+        'Erro ao descartar a versão',
+      ),
+    onSuccess: refresh,
+  })
+  const restore = useMutation({
+    mutationFn: ({
+      versionId,
+      ...body
+    }: SteelAgentVersionEditInput & { versionId: string }) =>
+      apiFetch<SteelAgentVersionRefDTO>(
+        url(versionId, 'restore'),
+        { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) },
+        'Erro ao restaurar a versão',
+      ),
+    onSuccess: refresh,
+  })
+  return { promote, discard, restore }
 }
