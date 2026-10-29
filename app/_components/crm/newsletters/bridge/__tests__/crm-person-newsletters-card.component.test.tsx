@@ -32,6 +32,7 @@ function subscription(
     lastOpenedAt: '2026-10-20T12:00:00.000Z',
     lastClickedAt: null,
     canUnsubscribe: true,
+    welcome: null,
     ...overrides,
   }
 }
@@ -95,6 +96,44 @@ describe('<CrmPersonNewslettersCard />', () => {
       ),
     ).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Inscrever' })).toBeNull()
+  })
+
+  it('shows the welcome series engagement', async () => {
+    mockFetch([
+      {
+        match: URL_BASE,
+        data: {
+          ...data,
+          subscriptions: [
+            subscription({
+              lastOpenedAt: null,
+              welcome: { sent: 3, opened: 2, clicked: 1 },
+            }),
+            subscription({
+              subscriberId: 's9',
+              newsletterId: 'c',
+              newsletterName: 'Dicas',
+              email: 'ana@pessoal.com',
+              lastOpenedAt: null,
+              welcome: { sent: 1, opened: 0, clicked: 0 },
+            }),
+          ],
+        },
+      },
+    ])
+    renderWithQuery(
+      <CrmPersonNewslettersCard workspaceId='ws1' personId='p1' />,
+    )
+    expect(
+      await screen.findByText(
+        'ana@x.com · Desde 02/10/2026 · boas-vindas: 2 de 3 abertos, 1 com clique',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(
+        'ana@pessoal.com · Desde 02/10/2026 · boas-vindas: 0 de 1 aberto',
+      ),
+    ).toBeTruthy()
   })
 
   it('says when the person has no subscription', async () => {

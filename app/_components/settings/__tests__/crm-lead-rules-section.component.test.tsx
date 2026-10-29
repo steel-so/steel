@@ -186,6 +186,7 @@ describe('<CrmLeadRulesSection />', () => {
           value: '',
           points: 5,
           active: true,
+          includeWelcome: false,
         },
       ],
     })
@@ -194,7 +195,9 @@ describe('<CrmLeadRulesSection />', () => {
         /Clicou em link da newsletter \(URL contém "\/precos"\)/,
       ),
     ).toBeTruthy()
-    expect(screen.getByText(/^Abriu newsletter/)).toBeTruthy()
+    // Welcome e-mails count unless the rule says otherwise.
+    expect(screen.getByText(/^Abriu newsletter, só edições/)).toBeTruthy()
+    expect(screen.queryByText(/Clicou em link.*só edições/)).toBeNull()
   })
 
   it('creates a newsletter click rule with the URL filter', async () => {
@@ -236,6 +239,45 @@ describe('<CrmLeadRulesSection />', () => {
       value: '/precos',
       points: 10,
       active: true,
+      includeWelcome: true,
+    })
+  })
+
+  it('lets an open rule leave the welcome e-mails out', async () => {
+    const spy = setup({
+      extra: [
+        {
+          method: 'POST',
+          match: `${CRM}/lead-scoring-rules`,
+          data: { id: 's9' },
+        },
+      ],
+    })
+    await screen.findByText('Nenhuma regra de pontuação ainda.')
+    fireEvent.click(
+      within(card('Pontuação de leads')).getByRole('button', {
+        name: /nova regra/i,
+      }),
+    )
+    await screen.findByRole('dialog')
+    const [fieldTrigger] = dialogTriggers()
+    await pick(fieldTrigger, 'Abriu newsletter')
+    const dialog = screen.getByRole('dialog')
+    const toggle = await within(dialog).findByRole('checkbox', {
+      name: 'Incluir e-mails de boas-vindas',
+    })
+    expect(
+      within(dialog).getByText(/uma vez por edição ou e-mail de boas-vindas/),
+    ).toBeTruthy()
+    fireEvent.click(toggle)
+    await waitFor(() =>
+      expect(within(dialog).getByText(/uma vez por edição\.$/)).toBeTruthy(),
+    )
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Criar regra' }))
+    await waitFor(() => expect(notify.success).toHaveBeenCalled())
+    expect(fetchBody(spy, `${CRM}/lead-scoring-rules`)).toMatchObject({
+      field: 'newsletter_opened',
+      includeWelcome: false,
     })
   })
 
@@ -263,6 +305,7 @@ describe('<CrmLeadRulesSection />', () => {
       expect(within(dialog).getByText(/uma vez por/)).toBeTruthy(),
     )
     expect(within(dialog).queryByText('URL contém (opcional)')).toBeNull()
+    expect(within(dialog).queryByRole('checkbox')).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Criar regra' }))
     await waitFor(() => expect(notify.success).toHaveBeenCalled())
     const body = fetchBody(spy, `${CRM}/lead-scoring-rules`)
@@ -271,6 +314,7 @@ describe('<CrmLeadRulesSection />', () => {
       operator: 'contains',
     })
     expect(body).not.toHaveProperty('value')
+    expect(body).not.toHaveProperty('includeWelcome')
   })
 
   it('hides the value input for empty-check operators', async () => {

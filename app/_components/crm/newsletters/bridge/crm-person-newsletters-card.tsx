@@ -57,6 +57,13 @@ function subscriptionDetail(s: CrmPersonNewsletterSubscriptionDTO): string {
   if (s.lastOpenedAt) {
     parts.push(`última abertura ${formatNewsletterDate(s.lastOpenedAt)}`)
   }
+  if (s.welcome) {
+    const { sent, opened, clicked } = s.welcome
+    const clicks = clicked > 0 ? `, ${clicked} com clique` : ''
+    parts.push(
+      `boas-vindas: ${opened} de ${sent} ${sent === 1 ? 'aberto' : 'abertos'}${clicks}`,
+    )
+  }
   return parts.join(' · ')
 }
 

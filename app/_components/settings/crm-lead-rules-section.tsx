@@ -7,6 +7,7 @@ import { Muted } from '@/components/typography/text/muted'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogClose,
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -81,6 +83,10 @@ const EVENT_FIELD_LABEL: Record<string, string> = {
 
 const isEventField = (field: string) => field in EVENT_FIELD_LABEL
 
+/** Opens and clicks may also come from the welcome series e-mails. */
+const countsWelcome = (field: string) =>
+  field === 'newsletter_opened' || field === 'newsletter_clicked'
+
 const OPERATOR_OPTIONS = [
   'equals',
   'not_equals',
@@ -103,10 +109,12 @@ function ConditionSummary({
   field,
   operator,
   value,
+  includeWelcome = true,
 }: {
   field: string
   operator: string
   value: string | null
+  includeWelcome?: boolean
 }) {
   if (isEventField(field)) {
     return (
@@ -115,6 +123,7 @@ function ConditionSummary({
         {field === 'newsletter_clicked' && value
           ? ` (URL contém "${value}")`
           : ''}
+        {countsWelcome(field) && !includeWelcome ? ', só edições' : ''}
         <span className='text-muted-foreground'> · uma vez por evento</span>
       </span>
     )
@@ -132,10 +141,14 @@ function EventRuleHint({
   field,
   value,
   onValue,
+  includeWelcome,
+  onIncludeWelcome,
 }: {
   field: string
   value: string
   onValue: (value: string) => void
+  includeWelcome: boolean
+  onIncludeWelcome: (value: boolean) => void
 }) {
   return (
     <>
@@ -149,9 +162,29 @@ function EventRuleHint({
           />
         </Field>
       ) : null}
+      {countsWelcome(field) ? (
+        <div className='flex items-start gap-2'>
+          <Checkbox
+            id='scoring-include-welcome'
+            checked={includeWelcome}
+            onCheckedChange={(checked) => onIncludeWelcome(checked === true)}
+          />
+          <Label
+            htmlFor='scoring-include-welcome'
+            className='font-normal leading-snug'
+          >
+            Incluir e-mails de boas-vindas
+          </Label>
+        </div>
+      ) : null}
       <Muted>
         Pontua os leads ligados à pessoa ou ao e-mail do assinante, uma vez por{' '}
-        {field === 'newsletter_subscribed' ? 'newsletter' : 'edição'}.
+        {field === 'newsletter_subscribed'
+          ? 'newsletter'
+          : includeWelcome
+            ? 'edição ou e-mail de boas-vindas'
+            : 'edição'}
+        .
       </Muted>
     </>
   )
@@ -169,6 +202,7 @@ function NewScoringRuleDialog({
   const [operator, setOperator] = useState<string>('equals')
   const [value, setValue] = useState('')
   const [points, setPoints] = useState('10')
+  const [includeWelcome, setIncludeWelcome] = useState(true)
   const [saving, setSaving] = useState(false)
   const eventRule = isEventField(field)
 
@@ -183,6 +217,7 @@ function NewScoringRuleDialog({
           : value || undefined,
       points: Number(points) || 0,
       active: true,
+      ...(countsWelcome(field) ? { includeWelcome } : {}),
     })
     setSaving(false)
     if (!result.ok) {
@@ -231,7 +266,13 @@ function NewScoringRuleDialog({
             </Select>
           </Field>
           {eventRule ? (
-            <EventRuleHint field={field} value={value} onValue={setValue} />
+            <EventRuleHint
+              field={field}
+              value={value}
+              onValue={setValue}
+              includeWelcome={includeWelcome}
+              onIncludeWelcome={setIncludeWelcome}
+            />
           ) : null}
           <Field className={eventRule ? 'hidden' : undefined}>
             <FieldLabel>Operador</FieldLabel>
@@ -483,6 +524,7 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
                           field={rule.field}
                           operator={rule.operator}
                           value={rule.value}
+                          includeWelcome={rule.includeWelcome}
                         />
                       </TableCell>
                       <TableCell>{rule.points}</TableCell>
