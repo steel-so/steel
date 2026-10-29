@@ -1,10 +1,12 @@
 import { z } from 'zod'
 import {
   SD_GENERIC_PAYLOAD_EXAMPLE,
+  SD_PRTG_PAYLOAD_EXAMPLE,
   sdZabbixPayloadExample,
 } from '@/src/lib/servicedesk/monitor-fields'
 import {
   CreateSdMonitorSourceSchema,
+  LinkSdMonitorAlertSchema,
   ListSdMonitorAlertsSchema,
   ListSdMonitorSourcesSchema,
   UpdateSdMonitorSourceSchema,
@@ -22,7 +24,7 @@ import {
  * ServiceDesk · monitoramento — origens (`app/api/workspaces/[id]/
  * servicedesk/monitor-sources/**`, `monitor-alerts`) e a entrada pública
  * `app/api/servicedesk/monitoring/[token]`, que abre o chamado a partir do
- * alerta do Zabbix ou de um webhook genérico.
+ * alerta do Zabbix, Grafana, PRTG ou de um webhook genérico.
  */
 
 const TAG = 'ServiceDesk · Monitoramento' as const
@@ -74,7 +76,17 @@ O formato genérico é:
 ${SD_GENERIC_PAYLOAD_EXAMPLE}
 \`\`\`
 
-com \`status\` em \`PROBLEM\`/\`FIRING\` ou \`OK\`/\`RESOLVED\`. Sem \`externalId\`, a chave de deduplicação é o SHA-256 de \`host|assunto\`.`
+com \`status\` em \`PROBLEM\`/\`FIRING\` ou \`OK\`/\`RESOLVED\`. Sem \`externalId\`, a chave de deduplicação é o SHA-256 de \`host|assunto\`.
+
+**Grafana** (ponto de contato "Webhook") e **Alertmanager** funcionam sem configurar o corpo: o JSON padrão traz \`alerts[]\` e cada alerta é processado em ordem (\`fingerprint\` é a chave de deduplicação; \`labels.host\`/\`instance\` casam com a CMDB; \`labels.severity\` alimenta o mapa de severidade).
+
+**PRTG** ("Executar ação HTTP", POST, \`application/json\`):
+
+\`\`\`json
+${SD_PRTG_PAYLOAD_EXAMPLE}
+\`\`\`
+
+\`status\` \`Up\` normaliza; \`Down\`, \`Warning\` e \`Unusual\` são a severidade. A chave de deduplicação é o \`sensorId\`.`
 
 export const sdMonitoringRoutes: RouteConfig[] = [
   {
@@ -112,7 +124,7 @@ export const sdMonitoringRoutes: RouteConfig[] = [
     path: SOURCE,
     tags: [TAG],
     summary: 'Atualizar origem de monitoramento',
-    description: `Padrões do chamado, mapa severidade → prioridade, encerramento automático e janela de instabilidade. Não troca o token. ${ADMIN}`,
+    description: `Padrões do chamado, mapa severidade → prioridade, encerramento automático, janela de instabilidade e correlação (\`correlationMode\`, \`correlationWindowMinutes\`). Não troca o token. ${ADMIN}`,
     consent: true,
     params: SOURCE_PARAM,
     body: UpdateSdMonitorSourceSchema,
@@ -153,13 +165,34 @@ export const sdMonitoringRoutes: RouteConfig[] = [
     path: `${BASE}/monitor-alerts`,
     tags: [TAG],
     summary: 'Listar alertas recebidos',
-    description: `Mais recentes primeiro, com o item de configuração e o chamado que o alerta abriu. Filtre por origem (\`sourceId\`), por chamado (\`ticketId\` — é o bloco de origem na tela do chamado) ou por status. ${AGENT}`,
+    description: `Mais recentes primeiro, com o item de configuração e o chamado que o alerta abriu. Filtre por origem (\`sourceId\`), por chamado (\`ticketId\` — é o bloco de origem na tela do chamado), por item da CMDB (\`configItemId\`), por status ou só os sem item (\`unmatched=true\` — fila para ligar à mão). ${AGENT}`,
     params: { id: 'Id do workspace.' },
     query: ListSdMonitorAlertsSchema,
     responses: {
       200: { description: 'Alertas.', schema: z.array(SdMonitorAlertDTO) },
     },
     errors: AGENT_ERRORS,
+  },
+  {
+    method: 'patch',
+    path: `${BASE}/monitor-alerts/{alertId}`,
+    tags: [TAG],
+    summary: 'Ligar um alerta a um item da CMDB',
+    description: `Liga (ou, com \`configItemId: null\`, desliga) o item de configuração do alerta. Com \`remember\`, guarda host → item para os próximos alertas e liga os abertos sem item com o mesmo host. O chamado do alerta herda o item se ainda não tinha um. ${AGENT}`,
+    consent: true,
+    params: { id: 'Id do workspace.', alertId: 'Id do alerta.' },
+    body: LinkSdMonitorAlertSchema,
+    responses: {
+      200: { description: 'Alerta atualizado.', schema: SdMonitorAlertDTO },
+    },
+    errors: [
+      ...AGENT_ERRORS,
+      'SD_MONITOR_ALERT_NOT_FOUND',
+      {
+        code: 'SD_CONFIG_NOT_FOUND',
+        when: 'Item de configuração de outra workspace ou excluído',
+      },
+    ],
   },
   {
     method: 'post',
@@ -182,7 +215,7 @@ ${ZABBIX_SCRIPT}`,
     body: {
       schema: SdMonitorAlertPayload,
       description:
-        'Corpo do tipo de mídia do Zabbix ou o formato genérico. Chaves desconhecidas são ignoradas.',
+        'Corpo do Zabbix, do Grafana/Alertmanager (`alerts[]`), do PRTG ou o formato genérico. Chaves desconhecidas são ignoradas.',
     },
     responses: {
       200: {
