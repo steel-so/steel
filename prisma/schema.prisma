@@ -10549,6 +10549,7 @@ model WhatsAppAdSpend {
   @@index([workspaceId, sourceId])
   @@index([workspaceId, periodStart, periodEnd])
   @@map("whatsapp_ad_spends")
+}
 
 // nov: s9-ai-vs-technician
 
