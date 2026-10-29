@@ -223,7 +223,7 @@ describe('<FlowEditor />', () => {
   })
 
   it('offers the template and the preview only for a published flow', async () => {
-    const published = {
+    const published: WhatsAppFlowDTO = {
       ...baseFlow,
       status: 'PUBLISHED',
       metaFlowId: 'meta_1',
