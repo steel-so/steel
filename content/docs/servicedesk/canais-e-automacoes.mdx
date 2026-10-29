@@ -28,14 +28,18 @@ template aprovado. Arquivos de até 16 MB.
 
 ## Monitoramento
 
-Em **Configurações › Monitoramento**, ligue o **Zabbix** ou um **webhook
-genérico** para que alertas abram chamados sozinhos:
+Em **Configurações › Monitoramento**, ligue o **Zabbix**, o **Grafana**, o
+**PRTG** ou um **webhook genérico** para que alertas abram chamados sozinhos
+(veja o passo a passo em [Monitoramento e chamado
+automático](/docs/servicedesk/monitoramento)):
 
 - A URL do webhook aparece **uma única vez**: trate-a como senha.
 - Defina os padrões do chamado e como a severidade do alerta vira prioridade.
 - **Encerrar o chamado quando o alerta normalizar**.
 - **Janela de instabilidade**: o mesmo alerta que volta dentro da janela reabre o
   chamado anterior em vez de abrir outro.
+- **Correlação**: alertas diferentes da mesma máquina entram no mesmo chamado.
+- O host do alerta é ligado ao item da **CMDB**.
 
 ## Slack, GitHub e GitLab
 

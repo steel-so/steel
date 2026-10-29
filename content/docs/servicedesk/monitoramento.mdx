@@ -1,0 +1,159 @@
+---
+title: Monitoramento e chamado automático
+description: Como o Zabbix, o Grafana, o PRTG ou um webhook abrem chamados sozinhos, como alertas repetidos e da mesma máquina se juntam e como o host é ligado ao item da CMDB.
+section: servicedesk
+order: 13
+---
+
+<Callout type='admin'>
+  A configuração fica em **ServiceDesk › Configurações › Monitoramento** e é
+  feita por administradores do módulo. Qualquer agente liga um alerta a um
+  item da CMDB.
+</Callout>
+
+## Como funciona
+
+Cada **origem** de monitoramento tem uma URL própria. A ferramenta de
+monitoramento envia o alerta para essa URL e o Steel:
+
+1. **Abre um chamado** com os padrões da origem (tipo, departamento, categoria,
+   cliente) e a prioridade definida pela severidade do alerta.
+2. **Não abre outro** se o mesmo alerta chegar de novo: ele só atualiza o alerta
+   e conta quantas vezes veio.
+3. **Junta** alertas diferentes da mesma máquina no mesmo chamado (correlação).
+4. **Liga o chamado ao item da CMDB** que corresponde ao host do alerta.
+5. **Encerra o chamado** quando o alerta normaliza, ou avisa no histórico quando
+   a fase exige algo que o monitoramento não preenche.
+
+O chamado nasce no canal **API**, com o sistema como autor. Quem estiver de
+plantão na equipe do chamado é avisado.
+
+## Criar uma origem
+
+1. Em **Configurações › Monitoramento**, clique em **Nova origem**.
+2. Escolha a **ferramenta**: Zabbix, Grafana, PRTG ou webhook genérico.
+3. Defina o tipo do chamado, o departamento, a categoria e o mapa
+   **severidade → prioridade**.
+4. Salve e **copie a URL**. Ela aparece **uma única vez**: trate-a como senha. Se
+   perder, use **Gerar token**; a URL anterior deixa de valer na hora.
+
+A mesma janela mostra o passo a passo da ferramenta escolhida.
+
+### Zabbix
+
+Em **Alertas › Tipos de mídia**, crie um tipo **Webhook** com a URL da origem,
+método POST e o JSON de macros que a tela mostra (`{EVENT.ID}`,
+`{EVENT.STATUS}`, `{EVENT.NAME}`, `{EVENT.SEVERITY}`, `{HOST.NAME}`,
+`{HOST.IP}` e outras). O Zabbix manda a severidade como `Disaster`, `High`,
+`Average`, `Warning`, `Information` ou `Not classified`.
+
+### Grafana
+
+Em **Alerting › Contact points**, crie um ponto de contato do tipo **Webhook**,
+com a URL da origem e método POST. Não é preciso mudar o corpo: o JSON padrão
+traz todos os alertas do envio e cada um é tratado em ordem.
+
+- A chave que evita duplicados é o `fingerprint` do alerta.
+- O host vem do rótulo `host`, `hostname`, `nodename`, `node` ou `instance` (a
+  porta é ignorada).
+- A severidade vem do rótulo `severity` (ou `priority`); o mapa costuma usar
+  `critical`, `high`, `warning` e `info`.
+- O resumo (`summary`) vira o título do chamado e a descrição vai para o corpo.
+
+O Prometheus Alertmanager usa o mesmo formato e também funciona, mesmo numa
+origem do tipo webhook genérico.
+
+### PRTG
+
+Em **Configurações › Notificações**, crie uma notificação **Executar ação
+HTTP**, com a URL da origem, método POST, tipo de conteúdo `application/json` e
+o payload que a tela mostra (com os `%sensorid`, `%device`, `%status` e demais
+placeholders do PRTG). Use a mesma notificação nos gatilhos de estado
+**Down**, **Warning** e **Up**.
+
+- Cada sensor é um alerta (a chave é o `sensorId`).
+- Os estados `Down`, `Warning` e `Unusual` são a severidade; **Up** normaliza.
+- O título do chamado é "sensor em dispositivo".
+
+### Webhook genérico
+
+Qualquer sistema pode enviar:
+
+```json
+{
+  "externalId": "cpu-srv02",
+  "status": "PROBLEM",
+  "severity": "high",
+  "host": "srv-02",
+  "subject": "CPU acima de 90%",
+  "body": "Média de 5 minutos em 94%"
+}
+```
+
+`status` aceita `PROBLEM`/`FIRING` e `OK`/`RESOLVED`. Sem `externalId`, o Steel
+usa o host e o assunto para reconhecer o mesmo alerta.
+
+## Duplicados, instabilidade e correlação
+
+| Situação | O que o Steel faz |
+| --- | --- |
+| O **mesmo alerta** chega de novo enquanto está aberto | Atualiza o alerta e soma uma **ocorrência**. Não abre chamado. |
+| O alerta normaliza e **volta dentro da janela de instabilidade** | Reabre o chamado anterior em vez de abrir outro. |
+| Um **alerta diferente da mesma máquina** chega com outro aberto | Entra no chamado já aberto e deixa uma nota interna. |
+| O alerta chega sem dizer de que máquina veio | Abre um chamado próprio. |
+
+A **correlação** é configurada por origem:
+
+- **Juntar alertas da mesma máquina** (padrão) ou **Um chamado por alerta**.
+- **Janela de correlação** (padrão 60 minutos): conta desde a última atividade
+  do alerta aberto da máquina.
+
+A máquina é o **item da CMDB** quando o host casa com um; senão, o nome do host
+(sem o domínio, sem diferenciar maiúsculas). A correlação vale entre origens: o
+alerta do Grafana e o do Zabbix sobre o mesmo servidor ficam no mesmo chamado.
+
+Com vários alertas no mesmo chamado, ele só é **encerrado quando o último
+normaliza**. Os anteriores deixam uma nota interna dizendo quantos ainda estão
+abertos. Na tela do chamado, o bloco **Monitoramento** mostra o alerta que o
+abriu e a lista dos alertas correlacionados.
+
+## Ligação com a CMDB
+
+O Steel procura o item da CMDB pelo **nome**, **código** ou **endereço IP**,
+sem diferenciar maiúsculas, usando todos os nomes que o alerta traz (por
+exemplo `host` e `hostIp`, ou o nome do dispositivo e o IP no PRTG). Se nada
+casar, tenta o primeiro trecho de um nome completo (`srv-02.empresa.local`
+vira `srv-02`).
+
+Quando o chamado nasce de um alerta ligado a um item, o campo **Item de
+configuração** já vem preenchido, e o bloco de monitoramento mostra o item.
+
+### Hosts sem item
+
+Os alertas cujo host não casou aparecem em **Hosts sem item na CMDB**, no fim da
+aba Monitoramento. Para cada host:
+
+1. Escolha o item da CMDB.
+2. Deixe **Lembrar este host** marcado para que os próximos alertas desse host
+   já entrem ligados ao item e os alertas abertos de agora também sejam
+   ligados.
+3. Clique em **Ligar**.
+
+Se o chamado daquele alerta ainda não tinha item, ele passa a ter.
+
+No detalhe de cada item da CMDB, a aba **Monitoramento** lista os alertas
+recebidos para ele, com a origem, a severidade, o número de ocorrências e o
+chamado.
+
+## Perguntas frequentes
+
+**O Steel recebe o alerta mas nenhum chamado abre.** Confira se a origem está
+ativa, se o módulo ServiceDesk está habilitado e, na lista de alertas da
+origem, se o alerta chegou como normalizado.
+
+**Quero um chamado para cada alerta.** Edite a origem e escolha **Um chamado por
+alerta** na correlação.
+
+**O chamado não encerrou sozinho.** Ele só encerra quando todos os alertas
+ligados a ele normalizaram e a fase de resolução do tipo não exige campos
+extras. Quando exige, o chamado recebe uma mensagem explicando.
