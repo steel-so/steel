@@ -66,13 +66,13 @@ export function renderReengagementEmail(input: ReengagementEmailInput): {
   text: string
 } {
   const { copy, brand } = input
-  const color = HEX.test(brand.primaryColor ?? '')
+  const color = HEX.test(brand.primaryColor)
     ? brand.primaryColor
     : DEFAULT_PRIMARY_COLOR
   const footer = {
     newsletterName: input.newsletterName,
     companyName: brand.companyName,
-    address: brand.address ?? '',
+    address: brand.address,
     unsubscribeUrl: input.unsubscribeUrl,
     preferencesUrl: input.preferencesUrl,
   }
