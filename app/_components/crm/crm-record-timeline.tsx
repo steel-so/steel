@@ -12,6 +12,7 @@ import {
   WhatsappIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { PhoneCallList } from '@/app/_components/phone-calls/phone-call-list'
+import { CrmOpportunityPixList } from '@/app/_components/whatsapp/pix/crm-opportunity-pix-list'
 import { SteelIcon } from '@/components/icon/icon'
 import { useCrmTimeline } from '@/src/hooks/use-crm-timeline'
 import type { CrmActivityDTO } from '@/types/crm-activity'
@@ -143,6 +144,12 @@ export function CrmRecordTimeline({
             personId: personId ?? call.crmPersonId,
             opportunityId: opportunityId ?? call.crmOpportunityId,
           })}
+        />
+      ) : null}
+      {opportunityId ? (
+        <CrmOpportunityPixList
+          workspaceId={workspaceId}
+          opportunityId={opportunityId}
         />
       ) : null}
       <div className='flex items-center gap-2'>

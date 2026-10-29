@@ -220,3 +220,26 @@ describe('createScopeRefresher()', () => {
     expect(await get()).toBe(agent)
   })
 })
+
+describe('createRealtimeScopeFilter() · Pix charges', () => {
+  const pix = (conversationId: string): WhatsAppRealtimeEvent => ({
+    type: 'pix-charge.updated',
+    conversationId,
+    charge: { id: 'ch1' } as never,
+  })
+
+  it('forwards a charge only to viewers who can see its conversation', async () => {
+    const { filter } = filterFor(agent, {
+      mine: { assignedUserId: 'ana', teamId: null },
+      theirs: { assignedUserId: 'bia', teamId: null },
+    })
+    expect(await filter(pix('mine'))).toEqual(pix('mine'))
+    expect(await filter(pix('theirs'))).toBeNull()
+  })
+
+  it('forwards it to an unscoped viewer without a lookup', async () => {
+    const { filter, loadTarget } = filterFor(owner)
+    expect(await filter(pix('any'))).toEqual(pix('any'))
+    expect(loadTarget).not.toHaveBeenCalled()
+  })
+})

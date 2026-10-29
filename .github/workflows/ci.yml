@@ -51,7 +51,7 @@ jobs:
         # 6 GB também estourou com os modelos do blog/coleções dos sites
         # (S4); o runner padrão tem 16 GB.
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
         run: pnpm tsc --noEmit
 
       - name: Lint

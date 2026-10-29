@@ -68,6 +68,13 @@ function toActions(drafts: AiCampaignActionDraft[]): AiCampaignAction[] {
           ...(draft.secret?.trim() ? { secret: draft.secret.trim() } : {}),
           fields: draft.fields ?? [],
         }
+      case 'SEND_PIX':
+        return {
+          ...base,
+          kind: draft.kind,
+          amount: draft.amount ?? 0,
+          description: draft.description?.trim() ?? '',
+        }
       default:
         return { ...base, kind: draft.kind }
     }

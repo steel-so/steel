@@ -40,6 +40,7 @@ import {
   notifyWhatsAppUsers,
   whatsAppConversationPath,
 } from './whatsapp-notify'
+import { formatPixAmount, WhatsAppPixService } from './whatsapp-pix.service'
 
 /** Notes appended to the contact are capped so the field stays readable. */
 const NOTE_MAX = 2000
@@ -260,6 +261,21 @@ async function runOne(
         ok: true,
         detail: 'Workflow disparado',
         payload: { runId: run.value.id },
+      }
+    }
+
+    case 'SEND_PIX': {
+      const charge = await WhatsAppPixService.createChargeForAi({
+        workspaceId,
+        conversationId: ctx.conversation.id,
+        amount: action.amount,
+        description: action.description,
+      })
+      if (!charge.ok) return { ok: false, detail: charge.error.message }
+      return {
+        ok: true,
+        detail: `Cobrança Pix de ${formatPixAmount(action.amount)} enviada`,
+        payload: { chargeId: charge.value.id, amount: action.amount },
       }
     }
 

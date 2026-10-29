@@ -473,6 +473,8 @@ model Workspace {
   whatsappTemplates            WhatsAppTemplate[]
   whatsappAiConfig             WhatsAppAiConfig?
   whatsappSettings             WhatsAppSettings?
+  whatsappPixSettings          WhatsAppPixSettings?
+  whatsappPixCharges           WhatsAppPixCharge[]
   whatsappNumberValidations    WhatsAppNumberValidation[]
   whatsappCloseStatuses        WhatsAppCloseStatus[]
   whatsappSlaPolicies          WhatsAppSlaPolicy[]
@@ -1329,6 +1331,7 @@ model WhatsAppConversation {
   sdTickets    SdTicket[]
   slaCycles    WhatsAppSlaCycle[]
   chatbotSessions WhatsAppChatbotSession[]
+  pixCharges   WhatsAppPixCharge[]
 
   @@index([workspaceId, status, lastMessageAt])
   @@index([workspaceId, deletedAt, archivedAt, pinnedAt])
@@ -1523,6 +1526,8 @@ enum WhatsAppConversationEventKind {
   /// A chatbot flow handed the conversation to a person or to the AI;
   /// `reason` carries the destination.
   CHATBOT_HANDOFF
+  /// A Pix charge of the conversation was paid; `reason` = "R$ valor · descrição".
+  PIX_PAID
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1546,6 +1551,8 @@ enum WhatsAppConversationEventSource {
   SLA
   /// Chatbot flow (Z2).
   CHATBOT
+  /// Pix payment notification (Z1).
+  PIX
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -2621,6 +2628,7 @@ model CrmOpportunity {
   calendarEvents CrmCalendarEvent[]
   proposals      CrmProposal[]
   phoneCalls     WhatsAppPhoneCall[]
+  pixCharges     WhatsAppPixCharge[]
 
   @@index([workspaceId])
   @@index([pipelineId])
@@ -11207,6 +11215,67 @@ model SteelAgentVersion {
   @@unique([agentId, number])
   @@index([agentId, status])
   @@map("steel_agent_versions")
+}
+
+// ─── nov: z1-pix-in-chat ──────────────────────────────────────────────────
+
+enum WhatsAppPixChargeStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELED
+}
+
+/// Pix in the conversation (Z1): per-workspace switch, off by default.
+model WhatsAppPixSettings {
+  id                    String   @id @default(cuid())
+  workspaceId           String   @unique @map("workspace_id")
+  enabled               Boolean  @default(false)
+  /// Minutes a charge stays payable when the agent does not choose.
+  defaultExpiresMinutes Int      @default(60) @map("default_expires_minutes")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_pix_settings")
+}
+
+/// A Pix charge sent in a WhatsApp conversation (by an agent or the AI).
+/// `provider` + `providerChargeId` identify it at the PSP; the payment
+/// notification marks it PAID. EXPIRED is derived from `expiresAt` when read.
+model WhatsAppPixCharge {
+  id               String                  @id @default(cuid())
+  workspaceId      String                  @map("workspace_id")
+  conversationId   String                  @map("conversation_id")
+  /// CRM deal the charge belongs to; the payment is noted on it.
+  opportunityId    String?                 @map("opportunity_id")
+  createdById      String?                 @map("created_by_id")
+  createdByAi      Boolean                 @default(false) @map("created_by_ai")
+  provider         String
+  providerChargeId String                  @map("provider_charge_id")
+  amount           Decimal                 @db.Decimal(14, 2)
+  description      String                  @db.VarChar(140)
+  /// "Copia e cola" (EMV BR Code) payload.
+  brCode           String                  @map("br_code")
+  status           WhatsAppPixChargeStatus @default(PENDING)
+  expiresAt        DateTime                @map("expires_at")
+  paidAt           DateTime?               @map("paid_at")
+  paidAmount       Decimal?                @map("paid_amount") @db.Decimal(14, 2)
+  endToEndId       String?                 @map("end_to_end_id")
+  payerName        String?                 @map("payer_name")
+  canceledAt       DateTime?               @map("canceled_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  opportunity  CrmOpportunity?      @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerChargeId])
+  @@index([workspaceId, conversationId, createdAt])
+  @@index([opportunityId])
+  @@map("whatsapp_pix_charges")
 }
 
 // nov: s3-monitoring-tickets

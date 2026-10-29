@@ -283,6 +283,11 @@ export const TAG_GROUPS = [
         description:
           'Atendente de voz com IA na URA do PABX (ADR 0046): ajustes, filas e números atendidos, segredo do dialplan, minutos do mês e os endpoints que o dialplan chama.',
       },
+      {
+        name: 'Comunicação · Pix',
+        description:
+          'Cobrança Pix dentro da conversa: envio do "copia e cola" pelo atendente ou pela IA, baixa do pagamento e ligação com a oportunidade do CRM.',
+      },
     ],
   },
   {

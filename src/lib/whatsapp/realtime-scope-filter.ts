@@ -88,6 +88,9 @@ export function createRealtimeScopeFilter(deps: RealtimeScopeFilterDeps) {
       case 'message.deleted':
         if (scope.mode === 'ALL') return event
         return (await visible(scope, event.conversationId)) ? event : null
+      case 'pix-charge.updated':
+        if (scope.mode === 'ALL') return event
+        return (await visible(scope, event.conversationId)) ? event : null
       case 'phone-call.updated':
         if (scope.mode === 'ALL') return event
         // A browser phone call with no conversation belongs to who made it.

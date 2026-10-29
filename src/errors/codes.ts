@@ -1349,6 +1349,15 @@ export const ERROR_CODES = {
   SD_SWARM_NOT_INVITED: { code: 'SD_SWARM_NOT_INVITED', status: 403 },
   // Too many specialists in one swarm.
   SD_SWARM_LIMIT_REACHED: { code: 'SD_SWARM_LIMIT_REACHED', status: 422 },
+  // Z1 Pix in the conversation.
+  PIX_DISABLED: { code: 'PIX_DISABLED', status: 422 },
+  PIX_CHARGE_NOT_FOUND: { code: 'PIX_CHARGE_NOT_FOUND', status: 404 },
+  // Only a pending charge can be canceled.
+  PIX_CHARGE_NOT_PENDING: { code: 'PIX_CHARGE_NOT_PENDING', status: 409 },
+  // The PSP refused or failed the call.
+  PIX_PROVIDER_ERROR: { code: 'PIX_PROVIDER_ERROR', status: 502 },
+  // Payment notification with a bad or missing signature.
+  PIX_WEBHOOK_INVALID: { code: 'PIX_WEBHOOK_INVALID', status: 401 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

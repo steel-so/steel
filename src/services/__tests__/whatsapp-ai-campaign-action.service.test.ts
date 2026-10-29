@@ -5,7 +5,8 @@ import { createFakeWhatsAppContactWithoutCount } from '@/src/__tests__/factories
 import { createFakeWhatsAppConversation } from '@/src/__tests__/factories/whatsapp-conversation.factory'
 import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-message.factory'
 import { expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { ok } from '@/src/lib/result'
+import { pixDisabled } from '@/src/errors'
+import { err, ok } from '@/src/lib/result'
 import type { AiCampaignActionRequest } from '@/src/lib/whatsapp/ai-campaign-actions'
 
 const {
@@ -14,7 +15,9 @@ const {
   postWebhook,
   closeBySystem,
   triggerWorkflow,
+  createPixCharge,
 } = vi.hoisted(() => ({
+  createPixCharge: vi.fn(),
   broadcastAdd: vi.fn(),
   aiReplyAdd: vi.fn(),
   postWebhook: vi.fn(),
@@ -37,6 +40,10 @@ vi.mock('@/src/lib/whatsapp/realtime', () => ({
 }))
 vi.mock('@/src/services/whatsapp-conversation.service', () => ({
   closeWhatsAppConversationBySystem: closeBySystem,
+}))
+vi.mock('@/src/services/whatsapp-pix.service', () => ({
+  WhatsAppPixService: { createChargeForAi: createPixCharge },
+  formatPixAmount: (amount: number) => `R$ ${amount}`,
 }))
 vi.mock('@/src/services/crm-workflow.service', () => ({
   CrmWorkflowService: { triggerFromSystem: triggerWorkflow },
@@ -320,6 +327,60 @@ describe('WhatsAppAiCampaignActionService.run()', () => {
         contact: { waId: '5511999990000', name: 'Maria' },
       }),
     })
+  })
+
+  it('should send the configured Pix charge on behalf of the AI', async () => {
+    createPixCharge.mockResolvedValue(ok({ id: 'ch1' }))
+
+    const result = expectOk(
+      await WhatsAppAiCampaignActionService.run(ctx, [
+        request({
+          id: 'a9',
+          kind: 'SEND_PIX',
+          label: 'Cobrar adesão',
+          when: 'o cliente aceitou',
+          amount: 99.9,
+          description: 'Taxa de adesão',
+        }),
+      ]),
+    )
+
+    expect(result).toEqual({ succeeded: 1, failed: 0 })
+    expect(createPixCharge).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      conversationId: 'conv1',
+      amount: 99.9,
+      description: 'Taxa de adesão',
+    })
+    expect(campaignRepo.createActionRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionId: 'a9',
+        kind: 'SEND_PIX',
+        status: 'SUCCESS',
+      }),
+    )
+  })
+
+  it('should log a failed Pix charge (Pix off, provider down) and go on', async () => {
+    createPixCharge.mockResolvedValue(err(pixDisabled()))
+
+    const result = expectOk(
+      await WhatsAppAiCampaignActionService.run(ctx, [
+        request({
+          id: 'a9',
+          kind: 'SEND_PIX',
+          label: 'Cobrar adesão',
+          when: 'o cliente aceitou',
+          amount: 10,
+          description: 'Taxa',
+        }),
+      ]),
+    )
+
+    expect(result).toEqual({ succeeded: 0, failed: 1 })
+    expect(campaignRepo.createActionRun).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'SEND_PIX', status: 'FAILED' }),
+    )
   })
 
   it('should record a failure and keep going with the next action', async () => {

@@ -28,6 +28,7 @@ export const AI_CAMPAIGN_ACTION_KIND_LABEL: Record<
   FOLLOW_UP: 'Agendar retorno',
   CRM_WORKFLOW: 'Disparar workflow do CRM',
   WEBHOOK: 'Chamar webhook',
+  SEND_PIX: 'Enviar cobrança Pix',
 }
 
 /** Kinds that end the AI's part of the conversation. */

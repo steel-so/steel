@@ -6,6 +6,7 @@ import {
   CheckmarkCircle02Icon,
   ComputerVideoCallIcon,
   Download01Icon,
+  MoneyReceive01Icon,
   RefreshIcon,
   UserGroup03Icon,
   UserSwitchIcon,
@@ -22,7 +23,10 @@ import {
   contactSubtitle,
   contactTitle,
 } from '@/app/_components/whatsapp/whatsapp-contact-label'
-import { useCan } from '@/app/_components/workspace/workspace-permissions'
+import {
+  useCan,
+  useIsPrivileged,
+} from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -71,6 +75,10 @@ import {
   useWhatsAppMessages,
 } from '@/src/hooks/use-whatsapp-messages'
 import {
+  useWhatsAppPixCharges,
+  useWhatsAppPixSettings,
+} from '@/src/hooks/use-whatsapp-pix'
+import {
   useSetWhatsAppConversationTeam,
   useWhatsAppConversationScope,
   useWhatsAppTeams,
@@ -81,6 +89,9 @@ import type {
 } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
+import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
+import { WhatsappPixChargeCard } from './pix/whatsapp-pix-charge-card'
+import { WhatsappPixChargeDialog } from './pix/whatsapp-pix-charge-dialog'
 import { WhatsappAdReferralBanner } from './whatsapp-ad-referral-banner'
 import { WhatsappAiBanner } from './whatsapp-ai-banner'
 import { WhatsappCloseConversationDialog } from './whatsapp-close-conversation-dialog'
@@ -111,6 +122,7 @@ type TimelineItem =
   | { kind: 'message'; at: string; message: WhatsAppMessageDTO }
   | { kind: 'event'; at: string; event: WhatsAppConversationEventDTO }
   | { kind: 'call'; at: string; call: PhoneCallRecordDTO }
+  | { kind: 'pix'; at: string; charge: WhatsAppPixChargeDTO }
 
 /** Live call states stay in the header banner, not in the timeline. */
 const LIVE_CALL_STATUSES = new Set(['QUEUED', 'DIALING', 'IN_PROGRESS'])
@@ -122,6 +134,7 @@ function buildTimeline(
   messages: WhatsAppMessageDTO[],
   events: WhatsAppConversationEventDTO[],
   calls: PhoneCallRecordDTO[] = [],
+  pixCharges: WhatsAppPixChargeDTO[] = [],
 ): TimelineItem[] {
   const oldest = messages[0]?.createdAt
   const items: TimelineItem[] = [
@@ -140,6 +153,13 @@ function buildTimeline(
           (!oldest || call.createdAt >= oldest),
       )
       .map((call) => ({ kind: 'call' as const, at: call.createdAt, call })),
+    ...pixCharges
+      .filter((charge) => !oldest || charge.createdAt >= oldest)
+      .map((charge) => ({
+        kind: 'pix' as const,
+        at: charge.createdAt,
+        charge,
+      })),
   ]
   return items.sort((a, b) => a.at.localeCompare(b.at))
 }
@@ -170,6 +190,7 @@ export function WhatsappConversationView({
 }) {
   const [callOpen, setCallOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
+  const [pixOpen, setPixOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [replyTarget, setReplyTarget] = useState<WhatsAppMessageDTO | null>(
     null,
@@ -182,6 +203,15 @@ export function WhatsappConversationView({
   const closeConversation = useCloseWhatsAppConversation(workspaceId)
   const reopenConversation = useReopenWhatsAppConversation(workspaceId)
   const canEdit = useCan('conversations', 'EDIT')
+  const canCreate = useCan('conversations', 'CREATE')
+  const isAdmin = useIsPrivileged()
+  const pixSettings = useWhatsAppPixSettings(workspaceId)
+  const pixEnabled = pixSettings.data?.enabled === true
+  const pixCharges = useWhatsAppPixCharges(
+    workspaceId,
+    conversation.id,
+    pixEnabled,
+  )
   const startPhoneCall = useStartWhatsAppPhoneCall(workspaceId)
   const phoneCall = useWhatsAppPhoneCall(workspaceId, conversation.id)
   const webPhone = useWebPhone()
@@ -294,8 +324,9 @@ export function WhatsappConversationView({
         messages.data ?? [],
         events.data ?? [],
         Array.isArray(calls.data) ? calls.data : [],
+        pixCharges.data ?? [],
       ),
-    [messages.data, events.data, calls.data],
+    [messages.data, events.data, calls.data, pixCharges.data],
   )
 
   function handleClose(reason: string | undefined, statusIds: string[]) {
@@ -527,6 +558,24 @@ export function WhatsappConversationView({
               label: contactTitle(conversation),
             }}
           />
+          {pixEnabled && canCreate && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Cobrar via Pix'
+              title={
+                conversation.aiActive
+                  ? 'Remova a conversa do atendimento da IA para cobrar'
+                  : isClosed
+                    ? 'Reabra a conversa para cobrar'
+                    : 'Cobrar via Pix'
+              }
+              disabled={conversation.aiActive || isClosed || outsideHours}
+              onClick={() => setPixOpen(true)}
+            >
+              <SteelIcon icon={MoneyReceive01Icon} size={18} />
+            </Button>
+          )}
           {canEdit && (
             <Button
               variant='ghost'
@@ -734,6 +783,15 @@ export function WhatsappConversationView({
               key={`event-${item.event.id}`}
               event={item.event}
             />
+          ) : item.kind === 'pix' ? (
+            <WhatsappPixChargeCard
+              key={`pix-${item.charge.id}`}
+              workspaceId={workspaceId}
+              charge={item.charge}
+              canManage={canEdit}
+              canSimulate={isAdmin && Boolean(pixSettings.data?.isTestProvider)}
+              className='mx-auto max-w-xl'
+            />
           ) : item.kind === 'call' ? (
             <PhoneCallCard
               key={`call-${item.call.id}`}
@@ -764,6 +822,15 @@ export function WhatsappConversationView({
         onConfirm={handleClose}
         isPending={closeConversation.isPending}
       />
+      {pixSettings.data?.enabled ? (
+        <WhatsappPixChargeDialog
+          workspaceId={workspaceId}
+          conversationId={conversation.id}
+          settings={pixSettings.data}
+          open={pixOpen}
+          onOpenChange={setPixOpen}
+        />
+      ) : null}
       <WhatsappVideoCallDialog
         open={callOpen}
         onOpenChange={setCallOpen}

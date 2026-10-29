@@ -1415,4 +1415,93 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       expect(screen.queryByRole('button', { name: /Criar tarefa/ })).toBeNull()
     })
   })
+
+  describe('Pix', () => {
+    const PIX_SETTINGS = `${API}/pix/settings`
+    const PIX = `${API}/conversations/cv_1/pix`
+    const pixSettings = (enabled: boolean) => ({
+      workspaceId: 'ws_1',
+      enabled,
+      defaultExpiresMinutes: 60,
+      provider: 'mock',
+      isTestProvider: true,
+    })
+    const pixCharge = {
+      id: 'ch_1',
+      conversationId: 'cv_1',
+      opportunityId: null,
+      createdById: 'u_1',
+      createdByAi: false,
+      provider: 'mock',
+      amount: 150,
+      description: 'Mensalidade',
+      brCode: '00020126mock6304ABCD',
+      status: 'PAID',
+      expiresAt: '2026-01-01T13:00:00.000Z',
+      paidAt: '2026-01-01T12:30:00.000Z',
+      paidAmount: 150,
+      payerName: 'Maria',
+      canceledAt: null,
+      createdAt: '2026-01-01T12:10:00.000Z',
+    }
+
+    it('has no Pix button while the workspace keeps Pix off', async () => {
+      setup([{ match: PIX_SETTINGS, data: pixSettings(false) }])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+          onSelectConversation={vi.fn()}
+        />,
+      )
+      await screen.findByText('Preciso de ajuda com meu pedido')
+      expect(
+        screen.queryByRole('button', { name: 'Cobrar via Pix' }),
+      ).toBeNull()
+    })
+
+    it('opens the charge dialog from the header and lists the charges in the thread', async () => {
+      setup([
+        { match: PIX_SETTINGS, data: pixSettings(true) },
+        { match: PIX, data: [pixCharge] },
+        {
+          match: `${API.replace('/whatsapp', '')}/crm/opportunities`,
+          data: [],
+        },
+      ])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+          onSelectConversation={vi.fn()}
+        />,
+      )
+
+      expect(await screen.findByText(/Cobrança Pix · R\$\s150,00/)).toBeTruthy()
+      expect(screen.getByText('Pago')).toBeTruthy()
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Cobrar via Pix' }),
+      )
+      expect(await screen.findByLabelText('Valor (R$)')).toBeTruthy()
+    })
+
+    it('blocks charging while the AI handles the conversation', async () => {
+      setup([
+        { match: PIX_SETTINGS, data: pixSettings(true) },
+        { match: PIX, data: [] },
+      ])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation({ aiActive: true })}
+          onSelectConversation={vi.fn()}
+        />,
+      )
+      const button = await screen.findByRole('button', {
+        name: 'Cobrar via Pix',
+      })
+      expect((button as HTMLButtonElement).disabled).toBe(true)
+    })
+  })
 })

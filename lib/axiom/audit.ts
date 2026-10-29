@@ -272,6 +272,9 @@ export type AuditEntity =
   // t1-nps-whatsapp: satisfaction surveys (NPS/CSAT/CES)
   | 'satisfaction_survey'
   | 'satisfaction_survey_config'
+  // Z1 Pix in the conversation: charges and the workspace switch
+  | 'whatsapp_pix_charge'
+  | 'whatsapp_pix_settings'
 
 export type AuditAction =
   | 'create'

@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import {
+  PIX_DESCRIPTION_MAX,
+  PIX_MAX_AMOUNT,
+  PIX_MIN_AMOUNT,
+} from './whatsapp-pix.schema'
 
 /** Segundos entre dois envios: mais agressivo 20 s, mais cauteloso 60 s. */
 export const AI_CAMPAIGN_MIN_INTERVAL_SECONDS = 20
@@ -72,6 +77,7 @@ export const AI_CAMPAIGN_ACTION_KINDS = [
   'FOLLOW_UP',
   'CRM_WORKFLOW',
   'WEBHOOK',
+  'SEND_PIX',
 ] as const
 
 export type AiCampaignActionKind = (typeof AI_CAMPAIGN_ACTION_KINDS)[number]
@@ -156,6 +162,25 @@ export const AiCampaignActionSchema = z.discriminatedUnion('kind', [
       .array(AiCampaignWebhookFieldSchema)
       .max(AI_CAMPAIGN_MAX_WEBHOOK_FIELDS)
       .default([]),
+  }),
+  // Z1: the AI sends a Pix charge. Amount and text are fixed by the admin
+  // (the AI only decides whether to charge), like every action target.
+  z.object({
+    ...actionBase,
+    kind: z.literal('SEND_PIX'),
+    amount: z
+      .number('Informe o valor da cobrança')
+      .min(PIX_MIN_AMOUNT, 'O valor mínimo é R$ 0,01')
+      .max(PIX_MAX_AMOUNT, 'O valor máximo é R$ 999.999,99')
+      .transform((value) => Math.round(value * 100) / 100),
+    description: z
+      .string()
+      .trim()
+      .min(1, 'Descreva o que está sendo cobrado')
+      .max(
+        PIX_DESCRIPTION_MAX,
+        `A descrição pode ter até ${PIX_DESCRIPTION_MAX} caracteres`,
+      ),
   }),
 ])
 
