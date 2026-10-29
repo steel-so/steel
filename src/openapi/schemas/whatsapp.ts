@@ -177,6 +177,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_GUARDRAIL_HANDOFF',
         'AI_ACTION',
         'SLA_BREACHED',
+        'PIX_PAID',
         'CHATBOT_HANDOFF',
       ]),
       source: z.enum([
@@ -189,6 +190,7 @@ export const WhatsAppConversationEventDTO = dto(
         'AI_CAMPAIGN',
         'DISTRIBUTION',
         'SLA',
+        'PIX',
         'CHATBOT',
       ]),
       actorUserId: z.string().nullable().meta({
@@ -1570,5 +1572,58 @@ export const WhatsAppChatbotSimulationDTO = dto(
       })
       .nullable(),
     closeConversation: z.boolean(),
+  }),
+)
+
+/* ---------------------------------- Pix ---------------------------------- */
+
+export const WhatsAppPixChargeDTO = dto(
+  'WhatsAppPixCharge',
+  z.object({
+    id: id('ckv9x2p0h0000ms7d3k1e5abc'),
+    conversationId: z.string(),
+    opportunityId: z.string().nullable().meta({
+      description: 'Oportunidade do CRM que recebe a anotação do pagamento.',
+    }),
+    createdById: z.string().nullable().meta({
+      description: 'Atendente que enviou; `null` quando foi a IA.',
+    }),
+    createdByAi: z.boolean(),
+    provider: z.string().meta({
+      description: 'PSP que emitiu a cobrança (`mock` enquanto não há um).',
+      example: 'mock',
+    }),
+    amount: z.number().meta({ description: 'Valor em reais.', example: 150 }),
+    description: z.string(),
+    brCode: z.string().meta({ description: 'Pix "copia e cola" (BR Code).' }),
+    status: z.enum(['PENDING', 'PAID', 'EXPIRED', 'CANCELED']).meta({
+      description:
+        '`EXPIRED` é derivado: cobrança `PENDING` depois do `expiresAt`. Um pagamento que chega depois do vencimento ou do cancelamento ainda a marca como `PAID`.',
+    }),
+    expiresAt: dateTime(),
+    paidAt: nullableDateTime(),
+    paidAmount: z.number().nullable(),
+    payerName: z.string().nullable(),
+    canceledAt: nullableDateTime(),
+    createdAt: dateTime(),
+  }),
+)
+
+export const WhatsAppPixSettingsDTO = dto(
+  'WhatsAppPixSettings',
+  z.object({
+    workspaceId: z.string(),
+    enabled: z.boolean().meta({
+      description:
+        'Pix na conversa ligado neste workspace (padrão: desligado).',
+    }),
+    defaultExpiresMinutes: z.number().int().meta({
+      description: 'Validade padrão de uma cobrança, em minutos (padrão: 60).',
+    }),
+    provider: z.string(),
+    isTestProvider: z.boolean().meta({
+      description:
+        '`true` enquanto o provedor é o `mock`: as cobranças não movimentam dinheiro de verdade.',
+    }),
   }),
 )

@@ -39,6 +39,9 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       return event.reason
         ? `Chatbot passou a conversa para: ${event.reason}`
         : 'Chatbot passou a conversa adiante'
+    // `reason` = "R$ valor · descrição" of the charge.
+    case 'PIX_PAID':
+      return `Pix recebido: ${event.reason ?? ''}`.trim()
     case 'BUTTON_CLICKED':
       return event.reason
         ? `O contato clicou em “${event.reason}”`
@@ -75,6 +78,8 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   // The click's label is already in the headline.
   if (event.kind === 'BUTTON_CLICKED') return null
   if (event.kind === 'CHATBOT_HANDOFF') return null
+  // The charge is already in the headline.
+  if (event.kind === 'PIX_PAID') return null
   if (event.kind === 'SENTIMENT_ALERT') return event.reason
   // The guardrail note says why the AI stopped.
   if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason
