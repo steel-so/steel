@@ -94,5 +94,17 @@ e-mail sair: corrija ou desligue o WhatsApp.
 ### Relatório
 
 No relatório da edição, a seção **WhatsApp** mostra quantas mensagens foram
-enviadas, quantas falharam, quantas não foram enviadas (e por quê) e a
-situação de cada número, com o nome ligado à pessoa do CRM.
+enviadas, entregues e lidas, a **taxa de leitura** (lidas ÷ enviadas), quantas
+falharam, quantas não foram enviadas (e por quê) e a situação de cada número,
+com o nome ligado à pessoa do CRM e a data e hora de envio, entrega e leitura
+(horário de Brasília).
+
+Entregue e lido vêm das confirmações que o WhatsApp devolve, tanto pela Meta
+quanto pela Z-API. Quem desativou a confirmação de leitura no celular aparece
+só como entregue, então a taxa de leitura é sempre um mínimo. Se a Meta avisar
+que a mensagem não pôde ser entregue, o número passa para **Falhou** com o
+motivo informado.
+
+A primeira leitura de cada edição também entra na linha do tempo da pessoa no
+CRM, como "Leu no WhatsApp a edição…". Ela não soma pontos nem dispara
+workflows.
