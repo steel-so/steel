@@ -68,7 +68,7 @@ describe('Steel Agent assignment — leads', () => {
     const { user, workspace, agent, lead } = await seed()
     const url = leadUrl(workspace.id, lead.id)
 
-    expect((await putJson(url, {}, user.cookie)).status).toBe(400)
+    expect((await putJson(url, {}, user.cookie)).status).toBe(422)
     expect(
       (await putJson(url, { agentId: 'does-not-exist' }, user.cookie)).status,
     ).toBe(404)
