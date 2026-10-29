@@ -1269,6 +1269,14 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_CHATBOT_LIMIT_REACHED',
     status: 409,
   },
+
+  // nov: c2-cnpj-enrichment
+  CRM_CNPJ_INVALID: { code: 'CRM_CNPJ_INVALID', status: 422 },
+  CRM_CNPJ_NOT_FOUND: { code: 'CRM_CNPJ_NOT_FOUND', status: 404 },
+  CRM_CNPJ_LOOKUP_FAILED: { code: 'CRM_CNPJ_LOOKUP_FAILED', status: 502 },
+  CRM_CNPJ_RATE_LIMITED: { code: 'CRM_CNPJ_RATE_LIMITED', status: 429 },
+  CRM_CNPJ_RUN_NOT_FOUND: { code: 'CRM_CNPJ_RUN_NOT_FOUND', status: 404 },
+  CRM_CNPJ_RUN_ACTIVE: { code: 'CRM_CNPJ_RUN_ACTIVE', status: 409 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

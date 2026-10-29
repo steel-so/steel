@@ -51,6 +51,7 @@ export const QueueName = {
   CrmNewsletter: 'crm-newsletter',
   CrmNewsletterAutomation: 'crm-newsletter-automation',
   WhatsappChatbot: 'whatsapp-chatbot',
+  CrmCnpjEnrichment: 'crm-cnpj-enrichment',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1058,4 +1059,19 @@ export type WhatsappChatbotJobPayload = {
     /** The inbound message that triggered the step. */
     messageId: string
   }
+}
+
+/**
+ * On-demand bulk CNPJ re-enrichment (enqueued by the API, never scheduled):
+ * one job per run, walking the workspace's companies in pages.
+ */
+export const CrmCnpjEnrichmentJob = {
+  Run: 'run-enrichment',
+} as const
+
+export type CrmCnpjEnrichmentJob =
+  (typeof CrmCnpjEnrichmentJob)[keyof typeof CrmCnpjEnrichmentJob]
+
+export type CrmCnpjEnrichmentJobPayload = {
+  [CrmCnpjEnrichmentJob.Run]: { runId: string }
 }

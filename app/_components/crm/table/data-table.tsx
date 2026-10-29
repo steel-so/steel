@@ -661,6 +661,7 @@ export function DataTable<TData extends WithId>({
   refetch,
   disableInlineCreate = false,
   headerAction,
+  headerExtra,
   onOpenRecord,
   renderRecordExtra,
   kanban,
@@ -687,6 +688,8 @@ export function DataTable<TData extends WithId>({
   disableInlineCreate?: boolean
   /** Botão customizado no canto direito da toolbar (substitui "Novo X"). */
   headerAction?: React.ReactNode
+  /** Ação extra na toolbar, antes do botão "Novo X" (que continua). */
+  headerExtra?: React.ReactNode
   /**
    * Sobrescreve o painel default ao abrir um registro. Recebe o registro
    * completo. Útil para entidades que precisam de UI dedicada. Returning
@@ -1282,6 +1285,7 @@ export function DataTable<TData extends WithId>({
           </div>
         ) : null}
 
+        {headerExtra}
         {headerAction ??
           (disableInlineCreate ? null : (
             <Button size='sm' onClick={addRow}>

@@ -2414,6 +2414,7 @@ model CrmCompany {
   tasks         CrmTask[]
   notes         CrmNote[]
   proposals     CrmProposal[]
+  enrichment    CrmCompanyEnrichment?
 
   @@unique([workspaceId, domain])
   @@unique([workspaceId, cnpj])
@@ -10631,4 +10632,69 @@ model WhatsAppChatbotSession {
   @@index([chatbotId, status])
   @@index([workspaceId, startedAt])
   @@map("whatsapp_chatbot_sessions")
+}
+
+// ─── nov: c2-cnpj-enrichment ──────────────────────────────────────────────
+
+enum CrmCnpjRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+/// Receita Federal profile of a CrmCompany (one row per company, refreshed in
+/// place). The company's own columns (name, address) are only filled from it
+/// by the enrichment service; this keeps the raw registry data (legal name,
+/// CNAE, size, partners) next to them.
+model CrmCompanyEnrichment {
+  id                 String    @id @default(cuid())
+  companyId          String    @unique @map("company_id")
+  workspaceId        String    @map("workspace_id")
+  cnpj               String
+  legalName          String?   @map("legal_name")
+  tradeName          String?   @map("trade_name")
+  cnaeCode           String?   @map("cnae_code")
+  cnaeDescription    String?   @map("cnae_description")
+  secondaryCnaes     Json      @default("[]") @map("secondary_cnaes")
+  size               String?
+  legalNature        String?   @map("legal_nature")
+  registrationStatus String?   @map("registration_status")
+  openedAt           DateTime? @map("opened_at") @db.Date
+  shareCapital       Decimal?  @map("share_capital") @db.Decimal(16, 2)
+  partners           Json      @default("[]")
+  source             String    @default("brasilapi")
+  fetchedAt          DateTime  @default(now()) @map("fetched_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  company CrmCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("crm_company_enrichments")
+}
+
+/// One bulk "re-enrich the base" run, executed by the worker in pages.
+model CrmCnpjEnrichmentRun {
+  id          String           @id @default(cuid())
+  workspaceId String           @map("workspace_id")
+  createdById String           @map("created_by_id")
+  status      CrmCnpjRunStatus @default(QUEUED)
+  onlyMissing Boolean          @default(true) @map("only_missing")
+  overwrite   Boolean          @default(false)
+  total       Int              @default(0)
+  processed   Int              @default(0)
+  enriched    Int              @default(0)
+  notFound    Int              @default(0) @map("not_found")
+  invalid     Int              @default(0)
+  failed      Int              @default(0)
+  error       String?
+  startedAt   DateTime?        @map("started_at")
+  finishedAt  DateTime?        @map("finished_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
+  @@map("crm_cnpj_enrichment_runs")
 }

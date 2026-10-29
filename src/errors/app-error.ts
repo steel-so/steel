@@ -1945,3 +1945,31 @@ export const whatsappChatbotLimitReached = (max: number): AppError =>
     'WHATSAPP_CHATBOT_LIMIT_REACHED',
     `O workspace pode ter no máximo ${max} chatbots`,
   )
+
+// nov: c2-cnpj-enrichment
+export const crmCnpjInvalid = (): AppError =>
+  appError('CRM_CNPJ_INVALID', 'CNPJ inválido — confira os 14 dígitos')
+
+export const crmCnpjNotFound = (): AppError =>
+  appError('CRM_CNPJ_NOT_FOUND', 'CNPJ não encontrado na Receita Federal')
+
+export const crmCnpjLookupFailed = (): AppError =>
+  appError(
+    'CRM_CNPJ_LOOKUP_FAILED',
+    'Não foi possível consultar a Receita agora — tente de novo em instantes',
+  )
+
+export const crmCnpjRateLimited = (): AppError =>
+  appError(
+    'CRM_CNPJ_RATE_LIMITED',
+    'A consulta de CNPJ está com muitas chamadas — aguarde um pouco e tente de novo',
+  )
+
+export const crmCnpjRunNotFound = (): AppError =>
+  appError('CRM_CNPJ_RUN_NOT_FOUND', 'Reenriquecimento não encontrado')
+
+export const crmCnpjRunActive = (): AppError =>
+  appError(
+    'CRM_CNPJ_RUN_ACTIVE',
+    'Já existe um reenriquecimento em andamento — aguarde terminar',
+  )

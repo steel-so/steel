@@ -17,6 +17,8 @@ import {
   type CrmApolloImportJobPayload,
   type CrmCampaignsJob,
   type CrmCampaignsJobPayload,
+  type CrmCnpjEnrichmentJob,
+  type CrmCnpjEnrichmentJobPayload,
   type CrmCompetitorSyncJob,
   type CrmCompetitorSyncJobPayload,
   type CrmNewsletterAutomationJob,
@@ -131,6 +133,7 @@ let crmScheduledSendQueue: Queue | null = null
 let crmWorkflowScheduleQueue: Queue | null = null
 let crmCompetitorSyncQueue: Queue | null = null
 let crmApolloImportQueue: Queue | null = null
+let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
 let crmSocialPostsTickQueue: Queue | null = null
@@ -454,6 +457,29 @@ export function getCrmApolloImportQueue(): Queue<
     CrmApolloImportJobPayload[CrmApolloImportJob],
     unknown,
     CrmApolloImportJob
+  >
+}
+
+/**
+ * `attempts: 1` on purpose: the runner records its own progress and is
+ * resumable by starting a new run; a blind BullMQ retry would restart a
+ * half-walked base.
+ */
+export function getCrmCnpjEnrichmentQueue(): Queue<
+  CrmCnpjEnrichmentJobPayload[CrmCnpjEnrichmentJob],
+  unknown,
+  CrmCnpjEnrichmentJob
+> {
+  if (!crmCnpjEnrichmentQueue) {
+    crmCnpjEnrichmentQueue = new Queue(QueueName.CrmCnpjEnrichment, {
+      connection: getQueueConnection(),
+      defaultJobOptions: { ...defaultJobOptions, attempts: 1 },
+    })
+  }
+  return crmCnpjEnrichmentQueue as Queue<
+    CrmCnpjEnrichmentJobPayload[CrmCnpjEnrichmentJob],
+    unknown,
+    CrmCnpjEnrichmentJob
   >
 }
 
@@ -829,6 +855,7 @@ export async function closeQueues(): Promise<void> {
     crmWorkflowScheduleQueue?.close(),
     crmCompetitorSyncQueue?.close(),
     crmApolloImportQueue?.close(),
+    crmCnpjEnrichmentQueue?.close(),
     crmProposalExpiryQueue?.close(),
     crmSocialPostsTickQueue?.close(),
     crmSocialPublishQueue?.close(),
@@ -873,6 +900,7 @@ export async function closeQueues(): Promise<void> {
   crmScheduledSendQueue = null
   crmCompetitorSyncQueue = null
   crmApolloImportQueue = null
+  crmCnpjEnrichmentQueue = null
   crmProposalExpiryQueue = null
   crmTaskRemindersQueue = null
   crmSocialPostsTickQueue = null
@@ -1152,6 +1180,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmWorkflowSchedule]: getCrmWorkflowScheduleQueue,
   [QueueName.CrmCompetitorSync]: getCrmCompetitorSyncQueue,
   [QueueName.CrmApolloImport]: getCrmApolloImportQueue,
+  [QueueName.CrmCnpjEnrichment]: getCrmCnpjEnrichmentQueue,
   [QueueName.CrmSocialPostsTick]: getCrmSocialPostsTickQueue,
   [QueueName.CrmSocialPublish]: getCrmSocialPublishQueue,
   [QueueName.CrmProposalExpiry]: getCrmProposalExpiryQueue,

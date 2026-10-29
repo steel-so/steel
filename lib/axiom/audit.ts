@@ -53,6 +53,7 @@ export type AuditEntity =
   | 'whatsapp_agent_presence'
   | 'whatsapp_number_validation'
   | 'crm_company'
+  | 'crm_cnpj_enrichment'
   | 'crm_person'
   | 'crm_pipeline'
   | 'crm_pipeline_stage'

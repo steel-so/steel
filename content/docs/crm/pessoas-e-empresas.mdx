@@ -17,6 +17,29 @@ Uma empresa tem nome, CNPJ, domínio, endereço (com busca pelo CEP), número de
 funcionários, LinkedIn e o **responsável pela conta**. Crie em **Empresas** (ou{' '}
 <Kbd>C</Kbd> <Kbd>E</Kbd>).
 
+### Enriquecimento pelo CNPJ
+
+Ao digitar o CNPJ de uma empresa, o Steel consulta a Receita Federal e preenche
+o nome e o endereço. Abra a ficha da empresa e use **Dados da Receita › Buscar
+na Receita** para guardar também a razão social, a situação cadastral, a data de
+abertura, o porte, a natureza jurídica, o capital social, o CNAE (principal e
+secundários) e os sócios. Use **Atualizar da Receita** quando quiser consultar de
+novo.
+
+Por padrão, só entra o que estiver em branco: o nome e o endereço que você já
+preencheu não são trocados. Para substituí-los, ligue **Substituir nome e
+endereço já preenchidos**.
+
+Para enriquecer a base inteira, o dono ou um administrador usa **Enriquecer
+base** na lista de empresas. A consulta roda em segundo plano, cerca de uma
+empresa por segundo, e o andamento aparece na própria janela. Só uma consulta
+roda por vez.
+
+<Callout type='nota'>
+  Os dados vêm da base pública da Receita. Dos sócios, o Steel guarda apenas
+  nome, qualificação e data de entrada, nunca o CPF.
+</Callout>
+
 ## Atividade
 
 A ficha de cada pessoa e empresa mostra a linha do tempo de **Atividade**: o que
