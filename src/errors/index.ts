@@ -1,4 +1,5 @@
 // nov: s6-swarming
+// nov: s2-major-incident
 export {
   aiInsightNotFound,
   aiModelNotEnabled,
@@ -275,6 +276,10 @@ export {
   sdMailboxConflict,
   sdMailboxConnectionFailed,
   sdMailboxNotFound,
+  sdMajorIncidentAlreadyActive,
+  sdMajorIncidentInvalidTicket,
+  sdMajorIncidentNotFound,
+  sdMajorIncidentResolved,
   sdMessageForbidden,
   sdMessageNotFound,
   sdMonitorAlertNotFound,
@@ -306,6 +311,10 @@ export {
   sdRiskPredictionNotFound,
   sdSignatureNotFound,
   sdSignatureRequired,
+  sdStatusPageNotFound,
+  sdStatusPageSlugTaken,
+  sdStatusSubscriberNotFound,
+  sdStatusSubscriptionsClosed,
   sdSwarmAlreadyOpen,
   sdSwarmClosed,
   sdSwarmLimitReached,

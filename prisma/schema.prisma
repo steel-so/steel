@@ -6672,6 +6672,8 @@ model SdTicket {
   riskPrediction         SdTicketRiskPrediction?
   integrationLinks       SdIntegrationLink[]
   swarms                 SdSwarm[]
+  majorIncidentsMaster   SdMajorIncident[]       @relation("SdMajorIncidentMaster")
+  majorIncidentLinks     SdMajorIncidentTicket[] @relation("SdMajorIncidentChild")
   kbArticlesOriginated   SdKbArticle[]           @relation("SdKbArticleSourceTicket")
   phoneCalls             WhatsAppPhoneCall[]
 
@@ -11298,4 +11300,170 @@ model SdMonitorHostAlias {
   @@unique([workspaceId, host])
   @@index([configItemId])
   @@map("sd_monitor_host_aliases")
+
+// nov: s2-major-incident
+
+enum SdMajorIncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum SdMajorIncidentImpact {
+  DEGRADED
+  PARTIAL_OUTAGE
+  MAJOR_OUTAGE
+}
+
+/// How a child ticket got attached to a major incident (the linking API is
+/// shared with the monitoring and automation slices).
+enum SdIncidentLinkSource {
+  MANUAL
+  SUGGESTION
+  MONITORING
+  AUTOMATION
+}
+
+enum SdStatusChannel {
+  EMAIL
+  WHATSAPP
+}
+
+/// A major incident: declared from one INCIDENT ticket (the master), groups
+/// the child tickets, may open a war room (swarm) and publishes updates on
+/// customer-facing status pages. `title` and `summary` are customer-safe
+/// text: they show on the public pages. User ids are plain strings (no FK) so
+/// the User model stays untouched; the repository resolves the summaries.
+model SdMajorIncident {
+  id           String                @id @default(cuid())
+  workspaceId  String                @map("workspace_id")
+  ticketId     String                @map("ticket_id")
+  title        String
+  summary      String?
+  impact       SdMajorIncidentImpact @default(PARTIAL_OUTAGE)
+  status       SdMajorIncidentStatus @default(INVESTIGATING)
+  commanderId  String?               @map("commander_id")
+  /// War room: the swarm opened on the master ticket (no FK).
+  swarmId      String?               @map("swarm_id")
+  declaredById String?               @map("declared_by_id")
+  resolvedById String?               @map("resolved_by_id")
+  resolution   String?
+  declaredAt   DateTime              @default(now()) @map("declared_at")
+  resolvedAt   DateTime?             @map("resolved_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  ticket  SdTicket                @relation("SdMajorIncidentMaster", fields: [ticketId], references: [id], onDelete: Cascade)
+  links   SdMajorIncidentTicket[]
+  updates SdMajorIncidentUpdate[]
+  pages   SdMajorIncidentPage[]
+
+  @@index([workspaceId, status])
+  @@index([ticketId, status])
+  @@map("sd_major_incidents")
+}
+
+model SdMajorIncidentTicket {
+  incidentId  String               @map("incident_id")
+  ticketId    String               @map("ticket_id")
+  workspaceId String               @map("workspace_id")
+  source      SdIncidentLinkSource @default(MANUAL)
+  linkedById  String?              @map("linked_by_id")
+  linkedAt    DateTime             @default(now()) @map("linked_at")
+
+  incident SdMajorIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  ticket   SdTicket        @relation("SdMajorIncidentChild", fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@id([incidentId, ticketId])
+  @@index([ticketId])
+  @@index([workspaceId])
+  @@map("sd_major_incident_tickets")
+}
+
+/// One entry of the incident timeline. `publish` puts it on the status pages
+/// of the incident; the notify counters are filled by the delivery job.
+model SdMajorIncidentUpdate {
+  id           String                @id @default(cuid())
+  incidentId   String                @map("incident_id")
+  workspaceId  String                @map("workspace_id")
+  status       SdMajorIncidentStatus
+  message      String
+  publish      Boolean               @default(false)
+  authorId     String?               @map("author_id")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  /// Claimed by the delivery job before it sends (at-most-once).
+  notifiedAt   DateTime?             @map("notified_at")
+  notifyTotal  Int                   @default(0) @map("notify_total")
+  notifySent   Int                   @default(0) @map("notify_sent")
+  notifyFailed Int                   @default(0) @map("notify_failed")
+
+  incident SdMajorIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+  @@index([workspaceId])
+  @@map("sd_major_incident_updates")
+}
+
+/// Public status page of a customer and/or a set of catalog services. The
+/// slug is the public address (`/status-page/<slug>`), globally unique.
+model SdStatusPage {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @map("workspace_id")
+  name               String
+  slug               String   @unique
+  description        String?
+  /// Customer the page is for (used to suggest the page when declaring).
+  customerId         String?  @map("customer_id")
+  /// Catalog services/categories the page covers (ids, no FK).
+  serviceIds         String[] @default([]) @map("service_ids")
+  published          Boolean  @default(true)
+  allowSubscriptions Boolean  @default(true) @map("allow_subscriptions")
+  /// Zone the public page formats dates in.
+  timeZone           String   @default("America/Sao_Paulo") @map("time_zone")
+  createdById        String?  @map("created_by_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  incidents   SdMajorIncidentPage[]
+  subscribers SdStatusSubscriber[]
+
+  @@index([workspaceId])
+  @@map("sd_status_pages")
+}
+
+model SdMajorIncidentPage {
+  incidentId  String @map("incident_id")
+  pageId      String @map("page_id")
+  workspaceId String @map("workspace_id")
+
+  incident SdMajorIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  page     SdStatusPage    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([incidentId, pageId])
+  @@index([pageId])
+  @@index([workspaceId])
+  @@map("sd_major_incident_pages")
+}
+
+/// Who gets the e-mail/WhatsApp notices of a status page. Self-service
+/// subscriptions (e-mail only) need the double opt-in (`confirmedAt`);
+/// agent-added ones are confirmed on creation.
+model SdStatusSubscriber {
+  id          String          @id @default(cuid())
+  workspaceId String          @map("workspace_id")
+  pageId      String          @map("page_id")
+  channel     SdStatusChannel
+  /// E-mail (lower case) or WhatsApp number (digits only, with country code).
+  address     String
+  name        String?
+  token       String          @unique
+  confirmedAt DateTime?       @map("confirmed_at")
+  addedById   String?         @map("added_by_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  page SdStatusPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, channel, address])
+  @@index([workspaceId])
+  @@map("sd_status_subscribers")
 }

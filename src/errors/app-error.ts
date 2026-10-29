@@ -2097,3 +2097,39 @@ export const pixProviderError = (message?: string): AppError =>
 
 export const pixWebhookInvalid = (): AppError =>
   appError('PIX_WEBHOOK_INVALID', 'Assinatura do webhook de Pix inválida')
+
+export const sdMajorIncidentNotFound = (): AppError =>
+  appError('SD_MAJOR_INCIDENT_NOT_FOUND', 'Incidente maior não encontrado')
+
+export const sdMajorIncidentAlreadyActive = (): AppError =>
+  appError(
+    'SD_MAJOR_INCIDENT_ALREADY_ACTIVE',
+    'Este chamado já tem um incidente maior ativo',
+  )
+
+export const sdMajorIncidentResolved = (): AppError =>
+  appError(
+    'SD_MAJOR_INCIDENT_RESOLVED',
+    'O incidente maior já foi resolvido e não aceita mais alterações',
+  )
+
+export const sdMajorIncidentInvalidTicket = (message: string): AppError =>
+  appError('SD_MAJOR_INCIDENT_INVALID_TICKET', message)
+
+export const sdStatusPageNotFound = (): AppError =>
+  appError('SD_STATUS_PAGE_NOT_FOUND', 'Página de status não encontrada')
+
+export const sdStatusPageSlugTaken = (): AppError =>
+  appError(
+    'SD_STATUS_PAGE_SLUG_TAKEN',
+    'Já existe uma página de status com este endereço',
+  )
+
+export const sdStatusSubscriptionsClosed = (): AppError =>
+  appError(
+    'SD_STATUS_SUBSCRIPTIONS_CLOSED',
+    'Esta página de status não aceita novas inscrições',
+  )
+
+export const sdStatusSubscriberNotFound = (): AppError =>
+  appError('SD_STATUS_SUBSCRIBER_NOT_FOUND', 'Inscrição não encontrada')
