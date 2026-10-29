@@ -10065,6 +10065,8 @@ model CrmNewsletterSegment {
   @@unique([newsletterId, name])
   @@index([workspaceId])
   @@map("crm_newsletter_segments")
+}
+
 // ─── newsletter2 · nl2-automation: welcome series + re-engagement ─────────
 
 enum CrmNewsletterDelayUnit {
