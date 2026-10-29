@@ -1248,6 +1248,11 @@ export const ERROR_CODES = {
     code: 'CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL',
     status: 422,
   },
+  // z4-ctwa-attribution: ad spend row not found in the workspace.
+  WHATSAPP_AD_SPEND_NOT_FOUND: {
+    code: 'WHATSAPP_AD_SPEND_NOT_FOUND',
+    status: 404,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

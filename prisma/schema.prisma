@@ -616,6 +616,9 @@ model Workspace {
   accessLogs                WorkspaceAccessLog[]
   whatsappArchives          WhatsAppArchive[]
   whatsappArchiveSettings   WhatsAppArchiveSettings?
+  whatsappAdSettings        WhatsAppAdSettings?
+  whatsappAdReferrals       WhatsAppAdReferral[]
+  whatsappAdSpends          WhatsAppAdSpend[]
   sendingDomains            WorkspaceSendingDomain[]
   crmNewsletters            CrmNewsletter[]
   crmNewsletterSettings     CrmNewsletterSettings?
@@ -10448,4 +10451,78 @@ model CrmNewsletterWelcomeLinkClick {
   @@index([deliveryId, url])
   @@index([stepId, url])
   @@map("crm_newsletter_welcome_link_clicks")
+}
+
+// ─── nov: z4-ctwa-attribution ─────────────────────────────────────────────
+
+/// Per-workspace opt-in of the Click-to-WhatsApp ad attribution. Off by
+/// default: with `enabled = false` the webhook ignores the `referral` block.
+model WhatsAppAdSettings {
+  workspaceId String   @id @map("workspace_id")
+  enabled     Boolean  @default(false)
+  /// Opens a CRM lead (source = ad headline) when a contact arrives from an ad.
+  createLeads Boolean  @default(false) @map("create_leads")
+  /// Owner of the leads opened by the attribution; null = routing rules only.
+  leadOwnerId String?  @map("lead_owner_id")
+  /// Base text of `CrmLead.source`; the ad headline is appended to it.
+  leadSource  String   @default("Anúncio Click-to-WhatsApp") @map("lead_source") @db.VarChar(60)
+  updatedById String?  @map("updated_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_ad_settings")
+}
+
+/// The `referral` block Meta sends with the first message of a contact that
+/// clicked a Click-to-WhatsApp ad (or post). One row per message; `leadId` is
+/// set on the first referral that opened (or matched) the CRM lead.
+model WhatsAppAdReferral {
+  id                String   @id @default(cuid())
+  workspaceId       String   @map("workspace_id")
+  contactId         String   @map("contact_id")
+  conversationId    String   @map("conversation_id")
+  providerMessageId String   @unique @map("provider_message_id")
+  /// `ad` or `post` as Meta reports it (lower case).
+  sourceType        String   @map("source_type") @db.VarChar(20)
+  /// Meta ad id (or post id): the grouping key of the report.
+  sourceId          String   @map("source_id") @db.VarChar(100)
+  sourceUrl         String?  @map("source_url") @db.VarChar(1000)
+  headline          String?  @db.VarChar(300)
+  body              String?  @db.VarChar(1000)
+  mediaType         String?  @map("media_type") @db.VarChar(20)
+  mediaUrl          String?  @map("media_url") @db.VarChar(1000)
+  ctwaClid          String?  @map("ctwa_clid") @db.VarChar(500)
+  leadId            String?  @map("lead_id")
+  receivedAt        DateTime @default(now()) @map("received_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, receivedAt])
+  @@index([workspaceId, sourceId])
+  @@index([conversationId])
+  @@index([leadId])
+  @@map("whatsapp_ad_referrals")
+}
+
+/// Ad spend typed by an admin for one ad/post id over a period (Meta Ads is
+/// not connected). The report prorates it by the days inside the range.
+model WhatsAppAdSpend {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  sourceId    String   @map("source_id") @db.VarChar(100)
+  label       String?  @db.VarChar(200)
+  periodStart DateTime @map("period_start") @db.Date
+  periodEnd   DateTime @map("period_end") @db.Date
+  amount      Decimal  @db.Decimal(14, 2)
+  note        String?  @db.VarChar(500)
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, sourceId])
+  @@index([workspaceId, periodStart, periodEnd])
+  @@map("whatsapp_ad_spends")
 }

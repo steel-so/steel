@@ -1922,3 +1922,6 @@ export const crmNewsletterAbAudienceTooSmall = (minimum: number): AppError =>
     'CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL',
     `O teste A/B de assunto precisa de pelo menos ${minimum} assinantes ativos`,
   )
+
+export const whatsappAdSpendNotFound = (): AppError =>
+  appError('WHATSAPP_AD_SPEND_NOT_FOUND', 'Gasto com anúncio não encontrado')

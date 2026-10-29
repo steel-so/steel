@@ -42,6 +42,8 @@ export type AuditEntity =
   | 'whatsapp_usage_limits'
   | 'whatsapp_cost_price'
   | 'whatsapp_cost_settings'
+  | 'whatsapp_ad_settings'
+  | 'whatsapp_ad_spend'
   | 'notification'
   | 'whatsapp_ai_knowledge_document'
   | 'whatsapp_group'
