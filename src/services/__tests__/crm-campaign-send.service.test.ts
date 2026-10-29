@@ -17,6 +17,9 @@ vi.mock('@/src/repositories/crm-campaign.repository')
 vi.mock('@/src/repositories/crm-campaign-audience.repository')
 vi.mock('@/src/repositories/crm-campaign-lookup.repository')
 vi.mock('@/src/services/crm-notifications')
+vi.mock('@/src/repositories/sending-domain.repository', () => ({
+  SendingDomainRepository: { findVerifiedByName: vi.fn() },
+}))
 vi.mock('@/src/lib/crm-campaign/email-renderer', () => ({
   renderCampaignEmail: vi.fn(),
 }))
@@ -46,6 +49,7 @@ import {
 } from '@/src/repositories/crm-campaign.repository'
 import { CrmCampaignAudienceRepository } from '@/src/repositories/crm-campaign-audience.repository'
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
+import { SendingDomainRepository } from '@/src/repositories/sending-domain.repository'
 import {
   buildCampaignEmail,
   CrmCampaignSendService,
@@ -54,7 +58,10 @@ import {
   SEND_INTERVAL_MS,
   sendCampaignWhatsApp,
 } from '../crm-campaign-send.service'
-import { notifyCrmMultichannelCampaignFinished } from '../crm-notifications'
+import {
+  notifyCrmCampaignSenderBlocked,
+  notifyCrmMultichannelCampaignFinished,
+} from '../crm-notifications'
 
 const campaigns = vi.mocked(CrmCampaignRepository)
 const recipients = vi.mocked(CrmCampaignRecipientRepository)
@@ -137,7 +144,12 @@ function counts(over?: {
   }
 }
 
+const sendingDomains = vi.mocked(SendingDomainRepository)
+
 beforeEach(() => {
+  sendingDomains.findVerifiedByName.mockResolvedValue(
+    ok({ id: 'dom1' } as never),
+  )
   add.mockReset()
   addBulk.mockReset()
   campaigns.findByIdUnscoped.mockResolvedValue(ok(campaign()))
@@ -349,6 +361,87 @@ describe('dispatch()', () => {
       await CrmCampaignSendService.dispatch('c1', 'EMAIL', NOW),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('unverified sender (ADR 0055)', () => {
+  it('dispatch warns the owner once and still queues the sends', async () => {
+    vi.mocked(notifyCrmCampaignSenderBlocked).mockClear()
+    sendingDomains.findVerifiedByName.mockResolvedValue(ok(null))
+    recipients.listPendingIds.mockResolvedValue(ok(['r1']))
+    expect(
+      expectOk(await CrmCampaignSendService.dispatch('c1', 'EMAIL', NOW))
+        .status,
+    ).toBe('queued')
+    expect(notifyCrmCampaignSenderBlocked).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      campaign: expect.objectContaining({ id: 'c1' }),
+      type: 'MULTICHANNEL',
+      fromEmail: 'crm@example.com',
+    })
+  })
+
+  it('dispatch does not warn for a verified domain, the platform address or WhatsApp', async () => {
+    vi.mocked(notifyCrmCampaignSenderBlocked).mockClear()
+    recipients.listPendingIds.mockResolvedValue(ok(['r1']))
+    expectOk(await CrmCampaignSendService.dispatch('c1', 'EMAIL', NOW))
+    campaigns.findByIdUnscoped.mockResolvedValue(
+      ok(campaign({ emailFrom: 'notificacoes@stratustelecom.com.br' })),
+    )
+    sendingDomains.findVerifiedByName.mockResolvedValue(ok(null))
+    expectOk(await CrmCampaignSendService.dispatch('c1', 'EMAIL', NOW))
+    campaigns.findByIdUnscoped.mockResolvedValue(
+      ok(campaign({ emailFrom: null })),
+    )
+    expectOk(await CrmCampaignSendService.dispatch('c1', 'EMAIL', NOW))
+    sendingDomains.findVerifiedByName.mockResolvedValue(err(databaseError()))
+    campaigns.findByIdUnscoped.mockResolvedValue(ok(campaign()))
+    expectOk(await CrmCampaignSendService.dispatch('c1', 'EMAIL', NOW))
+    expect(notifyCrmCampaignSenderBlocked).not.toHaveBeenCalled()
+  })
+
+  it('send fails the recipient with the reason, without retry', async () => {
+    vi.mocked(sendEmail).mockClear()
+    sendingDomains.findVerifiedByName.mockResolvedValue(ok(null))
+    recipients.findWithCampaign.mockResolvedValue(
+      ok({
+        ...createFakeCrmCampaignRecipient({
+          id: 'r1',
+          campaignId: 'c1',
+          email: 'ana@example.com',
+        }),
+        campaign: campaign(),
+      }),
+    )
+    const outcome = expectOk(
+      await CrmCampaignSendService.send('c1', 'r1', 'EMAIL', NOW),
+    )
+    expect(outcome.status).toBe('failed')
+    expect(recipients.markFailed).toHaveBeenCalledWith(
+      'r1',
+      'EMAIL',
+      expect.stringContaining('Domínios de e-mail'),
+    )
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('send retries later when the sender lookup fails', async () => {
+    sendingDomains.findVerifiedByName.mockResolvedValue(err(databaseError()))
+    recipients.findWithCampaign.mockResolvedValue(
+      ok({
+        ...createFakeCrmCampaignRecipient({
+          id: 'r1',
+          campaignId: 'c1',
+          email: 'ana@example.com',
+        }),
+        campaign: campaign(),
+      }),
+    )
+    const outcome = expectOk(
+      await CrmCampaignSendService.send('c1', 'r1', 'EMAIL', NOW),
+    )
+    expect(outcome.status).toBe('retry')
+    expect(recipients.release).toHaveBeenCalledWith('r1', 'EMAIL')
   })
 })
 

@@ -125,7 +125,8 @@ describe('CRM campaign → site page attribution', () => {
         destinationType: 'SITE_PAGE',
         siteId: site.id,
         sitePageId: page.id,
-        emailFrom: 'marketing@example.com',
+        // Platform address: no verified domain needed (ADR 0055).
+        emailFrom: 'notificacoes@stratustelecom.com.br',
         emailSubject: 'Venha nos visitar',
         emailTemplateId: template.id,
         emailLegalBasis: 'CONSENT',

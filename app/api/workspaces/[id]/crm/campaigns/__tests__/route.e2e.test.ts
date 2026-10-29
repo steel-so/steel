@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { seedSendingDomain } from '@/src/__tests__/factories/newsletter-nl-domains.factory'
 import {
   addMember,
   authenticatedOwner,
@@ -138,7 +139,21 @@ describe('/api/workspaces/[id]/crm/campaigns — wizard to results', () => {
       user.cookie,
     )
     expect(saved.status).toBe(200)
-    const ready = (await saved.json()).data
+    // ADR 0055: example.com is not a verified domain of the workspace.
+    expect((await saved.json()).data.issues).toEqual([
+      expect.objectContaining({ step: 'content', fix: 'SENDING_DOMAINS' }),
+    ])
+    const domain = await seedSendingDomain({
+      workspaceId: workspace.id,
+      createdById: user.id,
+      status: 'VERIFIED',
+    })
+    const verified = await patchJson(
+      `${base}/${draft.id}`,
+      { emailFrom: `marketing@${domain.name}` },
+      user.cookie,
+    )
+    const ready = (await verified.json()).data
     expect(ready.issues).toEqual([])
     expect(ready.links.email).toContain(
       `/f/${form.publicToken}?utm_source=email`,

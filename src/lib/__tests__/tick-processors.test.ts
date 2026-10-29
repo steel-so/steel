@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   setCampaignStatus: vi.fn(),
   sendCampaign: vi.fn(),
   notifyCampaignFinished: vi.fn(),
+  notifySenderBlocked: vi.fn(),
   notifyTrialEnded: vi.fn(),
   pruneWithoutLiveTokens: vi.fn(),
   purgeExpiredRecordings: vi.fn(),
@@ -64,6 +65,7 @@ vi.mock('@/src/services/workspace-access-log.service', () => ({
 }))
 vi.mock('@/src/services/crm-notifications', () => ({
   notifyCrmCampaignFinished: mocks.notifyCampaignFinished,
+  notifyCrmCampaignSenderBlocked: mocks.notifySenderBlocked,
 }))
 vi.mock('@/src/services/platform-notifications', () => ({
   notifyTrialEnded: mocks.notifyTrialEnded,
@@ -199,6 +201,39 @@ describe('processCrmScheduledSend', () => {
       }),
     )
     expect(mocks.loggerMock.error).toHaveBeenCalledTimes(2)
+  })
+
+  it('fails a due campaign whose From lost its verified domain and tells the creator', async () => {
+    mocks.setCampaignStatus.mockClear()
+    mocks.notifyCampaignFinished.mockClear()
+    mocks.listDueScheduled.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          ...campaign('c4'),
+          subject: 'Oferta',
+          fromAddress: 'mkt@acme.com',
+        },
+      ],
+    })
+    mocks.sendCampaign.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'SENDING_DOMAIN_NOT_VERIFIED', message: 'x' },
+    })
+
+    const result = await processCrmScheduledSend(
+      fakeJob(CrmScheduledSendJob.RunTick),
+    )
+
+    expect(result).toEqual({ due: 1, sent: 0, failed: 1 })
+    expect(mocks.setCampaignStatus).toHaveBeenCalledWith('c4', 'FAILED')
+    expect(mocks.notifySenderBlocked).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      campaign: { id: 'c4', title: 'Oferta', createdById: 'user-1' },
+      type: 'EMAIL',
+      fromEmail: 'mkt@acme.com',
+    })
+    expect(mocks.notifyCampaignFinished).not.toHaveBeenCalled()
   })
 
   it('throws when listing due campaigns fails', async () => {

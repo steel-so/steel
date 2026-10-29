@@ -148,7 +148,8 @@ describe('POST /api/workspaces/[id]/crm/email-campaigns/[campaignId]/send', () =
         {
           subject: 'Novidades',
           contentHtml: '<p>Oi</p>',
-          fromAddress: 'contato@example.com',
+          // Platform address: no verified domain needed (ADR 0055).
+          fromAddress: 'notificacoes@stratustelecom.com.br',
           recipientScope: 'ALL',
         },
         user.cookie,
@@ -170,5 +171,36 @@ describe('POST /api/workspaces/[id]/crm/email-campaigns/[campaignId]/send', () =
       user.cookie,
     )
     expect(second.status).toBe(409)
+  })
+
+  it('should refuse a From outside the verified domains (ADR 0055)', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    await postJson(
+      `/api/workspaces/${workspace.id}/crm/people`,
+      { name: 'Fulano', emails: ['fulano@example.com'] },
+      user.cookie,
+    )
+    const created = await (
+      await postJson(
+        `/api/workspaces/${workspace.id}/crm/email-campaigns`,
+        {
+          subject: 'Novidades',
+          contentHtml: '<p>Oi</p>',
+          fromAddress: 'contato@example.com',
+          recipientScope: 'ALL',
+        },
+        user.cookie,
+      )
+    ).json()
+
+    const res = await postJson(
+      `/api/workspaces/${workspace.id}/crm/email-campaigns/${created.data.id}/send`,
+      {},
+      user.cookie,
+    )
+    expect(res.status).toBe(422)
+    const body = await res.json()
+    expect(body.error.code).toBe('SENDING_DOMAIN_NOT_VERIFIED')
+    expect(body.error.message).toContain('Domínios de e-mail')
   })
 })

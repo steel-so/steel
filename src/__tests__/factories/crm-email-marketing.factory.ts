@@ -86,7 +86,7 @@ export async function seedCrmEmailCampaign(
   overrides?: Partial<
     Pick<
       CrmEmailCampaign,
-      'subject' | 'status' | 'recipientScope' | 'scheduledAt'
+      'subject' | 'status' | 'recipientScope' | 'scheduledAt' | 'fromAddress'
     >
   >,
 ) {

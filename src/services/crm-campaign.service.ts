@@ -26,6 +26,7 @@ import {
 } from '@/src/lib/crm-campaign/whatsapp-rules'
 import { sendEmail } from '@/src/lib/mail/send'
 import { err, ok, type Result } from '@/src/lib/result'
+import { checkCampaignSender } from '@/src/lib/sending-domain/campaign-sender'
 import { publicSiteUrl } from '@/src/lib/sites/public-url'
 import { parseSiteSnapshot } from '@/src/lib/sites/snapshot'
 import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
@@ -201,6 +202,20 @@ export async function computeCampaignIssues(
   // Conteúdo — e-mail
   if (!campaign.emailFrom) {
     issues.push({ step: 'content', message: 'Informe o remetente do e-mail' })
+  } else {
+    // ADR 0055: verified domain of the workspace or the platform address.
+    const sender = await checkCampaignSender(
+      campaign.workspaceId,
+      campaign.emailFrom,
+    )
+    if (!sender.ok) {
+      if (sender.error.code !== 'SENDING_DOMAIN_NOT_VERIFIED') return sender
+      issues.push({
+        step: 'content',
+        message: sender.error.message,
+        fix: 'SENDING_DOMAINS',
+      })
+    }
   }
   if (!campaign.emailSubject) {
     issues.push({ step: 'content', message: 'Informe o assunto do e-mail' })

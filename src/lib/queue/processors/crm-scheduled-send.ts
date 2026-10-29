@@ -2,7 +2,10 @@ import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { CrmEmailCampaignRepository } from '@/src/repositories/crm-email-campaign.repository'
 import { CrmEmailCampaignService } from '@/src/services/crm-email-campaign.service'
-import { notifyCrmCampaignFinished } from '@/src/services/crm-notifications'
+import {
+  notifyCrmCampaignFinished,
+  notifyCrmCampaignSenderBlocked,
+} from '@/src/services/crm-notifications'
 import { CrmScheduledSendJob } from '../jobs'
 
 type TickResult = {
@@ -31,6 +34,21 @@ async function runTick(): Promise<TickResult> {
       failed += 1
       // Sem destinatário não há o que reenviar: marca FAILED para o tick não
       // reprocessar a campanha a cada minuto (e nunca recalcula "todos").
+      // From outside the verified domains (ADR 0055): it will not pass
+      // later either — FAILED, and the creator learns why.
+      if (result.error.code === 'SENDING_DOMAIN_NOT_VERIFIED') {
+        await CrmEmailCampaignRepository.setStatus(campaign.id, 'FAILED')
+        await notifyCrmCampaignSenderBlocked({
+          workspaceId: campaign.workspaceId,
+          campaign: {
+            id: campaign.id,
+            title: campaign.subject,
+            createdById: campaign.createdById,
+          },
+          type: 'EMAIL',
+          fromEmail: campaign.fromAddress,
+        })
+      }
       if (result.error.code === 'CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS') {
         await CrmEmailCampaignRepository.setStatus(campaign.id, 'FAILED')
         await notifyCrmCampaignFinished({

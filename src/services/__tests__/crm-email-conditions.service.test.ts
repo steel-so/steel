@@ -20,6 +20,13 @@ vi.mock('@/lib/env/server', async (importOriginal) => ({
 }))
 vi.mock('@/lib/base-email-url', () => ({ baseEmailUrl: 'https://steel.test' }))
 vi.mock('@/src/services/crm-notifications')
+// ADR 0055 sender check: covered in crm-email-campaign.service.test.
+vi.mock('@/src/lib/sending-domain/campaign-sender', () => ({
+  checkCampaignSender: vi.fn(async () => ({
+    ok: true,
+    value: { platform: true },
+  })),
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-email-template.repository')
 vi.mock('@/src/repositories/crm-email-builder.repository')

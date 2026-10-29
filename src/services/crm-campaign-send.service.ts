@@ -36,6 +36,7 @@ import { sendEmail } from '@/src/lib/mail/send'
 import { CrmCampaignsJob } from '@/src/lib/queue/jobs'
 import { getCrmCampaignsQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
+import { checkCampaignSender } from '@/src/lib/sending-domain/campaign-sender'
 import { resolveBroadcastMediaKind } from '@/src/lib/whatsapp/broadcast-media'
 import { buildButtonPayload } from '@/src/lib/whatsapp/button-payload'
 import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
@@ -53,7 +54,10 @@ import {
 import { CrmCampaignAudienceRepository } from '@/src/repositories/crm-campaign-audience.repository'
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import type { CrmCampaignWhatsAppVariables } from '@/src/schemas/crm-campaign.schema'
-import { notifyCrmMultichannelCampaignFinished } from './crm-notifications'
+import {
+  notifyCrmCampaignSenderBlocked,
+  notifyCrmMultichannelCampaignFinished,
+} from './crm-notifications'
 
 /**
  * Execution of multichannel campaigns (ADR 0025) — system flows run by the
@@ -390,6 +394,18 @@ async function sendEmailTo(
   campaign: CrmCampaign,
   recipient: CrmCampaignRecipient,
 ): Promise<Result<string, { retry: boolean; message: string }>> {
+  // ADR 0055: a campaign scheduled before the rule (or whose domain lost its
+  // verification) fails here with the reason, instead of sending.
+  const sender = await checkCampaignSender(
+    campaign.workspaceId,
+    campaign.emailFrom as string,
+  )
+  if (!sender.ok) {
+    return err({
+      retry: sender.error.code !== 'SENDING_DOMAIN_NOT_VERIFIED',
+      message: sender.error.message,
+    })
+  }
   const token = createCampaignLinkToken(recipient.id, 'EMAIL')
   const unsubscribe = buildCrmUnsubscribeUrls(
     BETTER_AUTH_URL,
@@ -438,6 +454,35 @@ async function sendWhatsAppTo(
     })
   }
   return ok(sent.value.providerMessageId)
+}
+
+/**
+ * Tells the owner, once, that the e-mails of a running campaign will fail
+ * because its From is not on a verified domain (ADR 0055). Each send still
+ * fails on its own with the reason; a lookup failure is left to the sends.
+ */
+async function warnBlockedSender(campaign: CrmCampaign): Promise<void> {
+  if (!campaign.emailFrom) return
+  const sender = await checkCampaignSender(
+    campaign.workspaceId,
+    campaign.emailFrom,
+  )
+  if (sender.ok || sender.error.code !== 'SENDING_DOMAIN_NOT_VERIFIED') return
+  logger.warn('crm.campaign.sender_blocked', {
+    component: 'CrmCampaignSendService',
+    campaignId: campaign.id,
+    workspaceId: campaign.workspaceId,
+  })
+  await notifyCrmCampaignSenderBlocked({
+    workspaceId: campaign.workspaceId,
+    campaign: {
+      id: campaign.id,
+      title: campaign.name,
+      createdById: campaign.createdById,
+    },
+    type: 'MULTICHANNEL',
+    fromEmail: campaign.emailFrom,
+  })
 }
 
 export const CrmCampaignSendService = {
@@ -497,6 +542,8 @@ export const CrmCampaignSendService = {
       await CrmCampaignSendService.completeIfDrained(campaignId, now)
       return ok({ status: 'drained' })
     }
+
+    if (channel === 'EMAIL') await warnBlockedSender(campaign)
 
     let interval: number = SEND_INTERVAL_MS.EMAIL
     if (channel === 'WHATSAPP' && campaign.whatsappConnectionId) {

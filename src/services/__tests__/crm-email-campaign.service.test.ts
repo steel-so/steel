@@ -10,6 +10,9 @@ import { databaseError, notFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/services/crm-notifications')
+vi.mock('@/src/repositories/sending-domain.repository', () => ({
+  SendingDomainRepository: { findVerifiedByName: vi.fn() },
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-email-campaign.repository')
 vi.mock('@/src/repositories/crm-person.repository')
@@ -30,6 +33,7 @@ import { CrmEmailOptOutRepository } from '@/src/repositories/crm-email-opt-out.r
 import { CrmMailingListMemberRepository } from '@/src/repositories/crm-mailing-list.repository'
 import { CrmPersonRepository } from '@/src/repositories/crm-person.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { SendingDomainRepository } from '@/src/repositories/sending-domain.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CrmEmailCampaignService } from '../crm-email-campaign.service'
 import { notifyCrmCampaignFinished } from '../crm-notifications'
@@ -68,8 +72,62 @@ function fakePerson(id: string, name: string, email: string) {
   }
 }
 
+const mockedSendingDomains = vi.mocked(SendingDomainRepository)
+
 beforeEach(() => {
   mockedOptOutRepo.indexByWorkspace.mockResolvedValue(optOutIndex())
+  mockedSendingDomains.findVerifiedByName.mockResolvedValue(
+    ok({ id: 'dom1' } as never),
+  )
+})
+
+describe('CrmEmailCampaignService.send() — sender (ADR 0055)', () => {
+  function draft(fromAddress: string) {
+    mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+      ok(createFakeMembership({ role: 'MEMBER' })),
+    )
+    mockedCampaignRepo.findById.mockResolvedValue(
+      ok(
+        createFakeCrmEmailCampaign({ id: 'c1', status: 'DRAFT', fromAddress }),
+      ),
+    )
+    mockedCampaignRepo.setStatus.mockClear()
+    mockedSendEmail.mockClear()
+  }
+
+  it('refuses a From outside the verified domains before changing anything', async () => {
+    draft('mkt@acme.com')
+    mockedSendingDomains.findVerifiedByName.mockResolvedValue(ok(null))
+    const result = await CrmEmailCampaignService.send('u1', 'ws1', 'c1')
+    expectErr(result, 'SENDING_DOMAIN_NOT_VERIFIED')
+    if (!result.ok) {
+      expect(result.error.message).toContain('Ajustes › Domínios de e-mail')
+    }
+    expect(mockedCampaignRepo.setStatus).not.toHaveBeenCalled()
+    expect(mockedSendEmail).not.toHaveBeenCalled()
+  })
+
+  it('propagates a database error of the sender check', async () => {
+    draft('mkt@acme.com')
+    mockedSendingDomains.findVerifiedByName.mockResolvedValue(
+      err(databaseError()),
+    )
+    expectErr(
+      await CrmEmailCampaignService.send('u1', 'ws1', 'c1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('lets the platform address through without a verified domain', async () => {
+    draft('notificacoes@stratustelecom.com.br')
+    mockedSendingDomains.findVerifiedByName.mockResolvedValue(ok(null))
+    mockedRecipientRepo.listByCampaign.mockResolvedValue(ok([]))
+    // Passes the sender check and stops at the next rule.
+    expectErr(
+      await CrmEmailCampaignService.send('u1', 'ws1', 'c1'),
+      'CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS',
+    )
+  })
 })
 
 describe('CrmEmailCampaignService', () => {
