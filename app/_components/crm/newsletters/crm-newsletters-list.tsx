@@ -27,6 +27,7 @@ import {
 import type { CrmNewsletterDTO } from '@/src/schemas/crm-newsletter.schema'
 import { formatNewsletterDate } from './newsletter-labels'
 import { NewsletterSenderBadge } from './newsletter-sender-badge'
+import { NewsletterUsageSummary } from './newsletter-usage-summary'
 
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
@@ -79,6 +80,7 @@ function NewsletterCard({
         <NewsletterSenderBadge
           verified={newsletter.senderVerified}
           workspaceSlug={slug}
+          linked={false}
         />
         {newsletter.counts.pending > 0 ? (
           <span className='text-muted-foreground text-xs'>
@@ -159,6 +161,7 @@ export function CrmNewslettersList({
             Publicações com assinantes próprios, enviadas do domínio da sua
             empresa.
           </p>
+          <NewsletterUsageSummary workspaceId={workspaceId} className='mt-1' />
         </div>
         <Button onClick={() => setOpen(true)}>
           <SteelIcon icon={Add01Icon} /> Nova newsletter
