@@ -83,7 +83,7 @@ describe('/api/workspaces/[id]/servicedesk/monitor-alerts', () => {
       { remember: true },
       user.cookie,
     )
-    expect(invalid.status).toBe(400)
+    expect(invalid.status).toBe(422)
 
     const missingCi = await patchJson(
       api(workspace.id, `monitor-alerts/${alert.id}`),

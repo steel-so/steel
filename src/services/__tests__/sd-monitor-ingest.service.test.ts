@@ -126,8 +126,9 @@ beforeEach(() => {
       }),
     ),
   )
-  alerts.update.mockImplementation(async (id, { payload: _p, ...data }) =>
-    ok(createFakeSdMonitorAlert({ id, ...data })),
+  alerts.update.mockImplementation(
+    async (id, { payload: _p, occurrences: _o, ...data }) =>
+      ok(createFakeSdMonitorAlert({ id, ...data })),
   )
   automation.insertSystemMessage.mockResolvedValue(ok({ id: 'msg-1' }))
 })

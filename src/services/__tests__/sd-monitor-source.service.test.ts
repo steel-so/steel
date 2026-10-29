@@ -108,25 +108,33 @@ describe('SdMonitorSourceService.listAlerts', () => {
       await SdMonitorSourceService.listAlerts('u1', WS, {
         sourceId: 'src-1',
         limit: 5,
+        unmatched: false,
       }),
     )
     expect(list[0].subject).toBe('Sem resposta do agente no SRV-01')
     expect(alerts.list).toHaveBeenCalledWith(WS, {
       sourceId: 'src-1',
       limit: 5,
+      unmatched: false,
     })
   })
 
   it('refuses requesters and propagates database errors', async () => {
     actAs('requester')
     expectErr(
-      await SdMonitorSourceService.listAlerts('u1', WS, { limit: 20 }),
+      await SdMonitorSourceService.listAlerts('u1', WS, {
+        limit: 20,
+        unmatched: false,
+      }),
       'SD_NOT_AGENT',
     )
     actAs('agent')
     alerts.list.mockResolvedValue(err(databaseError()))
     expectErr(
-      await SdMonitorSourceService.listAlerts('u1', WS, { limit: 20 }),
+      await SdMonitorSourceService.listAlerts('u1', WS, {
+        limit: 20,
+        unmatched: false,
+      }),
       'DATABASE_ERROR',
     )
   })
