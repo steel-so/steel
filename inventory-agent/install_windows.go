@@ -12,7 +12,10 @@ import (
 	"strconv"
 )
 
-const windowsTaskName = "Steel Inventory Agent"
+const (
+	windowsTaskName       = "Steel Inventory Agent"
+	windowsUpdateTaskName = "Steel Inventory Agent Update"
+)
 
 func programDataDir() string {
 	if v := os.Getenv("ProgramData"); v != "" {
@@ -96,6 +99,18 @@ func installService(cfg *Config, configPath string, out io.Writer) error {
 		"/SC", "HOURLY", "/MO", strconv.Itoa(hours), "/RU", "SYSTEM", "/RL", "HIGHEST", "/F"); err != nil {
 		return err
 	}
+	// The report task runs `once`, so there is no long-lived process to update
+	// itself: a second daily task runs `update`. The new binary is picked up by
+	// the next `once` run, so no restart is needed.
+	if cfg.AutoUpdate {
+		updateCommand := fmt.Sprintf(`"%s" update --config "%s"`, target, configPath)
+		if err := runSchtasks("/Create", "/TN", windowsUpdateTaskName, "/TR", updateCommand,
+			"/SC", "DAILY", "/RU", "SYSTEM", "/RL", "HIGHEST", "/F"); err != nil {
+			return err
+		}
+	} else {
+		_ = runSchtasks("/Delete", "/TN", windowsUpdateTaskName, "/F")
+	}
 	if err := runSchtasks("/Run", "/TN", windowsTaskName); err != nil {
 		return err
 	}
@@ -105,6 +120,7 @@ func installService(cfg *Config, configPath string, out io.Writer) error {
 
 func uninstallService(out io.Writer) error {
 	_ = runSchtasks("/Delete", "/TN", windowsTaskName, "/F")
+	_ = runSchtasks("/Delete", "/TN", windowsUpdateTaskName, "/F")
 	for _, path := range []string{installDir(), programDataDir()} {
 		if err := os.RemoveAll(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
