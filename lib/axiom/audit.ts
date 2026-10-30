@@ -288,6 +288,12 @@ export type AuditEntity =
   // c1-sales-cadences
   | 'crm_cadence'
   | 'crm_cadence_enrollment'
+  // nov: crm-ops
+  | 'crm_duplicate'
+  | 'crm_merge'
+  | 'crm_meeting_page'
+  | 'crm_meeting_booking'
+  | 'crm_meeting_availability'
 
 export type AuditAction =
   | 'create'
@@ -371,6 +377,9 @@ export type AuditAction =
   | 'voice_ticket'
   // CRM newsletter (ADR 0054): CSV import of subscribers
   | 'import'
+  // crm-ops: duplicate merge and its undo
+  | 'merge'
+  | 'undo'
 
 type AuditOutcome = 'success' | 'failure'
 

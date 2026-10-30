@@ -23,6 +23,10 @@ import {
   type CrmCnpjEnrichmentJobPayload,
   type CrmCompetitorSyncJob,
   type CrmCompetitorSyncJobPayload,
+  type CrmDuplicatesJob,
+  type CrmDuplicatesJobPayload,
+  type CrmMeetingsJob,
+  type CrmMeetingsJobPayload,
   type CrmNewsletterAutomationJob,
   type CrmNewsletterAutomationJobPayload,
   type CrmNewsletterJob,
@@ -144,6 +148,8 @@ let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
 let crmCadencesQueue: Queue | null = null
+let crmDuplicatesQueue: Queue | null = null
+let crmMeetingsQueue: Queue | null = null
 let crmSocialPostsTickQueue: Queue | null = null
 let crmSocialPublishQueue: Queue | null = null
 let changelogQueue: Queue | null = null
@@ -924,6 +930,8 @@ export async function closeQueues(): Promise<void> {
     servicedeskIntegrationsQueue?.close(),
     crmTaskRemindersQueue?.close(),
     crmCadencesQueue?.close(),
+    crmDuplicatesQueue?.close(),
+    crmMeetingsQueue?.close(),
     servicedeskTaskRemindersQueue?.close(),
     steelAgentsQueue?.close(),
     searchReindexQueue?.close(),
@@ -955,6 +963,8 @@ export async function closeQueues(): Promise<void> {
   crmProposalExpiryQueue = null
   crmTaskRemindersQueue = null
   crmCadencesQueue = null
+  crmDuplicatesQueue = null
+  crmMeetingsQueue = null
   crmSocialPostsTickQueue = null
   crmSocialPublishQueue = null
   changelogQueue = null
@@ -983,6 +993,44 @@ export async function closeQueues(): Promise<void> {
   aiProactiveQueue = null
   whatsappArchiveQueue = null
   sendingDomainsQueue = null
+}
+
+/** Daily duplicate scan (crm-ops C7). */
+export function getCrmDuplicatesQueue(): Queue<
+  CrmDuplicatesJobPayload[CrmDuplicatesJob],
+  unknown,
+  CrmDuplicatesJob
+> {
+  if (!crmDuplicatesQueue) {
+    crmDuplicatesQueue = new Queue(QueueName.CrmDuplicates, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmDuplicatesQueue as Queue<
+    CrmDuplicatesJobPayload[CrmDuplicatesJob],
+    unknown,
+    CrmDuplicatesJob
+  >
+}
+
+/** Meeting reminders tick (crm-ops C5). */
+export function getCrmMeetingsQueue(): Queue<
+  CrmMeetingsJobPayload[CrmMeetingsJob],
+  unknown,
+  CrmMeetingsJob
+> {
+  if (!crmMeetingsQueue) {
+    crmMeetingsQueue = new Queue(QueueName.CrmMeetings, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmMeetingsQueue as Queue<
+    CrmMeetingsJobPayload[CrmMeetingsJob],
+    unknown,
+    CrmMeetingsJob
+  >
 }
 
 /** Sales cadences tick (c1-sales-cadences). */
@@ -1272,6 +1320,8 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.ServicedeskIntegrations]: getServicedeskIntegrationsQueue,
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
   [QueueName.CrmCadences]: getCrmCadencesQueue,
+  [QueueName.CrmDuplicates]: getCrmDuplicatesQueue,
+  [QueueName.CrmMeetings]: getCrmMeetingsQueue,
   [QueueName.ServicedeskTaskReminders]: getServicedeskTaskRemindersQueue,
   [QueueName.SteelAgents]: getSteelAgentsQueue,
   [QueueName.Notifications]: getNotificationsQueue,

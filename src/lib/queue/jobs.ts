@@ -32,6 +32,8 @@ export const QueueName = {
   ServicedeskIntegrations: 'servicedesk-integrations',
   CrmTaskReminders: 'crm-task-reminders',
   CrmCadences: 'crm-cadences',
+  CrmDuplicates: 'crm-duplicates',
+  CrmMeetings: 'crm-meetings',
   ServicedeskTaskReminders: 'servicedesk-task-reminders',
   SteelAgents: 'steel-agents',
   Notifications: 'notifications',
@@ -672,6 +674,36 @@ export type CrmCadencesJob =
 
 export type CrmCadencesJobPayload = {
   [CrmCadencesJob.RunTick]: Record<string, never>
+}
+
+/**
+ * Duplicate detection (crm-ops C7): a daily scan of every workspace with the
+ * CRM on, which refreshes the review queue and tells the admins once.
+ */
+export const CrmDuplicatesJob = {
+  RunScan: 'run-scan',
+} as const
+
+export type CrmDuplicatesJob =
+  (typeof CrmDuplicatesJob)[keyof typeof CrmDuplicatesJob]
+
+export type CrmDuplicatesJobPayload = {
+  [CrmDuplicatesJob.RunScan]: Record<string, never>
+}
+
+/**
+ * Meeting booking (crm-ops C5): every 5 minutes the worker sends the
+ * reminder e-mail of the bookings that start soon.
+ */
+export const CrmMeetingsJob = {
+  RunReminders: 'run-reminders',
+} as const
+
+export type CrmMeetingsJob =
+  (typeof CrmMeetingsJob)[keyof typeof CrmMeetingsJob]
+
+export type CrmMeetingsJobPayload = {
+  [CrmMeetingsJob.RunReminders]: Record<string, never>
 }
 
 /**

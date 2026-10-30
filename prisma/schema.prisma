@@ -641,6 +641,11 @@ model Workspace {
   sendingDomains            WorkspaceSendingDomain[]
   crmNewsletters            CrmNewsletter[]
   crmCadences               CrmCadence[]
+  crmDuplicateCandidates    CrmDuplicateCandidate[]
+  crmMergeLogs              CrmMergeLog[]
+  crmMeetingPages           CrmMeetingPage[]
+  crmMeetingAvailabilities  CrmMeetingAvailability[]
+  crmMeetingBookings        CrmMeetingBooking[]
   satisfactionSurveyConfigs SatisfactionSurveyConfig[]
   satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
@@ -3509,6 +3514,9 @@ model CrmForm {
   /// Newsletter the form subscribes to when the visitor ticks the consent
   /// box (ADR 0054). Null = the form does not subscribe anyone.
   newsletterId    String?       @map("newsletter_id")
+  /// Booking page offered right after the submission (crm-ops C5). Null = none.
+  /// Plain id (no FK): a removed page simply stops being offered.
+  bookingPageId   String?       @map("booking_page_id")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   deletedAt       DateTime?     @map("deleted_at")
@@ -5599,6 +5607,8 @@ enum NotificationKind {
   AGENT_SIMULATION_FINISHED
   /// nov ai-crm-followups: a bulk CNPJ enrichment run ended.
   CRM_CNPJ_ENRICHMENT_FINISHED
+  CRM_DUPLICATES_FOUND
+  CRM_MEETING_BOOKED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -12001,4 +12011,180 @@ model SdInventoryAgentRelease {
   @@unique([version, os, arch])
   @@index([os, arch, active, publishedAt])
   @@map("sd_inventory_agent_releases")
+}
+
+// nov: crm-ops
+
+enum CrmDuplicateEntity {
+  PERSON
+  COMPANY
+}
+
+enum CrmDuplicateStatus {
+  PENDING
+  MERGED
+  DISMISSED
+}
+
+/// A pair of CRM records the detector believes are the same entity. The pair
+/// is stored once, ordered (`leftId` < `rightId`), so a rescan only refreshes
+/// it; a DISMISSED pair is never proposed again.
+model CrmDuplicateCandidate {
+  id           String             @id @default(cuid())
+  workspaceId  String             @map("workspace_id")
+  entity       CrmDuplicateEntity
+  leftId       String             @map("left_id")
+  rightId      String             @map("right_id")
+  /// 0-100. 100 = same CNPJ / e-mail, lower for fuzzy name only.
+  score        Int
+  /// Machine reasons: `email`, `phone`, `name`, `cnpj`, `domain`.
+  reasons      String[]           @default([])
+  status       CrmDuplicateStatus @default(PENDING)
+  detectedAt   DateTime           @default(now()) @map("detected_at")
+  lastSeenAt   DateTime           @default(now()) @map("last_seen_at")
+  /// Set once the owners were told about the pair (one notice per scan).
+  notifiedAt   DateTime?          @map("notified_at")
+  resolvedAt   DateTime?          @map("resolved_at")
+  resolvedById String?            @map("resolved_by_id")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, entity, leftId, rightId])
+  @@index([workspaceId, entity, status, score])
+  @@map("crm_duplicate_candidates")
+}
+
+/// One merge, with everything needed to undo it inside the window: the
+/// archived record, what the survivor looked like and which child rows moved.
+model CrmMergeLog {
+  id            String             @id @default(cuid())
+  workspaceId   String             @map("workspace_id")
+  entity        CrmDuplicateEntity
+  survivorId    String             @map("survivor_id")
+  mergedId      String             @map("merged_id")
+  candidateId   String?            @map("candidate_id")
+  performedById String             @map("performed_by_id")
+  snapshot      Json
+  createdAt     DateTime           @default(now()) @map("created_at")
+  undoUntil     DateTime           @map("undo_until")
+  undoneAt      DateTime?          @map("undone_at")
+  undoneById    String?            @map("undone_by_id")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([survivorId])
+  @@index([mergedId])
+  @@map("crm_merge_logs")
+}
+
+enum CrmMeetingBookingStatus {
+  CONFIRMED
+  CANCELED
+}
+
+/// Public booking page (`/m/<slug>`): who can be booked, for how long and how
+/// far ahead. With more than one host the page does round-robin.
+model CrmMeetingPage {
+  id               String               @id @default(cuid())
+  workspaceId      String               @map("workspace_id")
+  slug             String               @unique
+  title            String
+  description      String?
+  durationMinutes  Int                  @default(30) @map("duration_minutes")
+  bufferMinutes    Int                  @default(0) @map("buffer_minutes")
+  minNoticeMinutes Int                  @default(120) @map("min_notice_minutes")
+  maxDaysAhead     Int                  @default(30) @map("max_days_ahead")
+  slotStepMinutes  Int                  @default(30) @map("slot_step_minutes")
+  /// IANA zone the page is shown in by default.
+  timezone         String               @default("America/Sao_Paulo")
+  format           CrmLeadMeetingFormat @default(ONLINE)
+  /// Video-call link or address, sent in the confirmation.
+  location         String?
+  /// Minutes before the start the reminder e-mail goes out (0 = no reminder).
+  reminderMinutes  Int                  @default(60) @map("reminder_minutes")
+  /// Source stamped on the lead created by a booking.
+  leadSource       String               @default("Agendamento de reunião") @map("lead_source")
+  active           Boolean              @default(true)
+  createdById      String               @map("created_by_id")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  deletedAt        DateTime?            @map("deleted_at")
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  hosts     CrmMeetingHost[]
+  bookings  CrmMeetingBooking[]
+
+  @@index([workspaceId, deletedAt])
+  @@map("crm_meeting_pages")
+}
+
+model CrmMeetingHost {
+  id             String    @id @default(cuid())
+  pageId         String    @map("page_id")
+  userId         String    @map("user_id")
+  position       Int       @default(0)
+  /// Round-robin cursor: the host booked longest ago goes first.
+  lastAssignedAt DateTime? @map("last_assigned_at")
+
+  page CrmMeetingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, userId])
+  @@index([userId])
+  @@map("crm_meeting_hosts")
+}
+
+/// Weekly working hours of a seller (and the optional secret iCal feed of
+/// their Google/Outlook calendar, encrypted) in the seller's own time zone.
+model CrmMeetingAvailability {
+  id           String    @id @default(cuid())
+  workspaceId  String    @map("workspace_id")
+  userId       String    @map("user_id")
+  timezone     String    @default("America/Sao_Paulo")
+  /// `{ "1": [{ "start": "09:00", "end": "12:00" }], ... }` (0 = Sunday).
+  weeklyHours  Json      @default("{}") @map("weekly_hours")
+  /// Encrypted secret iCal address (CONNECTION_SECRETS envelope).
+  icsUrlEnc    String?   @map("ics_url_enc")
+  icsCheckedAt DateTime? @map("ics_checked_at")
+  icsLastError String?   @map("ics_last_error")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("crm_meeting_availabilities")
+}
+
+model CrmMeetingBooking {
+  id                 String                  @id @default(cuid())
+  workspaceId        String                  @map("workspace_id")
+  pageId             String                  @map("page_id")
+  hostUserId         String                  @map("host_user_id")
+  startsAt           DateTime                @map("starts_at")
+  endsAt             DateTime                @map("ends_at")
+  status             CrmMeetingBookingStatus @default(CONFIRMED)
+  guestName          String                  @map("guest_name")
+  guestEmail         String                  @map("guest_email")
+  guestPhone         String?                 @map("guest_phone")
+  guestNotes         String?                 @map("guest_notes")
+  guestTimezone      String                  @map("guest_timezone")
+  leadId             String?                 @map("lead_id")
+  calendarEventId    String?                 @map("calendar_event_id")
+  /// Secret in the cancel/reschedule link the guest receives.
+  manageToken        String                  @unique @map("manage_token")
+  confirmationSentAt DateTime?               @map("confirmation_sent_at")
+  reminderSentAt     DateTime?               @map("reminder_sent_at")
+  canceledAt         DateTime?               @map("canceled_at")
+  canceledBy         String?                 @map("canceled_by")
+  createdAt          DateTime                @default(now()) @map("created_at")
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  page      CrmMeetingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([hostUserId, startsAt])
+  @@index([workspaceId, startsAt])
+  @@index([pageId])
+  @@index([status, startsAt])
+  @@map("crm_meeting_bookings")
 }

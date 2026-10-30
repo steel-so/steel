@@ -1457,6 +1457,22 @@ export const ERROR_CODES = {
     code: 'STEEL_AGENT_SIM_GATE_INVALID',
     status: 422,
   },
+  // nov: crm-ops (C7 duplicates, C5 meetings)
+  CRM_DUPLICATE_NOT_FOUND: { code: 'CRM_DUPLICATE_NOT_FOUND', status: 404 },
+  CRM_DUPLICATE_INVALID: { code: 'CRM_DUPLICATE_INVALID', status: 422 },
+  CRM_MERGE_NOT_FOUND: { code: 'CRM_MERGE_NOT_FOUND', status: 404 },
+  CRM_MERGE_UNDO_EXPIRED: { code: 'CRM_MERGE_UNDO_EXPIRED', status: 409 },
+  CRM_MEETING_PAGE_NOT_FOUND: {
+    code: 'CRM_MEETING_PAGE_NOT_FOUND',
+    status: 404,
+  },
+  CRM_MEETING_BOOKING_NOT_FOUND: {
+    code: 'CRM_MEETING_BOOKING_NOT_FOUND',
+    status: 404,
+  },
+  CRM_MEETING_SLOT_TAKEN: { code: 'CRM_MEETING_SLOT_TAKEN', status: 409 },
+  CRM_MEETING_INVALID: { code: 'CRM_MEETING_INVALID', status: 422 },
+  CRM_MEETING_SLUG_TAKEN: { code: 'CRM_MEETING_SLUG_TAKEN', status: 409 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES
