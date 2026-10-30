@@ -1,11 +1,13 @@
 import type { CrmCadenceStep } from '@prisma/client'
 import { logger } from '@/lib/axiom/logger'
+import { BETTER_AUTH_URL } from '@/lib/env/server'
 import {
   cadenceDelayMs,
   cadenceTextToHtml,
   leadPhoneToWaId,
   renderCadenceText,
 } from '@/src/lib/crm-cadence/merge'
+import { addCadenceTracking } from '@/src/lib/crm-cadence/tracking'
 import {
   isWithinSendWindow,
   nextSendWindowOpen,
@@ -31,9 +33,17 @@ import { CrmTaskRepository } from '@/src/repositories/crm-task.repository'
  * one transaction. A step that cannot go out because of the lead (no e-mail,
  * opted out) is SKIPPED; one that fails for a lasting reason is FAILED; both
  * advance the cadence. Transient problems (rate limit, connection down)
- * keep the position and retry later. A crash between the send and the
- * bookkeeping makes the stale claim run the same step again, so a duplicate
- * message is possible in that rare case.
+ * keep the position and retry later.
+ *
+ * No duplicate sends: before a message leaves, the step intent is recorded as
+ * a PENDING run under a unique key (`<enrollmentId>:<position>`) and the
+ * provider id is stored the moment the send returns. When a crash makes the
+ * stale claim reach the same step again, that row says how far the previous
+ * attempt got: provider id present means the message went out (settle it, do
+ * not send); no id on an e-mail step means the send is repeated under the same
+ * provider idempotency key (Resend answers with the first message); no id on a
+ * WhatsApp step cannot be told apart from "never sent", so it is settled as
+ * FAILED instead of risking a second message.
  */
 
 export const CADENCE_TICK_LIMIT = 200
@@ -58,6 +68,8 @@ type StepOutcome =
       status: 'SENT' | 'SKIPPED' | 'FAILED'
       detail: string
       providerMessageId?: string
+      /** The intent row to settle (steps that send a message). */
+      runId?: string
     }
   | { kind: 'retry'; delayMs: number; reason: string }
 
@@ -75,6 +87,127 @@ const failed = (detail: string): StepOutcome => ({
   status: 'FAILED',
   detail,
 })
+
+/** Resend keeps an idempotency key for 24 h; stay well inside it. */
+export const CADENCE_REDELIVERY_WINDOW_MS = 20 * 60 * 60 * 1000
+export const CADENCE_INTERRUPTED_DETAIL =
+  'O envio foi interrompido antes da confirmação e não foi repetido, para não duplicar a mensagem'
+
+type Intent =
+  | { kind: 'go'; runId: string; existed: boolean }
+  | { kind: 'settled'; outcome: StepOutcome }
+
+/**
+ * Records the intent to send (see the header comment) and says what to do:
+ * send, or an outcome already known from the previous attempt.
+ */
+async function beginSend(
+  enrollment: Enrollment,
+  step: CrmCadenceStep,
+  destination: string,
+  now: Date,
+  canRepeat: boolean,
+): Promise<Intent> {
+  const began = await CrmCadenceEnrollmentRepository.beginRun({
+    workspaceId: enrollment.workspaceId,
+    cadenceId: enrollment.cadenceId,
+    enrollmentId: enrollment.id,
+    stepId: step.id,
+    position: step.position,
+    type: step.type,
+    idempotencyKey: `${enrollment.id}:${step.position}`,
+  })
+  if (!began.ok) {
+    return {
+      kind: 'settled',
+      outcome: {
+        kind: 'retry',
+        delayMs: CADENCE_RETRY_MS,
+        reason: began.error.code,
+      },
+    }
+  }
+  const { run, existed } = began.value
+  if (!existed) return { kind: 'go', runId: run.id, existed }
+
+  if (run.status !== 'PENDING') {
+    return {
+      kind: 'settled',
+      outcome: {
+        kind: 'done',
+        status: run.status,
+        detail: run.detail ?? destination,
+        providerMessageId: run.providerMessageId ?? undefined,
+        runId: run.id,
+      },
+    }
+  }
+  if (run.providerMessageId) {
+    logger.warn('crm.cadence.send_reconciled', {
+      component: 'CrmCadenceRunService',
+      enrollmentId: enrollment.id,
+      position: step.position,
+    })
+    return {
+      kind: 'settled',
+      outcome: {
+        kind: 'done',
+        status: 'SENT',
+        detail: destination,
+        providerMessageId: run.providerMessageId,
+        runId: run.id,
+      },
+    }
+  }
+  if (
+    canRepeat &&
+    now.getTime() - run.createdAt.getTime() < CADENCE_REDELIVERY_WINDOW_MS
+  ) {
+    return { kind: 'go', runId: run.id, existed }
+  }
+  logger.warn('crm.cadence.send_interrupted', {
+    component: 'CrmCadenceRunService',
+    enrollmentId: enrollment.id,
+    position: step.position,
+  })
+  return {
+    kind: 'settled',
+    outcome: {
+      kind: 'done',
+      status: 'FAILED',
+      detail: CADENCE_INTERRUPTED_DETAIL,
+      runId: run.id,
+    },
+  }
+}
+
+/** A transient failure proves nothing left: the intent goes away so the retry starts clean. */
+async function dropIntent(intent: { runId: string; existed: boolean }) {
+  if (intent.existed) return
+  const dropped = await CrmCadenceEnrollmentRepository.discardRun(intent.runId)
+  if (!dropped.ok) {
+    logger.warn('crm.cadence.intent_discard_failed', {
+      component: 'CrmCadenceRunService',
+      runId: intent.runId,
+      reason: dropped.error.code,
+    })
+  }
+}
+
+/** Stores the provider id right after the send; a failure here only widens the crash window. */
+async function rememberSent(runId: string, providerMessageId: string) {
+  const stored = await CrmCadenceEnrollmentRepository.markRunSent(
+    runId,
+    providerMessageId,
+  )
+  if (!stored.ok) {
+    logger.warn('crm.cadence.provider_id_store_failed', {
+      component: 'CrmCadenceRunService',
+      runId,
+      reason: stored.error.code,
+    })
+  }
+}
 
 const isTransient = (message: string) =>
   /rate.?limit|429|too many|timeout|timed out|ECONN|ETIMEDOUT|fetch failed|socket|5\d\d|internal server/i.test(
@@ -95,6 +228,7 @@ function mergeContext(enrollment: Enrollment) {
 async function runEmailStep(
   enrollment: Enrollment,
   step: CrmCadenceStep,
+  now: Date,
 ): Promise<StepOutcome> {
   const { cadence, lead } = enrollment
   const to = lead.emails.map((email) => email.trim()).find(isEmailLike)
@@ -130,37 +264,51 @@ async function runEmailStep(
     return failed(sender.error.message)
   }
 
+  const intent = await beginSend(enrollment, step, to, now, true)
+  if (intent.kind === 'settled') return intent.outcome
+
   const context = mergeContext(enrollment)
   const subject = renderCadenceText(step.subject ?? '', context)
   const text = renderCadenceText(step.body, context)
   const footer =
     'Se não quiser receber mais mensagens, é só responder este e-mail avisando.'
+  const html = `${cadenceTextToHtml(text)}<p style="margin:24px 0 0;color:#6b7280;font-size:12px">${footer}</p>`
+  let sentId: string
   try {
-    const sent = await sendEmail({
-      from: cadence.emailFrom,
-      to,
-      subject,
-      html: `${cadenceTextToHtml(text)}<p style="margin:24px 0 0;color:#6b7280;font-size:12px">${footer}</p>`,
-      text: `${text}\n\n--\n${footer}`,
-      replyTo: cadence.emailReplyTo ?? lead.owner?.email ?? undefined,
-    })
-    return {
-      kind: 'done',
-      status: 'SENT',
-      providerMessageId: sent.id,
-      detail: to,
-    }
+    const sent = await sendEmail(
+      {
+        from: cadence.emailFrom,
+        to,
+        subject,
+        html: addCadenceTracking(html, intent.runId, BETTER_AUTH_URL),
+        text: `${text}\n\n--\n${footer}`,
+        replyTo: cadence.emailReplyTo ?? lead.owner?.email ?? undefined,
+      },
+      { idempotencyKey: `cadence-${enrollment.id}-${step.position}` },
+    )
+    sentId = sent.id
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao enviar'
-    return isTransient(message)
-      ? { kind: 'retry', delayMs: CADENCE_RETRY_MS, reason: message }
-      : failed(message)
+    if (isTransient(message)) {
+      await dropIntent(intent)
+      return { kind: 'retry', delayMs: CADENCE_RETRY_MS, reason: message }
+    }
+    return { ...failed(message), runId: intent.runId }
+  }
+  await rememberSent(intent.runId, sentId)
+  return {
+    kind: 'done',
+    status: 'SENT',
+    providerMessageId: sentId,
+    detail: to,
+    runId: intent.runId,
   }
 }
 
 async function runWhatsAppStep(
   enrollment: Enrollment,
   step: CrmCadenceStep,
+  now: Date,
 ): Promise<StepOutcome> {
   const { cadence, lead, workspaceId } = enrollment
   const waId = lead.phones
@@ -207,13 +355,16 @@ async function runWhatsAppStep(
 
   const context = mergeContext(enrollment)
   const cost = { source: 'CRM_CAMPAIGN' } as const
-  let sent: Result<{ providerMessageId: string }>
-  if (connection.value.provider === 'META') {
+  const isMeta = connection.value.provider === 'META'
+  let template: Awaited<
+    ReturnType<typeof CrmCampaignLookupRepository.findWhatsAppTemplate>
+  > | null = null
+  if (isMeta) {
     // Outside the 24 h window Meta only delivers approved templates.
     if (!step.whatsappTemplateId) {
       return failed('Na conexão da Meta o passo precisa de um template')
     }
-    const template = await CrmCampaignLookupRepository.findWhatsAppTemplate(
+    template = await CrmCampaignLookupRepository.findWhatsAppTemplate(
       workspaceId,
       connection.value.id,
       step.whatsappTemplateId,
@@ -228,6 +379,15 @@ async function runWhatsAppStep(
     if (template.value?.status !== 'APPROVED') {
       return failed('O template da Meta não está aprovado')
     }
+  }
+
+  // WhatsApp has no provider idempotency: an interrupted attempt is never repeated.
+  const intent = await beginSend(enrollment, step, waId, now, false)
+  if (intent.kind === 'settled') return intent.outcome
+
+  let sent: Result<{ providerMessageId: string }>
+  if (template?.ok && template.value) {
+    const approved = template.value
     const variables = step.templateVariables.map((value) =>
       renderCadenceText(value, context),
     )
@@ -244,12 +404,11 @@ async function runWhatsAppStep(
       connection.value,
       {
         to: waId,
-        templateName: template.value.name,
-        language: template.value.language,
-        components: applyTemplateSendExtras(template.value, components)
-          .components,
+        templateName: approved.name,
+        language: approved.language,
+        components: applyTemplateSendExtras(approved, components).components,
       },
-      { cost: { ...cost, templateCategory: template.value.category } },
+      { cost: { ...cost, templateCategory: approved.category } },
     )
   } else {
     sent = await WhatsAppSend.text(
@@ -260,15 +419,23 @@ async function runWhatsAppStep(
   }
 
   if (!sent.ok) {
-    return sent.error.code === 'RATE_LIMITED' || isTransient(sent.error.message)
-      ? { kind: 'retry', delayMs: CADENCE_RETRY_MS, reason: sent.error.message }
-      : failed(sent.error.message)
+    if (sent.error.code === 'RATE_LIMITED' || isTransient(sent.error.message)) {
+      await dropIntent(intent)
+      return {
+        kind: 'retry',
+        delayMs: CADENCE_RETRY_MS,
+        reason: sent.error.message,
+      }
+    }
+    return { ...failed(sent.error.message), runId: intent.runId }
   }
+  await rememberSent(intent.runId, sent.value.providerMessageId)
   return {
     kind: 'done',
     status: 'SENT',
     providerMessageId: sent.value.providerMessageId,
     detail: waId,
+    runId: intent.runId,
   }
 }
 
@@ -382,9 +549,9 @@ export const CrmCadenceRunService = {
 
     const outcome =
       step.type === 'EMAIL'
-        ? await runEmailStep(enrollment, step)
+        ? await runEmailStep(enrollment, step, now)
         : step.type === 'WHATSAPP'
-          ? await runWhatsAppStep(enrollment, step)
+          ? await runWhatsAppStep(enrollment, step, now)
           : await runTaskStep(enrollment, step, now)
 
     if (outcome.kind === 'retry') {
@@ -414,6 +581,7 @@ export const CrmCadenceRunService = {
       status: outcome.status,
       detail: outcome.detail,
       providerMessageId: outcome.providerMessageId,
+      runId: outcome.runId,
       next: following
         ? {
             position: following.position,
