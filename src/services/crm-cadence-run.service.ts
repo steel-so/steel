@@ -75,6 +75,13 @@ type StepOutcome =
 
 type Enrollment = CrmCadenceEnrollmentForRun
 
+const failedRun = (detail: string, runId: string): StepOutcome => ({
+  kind: 'done',
+  status: 'FAILED',
+  detail,
+  runId,
+})
+
 const isEmailLike = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
 const skipped = (detail: string): StepOutcome => ({
@@ -293,7 +300,7 @@ async function runEmailStep(
       await dropIntent(intent)
       return { kind: 'retry', delayMs: CADENCE_RETRY_MS, reason: message }
     }
-    return { ...failed(message), runId: intent.runId }
+    return failedRun(message, intent.runId)
   }
   await rememberSent(intent.runId, sentId)
   return {
@@ -427,7 +434,7 @@ async function runWhatsAppStep(
         reason: sent.error.message,
       }
     }
-    return { ...failed(sent.error.message), runId: intent.runId }
+    return failedRun(sent.error.message, intent.runId)
   }
   await rememberSent(intent.runId, sent.value.providerMessageId)
   return {

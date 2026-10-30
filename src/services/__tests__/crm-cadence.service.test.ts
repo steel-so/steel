@@ -67,6 +67,7 @@ const createDto = (overrides = {}) => ({
   name: 'Outbound',
   emailFrom: 'vendas@mail.example.com',
   stopOnReply: true,
+  stopOnClick: false,
   weekdaysOnly: true,
   steps: [emailStep],
   ...overrides,

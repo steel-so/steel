@@ -50,9 +50,20 @@ describe('crm-cadence mapper', () => {
       status: 'SENT',
       detail: 'ok',
       providerMessageId: null,
+      idempotencyKey: null,
+      openedAt: now,
+      clickedAt: null,
+      openCount: 2,
+      clickCount: 0,
       createdAt: now,
     })
     expect(run.createdAt).toBe(now.toISOString())
+    expect(run).toMatchObject({
+      openedAt: now.toISOString(),
+      clickedAt: null,
+      openCount: 2,
+      clickCount: 0,
+    })
 
     const enrollment = createFakeCrmCadenceEnrollment({
       nextRunAt: now,

@@ -18,6 +18,7 @@ import {
 const fields = {
   name: 'Outbound',
   stopOnReply: true,
+  stopOnClick: false,
   weekdaysOnly: true,
 }
 const step = (
