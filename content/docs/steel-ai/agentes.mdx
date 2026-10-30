@@ -148,6 +148,32 @@ Só uma versão fica em avaliação por vez. A avaliação gasta a cota de IA do
 workspace, como qualquer conjunto de teste. Sem conjunto configurado, as edições
 são publicadas na hora.
 
+Quando a avaliação termina, o **responsável pelo agente** (e quem fez a edição)
+recebe uma notificação dizendo se a versão foi publicada, entrou em teste A/B ou
+foi reprovada. Clicar nela abre a aba **Versões** do agente.
+
+### Trava por simulação
+
+Além da avaliação, a versão pode ter de passar nos **cenários de simulação** do
+agente (veja [Simular conversas com personas](#simular-conversas-com-personas)).
+Em **Configuração › Versões e avaliação**, ligue **Exigir também as simulações**
+e escolha a **aprovação mínima nas simulações** (80% por padrão). A trava vem
+**desligada** e só pode ser ligada depois que o agente tiver ao menos uma
+simulação criada por você.
+
+Com ela ligada, ao salvar uma edição:
+
+1. A versão passa primeiro na avaliação (se houver conjunto configurado).
+2. Depois o Steel repete os cenários da **última simulação** do agente, mas com
+   as instruções e as ferramentas da **versão nova**. As alterações continuam só
+   simuladas: nada é gravado nem enviado.
+3. A versão só é **Publicada** (ou entra em teste A/B) se a avaliação **e** as
+   simulações atingirem o mínimo. Senão fica **Reprovada**, com o motivo.
+
+A aba **Versões** mostra o resultado de cada uma ("Simulação: 4 de 5
+cenários"). Enquanto a trava roda, o agente continua na versão publicada e as
+simulações manuais ficam bloqueadas (uma por vez).
+
 ### Teste A/B com tráfego real
 
 Ao salvar uma edição, ligue **Testar em paralelo (A/B)** e escolha a parcela das
@@ -197,6 +223,11 @@ simulada**: nada é gravado, enviado ou mandado para aprovação. Ao final, o
 avaliador dá uma **nota de 0 a 100** e confere cada critério com uma evidência
 tirada da conversa. O cenário **passa** com a nota mínima **e** todos os
 critérios atendidos; do contrário fica **Reprovado**.
+
+Quando uma simulação termina, o responsável pelo agente e quem a iniciou recebem
+uma notificação com o placar (ou o motivo, se ela não pôde rodar) e o link para a
+página da simulação. As simulações que fazem parte da trava de uma versão não
+geram esse aviso: o resultado vai junto da notificação da versão.
 
 A página da simulação mostra o placar, a conversa completa, as ferramentas que
 o agente usou (consultas e alterações simuladas), o resultado de cada critério e

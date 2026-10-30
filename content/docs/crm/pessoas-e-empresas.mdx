@@ -35,9 +35,49 @@ base** na lista de empresas. A consulta roda em segundo plano, cerca de uma
 empresa por segundo, e o andamento aparece na própria janela. Só uma consulta
 roda por vez.
 
+Mudou de ideia? **Cancelar**, na linha da consulta em andamento, pede para o
+Steel parar. Ele termina a empresa que está consultando e para; o que já foi
+consultado fica guardado, e a consulta aparece como **Cancelado**. Quando a
+consulta termina (concluída, cancelada ou com falha), quem a iniciou recebe uma
+notificação com o resumo: quantas empresas foram consultadas, atualizadas, sem
+registro na Receita ou com falha.
+
 <Callout type='nota'>
   Os dados vêm da base pública da Receita. Dos sócios, o Steel guarda apenas
   nome, qualificação e data de entrada, nunca o CPF.
+</Callout>
+
+### Buscar com uma pergunta
+
+Acima da lista de **Pessoas** e de **Empresas** há a mesma barra de pergunta das
+oportunidades. Escreva em português e clique em **Perguntar**; a lista mostra só
+o que atende e, logo abaixo, como o Steel entendeu a pergunta. **Limpar** volta
+à lista completa.
+
+Em **Pessoas**, por exemplo:
+
+- "diretores com e-mail da Acme"
+- "pessoas sem empresa vinculada"
+- "contatos criados este mês com telefone"
+
+Dá para filtrar por e-mail e telefone, empresa (com ou sem, ou um trecho do
+nome), cargo, cidade, nome e por quando a pessoa foi criada ou atualizada.
+
+Em **Empresas**, por exemplo:
+
+- "empresas de alimentos com mais de 50 funcionários"
+- "minhas empresas do perfil ideal sem CNPJ"
+- "empresas ainda não consultadas na Receita"
+
+Dá para filtrar por perfil ideal (ICP), número de funcionários, ARR, CNPJ, se a
+empresa já foi consultada na Receita, **ramo de atividade** (buscado no CNAE da
+Receita), domínio, responsável da conta e datas. Veja
+[Enriquecimento pelo CNPJ](#enriquecimento-pelo-cnpj).
+
+<Callout type='nota'>
+  Como nas oportunidades, a IA recebe só o texto da pergunta e a data de hoje,
+  nunca os dados do CRM, e a busca vê só o que você já pode ver. Cada pergunta
+  consome a cota mensal da Steel IA.
 </Callout>
 
 ## Atividade
