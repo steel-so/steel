@@ -18,7 +18,9 @@ Comunicação > Configurações > Conexões. Decisão: ADR 0030.
    (Verificação de empresa concluída).
 5. Webhook do WhatsApp apontando para `/api/whatsapp/webhook/meta`, com os
    campos `messages`, `message_template_status_update` e
-   `message_template_quality_update`.
+   `message_template_quality_update`. Para acompanhar o status dos formulários
+   (WhatsApp Flows), assine também o campo `flows`
+   ([passo a passo](./whatsapp-flows-webhook.md)).
 
 ## Variáveis
 
