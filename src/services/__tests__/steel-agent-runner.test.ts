@@ -58,6 +58,9 @@ vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/src/services/ai-usage.service')
 vi.mock('@/src/services/steel-agent-notifications')
 
+vi.mock('@/src/repositories/steel-agent-governance.repository')
+vi.mock('@/src/repositories/steel-mcp-server.repository')
+
 import { resolveToolAccess } from '@/src/lib/ai/tools/registry'
 import { currentSteelAgentContext } from '@/src/lib/steel-agents/run-context'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
@@ -66,7 +69,9 @@ import {
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
 import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
+import { SteelMcpServerRepository } from '@/src/repositories/steel-mcp-server.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import {
@@ -256,6 +261,8 @@ function lastUpdate() {
 }
 
 beforeEach(() => {
+  vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(ok(null))
+  vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(ok([]))
   registry.tools = [readTool, createTool, deleteTool]
   readExecute.mockResolvedValue(
     ok({ data: [{ id: 't1' }], summary: '1 chamado' }),

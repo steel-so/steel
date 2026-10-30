@@ -15,6 +15,9 @@ export const GUARDRAIL_RULES = [
   'DELETE_NEEDS_APPROVAL',
   'ROUND_LIMIT',
   'TOOL_NOT_ALLOWED',
+  'AUTO_ROLE_RESTRICTED',
+  'DELEGATION_REFUSED',
+  'KILL_SWITCH',
 ] as const
 
 export type GuardrailRule = (typeof GUARDRAIL_RULES)[number]
@@ -28,6 +31,9 @@ export const GUARDRAIL_RULE_LABEL: Record<GuardrailRule, string> = {
   DELETE_NEEDS_APPROVAL: 'Exclusão sempre exige aprovação',
   ROUND_LIMIT: 'Limite de etapas da execução atingido',
   TOOL_NOT_ALLOWED: 'Ferramenta fora da lista do agente',
+  AUTO_ROLE_RESTRICTED: 'Perfil do responsável não libera o modo automático',
+  DELEGATION_REFUSED: 'Delegação recusada',
+  KILL_SWITCH: 'Agentes pausados por emergência',
 }
 
 export const PII_KIND_LABEL: Record<(typeof PII_KINDS)[number], string> = {

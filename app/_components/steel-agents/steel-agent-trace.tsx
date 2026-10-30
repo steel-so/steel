@@ -6,6 +6,8 @@ import {
   Shield01Icon,
   Wrench01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -49,6 +51,7 @@ function TraceItem({
   timezone: string
 }) {
   const failed = entry.status === 'FAILED'
+  const slug = useParams<{ 'workspace-slug'?: string }>()?.['workspace-slug']
   return (
     <li className='relative' data-kind={entry.kind}>
       <span
@@ -87,6 +90,15 @@ function TraceItem({
         >
           {entry.body}
         </p>
+      ) : null}
+      {entry.child && slug ? (
+        <Link
+          href={`/${slug}/ai/agents/${entry.child.agentId}/runs/${entry.child.runId}`}
+          className='mt-0.5 inline-block text-primary text-xs underline'
+        >
+          Ver a execução
+          {entry.child.agentName ? ` de ${entry.child.agentName}` : ' delegada'}
+        </Link>
       ) : null}
       {entry.kind === 'MODEL' &&
       (entry.toolCalls.length > 0 || entry.tokens) ? (

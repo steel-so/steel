@@ -72,6 +72,8 @@ export interface SteelAgentDTO {
   lastRunAt: string | null
   nextRunAt: string | null
   tools: SteelAgentToolDTO[]
+  /** A7: agents this one may delegate to (as a tool). */
+  delegateAgentIds: string[]
   /** Most recent run, if any. */
   lastRun: SteelAgentRunSummaryDTO | null
   /** A2: eval set that gates new versions (null = edits publish at once). */
@@ -167,6 +169,12 @@ export interface SteelAgentVersionListDTO {
   simGateMinPassRate: number
   /** Whether the caller can publish, restore and stop experiments. */
   canManage: boolean
+  /** A8: whether the caller may create agents (creators policy or RBAC). */
+  canCreate: boolean
+  /** A8: AUTO is restricted by role in this workspace. */
+  autoRestricted: boolean
+  /** A8: tool names the caller's role may set to AUTO (null = no limit). */
+  autoAllowedTools: string[] | null
 }
 
 /** A registry tool the editor can offer (enabled modules only). */
@@ -176,6 +184,8 @@ export interface SteelAgentToolCatalogItemDTO {
   description: string
   module: AiModuleDTO | null
   kind: 'READ' | AiActionKindDTO
+  /** A8: tool of an external MCP server. */
+  external?: boolean
 }
 
 export interface SteelAgentEventDTO {
@@ -216,6 +226,12 @@ export interface SteelAgentRunDTO {
   rerunOfId: string | null
   /** A2: version that served the run (null for tests and older runs). */
   versionId: string | null
+  /** A7: run that delegated this one (null = not a delegated run). */
+  parentRunId: string | null
+  /** A7: delegation depth (0 = root). */
+  depth: number
+  /** A7: cost of delegated runs, already included in `costUsd`. */
+  delegatedCostUsd: number
   createdAt: string
 }
 

@@ -42,6 +42,8 @@ vi.mock('@/src/services/ai-pending-action.service', () => ({
   executeClaimedAction: vi.fn(),
 }))
 
+vi.mock('@/src/repositories/steel-agent-governance.repository')
+
 import { resolveToolAccess } from '@/src/lib/ai/tools/registry'
 import { enqueueSteelAgentRun } from '@/src/lib/steel-agents/enqueue'
 import { currentSteelAgentContext } from '@/src/lib/steel-agents/run-context'
@@ -50,6 +52,7 @@ import {
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
 import {
   assertPreviewUnchanged,
   executeClaimedAction,
@@ -145,6 +148,7 @@ function setup(
 }
 
 beforeEach(() => {
+  vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(ok(null))
   registry.tools = [createTool]
 })
 

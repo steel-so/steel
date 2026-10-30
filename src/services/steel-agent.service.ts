@@ -1,6 +1,8 @@
 import type {
   ModuleKind,
   Prisma,
+  Role,
+  SteelAgentPolicy,
   SteelAgentTriggerType,
   SteelAgentVersion,
 } from '@prisma/client'
@@ -9,18 +11,32 @@ import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
 import { forbidden } from '@/src/errors'
 import {
+  steelAgentAutoNotAllowed,
+  steelAgentCreateForbidden,
+  steelAgentDelegateInvalid,
   steelAgentDisabled,
   steelAgentInvalidOwner,
   steelAgentInvalidTool,
   steelAgentInvalidTrigger,
   steelAgentRunNotFound,
+  steelAgentsPaused,
 } from '@/src/errors/app-error'
 import { STEEL_AI_TOOLS } from '@/src/lib/ai/tools'
 import { findTool } from '@/src/lib/ai/tools/registry'
+import type { AnySteelAiTool } from '@/src/lib/ai/tools/types'
 import { can } from '@/src/lib/permissions'
 import { err, ok, type Result } from '@/src/lib/result'
+import {
+  DELEGATE_TOOL_LABEL,
+  DELEGATE_TOOL_NAME,
+  MAX_DELEGATES_PER_AGENT,
+} from '@/src/lib/steel-agents/delegation'
 import { enqueueSteelAgentRun } from '@/src/lib/steel-agents/enqueue'
 import { STEEL_AGENT_EVENTS } from '@/src/lib/steel-agents/events'
+import {
+  canRoleRunAuto,
+  roleMayCreateAgents,
+} from '@/src/lib/steel-agents/policy'
 import {
   normalizeSteelAgentTrigger,
   steelAgentTriggerProblem,
@@ -36,10 +52,12 @@ import {
 import { WorkspaceAiSettingsRepository } from '@/src/repositories/ai-settings.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import {
+  SteelAgentDelegateRepository,
   SteelAgentRepository,
   SteelAgentRunRepository,
   type SteelAgentToolInput,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import type {
   CreateSteelAgentDTO,
@@ -55,6 +73,7 @@ import type {
 } from '@/types/steel-agent'
 import { assertMember, type MembershipContext } from './authz'
 import { SteelAgentVersionService } from './steel-agent-version.service'
+import { loadMcpAgentTools } from './steel-mcp-tools'
 
 /**
  * Steel Agents CRUD, catalog, run history and "Executar agora". RBAC
@@ -64,14 +83,67 @@ import { SteelAgentVersionService } from './steel-agent-version.service'
 
 const RESOURCE = 'steel-agents'
 
-const kindOf = (name: string) => findTool(name)?.kind
-const labelOf = (name: string) => findTool(name)?.label ?? null
+/** Lookups over the static registry plus the workspace's MCP tools. */
+async function toolLookups(workspaceId: string) {
+  const mcp = await loadMcpAgentTools(workspaceId)
+  const dynamic = new Map<string, AnySteelAiTool>(
+    (mcp.ok ? mcp.value : []).map((tool) => [tool.name, tool]),
+  )
+  const find = (name: string) => findTool(name) ?? dynamic.get(name)
+  return {
+    mcp: mcp.ok ? mcp.value : [],
+    kindOf: (name: string) => find(name)?.kind,
+    labelOf: (name: string) =>
+      name === DELEGATE_TOOL_NAME
+        ? DELEGATE_TOOL_LABEL
+        : (find(name)?.label ?? null),
+  }
+}
 
 export function canManageSteelAgents(membership: MembershipContext): boolean {
   return (
     membership.isPrivileged ||
     (membership.permissions !== null &&
       can(membership.permissions, RESOURCE, 'EDIT'))
+  )
+}
+
+/** Creating agents: the policy (when restricted) or the RBAC matrix. */
+export function canCreateSteelAgents(
+  membership: MembershipContext,
+  policy: SteelAgentPolicy | null,
+): boolean {
+  const byPolicy = roleMayCreateAgents(policy, membership.role)
+  if (byPolicy !== null) return byPolicy
+  return (
+    membership.isPrivileged ||
+    (membership.permissions !== null &&
+      can(membership.permissions, RESOURCE, 'CREATE'))
+  )
+}
+
+/**
+ * Edit/delete: the RBAC matrix, or — with a creators policy — the creator
+ * of the agent while their role is still allowed to create.
+ */
+function mayChangeAgent(
+  membership: MembershipContext,
+  policy: SteelAgentPolicy | null,
+  action: 'EDIT' | 'DELETE',
+  actorId: string,
+  createdById: string | null,
+): boolean {
+  if (
+    membership.isPrivileged ||
+    (membership.permissions !== null &&
+      can(membership.permissions, RESOURCE, action))
+  ) {
+    return true
+  }
+  return (
+    policy?.restrictCreators === true &&
+    createdById === actorId &&
+    canCreateSteelAgents(membership, policy)
   )
 }
 
@@ -92,9 +164,12 @@ async function validateTools(
   if (tools.length === 0) return ok([])
   const modules = await enabledModules(workspaceId)
   if (!modules.ok) return modules
+  const lookups = await toolLookups(workspaceId)
+  const find = (name: string) =>
+    findTool(name) ?? lookups.mcp.find((tool) => tool.name === name)
   const out: SteelAgentToolInput[] = []
   for (const input of tools) {
-    const tool = findTool(input.toolName)
+    const tool = find(input.toolName)
     if (!tool || (tool.module && !modules.value.includes(tool.module))) {
       return err(steelAgentInvalidTool(input.toolName))
     }
@@ -104,6 +179,93 @@ async function validateTools(
     })
   }
   return ok(out)
+}
+
+/**
+ * A8: with the AUTO policy on, the role of whoever saves the agent has to
+ * allow each tool that becomes automatic (tools already automatic before
+ * the edit are left alone; the runner re-checks the owner's role anyway).
+ */
+function assertAutoAllowed(
+  policy: SteelAgentPolicy | null,
+  role: Role,
+  tools: SteelAgentToolInput[],
+  previouslyAuto: Set<string>,
+): Result<true> {
+  for (const tool of tools) {
+    if (tool.mode !== 'AUTO' || previouslyAuto.has(tool.toolName)) continue
+    const kind = findTool(tool.toolName)?.kind
+    if (kind === 'READ') continue
+    if (!canRoleRunAuto(policy, role, tool.toolName)) {
+      return err(steelAgentAutoNotAllowed(tool.toolName))
+    }
+  }
+  return ok(true)
+}
+
+/**
+ * A7: delegates must be other agents of the workspace and must not close a
+ * cycle in the delegation graph (the runner also guards each chain).
+ */
+async function validateDelegates(
+  workspaceId: string,
+  agentId: string | null,
+  ids: string[],
+): Promise<Result<string[]>> {
+  const unique = [...new Set(ids)]
+  if (unique.length > MAX_DELEGATES_PER_AGENT) {
+    return err(
+      steelAgentDelegateInvalid(
+        `Um agente pode delegar a no máximo ${MAX_DELEGATES_PER_AGENT} agentes.`,
+      ),
+    )
+  }
+  if (agentId && unique.includes(agentId)) {
+    return err(
+      steelAgentDelegateInvalid('Um agente não pode delegar a si mesmo.'),
+    )
+  }
+  const existing = await SteelAgentDelegateRepository.existingInWorkspace(
+    workspaceId,
+    unique,
+  )
+  if (!existing.ok) return existing
+  if (existing.value.length !== unique.length) {
+    return err(
+      steelAgentDelegateInvalid(
+        'Algum agente escolhido para delegação não existe neste workspace.',
+      ),
+    )
+  }
+  if (!agentId || unique.length === 0) return ok(unique)
+
+  const edges = await SteelAgentDelegateRepository.edges(workspaceId)
+  if (!edges.ok) return edges
+  const next = new Map<string, string[]>()
+  for (const edge of edges.value) {
+    if (edge.agentId === agentId) continue
+    next.set(edge.agentId, [
+      ...(next.get(edge.agentId) ?? []),
+      edge.targetAgentId,
+    ])
+  }
+  // Can any new target already reach `agentId`?
+  const seen = new Set<string>()
+  const stack = [...unique]
+  while (stack.length > 0) {
+    const node = stack.pop() as string
+    if (node === agentId) {
+      return err(
+        steelAgentDelegateInvalid(
+          'Essa delegação criaria um ciclo entre agentes (A delega a B e B volta a A).',
+        ),
+      )
+    }
+    if (seen.has(node)) continue
+    seen.add(node)
+    stack.push(...(next.get(node) ?? []))
+  }
+  return ok(unique)
 }
 
 async function validateOwner(
@@ -142,6 +304,11 @@ async function startRun(
     return err(forbidden())
   }
   if (!test && !agent.value.enabled) return err(steelAgentDisabled())
+  if (!test) {
+    const policy = await SteelAgentPolicyRepository.find(workspaceId)
+    if (!policy.ok) return policy
+    if (policy.value?.killedAt) return err(steelAgentsPaused())
+  }
 
   let source: { triggerType: SteelAgentTriggerType; payload: unknown } | null =
     null
@@ -214,6 +381,7 @@ export const SteelAgentService = {
     if (!membership.ok) return membership
     const agents = await SteelAgentRepository.listByWorkspace(workspaceId)
     if (!agents.ok) return agents
+    const { kindOf } = await toolLookups(workspaceId)
     return ok(agents.value.map((agent) => toSteelAgentDTO(agent, kindOf)))
   },
 
@@ -229,6 +397,7 @@ export const SteelAgentService = {
     if (!membership.ok) return membership
     const agent = await SteelAgentRepository.findById(agentId, workspaceId)
     if (!agent.ok) return agent
+    const { kindOf } = await toolLookups(workspaceId)
     return ok(toSteelAgentDTO(agent.value, kindOf))
   },
 
@@ -242,30 +411,51 @@ export const SteelAgentService = {
       action: 'VIEW',
     })
     if (!membership.ok) return membership
-    const [modules, settings] = await Promise.all([
+    const [modules, settings, policy, lookups] = await Promise.all([
       enabledModules(workspaceId),
       WorkspaceAiSettingsRepository.findByWorkspace(workspaceId),
+      SteelAgentPolicyRepository.find(workspaceId),
+      toolLookups(workspaceId),
     ])
     if (!modules.ok) return modules
     if (!settings.ok) return settings
+    if (!policy.ok) return policy
 
     const inScope = (module: ModuleKind | null) =>
       module === null || modules.value.includes(module)
     return ok({
-      tools: STEEL_AI_TOOLS.filter((tool) => inScope(tool.module)).map(
-        (tool) => ({
+      tools: STEEL_AI_TOOLS.filter((tool) => inScope(tool.module))
+        .map((tool) => ({
           name: tool.name,
           label: tool.label,
           description: tool.description,
           module: tool.module,
           kind: tool.kind,
-        }),
-      ),
+        }))
+        .concat(
+          lookups.mcp.map((tool) => ({
+            name: tool.name,
+            label: tool.label,
+            description: tool.description,
+            module: null,
+            kind: tool.kind,
+            external: true,
+          })),
+        ),
       events: STEEL_AGENT_EVENTS.filter((event) => inScope(event.module)).map(
         (event) => ({ ...event }),
       ),
       agentModeEnabled: settings.value?.agentModeEnabled ?? true,
       canManage: canManageSteelAgents(membership.value),
+      canCreate: canCreateSteelAgents(membership.value, policy.value),
+      autoRestricted: policy.value?.restrictAuto ?? false,
+      autoAllowedTools: (policy.value?.restrictAuto
+        ? [...STEEL_AI_TOOLS, ...lookups.mcp]
+            .filter((tool) =>
+              canRoleRunAuto(policy.value, membership.value.role, tool.name),
+            )
+            .map((tool) => tool.name)
+        : null) as string[] | null,
     })
   },
 
@@ -274,16 +464,35 @@ export const SteelAgentService = {
     workspaceId: string,
     dto: CreateSteelAgentDTO,
   ): Promise<Result<SteelAgentDTO>> {
-    const membership = await assertMember(actorId, workspaceId, {
-      resource: RESOURCE,
-      action: 'CREATE',
-    })
+    const membership = await assertMember(actorId, workspaceId)
     if (!membership.ok) return membership
+    const policy = await SteelAgentPolicyRepository.find(workspaceId)
+    if (!policy.ok) return policy
+    if (!canCreateSteelAgents(membership.value, policy.value)) {
+      return err(
+        policy.value?.restrictCreators
+          ? steelAgentCreateForbidden()
+          : forbidden(),
+      )
+    }
 
     const owner = await validateOwner(dto.ownerId, workspaceId)
     if (!owner.ok) return owner
     const tools = await validateTools(workspaceId, dto.tools)
     if (!tools.ok) return tools
+    const auto = assertAutoAllowed(
+      policy.value,
+      membership.value.role,
+      tools.value,
+      new Set(),
+    )
+    if (!auto.ok) return auto
+    const delegates = await validateDelegates(
+      workspaceId,
+      null,
+      dto.delegateAgentIds,
+    )
+    if (!delegates.ok) return delegates
 
     if (dto.evalSetId) {
       const set = await SteelAgentVersionService.checkEvalSet(
@@ -310,6 +519,7 @@ export const SteelAgentService = {
       evalSetId: dto.evalSetId ?? null,
       evalMinPassRate: dto.evalMinPassRate,
       tools: tools.value,
+      delegateIds: delegates.value,
     })
     if (!created.ok) return created
 
@@ -338,8 +548,10 @@ export const SteelAgentService = {
         ownerId: dto.ownerId,
         triggerType: dto.triggerType,
         tools: tools.value.map((t) => `${t.toolName}:${t.mode}`),
+        ...(delegates.value.length > 0 && { delegates: delegates.value }),
       },
     })
+    const { kindOf } = await toolLookups(workspaceId)
     return ok(toSteelAgentDTO(created.value, kindOf))
   },
 
@@ -349,14 +561,24 @@ export const SteelAgentService = {
     agentId: string,
     dto: UpdateSteelAgentDTO,
   ): Promise<Result<SteelAgentUpdateResultDTO>> {
-    const membership = await assertMember(actorId, workspaceId, {
-      resource: RESOURCE,
-      action: 'EDIT',
-    })
+    const membership = await assertMember(actorId, workspaceId)
     if (!membership.ok) return membership
+    const policy = await SteelAgentPolicyRepository.find(workspaceId)
+    if (!policy.ok) return policy
 
     const current = await SteelAgentRepository.findById(agentId, workspaceId)
     if (!current.ok) return current
+    if (
+      !mayChangeAgent(
+        membership.value,
+        policy.value,
+        'EDIT',
+        actorId,
+        current.value.createdById,
+      )
+    ) {
+      return err(forbidden())
+    }
 
     if (dto.ownerId && dto.ownerId !== current.value.ownerId) {
       const owner = await validateOwner(dto.ownerId, workspaceId)
@@ -367,6 +589,27 @@ export const SteelAgentService = {
       const validated = await validateTools(workspaceId, dto.tools)
       if (!validated.ok) return validated
       tools = validated.value
+      const auto = assertAutoAllowed(
+        policy.value,
+        membership.value.role,
+        tools,
+        new Set(
+          current.value.tools
+            .filter((t) => t.mode === 'AUTO')
+            .map((t) => t.toolName),
+        ),
+      )
+      if (!auto.ok) return auto
+    }
+    let delegateIds: string[] | undefined
+    if (dto.delegateAgentIds) {
+      const validated = await validateDelegates(
+        workspaceId,
+        agentId,
+        dto.delegateAgentIds,
+      )
+      if (!validated.ok) return validated
+      delegateIds = validated.value
     }
 
     const merged = {
@@ -403,6 +646,7 @@ export const SteelAgentService = {
     // agent through `SteelAgentVersionService` (gate eval, optional A/B).
     const {
       tools: _tools,
+      delegateAgentIds: _delegates,
       changeNote,
       rolloutPercent,
       instructions,
@@ -437,14 +681,19 @@ export const SteelAgentService = {
       version = submitted.value
     }
 
-    const updated = await SteelAgentRepository.update(agentId, {
-      ...fields,
-      ...(version === null && {
-        ...(instructions !== undefined && { instructions }),
-        ...(maxToolRounds !== undefined && { maxToolRounds }),
-      }),
-      ...normalizeSteelAgentTrigger(merged),
-    })
+    const updated = await SteelAgentRepository.update(
+      agentId,
+      {
+        ...fields,
+        ...(version === null && {
+          ...(instructions !== undefined && { instructions }),
+          ...(maxToolRounds !== undefined && { maxToolRounds }),
+        }),
+        ...normalizeSteelAgentTrigger(merged),
+      },
+      undefined,
+      delegateIds,
+    )
     if (!updated.ok) return updated
 
     auditMutation({
@@ -460,8 +709,10 @@ export const SteelAgentService = {
           versionId: version.id,
           versionNumber: version.number,
         }),
+        ...(delegateIds && { delegates: delegateIds }),
       },
     })
+    const { kindOf } = await toolLookups(workspaceId)
     return ok({
       ...toSteelAgentDTO(updated.value, kindOf),
       version: version ? toSteelAgentVersionRefDTO(version) : null,
@@ -473,13 +724,23 @@ export const SteelAgentService = {
     workspaceId: string,
     agentId: string,
   ): Promise<Result<SteelAgentDTO>> {
-    const membership = await assertMember(actorId, workspaceId, {
-      resource: RESOURCE,
-      action: 'DELETE',
-    })
+    const membership = await assertMember(actorId, workspaceId)
     if (!membership.ok) return membership
+    const policy = await SteelAgentPolicyRepository.find(workspaceId)
+    if (!policy.ok) return policy
     const current = await SteelAgentRepository.findById(agentId, workspaceId)
     if (!current.ok) return current
+    if (
+      !mayChangeAgent(
+        membership.value,
+        policy.value,
+        'DELETE',
+        actorId,
+        current.value.createdById,
+      )
+    ) {
+      return err(forbidden())
+    }
     const deleted = await SteelAgentRepository.delete(agentId)
     if (!deleted.ok) return deleted
     auditMutation({
@@ -489,6 +750,7 @@ export const SteelAgentService = {
       targetId: agentId,
       meta: { workspaceId, name: current.value.name },
     })
+    const { kindOf } = await toolLookups(workspaceId)
     return ok(toSteelAgentDTO(current.value, kindOf))
   },
 
@@ -562,6 +824,7 @@ export const SteelAgentService = {
     const run = await SteelAgentRunRepository.findDetail(runId, workspaceId)
     if (!run.ok) return run
     if (run.value.agentId !== agentId) return err(steelAgentRunNotFound())
+    const { labelOf } = await toolLookups(workspaceId)
     return ok(
       toSteelAgentRunDetailDTO(run.value, {
         canApprove:

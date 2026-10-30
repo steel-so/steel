@@ -43,6 +43,8 @@ export interface SteelAgentInput {
   maxToolRounds: number
   monthlyRunCap: number | null
   tools: { toolName: string; mode: SteelAgentToolModeDTO }[]
+  /** A7: agents this one may delegate to (as a tool). */
+  delegateAgentIds?: string[]
   /** A2: eval set that gates new versions (null = none). */
   evalSetId?: string | null
   evalMinPassRate?: number

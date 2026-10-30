@@ -1,6 +1,7 @@
 import {
   type AiPendingAction,
   Prisma,
+  type Role,
   type SteelAgentRunStatus,
 } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
@@ -11,6 +12,7 @@ import {
   type AiToolAccess,
   availableTools,
   findTool,
+  isToolAllowed,
   proposeWriteTool,
   resolveToolAccess,
   runReadTool,
@@ -22,6 +24,21 @@ import { serializeToolResult } from '@/src/lib/ai/tools/tool-result'
 import type { AiToolContext, AnySteelAiTool } from '@/src/lib/ai/tools/types'
 import type { AiMessage, AiToolCall, AiUsageTokens } from '@/src/lib/ai/types'
 import { err, ok, type Result } from '@/src/lib/result'
+import {
+  buildDelegationTriggerMessage,
+  DELEGATE_TOOL_NAME,
+  DELEGATION_REFUSAL_MESSAGE,
+  type DelegateTarget,
+  delegateToolSpec,
+  delegationRefusal,
+  MAX_DELEGATION_DEPTH,
+  MAX_DELEGATION_RESULT_CHARS,
+  parseDelegateArgs,
+} from '@/src/lib/steel-agents/delegation'
+import {
+  canRoleRunAuto,
+  type SteelAgentPolicyLike,
+} from '@/src/lib/steel-agents/policy'
 import {
   buildSteelAgentDecisionMessage,
   buildSteelAgentSystemPrompt,
@@ -42,11 +59,14 @@ import {
   pickVersionId,
 } from '@/src/lib/steel-agents/versions'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
+import { MembershipRepository } from '@/src/repositories/membership.repository'
 import {
+  SteelAgentDelegateRepository,
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
   type SteelAgentRunWithAgent,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
 import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
@@ -56,6 +76,7 @@ import {
   notifyAgentApprovalRequested,
   notifyAgentRunFailed,
 } from './steel-agent-notifications'
+import { loadMcpAgentTools } from './steel-mcp-tools'
 
 /**
  * Executes a Steel Agent run (worker job `steel-agents/run`). Same loop as
@@ -76,12 +97,33 @@ import {
 /** Agent approvals happen in the inbox, so they live longer than chat ones. */
 export const STEEL_AGENT_APPROVAL_TTL_MS = 72 * 60 * 60_000
 
+/** Task and caller of a delegated run (A7); null for ordinary runs. */
+function delegatedTask(
+  run: SteelAgentRunWithAgent,
+): { parentAgentName: string; task: string } | null {
+  if (!run.parentRunId) return null
+  const payload = run.triggerPayload as {
+    task?: unknown
+    delegatedBy?: { agentName?: unknown }
+  } | null
+  if (typeof payload?.task !== 'string') return null
+  return {
+    parentAgentName:
+      typeof payload.delegatedBy?.agentName === 'string'
+        ? payload.delegatedBy.agentName
+        : 'outro agente',
+    task: payload.task,
+  }
+}
+
 const PENDING_NOTE =
   'Ação registrada e aguardando aprovação humana. Não chame esta ferramenta de novo; siga com o resto da tarefa ou encerre com um resumo.'
 const ROUND_LIMIT_NOTE =
   'Limite de etapas desta execução atingido; a ferramenta não foi executada. Encerre com um resumo do que já fez.'
 const EMPTY_SUMMARY = 'Execução concluída sem resposta do modelo.'
 const PROVIDER_ERROR = 'Falha ao falar com o provedor de IA'
+const KILL_SWITCH_NOTE =
+  'Os agentes do workspace estão pausados por emergência.'
 
 export type SteelAgentRunOutcome =
   | 'succeeded'
@@ -121,6 +163,11 @@ type Preflight =
       access: AiToolAccess
       call: PreparedAiCall
       tools: AnySteelAiTool[]
+      /** A8: governance policy and the owner's role (AUTO rules). */
+      policy: SteelAgentPolicyLike | null
+      ownerRole: Role | null
+      /** A7: agents this run may delegate to. */
+      delegates: DelegateTarget[]
     }
 
 /** Kill switches, checked on start and on every resume. */
@@ -134,6 +181,13 @@ async function preflight(
   }
   if (!agent.ownerId) {
     return { kind: 'skip', reason: 'O agente está sem responsável.' }
+  }
+
+  // A6: emergency switch. Test runs write nothing, so they may still run.
+  const policy = await SteelAgentPolicyRepository.find(run.workspaceId)
+  if (!policy.ok) return { kind: 'fail', error: policy.error.message }
+  if (policy.value?.killedAt && !run.isTest) {
+    return { kind: 'skip', reason: KILL_SWITCH_NOTE }
   }
 
   const access = await resolveToolAccess(agent.ownerId, run.workspaceId)
@@ -159,8 +213,13 @@ async function preflight(
     }
   }
 
+  const mcp = await loadMcpAgentTools(run.workspaceId)
+  if (!mcp.ok) return { kind: 'fail', error: mcp.error.message }
   const configured = agent.tools
-    .map((t) => findTool(t.toolName))
+    .map(
+      (t) =>
+        findTool(t.toolName) ?? mcp.value.find((m) => m.name === t.toolName),
+    )
     .filter((tool): tool is AnySteelAiTool => Boolean(tool))
   const hasWrites = configured.some((tool) => tool.kind !== 'READ')
   if (hasWrites && !access.value.agentModeEnabled && !run.isTest) {
@@ -208,11 +267,39 @@ async function preflight(
   }
 
   const allowedNames = new Set(agent.tools.map((t) => t.toolName))
-  const tools = availableTools(
-    access.value,
-    run.isTest ? 'TEST' : 'AGENT',
-  ).filter((tool) => allowedNames.has(tool.name))
-  return { kind: 'go', access: access.value, call: call.value, tools }
+  const mode = run.isTest ? 'TEST' : 'AGENT'
+  const tools = [
+    ...availableTools(access.value, mode),
+    ...mcp.value.filter((tool) => isToolAllowed(tool, access.value, mode)),
+  ].filter((tool) => allowedNames.has(tool.name))
+
+  let ownerRole: Role | null = null
+  if (policy.value?.restrictAuto) {
+    const membership = await MembershipRepository.findByUserAndWorkspace(
+      agent.ownerId,
+      run.workspaceId,
+    )
+    if (!membership.ok) return { kind: 'fail', error: membership.error.message }
+    ownerRole = membership.value?.role ?? null
+  }
+
+  let delegates: DelegateTarget[] = []
+  if (run.depth < MAX_DELEGATION_DEPTH) {
+    const targets = await SteelAgentDelegateRepository.listTargets(agent.id)
+    if (!targets.ok) return { kind: 'fail', error: targets.error.message }
+    delegates = targets.value
+      .filter((target) => target.enabled)
+      .map(({ id, name, description }) => ({ id, name, description }))
+  }
+  return {
+    kind: 'go',
+    access: access.value,
+    call: call.value,
+    tools,
+    policy: policy.value,
+    ownerRole,
+    delegates,
+  }
 }
 
 async function finish(
@@ -382,7 +469,7 @@ export async function executeSteelAgentRun(
     await finish(run, from, 'FAILED', checked.error)
     return ok('failed')
   }
-  const { access, call, tools } = checked
+  const { access, call, tools, policy, ownerRole, delegates } = checked
 
   const claimed = await SteelAgentRunRepository.claim(run.id, from, {
     status: 'RUNNING',
@@ -392,16 +479,19 @@ export async function executeSteelAgentRun(
   if (!claimed.ok) return claimed
   if (!claimed.value) return ok('noop')
 
+  const delegated = delegatedTask(run)
   const state = starting
     ? {
         messages: [
           {
             role: 'user',
-            content: buildSteelAgentTriggerMessage({
-              triggerType: run.triggerType,
-              payload: run.triggerPayload,
-              eventKey: agent.eventKey,
-            }),
+            content: delegated
+              ? buildDelegationTriggerMessage(delegated)
+              : buildSteelAgentTriggerMessage({
+                  triggerType: run.triggerType,
+                  payload: run.triggerPayload,
+                  eventKey: agent.eventKey,
+                }),
           },
         ] as AiMessage[],
         round: 0,
@@ -422,7 +512,10 @@ export async function executeSteelAgentRun(
   }
 
   const system = await promptContext(run, access)
-  const specs = toToolSpecs(tools)
+  const specs = [
+    ...toToolSpecs(tools),
+    ...(delegates.length > 0 ? [delegateToolSpec(delegates)] : []),
+  ]
   const modeOf = new Map(agent.tools.map((t) => [t.toolName, t.mode]))
   const ctx: AiToolContext = {
     workspaceId: run.workspaceId,
@@ -437,6 +530,9 @@ export async function executeSteelAgentRun(
   }
   let roundsThisPass = 0
   let lastText = ''
+  /** A7: cost of the child runs started in this pass (billed to this run). */
+  let delegatedCost = 0
+  let delegationsStarted = 0
 
   const step = async (
     data: Parameters<typeof SteelAgentRunStepRepository.create>[0],
@@ -488,6 +584,111 @@ export async function executeSteelAgentRun(
     }
   }
 
+  /** A7: runs another agent as a child run, inline, and reports back. */
+  const handleDelegation = async (toolCall: AiToolCall): Promise<string> => {
+    const input = toolCall.arguments as Prisma.InputJsonValue
+    const base = {
+      runId: run.id,
+      toolName: DELEGATE_TOOL_NAME,
+      toolCallId: toolCall.id,
+      input,
+    }
+    const refuse = async (message: string, rule = true) => {
+      if (rule) {
+        await guardrail(
+          'DELEGATION_REFUSED',
+          message,
+          undefined,
+          DELEGATE_TOOL_NAME,
+        )
+      }
+      await step({ ...base, kind: 'TOOL', status: 'FAILED', error: message })
+      return errorContent('AI_DELEGATION_REFUSED', message)
+    }
+    const parsed = parseDelegateArgs(toolCall.arguments)
+    const target = parsed && delegates.find((d) => d.id === parsed.agentId)
+    if (!parsed || !target) {
+      return refuse(
+        'Agente de destino inválido ou fora da sua lista de delegação.',
+      )
+    }
+    const chain = await SteelAgentDelegateRepository.runChain(run.id)
+    const refusal = delegationRefusal({
+      depth: run.depth,
+      chain: chain.ok ? chain.value : [agent.id],
+      targetId: target.id,
+      delegationsSoFar: delegationsStarted,
+    })
+    if (refusal) return refuse(DELEGATION_REFUSAL_MESSAGE[refusal])
+    delegationsStarted++
+
+    const created = await SteelAgentRunRepository.create({
+      workspaceId: run.workspaceId,
+      agentId: target.id,
+      triggerType: 'MANUAL',
+      triggerPayload: {
+        task: parsed.task,
+        delegatedBy: {
+          agentId: agent.id,
+          agentName: agent.name,
+          runId: run.id,
+        },
+      },
+      startedById: run.startedById,
+      isTest: run.isTest,
+      parentRunId: run.id,
+      depth: run.depth + 1,
+    })
+    if (!created.ok) return refuse(created.error.message, false)
+
+    const outcome = await executeSteelAgentRun(created.value.id)
+    const child = await SteelAgentRunRepository.findForExecution(
+      created.value.id,
+    )
+    const childRun = child.ok ? child.value : null
+    delegatedCost += Number(childRun?.costUsd ?? 0)
+    const status = childRun?.status ?? 'FAILED'
+    const text = (
+      childRun?.summary ??
+      childRun?.error ??
+      (outcome.ok ? '' : outcome.error.message)
+    ).slice(0, MAX_DELEGATION_RESULT_CHARS)
+    const succeeded = status === 'SUCCEEDED' || status === 'WAITING_APPROVAL'
+    await step({
+      ...base,
+      kind: 'TOOL',
+      status: succeeded ? 'OK' : 'FAILED',
+      ...(succeeded ? {} : { error: text || 'A delegação não foi concluída.' }),
+      output: {
+        title: `Delegou a “${target.name}”`,
+        childRunId: created.value.id,
+        childAgentId: target.id,
+        childAgentName: target.name,
+        childStatus: status,
+        costUsd: Number(childRun?.costUsd ?? 0),
+        summary: text.slice(0, 600),
+      } as Prisma.InputJsonValue,
+    })
+    if (!succeeded) {
+      return errorContent(
+        'AI_DELEGATION_FAILED',
+        text || `O agente "${target.name}" não concluiu a tarefa.`,
+      )
+    }
+    return serializeToolResult({
+      status: 'done',
+      summary: `${target.name} concluiu a tarefa`,
+      data: {
+        agente: target.name,
+        situacao:
+          status === 'WAITING_APPROVAL'
+            ? 'Propôs ações que aguardam aprovação humana; elas ainda não foram executadas.'
+            : 'Concluída',
+        resumo: text,
+      },
+    })
+  }
+
   /** Runs one tool call; returns the content for the model. */
   const handleCall = async (
     toolCall: AiToolCall,
@@ -514,6 +715,9 @@ export async function executeSteelAgentRun(
         error: ROUND_LIMIT_NOTE,
       })
       return errorContent('ROUND_LIMIT', ROUND_LIMIT_NOTE)
+    }
+    if (toolCall.name === DELEGATE_TOOL_NAME && delegates.length > 0) {
+      return handleDelegation(toolCall)
     }
     const tool = tools.find((t) => t.name === toolCall.name)
     if (!tool) {
@@ -568,7 +772,7 @@ export async function executeSteelAgentRun(
     }
 
     const configuredMode = modeOf.get(tool.name) ?? 'APPROVAL'
-    const mode = effectiveToolMode(tool.kind, configuredMode)
+    let mode = effectiveToolMode(tool.kind, configuredMode)
     if (configuredMode === 'AUTO' && mode === 'APPROVAL') {
       await guardrail(
         'DELETE_NEEDS_APPROVAL',
@@ -576,6 +780,20 @@ export async function executeSteelAgentRun(
         undefined,
         tool.name,
       )
+    }
+    // A8: the owner's role has to allow this tool in AUTO under the policy.
+    if (
+      mode === 'AUTO' &&
+      policy?.restrictAuto &&
+      !canRoleRunAuto(policy, ownerRole ?? 'VIEWER', tool.name)
+    ) {
+      await guardrail(
+        'AUTO_ROLE_RESTRICTED',
+        'O perfil do responsável não libera esta ferramenta no modo automático; a ação foi enviada para aprovação humana.',
+        undefined,
+        tool.name,
+      )
+      mode = 'APPROVAL'
     }
     // Third-party content tried to instruct the model in this run (ADR
     // 0041): even an AUTO write waits for a human approval in the inbox.
@@ -686,7 +904,10 @@ export async function executeSteelAgentRun(
     rounds: { increment: roundsThisPass },
     inputTokens: { increment: usage.inputTokens },
     outputTokens: { increment: usage.outputTokens },
-    costUsd: { increment: AiUsageService.price(call, usage) },
+    costUsd: { increment: AiUsageService.price(call, usage) + delegatedCost },
+    ...(delegatedCost > 0 && {
+      delegatedCostUsd: { increment: delegatedCost },
+    }),
   })
   const record = () =>
     AiUsageService.record(call, {
@@ -697,6 +918,21 @@ export async function executeSteelAgentRun(
 
   try {
     while (state.round < agent.maxToolRounds) {
+      if (!run.isTest && state.round > 0) {
+        const live = await SteelAgentPolicyRepository.find(run.workspaceId)
+        if (live.ok && live.value?.killedAt) {
+          await guardrail('KILL_SWITCH', KILL_SWITCH_NOTE)
+          await SteelAgentRunRepository.update(run.id, {
+            status: 'SKIPPED',
+            summary: KILL_SWITCH_NOTE,
+            finishedAt: new Date(),
+            state: Prisma.DbNull,
+            ...totals(),
+          })
+          await record()
+          return ok('skipped')
+        }
+      }
       const forceText = state.round === agent.maxToolRounds - 1
       const response = await call.provider.chat({
         model: call.model.model,

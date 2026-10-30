@@ -38,6 +38,7 @@ import type {
   SteelAgentDTO,
   SteelAgentTriggerTypeDTO,
 } from '@/types/steel-agent'
+import { SteelAgentDelegation } from './steel-agent-delegation'
 import { CRON_PRESETS, TIMEZONES, TRIGGER_LABEL } from './steel-agent-labels'
 import { SteelAgentToolPicker } from './steel-agent-tool-picker'
 
@@ -62,6 +63,7 @@ function initialState(
     maxToolRounds: agent?.maxToolRounds ?? 8,
     monthlyRunCap: agent?.monthlyRunCap ?? null,
     tools: agent?.tools ?? [],
+    delegateAgentIds: agent?.delegateAgentIds ?? [],
     evalSetId: agent?.evalSetId ?? null,
     evalMinPassRate: agent?.evalMinPassRate ?? 0.8,
     ...(agent && {
@@ -137,7 +139,11 @@ export function SteelAgentEditor({
     )
   }
   const { tools, events, agentModeEnabled } = catalog.data
-  const disabled = !canManage || saving
+  const canEdit =
+    canManage ||
+    ((catalog.data?.canCreate ?? false) &&
+      (!agent || agent.createdById === currentUserId))
+  const disabled = !canEdit || saving
   const preset = CRON_PRESETS.some((p) => p.cron === form.cron)
     ? (form.cron as string)
     : CUSTOM
@@ -176,7 +182,7 @@ export function SteelAgentEditor({
 
   return (
     <form onSubmit={submit} className='space-y-6' aria-label='Editor do agente'>
-      {!canManage ? (
+      {!canEdit ? (
         <p className='rounded-lg border bg-muted/40 p-3 text-muted-foreground text-sm'>
           Você pode ver este agente, mas só administradores editam.
         </p>
@@ -458,8 +464,17 @@ export function SteelAgentEditor({
           value={form.tools}
           onChange={(next) => set('tools', next)}
           disabled={disabled}
+          autoAllowedTools={catalog.data.autoAllowedTools}
         />
       </section>
+
+      <SteelAgentDelegation
+        workspaceId={workspaceId}
+        agentId={agent?.id}
+        value={form.delegateAgentIds ?? []}
+        onChange={(next) => set('delegateAgentIds', next)}
+        disabled={disabled}
+      />
 
       <section className='space-y-3' aria-label='Versões e avaliação'>
         <div>
