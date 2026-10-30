@@ -8,6 +8,7 @@ import { sdDirectoryRoutes } from './servicedesk/directory'
 import { sdExternalPortalRoutes } from './servicedesk/external-portal'
 import { sdIntegrationRoutes } from './servicedesk/integrations'
 import { sdInventoryRoutes } from './servicedesk/inventory'
+import { sdInventoryFollowupRoutes } from './servicedesk/inventory-followups'
 import { sdKcsRoutes } from './servicedesk/kcs'
 import { sdMailRoutes } from './servicedesk/mail'
 import { sdMajorIncidentRoutes } from './servicedesk/major-incident'
@@ -49,6 +50,7 @@ const routes: RouteConfig[] = [
   ...sdSwarmRoutes,
   ...sdMajorIncidentRoutes,
   ...sdInventoryRoutes,
+  ...sdInventoryFollowupRoutes,
 ]
 
 export function registerServiceDeskPaths(registry: OpenApiRegistry): void {

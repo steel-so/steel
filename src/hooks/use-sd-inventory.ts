@@ -7,17 +7,23 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import type {
+  CreateSdInventoryDiscoveryRangeDTO,
   CreateSdInventorySnmpTargetDTO,
   CreateSdInventoryTokenDTO,
+  MergeSdInventoryDeviceDTO,
+  UpdateSdInventoryDiscoveryRangeDTO,
   UpdateSdInventorySettingsDTO,
   UpdateSdInventorySnmpTargetDTO,
 } from '@/src/schemas/sd-inventory.schema'
 import type { SdPage } from '@/types/sd-directory'
 import type {
+  SdInventoryAdoptResultDTO,
+  SdInventoryAgentReleaseDTO,
   SdInventoryAlertDTO,
   SdInventoryAlertStatusDTO,
   SdInventoryDeviceDetailDTO,
   SdInventoryDeviceDTO,
+  SdInventoryDiscoveryRangeDTO,
   SdInventorySettingsDTO,
   SdInventorySnmpTargetDTO,
   SdInventorySoftwareCatalogRowDTO,
@@ -42,6 +48,8 @@ export interface SdInventoryDevicesQuery {
   source?: SdInventorySourceDTO
   hasAlert?: boolean
   stale?: boolean
+  /** Só os descobertos por ping/ARP, ainda sem gestão. */
+  discovered?: boolean
   page?: number
   pageSize?: number
 }
@@ -98,6 +106,7 @@ export function useSdInventoryDevices(
           ...query,
           hasAlert: query.hasAlert ? 'true' : undefined,
           stale: query.stale ? 'true' : undefined,
+          discovered: query.discovered ? 'true' : undefined,
         })}`,
         undefined,
         'Erro ao carregar os equipamentos',
@@ -270,4 +279,130 @@ export function useSdInventoryTargetMutations(workspaceId: string) {
     onSuccess: invalidate,
   })
   return { create, update, remove, scanNow }
+}
+
+export function useSdInventoryDiscoveryRanges(
+  workspaceId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [...sdInventoryKeys.all(workspaceId), 'discovery-ranges'],
+    queryFn: () =>
+      apiFetch<SdInventoryDiscoveryRangeDTO[]>(
+        sdBase(workspaceId, path('discovery-ranges')),
+        undefined,
+        'Erro ao carregar as faixas de descoberta',
+      ),
+    enabled: !!workspaceId && enabled,
+  })
+}
+
+export function useSdInventoryDiscoveryMutations(workspaceId: string) {
+  const invalidate = useInvalidate(workspaceId)
+  const url = sdBase(workspaceId, path('discovery-ranges'))
+  const create = useMutation({
+    mutationFn: (data: CreateSdInventoryDiscoveryRangeDTO) =>
+      apiFetch<SdInventoryDiscoveryRangeDTO>(
+        url,
+        sdJson('POST', data),
+        'Erro ao criar a faixa',
+      ),
+    onSuccess: invalidate,
+  })
+  const update = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: UpdateSdInventoryDiscoveryRangeDTO
+    }) =>
+      apiFetch<SdInventoryDiscoveryRangeDTO>(
+        `${url}/${id}`,
+        sdJson('PATCH', data),
+        'Erro ao salvar a faixa',
+      ),
+    onSuccess: invalidate,
+  })
+  const remove = useMutation({
+    mutationFn: (id: string) =>
+      apiSend(`${url}/${id}`, { method: 'DELETE' }, 'Erro ao excluir a faixa'),
+    onSuccess: invalidate,
+  })
+  const scanNow = useMutation({
+    mutationFn: (id: string) =>
+      apiSend(
+        `${url}/${id}/scan`,
+        { method: 'POST' },
+        'Erro ao pedir a descoberta',
+      ),
+    onSuccess: invalidate,
+  })
+  return { create, update, remove, scanNow }
+}
+
+/** Mesclar, desfazer a mescla, adotar e descartar um equipamento. */
+export function useSdInventoryDeviceActions(workspaceId: string) {
+  const invalidate = useInvalidate(workspaceId)
+  const url = (deviceId: string) =>
+    sdBase(workspaceId, path(`devices/${deviceId}`))
+  const merge = useMutation({
+    mutationFn: ({
+      deviceId,
+      data,
+    }: {
+      deviceId: string
+      data: MergeSdInventoryDeviceDTO
+    }) =>
+      apiSend(
+        `${url(deviceId)}/merge`,
+        sdJson('POST', data),
+        'Erro ao mesclar os equipamentos',
+      ),
+    onSuccess: invalidate,
+  })
+  const unmerge = useMutation({
+    mutationFn: (deviceId: string) =>
+      apiSend(
+        `${url(deviceId)}/unmerge`,
+        { method: 'POST' },
+        'Erro ao desfazer a mescla',
+      ),
+    onSuccess: invalidate,
+  })
+  const adopt = useMutation({
+    mutationFn: (deviceId: string) =>
+      apiFetch<SdInventoryAdoptResultDTO>(
+        `${url(deviceId)}/adopt`,
+        { method: 'POST' },
+        'Erro ao adotar o equipamento',
+      ),
+    onSuccess: invalidate,
+  })
+  const dismiss = useMutation({
+    mutationFn: (deviceId: string) =>
+      apiSend(
+        url(deviceId),
+        { method: 'DELETE' },
+        'Erro ao descartar o equipamento',
+      ),
+    onSuccess: invalidate,
+  })
+  return { merge, unmerge, adopt, dismiss }
+}
+
+export function useSdInventoryAgentReleases(
+  workspaceId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [...sdInventoryKeys.all(workspaceId), 'agent-releases'],
+    queryFn: () =>
+      apiFetch<SdInventoryAgentReleaseDTO[]>(
+        sdBase(workspaceId, path('agent-releases')),
+        undefined,
+        'Erro ao carregar as versões do agente',
+      ),
+    enabled: !!workspaceId && enabled,
+  })
 }

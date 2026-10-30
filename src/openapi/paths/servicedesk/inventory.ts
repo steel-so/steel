@@ -67,7 +67,7 @@ export const sdInventoryRoutes: RouteConfig[] = [
     path: `${BASE}/summary`,
     tags: [TAG],
     summary: 'Resumo do inventário',
-    description: `Totais de equipamentos (agente × SNMP), sem sinal e alertas abertos. ${AGENT}`,
+    description: `Totais de equipamentos geridos (agente × SNMP), os descobertos por ping/ARP ainda para adotar, sem sinal e alertas abertos. ${AGENT}`,
     params: WS,
     responses: {
       200: { description: 'Resumo.', schema: SdInventorySummaryDTO },
@@ -79,7 +79,7 @@ export const sdInventoryRoutes: RouteConfig[] = [
     path: `${BASE}/devices`,
     tags: [TAG],
     summary: 'Listar equipamentos inventariados',
-    description: `Página de equipamentos por hostname. Filtros: busca (nome, série, sistema ou IP), origem, só com alerta aberto e só sem sinal. ${AGENT}`,
+    description: `Página de equipamentos por hostname. Filtros: busca (nome, série, sistema ou IP), origem, só com alerta aberto, só sem sinal e \`discovered=true\` (só os descobertos por ping/ARP ainda sem gestão; sem ele a lista traz só os geridos). Fichas secundárias de uma mescla não aparecem: elas vêm em \`mergedSources\` da principal. ${AGENT}`,
     params: WS,
     query: ListSdInventoryDevicesSchema,
     responses: {
@@ -136,7 +136,7 @@ export const sdInventoryRoutes: RouteConfig[] = [
     path: `${BASE}/settings`,
     tags: [TAG],
     summary: 'Ler os ajustes do inventário',
-    description: `Limiares de disco e memória, dias para "sem sinal" e a sincronização com a CMDB. Sem ajuste salvo, devolve os padrões. ${AGENT}`,
+    description: `Limiares de disco e memória, dias para "sem sinal", a sincronização com a CMDB e a atualização automática do agente. Sem ajuste salvo, devolve os padrões. ${AGENT}`,
     params: WS,
     responses: {
       200: { description: 'Ajustes.', schema: SdInventorySettingsDTO },
@@ -217,21 +217,25 @@ export const sdInventoryRoutes: RouteConfig[] = [
     path: `${BASE}/snmp-targets`,
     tags: [TAG],
     summary: 'Criar alvo de varredura SNMP',
-    description: `Faixas em CIDR ou IP avulso (até 1.024 endereços por alvo), SNMP v2c. A community é cifrada com \`CONNECTION_SECRETS\`. A primeira varredura roda no próximo ciclo do worker (5 min). ${ADMIN}`,
+    description: `Faixas em CIDR ou IP avulso (até 1.024 endereços por alvo), SNMP v2c (\`community\`) ou v3 (\`v3Username\` + chaves de autenticação e privacidade, com no mínimo 8 caracteres). Community e chaves são cifradas com \`CONNECTION_SECRETS\` e nunca voltam. A primeira varredura roda no próximo ciclo do worker (5 min). ${ADMIN}`,
     consent: true,
     params: WS,
     body: CreateSdInventorySnmpTargetSchema,
     responses: {
       201: { description: 'Alvo criado.', schema: SdInventorySnmpTargetDTO },
     },
-    errors: [...ADMIN_ERRORS, 'SD_CONFIG_NOT_FOUND'],
+    errors: [
+      ...ADMIN_ERRORS,
+      'SD_CONFIG_NOT_FOUND',
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    ],
   },
   {
     method: 'patch',
     path: TARGET,
     tags: [TAG],
     summary: 'Atualizar alvo de varredura SNMP',
-    description: `Omitir \`community\` mantém a atual. ${ADMIN}`,
+    description: `Omitir \`community\` ou as chaves v3 mantém as atuais; trocar \`snmpVersion\` exige as credenciais da nova versão. ${ADMIN}`,
     consent: true,
     params: { ...WS, targetId: 'Id do alvo.' },
     body: UpdateSdInventorySnmpTargetSchema,
@@ -242,6 +246,7 @@ export const sdInventoryRoutes: RouteConfig[] = [
       ...ADMIN_ERRORS,
       'SD_INVENTORY_TARGET_NOT_FOUND',
       'SD_CONFIG_NOT_FOUND',
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
     ],
   },
   {

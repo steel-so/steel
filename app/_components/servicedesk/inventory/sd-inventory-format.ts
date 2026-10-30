@@ -34,6 +34,7 @@ export function usageTone(percent: number | null | undefined): string {
 export const SD_INVENTORY_SOURCE_LABEL = {
   AGENT: 'Agente',
   SNMP: 'SNMP',
+  DISCOVERY: 'Descoberto',
 } as const
 
 export const SD_INVENTORY_ALERT_KIND_LABEL = {

@@ -473,12 +473,70 @@ numeração; viram ADR se a equipe quiser):
   lista quando o equipamento expõe `hrSWInstalled`.
 - **Sem sinal**: derivado de `lastSeenAt` × `staleAfterDays` (padrão 7 dias);
   não há job de varredura nem mudança automática do status do item.
-- **Fora do escopo desta entrega**: SNMP v3, descoberta por ARP/ping, ligar o
-  mesmo computador visto pelo agente e pelo SNMP num só equipamento, atualização
-  automática do agente e distribuição dos binários pelo app (hoje são
-  artefatos do workflow).
+- **Fora do escopo**: assinatura de código do Windows (precisa de certificado)
+  e distribuição da **primeira** instalação do agente pelo app (o binário
+  inicial continua sendo o artefato do workflow; só as atualizações passam pelo
+  app, ver abaixo).
 
-Contrato: `src/services/sd-inventory-{sync,ingest,token,settings,target}.service.ts`
+### Complementos do S1 (nov2: SNMP v3, descoberta, mescla, atualização)
+
+- **SNMP v3** (`SdInventorySnmpTarget.snmpVersion`): usuário + protocolos e
+  chaves de autenticação (MD5, SHA, SHA-224/256/384/512) e privacidade (DES,
+  AES-128, AES-256 Blumenthal/Reeder). O nível de segurança sai do que foi
+  informado (nenhuma chave = noAuthNoPriv; só autenticação = authNoPriv; as
+  duas = authPriv); privacidade sem autenticação é recusada e as chaves têm no
+  mínimo 8 caracteres (RFC 3414). As chaves são cifradas com
+  `CONNECTION_SECRETS`, como a community (que fica vazia no v3), e **nunca**
+  voltam pela API (`hasV3AuthKey`/`hasV3PrivKey`). Na edição, omitir um segredo
+  mantém o guardado; trocar a versão exige as credenciais da nova.
+  `buildSnmpV3User` (`src/lib/servicedesk/snmp.ts`) monta o usuário do
+  `net-snmp`.
+- **Descoberta por ping + ARP** (`SdInventoryDiscoveryRange`, jobs
+  `discovery-due` a cada 10 min e `discovery-range`): cada faixa é **opt-in**
+  (`enabled` nasce desligado; nada é sondado sem ele). Só aceita rede privada
+  (10/8, 172.16/12, 192.168/16, 100.64/10, 169.254/16) com até 1.024 endereços,
+  no mínimo de hora em hora. Ritmo fixo: 16 sondas em paralelo e no máximo 40
+  por segundo (`discoverHosts`). A sonda é `ping -c1` mais conexão TCP
+  (22/80/135/443/445/3389; "recusada" também prova que o host existe), então
+  funciona mesmo sem `CAP_NET_RAW`; o MAC vem de `/proc/net/arp` depois da
+  varredura, ou seja, **só de hosts na mesma rede L2 do worker**. O achado vira
+  `SdInventoryDevice` com `source = DISCOVERY` e `managed = false` ("descoberto,
+  sem gestão"): **não** cria item na CMDB nem entra no catálogo de software. Quem
+  o agente ou o SNMP já conhecem (IP ou MAC) não é recriado. O admin **adota**
+  (`POST .../devices/{id}/adopt`: passa a ser gerido e ganha item) ou
+  **descarta** (`DELETE`: `ignored = true`, a descoberta não o traz de volta).
+- **Mescla do mesmo equipamento** (`SdInventoryDevice.mergedIntoId`): a cada
+  relatório, `autoMergeDevice` procura entre as fichas principais outra de
+  **origem diferente** que seja a mesma máquina, por **série** (duas séries
+  diferentes nunca mesclam), **MAC** em comum ou **nome** (primeiro rótulo; IPs
+  e nomes genéricos como `localhost` não valem). Principal = origem mais rica
+  (agente > SNMP > descoberta); a outra vira secundária, sai das listas e
+  aparece em `mergedSources` da principal. O item da CMDB da secundária passa
+  para a principal quando ela não tem um; se os dois têm, o da secundária só é
+  desligado (fica na CMDB para o admin decidir; vai no `meta` da auditoria como
+  `orphanedConfigItemId`). A principal completa o que lhe falta (série,
+  fabricante, modelo, união de IPs e MACs). Manual: `POST .../devices/{id}/merge`
+  (`{ intoId }`) e `.../unmerge`; desfazer trava (`mergeLocked`) a mescla
+  automática daquela ficha. Admin apenas, auditado.
+- **Atualização automática do agente** (desligada por padrão:
+  `SdInventorySettings.agentAutoUpdate`). O agente pergunta
+  `GET /api/servicedesk/inventory/agent/version?os=&arch=&current=` (token no
+  `Authorization`, rota pública) e, havendo versão nova, baixa
+  `.../agent/download` e confere o **SHA-256** (do banco, repetido em
+  `X-Content-SHA256`) antes de se trocar; o servidor também recusa servir um
+  arquivo que não bate com o hash publicado. No agente (`inventory-agent/
+  update.go`): download ao lado do executável, teste do novo binário
+  (`selftest`) antes de trocar, troca por renomeação (guarda `.old`), marcador
+  `<exe>.update.json` e **volta à versão anterior** se o novo morrer ao iniciar
+  (3ª tentativa sem confirmar) — o marcador só sai quando o primeiro relatório
+  é aceito. Builds `dev` nunca se atualizam. Os binários ficam num bucket
+  privado (`inventory-agent`) e a versão é publicada pelo operador do servidor:
+  `pnpm inventory-agent:publish <versão> <pasta-do-artefato-do-CI>` (calcula o
+  SHA-256 e grava `SdInventoryAgentRelease`). **Assinatura de código do Windows
+  segue fora** (precisa de certificado): o aviso do SmartScreen continua.
+
+Contrato: `src/services/sd-inventory-{sync,ingest,token,settings,target,
+discovery,device-actions,auto-merge,agent-update}.service.ts`
 e `sd-inventory.service.ts` (consultas); `syncInventoryDevice(workspaceId,
 actorId, input, now?)` é o ponto único de gravação; API em
 `servicedesk/inventory/**`; hook `src/hooks/use-sd-inventory.ts`.

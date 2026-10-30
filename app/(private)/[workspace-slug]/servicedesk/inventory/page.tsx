@@ -8,7 +8,7 @@ import { SdInventoryView } from '@/app/_components/servicedesk/inventory/sd-inve
 export const metadata: Metadata = {
   title: 'Inventário | ServiceDesk | Steel',
   description:
-    'Equipamentos descobertos pelo agente e pela varredura SNMP, com hardware, software e alertas',
+    'Equipamentos descobertos pelo agente, pela varredura SNMP e por ping/ARP, com hardware, software e alertas',
 }
 
 export default async function SdInventoryPage({
@@ -26,7 +26,11 @@ export default async function SdInventoryPage({
       icon={HardDriveIcon}
       isAgent={ctx.isAgent}
     >
-      <SdInventoryView workspaceId={ctx.workspaceId} slug={slug} />
+      <SdInventoryView
+        workspaceId={ctx.workspaceId}
+        slug={slug}
+        isAdmin={ctx.isAdmin}
+      />
     </SdDirectoryShell>
   )
 }
