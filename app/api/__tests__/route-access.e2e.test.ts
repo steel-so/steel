@@ -94,6 +94,8 @@ const OPEN_ENDPOINTS: Record<string, string> = {
     'portal logout, only clears the caller own cookie',
   'GET /api/crm/campaigns/o/[token]':
     'open-tracking pixel, answers a GIF whatever the token',
+  'GET /api/crm/cadences/o/[token]':
+    'open-tracking pixel, answers a GIF whatever the token',
   'POST /api/v1/auth/device': 'device authorization request (RFC 8628)',
   'GET /api/crm/unsubscribe/[token]':
     'redirects to the result page; an invalid token unsubscribes nobody',
