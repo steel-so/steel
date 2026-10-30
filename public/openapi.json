@@ -127241,6 +127241,54 @@
                                 },
                                 "type": {
                                   "type": "string",
+                                  "const": "send-form"
+                                },
+                                "data": {
+                                  "type": "object",
+                                  "properties": {
+                                    "flowId": {
+                                      "type": "string",
+                                      "maxLength": 40
+                                    },
+                                    "bodyText": {
+                                      "type": "string",
+                                      "maxLength": 1024
+                                    },
+                                    "ctaLabel": {
+                                      "type": "string",
+                                      "maxLength": 30
+                                    },
+                                    "fallbackText": {
+                                      "type": "string",
+                                      "maxLength": 1024
+                                    }
+                                  },
+                                  "required": ["flowId"]
+                                }
+                              },
+                              "required": ["id", "position", "type", "data"]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                                },
+                                "position": {
+                                  "type": "object",
+                                  "properties": {
+                                    "x": {
+                                      "type": "number"
+                                    },
+                                    "y": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["x", "y"]
+                                },
+                                "type": {
+                                  "type": "string",
                                   "const": "handoff-human"
                                 },
                                 "data": {
@@ -133058,6 +133106,18 @@
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1000
+                  },
+                  "liteUnitPrice": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "validFrom": {
                     "type": "string",
@@ -240286,6 +240346,54 @@
                         },
                         "type": {
                           "type": "string",
+                          "const": "send-form"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "flowId": {
+                              "type": "string",
+                              "maxLength": 40
+                            },
+                            "bodyText": {
+                              "type": "string",
+                              "maxLength": 1024
+                            },
+                            "ctaLabel": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "fallbackText": {
+                              "type": "string",
+                              "maxLength": 1024
+                            }
+                          },
+                          "required": ["flowId"]
+                        }
+                      },
+                      "required": ["id", "position", "type", "data"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                        },
+                        "position": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["x", "y"]
+                        },
+                        "type": {
+                          "type": "string",
                           "const": "handoff-human"
                         },
                         "data": {
@@ -240794,6 +240902,31 @@
                     }
                   },
                   "required": ["kind", "text"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "form"
+                    },
+                    "nodeId": {
+                      "type": "string"
+                    },
+                    "flowId": {
+                      "type": "string"
+                    },
+                    "bodyText": {
+                      "type": "string"
+                    },
+                    "ctaLabel": {
+                      "type": "string"
+                    },
+                    "fallbackText": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "nodeId", "flowId"]
                 },
                 {
                   "type": "object",
@@ -243854,6 +243987,17 @@
             "description": "Preço por mensagem de template, na moeda.",
             "example": 0.3625
           },
+          "liteUnitPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Preço de uma mensagem enviada pela Marketing Messages Lite (só Marketing); `null` = igual a `unitPrice`."
+          },
           "validFrom": {
             "type": "string",
             "description": "Vale para envios a partir deste instante (ISO 8601)."
@@ -243863,7 +244007,16 @@
             "description": "Valor de referência semeado pelo Steel — confira na sua conta Meta."
           }
         },
-        "required": ["id", "category", "country", "currency", "unitPrice", "validFrom", "reference"]
+        "required": [
+          "id",
+          "category",
+          "country",
+          "currency",
+          "unitPrice",
+          "liteUnitPrice",
+          "validFrom",
+          "reference"
+        ]
       },
       "WhatsAppQrCode": {
         "type": "object",
