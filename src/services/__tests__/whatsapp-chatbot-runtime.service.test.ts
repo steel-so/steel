@@ -32,7 +32,12 @@ vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
 vi.mock('@/src/repositories/whatsapp-button-action.repository')
 vi.mock('@/src/lib/whatsapp/send', () => ({
-  WhatsAppSend: { text: vi.fn(), buttons: vi.fn(), list: vi.fn() },
+  WhatsAppSend: {
+    text: vi.fn(),
+    buttons: vi.fn(),
+    list: vi.fn(),
+    flow: vi.fn(),
+  },
 }))
 vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
@@ -50,6 +55,12 @@ vi.mock('@/src/services/whatsapp-sla.service', () => ({
 }))
 vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
   WhatsAppBusinessHoursService: { check: vi.fn() },
+}))
+vi.mock('@/src/services/whatsapp-flow-dispatch.service', () => ({
+  WhatsAppFlowDispatchService: {
+    prepareInteractive: vi.fn(),
+    recordSent: vi.fn(async () => undefined),
+  },
 }))
 vi.mock('@/src/services/whatsapp-distribution.service', () => ({
   WhatsAppDistributionService: { distributeConversation: vi.fn() },
@@ -79,6 +90,7 @@ import { assertMember } from '@/src/services/authz'
 import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
 import { emitWhatsAppConversationWaiting } from '@/src/services/whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from '@/src/services/whatsapp-distribution.service'
+import { WhatsAppFlowDispatchService } from '@/src/services/whatsapp-flow-dispatch.service'
 import { notifyWhatsAppUsers } from '@/src/services/whatsapp-notify'
 import { WhatsAppSlaService } from '@/src/services/whatsapp-sla.service'
 import {
@@ -98,6 +110,7 @@ const contactRepo = vi.mocked(WhatsAppContactRepository)
 const aiConfigRepo = vi.mocked(WhatsAppAiConfigRepository)
 const teamRepo = vi.mocked(WhatsAppButtonActionRepository)
 const send = vi.mocked(WhatsAppSend)
+const dispatch = vi.mocked(WhatsAppFlowDispatchService)
 const hours = vi.mocked(WhatsAppBusinessHoursService)
 const distribution = vi.mocked(WhatsAppDistributionService)
 const member = vi.mocked(assertMember)
@@ -921,6 +934,198 @@ describe('runStep()', () => {
       'generate-ai-reply',
       expect.objectContaining({ instruction: 'Seja breve' }),
     )
+  })
+
+  describe('send form node', () => {
+    const formFlow = (
+      data: Record<string, unknown> = { flowId: 'flow-1' },
+    ): ChatbotFlow => ({
+      nodes: [
+        { id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} },
+        {
+          id: 'form',
+          type: 'send-form',
+          position: { x: 0, y: 0 },
+          data: data as never,
+        },
+        {
+          id: 'm',
+          type: 'message',
+          position: { x: 0, y: 0 },
+          data: { text: 'Depois' },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'start', sourceHandle: 'next', target: 'form' },
+        { id: 'e2', source: 'form', sourceHandle: 'next', target: 'm' },
+      ],
+    })
+    const ready = {
+      kind: 'ready' as const,
+      flow: { id: 'flow-1', name: 'Cadastro' } as never,
+      input: {
+        flowId: 'meta-flow-1',
+        flowToken: 'stlf.flow-1.n',
+        bodyText: 'Preencha',
+        ctaLabel: 'Abrir',
+        screen: 'SCREEN_A',
+        draft: false,
+        data: { nome: 'Ana' },
+      },
+    }
+
+    it('sends the prefilled form, records it and keeps going', async () => {
+      prepare({
+        flow: formFlow({ flowId: 'flow-1', bodyText: 'Oi {{contact_name}}' }),
+      })
+      dispatch.prepareInteractive.mockResolvedValue(ok(ready))
+      send.flow.mockResolvedValue(ok({ providerMessageId: 'pf' }))
+
+      const outcome = expectOk(
+        await WhatsAppChatbotRuntimeService.runStep(step),
+      )
+
+      expect(outcome).toMatchObject({ sessionStatus: 'COMPLETED', sent: 2 })
+      expect(dispatch.prepareInteractive).toHaveBeenCalledWith(
+        'ws',
+        connection,
+        'flow-1',
+        { id: 'ct1', name: 'Ana', waId: '5511' },
+        { bodyText: 'Oi Ana', ctaLabel: undefined },
+      )
+      expect(send.flow).toHaveBeenCalledWith(
+        connection,
+        expect.objectContaining({
+          to: '5511',
+          flowId: 'meta-flow-1',
+          flowToken: 'stlf.flow-1.n',
+          data: { nome: 'Ana' },
+        }),
+        expect.any(Object),
+      )
+      expect(messageRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          direction: 'OUT',
+          text: 'Formulário enviado: Cadastro',
+          providerMessageId: 'pf',
+        }),
+      )
+      expect(dispatch.recordSent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws',
+          flowId: 'flow-1',
+          contactId: 'ct1',
+          conversationId: 'cv1',
+          flowToken: 'stlf.flow-1.n',
+        }),
+      )
+      expect(send.text).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends the fallback text when the form cannot be delivered', async () => {
+      prepare({
+        flow: formFlow({ flowId: 'flow-1', fallbackText: 'Acesse o link' }),
+      })
+      dispatch.prepareInteractive.mockResolvedValue(
+        ok({ kind: 'blocked', reason: 'not_meta' }),
+      )
+
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+
+      expect(send.flow).not.toHaveBeenCalled()
+      expect(send.text).toHaveBeenCalledWith(
+        connection,
+        { to: '5511', text: 'Acesse o link' },
+        expect.any(Object),
+      )
+      expect(logger.warn).toHaveBeenCalledWith(
+        'whatsapp.chatbot.form_fallback',
+        expect.objectContaining({ reason: 'not_meta' }),
+      )
+    })
+
+    it('skips a blocked form quietly when there is no fallback', async () => {
+      prepare({ flow: formFlow() })
+      dispatch.prepareInteractive.mockResolvedValue(
+        ok({ kind: 'blocked', reason: 'deprecated' }),
+      )
+      const outcome = expectOk(
+        await WhatsAppChatbotRuntimeService.runStep(step),
+      )
+      expect(outcome).toMatchObject({ sessionStatus: 'COMPLETED', sent: 2 })
+      expect(send.flow).not.toHaveBeenCalled()
+      // Only the next message of the flow went out.
+      expect(send.text).toHaveBeenCalledTimes(1)
+    })
+
+    it('falls back when the provider refuses the form and a text is set', async () => {
+      prepare({
+        flow: formFlow({ flowId: 'flow-1', fallbackText: 'Acesse o link' }),
+      })
+      dispatch.prepareInteractive.mockResolvedValue(ok(ready))
+      send.flow.mockResolvedValue(err(whatsappProviderError('recusado')))
+
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+
+      expect(send.text).toHaveBeenCalledWith(
+        connection,
+        { to: '5511', text: 'Acesse o link' },
+        expect.any(Object),
+      )
+      expect(dispatch.recordSent).not.toHaveBeenCalled()
+    })
+
+    it('hands the conversation to a person when the form fails without fallback', async () => {
+      prepare({ flow: formFlow() })
+      distribution.distributeConversation.mockResolvedValue(
+        ok({ assigned: false } as never),
+      )
+      dispatch.prepareInteractive.mockResolvedValue(ok(ready))
+      send.flow.mockResolvedValue(err(whatsappProviderError('recusado')))
+
+      const outcome = expectOk(
+        await WhatsAppChatbotRuntimeService.runStep(step),
+      )
+
+      expect(outcome).toMatchObject({ sessionStatus: 'FAILED', sent: 0 })
+      expect(sessionRepo.finish).toHaveBeenCalledWith(
+        's1',
+        'FAILED',
+        'send_failed',
+        expect.anything(),
+      )
+    })
+
+    it('fails the step when the flow cannot be loaded', async () => {
+      prepare({ flow: formFlow() })
+      distribution.distributeConversation.mockResolvedValue(
+        ok({ assigned: false } as never),
+      )
+      dispatch.prepareInteractive.mockResolvedValue(dbErr())
+
+      expect(
+        expectOk(await WhatsAppChatbotRuntimeService.runStep(step)),
+      ).toMatchObject({ sessionStatus: 'FAILED' })
+    })
+
+    it('still records the send when the timeline message cannot be saved', async () => {
+      prepare({ flow: formFlow() })
+      distribution.distributeConversation.mockResolvedValue(
+        ok({ assigned: false } as never),
+      )
+      dispatch.prepareInteractive.mockResolvedValue(ok(ready))
+      send.flow.mockResolvedValue(ok({ providerMessageId: 'pf' }))
+      messageRepo.create.mockResolvedValue(dbErr())
+
+      const outcome = expectOk(
+        await WhatsAppChatbotRuntimeService.runStep(step),
+      )
+
+      expect(outcome).toMatchObject({ sessionStatus: 'FAILED' })
+      expect(dispatch.recordSent).toHaveBeenCalledWith(
+        expect.objectContaining({ messageId: null }),
+      )
+    })
   })
 
   it('closes the conversation when the end node asks to', async () => {

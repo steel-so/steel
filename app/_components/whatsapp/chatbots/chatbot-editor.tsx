@@ -69,6 +69,7 @@ import {
   useWhatsAppChatbot,
   useWhatsAppChatbotNodeStats,
 } from '@/src/hooks/use-whatsapp-chatbots'
+import { useWhatsAppFlows } from '@/src/hooks/use-whatsapp-flows'
 import { useWhatsAppTeams } from '@/src/hooks/use-whatsapp-teams'
 import {
   collectVariables,
@@ -221,6 +222,7 @@ function EditorInner({
   const setStatus = useSetWhatsAppChatbotStatus(workspaceId)
   const teams = useWhatsAppTeams(workspaceId)
   const nodeStats = useWhatsAppChatbotNodeStats(workspaceId, bot.id)
+  const forms = useWhatsAppFlows(workspaceId)
 
   const flow = useMemo(() => xyToFlow(nodes, edges), [nodes, edges])
   const serialized = useMemo(() => JSON.stringify(flow), [flow])
@@ -239,6 +241,16 @@ function EditorInner({
         ]),
       ),
     [nodeStats.data],
+  )
+
+  const flows = useMemo(
+    () =>
+      (forms.data ?? []).map((form) => ({
+        id: form.id,
+        name: form.name,
+        sendable: form.status !== 'DEPRECATED' && Boolean(form.metaFlowId),
+      })),
+    [forms.data],
   )
 
   const agents = useMemo(() => {
@@ -676,6 +688,7 @@ function EditorInner({
                 variables={variables}
                 teams={teams.data ?? []}
                 agents={agents}
+                flows={flows}
                 readOnly={readOnly}
                 onChange={(data) => updateNodeData(selectedNode.id, data)}
                 onDelete={() => deleteNode(selectedNode.id)}

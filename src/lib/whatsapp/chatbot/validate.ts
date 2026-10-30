@@ -24,6 +24,7 @@ export function nodeHandles(node: ChatbotNode): string[] {
     case 'start':
     case 'message':
     case 'set-variable':
+    case 'send-form':
       return ['next']
     case 'question':
       return ['next', 'invalid']
@@ -68,6 +69,8 @@ function describe(node: ChatbotNode): string {
       return 'Definir variável'
     case 'webhook':
       return 'Integração'
+    case 'send-form':
+      return 'Enviar formulário'
     case 'handoff-human':
       return 'Passar para atendente'
     case 'handoff-ai':
@@ -149,6 +152,9 @@ export function validateChatbotFlow(flow: ChatbotFlow): ChatbotFlowIssue[] {
           error('Condição: ramos repetidos', node.id)
         branchIds.add(branch.id)
       }
+    }
+    if (node.type === 'send-form' && !node.data.flowId) {
+      error('Enviar formulário: escolha o formulário', node.id)
     }
     if (node.type === 'set-variable' && reserved.has(node.data.variable)) {
       error('Definir variável: este nome é reservado', node.id)

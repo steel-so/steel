@@ -1575,6 +1575,14 @@ export const WhatsAppChatbotSimulationDTO = dto(
       z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('text'), text: z.string() }),
         z.object({
+          kind: z.literal('form'),
+          nodeId: z.string(),
+          flowId: z.string(),
+          bodyText: z.string().optional(),
+          ctaLabel: z.string().optional(),
+          fallbackText: z.string().optional(),
+        }),
+        z.object({
           kind: z.literal('menu'),
           nodeId: z.string(),
           text: z.string(),

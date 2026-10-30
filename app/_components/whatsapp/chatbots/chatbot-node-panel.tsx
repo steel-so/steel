@@ -41,12 +41,21 @@ export interface PanelTeam {
   id: string
   name: string
 }
+/** A WhatsApp Flow (Z3) the "send form" block can pick. */
+export interface PanelFlow {
+  id: string
+  name: string
+  /** Published at Meta and not retired: the only ones that can be sent. */
+  sendable: boolean
+}
 
 interface PanelProps {
   node: ChatbotNode
   variables: string[]
   teams: PanelTeam[]
   agents: PanelAgent[]
+  /** Forms of the workspace; empty while loading or when there are none. */
+  flows?: PanelFlow[]
   readOnly: boolean
   onChange: (data: ChatbotNode['data']) => void
   onDelete: () => void
@@ -557,6 +566,94 @@ function WebhookForm({
   )
 }
 
+function SendFormForm({
+  node,
+  variables,
+  flows = [],
+  readOnly,
+  onChange,
+}: PanelProps & { node: ChatbotNodeOf<'send-form'> }) {
+  const { data } = node
+  const patch = (next: Partial<typeof data>) => onChange({ ...data, ...next })
+  const sendable = flows.filter((flow) => flow.sendable)
+  const current = flows.find((flow) => flow.id === data.flowId)
+  const options = [
+    { value: '', label: 'Escolha o formulário' },
+    ...sendable.map((flow) => ({ value: flow.id, label: flow.name })),
+    // A form picked earlier that cannot be sent anymore stays visible.
+    ...(current && !current.sendable
+      ? [{ value: current.id, label: `${current.name} (indisponível)` }]
+      : []),
+  ]
+  return (
+    <>
+      <p className='rounded-lg bg-muted p-3 text-muted-foreground text-xs'>
+        Envia um formulário do WhatsApp (Flow) já preenchido com o nome e o
+        telefone do contato. O bot segue para o próximo bloco sem esperar a
+        resposta: ela chega ao contato, ao CRM e à aba Respostas do formulário.
+        Funciona só em conexões da API oficial da Meta.
+      </p>
+      <Field label='Formulário'>
+        <SimpleSelect
+          ariaLabel='Formulário'
+          value={data.flowId}
+          disabled={readOnly}
+          options={options}
+          onChange={(flowId) => patch({ flowId })}
+        />
+        {sendable.length === 0 ? (
+          <p className='text-muted-foreground text-xs'>
+            Nenhum formulário publicado. Crie e publique um em Formulários.
+          </p>
+        ) : null}
+      </Field>
+      <Field
+        label='Mensagem (opcional)'
+        htmlFor='form-body'
+        hint='Em branco, vale a mensagem do próprio formulário.'
+      >
+        <TextWithVariables
+          id='form-body'
+          value={data.bodyText ?? ''}
+          variables={variables}
+          disabled={readOnly}
+          onChange={(bodyText) => patch({ bodyText: bodyText || undefined })}
+        />
+      </Field>
+      <Field
+        label='Texto do botão (opcional)'
+        htmlFor='form-cta'
+        hint='Até 30 caracteres. Em branco, vale o do formulário.'
+      >
+        <Input
+          id='form-cta'
+          value={data.ctaLabel ?? ''}
+          maxLength={30}
+          disabled={readOnly}
+          onChange={(event) =>
+            patch({ ctaLabel: event.target.value || undefined })
+          }
+        />
+      </Field>
+      <Field
+        label='Se o formulário não puder ser enviado (opcional)'
+        htmlFor='form-fallback'
+        hint='Texto enviado no lugar, por exemplo com um link. Vale para linhas Z-API e formulários descontinuados.'
+      >
+        <TextWithVariables
+          id='form-fallback'
+          value={data.fallbackText ?? ''}
+          variables={variables}
+          disabled={readOnly}
+          onChange={(fallbackText) =>
+            patch({ fallbackText: fallbackText || undefined })
+          }
+        />
+      </Field>
+    </>
+  )
+}
+
 function HandoffHumanForm({
   node,
   variables,
@@ -665,6 +762,8 @@ function Body(props: PanelProps) {
       )
     case 'webhook':
       return <WebhookForm {...props} node={node} />
+    case 'send-form':
+      return <SendFormForm {...props} node={node} />
     case 'handoff-human':
       return <HandoffHumanForm {...props} node={node} />
     case 'handoff-ai':

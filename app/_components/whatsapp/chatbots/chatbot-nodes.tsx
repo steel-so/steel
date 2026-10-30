@@ -4,6 +4,7 @@ import {
   Alert02Icon,
   BotIcon,
   CustomerSupportIcon,
+  File01Icon,
   GitBranchIcon,
   Link01Icon,
   ListViewIcon,
@@ -44,6 +45,7 @@ export const NODE_ICON: Record<ChatbotNodeType, IconType> = {
   condition: GitBranchIcon,
   'set-variable': SourceCodeIcon,
   webhook: Link01Icon,
+  'send-form': File01Icon,
   'handoff-human': CustomerSupportIcon,
   'handoff-ai': BotIcon,
   end: Tick02Icon,
@@ -132,6 +134,10 @@ function previewOf(node: ChatbotNode): string | null {
       return `${node.data.variable} = ${node.data.value || '(vazio)'}`
     case 'webhook':
       return `${node.data.method} ${node.data.url}`
+    case 'send-form':
+      return node.data.flowId
+        ? (node.data.bodyText ?? 'Envia o formulário escolhido')
+        : 'Escolha o formulário'
     case 'handoff-human':
     case 'end':
       return node.data.text ?? null
@@ -261,6 +267,7 @@ export const CHATBOT_NODE_TYPES_MAP = {
   condition: ChatbotNodeView,
   'set-variable': ChatbotNodeView,
   webhook: ChatbotNodeView,
+  'send-form': ChatbotNodeView,
   'handoff-human': ChatbotNodeView,
   'handoff-ai': ChatbotNodeView,
   end: ChatbotNodeView,

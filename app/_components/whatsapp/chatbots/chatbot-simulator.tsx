@@ -69,6 +69,13 @@ export function ChatbotSimulator({
       for (const output of outputs) {
         if (output.kind === 'text') {
           added.push({ id: nextId(), from: 'bot', text: output.text })
+        } else if (output.kind === 'form') {
+          // The dry run sends nothing: it only shows where the form goes out.
+          added.push({
+            id: nextId(),
+            from: 'bot',
+            text: `Formulário do WhatsApp: ${output.bodyText ?? 'o contato recebe o formulário para preencher.'}`,
+          })
         } else if (output.buttons ?? output.list) {
           // Reply buttons, or the rows of the Meta interactive list (more
           // than three options): tapping either sends the option's id.
