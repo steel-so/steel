@@ -26,10 +26,14 @@
 # Variáveis:
 #   DEPLOY_DIR            diretório com docker-compose.yml + .env (default /var/www/steel)
 #   HEALTHCHECK_TIMEOUT   segundos esperando cada réplica responder (default 120)
+#   IMAGE_PRUNE_AGE       idade mínima das imagens sem uso apagadas após o deploy (default 72h)
+#   DISK_WARN_PERCENT     uso do disco que gera aviso no fim do deploy (default 80)
 set -euo pipefail
 
 DEPLOY_DIR="${DEPLOY_DIR:-/var/www/steel}"
 HEALTHCHECK_TIMEOUT="${HEALTHCHECK_TIMEOUT:-120}"
+IMAGE_PRUNE_AGE="${IMAGE_PRUNE_AGE:-72h}"
+DISK_WARN_PERCENT="${DISK_WARN_PERCENT:-80}"
 # Serviços de app que rolam um por vez; o resto sobe junto, antes deles.
 APP_SERVICE_PATTERN='^steel-app(-[0-9]+)?$'
 HISTORY_FILE=".deploy-history"
@@ -83,6 +87,25 @@ set_tag() {
 }
 
 fail() { printf '[deploy] FALHA: %s\n' "$*" >&2; return 1; }
+
+# Cada deploy baixa uma imagem com tag nova e as antigas ficam no host: sem
+# limpeza o disco enche (a homologação parou por isso em 29/10/2026 e o
+# Postgres não conseguiu gravar o checkpoint). `image prune -f` sozinho só
+# apaga imagens sem tag; as versionadas exigem `-a`. Contêineres em uso (e a
+# imagem do tag atual) nunca entram, e o tag de rollback é baixado de novo
+# pelo `docker compose pull` do próprio deploy.
+prune_images() {
+  docker image prune -af --filter "until=${IMAGE_PRUNE_AGE}" >/dev/null ||
+    log "aviso: não foi possível limpar imagens antigas"
+  local used
+  used=$(df --output=pcent "$DEPLOY_DIR" 2>/dev/null | tail -n 1 | tr -dc '0-9')
+  if [[ -n "$used" ]]; then
+    log "disco em ${DEPLOY_DIR}: ${used}% usado"
+    if ((used >= DISK_WARN_PERCENT)); then
+      log "ATENÇÃO: disco com ${used}% (limite ${DISK_WARN_PERCENT}%) — ver docs/runbooks/disco-cheio.md"
+    fi
+  fi
+}
 
 # URL local de uma réplica, a partir da porta publicada no host
 # ("0.0.0.0:3000" ou "127.0.0.1:3001" → http://127.0.0.1:<porta>).
@@ -211,7 +234,7 @@ main() {
   else
     printf '%s\n' "$tag" >> "$HISTORY_FILE"
   fi
-  docker image prune -f >/dev/null
+  prune_images
   log "ok: rodando ${tag} (anterior: ${current:-<nenhum>})"
   log "rollback: scripts/deploy.sh --rollback   (ou workflow Rollback no GitHub)"
 }
