@@ -80,7 +80,7 @@ describe('crm-cadence mapper', () => {
         { status: 'REPLIED', n: 1 },
         { status: 'COMPLETED', n: 1 },
         { status: 'PAUSED', n: 1 },
-        { status: 'STOPPED', n: 1 },
+        { status: 'STOPPED', stopReason: 'CLICKED', n: 1 },
       ],
       [
         { position: 0, status: 'SENT', n: 5 },
@@ -89,9 +89,14 @@ describe('crm-cadence mapper', () => {
         { position: 1, status: 'SKIPPED', n: 1 },
       ],
       2,
+      [
+        { position: 0, opened: 3, clicked: 1 },
+        { position: 1, opened: 1, clicked: 0 },
+      ],
     )
     expect(stats).toMatchObject({
       enrolled: 6,
+      stoppedByClick: 1,
       active: 2,
       paused: 1,
       replied: 1,
@@ -100,8 +105,24 @@ describe('crm-cadence mapper', () => {
     })
     expect(stats.replyRate).toBeCloseTo(1 / 6)
     expect(stats.sentByStep).toEqual([
-      { position: 0, sent: 5, failed: 1 },
-      { position: 1, sent: 2, failed: 0 },
+      {
+        position: 0,
+        sent: 5,
+        skipped: 0,
+        failed: 1,
+        opened: 3,
+        clicked: 1,
+        reached: 6,
+      },
+      {
+        position: 1,
+        sent: 2,
+        skipped: 1,
+        failed: 0,
+        opened: 1,
+        clicked: 0,
+        reached: 3,
+      },
     ])
   })
 
@@ -109,7 +130,17 @@ describe('crm-cadence mapper', () => {
     expect(buildCadenceStats([], [], 1)).toMatchObject({
       enrolled: 0,
       replyRate: 0,
-      sentByStep: [{ position: 0, sent: 0, failed: 0 }],
+      sentByStep: [
+        {
+          position: 0,
+          sent: 0,
+          skipped: 0,
+          failed: 0,
+          opened: 0,
+          clicked: 0,
+          reached: 0,
+        },
+      ],
     })
   })
 })

@@ -77,6 +77,7 @@ beforeEach(() => {
   moduleAccess.isEnabled.mockResolvedValue(ok(true))
   repo.enrollmentCounts.mockResolvedValue(ok([]))
   repo.runCounts.mockResolvedValue(ok([]))
+  repo.trackingCounts.mockResolvedValue(ok([]))
   sender.mockResolvedValue(ok({ platform: false }))
 })
 
@@ -123,15 +124,22 @@ describe('list() and get()', () => {
     const cadence = createFakeCrmCadence({ id: 'c1' })
     repo.list.mockResolvedValue(ok([cadence]))
     repo.enrollmentCounts.mockResolvedValue(
-      ok([{ cadenceId: 'c1', status: 'ACTIVE', n: 3 }]),
+      ok([{ cadenceId: 'c1', status: 'ACTIVE', stopReason: null, n: 3 }]),
     )
     repo.runCounts.mockResolvedValue(
       ok([{ cadenceId: 'c1', position: 0, status: 'SENT', n: 4 }]),
     )
+    repo.trackingCounts.mockResolvedValue(
+      ok([{ cadenceId: 'c1', position: 0, opened: 2, clicked: 1 }]),
+    )
 
     const [dto] = expectOk(await CrmCadenceService.list('u1', 'ws1'))
     expect(dto.stats).toMatchObject({ enrolled: 3, active: 3 })
-    expect(dto.stats?.sentByStep[0].sent).toBe(4)
+    expect(dto.stats?.sentByStep[0]).toMatchObject({
+      sent: 4,
+      opened: 2,
+      clicked: 1,
+    })
   })
 
   it('should propagate repository and stats errors', async () => {
@@ -144,6 +152,9 @@ describe('list() and get()', () => {
     expectErr(await CrmCadenceService.list('u1', 'ws1'), 'DATABASE_ERROR')
 
     repo.runCounts.mockResolvedValueOnce(err(databaseError()))
+    expectErr(await CrmCadenceService.list('u1', 'ws1'), 'DATABASE_ERROR')
+
+    repo.trackingCounts.mockResolvedValueOnce(err(databaseError()))
     expectErr(await CrmCadenceService.list('u1', 'ws1'), 'DATABASE_ERROR')
   })
 
@@ -363,6 +374,7 @@ describe('update()', () => {
         description: 'desc',
         emailReplyTo: 'resp@mail.example.com',
         stopOnReply: false,
+        stopOnClick: true,
         weekdaysOnly: false,
       }),
     )
@@ -376,6 +388,7 @@ describe('update()', () => {
         description: 'desc',
         emailReplyTo: 'resp@mail.example.com',
         stopOnReply: false,
+        stopOnClick: true,
         weekdaysOnly: false,
       }),
       undefined,

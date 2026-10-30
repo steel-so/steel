@@ -14,7 +14,8 @@ export type CrmCadenceStopReasonDTO =
   | 'LEAD_DELETED'
   | 'NO_CONTACT'
   | 'CADENCE_ARCHIVED'
-export type CrmCadenceRunStatusDTO = 'SENT' | 'SKIPPED' | 'FAILED'
+  | 'CLICKED'
+export type CrmCadenceRunStatusDTO = 'SENT' | 'SKIPPED' | 'FAILED' | 'PENDING'
 
 export interface CrmCadenceStepDTO {
   id: string
@@ -28,6 +29,18 @@ export interface CrmCadenceStepDTO {
   templateVariables: string[]
 }
 
+export interface CrmCadenceStepStatsDTO {
+  position: number
+  sent: number
+  skipped: number
+  failed: number
+  /** Distinct e-mails opened / with a link clicked (EMAIL steps only). */
+  opened: number
+  clicked: number
+  /** Enrollments that got past this step (sent, skipped or failed). */
+  reached: number
+}
+
 export interface CrmCadenceStatsDTO {
   enrolled: number
   active: number
@@ -37,8 +50,10 @@ export interface CrmCadenceStatsDTO {
   stopped: number
   /** Share of enrollments that ended with a reply (0..1). */
   replyRate: number
-  /** Sent messages per step position. */
-  sentByStep: { position: number; sent: number; failed: number }[]
+  /** Per step position: executions, e-mail opens/clicks and the funnel. */
+  sentByStep: CrmCadenceStepStatsDTO[]
+  /** Enrollments ended by a click (`stopOnClick`). */
+  stoppedByClick: number
 }
 
 export interface CrmCadenceDTO {
@@ -51,6 +66,8 @@ export interface CrmCadenceDTO {
   emailReplyTo: string | null
   whatsappConnectionId: string | null
   stopOnReply: boolean
+  /** A click on a tracked link of an e-mail step also ends the enrollment. */
+  stopOnClick: boolean
   windowStartHour: number | null
   windowEndHour: number | null
   weekdaysOnly: boolean
@@ -68,6 +85,10 @@ export interface CrmCadenceRunDTO {
   type: CrmCadenceStepTypeDTO
   status: CrmCadenceRunStatusDTO
   detail: string | null
+  openedAt: string | null
+  clickedAt: string | null
+  openCount: number
+  clickCount: number
   createdAt: string
 }
 
