@@ -5,6 +5,7 @@ import {
   evaluateInventoryAlerts,
   type SdInventoryDiskUsage,
 } from '@/src/lib/servicedesk/inventory'
+import { parseSdInventoryDisks } from '@/src/mappers/sd-inventory.mapper'
 import { SdConfigItemRepository } from '@/src/repositories/sd-config-item.repository'
 import { SdConfigItemTypeRepository } from '@/src/repositories/sd-config-item-type.repository'
 import { SdInventoryAlertRepository } from '@/src/repositories/sd-inventory-alert.repository'
@@ -13,17 +14,28 @@ import {
   type SdInventoryDeviceRow,
   type SdInventorySoftwareInput,
 } from '@/src/repositories/sd-inventory-device.repository'
+import {
+  autoMergeDevice,
+  enrichPrimaryFromSecondary,
+} from './sd-inventory-auto-merge.service'
 import { SdInventorySettingsService } from './sd-inventory-settings.service'
 
 /** Nomes dos tipos de CMDB criados quando o workspace não escolheu um. */
 export const SD_INVENTORY_DEFAULT_TYPE_NAMES = {
   AGENT: 'Computador',
   SNMP: 'Equipamento de rede',
+  DISCOVERY: 'Equipamento de rede',
+} as const
+
+const CONFIG_ITEM_NOTES = {
+  AGENT: 'Descoberto automaticamente pelo agente de inventário.',
+  SNMP: 'Descoberto automaticamente pela varredura SNMP.',
+  DISCOVERY: 'Descoberto pela varredura de rede (ping/ARP) e adotado.',
 } as const
 
 /** Equipamento já normalizado (veio do agente ou do SNMP). */
 export interface SdInventoryDeviceInput {
-  source: 'AGENT' | 'SNMP'
+  source: 'AGENT' | 'SNMP' | 'DISCOVERY'
   externalKey: string
   hostname: string
   osName: string | null
@@ -46,6 +58,9 @@ export interface SdInventoryDeviceInput {
   snmpTargetId: string | null
   /** Cliente do item da CMDB criado (alvo SNMP com cliente). */
   customerId: string | null
+  /** `false` = descoberto por ping/ARP e ainda sem gestão (padrão `true`). */
+  managed?: boolean
+  discoveryRangeId?: string | null
 }
 
 export interface SdInventorySyncResult {
@@ -63,7 +78,7 @@ export interface SdInventorySyncResult {
  * série, fabricante, modelo e IP; nome, status, dono e criticidade ficam
  * com o que a equipe definiu.
  */
-async function syncConfigItem(
+export async function syncConfigItem(
   workspaceId: string,
   actorId: string,
   device: SdInventoryDeviceRow,
@@ -137,10 +152,7 @@ async function syncConfigItem(
     name: input.hostname,
     typeId,
     customerId: input.customerId,
-    notes:
-      input.source === 'AGENT'
-        ? 'Descoberto automaticamente pelo agente de inventário.'
-        : 'Descoberto automaticamente pela varredura SNMP.',
+    notes: CONFIG_ITEM_NOTES[input.source],
     ...facts,
   })
   if (!created.ok) return created
@@ -205,12 +217,24 @@ export async function syncInventoryDevice(
       tokenId: input.tokenId,
       lastSeenAt: now,
     },
+    {
+      managed: input.managed ?? true,
+      discoveryRangeId: input.discoveryRangeId ?? null,
+    },
   )
   if (!saved.ok) return saved
-  const device = saved.value
+
+  // A mesma máquina vista por outra origem vira uma só (sem item duplicado).
+  const merged = await autoMergeDevice(workspaceId, actorId, saved.value)
+  if (!merged.ok) return merged
+  const device = merged.value
 
   let configItemId = device.configItemId
-  if (settings.value.syncConfigItems) {
+  if (device.mergedIntoId) {
+    const primary = await enrichPrimaryFromSecondary(workspaceId, device)
+    if (!primary.ok) return primary
+    configItemId = primary.value?.configItemId ?? null
+  } else if (device.managed && settings.value.syncConfigItems) {
     const item = await syncConfigItem(
       workspaceId,
       actorId,
@@ -260,4 +284,56 @@ export async function syncInventoryDevice(
     openedAlerts: alerts.value.opened,
     resolvedAlerts: alerts.value.resolved,
   })
+}
+
+/** Reconstrói a entrada de sincronização a partir da ficha gravada. */
+export function deviceInputFromRow(
+  device: SdInventoryDeviceRow,
+): SdInventoryDeviceInput {
+  return {
+    source: device.source,
+    externalKey: device.externalKey,
+    hostname: device.hostname,
+    osName: device.osName,
+    osVersion: device.osVersion,
+    arch: device.arch,
+    manufacturer: device.manufacturer,
+    model: device.model,
+    serialNumber: device.serialNumber,
+    cpuModel: device.cpuModel,
+    cpuCores: device.cpuCores,
+    ramTotalMb: device.ramTotalMb,
+    ramUsedMb: device.ramUsedMb,
+    ipAddresses: device.ipAddresses,
+    macAddresses: device.macAddresses,
+    disks: parseSdInventoryDisks(device.disks),
+    agentVersion: device.agentVersion,
+    software: null,
+    tokenId: device.tokenId,
+    snmpTargetId: device.snmpTargetId,
+    customerId: null,
+    managed: device.managed,
+  }
+}
+
+/**
+ * Garante o item da CMDB de uma ficha já gravada (adoção de um descoberto,
+ * fim de uma mescla), respeitando o ajuste "manter a CMDB atualizada".
+ */
+export async function ensureConfigItemForDevice(
+  workspaceId: string,
+  actorId: string,
+  device: SdInventoryDeviceRow,
+  customerId: string | null = null,
+): Promise<Result<string | null>> {
+  const settings = await SdInventorySettingsService.load(workspaceId)
+  if (!settings.ok) return settings
+  if (!settings.value.syncConfigItems) return ok(device.configItemId)
+  return syncConfigItem(
+    workspaceId,
+    actorId,
+    device,
+    { ...deviceInputFromRow(device), customerId },
+    settings.value.defaultTypeId,
+  )
 }

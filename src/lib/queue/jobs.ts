@@ -1126,6 +1126,9 @@ export type SatisfactionSurveyJobPayload = {
 export const ServicedeskInventoryJob = {
   ScanDue: 'scan-due',
   ScanTarget: 'scan-target',
+  /** Faixas de descoberta por ping/ARP com opt-in ligado e a hora chegada. */
+  DiscoveryDue: 'discovery-due',
+  DiscoveryRange: 'discovery-range',
 } as const
 
 export type ServicedeskInventoryJob =
@@ -1134,4 +1137,6 @@ export type ServicedeskInventoryJob =
 export type ServicedeskInventoryJobPayload = {
   [ServicedeskInventoryJob.ScanDue]: Record<string, never>
   [ServicedeskInventoryJob.ScanTarget]: { targetId: string }
+  [ServicedeskInventoryJob.DiscoveryDue]: Record<string, never>
+  [ServicedeskInventoryJob.DiscoveryRange]: { rangeId: string }
 }
