@@ -99,7 +99,8 @@ describe('buildMetaFlowJson', () => {
       terminal: true,
       success: true,
     })
-    expect(only.data).toBeUndefined()
+    // The first screen declares the data its text fields can be prefilled with.
+    expect(Object.keys((only.data ?? {}) as object)).toEqual(['nome'])
     const form = only.layout.children.find((c) => c.type === 'Form') as {
       children: Array<Record<string, unknown>>
     }

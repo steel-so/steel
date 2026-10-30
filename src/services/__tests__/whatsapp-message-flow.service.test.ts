@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
+import { createFakeWhatsAppContact } from '@/src/__tests__/factories/whatsapp-contact.factory'
 import { createFakeWhatsAppConversationWithPreview } from '@/src/__tests__/factories/whatsapp-conversation.factory'
 import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-message.factory'
 import { createFakeWhatsAppTemplate } from '@/src/__tests__/factories/whatsapp-template.factory'
@@ -160,6 +161,104 @@ describe('WhatsAppMessageService.sendFlow()', () => {
     expect(messageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'TEMPLATE', text: 'cadastro' }),
     )
+  })
+
+  describe('prefill', () => {
+    const definition = {
+      screens: [
+        {
+          title: 'Dados',
+          fields: [
+            {
+              key: 'nome',
+              label: 'Nome',
+              type: 'text' as const,
+              required: false,
+              mapping: { target: 'contact' as const, attribute: 'name' },
+            },
+            {
+              key: 'fone',
+              label: 'Telefone',
+              type: 'phone' as const,
+              required: false,
+            },
+          ],
+        },
+      ],
+    }
+
+    beforeEach(() => {
+      conversationRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppConversationWithPreview({
+            id: 'conv1',
+            workspaceId: 'ws1',
+            connectionId: 'conn1',
+            contactId: 'contact1',
+            aiActive: false,
+            contact: createFakeWhatsAppContact({
+              id: 'contact1',
+              name: 'Maria',
+              waId: '5511999990000',
+            }),
+          }),
+        ),
+      )
+    })
+
+    it('passes the contact data to the first screen of an interactive send', async () => {
+      expectOk(
+        await WhatsAppMessageService.sendFlow('u1', 'ws1', 'conv1', {
+          ...interactive,
+          definition,
+        }),
+      )
+      expect(send.flow).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          data: { nome: 'Maria', fone: '5511999990000' },
+        }),
+        expect.anything(),
+      )
+    })
+
+    it('puts the data on the FLOW button of a template send', async () => {
+      templateRepo.findByConnectionAndName.mockResolvedValue(ok(null))
+      expectOk(
+        await WhatsAppMessageService.sendFlow('u1', 'ws1', 'conv1', {
+          ...byTemplate,
+          definition,
+        }),
+      )
+      expect(send.template.mock.calls[0][1].components).toEqual([
+        {
+          type: 'button',
+          sub_type: 'flow',
+          index: '0',
+          parameters: [
+            {
+              type: 'action',
+              action: {
+                flow_token: 'stlf.f.n',
+                flow_action_data: { nome: 'Maria', fone: '5511999990000' },
+              },
+            },
+          ],
+        },
+      ])
+    })
+
+    it('sends no data without a definition', async () => {
+      expectOk(
+        await WhatsAppMessageService.sendFlow(
+          'u1',
+          'ws1',
+          'conv1',
+          interactive,
+        ),
+      )
+      expect(send.flow.mock.calls[0][1].data).toEqual({})
+    })
   })
 
   it('falls back to button index 0 when the template is unknown or malformed', async () => {

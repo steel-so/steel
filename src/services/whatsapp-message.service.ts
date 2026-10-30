@@ -11,6 +11,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import type { WhatsAppConversationScope } from '@/src/lib/whatsapp/conversation-scope'
 import { agentCost } from '@/src/lib/whatsapp/cost'
+import { flowPrefillData } from '@/src/lib/whatsapp/flows/prefill'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
@@ -24,6 +25,7 @@ import {
 } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WhatsAppTemplateRepository } from '@/src/repositories/whatsapp-template.repository'
+import type { FlowDefinition } from '@/src/schemas/whatsapp-flow.schema'
 import type {
   ListWhatsAppMessagesDTO,
   ReactToWhatsAppMessageDTO,
@@ -198,6 +200,11 @@ export type WhatsAppFlowSendInput = (
 ) & {
   /** Connection that owns the flow at Meta: the chat must be on it. */
   connectionId: string
+  /**
+   * What the flow asks (the published copy). When given, the first screen is
+   * prefilled with the contact's name and phone.
+   */
+  definition?: FlowDefinition
 }
 
 interface TemplateButtonsBlock {
@@ -425,6 +432,12 @@ export const WhatsAppMessageService = {
     }
     const to = conversation.contact.waId
     const cost = agentCost(actorId, conversationId)
+    const prefill = input.definition
+      ? flowPrefillData(input.definition, {
+          name: conversation.contact.name,
+          waId: to,
+        })
+      : {}
 
     if (input.kind === 'INTERACTIVE') {
       const sent = await WhatsAppSend.flow(
@@ -437,6 +450,7 @@ export const WhatsAppMessageService = {
           ctaLabel: input.ctaLabel,
           screen: input.screen,
           draft: input.draft,
+          data: prefill,
         },
         { cost },
       )
@@ -472,7 +486,15 @@ export const WhatsAppMessageService = {
             sub_type: 'flow',
             index,
             parameters: [
-              { type: 'action', action: { flow_token: input.flowToken } },
+              {
+                type: 'action',
+                action: {
+                  flow_token: input.flowToken,
+                  ...(Object.keys(prefill).length > 0
+                    ? { flow_action_data: prefill }
+                    : {}),
+                },
+              },
             ],
           },
         ],

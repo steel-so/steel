@@ -98,6 +98,8 @@ export interface WhatsAppOutboundFlow {
   screen: string
   /** Send a flow that is still a draft at Meta (tests). */
   draft?: boolean
+  /** Values for the first screen (prefill); omitted when empty. */
+  data?: Record<string, string>
 }
 
 export interface WhatsAppQrCode {

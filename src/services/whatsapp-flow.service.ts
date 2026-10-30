@@ -678,6 +678,10 @@ export const WhatsAppFlowService = {
     }
 
     const flowToken = buildFlowToken(flow.id, createId())
+    // The published copy is what the contact sees, and what gets prefilled.
+    const definition = parseStoredDefinition(
+      flow.publishedDefinition ?? flow.definition,
+    )
     const sent = await WhatsAppMessageService.sendFlow(
       actorId,
       workspaceId,
@@ -690,6 +694,7 @@ export const WhatsAppFlowService = {
             language: dto.language,
             flowToken,
             label: flow.name,
+            definition,
           }
         : {
             kind: 'INTERACTIVE',
@@ -701,6 +706,7 @@ export const WhatsAppFlowService = {
             screen: firstScreenId(),
             draft: flow.metaStatus !== 'PUBLISHED',
             label: flow.name,
+            definition,
           },
     )
     if (!sent.ok) return sent

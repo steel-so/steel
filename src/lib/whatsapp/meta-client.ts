@@ -257,7 +257,13 @@ export function buildMetaFlowMessage(
         flow_id: input.flowId,
         flow_cta: input.ctaLabel,
         flow_action: 'navigate',
-        flow_action_payload: { screen: input.screen },
+        flow_action_payload: {
+          screen: input.screen,
+          // Meta rejects an empty `data` object, so it only goes when filled.
+          ...(input.data && Object.keys(input.data).length > 0
+            ? { data: input.data }
+            : {}),
+        },
         ...(input.draft ? { mode: 'draft' } : {}),
       },
     },

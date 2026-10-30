@@ -48,6 +48,10 @@ import type {
 import type { WhatsAppBroadcastMarketingMetricsDTO } from '@/types/whatsapp-broadcast-marketing'
 import { assertModuleMember } from './authz'
 import { assertFeature } from './feature-flag.service'
+import {
+  type PreparedTemplateFlow,
+  WhatsAppFlowDispatchService,
+} from './whatsapp-flow-dispatch.service'
 import { notifyWhatsAppUsers } from './whatsapp-notify'
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
 
@@ -548,6 +552,7 @@ export const WhatsAppBroadcastService = {
 
     let sendResult: Result<WhatsAppSendResult>
     let viaMarketingLite = false
+    let flowSend: PreparedTemplateFlow | null = null
     if (list.templateId) {
       const template = await WhatsAppTemplateRepository.findById(
         list.templateId,
@@ -572,6 +577,24 @@ export const WhatsAppBroadcastService = {
         body: values.body ?? {},
         buttons: values.buttons ?? {},
       })
+
+      // A template with a FLOW button (Z3): every recipient gets its own
+      // token (the answer finds its send) and the prefilled first screen.
+      if (connection.value.provider === 'META') {
+        const prepared =
+          await WhatsAppFlowDispatchService.prepareTemplateButton(
+            list.workspaceId,
+            template.value.components,
+            {
+              id: recipient.contact.id,
+              name: recipient.contact.name,
+              waId: recipient.contact.waId,
+            },
+          )
+        if (!prepared.ok) return prepared
+        flowSend = prepared.value
+        if (flowSend) components.push(flowSend.component)
+      }
 
       // Marketing Messages Lite (Z11): only marketing templates on Meta
       // connections, and only when the workspace turned it on.
@@ -647,6 +670,14 @@ export const WhatsAppBroadcastService = {
           status: 'FAILED',
           errorMessage: sendResult.error.message,
         })
+    if (sendResult.ok && flowSend) {
+      await WhatsAppFlowDispatchService.recordSent({
+        workspaceId: list.workspaceId,
+        flowId: flowSend.flow.id,
+        contactId: recipient.contact.id,
+        flowToken: flowSend.flowToken,
+      })
+    }
     // Já enviado: não devolve erro (o job tentaria de novo e duplicaria o
     // envio) — só registra para investigação.
     if (!recorded.ok) {
