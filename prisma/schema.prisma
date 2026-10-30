@@ -5592,6 +5592,12 @@ enum NotificationKind {
   CRM_NEWSLETTER_DIGEST_SKIPPED
   /// Comunicação (nov: zap-followups): a satisfaction survey got a detractor answer.
   WHATSAPP_SURVEY_DETRACTOR
+  /// nov ai-crm-followups: an agent version finished its eval/simulation gate.
+  AGENT_VERSION_GATE_FINISHED
+  /// nov ai-crm-followups: a persona simulation of an agent ended.
+  AGENT_SIMULATION_FINISHED
+  /// nov ai-crm-followups: a bulk CNPJ enrichment run ended.
+  CRM_CNPJ_ENRICHMENT_FINISHED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -8236,6 +8242,10 @@ model SteelAgent {
   publishedVersionId  String?  @map("published_version_id")
   /// A2: version splitting the traffic with the published one (A/B).
   challengerVersionId String?  @map("challenger_version_id")
+  /// A2+A3: also gate versions on the saved simulation scenarios (default off).
+  simGateEnabled      Boolean  @default(false) @map("sim_gate_enabled")
+  /// A2+A3: minimum share (0..1) of passing simulation cases.
+  simGateMinPassRate  Float    @default(0.8) @map("sim_gate_min_pass_rate")
   /// Last cron occurrence already dispatched (schedule dedupe).
   lastRunAt     DateTime?             @map("last_run_at")
   nextRunAt     DateTime?             @map("next_run_at")
@@ -10867,6 +10877,8 @@ enum CrmCnpjRunStatus {
   RUNNING
   COMPLETED
   FAILED
+  /// Cancelled by an admin (cooperative: checked between companies).
+  CANCELED
 }
 
 /// Receita Federal profile of a CrmCompany (one row per company, refreshed in
@@ -10915,6 +10927,8 @@ model CrmCnpjEnrichmentRun {
   invalid     Int              @default(0)
   failed      Int              @default(0)
   error       String?
+  /// Set when an admin asked to stop; the worker checks it between companies.
+  cancelRequestedAt DateTime? @map("cancel_requested_at")
   startedAt   DateTime?        @map("started_at")
   finishedAt  DateTime?        @map("finished_at")
   createdAt   DateTime         @default(now()) @map("created_at")
@@ -11228,6 +11242,10 @@ model SteelAgentVersion {
   evalPassed     Int?                    @map("eval_passed")
   evalTotal      Int?                    @map("eval_total")
   evalNote       String?                 @map("eval_note") @db.Text
+  /// Simulation that gated this version (when the agent gates on simulations).
+  simulationId   String?                 @map("simulation_id")
+  simPassed      Int?                    @map("sim_passed")
+  simTotal       Int?                    @map("sim_total")
   createdById    String?                 @map("created_by_id")
   publishedAt    DateTime?               @map("published_at")
   resolvedAt     DateTime?               @map("resolved_at")
@@ -11642,6 +11660,9 @@ model SteelAgentSimulation {
   costUsd      Decimal                    @default(0) @map("cost_usd") @db.Decimal(14, 6)
   modelKey     String?                    @map("model_key")
   error        String?                    @db.Text
+  /// Version under test when this run is the simulation gate of a version
+  /// (the runner uses that version's instructions and tools).
+  agentVersionId String?                  @map("agent_version_id")
   startedAt    DateTime?                  @map("started_at")
   finishedAt   DateTime?                  @map("finished_at")
   createdAt    DateTime                   @default(now()) @map("created_at")

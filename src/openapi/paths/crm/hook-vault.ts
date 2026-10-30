@@ -6,9 +6,14 @@ import {
 } from '@/src/schemas/crm-hook-vault.schema'
 import { CrmNlSearchSchema } from '@/src/schemas/crm-nl-search.schema'
 import { CrmTextAiAssistSchema } from '@/src/schemas/crm-text-ai.schema'
-import type { RouteConfig } from '../../registry'
+import type { ErrorEntry, RouteConfig } from '../../registry'
 import { CrmTextAiReplyDTO } from '../../schemas/crm/forms'
 import { CrmHookVaultItemDTO } from '../../schemas/crm/hook-vault'
+import {
+  CrmNlCompanySearchResultDTO,
+  CrmNlLeadSearchResultDTO,
+  CrmNlPersonSearchResultDTO,
+} from '../../schemas/crm/nl-search'
 import { CrmNlSearchResultDTO } from '../../schemas/crm/opportunities'
 import { CRM_ERRORS, crmAccess, describe, notFoundError } from './shared'
 
@@ -20,6 +25,34 @@ import { CRM_ERRORS, crmAccess, describe, notFoundError } from './shared'
 const HOOK_PARAM = { description: 'ID do item do Hook Vault.' }
 
 const HOOK_NOT_FOUND = notFoundError('CrmHookVaultItem', 'Item inexistente')
+
+const NL_SEARCH_ERRORS: ErrorEntry[] = [
+  ...CRM_ERRORS,
+  {
+    code: 'FEATURE_NOT_ENABLED',
+    when: 'Feature `crm.aiAssistant` desligada para o workspace',
+  },
+  {
+    code: 'AI_QUOTA_EXCEEDED',
+    when: 'Cota mensal de IA do workspace esgotada',
+  },
+  {
+    code: 'AI_PROVIDER_UNAVAILABLE',
+    when: 'Nenhum modelo habilitado com provedor configurado',
+  },
+  {
+    code: 'CRM_NL_SEARCH_FAILED',
+    when: 'Falha do provedor ou resposta fora do formato',
+  },
+  {
+    code: 'VALIDATION_ERROR',
+    message: 'Dados inválidos',
+    when: 'Pergunta vazia ou com mais de 300 caracteres',
+  },
+]
+
+const NL_SEARCH_NOTE =
+  'A IA só recebe a pergunta e a data de hoje, nunca dados do CRM, e o filtro validado roda no repositório do workspace, então o resultado nunca passa do que o usuário já vê (até 200 itens; `truncated` indica que havia mais). `interpretation` traz como a pergunta foi lida. Usa a IA do workspace e consome a cota mensal de IA.'
 
 export const crmHookVaultRoutes: RouteConfig[] = [
   /* ------------------------------ Hook Vault ------------------------------ */
@@ -175,5 +208,59 @@ export const crmHookVaultRoutes: RouteConfig[] = [
         when: 'Pergunta vazia ou com mais de 300 caracteres',
       },
     ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/leads/search',
+    tags: ['CRM · IA'],
+    summary: 'Buscar leads por pergunta livre',
+    description: describe(
+      `Converte uma pergunta em português ("leads do WhatsApp parados há 7 dias") em um filtro estruturado e validado sobre os leads do funil. ${NL_SEARCH_NOTE}`,
+      crmAccess('leads', 'VIEW'),
+    ),
+    body: CrmNlSearchSchema,
+    responses: {
+      200: {
+        description: 'Filtro interpretado e leads encontrados.',
+        schema: CrmNlLeadSearchResultDTO,
+      },
+    },
+    errors: NL_SEARCH_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/people/search',
+    tags: ['CRM · IA'],
+    summary: 'Buscar pessoas por pergunta livre',
+    description: describe(
+      `Converte uma pergunta em português ("diretores com e-mail da Acme") em um filtro estruturado e validado sobre as pessoas. ${NL_SEARCH_NOTE}`,
+      crmAccess('people', 'VIEW'),
+    ),
+    body: CrmNlSearchSchema,
+    responses: {
+      200: {
+        description: 'Filtro interpretado e pessoas encontradas.',
+        schema: CrmNlPersonSearchResultDTO,
+      },
+    },
+    errors: NL_SEARCH_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/companies/search',
+    tags: ['CRM · IA'],
+    summary: 'Buscar empresas por pergunta livre',
+    description: describe(
+      `Converte uma pergunta em português ("empresas de alimentos com mais de 50 funcionários") em um filtro estruturado e validado sobre as empresas; o ramo de atividade é buscado no CNAE da Receita (enriquecimento pelo CNPJ). ${NL_SEARCH_NOTE}`,
+      crmAccess('companies', 'VIEW'),
+    ),
+    body: CrmNlSearchSchema,
+    responses: {
+      200: {
+        description: 'Filtro interpretado e empresas encontradas.',
+        schema: CrmNlCompanySearchResultDTO,
+      },
+    },
+    errors: NL_SEARCH_ERRORS,
   },
 ]

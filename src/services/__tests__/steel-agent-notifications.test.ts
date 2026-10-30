@@ -12,7 +12,11 @@ import {
 import {
   notifyAgentApprovalRequested,
   notifyAgentRunFailed,
+  notifyAgentSimulationFinished,
+  notifyAgentVersionGateFinished,
   steelAgentRunPath,
+  steelAgentSimulationPath,
+  steelAgentVersionsPath,
 } from '../steel-agent-notifications'
 
 const emit = vi.mocked(emitNotification)
@@ -78,5 +82,102 @@ describe('steel agent notifications', () => {
     expect(input.recipients).toEqual(['owner1', 'admin1'])
     expect(input.body).toHaveLength(280)
     expect(input.dedupeKey).toBe('agent-run-failed:r1')
+  })
+})
+
+describe('steel agent version gate and simulation notices', () => {
+  const gate = {
+    workspaceId: 'ws1',
+    agentId: 'a1',
+    agentName: 'Triagem',
+    ownerId: 'owner1',
+    createdById: 'editor1',
+    versionId: 'v2',
+    number: 2,
+  }
+
+  it('should build the deep links', () => {
+    expect(steelAgentVersionsPath('a1')).toBe('/ai/agents/a1?tab=versions')
+    expect(steelAgentSimulationPath('a1', 's1')).toBe(
+      '/ai/agents/a1/simulations/s1',
+    )
+  })
+
+  it.each([
+    ['PUBLISHED', 'Triagem: versão 2 publicada'],
+    ['CHALLENGER', 'Triagem: versão 2 em teste A/B'],
+    ['REJECTED', 'Triagem: versão 2 reprovada na avaliação'],
+  ] as const)(
+    'should notify owner and editor when the gate ends as %s',
+    async (outcome, title) => {
+      await notifyAgentVersionGateFinished({
+        ...gate,
+        outcome,
+        detail: 'x'.repeat(400),
+      })
+      const input = emit.mock.calls[emit.mock.calls.length - 1][0]
+      expect(input).toMatchObject({
+        workspaceId: 'ws1',
+        recipients: ['owner1', 'editor1'],
+        kind: 'AGENT_VERSION_GATE_FINISHED',
+        title,
+        path: '/ai/agents/a1?tab=versions',
+        dedupeKey: 'agent-version-gate:v2',
+      })
+      expect(input.body).toHaveLength(280)
+    },
+  )
+
+  const sim = {
+    workspaceId: 'ws1',
+    agentId: 'a1',
+    agentName: 'Triagem',
+    ownerId: 'owner1',
+    startedById: 'starter',
+    simulationId: 's1',
+    passed: 3,
+    failed: 1,
+    avgScore: 82,
+    error: null,
+  }
+
+  it('should summarize a completed simulation', async () => {
+    await notifyAgentSimulationFinished({ ...sim, status: 'COMPLETED' })
+    expect(emit).toHaveBeenLastCalledWith({
+      workspaceId: 'ws1',
+      recipients: ['owner1', 'starter'],
+      kind: 'AGENT_SIMULATION_FINISHED',
+      title: 'Triagem: simulação concluída',
+      body: '3 de 4 cenários passaram (nota média 82).',
+      path: '/ai/agents/a1/simulations/s1',
+      dedupeKey: 'agent-simulation:s1',
+    })
+  })
+
+  it('should omit the score when nothing was graded', async () => {
+    await notifyAgentSimulationFinished({
+      ...sim,
+      status: 'COMPLETED',
+      avgScore: null,
+    })
+    expect(emit.mock.calls[emit.mock.calls.length - 1][0].body).toBe(
+      '3 de 4 cenários passaram.',
+    )
+  })
+
+  it('should explain a failed or skipped simulation', async () => {
+    await notifyAgentSimulationFinished({
+      ...sim,
+      status: 'SKIPPED',
+      error: 'A cota mensal de IA do workspace acabou.',
+    })
+    let input = emit.mock.calls[emit.mock.calls.length - 1][0]
+    expect(input.title).toBe('Triagem: simulação não rodou')
+    expect(input.body).toBe('A cota mensal de IA do workspace acabou.')
+
+    await notifyAgentSimulationFinished({ ...sim, status: 'FAILED' })
+    input = emit.mock.calls[emit.mock.calls.length - 1][0]
+    expect(input.title).toBe('Triagem: simulação falhou')
+    expect(input.body).toBe('Nenhum cenário foi avaliado.')
   })
 })

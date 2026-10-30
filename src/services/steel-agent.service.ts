@@ -390,6 +390,15 @@ export const SteelAgentService = {
       if (!set.ok) return set
     }
 
+    const simGateEnabled =
+      dto.simGateEnabled !== undefined
+        ? dto.simGateEnabled
+        : current.value.simGateEnabled
+    if (dto.simGateEnabled) {
+      const gate = await SteelAgentVersionService.checkSimulationGate(agentId)
+      if (!gate.ok) return gate
+    }
+
     // Instructions, tools and the round cap are versioned: they reach the
     // agent through `SteelAgentVersionService` (gate eval, optional A/B).
     const {
@@ -422,6 +431,7 @@ export const SteelAgentService = {
         changeNote: changeNote ?? null,
         rolloutPercent: rolloutPercent ?? null,
         evalSetId,
+        simGateEnabled,
       })
       if (!submitted.ok) return submitted
       version = submitted.value

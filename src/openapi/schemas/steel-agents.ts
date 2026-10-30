@@ -75,6 +75,15 @@ export const SteelAgentDTO = dto(
         description: 'Parcela mínima (0 a 1) de casos aprovados para publicar.',
         example: 0.8,
       }),
+      simGateEnabled: z.boolean().meta({
+        description:
+          'A3: além da avaliação, a versão precisa passar nos cenários da última simulação salva do agente. Desligado por padrão.',
+      }),
+      simGateMinPassRate: z.number().meta({
+        description:
+          'Parcela mínima (0 a 1) de cenários aprovados quando `simGateEnabled`.',
+        example: 0.8,
+      }),
       publishedVersionId: z.string().nullable().meta({
         description:
           'Versão que o agente executa; os campos `instructions`, `tools` e `maxToolRounds` espelham essa versão.',
@@ -148,6 +157,13 @@ export const SteelAgentVersionDTO = dto(
     evalTotal: z.number().int().nullable(),
     evalPassRate: z.number().nullable(),
     evalNote: z.string().nullable(),
+    simulationId: z.string().nullable().meta({
+      description:
+        'Simulação que travou a versão (A3), quando a trava está ligada.',
+    }),
+    simPassed: z.number().int().nullable(),
+    simTotal: z.number().int().nullable(),
+    simPassRate: z.number().nullable(),
     createdById: z.string().nullable(),
     publishedAt: dateTime().nullable(),
     resolvedAt: dateTime().nullable(),
@@ -166,6 +182,8 @@ export const SteelAgentVersionListDTO = dto(
     challengerVersionId: z.string().nullable(),
     evalSetId: z.string().nullable(),
     evalMinPassRate: z.number(),
+    simGateEnabled: z.boolean(),
+    simGateMinPassRate: z.number(),
     canManage: z.boolean(),
   }),
 )

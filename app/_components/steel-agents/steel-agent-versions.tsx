@@ -124,9 +124,19 @@ function VersionCard({
           Avaliação: {version.evalPassed} de {version.evalTotal} casos (
           {formatRate(version.evalPassRate)}).
         </p>
-      ) : version.status === 'PENDING_EVAL' ? (
+      ) : version.status === 'PENDING_EVAL' && !version.simulationId ? (
         <p className='text-muted-foreground text-sm'>
           Aguardando o resultado da avaliação…
+        </p>
+      ) : null}
+      {version.simTotal !== null ? (
+        <p className='text-muted-foreground text-sm'>
+          Simulação: {version.simPassed} de {version.simTotal} cenários (
+          {formatRate(version.simPassRate)}).
+        </p>
+      ) : version.status === 'PENDING_EVAL' && version.simulationId ? (
+        <p className='text-muted-foreground text-sm'>
+          Rodando os cenários de simulação…
         </p>
       ) : null}
       {version.evalNote && version.status === 'REJECTED' ? (
@@ -245,6 +255,9 @@ export function SteelAgentVersions({
         {data.evalSetId
           ? `Mudanças só são publicadas se ao menos ${formatRate(data.evalMinPassRate)} dos casos do conjunto de avaliação passarem.`
           : 'Sem conjunto de avaliação: as mudanças são publicadas na hora. Configure um na aba Configuração para travar a publicação.'}
+        {data.simGateEnabled
+          ? ` Também precisam passar em ao menos ${formatRate(data.simGateMinPassRate)} dos cenários de simulação salvos.`
+          : ''}
       </p>
 
       {published && challenger ? (

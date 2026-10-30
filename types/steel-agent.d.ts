@@ -78,6 +78,10 @@ export interface SteelAgentDTO {
   evalSetId: string | null
   /** A2: minimum share (0..1) of passing eval cases to publish a version. */
   evalMinPassRate: number
+  /** A3: versions also have to pass the saved simulation scenarios. */
+  simGateEnabled: boolean
+  /** A3: minimum share (0..1) of passing simulation cases. */
+  simGateMinPassRate: number
   /** A2: version the agent runs (its fields mirror it). */
   publishedVersionId: string | null
   /** A2: version splitting the traffic with the published one. */
@@ -139,6 +143,12 @@ export interface SteelAgentVersionDTO {
   /** evalPassed / evalTotal, 0..1. */
   evalPassRate: number | null
   evalNote: string | null
+  /** A3: simulation that gated this version (null = no simulation gate). */
+  simulationId: string | null
+  simPassed: number | null
+  simTotal: number | null
+  /** simPassed / simTotal, 0..1. */
+  simPassRate: number | null
   createdById: string | null
   publishedAt: string | null
   resolvedAt: string | null
@@ -153,6 +163,8 @@ export interface SteelAgentVersionListDTO {
   challengerVersionId: string | null
   evalSetId: string | null
   evalMinPassRate: number
+  simGateEnabled: boolean
+  simGateMinPassRate: number
   /** Whether the caller can publish, restore and stop experiments. */
   canManage: boolean
 }

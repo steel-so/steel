@@ -46,6 +46,9 @@ export interface SteelAgentInput {
   /** A2: eval set that gates new versions (null = none). */
   evalSetId?: string | null
   evalMinPassRate?: number
+  /** A3: also replay the saved simulation scenarios before publishing (edit only). */
+  simGateEnabled?: boolean
+  simGateMinPassRate?: number
 }
 
 /** Extra fields of an edit that describe the version it creates. */

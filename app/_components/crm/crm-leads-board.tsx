@@ -18,6 +18,11 @@ import {
   STAGE_LABELS,
   STAGE_STYLES,
 } from '@/app/_components/crm/crm-lead-stage'
+import { CrmNlSearchBar } from '@/app/_components/crm/crm-nl-search-bar'
+import {
+  applyNlResult,
+  type CrmNlAnyResult,
+} from '@/app/_components/crm/crm-nl-search-result'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
 import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
@@ -274,9 +279,10 @@ export function CrmLeadsBoard({
     (f) => (filters[f.key] ?? '').trim() !== '',
   )
 
+  const [nlResult, setNlResult] = useState<CrmNlAnyResult | null>(null)
   const visibleLeads = useMemo(() => {
     const term = search.trim().toLowerCase()
-    const filtered = leads.filter((lead) => {
+    const filtered = applyNlResult(leads, nlResult).filter((lead) => {
       if (term) {
         const haystack = FILTERABLE_FIELDS.map((f) =>
           String(leadFieldValue(lead, f.key)),
@@ -307,7 +313,7 @@ export function CrmLeadsBoard({
       }
       return 0
     })
-  }, [leads, search, filters, sorting, activeFilters])
+  }, [leads, nlResult, search, filters, sorting, activeFilters])
 
   const toggleSort = (key: LeadFieldKey, desc: boolean) =>
     setSorting((cur) => {
@@ -345,6 +351,13 @@ export function CrmLeadsBoard({
         workspaceId={workspaceId}
         slug={slug}
       />
+      <div className='-mx-4 -mt-4'>
+        <CrmNlSearchBar
+          workspaceId={workspaceId}
+          entity='leads'
+          onResult={setNlResult}
+        />
+      </div>
       <div className='flex items-center justify-between'>
         <p className='text-muted-foreground text-sm'>
           {visibleLeads.length === leads.length

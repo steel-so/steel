@@ -3,12 +3,15 @@ import { logger } from '@/lib/axiom/logger'
 import { err, ok, type Result } from '@/src/lib/result'
 import { CrmCnpjRunRepository } from '@/src/repositories/crm-cnpj-run.repository'
 import { enrichCompany } from './crm-cnpj-enrichment.service'
+import { notifyCnpjRunFinished } from './crm-cnpj-notifications'
 
 /**
  * Worker side of the bulk CNPJ enrichment. Walks the workspace's companies
  * that have a CNPJ in id order, one provider call at a time (the public
  * BrasilAPI is rate limited per IP), and writes the counters after every
- * page so the UI can show progress.
+ * page so the UI can show progress. An admin can cancel a run: the flag is
+ * read between two companies (cooperative cancel), the company in flight
+ * always finishes. Every ending notifies whoever started the run.
  */
 
 const PAGE_SIZE = 25
@@ -18,7 +21,7 @@ const RATE_LIMIT_BACKOFF_MS = 30_000
 const MAX_RATE_LIMIT_RETRIES = 3
 
 type RunSummary = {
-  status: 'COMPLETED' | 'FAILED'
+  status: 'COMPLETED' | 'FAILED' | 'CANCELED'
   processed: number
   enriched: number
 }
@@ -35,7 +38,11 @@ export const CrmCnpjEnrichmentRunner = {
     if (!found.ok) return found
     const run = found.value
     // A finished run is never replayed (a duplicated job is a no-op).
-    if (run.status === 'COMPLETED' || run.status === 'FAILED') {
+    if (
+      run.status === 'COMPLETED' ||
+      run.status === 'FAILED' ||
+      run.status === 'CANCELED'
+    ) {
       return ok({
         status: run.status,
         processed: run.processed,
@@ -63,6 +70,21 @@ export const CrmCnpjEnrichmentRunner = {
       failed: 0,
     }
     let afterId: string | undefined
+    let canceled = false
+
+    const finishNotice = (
+      status: 'COMPLETED' | 'FAILED' | 'CANCELED',
+      error?: string,
+    ) =>
+      notifyCnpjRunFinished({
+        workspaceId: run.workspaceId,
+        runId: run.id,
+        createdById: run.createdById,
+        status,
+        total: run.total,
+        error,
+        ...counts,
+      })
 
     for (;;) {
       const page = await CrmCnpjRunRepository.listTargets(run.workspaceId, {
@@ -77,11 +99,17 @@ export const CrmCnpjEnrichmentRunner = {
           error: 'Falha ao ler as empresas do workspace',
           finishedAt: new Date(),
         })
+        await finishNotice('FAILED', 'Falha ao ler as empresas do workspace')
         return page
       }
       if (page.value.length === 0) break
 
       for (const company of page.value) {
+        const stop = await CrmCnpjRunRepository.isCancelRequested(run.id)
+        if (stop.ok && stop.value) {
+          canceled = true
+          break
+        }
         let attempt = 0
         for (;;) {
           const result = await enrichCompany({
@@ -118,14 +146,17 @@ export const CrmCnpjEnrichmentRunner = {
           code: progress.error.code,
         })
       }
+      if (canceled) break
     }
 
+    const finalStatus = canceled ? 'CANCELED' : 'COMPLETED'
     const done = await CrmCnpjRunRepository.update(run.id, {
       ...counts,
-      status: 'COMPLETED',
+      status: finalStatus,
       finishedAt: new Date(),
     })
     if (!done.ok) return err(done.error)
+    await finishNotice(finalStatus)
 
     auditMutation({
       entity: 'crm_cnpj_enrichment',
@@ -136,11 +167,12 @@ export const CrmCnpjEnrichmentRunner = {
         ...counts,
         onlyMissing: run.onlyMissing,
         overwrite: run.overwrite,
+        canceled,
       },
     })
 
     return ok({
-      status: 'COMPLETED',
+      status: finalStatus,
       processed: counts.processed,
       enriched: counts.enriched,
     })

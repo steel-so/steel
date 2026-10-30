@@ -27,6 +27,7 @@ import {
 import { notify } from '@/lib/notify'
 import {
   LIVE_CNPJ_RUN_STATUSES,
+  useCancelCnpjRun,
   useCrmCnpjRuns,
   useStartCnpjRun,
 } from '@/src/hooks/use-crm-cnpj-enrichment'
@@ -53,6 +54,7 @@ export function CnpjBulkDialog({
   const [overwrite, setOverwrite] = useState(false)
   const runs = useCrmCnpjRuns(workspaceId, open)
   const start = useStartCnpjRun(workspaceId)
+  const cancel = useCancelCnpjRun(workspaceId)
   const live = runs.data?.some((run) =>
     LIVE_CNPJ_RUN_STATUSES.includes(run.status),
   )
@@ -70,6 +72,18 @@ export function CnpjBulkDialog({
         onError: (error) => notify.error(error.message),
       },
     )
+  }
+
+  function stop(runId: string) {
+    cancel.mutate(runId, {
+      onSuccess: (run) =>
+        notify.success(
+          run.status === 'CANCELED'
+            ? 'Consulta cancelada'
+            : 'Cancelamento pedido — termina a empresa em andamento',
+        ),
+      onError: (error) => notify.error(error.message),
+    })
   }
 
   return (
@@ -146,6 +160,9 @@ export function CnpjBulkDialog({
                   <TableHead className='text-right'>Atualizadas</TableHead>
                   <TableHead className='text-right'>Sem registro</TableHead>
                   <TableHead className='text-right'>Falhas</TableHead>
+                  <TableHead className='w-px'>
+                    <span className='sr-only'>Ações</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,6 +194,18 @@ export function CnpjBulkDialog({
                     </TableCell>
                     <TableCell className='text-right tabular-nums'>
                       {run.failed}
+                    </TableCell>
+                    <TableCell>
+                      {LIVE_CNPJ_RUN_STATUSES.includes(run.status) ? (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          disabled={cancel.isPending || run.cancelRequested}
+                          onClick={() => stop(run.id)}
+                        >
+                          {run.cancelRequested ? 'Cancelando…' : 'Cancelar'}
+                        </Button>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}

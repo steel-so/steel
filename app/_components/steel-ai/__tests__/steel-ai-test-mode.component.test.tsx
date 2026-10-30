@@ -248,6 +248,8 @@ const AGENT: SteelAgentDTO = {
   tools: [],
   evalSetId: null,
   evalMinPassRate: 0.8,
+  simGateEnabled: false,
+  simGateMinPassRate: 0.8,
   publishedVersionId: null,
   challengerVersionId: null,
   lastRun: null,

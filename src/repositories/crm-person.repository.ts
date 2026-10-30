@@ -1,4 +1,4 @@
-import type { CrmPerson } from '@prisma/client'
+import type { CrmPerson, Prisma } from '@prisma/client'
 import { notFound } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -21,6 +21,19 @@ export const CrmPersonRepository = {
       return ok(people)
     } catch (error) {
       return err(dbError('Failed to list CRM people', error))
+    }
+  },
+
+  /** Natural-language search (C10): a prebuilt `where`/`orderBy`, capped. */
+  async search(
+    where: Prisma.CrmPersonWhereInput,
+    orderBy: Prisma.CrmPersonOrderByWithRelationInput[],
+    take: number,
+  ): Promise<Result<CrmPerson[]>> {
+    try {
+      return ok(await prisma.crmPerson.findMany({ where, orderBy, take }))
+    } catch (error) {
+      return err(dbError('Failed to search CRM people', error))
     }
   },
 

@@ -73,6 +73,7 @@ export function toCrmCnpjRunDTO(run: CrmCnpjEnrichmentRun): CrmCnpjRunDTO {
     invalid: run.invalid,
     failed: run.failed,
     error: run.error,
+    cancelRequested: run.cancelRequestedAt !== null,
     startedAt: run.startedAt?.toISOString() ?? null,
     finishedAt: run.finishedAt?.toISOString() ?? null,
     createdAt: run.createdAt.toISOString(),

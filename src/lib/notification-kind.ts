@@ -527,6 +527,24 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'agent',
     color: 'rose',
   },
+  AGENT_VERSION_GATE_FINISHED: {
+    module: 'OTHER',
+    label: 'Avaliação da versão do agente concluída',
+    icon: 'agent',
+    color: 'violet',
+  },
+  AGENT_SIMULATION_FINISHED: {
+    module: 'OTHER',
+    label: 'Simulação do agente concluída',
+    icon: 'agent',
+    color: 'sky',
+  },
+  CRM_CNPJ_ENRICHMENT_FINISHED: {
+    module: 'CRM',
+    label: 'Enriquecimento de empresas pelo CNPJ concluído',
+    icon: 'report',
+    color: 'sky',
+  },
   AI_ACTION_EXPIRING: {
     module: 'OTHER',
     label: 'Ação da IA expirando',

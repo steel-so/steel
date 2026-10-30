@@ -30,11 +30,13 @@ import {
   parseCustomerTurn,
   parseJudgement,
 } from '@/src/lib/steel-agents/simulation/prompts'
+import { parseVersionTools } from '@/src/lib/steel-agents/versions'
 import {
   SteelAgentSimulationCaseRepository,
   type SteelAgentSimulationForExecution,
   SteelAgentSimulationRepository,
 } from '@/src/repositories/steel-agent-simulation.repository'
+import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type {
@@ -42,6 +44,8 @@ import type {
   SteelAgentSimulationTurnDTO,
 } from '@/types/steel-agent-simulation'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
+import { notifyAgentSimulationFinished } from './steel-agent-notifications'
+import { SteelAgentVersionService } from './steel-agent-version.service'
 
 /**
  * Executes a persona simulation (worker job `steel-agents/simulate`). Each
@@ -51,6 +55,11 @@ import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
  * sent) — and an AI judge scores the transcript against the criteria.
  * Cases run one after another, each with its own quota check; a failing case
  * never stops the others. Never throws.
+ *
+ * A simulation linked to an agent version (`agentVersionId`, the A3 gate of A2)
+ * tests that version's instructions and tools instead of the published ones,
+ * and reports back to the version gate. Any other simulation notifies the
+ * agent's owner when it ends.
  */
 
 const NO_REPLY = '(o agente não respondeu)'
@@ -434,14 +443,83 @@ async function runCase(input: {
   return { ...outcome, costUsd }
 }
 
+/**
+ * Tells whoever is waiting that the simulation ended: the version gate for a
+ * gate run (it notifies the owner itself), the agent's owner otherwise.
+ */
+async function reportFinished(
+  simulation: SteelAgentSimulationForExecution,
+  result: {
+    status: 'COMPLETED' | 'FAILED' | 'SKIPPED'
+    passed: number
+    failed: number
+    avgScore: number | null
+    error: string | null
+  },
+): Promise<void> {
+  if (simulation.agentVersionId) {
+    await SteelAgentVersionService.onSimulationFinished({
+      versionId: simulation.agentVersionId,
+      simulationId: simulation.id,
+      status: result.status,
+      passed: result.passed,
+      failed: result.failed,
+      error: result.error,
+    })
+    return
+  }
+  await notifyAgentSimulationFinished({
+    workspaceId: simulation.workspaceId,
+    agentId: simulation.agentId,
+    agentName: simulation.agent.name,
+    ownerId: simulation.agent.ownerId,
+    startedById: simulation.startedById,
+    simulationId: simulation.id,
+    ...result,
+  })
+}
+
+/** Gate runs test the version's content, not the agent's published one. */
+async function overlayVersion(
+  simulation: SteelAgentSimulationForExecution,
+): Promise<Result<SteelAgentSimulationForExecution | null>> {
+  if (!simulation.agentVersionId) return ok(simulation)
+  const version = await SteelAgentVersionRepository.findByIdUnscoped(
+    simulation.agentVersionId,
+  )
+  if (!version.ok) return version
+  const found = version.value
+  if (!found) return ok(null)
+  const { agent } = simulation
+  return ok({
+    ...simulation,
+    agent: {
+      ...agent,
+      instructions: found.instructions,
+      maxToolRounds: found.maxToolRounds,
+      tools: parseVersionTools(found.tools).map((tool) => ({
+        id: `${found.id}:${tool.toolName}`,
+        agentId: agent.id,
+        toolName: tool.toolName,
+        mode: tool.mode,
+        createdAt: found.createdAt,
+      })),
+    },
+  })
+}
+
 export async function executeSteelAgentSimulation(
   simulationId: string,
 ): Promise<Result<SteelAgentSimulationOutcome>> {
   const loaded =
     await SteelAgentSimulationRepository.findForExecution(simulationId)
   if (!loaded.ok) return loaded
-  const simulation = loaded.value
-  if (simulation.status !== 'QUEUED') return ok('noop')
+  const stored = loaded.value
+  if (stored.status !== 'QUEUED') return ok('noop')
+  const overlaid = await overlayVersion(stored)
+  if (!overlaid.ok) return overlaid
+  const versionMissing = overlaid.value === null
+  const simulation = overlaid.value ?? stored
 
   const skip = async (reason: string) => {
     const claimed = await SteelAgentSimulationRepository.claim(
@@ -465,9 +543,19 @@ export async function executeSteelAgentSimulation(
         { simulationId: simulation.id, reason },
       ),
     )
+    if (claimed.ok && claimed.value) {
+      await reportFinished(simulation, {
+        status: 'SKIPPED',
+        passed: 0,
+        failed: 0,
+        avgScore: null,
+        error: reason,
+      })
+    }
     return ok<SteelAgentSimulationOutcome>('skipped')
   }
 
+  if (versionMissing) return skip('A versão avaliada não existe mais.')
   const checked = await preflight(simulation)
   if ('skip' in checked) return skip(checked.skip)
   const { access } = checked
@@ -584,5 +672,14 @@ export async function executeSteelAgentSimulation(
       },
     ),
   )
+  await reportFinished(simulation, {
+    status,
+    passed,
+    failed,
+    avgScore,
+    error:
+      stopReason ??
+      (status === 'FAILED' ? 'Nenhum cenário foi avaliado.' : null),
+  })
   return ok(status === 'COMPLETED' ? 'completed' : 'failed')
 }

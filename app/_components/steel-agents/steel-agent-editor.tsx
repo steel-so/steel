@@ -64,6 +64,10 @@ function initialState(
     tools: agent?.tools ?? [],
     evalSetId: agent?.evalSetId ?? null,
     evalMinPassRate: agent?.evalMinPassRate ?? 0.8,
+    ...(agent && {
+      simGateEnabled: agent.simGateEnabled,
+      simGateMinPassRate: agent.simGateMinPassRate,
+    }),
   }
 }
 
@@ -532,6 +536,53 @@ export function SteelAgentEditor({
             </FieldDescription>
           </Field>
         </div>
+        {agent ? (
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <Field orientation='horizontal'>
+              <Switch
+                id='agent-sim-gate'
+                checked={form.simGateEnabled ?? false}
+                disabled={disabled}
+                onCheckedChange={(next) => set('simGateEnabled', next)}
+              />
+              <div className='space-y-0.5'>
+                <FieldLabel htmlFor='agent-sim-gate'>
+                  Exigir também as simulações
+                </FieldLabel>
+                <FieldDescription>
+                  Antes de publicar, repete os cenários da última simulação
+                  salva (aba Simulações) com a versão nova. Só vai ao ar se
+                  passar na avaliação e nos cenários. Desligado por padrão.
+                </FieldDescription>
+              </div>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor='agent-sim-min-pass'>
+                Aprovação mínima nas simulações (%)
+              </FieldLabel>
+              <Input
+                id='agent-sim-min-pass'
+                type='number'
+                min={10}
+                max={100}
+                value={Math.round((form.simGateMinPassRate ?? 0.8) * 100)}
+                disabled={disabled || !form.simGateEnabled}
+                onChange={(e) =>
+                  set(
+                    'simGateMinPassRate',
+                    Math.min(
+                      1,
+                      Math.max(0.1, (Number(e.target.value) || 80) / 100),
+                    ),
+                  )
+                }
+              />
+              <FieldDescription>
+                Parcela dos cenários que precisa passar para publicar.
+              </FieldDescription>
+            </Field>
+          </div>
+        ) : null}
         {agent ? (
           <div className='space-y-3 rounded-lg border bg-muted/30 p-3'>
             <Field>

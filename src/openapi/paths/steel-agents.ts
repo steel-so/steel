@@ -55,6 +55,7 @@ const VALIDATION: ErrorEntry[] = [
   'STEEL_AGENT_INVALID_TRIGGER',
   'STEEL_AGENT_INVALID_OWNER',
   'STEEL_AGENT_EVAL_SET_INVALID',
+  'STEEL_AGENT_SIM_GATE_INVALID',
 ]
 const VERSION_PARAM = { description: 'ID da versão do agente.' }
 const VERSION_NOT_FOUND: ErrorEntry = {
@@ -157,7 +158,7 @@ const routes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Atualizar agente',
     description:
-      'Atualização parcial; `tools`, quando enviado, substitui a lista inteira. `enabled: false` pausa o agente. O gatilho é revalidado sobre o resultado. Mudar `instructions`, `tools` ou `maxToolRounds` cria uma **versão** (campo `version` da resposta): com `evalSetId` configurado ela fica `PENDING_EVAL` até a avaliação terminar (os campos do agente seguem na versão publicada) e só é publicada se a taxa de aprovação atingir `evalMinPassRate`; sem conjunto, é publicada na hora. `rolloutPercent` (1 a 99) manda a versão nova para essa parcela das execuções (teste A/B) em vez de substituir a publicada. `changeNote` descreve a alteração no histórico.',
+      'Atualização parcial; `tools`, quando enviado, substitui a lista inteira. `enabled: false` pausa o agente. O gatilho é revalidado sobre o resultado. Mudar `instructions`, `tools` ou `maxToolRounds` cria uma **versão** (campo `version` da resposta): com `evalSetId` configurado ela fica `PENDING_EVAL` até a avaliação terminar (os campos do agente seguem na versão publicada) e só é publicada se a taxa de aprovação atingir `evalMinPassRate`; sem conjunto, é publicada na hora. `rolloutPercent` (1 a 99) manda a versão nova para essa parcela das execuções (teste A/B) em vez de substituir a publicada. `changeNote` descreve a alteração no histórico. Com `simGateEnabled: true` (exige ao menos uma simulação salva; senão `STEEL_AGENT_SIM_GATE_INVALID`), depois da avaliação — ou sozinha, sem conjunto — a versão repete os cenários da última simulação do agente e só é publicada se ao menos `simGateMinPassRate` deles passarem. Ao final o responsável recebe a notificação `AGENT_VERSION_GATE_FINISHED`, com link para a aba Versões; toda simulação que termina avisa com `AGENT_SIMULATION_FINISHED`.',
     consent: true,
     params: { agentId: AGENT_PARAM },
     body: UpdateSteelAgentSchema,
@@ -322,6 +323,7 @@ const routes: RouteConfig[] = [
         when: 'Já existe uma versão do agente em avaliação',
       },
       'STEEL_AGENT_EVAL_SET_INVALID',
+      'STEEL_AGENT_SIM_GATE_INVALID',
     ],
   },
   {

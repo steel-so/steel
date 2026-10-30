@@ -1,6 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { CrmNlSearchBar } from '@/app/_components/crm/crm-nl-search-bar'
+import {
+  applyNlResult,
+  type CrmNlAnyResult,
+} from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { CrmPersonNewslettersCard } from '@/app/_components/crm/newsletters/bridge/crm-person-newsletters-card'
 import { DataTable } from '@/app/_components/crm/table/data-table'
@@ -95,36 +100,50 @@ export function CrmPeopleTable({
     () => [...COLUMNS, ...customFieldColumns(customFields ?? [])],
     [customFields],
   )
+  const [nlResult, setNlResult] = useState<CrmNlAnyResult | null>(null)
   const rows = useMemo(
-    () => items.map((item) => ({ ...item, ...(item.customFields ?? {}) })),
-    [items],
+    () =>
+      applyNlResult(items, nlResult).map((item) => ({
+        ...item,
+        ...(item.customFields ?? {}),
+      })),
+    [items, nlResult],
   )
 
   return (
-    <DataTable
-      columns={columns}
-      data={rows}
-      workspaceId={workspaceId}
-      slug={slug}
-      resource='people'
-      createTitle='pessoa'
-      lookups={lookups}
-      isLoading={isLoading}
-      searchPlaceholder='Buscar pessoas…'
-      refetch={refetch}
-      renderRecordExtra={(record) => (
-        <div className='flex flex-col gap-6'>
-          <CrmPersonNewslettersCard
-            workspaceId={workspaceId}
-            personId={record.id}
-          />
-          <CrmRecordTimeline
-            workspaceId={workspaceId}
-            personId={record.id}
-            userMap={lookups.maps.users}
-          />
-        </div>
-      )}
-    />
+    <div className='flex h-full min-h-0 flex-col'>
+      <CrmNlSearchBar
+        workspaceId={workspaceId}
+        entity='people'
+        onResult={setNlResult}
+      />
+      <div className='min-h-0 flex-1'>
+        <DataTable
+          columns={columns}
+          data={rows}
+          workspaceId={workspaceId}
+          slug={slug}
+          resource='people'
+          createTitle='pessoa'
+          lookups={lookups}
+          isLoading={isLoading}
+          searchPlaceholder='Buscar pessoas…'
+          refetch={refetch}
+          renderRecordExtra={(record) => (
+            <div className='flex flex-col gap-6'>
+              <CrmPersonNewslettersCard
+                workspaceId={workspaceId}
+                personId={record.id}
+              />
+              <CrmRecordTimeline
+                workspaceId={workspaceId}
+                personId={record.id}
+                userMap={lookups.maps.users}
+              />
+            </div>
+          )}
+        />
+      </div>
+    </div>
   )
 }

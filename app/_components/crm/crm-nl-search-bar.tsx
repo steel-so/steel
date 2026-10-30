@@ -8,35 +8,94 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { notify } from '@/lib/notify'
 import { useCrmNlSearch } from '@/src/hooks/use-crm-nl-search'
-import type { CrmNlSearchResultDTO } from '@/types/crm-nl-search'
+import {
+  type CrmNlAnyResult,
+  type CrmNlSearchEntityKey,
+  nlResultIds,
+} from './crm-nl-search-result'
 
-const EXAMPLES = [
-  'Negócios parados há 15 dias acima de 10 mil',
-  'Meus negócios que fecham este mês',
-  'Em negociação sem responsável',
-]
+interface EntityCopy {
+  /** aria-label of the question field. */
+  label: string
+  singular: string
+  plural: string
+  /** Feminine nouns take "Nenhuma … encontrada". */
+  none: string
+  examples: string[]
+}
+
+const ENTITY_COPY: Record<CrmNlSearchEntityKey, EntityCopy> = {
+  opportunities: {
+    label: 'Pergunte sobre as oportunidades',
+    singular: 'oportunidade',
+    plural: 'oportunidades',
+    none: 'Nenhuma oportunidade encontrada',
+    examples: [
+      'Negócios parados há 15 dias acima de 10 mil',
+      'Meus negócios que fecham este mês',
+      'Em negociação sem responsável',
+    ],
+  },
+  leads: {
+    label: 'Pergunte sobre os leads',
+    singular: 'lead',
+    plural: 'leads',
+    none: 'Nenhum lead encontrado',
+    examples: [
+      'Leads do WhatsApp parados há 7 dias',
+      'Meus leads com score acima de 50',
+      'Leads novos desta semana sem responsável',
+    ],
+  },
+  people: {
+    label: 'Pergunte sobre as pessoas',
+    singular: 'pessoa',
+    plural: 'pessoas',
+    none: 'Nenhuma pessoa encontrada',
+    examples: [
+      'Diretores com e-mail da Acme',
+      'Pessoas sem empresa vinculada',
+      'Contatos criados este mês com telefone',
+    ],
+  },
+  companies: {
+    label: 'Pergunte sobre as empresas',
+    singular: 'empresa',
+    plural: 'empresas',
+    none: 'Nenhuma empresa encontrada',
+    examples: [
+      'Empresas de alimentos com mais de 50 funcionários',
+      'Minhas empresas do perfil ideal sem CNPJ',
+      'Empresas ainda não consultadas na Receita',
+    ],
+  },
+}
 
 /**
- * Pergunta livre sobre as oportunidades (C10). O resultado volta como lista
- * de ids + as frases de como a pergunta foi lida; quem usa a barra filtra a
- * tabela com elas e limpa com `onResult(null)`.
+ * Pergunta livre sobre oportunidades, leads, pessoas ou empresas (C10). O
+ * resultado volta com os registros achados + as frases de como a pergunta foi
+ * lida; quem usa a barra filtra a tabela com elas (`applyNlResult`) e limpa
+ * com `onResult(null)`.
  */
 export function CrmNlSearchBar({
   workspaceId,
+  entity = 'opportunities',
   onResult,
 }: {
   workspaceId: string
-  onResult: (result: CrmNlSearchResultDTO | null) => void
+  entity?: CrmNlSearchEntityKey
+  onResult: (result: CrmNlAnyResult | null) => void
 }) {
+  const copy = ENTITY_COPY[entity]
   const [query, setQuery] = useState('')
-  const [result, setResult] = useState<CrmNlSearchResultDTO | null>(null)
-  const search = useCrmNlSearch(workspaceId)
+  const [result, setResult] = useState<CrmNlAnyResult | null>(null)
+  const search = useCrmNlSearch(workspaceId, entity)
 
   function run(text: string) {
     const trimmed = text.trim()
     if (trimmed.length < 2 || search.isPending) return
     search.mutate(trimmed, {
-      onSuccess: (data) => {
+      onSuccess: (data: CrmNlAnyResult) => {
         setResult(data)
         onResult(data)
       },
@@ -49,6 +108,8 @@ export function CrmNlSearchBar({
     setResult(null)
     onResult(null)
   }
+
+  const total = result ? nlResultIds(result).length : 0
 
   return (
     <div className='flex shrink-0 flex-col gap-2 px-4 pt-4'>
@@ -68,8 +129,8 @@ export function CrmNlSearchBar({
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Pergunte em português: “${EXAMPLES[0].toLowerCase()}”`}
-            aria-label='Pergunte sobre as oportunidades'
+            placeholder={`Pergunte em português: “${copy.examples[0].toLowerCase()}”`}
+            aria-label={copy.label}
             maxLength={300}
             className='h-9 pl-8'
           />
@@ -95,12 +156,10 @@ export function CrmNlSearchBar({
           data-testid='nl-search-summary'
         >
           <span className='text-muted-foreground text-xs'>
-            {result.opportunities.length === 0
-              ? 'Nenhuma oportunidade encontrada'
-              : `${result.opportunities.length}${result.truncated ? '+' : ''} ${
-                  result.opportunities.length === 1
-                    ? 'oportunidade'
-                    : 'oportunidades'
+            {total === 0
+              ? copy.none
+              : `${total}${result.truncated ? '+' : ''} ${
+                  total === 1 ? copy.singular : copy.plural
                 }`}{' '}
             · entendi:
           </span>
@@ -113,7 +172,7 @@ export function CrmNlSearchBar({
       ) : (
         <div className='flex flex-wrap items-center gap-1.5'>
           <span className='text-muted-foreground text-xs'>Experimente:</span>
-          {EXAMPLES.map((example) => (
+          {copy.examples.map((example) => (
             <button
               key={example}
               type='button'

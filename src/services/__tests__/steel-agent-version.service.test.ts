@@ -12,6 +12,7 @@ import {
 } from '@/src/__tests__/factories/steel-agent.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'
+import { appError } from '@/src/errors/app-error'
 import { SYSTEM_PROFILE_PERMISSIONS } from '@/src/lib/permissions'
 import { err, ok } from '@/src/lib/result'
 
@@ -20,18 +21,28 @@ vi.mock('@/src/repositories/steel-agent-version.repository')
 vi.mock('@/src/repositories/steel-agent.repository')
 vi.mock('@/src/repositories/ai-eval.repository')
 vi.mock('@/src/repositories/ai-settings.repository')
+vi.mock('@/src/repositories/steel-agent-simulation.repository')
+vi.mock('@/src/lib/steel-agents/enqueue', () => ({
+  enqueueSteelAgentSimulation: vi.fn(),
+}))
+vi.mock('@/src/services/steel-agent-notifications', () => ({
+  notifyAgentVersionGateFinished: vi.fn(async () => 1),
+}))
 vi.mock('@/src/lib/queue/queues', () => ({ getAiEvalQueue: vi.fn() }))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 
 import { getAiEvalQueue } from '@/src/lib/queue/queues'
+import { enqueueSteelAgentSimulation } from '@/src/lib/steel-agents/enqueue'
 import { AiEvalRepository } from '@/src/repositories/ai-eval.repository'
 import { WorkspaceAiSettingsRepository } from '@/src/repositories/ai-settings.repository'
 import {
   SteelAgentRepository,
   type SteelAgentWithRelations,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentSimulationRepository } from '@/src/repositories/steel-agent-simulation.repository'
 import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { assertMember } from '@/src/services/authz'
+import { notifyAgentVersionGateFinished } from '@/src/services/steel-agent-notifications'
 import {
   SteelAgentVersionService,
   type SubmitVersionInput,
@@ -42,7 +53,26 @@ const versions = vi.mocked(SteelAgentVersionRepository)
 const agents = vi.mocked(SteelAgentRepository)
 const evals = vi.mocked(AiEvalRepository)
 const settings = vi.mocked(WorkspaceAiSettingsRepository)
+const sims = vi.mocked(SteelAgentSimulationRepository)
+const enqueueSim = vi.mocked(enqueueSteelAgentSimulation)
+const notifyGate = vi.mocked(notifyAgentVersionGateFinished)
 const queue = { add: vi.fn() }
+
+const SCENARIOS = {
+  passScore: 75,
+  cases: [
+    {
+      label: 'Cliente irritado',
+      personaKey: null,
+      persona: 'Cliente',
+      scenario: 'Internet fora',
+      channel: 'WHATSAPP',
+      openingMessage: 'Oi',
+      criteria: ['Pede desculpas'],
+      maxTurns: 4,
+    },
+  ],
+}
 
 const WS = 'ws1'
 const AGENT_ID = 'agent1'
@@ -129,6 +159,10 @@ beforeEach(() => {
   )
   vi.mocked(getAiEvalQueue).mockReturnValue(queue as never)
   queue.add.mockResolvedValue({})
+  sims.latestScenarioSet.mockResolvedValue(ok(SCENARIOS))
+  sims.create.mockResolvedValue(ok({ id: 'sim1' } as never))
+  sims.update.mockResolvedValue(ok({} as never))
+  enqueueSim.mockResolvedValue(ok(true))
 })
 
 describe('SteelAgentVersionService.checkEvalSet', () => {
@@ -336,6 +370,126 @@ describe('SteelAgentVersionService.submit', () => {
 
     versions.publish.mockResolvedValue(err(databaseError('x')))
     expectErr(await submit({ evalSetId: null }), 'DATABASE_ERROR')
+  })
+})
+
+describe('SteelAgentVersionService.checkSimulationGate', () => {
+  it('should accept an agent with saved scenarios', async () => {
+    expect(
+      expectOk(await SteelAgentVersionService.checkSimulationGate('a')),
+    ).toBe(true)
+  })
+
+  it('should refuse an agent without scenarios and propagate errors', async () => {
+    sims.latestScenarioSet.mockResolvedValue(ok(null))
+    expectErr(
+      await SteelAgentVersionService.checkSimulationGate('a'),
+      'STEEL_AGENT_SIM_GATE_INVALID',
+    )
+    sims.latestScenarioSet.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentVersionService.checkSimulationGate('a'),
+      'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('SteelAgentVersionService.submit with the simulation gate', () => {
+  const submit = (over: Partial<SubmitVersionInput> = {}) =>
+    SteelAgentVersionService.submit({
+      actorId: 'u1',
+      agent: agent({ simGateEnabled: true }),
+      content: CONTENT,
+      changeNote: null,
+      rolloutPercent: null,
+      evalSetId: null,
+      ...over,
+    })
+
+  it('should replay the saved scenarios when there is no eval set', async () => {
+    const created = expectOk(await submit())
+    expect(created.status).toBe('PENDING_EVAL')
+    expect(sims.create).toHaveBeenCalledWith({
+      workspaceId: WS,
+      agentId: AGENT_ID,
+      name: 'Trava da versão 2',
+      startedById: 'u1',
+      passScore: 75,
+      cases: SCENARIOS.cases,
+      agentVersionId: 'v2',
+    })
+    expect(enqueueSim).toHaveBeenCalledWith('sim1')
+    expect(versions.update).toHaveBeenCalledWith('v2', { simulationId: 'sim1' })
+    expect(versions.publish).not.toHaveBeenCalled()
+    expect(evals.createRun).not.toHaveBeenCalled()
+  })
+
+  it('should run the eval first when both gates are on', async () => {
+    expectOk(await submit({ evalSetId: 'set1' }))
+    expect(evals.createRun).toHaveBeenCalled()
+    expect(sims.create).not.toHaveBeenCalled()
+  })
+
+  it('should honor the effective setting of the edit over the stored one', async () => {
+    expectOk(
+      await submit({
+        agent: agent({ simGateEnabled: false }),
+        simGateEnabled: true,
+      }),
+    )
+    expect(sims.create).toHaveBeenCalled()
+    sims.create.mockClear()
+    expectOk(
+      await submit({
+        agent: agent({ simGateEnabled: true }),
+        simGateEnabled: false,
+      }),
+    )
+    expect(sims.create).not.toHaveBeenCalled()
+    expect(versions.publish).toHaveBeenCalled()
+  })
+
+  it('should refuse before creating anything when there are no scenarios', async () => {
+    sims.latestScenarioSet.mockResolvedValue(ok(null))
+    expectErr(await submit(), 'STEEL_AGENT_SIM_GATE_INVALID')
+    expect(versions.create).not.toHaveBeenCalled()
+    sims.latestScenarioSet.mockResolvedValue(err(databaseError('x')))
+    expectErr(await submit(), 'DATABASE_ERROR')
+  })
+
+  it('should discard the version when the simulation cannot start', async () => {
+    settings.findByWorkspace.mockResolvedValue(
+      ok(createFakeWorkspaceAiSettings({ aiEnabled: false })),
+    )
+    expectErr(await submit(), 'AI_DISABLED')
+    expect(versions.close).toHaveBeenCalledWith('v2', AGENT_ID, 'DISCARDED', {
+      evalNote: expect.any(String),
+    })
+
+    settings.findByWorkspace.mockResolvedValue(err(databaseError('x')))
+    expectErr(await submit(), 'DATABASE_ERROR')
+  })
+
+  it('should fail the simulation and discard the version when the queue is down', async () => {
+    enqueueSim.mockResolvedValue(
+      err(appError('INTERNAL_SERVER_ERROR', 'fila fora')),
+    )
+    expectErr(await submit(), 'INTERNAL_SERVER_ERROR')
+    expect(sims.update).toHaveBeenCalledWith(
+      'sim1',
+      expect.objectContaining({ status: 'FAILED', error: 'fila fora' }),
+    )
+    expect(versions.close).toHaveBeenCalledWith(
+      'v2',
+      AGENT_ID,
+      'DISCARDED',
+      expect.anything(),
+    )
+  })
+
+  it('should propagate a failure to create the simulation', async () => {
+    sims.create.mockResolvedValue(err(databaseError('x')))
+    expectErr(await submit(), 'DATABASE_ERROR')
   })
 })
 
@@ -630,5 +784,248 @@ describe('SteelAgentVersionService.onEvalFinished', () => {
     await expect(
       SteelAgentVersionService.onEvalFinished(finished()),
     ).resolves.toBeUndefined()
+  })
+})
+
+describe('SteelAgentVersionService gate notifications and simulation chain', () => {
+  const evalDone = (over = {}) => ({
+    versionId: 'v2',
+    evalRunId: 'run1',
+    status: 'DONE' as const,
+    passed: 9,
+    failed: 1,
+    error: null,
+    ...over,
+  })
+
+  beforeEach(() => {
+    versions.findByIdUnscoped.mockResolvedValue(
+      ok(version({ createdById: 'editor1' })),
+    )
+  })
+
+  it('should notify the owner when the eval gate publishes', async () => {
+    agents.findById.mockResolvedValue(
+      ok(agent({ ownerId: 'owner1', name: 'Triagem' })),
+    )
+    await SteelAgentVersionService.onEvalFinished(evalDone())
+    expect(notifyGate).toHaveBeenCalledWith({
+      workspaceId: WS,
+      agentId: AGENT_ID,
+      agentName: 'Triagem',
+      ownerId: 'owner1',
+      createdById: 'editor1',
+      versionId: 'v2',
+      number: 2,
+      outcome: 'PUBLISHED',
+      detail: 'Avaliação: 9 de 10 casos',
+    })
+  })
+
+  it('should notify the A/B start and a rejection', async () => {
+    versions.update.mockResolvedValue(
+      ok(
+        version({
+          rolloutPercent: 20,
+          evalRunId: 'run1',
+          evalPassed: 9,
+          evalTotal: 10,
+        }),
+      ),
+    )
+    await SteelAgentVersionService.onEvalFinished(evalDone())
+    expect(notifyGate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ outcome: 'CHALLENGER' }),
+    )
+    versions.update.mockImplementation(async (id, data) =>
+      ok(version({ id, ...data })),
+    )
+    await SteelAgentVersionService.onEvalFinished(
+      evalDone({ passed: 1, failed: 9 }),
+    )
+    expect(notifyGate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        outcome: 'REJECTED',
+        detail: 'Passou em 1 de 10 casos (10%); o mínimo é 80%.',
+      }),
+    )
+  })
+
+  it('should start the simulation gate after a passing eval and wait for it', async () => {
+    agents.findById.mockResolvedValue(ok(agent({ simGateEnabled: true })))
+    await SteelAgentVersionService.onEvalFinished(evalDone())
+    expect(sims.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startedById: 'editor1',
+        agentVersionId: 'v2',
+      }),
+    )
+    expect(versions.publish).not.toHaveBeenCalled()
+    expect(notifyGate).not.toHaveBeenCalled()
+  })
+
+  it('should reject when the simulation cannot start after a passing eval', async () => {
+    agents.findById.mockResolvedValue(ok(agent({ simGateEnabled: true })))
+    sims.latestScenarioSet.mockResolvedValue(ok(null))
+    await SteelAgentVersionService.onEvalFinished(evalDone())
+    expect(versions.close).toHaveBeenCalledWith('v2', AGENT_ID, 'REJECTED', {
+      evalNote: expect.stringContaining(
+        'A avaliação passou, mas a simulação não pôde começar',
+      ),
+    })
+    expect(notifyGate).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'REJECTED' }),
+    )
+  })
+
+  it('should not start the simulation when the eval already failed', async () => {
+    agents.findById.mockResolvedValue(ok(agent({ simGateEnabled: true })))
+    await SteelAgentVersionService.onEvalFinished(
+      evalDone({ passed: 1, failed: 9 }),
+    )
+    expect(sims.create).not.toHaveBeenCalled()
+    expect(versions.close).toHaveBeenCalled()
+  })
+
+  describe('onSimulationFinished', () => {
+    const simDone = (over = {}) => ({
+      versionId: 'v2',
+      simulationId: 'sim1',
+      status: 'COMPLETED' as const,
+      passed: 4,
+      failed: 1,
+      error: null,
+      ...over,
+    })
+
+    beforeEach(() => {
+      agents.findById.mockResolvedValue(
+        ok(
+          agent({
+            simGateEnabled: true,
+            simGateMinPassRate: 0.8,
+            ownerId: 'owner1',
+          }),
+        ),
+      )
+      versions.findByIdUnscoped.mockResolvedValue(
+        ok(version({ evalPassed: 9, evalTotal: 10, createdById: 'editor1' })),
+      )
+    })
+
+    it('should publish when enough scenarios passed and report both gates', async () => {
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      expect(versions.update).toHaveBeenCalledWith('v2', {
+        simulationId: 'sim1',
+        simPassed: 4,
+        simTotal: 5,
+      })
+      expect(versions.publish).toHaveBeenCalled()
+      expect(notifyGate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outcome: 'PUBLISHED',
+          detail: 'Simulação: 4 de 5 cenários',
+        }),
+      )
+    })
+
+    it('should start the A/B when the version asked for a rollout', async () => {
+      versions.update.mockResolvedValue(
+        ok(version({ rolloutPercent: 10, simPassed: 5, simTotal: 5 })),
+      )
+      await SteelAgentVersionService.onSimulationFinished(
+        simDone({ passed: 5, failed: 0 }),
+      )
+      expect(versions.makeChallenger).toHaveBeenCalledWith('v2', AGENT_ID, 10)
+    })
+
+    it('should reject under the simulation minimum with a pt-BR note', async () => {
+      await SteelAgentVersionService.onSimulationFinished(
+        simDone({ passed: 2, failed: 3 }),
+      )
+      expect(versions.close).toHaveBeenCalledWith('v2', AGENT_ID, 'REJECTED', {
+        evalNote:
+          'Passou em 2 de 5 cenários da simulação (40%); o mínimo é 80%.',
+      })
+      expect(versions.publish).not.toHaveBeenCalled()
+      expect(notifyGate).toHaveBeenCalledWith(
+        expect.objectContaining({ outcome: 'REJECTED' }),
+      )
+    })
+
+    it('should reject a simulation that failed, was skipped or judged nothing', async () => {
+      await SteelAgentVersionService.onSimulationFinished(
+        simDone({
+          status: 'SKIPPED',
+          passed: 0,
+          failed: 0,
+          error: 'Cota acabou',
+        }),
+      )
+      expect(versions.close).toHaveBeenLastCalledWith(
+        'v2',
+        AGENT_ID,
+        'REJECTED',
+        {
+          evalNote: 'A simulação não terminou: Cota acabou',
+        },
+      )
+      await SteelAgentVersionService.onSimulationFinished(
+        simDone({ status: 'FAILED', passed: 0, failed: 0 }),
+      )
+      expect(versions.close).toHaveBeenLastCalledWith(
+        'v2',
+        AGENT_ID,
+        'REJECTED',
+        {
+          evalNote: 'A simulação não terminou: nenhum cenário foi avaliado.',
+        },
+      )
+      await SteelAgentVersionService.onSimulationFinished(
+        simDone({ passed: 0, failed: 0 }),
+      )
+      expect(versions.close).toHaveBeenLastCalledWith(
+        'v2',
+        AGENT_ID,
+        'REJECTED',
+        {
+          evalNote: 'Nenhum cenário foi avaliado.',
+        },
+      )
+    })
+
+    it('should leave versions that are not pending alone', async () => {
+      versions.findByIdUnscoped.mockResolvedValue(
+        ok(version({ status: 'DISCARDED' })),
+      )
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      versions.findByIdUnscoped.mockResolvedValue(ok(null))
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      versions.findByIdUnscoped.mockResolvedValue(err(databaseError('x')))
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      expect(versions.update).not.toHaveBeenCalled()
+      expect(notifyGate).not.toHaveBeenCalled()
+    })
+
+    it('should stop quietly on repository errors and never throw', async () => {
+      agents.findById.mockResolvedValue(err(databaseError('x')))
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      agents.findById.mockResolvedValue(ok(agent({ simGateEnabled: true })))
+      versions.update.mockResolvedValue(err(databaseError('x')))
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      versions.update.mockImplementation(async (id, data) =>
+        ok(version({ id, ...data })),
+      )
+      versions.publish.mockResolvedValue(err(databaseError('x')))
+      await SteelAgentVersionService.onSimulationFinished(simDone())
+      versions.findByIdUnscoped.mockRejectedValue(new Error('boom'))
+      await expect(
+        SteelAgentVersionService.onSimulationFinished(simDone()),
+      ).resolves.toBeUndefined()
+      versions.findByIdUnscoped.mockRejectedValue('weird')
+      await expect(
+        SteelAgentVersionService.onSimulationFinished(simDone()),
+      ).resolves.toBeUndefined()
+    })
   })
 })

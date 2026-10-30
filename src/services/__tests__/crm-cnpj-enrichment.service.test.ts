@@ -15,6 +15,7 @@ import {
   databaseError,
   notFound,
 } from '@/src/errors'
+import { crmCnpjRunNotCancelable } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/audit')
@@ -113,6 +114,7 @@ describe('CrmCnpjEnrichmentService', () => {
         () => CrmCnpjEnrichmentService.listRuns(ACTOR, WS, { limit: 5 }),
       ],
       ['getRun', () => CrmCnpjEnrichmentService.getRun(ACTOR, WS, 'r1')],
+      ['cancelRun', () => CrmCnpjEnrichmentService.cancelRun(ACTOR, WS, 'r1')],
       [
         'enrich',
         () =>
@@ -155,6 +157,15 @@ describe('CrmCnpjEnrichmentService', () => {
         }),
         'FORBIDDEN',
       )
+    })
+
+    it('forbids a MEMBER from canceling a bulk run (OWNER/ADMIN only)', async () => {
+      asRole('MEMBER')
+      expectErr(
+        await CrmCnpjEnrichmentService.cancelRun(ACTOR, WS, 'r1'),
+        'FORBIDDEN',
+      )
+      expect(runs.requestCancel).not.toHaveBeenCalled()
     })
 
     it('forbids a MEMBER from starting a bulk run (OWNER/ADMIN only)', async () => {
@@ -531,6 +542,43 @@ describe('CrmCnpjEnrichmentService', () => {
         await CrmCnpjEnrichmentService.getRun(ACTOR, WS, 'nope'),
         'CRM_CNPJ_RUN_NOT_FOUND',
       )
+    })
+  })
+
+  describe('cancelRun', () => {
+    it('asks the repository to cancel and audits it', async () => {
+      asRole('ADMIN')
+      runs.requestCancel.mockResolvedValue(
+        ok(
+          createFakeCnpjRun({
+            id: 'r1',
+            status: 'RUNNING',
+            cancelRequestedAt: new Date(),
+          }),
+        ),
+      )
+      const dto = expectOk(
+        await CrmCnpjEnrichmentService.cancelRun(ACTOR, WS, 'r1'),
+      )
+      expect(dto).toMatchObject({ id: 'r1', cancelRequested: true })
+      expect(runs.requestCancel).toHaveBeenCalledWith('r1', WS)
+      expect(auditMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity: 'crm_cnpj_enrichment',
+          action: 'cancel',
+          targetId: 'r1',
+        }),
+      )
+    })
+
+    it('propagates a run that is not cancelable or not found', async () => {
+      asRole('OWNER')
+      runs.requestCancel.mockResolvedValue(err(crmCnpjRunNotCancelable()))
+      expectErr(
+        await CrmCnpjEnrichmentService.cancelRun(ACTOR, WS, 'r1'),
+        'CRM_CNPJ_RUN_NOT_CANCELABLE',
+      )
+      expect(auditMutation).not.toHaveBeenCalled()
     })
   })
 })

@@ -36,6 +36,7 @@ export function createFakeSimulation(
     costUsd: new Prisma.Decimal(0),
     modelKey: null,
     error: null,
+    agentVersionId: null,
     startedAt: null,
     finishedAt: null,
     createdAt: NOW,

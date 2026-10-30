@@ -89,6 +89,34 @@ describe('CNPJ enrichment routes /api/workspaces/[id]/crm/companies', () => {
     expect((await missing.json()).error.code).toBe('CRM_CNPJ_RUN_NOT_FOUND')
   })
 
+  it('should cancel a queued run and refuse to cancel it again', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const base = `/api/workspaces/${workspace.id}/crm/companies/enrichment-runs`
+    const run = (await (await postJson(base, {}, user.cookie)).json()).data
+
+    const canceled = await postJson(`${base}/${run.id}/cancel`, {}, user.cookie)
+    expect(canceled.status).toBe(200)
+    expect((await canceled.json()).data.status).toBe('CANCELED')
+
+    const again = await postJson(`${base}/${run.id}/cancel`, {}, user.cookie)
+    expect(again.status).toBe(409)
+    expect((await again.json()).error.code).toBe('CRM_CNPJ_RUN_NOT_CANCELABLE')
+
+    const missing = await postJson(`${base}/nope/cancel`, {}, user.cookie)
+    expect(missing.status).toBe(404)
+  })
+
+  it('should forbid a MEMBER from canceling a bulk run', async () => {
+    const { workspace } = await authenticatedOwner()
+    const member = await addMember(workspace.id, 'MEMBER')
+    const res = await postJson(
+      `/api/workspaces/${workspace.id}/crm/companies/enrichment-runs/any/cancel`,
+      {},
+      member.cookie,
+    )
+    expect(res.status).toBe(403)
+  })
+
   it('should forbid a MEMBER from starting a bulk run', async () => {
     const { workspace } = await authenticatedOwner()
     const member = await addMember(workspace.id, 'MEMBER')

@@ -53,6 +53,47 @@ describe('CrmCnpjRunRepository', () => {
     )
   })
 
+  it('cancels a queued run at once and flags a running one', async () => {
+    const [ws, other, user] = await Promise.all([
+      seedWorkspace(),
+      seedWorkspace(),
+      seedUser(),
+    ])
+    const queued = await seedCnpjRun(ws.id, user.id, { status: 'QUEUED' })
+    const canceled = expectOk(
+      await CrmCnpjRunRepository.requestCancel(queued.id, ws.id),
+    )
+    expect(canceled.status).toBe('CANCELED')
+    expect(canceled.finishedAt).not.toBeNull()
+    expectErr(
+      await CrmCnpjRunRepository.requestCancel(queued.id, ws.id),
+      'CRM_CNPJ_RUN_NOT_CANCELABLE',
+    )
+
+    const running = await seedCnpjRun(ws.id, user.id, { status: 'RUNNING' })
+    expect(
+      expectOk(await CrmCnpjRunRepository.isCancelRequested(running.id)),
+    ).toBe(false)
+    expectErr(
+      await CrmCnpjRunRepository.requestCancel(running.id, other.id),
+      'CRM_CNPJ_RUN_NOT_FOUND',
+    )
+    const flagged = expectOk(
+      await CrmCnpjRunRepository.requestCancel(running.id, ws.id),
+    )
+    expect(flagged.status).toBe('RUNNING')
+    expect(flagged.cancelRequestedAt).not.toBeNull()
+    expect(
+      expectOk(await CrmCnpjRunRepository.isCancelRequested(running.id)),
+    ).toBe(true)
+    expect(
+      expectOk(await CrmCnpjRunRepository.isCancelRequested(queued.id)),
+    ).toBe(true)
+    expect(expectOk(await CrmCnpjRunRepository.isCancelRequested('nope'))).toBe(
+      false,
+    )
+  })
+
   it('updates status and counters', async () => {
     const [ws, user] = await Promise.all([seedWorkspace(), seedUser()])
     const run = await seedCnpjRun(ws.id, user.id)

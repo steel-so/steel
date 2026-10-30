@@ -199,6 +199,8 @@ function agent(over: Partial<SteelAgentDTO> = {}): SteelAgentDTO {
     lastRun: null,
     evalSetId: null,
     evalMinPassRate: 0.8,
+    simGateEnabled: false,
+    simGateMinPassRate: 0.8,
     publishedVersionId: null,
     challengerVersionId: null,
     createdAt: '2026-10-08T12:00:00.000Z',

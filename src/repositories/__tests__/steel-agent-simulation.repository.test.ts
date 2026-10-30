@@ -57,6 +57,82 @@ describe('SteelAgentSimulationRepository', () => {
     expect(created.cases[0].criteria).toEqual(['Reconhece o problema'])
   })
 
+  it('should create a gate simulation linked to a version, with no starter', async () => {
+    const { workspace, agent } = await context()
+    const created = expectOk(
+      await SteelAgentSimulationRepository.create({
+        workspaceId: workspace.id,
+        agentId: agent.id,
+        name: 'Trava da versão 2',
+        startedById: null,
+        passScore: 70,
+        cases: [caseInput('A')],
+        agentVersionId: 'v-gate',
+      }),
+    )
+    expect(created).toMatchObject({
+      startedById: null,
+      agentVersionId: 'v-gate',
+    })
+  })
+
+  it('should return the scenarios of the latest person-started simulation, never a gate run', async () => {
+    const { workspace, owner, agent } = await context()
+    expect(
+      expectOk(
+        await SteelAgentSimulationRepository.latestScenarioSet(agent.id),
+      ),
+    ).toBeNull()
+
+    expectOk(
+      await SteelAgentSimulationRepository.create({
+        workspaceId: workspace.id,
+        agentId: agent.id,
+        name: 'Antiga',
+        startedById: owner.id,
+        passScore: 60,
+        cases: [caseInput('Velha')],
+      }),
+    )
+    const latest = expectOk(
+      await SteelAgentSimulationRepository.create({
+        workspaceId: workspace.id,
+        agentId: agent.id,
+        name: 'Recente',
+        startedById: owner.id,
+        passScore: 85,
+        cases: [caseInput('B1'), caseInput('B2')],
+      }),
+    )
+    expectOk(
+      await SteelAgentSimulationRepository.create({
+        workspaceId: workspace.id,
+        agentId: agent.id,
+        name: 'Trava',
+        startedById: null,
+        passScore: 85,
+        cases: [caseInput('Gate')],
+        agentVersionId: 'v-gate',
+      }),
+    )
+    // Same millisecond-safe ordering: make the intended one clearly newest.
+    await prisma.steelAgentSimulation.update({
+      where: { id: latest.id },
+      data: { createdAt: new Date(Date.now() + 60_000) },
+    })
+
+    const set = expectOk(
+      await SteelAgentSimulationRepository.latestScenarioSet(agent.id),
+    )
+    expect(set?.passScore).toBe(85)
+    expect(set?.cases.map((c) => c.label)).toEqual(['B1', 'B2'])
+    expect(set?.cases[0]).toMatchObject({
+      criteria: ['Reconhece o problema'],
+      maxTurns: 4,
+      channel: 'WHATSAPP',
+    })
+  })
+
   it('should find the detail scoped by workspace', async () => {
     const { workspace, agent } = await context()
     const seeded = await seedSimulation({

@@ -85,6 +85,12 @@ const versionFields = {
     .nullable(),
 }
 
+/** A2+A3: the simulation part of the version gate (set on an existing agent). */
+const simGateFields = {
+  simGateEnabled: z.boolean(),
+  simGateMinPassRate: z.number().min(0.1).max(1),
+}
+
 export const CreateSteelAgentSchema = z
   .object({
     ...baseFields,
@@ -113,7 +119,7 @@ export type CreateSteelAgentDTO = z.infer<typeof CreateSteelAgentSchema>
 
 /** Partial update; the trigger is re-validated on the merged result. */
 export const UpdateSteelAgentSchema = z
-  .object({ ...baseFields, ...versionFields })
+  .object({ ...baseFields, ...versionFields, ...simGateFields })
   .partial()
   .refine((value) => Object.keys(value).length > 0, {
     message: 'Informe ao menos um campo',

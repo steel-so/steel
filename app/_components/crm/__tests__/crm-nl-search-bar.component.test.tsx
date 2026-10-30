@@ -7,6 +7,7 @@ import {
 } from '@/src/__tests__/component-utils'
 import type { CrmNlSearchResultDTO } from '@/types/crm-nl-search'
 import { CrmNlSearchBar } from '../crm-nl-search-bar'
+import { applyNlResult, nlResultIds } from '../crm-nl-search-result'
 
 const notify = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
@@ -126,5 +127,105 @@ describe('CrmNlSearchBar', () => {
         '1+ oportunidade',
       ),
     )
+  })
+})
+
+describe('CrmNlSearchBar for other records', () => {
+  const LEADS = {
+    query: 'leads quentes',
+    interpretation: ['Em andamento', 'Score a partir de 50'],
+    filter: {},
+    items: [{ id: 'l1' }, { id: 'l2' }, { id: 'l3' }],
+    truncated: false,
+  }
+
+  it.each([
+    ['leads', 'Pergunte sobre os leads', '3 leads'],
+    ['people', 'Pergunte sobre as pessoas', '3 pessoas'],
+    ['companies', 'Pergunte sobre as empresas', '3 empresas'],
+  ] as const)(
+    'posts to the %s route and counts the matches',
+    async (entity, label, count) => {
+      const fetchMock = mockFetch([
+        {
+          method: 'POST',
+          match: new RegExp(`/workspaces/ws_1/crm/${entity}/search$`),
+          data: LEADS,
+        },
+      ])
+      const onResult = vi.fn()
+      renderWithQuery(
+        <CrmNlSearchBar
+          workspaceId='ws_1'
+          entity={entity}
+          onResult={onResult}
+        />,
+      )
+      fireEvent.change(screen.getByLabelText(label), {
+        target: { value: 'uma pergunta' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Perguntar' }))
+      await waitFor(() => expect(onResult).toHaveBeenCalledWith(LEADS))
+      expect(
+        fetchBody(fetchMock, new RegExp(`/crm/${entity}/search$`)),
+      ).toEqual({ query: 'uma pergunta' })
+      expect(screen.getByTestId('nl-search-summary').textContent).toContain(
+        count,
+      )
+    },
+  )
+
+  it('says when nothing matched for leads', async () => {
+    mockFetch([
+      {
+        method: 'POST',
+        match: /\/crm\/leads\/search$/,
+        data: { ...LEADS, items: [] },
+      },
+    ])
+    renderWithQuery(
+      <CrmNlSearchBar workspaceId='ws_1' entity='leads' onResult={vi.fn()} />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Meus leads com score acima de 50',
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('nl-search-summary').textContent).toContain(
+        'Nenhum lead encontrado',
+      ),
+    )
+  })
+})
+
+describe('applyNlResult()', () => {
+  const rows = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+
+  it('returns every row when there is no result', () => {
+    expect(applyNlResult(rows, null)).toBe(rows)
+  })
+
+  it('keeps the table order when the question asked for none', () => {
+    const result = {
+      filter: {},
+      items: [{ id: 'c' }, { id: 'a' }],
+    } as never
+    expect(applyNlResult(rows, result)).toEqual([{ id: 'a' }, { id: 'c' }])
+    expect(nlResultIds(result)).toEqual(['c', 'a'])
+  })
+
+  it('follows the server order when the question asked for one, skipping rows not loaded', () => {
+    const result = {
+      filter: { sort: 'SCORE_DESC' },
+      items: [{ id: 'c' }, { id: 'zz' }, { id: 'a' }],
+    } as never
+    expect(applyNlResult(rows, result)).toEqual([{ id: 'c' }, { id: 'a' }])
+  })
+
+  it('reads the opportunities key of the original result', () => {
+    expect(
+      nlResultIds({ filter: {}, opportunities: [{ id: 'o1' }] } as never),
+    ).toEqual(['o1'])
   })
 })
