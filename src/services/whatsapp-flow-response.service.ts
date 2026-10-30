@@ -28,6 +28,7 @@ import { WhatsAppFlowRepository } from '@/src/repositories/whatsapp-flow.reposit
 import { WhatsAppFlowResponseRepository } from '@/src/repositories/whatsapp-flow-response.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { assertModuleEnabled } from './authz'
+import { CrmDuplicateService } from './crm-duplicate.service'
 import { CrmLeadService } from './crm-lead.service'
 
 export interface InboundFlowReply {
@@ -142,6 +143,11 @@ async function applyCrmMapping(
     })
     if (!created.ok)
       return { note: `Pessoa não criada: ${created.error.message}` }
+    void CrmDuplicateService.flagOnArrival(
+      flow.workspaceId,
+      'PERSON',
+      created.value.id,
+    )
     return { createdPersonId: created.value.id }
   }
 
@@ -160,6 +166,11 @@ async function applyCrmMapping(
   })
   if (!created.ok)
     return { note: `Empresa não criada: ${created.error.message}` }
+  void CrmDuplicateService.flagOnArrival(
+    flow.workspaceId,
+    'COMPANY',
+    created.value.id,
+  )
   return { createdCompanyId: created.value.id }
 }
 
