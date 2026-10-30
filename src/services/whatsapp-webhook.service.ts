@@ -515,16 +515,6 @@ export const WhatsAppWebhookService = {
       type: input.type,
       text: input.text?.slice(0, 500) ?? null,
     })
-    if (waiting) {
-      emitWhatsAppConversationWaiting({
-        ...waiting,
-        contact: contact.value,
-        actorId: null,
-      })
-    }
-    // Unassigned conversation of a team: the team queue hears about it.
-    await WhatsAppTeamService.notifyQueueOnInbound(workspaceId, conversationId)
-
     // Reply to a CRM campaign: links this conversation to the contact.
     await CrmCampaignTrackingService.onWhatsAppInbound(
       { workspaceId, waId: input.waId, conversationId },
@@ -589,6 +579,25 @@ export const WhatsAppWebhookService = {
           reason: claim.error.code,
         })
       }
+    }
+
+    // Entering the agents' queue (webhook + team/supervisor notices) waits
+    // until we know no chatbot owns the message: while a flow is talking to
+    // the contact nobody is waiting. When the flow hands off to a person the
+    // runtime raises the same notices.
+    if (!chatbotEngaged) {
+      if (waiting) {
+        emitWhatsAppConversationWaiting({
+          ...waiting,
+          contact: contact.value,
+          actorId: null,
+        })
+      }
+      // Unassigned conversation of a team: the team queue hears about it.
+      await WhatsAppTeamService.notifyQueueOnInbound(
+        workspaceId,
+        conversationId,
+      )
     }
 
     // A confirmação do descadastro já é a resposta — a IA não responde.

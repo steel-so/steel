@@ -67,6 +67,7 @@ import {
   useUpdateWhatsAppChatbot,
   useValidateWhatsAppChatbot,
   useWhatsAppChatbot,
+  useWhatsAppChatbotNodeStats,
 } from '@/src/hooks/use-whatsapp-chatbots'
 import { useWhatsAppTeams } from '@/src/hooks/use-whatsapp-teams'
 import {
@@ -104,8 +105,42 @@ import {
 } from './chatbot-settings-fields'
 import { ChatbotSimulator } from './chatbot-simulator'
 import { ChatbotStatusBadge, formatChatbotDate } from './chatbot-ui'
+import {
+  type ChatbotAutosaveState,
+  useChatbotAutosave,
+} from './use-chatbot-autosave'
 
 type Panel = 'node' | 'simulator' | 'sessions' | 'issues' | null
+
+/** The status line under the bot name (the saved/unsaved indicator). */
+export function chatbotSaveLabel(input: {
+  dirty: boolean
+  autosave: ChatbotAutosaveState
+  autoSaved: boolean
+  invalid: boolean
+  hasUnpublishedChanges: boolean
+  publishedAt: string | null
+  publishedVersion: number
+  formatDate: (value: string) => string
+}): string {
+  if (input.autosave === 'saving') return 'Salvando o rascunho…'
+  if (input.dirty) {
+    if (input.autosave === 'failed') {
+      return 'Não foi possível salvar sozinho — use "Salvar rascunho"'
+    }
+    if (input.invalid) {
+      return 'Alterações não salvas — corrija o bloco com erro para salvar'
+    }
+    return 'Alterações não salvas — salvando em instantes'
+  }
+  if (input.autoSaved) return 'Rascunho salvo automaticamente'
+  if (input.hasUnpublishedChanges) {
+    return 'Rascunho com alterações não publicadas'
+  }
+  return input.publishedAt
+    ? `Publicado em ${input.formatDate(input.publishedAt)} · versão ${input.publishedVersion}`
+    : 'Ainda não publicado'
+}
 
 function toXyNodes(flow: WhatsAppChatbotDTO['flow']): ChatbotXyNode[] {
   return flowToXy(flow).nodes.map((node) => ({
@@ -185,6 +220,7 @@ function EditorInner({
   const validate = useValidateWhatsAppChatbot(workspaceId, bot.id)
   const setStatus = useSetWhatsAppChatbotStatus(workspaceId)
   const teams = useWhatsAppTeams(workspaceId)
+  const nodeStats = useWhatsAppChatbotNodeStats(workspaceId, bot.id)
 
   const flow = useMemo(() => xyToFlow(nodes, edges), [nodes, edges])
   const serialized = useMemo(() => JSON.stringify(flow), [flow])
@@ -193,6 +229,17 @@ function EditorInner({
   )
   const dirty = serialized !== savedRef.current
   const variables = useMemo(() => collectVariables(flow), [flow])
+
+  const traffic = useMemo(
+    () =>
+      new Map(
+        (nodeStats.data?.nodes ?? []).map((row) => [
+          row.nodeId,
+          { entries: row.entries, exits: row.exits },
+        ]),
+      ),
+    [nodeStats.data],
+  )
 
   const agents = useMemo(() => {
     const seen = new Map<string, string>()
@@ -321,6 +368,23 @@ function EditorInner({
 
   /* ------------------------------ saving ------------------------------- */
 
+  const invalidDraft = useMemo(() => firstSchemaProblem(flow) !== null, [flow])
+  const {
+    state: autosave,
+    autoSaved,
+    reset: resetAutosave,
+  } = useChatbotAutosave({
+    enabled: canEdit,
+    dirty,
+    invalid: invalidDraft,
+    busy: update.isPending,
+    serialized,
+    persist: async () => {
+      await update.mutateAsync({ flow })
+      savedRef.current = serialized
+    },
+  })
+
   const save = useCallback(async (): Promise<boolean> => {
     if (!dirty) return true
     const problem = firstSchemaProblem(flow)
@@ -335,6 +399,7 @@ function EditorInner({
     try {
       await update.mutateAsync({ flow })
       savedRef.current = serialized
+      resetAutosave()
       return true
     } catch (error) {
       notify.error(error instanceof Error ? error.message : 'Erro ao salvar')
@@ -402,7 +467,13 @@ function EditorInner({
   }
 
   return (
-    <ChatbotCanvasContext.Provider value={{ issueNodeIds }}>
+    <ChatbotCanvasContext.Provider
+      value={{
+        issueNodeIds,
+        traffic,
+        trafficDays: nodeStats.data?.days ?? 30,
+      }}
+    >
       <div className='flex h-full min-h-0 flex-col'>
         <div className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2'>
           <div className='flex min-w-0 items-center gap-2'>
@@ -423,14 +494,21 @@ function EditorInner({
                   <Badge variant='outline'>Somente leitura</Badge>
                 ) : null}
               </div>
-              <p className='truncate text-muted-foreground text-xs'>
-                {dirty
-                  ? 'Alterações não salvas'
-                  : bot.hasUnpublishedChanges
-                    ? 'Rascunho com alterações não publicadas'
-                    : bot.publishedAt
-                      ? `Publicado em ${formatChatbotDate(bot.publishedAt)} · versão ${bot.publishedVersion}`
-                      : 'Ainda não publicado'}
+              <p
+                className='truncate text-muted-foreground text-xs'
+                aria-live='polite'
+                data-testid='chatbot-save-status'
+              >
+                {chatbotSaveLabel({
+                  dirty,
+                  autosave,
+                  autoSaved,
+                  invalid: invalidDraft,
+                  hasUnpublishedChanges: bot.hasUnpublishedChanges,
+                  publishedAt: bot.publishedAt,
+                  publishedVersion: bot.publishedVersion,
+                  formatDate: formatChatbotDate,
+                })}
               </p>
             </div>
           </div>

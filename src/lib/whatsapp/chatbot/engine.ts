@@ -69,6 +69,15 @@ export interface ChatbotButtonOutput {
   label: string
 }
 
+/** Button that opens a Meta interactive list. */
+export const MENU_LIST_BUTTON_LABEL = 'Ver opções'
+
+export interface ChatbotListOutput {
+  buttonLabel: string
+  /** One row per option (the schema caps a menu at 10, the list limit). */
+  rows: ChatbotButtonOutput[]
+}
+
 export type ChatbotOutput =
   | { kind: 'text'; text: string }
   | {
@@ -77,7 +86,12 @@ export type ChatbotOutput =
       text: string
       /** Set when the menu fits reply buttons (up to 3, short labels). */
       buttons: ChatbotButtonOutput[] | null
-      /** Same menu as numbered text — also the fallback for buttons. */
+      /**
+       * Set when the menu does not fit reply buttons: Meta sends it as an
+       * interactive list (Z-API keeps the numbered text).
+       */
+      list: ChatbotListOutput | null
+      /** Same menu as numbered text — also the fallback for buttons/list. */
       numbered: string
     }
 
@@ -104,6 +118,10 @@ export interface ChatbotRunResult {
   handoff?: ChatbotHandoff
   closeConversation?: boolean
   endReason?: string
+  /** Blocks the run entered, in order (feeds the per-block metrics). */
+  entered: string[]
+  /** Blocks the contact moved on from (a following block, or a valid answer). */
+  exited: string[]
 }
 
 export interface ChatbotWebhookRequest {
@@ -175,6 +193,15 @@ function renderMenu(
           label: option.label,
         }))
       : null,
+    list: fitsButtons
+      ? null
+      : {
+          buttonLabel: MENU_LIST_BUTTON_LABEL,
+          rows: node.data.options.map((option) => ({
+            id: menuButtonPayload(node.id, option.id),
+            label: option.label,
+          })),
+        },
     numbered: numberedMenu(node, text),
   }
 }
@@ -209,6 +236,8 @@ interface Run {
   variables: Record<string, string>
   outputs: ChatbotOutput[]
   steps: number
+  entered: string[]
+  exited: string[]
 }
 
 type Step =
@@ -322,8 +351,9 @@ function finish(
     awaiting,
     variables: run.variables,
   }
+  const tracked = { entered: run.entered, exited: run.exited }
   if (step.kind === 'wait') {
-    return { state, outputs: run.outputs, status: 'WAITING' }
+    return { state, outputs: run.outputs, status: 'WAITING', ...tracked }
   }
   if (step.kind === 'stop') {
     return {
@@ -333,6 +363,7 @@ function finish(
       handoff: step.handoff,
       closeConversation: step.closeConversation,
       endReason: step.endReason,
+      ...tracked,
     }
   }
   return {
@@ -340,6 +371,7 @@ function finish(
     outputs: run.outputs,
     status: 'COMPLETED',
     endReason: 'flow_ended',
+    ...tracked,
   }
 }
 
@@ -354,6 +386,8 @@ async function walk(run: Run, from: string | null): Promise<ChatbotRunResult> {
         status: 'FAILED',
         handoff: { reason: 'loop_guard' },
         endReason: 'loop_guard',
+        entered: run.entered,
+        exited: run.exited,
       }
     }
     const node = nodeById(run.flow, cursor)
@@ -364,10 +398,14 @@ async function walk(run: Run, from: string | null): Promise<ChatbotRunResult> {
         status: 'FAILED',
         handoff: { reason: 'missing_node' },
         endReason: 'missing_node',
+        entered: run.entered,
+        exited: run.exited,
       }
     }
+    run.entered.push(node.id)
     const step = await visit(run, node)
     if (step.kind === 'goto') {
+      if (step.nodeId) run.exited.push(node.id)
       cursor = step.nodeId
       continue
     }
@@ -402,6 +440,8 @@ export async function startFlow(
     variables: seedVariables(ctx, {}, input),
     outputs: [],
     steps: 0,
+    entered: [],
+    exited: [],
   }
   if (!start) {
     return {
@@ -410,6 +450,8 @@ export async function startFlow(
       status: 'FAILED',
       handoff: { reason: 'missing_start' },
       endReason: 'missing_start',
+      entered: [],
+      exited: [],
     }
   }
   return walk(run, start.id)
@@ -424,7 +466,10 @@ function invalidAnswer(
   const attempts = pending.attempts + 1
   if (attempts >= node.data.maxAttempts) {
     const target = targetOf(run.flow, node.id, 'invalid')
-    if (target) return walk(run, target)
+    if (target) {
+      run.exited.push(node.id)
+      return walk(run, target)
+    }
     // No "invalid" exit drawn: a person takes over instead of looping.
     pushText(
       run,
@@ -436,6 +481,8 @@ function invalidAnswer(
       status: 'HANDED_OFF_HUMAN',
       handoff: { reason: 'invalid_answer' },
       endReason: 'invalid_answer',
+      entered: run.entered,
+      exited: run.exited,
     }
   }
   pushText(run, retryText)
@@ -449,6 +496,8 @@ function invalidAnswer(
     state: { started: true, awaiting, variables: run.variables },
     outputs: run.outputs,
     status: 'WAITING',
+    entered: run.entered,
+    exited: run.exited,
   }
 }
 
@@ -465,6 +514,8 @@ export async function resumeFlow(
     variables: seedVariables(ctx, state.variables, input),
     outputs: [],
     steps: 0,
+    entered: [],
+    exited: [],
   }
   const awaiting = state.awaiting
   const node = awaiting ? nodeById(flow, awaiting.nodeId) : undefined
@@ -475,6 +526,8 @@ export async function resumeFlow(
       status: 'FAILED',
       handoff: { reason: 'missing_node' },
       endReason: 'missing_node',
+      entered: [],
+      exited: [],
     }
   }
 
@@ -489,7 +542,9 @@ export async function resumeFlow(
       )
     }
     if (node.data.variable) run.variables[node.data.variable] = option.label
-    return walk(run, targetOf(flow, node.id, option.id))
+    const next = targetOf(flow, node.id, option.id)
+    if (next) run.exited.push(node.id)
+    return walk(run, next)
   }
 
   if (node.type === 'question') {
@@ -504,7 +559,9 @@ export async function resumeFlow(
       )
     }
     run.variables[node.data.variable] = checked.value
-    return walk(run, targetOf(flow, node.id, 'next'))
+    const next = targetOf(flow, node.id, 'next')
+    if (next) run.exited.push(node.id)
+    return walk(run, next)
   }
 
   return {
@@ -513,5 +570,7 @@ export async function resumeFlow(
     status: 'FAILED',
     handoff: { reason: 'invalid_state' },
     endReason: 'invalid_state',
+    entered: [],
+    exited: [],
   }
 }

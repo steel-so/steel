@@ -77186,6 +77186,7 @@
                             "WHATSAPP_USAGE_LIMIT_REACHED",
                             "WHATSAPP_SLA_AT_RISK",
                             "WHATSAPP_SLA_BREACHED",
+                            "WHATSAPP_SURVEY_DETRACTOR",
                             "WHATSAPP_COST_BUDGET_WARNING",
                             "WHATSAPP_COST_BUDGET_REACHED",
                             "AGENT_APPROVAL_REQUESTED",
@@ -120260,6 +120261,21 @@
                   "emailFallback": {
                     "type": "boolean"
                   },
+                  "alertDetractors": {
+                    "type": "boolean"
+                  },
+                  "detractorMaxScore": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "questionText": {
                     "anyOf": [
                       {
@@ -126269,6 +126285,69 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/chatbots/{chatbotId}/stats": {
+      "get": {
+        "tags": ["Comunicação · Chatbots"],
+        "summary": "Métricas por bloco",
+        "operationId": "getWorkspacesByIdWhatsappChatbotsByChatbotIdStats",
+        "description": "Quantas vezes cada bloco do fluxo foi alcançado (entradas) e quantas vezes a conversa seguiu adiante (saídas) nos últimos 30 dias. A diferença entre as duas é onde as conversas ficaram, foram entregues a uma pessoa ou desistiram. Blocos sem passagem não aparecem. O editor mostra os números sobre o desenho. Módulo **Comunicação** habilitado; qualquer membro.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "chatbotId",
+            "in": "path",
+            "required": true,
+            "description": "Id do chatbot.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas por bloco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppChatbotNodeStats"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_11"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CHATBOT_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -137654,7 +137733,7 @@
         "tags": ["Comunicação · Configurações"],
         "summary": "Atualizar configurações de atendimento",
         "operationId": "patchWorkspacesByIdWhatsappSettings",
-        "description": "Upsert parcial (omitido = mantém). Fila e distribuição (ADR 0047): `unassignedAlertNotifyInApp`/`unassignedAlertNotifyEmail` e `unassignedReminderMinutes` (0–1440; 0 desliga o lembrete) controlam o aviso aos supervisores de conversas sem atendente; `distributionMode` (`OFF`, `ROUND_ROBIN`, `LEAST_LOADED`), `distributionMaxOpenPerAgent` (1–500 ou `null`), `distributionOnlyAvailable` e `distributionRespectBusinessHours` controlam a entrega automática da fila. `autoCloseAfterHours`: 0 desliga, máximo 720 (30 dias) — o worker fecha conversas sem mensagem além dessa janela. Alerta de sentimento: quando a média da conversa cai abaixo de `sentimentAlertThreshold` (-1 a 0), avisa os destinatários (in-app e/ou e-mail; vazio = todos os OWNER/ADMIN), opcionalmente atribui a conversa a `sentimentAlertAssignToId` e respeita `sentimentAlertCooldownHours` (1–168) por conversa. Destinatários e supervisor precisam ser membros do workspace. Marketing Messages Lite (Z11): `marketingLiteEnabled` (padrão desligado) envia os templates de marketing das conexões Meta pela API `/marketing_messages`; `marketingLiteCloudFallback` (padrão ligado) deixa a Meta usar a Cloud API comum quando a Lite não entrega. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Upsert parcial (omitido = mantém). Fila e distribuição (ADR 0047): `unassignedAlertNotifyInApp`/`unassignedAlertNotifyEmail` e `unassignedReminderMinutes` (0–1440; 0 desliga o lembrete) controlam o aviso aos supervisores de conversas sem atendente; `distributionMode` (`OFF`, `ROUND_ROBIN`, `LEAST_LOADED`), `distributionMaxOpenPerAgent` (1–500 ou `null`), `distributionOnlyAvailable` e `distributionRespectBusinessHours` controlam a entrega automática da fila. `autoCloseAfterHours`: 0 desliga, máximo 720 (30 dias) — o worker fecha conversas sem mensagem além dessa janela. Alerta de sentimento: quando a média da conversa cai abaixo de `sentimentAlertThreshold` (-1 a 0), avisa os destinatários (in-app e/ou e-mail; vazio = todos os OWNER/ADMIN), opcionalmente atribui a conversa a `sentimentAlertAssignToId` e respeita `sentimentAlertCooldownHours` (1–168) por conversa. Destinatários e supervisor precisam ser membros do workspace. Marketing Messages Lite (Z11): `marketingLiteEnabled` (padrão desligado) envia os templates de marketing das conexões Meta pela API `/marketing_messages`; `marketingLiteCloudFallback` (padrão ligado) deixa a Meta usar a Cloud API comum quando a Lite não entrega. Resumo na transferência (Z7): `copilotSummaryOnTransfer` (padrão desligado) faz o copiloto escrever um resumo interno na linha do tempo quando a conversa muda de atendente ou de equipe; usa a cota de IA e nunca bloqueia a transferência. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -137804,6 +137883,9 @@
                     "type": "boolean"
                   },
                   "marketingLiteCloudFallback": {
+                    "type": "boolean"
+                  },
+                  "copilotSummaryOnTransfer": {
                     "type": "boolean"
                   }
                 }
@@ -207680,6 +207762,7 @@
                     "WHATSAPP_SLA_BREACHED",
                     "WHATSAPP_COST_BUDGET_WARNING",
                     "WHATSAPP_COST_BUDGET_REACHED",
+                    "WHATSAPP_SURVEY_DETRACTOR",
                     "AGENT_APPROVAL_REQUESTED",
                     "AGENT_RUN_FAILED",
                     "AI_ACTION_EXPIRING",
@@ -208509,6 +208592,23 @@
           "emailFallback": {
             "type": "boolean"
           },
+          "alertDetractors": {
+            "type": "boolean",
+            "description": "Avisa os administradores quando chega uma resposta de detrator."
+          },
+          "detractorMaxScore": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Maior nota que conta como detrator; nulo usa o padrão do tipo (NPS 6, CSAT 2, CES 3)."
+          },
           "questionText": {
             "anyOf": [
               {
@@ -208538,6 +208638,8 @@
           "expiresInHours",
           "cooldownDays",
           "emailFallback",
+          "alertDetractors",
+          "detractorMaxScore",
           "questionText",
           "thankYouText"
         ]
@@ -238207,6 +238309,42 @@
           "stats"
         ]
       },
+      "WhatsAppChatbotNodeStats": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Janela das métricas, em dias."
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nodeId": {
+                  "type": "string"
+                },
+                "entries": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Vezes em que uma conversa chegou ao bloco."
+                },
+                "exits": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Vezes em que seguiu adiante (resposta válida ou bloco seguinte)."
+                }
+              },
+              "required": ["nodeId", "entries", "exits"]
+            }
+          }
+        },
+        "required": ["days", "nodes"]
+      },
       "WhatsAppChatbotPublish": {
         "type": "object",
         "properties": {
@@ -238381,11 +238519,42 @@
                         }
                       ]
                     },
+                    "list": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "buttonLabel": {
+                              "type": "string"
+                            },
+                            "rows": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["id", "label"]
+                              }
+                            }
+                          },
+                          "required": ["buttonLabel", "rows"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "numbered": {
                       "type": "string"
                     }
                   },
-                  "required": ["kind", "nodeId", "text", "buttons", "numbered"]
+                  "required": ["kind", "nodeId", "text", "buttons", "list", "numbered"]
                 }
               ]
             }
@@ -239133,7 +239302,8 @@
               "AI_ACTION",
               "SLA_BREACHED",
               "PIX_PAID",
-              "CHATBOT_HANDOFF"
+              "CHATBOT_HANDOFF",
+              "TRANSFER_SUMMARY"
             ]
           },
           "source": {
@@ -239149,7 +239319,8 @@
               "DISTRIBUTION",
               "SLA",
               "PIX",
-              "CHATBOT"
+              "CHATBOT",
+              "COPILOT"
             ]
           },
           "actorUserId": {
@@ -241767,6 +241938,10 @@
           "marketingLiteCloudFallback": {
             "type": "boolean",
             "description": "Permite que a Meta use a Cloud API comum quando a Lite não consegue entregar (padrão: ligado)."
+          },
+          "copilotSummaryOnTransfer": {
+            "type": "boolean",
+            "description": "Ao transferir a conversa para outro atendente ou equipe, o copiloto escreve um resumo na linha do tempo (padrão: desligado; consome a cota de IA do workspace)."
           }
         },
         "required": [
@@ -241798,7 +241973,8 @@
           "distributionRespectBusinessHours",
           "whatsappCheckTtlDays",
           "marketingLiteEnabled",
-          "marketingLiteCloudFallback"
+          "marketingLiteCloudFallback",
+          "copilotSummaryOnTransfer"
         ]
       },
       "WhatsAppSlaOpenCycle": {

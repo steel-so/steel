@@ -540,3 +540,150 @@ describe('parseChatbotState', () => {
     ).toEqual({ started: true, awaiting: null, variables: {} })
   })
 })
+
+describe('chatbot engine — interactive list', () => {
+  const options = Array.from({ length: 6 }, (_, index) => ({
+    id: `o${index}`,
+    label: `Opção ${index + 1}`,
+  }))
+  const bigMenu = parse({
+    nodes: [
+      { id: 'start', type: 'start', position: pos, data: {} },
+      {
+        id: 'menu',
+        type: 'menu',
+        position: pos,
+        data: { text: 'Escolha', options },
+      },
+      { id: 'end', type: 'end', position: pos, data: { text: 'Fim' } },
+    ],
+    edges: [edge('start', 'next', 'menu'), edge('menu', 'o3', 'end')],
+  })
+
+  it('offers a list when the menu has more than three options', async () => {
+    const run = await startFlow(bigMenu, ctx())
+    const menu = run.outputs[0]
+    if (menu.kind !== 'menu') throw new Error('expected a menu')
+    expect(menu.buttons).toBeNull()
+    expect(menu.list).toEqual({
+      buttonLabel: 'Ver opções',
+      rows: options.map((option) => ({
+        id: menuButtonPayload('menu', option.id),
+        label: option.label,
+      })),
+    })
+    expect(menu.numbered).toContain('6. Opção 6')
+  })
+
+  it('reads a list row like a button click', async () => {
+    const started = await startFlow(bigMenu, ctx())
+    const run = await resumeFlow(
+      bigMenu,
+      started.state,
+      { text: 'Opção 4', buttonPayload: menuButtonPayload('menu', 'o3') },
+      ctx(),
+    )
+    expect(run.status).toBe('COMPLETED')
+    expect(run.outputs).toEqual([{ kind: 'text', text: 'Fim' }])
+  })
+
+  it('keeps reply buttons (and no list) for a short menu', async () => {
+    const run = await startFlow(menuFlow, ctx())
+    const menu = run.outputs[0]
+    if (menu.kind !== 'menu') throw new Error('expected a menu')
+    expect(menu.list).toBeNull()
+  })
+})
+
+describe('chatbot engine — per-block tracking', () => {
+  it('records the blocks entered and the ones left', async () => {
+    const started = await startFlow(menuFlow, ctx())
+    // start -> menu: the start block was left, the menu is waiting.
+    expect(started.entered).toEqual(['start', 'menu'])
+    expect(started.exited).toEqual(['start'])
+
+    const answered = await resumeFlow(
+      menuFlow,
+      started.state,
+      { text: '1' },
+      ctx(),
+    )
+    // The valid answer leaves the menu; the handoff block is entered, not left.
+    expect(answered.entered).toEqual(['sales'])
+    expect(answered.exited).toEqual(['menu'])
+  })
+
+  it('does not count an invalid answer as an exit, but the invalid exit is one', async () => {
+    const started = await startFlow(menuFlow, ctx())
+    const retry = await resumeFlow(
+      menuFlow,
+      started.state,
+      { text: 'zzz' },
+      ctx(),
+    )
+    expect(retry.status).toBe('WAITING')
+    expect(retry.entered).toEqual([])
+    expect(retry.exited).toEqual([])
+
+    const exhausted = await resumeFlow(
+      menuFlow,
+      retry.state,
+      { text: 'zzz' },
+      ctx(),
+    )
+    expect(exhausted.status).toBe('HANDED_OFF_HUMAN')
+    expect(exhausted.exited).toEqual([])
+  })
+
+  it('counts the "invalid" exit when it is drawn', async () => {
+    const flow = parse({
+      nodes: [
+        { id: 'start', type: 'start', position: pos, data: {} },
+        {
+          id: 'q',
+          type: 'question',
+          position: pos,
+          data: {
+            text: 'CPF?',
+            variable: 'cpf',
+            validation: 'CPF',
+            maxAttempts: 1,
+          },
+        },
+        { id: 'bye', type: 'end', position: pos, data: { text: 'Tchau' } },
+      ],
+      edges: [edge('start', 'next', 'q'), edge('q', 'invalid', 'bye')],
+    })
+    const started = await startFlow(flow, ctx())
+    const run = await resumeFlow(flow, started.state, { text: 'abc' }, ctx())
+    expect(run.entered).toEqual(['bye'])
+    expect(run.exited).toEqual(['q'])
+  })
+
+  it('tracks the loop guard and the missing-target failures', async () => {
+    const loop = parse({
+      nodes: [
+        { id: 'start', type: 'start', position: pos, data: {} },
+        {
+          id: 'a',
+          type: 'set-variable',
+          position: pos,
+          data: { variable: 'x', value: '1' },
+        },
+      ],
+      edges: [edge('start', 'next', 'a'), edge('a', 'next', 'a')],
+    })
+    const guarded = await startFlow(loop, ctx())
+    expect(guarded.endReason).toBe('loop_guard')
+    expect(guarded.entered.length).toBe(CHATBOT_MAX_STEPS)
+
+    const dangling = parse({
+      nodes: [{ id: 'start', type: 'start', position: pos, data: {} }],
+      edges: [edge('start', 'next', 'ghost')],
+    })
+    const missing = await startFlow(dangling, ctx())
+    expect(missing.endReason).toBe('missing_node')
+    expect(missing.entered).toEqual(['start'])
+    expect(missing.exited).toEqual(['start'])
+  })
+})

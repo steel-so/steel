@@ -31,6 +31,7 @@ import {
 } from '@/src/mappers/whatsapp-chatbot.mapper'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
 import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.repository'
+import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import type {
@@ -45,6 +46,7 @@ import type {
   WhatsAppChatbotDTO,
   WhatsAppChatbotFlowIssueDTO,
   WhatsAppChatbotListItemDTO,
+  WhatsAppChatbotNodeStatsDTO,
   WhatsAppChatbotPublishDTO,
   WhatsAppChatbotSessionDTO,
   WhatsAppChatbotSimulationDTO,
@@ -480,6 +482,45 @@ export const WhatsAppChatbotService = {
       status: run.status,
       handoff: run.handoff ?? null,
       closeConversation: run.closeConversation ?? false,
+    })
+  },
+
+  /**
+   * Entries and exits per block over the last 30 days (UTC calendar days,
+   * today included), for the numbers drawn on the editor canvas.
+   */
+  async nodeStats(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+  ): Promise<Result<WhatsAppChatbotNodeStatsDTO>> {
+    const access = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'conversations', action: 'VIEW' },
+    )
+    if (!access.ok) return access
+    const existing = await loadOwned(workspaceId, id)
+    if (!existing.ok) return existing
+
+    const today = new Date()
+    const since = new Date(
+      Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate() - (STATS_WINDOW_DAYS - 1),
+      ),
+    )
+    const totals = await WhatsAppChatbotNodeStatRepository.totalsSince(
+      workspaceId,
+      id,
+      since,
+    )
+    if (!totals.ok) return totals
+    return ok({
+      days: STATS_WINDOW_DAYS,
+      nodes: totals.value.filter((row) => row.entries > 0 || row.exits > 0),
     })
   },
 

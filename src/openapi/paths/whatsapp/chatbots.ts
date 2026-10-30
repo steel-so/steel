@@ -11,6 +11,7 @@ import {
   WhatsAppChatbotDTO,
   WhatsAppChatbotFlowIssueDTO,
   WhatsAppChatbotListItemDTO,
+  WhatsAppChatbotNodeStatsDTO,
   WhatsAppChatbotPublishDTO,
   WhatsAppChatbotSessionDTO,
   WhatsAppChatbotSimulationDTO,
@@ -191,5 +192,20 @@ export const chatbotRoutes: RouteConfig[] = [
       'VALIDATION_ERROR',
       'WHATSAPP_CHATBOT_NOT_FOUND',
     ],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/chatbots/{chatbotId}/stats',
+    tags: [TAG],
+    summary: 'Métricas por bloco',
+    description: `Quantas vezes cada bloco do fluxo foi alcançado (entradas) e quantas vezes a conversa seguiu adiante (saídas) nos últimos 30 dias. A diferença entre as duas é onde as conversas ficaram, foram entregues a uma pessoa ou desistiram. Blocos sem passagem não aparecem. O editor mostra os números sobre o desenho. ${MEMBER}`,
+    params: BOT_PARAMS,
+    responses: {
+      200: {
+        description: 'Métricas por bloco.',
+        schema: WhatsAppChatbotNodeStatsDTO,
+      },
+    },
+    errors: [...MEMBER_ERRORS, 'WHATSAPP_CHATBOT_NOT_FOUND'],
   },
 ]

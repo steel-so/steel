@@ -23,6 +23,7 @@ const menuStep = {
       nodeId: 'menu',
       text: 'Como podemos ajudar?',
       buttons: [{ id: 'bot:menu:sales', label: 'Comercial' }],
+      list: null,
       numbered: 'Como podemos ajudar?\n\n1. Comercial',
     },
   ],
@@ -101,5 +102,35 @@ describe('<ChatbotSimulator />', () => {
     mockFetch([{ method: 'POST', match: URL, status: 500, error: 'Falhou' }])
     renderWithQuery(<ChatbotSimulator workspaceId='ws_1' chatbotId='bot_1' />)
     await waitFor(() => expect(notify.error).toHaveBeenCalledWith('Falhou'))
+  })
+
+  it('shows the rows of an interactive list as tappable options', async () => {
+    const listStep = {
+      ...menuStep,
+      outputs: [
+        {
+          kind: 'menu',
+          nodeId: 'menu',
+          text: 'Escolha uma área',
+          buttons: null,
+          list: {
+            buttonLabel: 'Ver opções',
+            rows: [
+              { id: 'bot:menu:a', label: 'Financeiro' },
+              { id: 'bot:menu:b', label: 'Suporte' },
+              { id: 'bot:menu:c', label: 'Vendas' },
+              { id: 'bot:menu:d', label: 'Outros' },
+            ],
+          },
+          numbered: 'Escolha uma área\n\n1. Financeiro',
+        },
+      ],
+    }
+    mockFetch([{ method: 'POST', match: URL, data: listStep }])
+    renderWithQuery(<ChatbotSimulator workspaceId='ws_1' chatbotId='bot_1' />)
+
+    expect(await screen.findByText('Escolha uma área')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Financeiro' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Outros' })).toBeTruthy()
   })
 })

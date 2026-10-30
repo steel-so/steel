@@ -45,6 +45,22 @@ export interface WhatsAppChatbotDTO {
   updatedAt: string
 }
 
+/** Entries and exits of one block over the metrics window. */
+export interface WhatsAppChatbotNodeStatDTO {
+  nodeId: string
+  /** Times a conversation reached the block. */
+  entries: number
+  /** Times it moved on from the block (a valid answer or a following block). */
+  exits: number
+}
+
+export interface WhatsAppChatbotNodeStatsDTO {
+  /** Length of the window, in days. */
+  days: number
+  /** Blocks that had traffic; the others are absent (zero). */
+  nodes: WhatsAppChatbotNodeStatDTO[]
+}
+
 export interface WhatsAppChatbotListItemDTO
   extends Omit<WhatsAppChatbotDTO, 'flow'> {
   nodeCount: number
@@ -73,6 +89,11 @@ export type WhatsAppChatbotSimulationOutputDTO =
       nodeId: string
       text: string
       buttons: Array<{ id: string; label: string }> | null
+      /** Meta interactive list for menus that do not fit reply buttons. */
+      list: {
+        buttonLabel: string
+        rows: Array<{ id: string; label: string }>
+      } | null
       numbered: string
     }
 

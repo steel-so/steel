@@ -374,6 +374,44 @@ describe('WhatsAppConversationRepository · distribution queries', () => {
       ).toEqual([])
     })
 
+    it('skips a conversation a chatbot is still talking to', async () => {
+      const fx = await fixtures()
+      const talking = await conversation(fx, { queuedAt: minutesAgo(25) })
+      const finished = await conversation(fx, { queuedAt: minutesAgo(25) })
+      const bot = await prisma.whatsAppChatbot.create({
+        data: {
+          workspaceId: fx.workspace.id,
+          name: 'Bot',
+          draft: {} as never,
+        },
+      })
+      const session = (
+        conversationId: string,
+        status: 'RUNNING' | 'COMPLETED',
+      ) =>
+        prisma.whatsAppChatbotSession.create({
+          data: {
+            workspaceId: fx.workspace.id,
+            chatbotId: bot.id,
+            conversationId,
+            status,
+            botVersion: 1,
+            state: {},
+            definition: {},
+          },
+        })
+      await session(talking.id, 'RUNNING')
+      await session(finished.id, 'COMPLETED')
+
+      const found = expectOk(
+        await WhatsAppConversationRepository.listUnattendedForReminder({
+          ...base(),
+          workspaceIds: { in: [fx.workspace.id] },
+        }),
+      )
+      expect(found.map((c) => c.id)).toEqual([finished.id])
+    })
+
     it('applies the workspace filter in both forms', async () => {
       const fx = await fixtures()
       const other = await fixtures()

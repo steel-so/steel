@@ -68,6 +68,7 @@ export const DataRetentionJob = {
   PruneDeadIntegrationGrants: 'prune-dead-integration-grants',
   PurgeCallRecordings: 'purge-call-recordings',
   CleanupWorkspaceAccessLogs: 'cleanup-workspace-access-logs',
+  CleanupChatbotNodeStats: 'cleanup-chatbot-node-stats',
 } as const
 
 export type DataRetentionJob =
@@ -82,6 +83,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.PruneDeadIntegrationGrants]: Record<string, never>
   [DataRetentionJob.PurgeCallRecordings]: Record<string, never>
   [DataRetentionJob.CleanupWorkspaceAccessLogs]: Record<string, never>
+  [DataRetentionJob.CleanupChatbotNodeStats]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {

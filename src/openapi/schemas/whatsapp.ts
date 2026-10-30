@@ -1516,6 +1516,25 @@ export const WhatsAppChatbotPublishDTO = dto(
   }),
 )
 
+export const WhatsAppChatbotNodeStatsDTO = dto(
+  'WhatsAppChatbotNodeStats',
+  z.object({
+    days: z.number().int().meta({ description: 'Janela das métricas, em dias.' }),
+    nodes: z.array(
+      z.object({
+        nodeId: z.string(),
+        entries: z.number().int().meta({
+          description: 'Vezes em que uma conversa chegou ao bloco.',
+        }),
+        exits: z.number().int().meta({
+          description:
+            'Vezes em que seguiu adiante (resposta válida ou bloco seguinte).',
+        }),
+      }),
+    ),
+  }),
+)
+
 export const WhatsAppChatbotSessionDTO = dto(
   'WhatsAppChatbotSession',
   z.object({
@@ -1557,6 +1576,12 @@ export const WhatsAppChatbotSimulationDTO = dto(
           text: z.string(),
           buttons: z
             .array(z.object({ id: z.string(), label: z.string() }))
+            .nullable(),
+          list: z
+            .object({
+              buttonLabel: z.string(),
+              rows: z.array(z.object({ id: z.string(), label: z.string() })),
+            })
             .nullable(),
           numbered: z.string(),
         }),

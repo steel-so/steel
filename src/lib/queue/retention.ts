@@ -15,6 +15,8 @@ export const RetentionWindowMs = {
    * banks keep access records for under BACEN rules (5 × 365 days).
    */
   workspaceAccessLogs: 5 * 365 * DAY_MS,
+  /** Per-block chatbot metrics: the editor shows 30 days, 60 are kept. */
+  chatbotNodeStats: 60 * DAY_MS,
 } as const
 
 export const RetentionCron = {

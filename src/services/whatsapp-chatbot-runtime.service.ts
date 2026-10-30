@@ -34,6 +34,10 @@ import { dbError } from '@/src/repositories/db-error'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
 import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.repository'
+import {
+  type ChatbotNodeCount,
+  WhatsAppChatbotNodeStatRepository,
+} from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import {
@@ -44,6 +48,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { assertMember } from './authz'
 import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
+import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
   notifyWhatsAppUsers,
@@ -145,7 +150,11 @@ async function sendText(
   return saved.ok ? ok(undefined) : saved
 }
 
-/** Reply buttons when the menu fits them; numbered text otherwise. */
+/**
+ * Reply buttons when the menu fits them; on Meta an interactive list (up to
+ * 10 rows) when it does not; numbered text otherwise, which is also the
+ * fallback whenever the provider refuses the richer message.
+ */
 async function sendMenu(
   conversation: ConversationWithConnection,
   contact: WhatsAppContact,
@@ -177,6 +186,34 @@ async function sendMenu(
     // The provider refused the buttons (e.g. Z-API without the feature):
     // the numbered list reaches the contact anyway.
     logger.warn('whatsapp.chatbot.buttons_fallback', {
+      conversationId: conversation.id,
+      reason: sent.error.code,
+    })
+  }
+  if (output.list && conversation.connection.provider === 'META') {
+    const sent = await WhatsAppSend.list(
+      conversation.connection,
+      {
+        to: contact.waId,
+        text: output.text,
+        buttonLabel: output.list.buttonLabel,
+        rows: output.list.rows.map((row) => ({
+          id: row.id,
+          title: row.label,
+        })),
+      },
+      { cost: { source: 'OTHER', conversationId: conversation.id } },
+    )
+    if (sent.ok) {
+      const saved = await persistOutbound({
+        conversation,
+        text: output.text,
+        providerMessageId: sent.value.providerMessageId,
+        buttons: output.list.rows,
+      })
+      return saved.ok ? ok(undefined) : saved
+    }
+    logger.warn('whatsapp.chatbot.list_fallback', {
       conversationId: conversation.id,
       reason: sent.error.code,
     })
@@ -304,6 +341,16 @@ async function handoffToHuman(
     conversation.id,
   )
   const distributed = distribution.ok && distribution.value.assigned
+  // While the bot talked the conversation was not "waiting" (no alert fired
+  // on open); now that it lands in the queue unassigned, it is.
+  if (!distributed) {
+    emitWhatsAppConversationWaiting({
+      conversation: updated.value,
+      contact,
+      reason: 'returned_to_queue',
+      actorId: null,
+    })
+  }
   if (!distributed && memberIds.length > 0) {
     await notifyWhatsAppUsers({
       workspaceId,
@@ -371,6 +418,55 @@ async function closeConversation(
     assignedUserId: null,
   })
   return ok(undefined)
+}
+
+/** Folds a run's visited blocks into per-block counts. */
+export function countNodeVisits(
+  run: Pick<ChatbotRunResult, 'entered' | 'exited'>,
+): ChatbotNodeCount[] {
+  const counts = new Map<string, ChatbotNodeCount>()
+  const slot = (nodeId: string) => {
+    const found = counts.get(nodeId)
+    if (found) return found
+    const created = { nodeId, entries: 0, exits: 0 }
+    counts.set(nodeId, created)
+    return created
+  }
+  for (const nodeId of run.entered) slot(nodeId).entries += 1
+  for (const nodeId of run.exited) slot(nodeId).exits += 1
+  return [...counts.values()]
+}
+
+/** UTC calendar day of an instant, as the `@db.Date` column stores it. */
+export function metricsDay(at: Date): Date {
+  return new Date(
+    Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()),
+  )
+}
+
+/** Per-block metrics are a nicety: a failure never touches the conversation. */
+async function recordNodeStats(
+  workspaceId: string,
+  chatbotId: string,
+  run: Pick<ChatbotRunResult, 'entered' | 'exited'>,
+): Promise<void> {
+  try {
+    const saved = await WhatsAppChatbotNodeStatRepository.increment(
+      { workspaceId, chatbotId, day: metricsDay(new Date()) },
+      countNodeVisits(run),
+    )
+    if (!saved.ok) {
+      logger.warn('whatsapp.chatbot.node_stats_failed', {
+        chatbotId,
+        reason: saved.error.code,
+      })
+    }
+  } catch (error) {
+    logger.warn('whatsapp.chatbot.node_stats_failed', {
+      chatbotId,
+      reason: error instanceof Error ? error.message : String(error),
+    })
+  }
 }
 
 function chatbotContext(contact: WhatsAppContact): ChatbotContext {
@@ -573,6 +669,8 @@ export const WhatsAppChatbotRuntimeService = {
           ctx,
         )
       : await startFlow(flow, ctx, { text })
+
+    await recordNodeStats(conversation.workspaceId, session.chatbotId, run)
 
     const dispatched = await dispatchOutputs(conversation, contact, run.outputs)
     if (!dispatched.ok) {

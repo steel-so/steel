@@ -4,6 +4,7 @@ import type {
   WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
   WhatsAppOutboundFlow,
+  WhatsAppOutboundList,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
   WhatsAppOutboundTemplate,
@@ -185,6 +186,43 @@ export function buildMetaInteractive(input: WhatsAppOutboundButtons): {
   return { interactive, body }
 }
 
+/** Row title / description / button limits of an interactive list. */
+export const META_LIST_TITLE_MAX = 24
+export const META_LIST_DESCRIPTION_MAX = 72
+export const META_LIST_BUTTON_MAX = 20
+export const META_LIST_ROWS_MAX = 10
+
+/**
+ * Interactive list message (`interactive.type=list`): one section with up to
+ * 10 rows. Titles over 24 characters are cut and the full text moves to the
+ * row description, so a long option never goes out unreadable.
+ */
+export function buildMetaListMessage(
+  input: WhatsAppOutboundList,
+): Record<string, unknown> {
+  const rows = input.rows.slice(0, META_LIST_ROWS_MAX).map((row) => {
+    const long = row.title.length > META_LIST_TITLE_MAX
+    const description = row.description ?? (long ? row.title : undefined)
+    return {
+      id: row.id,
+      title: long
+        ? `${row.title.slice(0, META_LIST_TITLE_MAX - 1).trimEnd()}…`
+        : row.title,
+      ...(description
+        ? { description: description.slice(0, META_LIST_DESCRIPTION_MAX) }
+        : {}),
+    }
+  })
+  return {
+    type: 'list',
+    body: { text: input.text },
+    action: {
+      button: input.buttonLabel.slice(0, META_LIST_BUTTON_MAX),
+      sections: [{ title: 'Opções', rows }],
+    },
+  }
+}
+
 /**
  * Interactive message that opens a Flow. `mode: 'draft'` lets the team test a
  * flow that is not published yet.
@@ -362,6 +400,28 @@ export function createMetaClient(
             ...metaRecipient(input.to),
             type: 'interactive',
             interactive,
+          }),
+        },
+      )
+      return { providerMessageId: result.messages[0].id }
+    },
+
+    async sendList(input: WhatsAppOutboundList): Promise<WhatsAppSendResult> {
+      if (input.text.length > META_INTERACTIVE_BODY_MAX) {
+        throw new Error(
+          `Lista aceita até ${META_INTERACTIVE_BODY_MAX} caracteres no texto na Meta`,
+        )
+      }
+      const result = await metaRequest<{ messages: { id: string }[] }>(
+        credentials,
+        messagesPath,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            ...metaRecipient(input.to),
+            type: 'interactive',
+            interactive: buildMetaListMessage(input),
           }),
         },
       )

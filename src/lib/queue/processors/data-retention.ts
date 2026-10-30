@@ -1,6 +1,7 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { prisma } from '@/src/lib/prisma'
+import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { IntegrationGrantLifecycleService } from '@/src/services/integration-grant-lifecycle.service'
 import { PhoneCallRecordingService } from '@/src/services/phone-call-recording.service'
 import { WorkspaceAccessLogService } from '@/src/services/workspace-access-log.service'
@@ -104,6 +105,15 @@ async function cleanupWorkspaceAccessLogs(): Promise<CleanupResult> {
   return { deleted: deleted.value, cutoff: cutoff.toISOString() }
 }
 
+/** Per-block chatbot metrics older than the retention window. */
+async function cleanupChatbotNodeStats(): Promise<CleanupResult> {
+  const cutoff = new Date(Date.now() - RetentionWindowMs.chatbotNodeStats)
+  const deleted = await WhatsAppChatbotNodeStatRepository.deleteBefore(cutoff)
+  // Throw so BullMQ retries.
+  if (!deleted.ok) throw new Error(deleted.error.message)
+  return { deleted: deleted.value, cutoff: cutoff.toISOString() }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -180,6 +190,16 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
     case DataRetentionJob.CleanupWorkspaceAccessLogs: {
       const result = await cleanupWorkspaceAccessLogs()
       logger.info('queue.data_retention.workspace_access_logs_cleaned', {
+        component: 'Worker',
+        jobId: job.id,
+        deleted: result.deleted,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.CleanupChatbotNodeStats: {
+      const result = await cleanupChatbotNodeStats()
+      logger.info('queue.data_retention.chatbot_node_stats_cleaned', {
         component: 'Worker',
         jobId: job.id,
         deleted: result.deleted,

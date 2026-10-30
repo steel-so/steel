@@ -69,6 +69,10 @@ describe('/api/workspaces/[id]/whatsapp/chatbots', () => {
     )
     expect((await sessions.json()).data).toEqual([])
 
+    const stats = await getJson(`${base}/${bot.id}/stats`, user.cookie)
+    expect(stats.status).toBe(200)
+    expect((await stats.json()).data).toEqual({ days: 30, nodes: [] })
+
     const removed = await deleteJson(`${base}/${bot.id}`, user.cookie)
     expect(removed.status).toBe(200)
     expect((await getJson(`${base}/${bot.id}`, user.cookie)).status).toBe(404)
@@ -148,6 +152,9 @@ describe('/api/workspaces/[id]/whatsapp/chatbots', () => {
 
     expect((await getJson(base, member.cookie)).status).toBe(200)
     expect((await getJson(`${base}/${bot.id}`, member.cookie)).status).toBe(200)
+    expect(
+      (await getJson(`${base}/${bot.id}/stats`, member.cookie)).status,
+    ).toBe(200)
     expect((await postJson(base, { name: 'X' }, member.cookie)).status).toBe(
       403,
     )
@@ -181,6 +188,14 @@ describe('/api/workspaces/[id]/whatsapp/chatbots', () => {
       other.user.cookie,
     )
     expect(peek.status).toBe(404)
+    expect(
+      (
+        await getJson(
+          `/api/workspaces/${other.workspace.id}/whatsapp/chatbots/${bot.id}/stats`,
+          other.user.cookie,
+        )
+      ).status,
+    ).toBe(404)
     const stranger = await getJson(
       `/api/workspaces/${owner.workspace.id}/whatsapp/chatbots`,
       other.user.cookie,
