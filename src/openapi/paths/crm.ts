@@ -9,6 +9,7 @@ import { crmEmailRoutes } from './crm/email'
 import { crmEmailEditorRoutes } from './crm/email-editor'
 import { crmForecastRoutes } from './crm/forecast'
 import { crmFormsRoutes } from './crm/forms'
+import { crmHealthRoutes } from './crm/health'
 import { crmHookVaultRoutes } from './crm/hook-vault'
 import { crmIntegrationsRoutes } from './crm/integrations'
 import { crmLeadsRoutes } from './crm/leads'
@@ -51,6 +52,7 @@ const routes: RouteConfig[] = [
   ...crmCadenceRoutes,
   ...crmDuplicateRoutes,
   ...crmMeetingRoutes,
+  ...crmHealthRoutes,
   ...crmEmailRoutes,
   ...crmEmailEditorRoutes,
   ...crmForecastRoutes,

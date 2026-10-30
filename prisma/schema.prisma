@@ -12044,6 +12044,7 @@ model SdInventoryAgentRelease {
   @@unique([version, os, arch])
   @@index([os, arch, active, publishedAt])
   @@map("sd_inventory_agent_releases")
+}
 
 // nov: health-scores ───────────────────────────────────────────────────────
 
