@@ -53,6 +53,13 @@ import { SteelAgentVersions } from './steel-agent-versions'
 export const TEST_AGENT_HINT =
   'Roda o agente uma vez em modo teste: consulta os dados de verdade, mas só simula as alterações — nada é gravado, enviado ou mandado para aprovação.'
 
+const TABS = ['runs', 'versions', 'simulations', 'config'] as const
+
+/** Only a known tab opens from the URL; anything else falls back to the runs. */
+export function resolveTab(tab: string | undefined): (typeof TABS)[number] {
+  return TABS.find((known) => known === tab) ?? 'runs'
+}
+
 /** `/ai/agents/[agentId]` — run history + configuration. */
 export function SteelAgentDetail({
   workspaceId,
@@ -60,6 +67,7 @@ export function SteelAgentDetail({
   agentId,
   currentUserId,
   fromTemplate = false,
+  initialTab,
 }: {
   workspaceId: string
   slug: string
@@ -67,6 +75,8 @@ export function SteelAgentDetail({
   currentUserId: string
   /** Just created from a template: nudge to "Testar agente" first. */
   fromTemplate?: boolean
+  /** `?tab=` of the link (e.g. a notification): which tab opens first. */
+  initialTab?: string
 }) {
   const agent = useSteelAgent(workspaceId, agentId)
   const catalog = useSteelAgentCatalog(workspaceId)
@@ -252,7 +262,7 @@ export function SteelAgentDetail({
             </div>
           ) : null}
 
-          <Tabs defaultValue='runs'>
+          <Tabs defaultValue={resolveTab(initialTab)}>
             <TabsList>
               <TabsTrigger value='runs'>Execuções</TabsTrigger>
               <TabsTrigger value='versions'>Versões</TabsTrigger>

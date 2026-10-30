@@ -76,6 +76,8 @@ export function toSteelAgentDTO(
       : null,
     evalSetId: agent.evalSetId,
     evalMinPassRate: agent.evalMinPassRate,
+    simGateEnabled: agent.simGateEnabled,
+    simGateMinPassRate: agent.simGateMinPassRate,
     publishedVersionId: agent.publishedVersionId,
     challengerVersionId: agent.challengerVersionId,
     createdAt: agent.createdAt.toISOString(),
@@ -109,6 +111,13 @@ export function toSteelAgentVersionDTO(
         ? version.evalPassed / version.evalTotal
         : null,
     evalNote: version.evalNote,
+    simulationId: version.simulationId,
+    simPassed: version.simPassed,
+    simTotal: version.simTotal,
+    simPassRate:
+      version.simTotal && version.simPassed !== null
+        ? version.simPassed / version.simTotal
+        : null,
     createdById: version.createdById,
     publishedAt: iso(version.publishedAt),
     resolvedAt: iso(version.resolvedAt),

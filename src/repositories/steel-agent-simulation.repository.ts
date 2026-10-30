@@ -50,9 +50,11 @@ export const SteelAgentSimulationRepository = {
     workspaceId: string
     agentId: string
     name: string
-    startedById: string
+    startedById: string | null
     passScore: number
     cases: SteelAgentSimulationCaseInput[]
+    /** Set when this run is the simulation gate of an agent version. */
+    agentVersionId?: string | null
   }): Promise<Result<SteelAgentSimulationWithCases>> {
     try {
       const { cases, ...fields } = data
@@ -73,6 +75,44 @@ export const SteelAgentSimulationRepository = {
       return ok(simulation)
     } catch (error) {
       return err(dbError('Failed to create steel agent simulation', error))
+    }
+  },
+
+  /**
+   * The agent's saved scenarios for the version gate: the cases of its most
+   * recent simulation that was started by a person (gate runs are excluded,
+   * they only replay these same scenarios). `null` when it has none.
+   */
+  async latestScenarioSet(agentId: string): Promise<
+    Result<{
+      passScore: number
+      cases: SteelAgentSimulationCaseInput[]
+    } | null>
+  > {
+    try {
+      const simulation = await prisma.steelAgentSimulation.findFirst({
+        where: { agentId, agentVersionId: null, totalCases: { gt: 0 } },
+        orderBy: { createdAt: 'desc' },
+        include: { cases: CASES_ORDER },
+      })
+      if (!simulation) return ok(null)
+      return ok({
+        passScore: simulation.passScore,
+        cases: simulation.cases.map((item) => ({
+          label: item.label,
+          personaKey: item.personaKey,
+          persona: item.persona,
+          scenario: item.scenario,
+          channel: item.channel,
+          openingMessage: item.openingMessage,
+          criteria: Array.isArray(item.criteria)
+            ? (item.criteria as string[])
+            : [],
+          maxTurns: item.maxTurns,
+        })),
+      })
+    } catch (error) {
+      return err(dbError('Failed to load steel agent scenarios', error))
     }
   },
 

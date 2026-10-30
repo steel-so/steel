@@ -14,10 +14,10 @@ export default async function SteelAgentPage({
   searchParams,
 }: {
   params: Promise<{ 'workspace-slug': string; agentId: string }>
-  searchParams: Promise<{ from?: string | string[] }>
+  searchParams: Promise<{ from?: string | string[]; tab?: string | string[] }>
 }) {
   const { 'workspace-slug': slug, agentId } = await params
-  const { from } = await searchParams
+  const { from, tab } = await searchParams
   const session = await getAuthSession()
   if (!session.ok) redirect('/sign-in')
   const membership = await MembershipService.getByUserAndSlug(
@@ -34,6 +34,7 @@ export default async function SteelAgentPage({
       agentId={agentId}
       currentUserId={session.value.user.id}
       fromTemplate={from === 'template'}
+      initialTab={typeof tab === 'string' ? tab : undefined}
     />
   )
 }

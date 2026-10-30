@@ -35,6 +35,8 @@ export function createFakeSteelAgent(
     monthlyRunCap: null,
     evalSetId: null,
     evalMinPassRate: 0.8,
+    simGateEnabled: false,
+    simGateMinPassRate: 0.8,
     publishedVersionId: null,
     challengerVersionId: null,
     lastRunAt: null,

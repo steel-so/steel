@@ -31,6 +31,9 @@ export interface SteelAgentVersionUpdateInput {
   evalPassed?: number | null
   evalTotal?: number | null
   evalNote?: string | null
+  simulationId?: string | null
+  simPassed?: number | null
+  simTotal?: number | null
   resolvedAt?: Date | null
 }
 

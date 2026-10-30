@@ -66,6 +66,8 @@ describe('notifyCnpjRunFinished', () => {
 
   it('falls back to the counters when a failed run has no error text', async () => {
     await notifyCnpjRunFinished({ ...base, status: 'FAILED' })
-    expect(emit.mock.calls[0][0].body).toContain('Consultadas 10 de 10 empresas')
+    expect(emit.mock.calls[0][0].body).toContain(
+      'Consultadas 10 de 10 empresas',
+    )
   })
 })

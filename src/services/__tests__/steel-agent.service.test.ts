@@ -469,6 +469,36 @@ describe('SteelAgentService.update', () => {
     )
   })
 
+  it('should require saved scenarios to turn the simulation gate on', async () => {
+    versions.checkSimulationGate.mockResolvedValue(ok(true))
+    expectOk(await update({ simGateEnabled: true, simGateMinPassRate: 0.9 }))
+    expect(versions.checkSimulationGate).toHaveBeenCalledWith('agent1')
+    expect(agents.update.mock.calls[0][1]).toEqual(
+      expect.objectContaining({
+        simGateEnabled: true,
+        simGateMinPassRate: 0.9,
+      }),
+    )
+
+    versions.checkSimulationGate.mockResolvedValue(
+      err(appError('STEEL_AGENT_SIM_GATE_INVALID', 'sem cenários')),
+    )
+    expectErr(
+      await update({ simGateEnabled: true }),
+      'STEEL_AGENT_SIM_GATE_INVALID',
+    )
+  })
+
+  it('should not check scenarios when the gate is turned off, and pass the effective setting to the version', async () => {
+    versions.checkSimulationGate.mockClear()
+    agents.findById.mockResolvedValue(ok({ ...AGENT, simGateEnabled: true }))
+    expectOk(await update({ simGateEnabled: false, instructions: 'Outro' }))
+    expect(versions.checkSimulationGate).not.toHaveBeenCalled()
+    expect(versions.submit).toHaveBeenCalledWith(
+      expect.objectContaining({ simGateEnabled: false }),
+    )
+  })
+
   it('should keep tools untouched when not sent and validate a new owner', async () => {
     expectOk(await update({ enabled: false, ownerId: 'owner2' }))
     expect(agents.update.mock.calls[0][2]).toBeUndefined()

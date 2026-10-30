@@ -6,6 +6,7 @@ import {
   aiDisabled,
   appError,
   steelAgentEvalSetInvalid,
+  steelAgentSimGateInvalid,
   steelAgentVersionInvalidState,
   steelAgentVersionNotFound,
   steelAgentVersionPending,
@@ -15,6 +16,7 @@ import { can } from '@/src/lib/permissions'
 import { AiEvalJob } from '@/src/lib/queue/jobs'
 import { getAiEvalQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
+import { enqueueSteelAgentSimulation } from '@/src/lib/steel-agents/enqueue'
 import {
   evaluateGate,
   normalizeVersionTools,
@@ -33,6 +35,7 @@ import {
   SteelAgentRepository,
   type SteelAgentWithRelations,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentSimulationRepository } from '@/src/repositories/steel-agent-simulation.repository'
 import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import type { RestoreSteelAgentVersionDTO } from '@/src/schemas/steel-agent.schema'
 import type {
@@ -40,6 +43,7 @@ import type {
   SteelAgentVersionRefDTO,
 } from '@/types/steel-agent'
 import { assertMember, type MembershipContext } from './authz'
+import { notifyAgentVersionGateFinished } from './steel-agent-notifications'
 
 /**
  * Steel Agent versions (A2). Every edit of the instructions, the tools or the
@@ -47,6 +51,11 @@ import { assertMember, type MembershipContext } from './authz'
  * the version waits for the eval run and is published (or goes live as an
  * A/B challenger) only when enough cases pass; without one it is published at
  * once. The agent's own columns always mirror the published version.
+ *
+ * A3 adds a second, optional gate: when the agent has `simGateEnabled`, the
+ * saved simulation scenarios are replayed against the version (after the eval
+ * passed, or alone when there is no eval set) and the version only goes live
+ * if both meet their minimum. The outcome notifies the agent's owner.
  */
 
 const RESOURCE = 'steel-agents'
@@ -222,6 +231,152 @@ async function startGateEval(
   })
 }
 
+/** The saved scenarios the simulation gate replays; the gate needs at least one. */
+async function loadGateScenarios(agentId: string): Promise<
+  Result<{
+    passScore: number
+    cases: Parameters<typeof SteelAgentSimulationRepository.create>[0]['cases']
+  }>
+> {
+  const set = await SteelAgentSimulationRepository.latestScenarioSet(agentId)
+  if (!set.ok) return set
+  if (!set.value) {
+    return err(
+      steelAgentSimGateInvalid(
+        'O agente não tem cenários salvos. Crie e rode uma simulação em Simulações antes de ligar a trava.',
+      ),
+    )
+  }
+  return ok(set.value)
+}
+
+/** Replays the saved scenarios against `version` and queues the run. */
+async function startGateSimulation(
+  actorId: string | null,
+  version: SteelAgentVersion,
+): Promise<Result<SteelAgentVersion>> {
+  const settingsRow = await WorkspaceAiSettingsRepository.findByWorkspace(
+    version.workspaceId,
+  )
+  if (!settingsRow.ok) return settingsRow
+  if (!toEffectiveAiSettings(settingsRow.value).aiEnabled) {
+    return err(aiDisabled())
+  }
+  const scenarios = await loadGateScenarios(version.agentId)
+  if (!scenarios.ok) return scenarios
+  const simulation = await SteelAgentSimulationRepository.create({
+    workspaceId: version.workspaceId,
+    agentId: version.agentId,
+    name: `Trava da versão ${version.number}`,
+    startedById: actorId,
+    passScore: scenarios.value.passScore,
+    cases: scenarios.value.cases,
+    agentVersionId: version.id,
+  })
+  if (!simulation.ok) return simulation
+  const queued = await enqueueSteelAgentSimulation(simulation.value.id)
+  if (!queued.ok) {
+    await SteelAgentSimulationRepository.update(simulation.value.id, {
+      status: 'FAILED',
+      error: queued.error.message,
+      finishedAt: new Date(),
+    })
+    return queued
+  }
+  return SteelAgentVersionRepository.update(version.id, {
+    simulationId: simulation.value.id,
+  })
+}
+
+/** One line per gate that ran: "Avaliação: 8 de 10 casos · Simulação: ...". */
+function gateSummary(
+  version: Pick<
+    SteelAgentVersion,
+    'evalPassed' | 'evalTotal' | 'simPassed' | 'simTotal'
+  >,
+): string {
+  const parts: string[] = []
+  if (version.evalTotal) {
+    parts.push(
+      `Avaliação: ${version.evalPassed ?? 0} de ${version.evalTotal} casos`,
+    )
+  }
+  if (version.simTotal) {
+    parts.push(
+      `Simulação: ${version.simPassed ?? 0} de ${version.simTotal} cenários`,
+    )
+  }
+  return parts.join(' · ')
+}
+
+/** Audit + log + owner notice once a gate reached its final outcome. */
+async function concludeGate(
+  agent: SteelAgentWithRelations,
+  before: SteelAgentVersion,
+  outcome: SteelAgentVersion,
+): Promise<void> {
+  const rejected = outcome.status === 'REJECTED'
+  auditMutation({
+    entity: 'steel_agent_version',
+    action: rejected ? 'cancel' : 'publish',
+    actorId: null,
+    targetId: before.id,
+    meta: {
+      workspaceId: before.workspaceId,
+      agentId: before.agentId,
+      number: before.number,
+      status: outcome.status,
+      passed: outcome.evalPassed,
+      total: outcome.evalTotal,
+      simPassed: outcome.simPassed,
+      simTotal: outcome.simTotal,
+    },
+  })
+  logger.info(
+    'steel_agents.version_gate_finished',
+    logFields(
+      { component: COMPONENT, workspaceId: before.workspaceId },
+      {
+        agentId: before.agentId,
+        versionId: before.id,
+        status: outcome.status,
+      },
+    ),
+  )
+  await notifyAgentVersionGateFinished({
+    workspaceId: before.workspaceId,
+    agentId: before.agentId,
+    agentName: agent.name,
+    ownerId: agent.ownerId,
+    createdById: before.createdById,
+    versionId: before.id,
+    number: before.number,
+    outcome: rejected
+      ? 'REJECTED'
+      : outcome.status === 'CHALLENGER'
+        ? 'CHALLENGER'
+        : 'PUBLISHED',
+    detail: rejected
+      ? (outcome.evalNote ?? 'A versão não passou na avaliação.')
+      : gateSummary(outcome),
+  })
+}
+
+/** Rejects a pending version with the reason shown in the Versions tab. */
+async function rejectVersion(
+  agent: SteelAgentWithRelations,
+  version: SteelAgentVersion,
+  note: string,
+): Promise<void> {
+  const closed = await SteelAgentVersionRepository.close(
+    version.id,
+    version.agentId,
+    'REJECTED',
+    { evalNote: note },
+  )
+  if (closed.ok) await concludeGate(agent, version, closed.value)
+}
+
 export interface SubmitVersionInput {
   actorId: string
   agent: SteelAgentWithRelations
@@ -230,10 +385,18 @@ export interface SubmitVersionInput {
   changeNote: string | null
   rolloutPercent: number | null
   evalSetId: string | null
+  /** Effective simulation gate of this edit; defaults to the agent's setting. */
+  simGateEnabled?: boolean
 }
 
 export const SteelAgentVersionService = {
   checkEvalSet,
+
+  /** Turning the simulation gate on needs saved scenarios to replay. */
+  async checkSimulationGate(agentId: string): Promise<Result<true>> {
+    const scenarios = await loadGateScenarios(agentId)
+    return scenarios.ok ? ok(true) : scenarios
+  },
 
   /** Records the agent's current state as v1 when it has no version yet. */
   ensureBaseline,
@@ -258,6 +421,12 @@ export const SteelAgentVersionService = {
       caseCount = set.value.caseCount
     }
 
+    const simGate = input.simGateEnabled ?? agent.simGateEnabled
+    if (simGate) {
+      const scenarios = await loadGateScenarios(agent.id)
+      if (!scenarios.ok) return scenarios
+    }
+
     const baseline = await ensureBaseline(agent, actorId)
     if (!baseline.ok) return baseline
 
@@ -273,13 +442,15 @@ export const SteelAgentVersionService = {
     if (!created.ok) return created
 
     let result: Result<SteelAgentVersion>
-    if (input.evalSetId) {
-      result = await startGateEval(
-        actorId,
-        created.value,
-        input.evalSetId,
-        caseCount,
-      )
+    if (input.evalSetId || simGate) {
+      result = input.evalSetId
+        ? await startGateEval(
+            actorId,
+            created.value,
+            input.evalSetId,
+            caseCount,
+          )
+        : await startGateSimulation(actorId, created.value)
       if (!result.ok) {
         await SteelAgentVersionRepository.close(
           created.value.id,
@@ -305,6 +476,7 @@ export const SteelAgentVersionService = {
         number: result.value.number,
         status: result.value.status,
         gated: Boolean(input.evalSetId),
+        simGated: simGate,
         rolloutPercent: input.rolloutPercent,
       },
     })
@@ -338,6 +510,8 @@ export const SteelAgentVersionService = {
       challengerVersionId: agent.value.challengerVersionId,
       evalSetId: agent.value.evalSetId,
       evalMinPassRate: agent.value.evalMinPassRate,
+      simGateEnabled: agent.value.simGateEnabled,
+      simGateMinPassRate: agent.value.simGateMinPassRate,
       canManage: canManage(membership.value),
     })
   },
@@ -450,9 +624,11 @@ export const SteelAgentVersionService = {
   },
 
   /**
-   * Worker side: the gate eval run ended. Publishes (or starts the A/B) when
-   * the pass rate reaches the agent's minimum, rejects otherwise. Never
-   * throws; a version that is no longer pending is left alone.
+   * Worker side: the gate eval run ended. Rejects the version when the pass
+   * rate is under the agent's minimum; otherwise it goes live, or, when the
+   * agent also gates on simulations, waits for the scenarios to be replayed
+   * (`onSimulationFinished`). Never throws; a version that is no longer
+   * pending is left alone.
    */
   async onEvalFinished(input: {
     versionId: string
@@ -487,55 +663,103 @@ export const SteelAgentVersionService = {
       })
       if (!recorded.ok) return
 
-      let outcome: SteelAgentVersion | null = null
-      if (input.status === 'DONE' && gate.passed) {
-        const live = await goLive(recorded.value)
-        if (live.ok) outcome = live.value
-      } else {
+      if (input.status !== 'DONE' || !gate.passed) {
         const note =
           input.status === 'FAILED'
             ? (input.error ?? 'A avaliação não terminou.')
             : gate.total === 0
               ? 'Nenhum caso foi avaliado.'
               : `Passou em ${gate.passedCases} de ${gate.total} casos (${percent(gate.rate)}); o mínimo é ${percent(agent.value.evalMinPassRate)}.`
-        const closed = await SteelAgentVersionRepository.close(
-          version.id,
-          version.agentId,
-          'REJECTED',
-          { evalNote: note },
-        )
-        if (closed.ok) outcome = closed.value
+        await rejectVersion(agent.value, recorded.value, note)
+        return
       }
-      if (!outcome) return
-      auditMutation({
-        entity: 'steel_agent_version',
-        action: outcome.status === 'REJECTED' ? 'cancel' : 'publish',
-        actorId: null,
-        targetId: version.id,
-        meta: {
-          workspaceId: version.workspaceId,
-          agentId: version.agentId,
-          number: version.number,
-          status: outcome.status,
-          passed: gate.passedCases,
-          total: gate.total,
-        },
-      })
-      logger.info(
-        'steel_agents.version_gate_finished',
-        logFields(
-          { component: COMPONENT, workspaceId: version.workspaceId },
-          {
-            agentId: version.agentId,
-            versionId: version.id,
-            status: outcome.status,
-            passRate: gate.rate,
-          },
-        ),
-      )
+
+      if (agent.value.simGateEnabled) {
+        const started = await startGateSimulation(
+          version.createdById,
+          recorded.value,
+        )
+        if (!started.ok) {
+          await rejectVersion(
+            agent.value,
+            recorded.value,
+            `A avaliação passou, mas a simulação não pôde começar: ${started.error.message}`,
+          )
+        }
+        return
+      }
+
+      const live = await goLive(recorded.value)
+      if (live.ok) await concludeGate(agent.value, version, live.value)
     } catch (cause) {
       logger.error(
         'steel_agents.version_gate_failed',
+        logFields(
+          {
+            component: COMPONENT,
+            message: cause instanceof Error ? cause.message : String(cause),
+          },
+          { versionId: input.versionId },
+        ),
+      )
+    }
+  },
+
+  /**
+   * Worker side: the gate simulation of a version ended. The version goes
+   * live only when enough scenarios passed (the agent's simulation minimum);
+   * a simulation that failed or could not run rejects it. Never throws; a
+   * version that is no longer pending is left alone.
+   */
+  async onSimulationFinished(input: {
+    versionId: string
+    simulationId: string
+    status: 'COMPLETED' | 'FAILED' | 'SKIPPED'
+    passed: number
+    failed: number
+    error: string | null
+  }): Promise<void> {
+    try {
+      const loaded = await SteelAgentVersionRepository.findByIdUnscoped(
+        input.versionId,
+      )
+      if (!loaded.ok || !loaded.value) return
+      const version = loaded.value
+      if (version.status !== 'PENDING_EVAL') return
+      const agent = await SteelAgentRepository.findById(
+        version.agentId,
+        version.workspaceId,
+      )
+      if (!agent.ok) return
+
+      const gate = evaluateGate({
+        passedCases: input.passed,
+        failedCases: input.failed,
+        minPassRate: agent.value.simGateMinPassRate,
+      })
+      const recorded = await SteelAgentVersionRepository.update(version.id, {
+        simulationId: input.simulationId,
+        simPassed: gate.passedCases,
+        simTotal: gate.total,
+      })
+      if (!recorded.ok) return
+
+      if (input.status !== 'COMPLETED' || !gate.passed) {
+        const note =
+          input.status !== 'COMPLETED'
+            ? `A simulação não terminou: ${input.error ?? 'nenhum cenário foi avaliado.'}`
+            : gate.total === 0
+              ? 'Nenhum cenário foi avaliado.'
+              : `Passou em ${gate.passedCases} de ${gate.total} cenários da simulação (${percent(gate.rate)}); o mínimo é ${percent(agent.value.simGateMinPassRate)}.`
+        await rejectVersion(agent.value, recorded.value, note)
+        return
+      }
+
+      const live = await goLive(recorded.value)
+      if (live.ok) await concludeGate(agent.value, version, live.value)
+    } catch (cause) {
+      logger.error(
+        'steel_agents.version_sim_gate_failed',
         logFields(
           {
             component: COMPONENT,

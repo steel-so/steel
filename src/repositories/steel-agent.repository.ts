@@ -77,6 +77,9 @@ export interface SteelAgentWriteInput {
   /** A2: eval set that gates new versions (null = none). */
   evalSetId?: string | null
   evalMinPassRate?: number
+  /** A2+A3: also gate versions on the saved simulation scenarios. */
+  simGateEnabled?: boolean
+  simGateMinPassRate?: number
 }
 
 /** Steel Agents and their allowed tools. */

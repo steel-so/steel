@@ -154,6 +154,8 @@ describe('steel agent mapper', () => {
       createFakeSteelAgentWithRelations({
         evalSetId: 'set1',
         evalMinPassRate: 0.9,
+        simGateEnabled: true,
+        simGateMinPassRate: 0.7,
         publishedVersionId: 'v1',
         challengerVersionId: 'v2',
       }),
@@ -162,6 +164,8 @@ describe('steel agent mapper', () => {
     expect(dto).toMatchObject({
       evalSetId: 'set1',
       evalMinPassRate: 0.9,
+      simGateEnabled: true,
+      simGateMinPassRate: 0.7,
       publishedVersionId: 'v1',
       challengerVersionId: 'v2',
     })
@@ -179,6 +183,9 @@ describe('steel agent mapper', () => {
       rolloutPercent: 20,
       evalPassed: 8,
       evalTotal: 10,
+      simulationId: 'sim1',
+      simPassed: 3,
+      simTotal: 4,
       tools: [
         { toolName: 'crm_delete_task', mode: 'AUTO' },
         { toolName: 'crm_create_task', mode: 'AUTO' },
@@ -195,6 +202,8 @@ describe('steel agent mapper', () => {
       status: 'CHALLENGER',
       rolloutPercent: 20,
       evalPassRate: 0.8,
+      simulationId: 'sim1',
+      simPassRate: 0.75,
       stats: { runs: 4 },
     })
     expect(dto.tools).toEqual([
@@ -211,6 +220,7 @@ describe('steel agent mapper', () => {
       kindOf,
     )
     expect(dto.evalPassRate).toBeNull()
+    expect(dto.simPassRate).toBeNull()
     expect(dto.publishedAt).toBeNull()
     expect(dto.stats.runs).toBe(0)
     expect(

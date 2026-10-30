@@ -186,6 +186,24 @@ describe('version fields (A2)', () => {
     ).toBe(false)
   })
 
+  it('should accept the simulation gate on update only, within range', () => {
+    expect(
+      UpdateSteelAgentSchema.parse({
+        simGateEnabled: true,
+        simGateMinPassRate: 0.9,
+      }),
+    ).toEqual({ simGateEnabled: true, simGateMinPassRate: 0.9 })
+    expect(
+      UpdateSteelAgentSchema.safeParse({ simGateMinPassRate: 0.05 }).success,
+    ).toBe(false)
+    expect(
+      UpdateSteelAgentSchema.safeParse({ simGateEnabled: 'x' }).success,
+    ).toBe(false)
+    expect(CreateSteelAgentSchema.parse(base)).not.toHaveProperty(
+      'simGateEnabled',
+    )
+  })
+
   it('should parse the restore body, which may be empty', () => {
     expect(RestoreSteelAgentVersionSchema.parse({})).toEqual({})
     expect(

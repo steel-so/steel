@@ -46,19 +46,30 @@ vi.mock('@/src/repositories/ai-action-log.repository')
 vi.mock('@/src/repositories/user.repository')
 vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/src/services/ai-usage.service')
+vi.mock('@/src/repositories/steel-agent-version.repository')
+vi.mock('@/src/services/steel-agent-version.service', () => ({
+  SteelAgentVersionService: { onSimulationFinished: vi.fn(async () => {}) },
+}))
+vi.mock('@/src/services/steel-agent-notifications', () => ({
+  notifyAgentSimulationFinished: vi.fn(async () => 1),
+}))
 
+import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import { resolveToolAccess } from '@/src/lib/ai/tools/registry'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
 import {
   SteelAgentSimulationCaseRepository,
   SteelAgentSimulationRepository,
 } from '@/src/repositories/steel-agent-simulation.repository'
+import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import {
   AiUsageService,
   type PreparedAiCall,
 } from '@/src/services/ai-usage.service'
+import { notifyAgentSimulationFinished } from '@/src/services/steel-agent-notifications'
+import { SteelAgentVersionService } from '@/src/services/steel-agent-version.service'
 import { executeSteelAgentSimulation } from '../steel-agent-simulation-runner'
 
 const access = vi.mocked(resolveToolAccess)
@@ -738,5 +749,121 @@ describe('executeSteelAgentSimulation — gates', () => {
     expect(expectOk(await executeSteelAgentSimulation('sim1'))).toBe(
       'completed',
     )
+  })
+})
+
+describe('executeSteelAgentSimulation — reporting', () => {
+  const happy = {
+    agent: [{ text: 'Oi' }],
+    customer: [{ text: customer('', true, 'x') }],
+    judge: [{ text: judge(90) }],
+  }
+
+  beforeEach(() => {
+    vi.mocked(notifyAgentSimulationFinished).mockClear()
+    vi.mocked(SteelAgentVersionService.onSimulationFinished).mockClear()
+  })
+
+  it('should notify the owner and the starter when a simulation completes', async () => {
+    setup({ script: happy, simulation: { agentId: 'agent1' } })
+    await executeSteelAgentSimulation('sim1')
+    expect(notifyAgentSimulationFinished).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      agentId: 'agent1',
+      agentName: 'Triagem de chamados',
+      ownerId: 'owner1',
+      startedById: 'starter',
+      simulationId: 'sim1',
+      status: 'COMPLETED',
+      passed: 1,
+      failed: 0,
+      avgScore: 90,
+      error: null,
+    })
+    expect(SteelAgentVersionService.onSimulationFinished).not.toHaveBeenCalled()
+  })
+
+  it('should notify with the reason when nothing was judged', async () => {
+    setup({ script: { agent: [{ text: 'Oi' }], judge: [{ text: 'lixo' }] } })
+    await executeSteelAgentSimulation('sim1')
+    expect(notifyAgentSimulationFinished).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'FAILED',
+        error: 'Nenhum cenário foi avaliado.',
+      }),
+    )
+  })
+
+  it('should notify when the simulation is skipped', async () => {
+    setup({ agent: { ownerId: null } })
+    await executeSteelAgentSimulation('sim1')
+    expect(notifyAgentSimulationFinished).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'SKIPPED',
+        error: expect.stringContaining('sem responsável'),
+      }),
+    )
+  })
+
+  it('should not notify twice when the skip claim is lost', async () => {
+    setup({ agent: { ownerId: null } })
+    sims.claim.mockResolvedValue(ok(false))
+    await executeSteelAgentSimulation('sim1')
+    expect(notifyAgentSimulationFinished).not.toHaveBeenCalled()
+  })
+
+  it('should test the version instead of the published agent and report to the gate', async () => {
+    const { fake } = setup({
+      script: happy,
+      simulation: { agentVersionId: 'v9' },
+      agent: { instructions: 'INSTRUCOES PUBLICADAS' },
+    })
+    vi.mocked(SteelAgentVersionRepository.findByIdUnscoped).mockResolvedValue(
+      ok(
+        createFakeSteelAgentVersion({
+          id: 'v9',
+          instructions: 'INSTRUCOES DA VERSAO NOVA',
+          tools: [{ toolName: 'sd_list_tickets', mode: 'AUTO' }],
+        }),
+      ),
+    )
+    expect(expectOk(await executeSteelAgentSimulation('sim1'))).toBe(
+      'completed',
+    )
+    const request = fake.requests.agent[0]
+    expect(request.system).toContain('INSTRUCOES DA VERSAO NOVA')
+    expect(request.system).not.toContain('INSTRUCOES PUBLICADAS')
+    expect(request.tools?.map((t) => t.name)).toEqual(['sd_list_tickets'])
+    expect(SteelAgentVersionService.onSimulationFinished).toHaveBeenCalledWith({
+      versionId: 'v9',
+      simulationId: 'sim1',
+      status: 'COMPLETED',
+      passed: 1,
+      failed: 0,
+      error: null,
+    })
+    expect(notifyAgentSimulationFinished).not.toHaveBeenCalled()
+  })
+
+  it('should skip a gate run whose version no longer exists', async () => {
+    setup({ simulation: { agentVersionId: 'v9' } })
+    vi.mocked(SteelAgentVersionRepository.findByIdUnscoped).mockResolvedValue(
+      ok(null),
+    )
+    expect(expectOk(await executeSteelAgentSimulation('sim1'))).toBe('skipped')
+    expect(SteelAgentVersionService.onSimulationFinished).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'SKIPPED',
+        error: 'A versão avaliada não existe mais.',
+      }),
+    )
+  })
+
+  it('should propagate a failure to load the version', async () => {
+    setup({ simulation: { agentVersionId: 'v9' } })
+    vi.mocked(SteelAgentVersionRepository.findByIdUnscoped).mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expectErr(await executeSteelAgentSimulation('sim1'), 'DATABASE_ERROR')
   })
 })
