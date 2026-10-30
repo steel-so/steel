@@ -8,6 +8,7 @@ import {
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
   CrmDuplicatesJob,
+  CrmHealthJob,
   CrmMeetingsJob,
   CrmNewsletterAutomationJob,
   CrmNewsletterJob,
@@ -50,6 +51,7 @@ import {
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
   getCrmDuplicatesQueue,
+  getCrmHealthQueue,
   getCrmMeetingsQueue,
   getCrmNewsletterAutomationQueue,
   getCrmNewsletterQueue,
@@ -94,6 +96,7 @@ import {
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
   CrmDuplicatesCron,
+  CrmHealthCron,
   CrmMeetingsCron,
   CrmNewsletterAbTickCron,
   CrmNewsletterAutomationCron,
@@ -582,6 +585,21 @@ export async function scheduleCrmMeetingsJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_meetings_registered', {
     component: 'Worker',
     pattern: CrmMeetingsCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleCrmHealthJobs(): Promise<void> {
+  const queue = getCrmHealthQueue()
+  await queue.upsertJobScheduler(
+    CrmHealthJob.Recompute,
+    { pattern: CrmHealthCron, tz: RetentionTimezone },
+    { name: CrmHealthJob.Recompute, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_health_registered', {
+    component: 'Worker',
+    pattern: CrmHealthCron,
     timezone: RetentionTimezone,
   })
 }

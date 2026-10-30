@@ -138,6 +138,9 @@ export const CrmDuplicatesCron = '40 2 * * *' as const
 /** Meeting reminders: every 5 minutes. */
 export const CrmMeetingsCron = '*/5 * * * *' as const
 
+/** CRM health scores: hourly, at minute 20 (off the :00 and :15 peaks). */
+export const CrmHealthCron = '20 * * * *' as const
+
 /** Sales cadences: due steps run every minute. */
 export const CrmCadencesCron = '* * * * *' as const
 
