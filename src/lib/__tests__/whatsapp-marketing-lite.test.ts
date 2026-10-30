@@ -272,12 +272,14 @@ describe('Meta request errors', () => {
   it('should carry the status and Meta code on the thrown error', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({ error: { code: 190, message: 'Token expired' } }),
-          { status: 401 },
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ error: { code: 190, message: 'Token expired' } }),
+            { status: 401 },
+          ),
         ),
-      ),
     )
     const client = createMetaClient(credentials)
     const failure = await client
