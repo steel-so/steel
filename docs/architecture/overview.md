@@ -408,6 +408,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 | `crm-proposal-expiry` | expira propostas com validade vencida e avisa o responsável | cron 00:05 |
 | `crm-task-reminders` | avisa na caixa de entrada o responsável por tarefas do CRM que vencem em até 1 h ou acabaram de atrasar (uma vez cada, por `dedupeKey`) | cron a cada 15 min |
 | `crm-cadences` | executa os passos vencidos das cadências de vendas (e-mail, WhatsApp, tarefa) e encerra a inscrição do lead que respondeu; ver `docs/crm-cadencias.md` | cron a cada 1 min |
+| `crm-health` | recalcula a saúde do cliente (risco de churn) e do negócio em andamento e avisa o responsável de quem entrou na faixa de risco alto; ver [`docs/crm-saude.md`](../crm-saude.md) e a [ADR 0057](../adr/0057-saude-do-cliente-e-do-negocio-pela-mesma-heuristica-do-risco-preditivo.md) | cron de hora em hora (minuto 20) |
 | `crm-social-posts-tick` | publica posts sociais vencidos | a cada 1 min |
 | `notifications` | `ai-action-expiry-tick`: avisa ~5 min antes de uma ação pendente do Steel AI expirar (uma vez por ação, `dedupeKey`) | a cada 1 min |
 | `steel-agents` | Steel Agents: `tick` dispara agentes de agenda (cron + `lastRunAt`) e expira aprovações vencidas; `run` executa ou retoma uma execução, com as permissões do responsável ([ADR 0020](../adr/0020-steel-agents-owner-identity-and-approvals.md), [Steel AI](../steel-ai/README.md#steel-agents)) | a cada 1 min + sob demanda (tentativa única) |
