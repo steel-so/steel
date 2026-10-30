@@ -1,6 +1,7 @@
 import {
   Building03Icon,
   Calendar01Icon,
+  CalendarAdd01Icon,
   ChartHistogramIcon,
   ChartLineData01Icon,
   DashboardSquare01Icon,
@@ -9,6 +10,7 @@ import {
   FireIcon,
   FormIcon,
   FunnelIcon,
+  GitMergeIcon,
   GoogleIcon,
   InstagramIcon,
   Key01Icon,
@@ -85,6 +87,9 @@ export default async function CrmLayout({
           <NavItem href={`${base}/people`} icon={UserMultipleIcon}>
             Pessoas
           </NavItem>
+          <NavItem href={`${base}/duplicates`} icon={GitMergeIcon}>
+            Duplicados
+          </NavItem>
           <NavItem href={`${base}/pipelines`} icon={FunnelIcon}>
             Pipelines
           </NavItem>
@@ -101,6 +106,9 @@ export default async function CrmLayout({
           </NavItem>
           <NavItem href={`${base}/tasks/calendar`} icon={Calendar01Icon}>
             Calendário
+          </NavItem>
+          <NavItem href={`${base}/meetings`} icon={CalendarAdd01Icon}>
+            Agendamentos
           </NavItem>
           <NavItem href={`${base}/notes`} icon={StickyNote01Icon}>
             Notas

@@ -244,8 +244,16 @@ const nextConfig: NextConfig = {
       headers: staticAssetHeaders,
     },
     {
-      source: '/(.*)',
+      // Every route but the embeddable meeting widget (`/m/<slug>/embed`),
+      // which must be framable: the proxy sets its own CSP for it.
+      source: '/((?!m/[a-z0-9-]+/embed).*)',
       headers: securityHeaders,
+    },
+    {
+      source: '/m/:slug/embed',
+      headers: securityHeaders.filter(
+        (header) => header.key !== 'X-Frame-Options',
+      ),
     },
   ],
 };

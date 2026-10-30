@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { MeetingBookingWidget } from '@/app/_components/crm/meetings/public/meeting-booking-widget'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -129,6 +130,22 @@ function FieldControl({
   )
 }
 
+/** Name, e-mail and phone the visitor just typed, to pre-fill the booking. */
+function bookingPrefill(
+  fields: CrmFormFieldDefinition[],
+  values: Values,
+): { name?: string; email?: string; phone?: string } {
+  const text = (field: CrmFormFieldDefinition | undefined) => {
+    const value = field ? values[field.key] : undefined
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined
+  }
+  return {
+    name: text(fields.find((field) => field.mapping.attribute === 'name')),
+    email: text(fields.find((field) => field.type === 'email')),
+    phone: text(fields.find((field) => field.type === 'phone')),
+  }
+}
+
 function FieldGroup({
   fields,
   values,
@@ -210,7 +227,9 @@ export function CrmPublicFormRenderer({
         setError(json?.message ?? 'Não foi possível enviar. Tente novamente.')
         return
       }
-      if (form.redirectUrl) {
+      // A form with a booking page keeps the visitor here so they can pick a
+      // time right away; the redirect only applies to forms without one.
+      if (form.redirectUrl && !form.booking) {
         window.location.href = form.redirectUrl
         return
       }
@@ -224,8 +243,19 @@ export function CrmPublicFormRenderer({
 
   if (done) {
     return (
-      <div className='rounded-xl border bg-card p-8 text-center'>
-        <p className='font-medium text-base'>{done}</p>
+      <div className='flex flex-col gap-6'>
+        <div className='rounded-xl border bg-card p-8 text-center'>
+          <p className='font-medium text-base'>{done}</p>
+        </div>
+        {form.booking ? (
+          <div className='rounded-xl border bg-card p-6'>
+            <MeetingBookingWidget
+              page={form.booking}
+              compact
+              prefill={bookingPrefill(form.fields, values)}
+            />
+          </div>
+        ) : null}
       </div>
     )
   }
