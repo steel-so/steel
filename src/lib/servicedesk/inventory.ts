@@ -161,3 +161,36 @@ export function normalizeMac(value: string): string | null {
   if (hex.length !== 12 || /^0+$/.test(hex)) return null
   return hex.match(/.{2}/g)?.join(':') ?? null
 }
+
+function ipv4ToNumber(ip: string): number | null {
+  const parts = ip.split('.')
+  if (parts.length !== 4) return null
+  let out = 0
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part) || Number(part) > 255) return null
+    out = out * 256 + Number(part)
+  }
+  return out
+}
+
+/** [início, fim] de cada bloco aceito: RFC 1918, CGNAT e link-local. */
+const PRIVATE_BLOCKS: Array<[number, number]> = [
+  [0x0a000000, 0x0affffff],
+  [0xac100000, 0xac1fffff],
+  [0xc0a80000, 0xc0a8ffff],
+  [0x64400000, 0x647fffff],
+  [0xa9fe0000, 0xa9feffff],
+]
+
+/** A faixa (CIDR ou IP) cabe inteira num bloco de rede privada. */
+export function isPrivateInventoryRange(range: string): boolean {
+  const [address, bits] = range.trim().split('/')
+  const base = ipv4ToNumber(address ?? '')
+  if (base === null) return false
+  const prefix = bits === undefined ? 32 : Number(bits)
+  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false
+  const size = 2 ** (32 - prefix)
+  const first = base - (base % size)
+  const last = first + size - 1
+  return PRIVATE_BLOCKS.some(([from, to]) => first >= from && last <= to)
+}

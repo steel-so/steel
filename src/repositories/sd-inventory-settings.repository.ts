@@ -9,6 +9,7 @@ export interface SdInventorySettingsData {
   staleAfterDays?: number
   syncConfigItems?: boolean
   defaultTypeId?: string | null
+  agentAutoUpdate?: boolean
 }
 
 /** Uma linha por workspace; `null` = ainda nos padrões do banco. */

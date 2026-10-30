@@ -1387,6 +1387,24 @@ export const sdInventoryRangeInvalid = (
   message = 'Faixa de endereços inválida',
 ): AppError => appError('SD_INVENTORY_RANGE_INVALID', message)
 
+export const sdInventoryDiscoveryRangeNotFound = (): AppError =>
+  appError(
+    'SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND',
+    'Faixa de descoberta não encontrada',
+  )
+
+export const sdInventoryDeviceStateInvalid = (
+  message = 'Esta ação não vale para o estado atual do equipamento',
+): AppError => appError('SD_INVENTORY_DEVICE_STATE_INVALID', message)
+
+export const sdInventorySnmpCredentialsInvalid = (
+  message = 'Credenciais SNMP inválidas',
+): AppError => appError('SD_INVENTORY_SNMP_CREDENTIALS_INVALID', message)
+
+export const sdInventoryReleaseInvalid = (
+  message = 'Versão do agente inválida',
+): AppError => appError('SD_INVENTORY_RELEASE_INVALID', message)
+
 export const sdPortalLinkInvalid = (
   message = 'Link de acesso inválido ou já utilizado',
 ): AppError => appError('SD_PORTAL_LINK_INVALID', message)

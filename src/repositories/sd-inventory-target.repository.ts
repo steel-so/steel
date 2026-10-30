@@ -1,6 +1,9 @@
 import type {
   SdInventoryScanStatus,
   SdInventorySnmpTarget,
+  SdSnmpAuthProtocol,
+  SdSnmpPrivProtocol,
+  SdSnmpVersion,
 } from '@prisma/client'
 import { sdInventoryTargetNotFound } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
@@ -12,6 +15,12 @@ export interface SdInventoryTargetData {
   ranges?: string[]
   port?: number
   communityEnc?: string
+  snmpVersion?: SdSnmpVersion
+  v3Username?: string | null
+  v3AuthProtocol?: SdSnmpAuthProtocol | null
+  v3AuthKeyEnc?: string | null
+  v3PrivProtocol?: SdSnmpPrivProtocol | null
+  v3PrivKeyEnc?: string | null
   intervalMinutes?: number
   active?: boolean
   customerId?: string | null

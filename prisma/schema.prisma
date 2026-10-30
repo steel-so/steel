@@ -597,6 +597,7 @@ model Workspace {
   sdInventoryTokens         SdInventoryToken[]
   sdInventoryDevices        SdInventoryDevice[]
   sdInventorySnmpTargets    SdInventorySnmpTarget[]
+  sdInventoryDiscoveryRanges SdInventoryDiscoveryRange[]
   sdMonitorAlerts           SdMonitorAlert[]
   sdMonitorHostAliases      SdMonitorHostAlias[]
   sdPortalAccesses          SdPortalAccess[]
@@ -10944,6 +10945,8 @@ model CrmCnpjEnrichmentRun {
 enum SdInventorySource {
   AGENT
   SNMP
+  /// nov: inventory-followups — achado por ping/ARP, ainda sem gestão.
+  DISCOVERY
 }
 
 enum SdInventoryAlertKind {
@@ -10975,6 +10978,8 @@ model SdInventorySettings {
   syncConfigItems      Boolean  @default(true) @map("sync_config_items")
   /// Tipo da CMDB usado nos itens criados (nulo = "Computador"/"Rede").
   defaultTypeId        String?  @map("default_type_id")
+  /// nov: inventory-followups — o agente pode se atualizar sozinho (desligado por padrão).
+  agentAutoUpdate      Boolean  @default(false) @map("agent_auto_update")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -11027,6 +11032,15 @@ model SdInventoryDevice {
   agentVersion String?           @map("agent_version")
   snmpTargetId String?           @map("snmp_target_id")
   tokenId      String?           @map("token_id")
+  /// nov: inventory-followups — `false` = descoberto por ping/ARP e ainda não adotado.
+  managed      Boolean           @default(true)
+  /// Descartado pelo admin: a descoberta não o mostra de novo.
+  ignored      Boolean           @default(false)
+  discoveryRangeId String?       @map("discovery_range_id")
+  /// Equipamento principal quando esta ficha é a mesma máquina vista por outra origem.
+  mergedIntoId String?           @map("merged_into_id")
+  /// `true` depois de um "desfazer mescla": a mescla automática não repete.
+  mergeLocked  Boolean           @default(false) @map("merge_locked")
   firstSeenAt  DateTime          @default(now()) @map("first_seen_at")
   lastSeenAt   DateTime          @default(now()) @map("last_seen_at")
   createdAt    DateTime          @default(now()) @map("created_at")
@@ -11037,9 +11051,12 @@ model SdInventoryDevice {
   snmpTarget SdInventorySnmpTarget? @relation(fields: [snmpTargetId], references: [id], onDelete: SetNull)
   software   SdInventorySoftware[]
   alerts     SdInventoryAlert[]
+  mergedInto SdInventoryDevice?     @relation("SdInventoryMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom SdInventoryDevice[]    @relation("SdInventoryMerge")
 
   @@unique([workspaceId, externalKey])
   @@index([workspaceId, lastSeenAt])
+  @@index([workspaceId, mergedIntoId])
   @@map("sd_inventory_devices")
 }
 
@@ -11091,6 +11108,13 @@ model SdInventorySnmpTarget {
   port            Int                    @default(161)
   /// Community cifrada com `CONNECTION_SECRETS`.
   communityEnc    String                 @map("community_enc")
+  /// nov: inventory-followups — v3 usa usuário + chaves cifradas (a community fica vazia).
+  snmpVersion     SdSnmpVersion          @default(V2C) @map("snmp_version")
+  v3Username      String?                @map("v3_username")
+  v3AuthProtocol  SdSnmpAuthProtocol?    @map("v3_auth_protocol")
+  v3AuthKeyEnc    String?                @map("v3_auth_key_enc")
+  v3PrivProtocol  SdSnmpPrivProtocol?    @map("v3_priv_protocol")
+  v3PrivKeyEnc    String?                @map("v3_priv_key_enc")
   intervalMinutes Int                    @default(1440) @map("interval_minutes")
   active          Boolean                @default(true)
   customerId      String?                @map("customer_id")
@@ -11905,4 +11929,76 @@ model WhatsAppChatbotNodeStat {
   @@unique([chatbotId, nodeId, day])
   @@index([workspaceId, day])
   @@map("whatsapp_chatbot_node_stats")
+}
+
+// nov: inventory-followups
+
+enum SdSnmpVersion {
+  V2C
+  V3
+}
+
+enum SdSnmpAuthProtocol {
+  MD5
+  SHA
+  SHA224
+  SHA256
+  SHA384
+  SHA512
+}
+
+enum SdSnmpPrivProtocol {
+  DES
+  AES
+  AES256B
+  AES256R
+}
+
+/// Faixa de rede varrida por ping/ARP (descoberta). Só roda com `enabled`
+/// ligado (opt-in por faixa); o resultado vira equipamento "descoberto, sem
+/// gestão" que o admin adota.
+model SdInventoryDiscoveryRange {
+  id              String                 @id @default(cuid())
+  workspaceId     String                 @map("workspace_id")
+  name            String
+  /// Uma faixa CIDR privada (`10.0.0.0/24`) ou IP avulso.
+  cidr            String
+  enabled         Boolean                @default(false)
+  intervalMinutes Int                    @default(1440) @map("interval_minutes")
+  customerId      String?                @map("customer_id")
+  nextRunAt       DateTime?              @map("next_run_at")
+  lastRunAt       DateTime?              @map("last_run_at")
+  lastStatus      SdInventoryScanStatus? @map("last_status")
+  lastProbed      Int                    @default(0) @map("last_probed")
+  lastFound       Int                    @default(0) @map("last_found")
+  lastError       String?                @map("last_error")
+  createdById     String                 @map("created_by_id")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+  deletedAt       DateTime?              @map("deleted_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([enabled, nextRunAt])
+  @@map("sd_inventory_discovery_ranges")
+}
+
+/// Binário do agente publicado para a atualização automática. Global (o
+/// mesmo arquivo serve todas as workspaces); o arquivo fica no MinIO e só o
+/// SHA-256 conhecido aqui vale para o agente.
+model SdInventoryAgentRelease {
+  id          String   @id @default(cuid())
+  version     String
+  os          String
+  arch        String
+  sha256      String
+  sizeBytes   Int      @map("size_bytes")
+  storageKey  String   @map("storage_key")
+  active      Boolean  @default(true)
+  publishedAt DateTime @default(now()) @map("published_at")
+
+  @@unique([version, os, arch])
+  @@index([os, arch, active, publishedAt])
+  @@map("sd_inventory_agent_releases")
 }

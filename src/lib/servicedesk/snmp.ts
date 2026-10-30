@@ -1,8 +1,17 @@
-import { createSession, isVarbindError, Version2c } from 'net-snmp'
+import {
+  AuthProtocols,
+  createSession,
+  createV3Session,
+  isVarbindError,
+  PrivProtocols,
+  SecurityLevel,
+  Version2c,
+  Version3,
+} from 'net-snmp'
 import { normalizeMac } from './inventory'
 
 /**
- * Varredura SNMP v2c para o inventário (S1). A sessão fica atrás de uma
+ * Varredura SNMP (v2c ou v3) para o inventário (S1). A sessão fica atrás de uma
  * interface mínima ({@link SnmpSession}) para os testes não abrirem rede, e a
  * coleta de um host ({@link collectSnmpHost}) só usa MIBs padrão — HOST-
  * RESOURCES (memória, discos, software), MIB-II (nome, interfaces) e
@@ -22,10 +31,34 @@ export interface SnmpSession {
   close(): void
 }
 
+export type SnmpAuthProtocolName =
+  | 'MD5'
+  | 'SHA'
+  | 'SHA224'
+  | 'SHA256'
+  | 'SHA384'
+  | 'SHA512'
+export type SnmpPrivProtocolName = 'DES' | 'AES' | 'AES256B' | 'AES256R'
+
+/**
+ * Credenciais SNMPv3 (USM). O nível de segurança sai do que foi informado:
+ * chave de privacidade → authPriv; só chave de autenticação → authNoPriv;
+ * nenhuma → noAuthNoPriv.
+ */
+export interface SnmpV3Credentials {
+  username: string
+  authProtocol?: SnmpAuthProtocolName | null
+  authKey?: string | null
+  privProtocol?: SnmpPrivProtocolName | null
+  privKey?: string | null
+}
+
 export interface SnmpSessionOptions {
+  /** v2c. Ignorada quando `v3` vem preenchido. */
   community: string
   port: number
   timeoutMs: number
+  v3?: SnmpV3Credentials
 }
 
 export type SnmpSessionFactory = (
@@ -255,14 +288,63 @@ export async function scanSnmpHosts(
   return { found, probed: hosts.length, failed }
 }
 
-/** Fábrica real, sobre o `net-snmp` (v2c, sem retry: o timeout já basta). */
+const AUTH_PROTOCOLS: Record<SnmpAuthProtocolName, AuthProtocols> = {
+  MD5: AuthProtocols.md5,
+  SHA: AuthProtocols.sha,
+  SHA224: AuthProtocols.sha224,
+  SHA256: AuthProtocols.sha256,
+  SHA384: AuthProtocols.sha384,
+  SHA512: AuthProtocols.sha512,
+}
+
+const PRIV_PROTOCOLS: Record<SnmpPrivProtocolName, PrivProtocols> = {
+  DES: PrivProtocols.des,
+  AES: PrivProtocols.aes,
+  AES256B: PrivProtocols.aes256b,
+  AES256R: PrivProtocols.aes256r,
+}
+
+/** Usuário USM do `net-snmp` a partir das credenciais guardadas. */
+export function buildSnmpV3User(credentials: SnmpV3Credentials) {
+  const authenticated = !!credentials.authKey
+  const encrypted = authenticated && !!credentials.privKey
+  return {
+    name: credentials.username,
+    level: encrypted
+      ? SecurityLevel.authPriv
+      : authenticated
+        ? SecurityLevel.authNoPriv
+        : SecurityLevel.noAuthNoPriv,
+    ...(authenticated
+      ? {
+          authProtocol: AUTH_PROTOCOLS[credentials.authProtocol ?? 'SHA'],
+          authKey: credentials.authKey as string,
+        }
+      : {}),
+    ...(encrypted
+      ? {
+          privProtocol: PRIV_PROTOCOLS[credentials.privProtocol ?? 'AES'],
+          privKey: credentials.privKey as string,
+        }
+      : {}),
+  }
+}
+
+/** Fábrica real, sobre o `net-snmp` (v2c ou v3, sem retry: o timeout já basta). */
 export const createNetSnmpSession: SnmpSessionFactory = (host, options) => {
-  const session = createSession(host, options.community, {
-    port: options.port,
-    retries: 0,
-    timeout: options.timeoutMs,
-    version: Version2c,
-  })
+  const session = options.v3
+    ? createV3Session(host, buildSnmpV3User(options.v3), {
+        port: options.port,
+        retries: 0,
+        timeout: options.timeoutMs,
+        version: Version3,
+      })
+    : createSession(host, options.community, {
+        port: options.port,
+        retries: 0,
+        timeout: options.timeoutMs,
+        version: Version2c,
+      })
   // Sem este handler, um erro de socket derruba o processo do worker.
   session.on('error', () => {})
 

@@ -534,6 +534,7 @@ describe('SdInventoryDeviceRepository', () => {
       total: 2,
       agents: 1,
       snmp: 1,
+      discovered: 0,
       stale: 1,
       openAlerts: 1,
     })
