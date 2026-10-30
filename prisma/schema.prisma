@@ -648,6 +648,8 @@ model Workspace {
   crmMeetingPages           CrmMeetingPage[]
   crmMeetingAvailabilities  CrmMeetingAvailability[]
   crmMeetingBookings        CrmMeetingBooking[]
+  crmCustomerHealth         CrmCustomerHealth[]
+  crmOpportunityHealth      CrmOpportunityHealth[]
   satisfactionSurveyConfigs SatisfactionSurveyConfig[]
   satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
@@ -2469,6 +2471,7 @@ model CrmCompany {
   notes         CrmNote[]
   proposals     CrmProposal[]
   enrichment    CrmCompanyEnrichment?
+  health        CrmCustomerHealth?
 
   @@unique([workspaceId, domain])
   @@unique([workspaceId, cnpj])
@@ -2636,6 +2639,10 @@ model CrmOpportunity {
   /// When the deal entered a WON stage (cleared when it leaves one). The
   /// sales kit attributes a win to the period of this date (ADR 0031).
   wonAt            DateTime? @map("won_at")
+  /// When the deal last changed stage / point of contact (health score,
+  /// nov-health-scores). Null until the first change after the deal exists.
+  stageChangedAt   DateTime? @map("stage_changed_at")
+  contactChangedAt DateTime? @map("contact_changed_at")
 
   workspace      Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   pipeline       CrmPipeline      @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
@@ -2654,6 +2661,7 @@ model CrmOpportunity {
   proposals      CrmProposal[]
   phoneCalls     WhatsAppPhoneCall[]
   pixCharges     WhatsAppPixCharge[]
+  health         CrmOpportunityHealth?
 
   @@index([workspaceId])
   @@index([pipelineId])
@@ -5511,6 +5519,8 @@ enum NotificationKind {
   CRM_TASK_ASSIGNED
   /// CRM: task due within 1 h or overdue.
   CRM_TASK_DUE
+  CRM_CUSTOMER_HEALTH_DROP
+  CRM_OPPORTUNITY_AT_RISK
   /// CRM: proposal opened by the client for the first time.
   CRM_PROPOSAL_VIEWED
   /// CRM: proposal accepted by the client.
@@ -12034,6 +12044,68 @@ model SdInventoryAgentRelease {
   @@unique([version, os, arch])
   @@index([os, arch, active, publishedAt])
   @@map("sd_inventory_agent_releases")
+
+// nov: health-scores ───────────────────────────────────────────────────────
+
+/// Risk band of a health score. Same cuts as the ServiceDesk predictive risk
+/// (`SD_RISK_THRESHOLDS`, ADR 0016): MEDIUM >= 40, HIGH >= 70.
+enum CrmHealthLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Explainable churn-risk index of a CRM company (T4). One row per company,
+/// recomputed by the `crm-health` worker queue and on demand.
+model CrmCustomerHealth {
+  id            String          @id @default(cuid())
+  workspaceId   String          @map("workspace_id")
+  companyId     String          @unique @map("company_id")
+  /// 0-100, higher = more risk. The UI shows `100 - riskScore` as "saúde".
+  riskScore     Int             @map("risk_score")
+  level         CrmHealthLevel
+  /// [{"key","label","points","max","detail"}] of the factors that scored.
+  factors       Json            @default("[]")
+  /// Labels of the factors skipped for lack of data (no zap, no ServiceDesk).
+  missing       Json            @default("[]")
+  /// {"key","label","detail"}.
+  nextAction    Json            @map("next_action")
+  /// Raw counters the factors were computed from (audit trail).
+  signals       Json            @default("{}")
+  previousScore Int?            @map("previous_score")
+  previousLevel CrmHealthLevel? @map("previous_level")
+  computedAt    DateTime        @default(now()) @map("computed_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   CrmCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, level, riskScore])
+  @@index([workspaceId, computedAt])
+  @@map("crm_customer_health")
+}
+
+/// Per-deal version of the health index (C4): only open deals have a row.
+model CrmOpportunityHealth {
+  id            String          @id @default(cuid())
+  workspaceId   String          @map("workspace_id")
+  opportunityId String          @unique @map("opportunity_id")
+  riskScore     Int             @map("risk_score")
+  level         CrmHealthLevel
+  factors       Json            @default("[]")
+  nextAction    Json            @map("next_action")
+  signals       Json            @default("{}")
+  previousScore Int?            @map("previous_score")
+  previousLevel CrmHealthLevel? @map("previous_level")
+  computedAt    DateTime        @default(now()) @map("computed_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  opportunity CrmOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, level, riskScore])
+  @@index([workspaceId, computedAt])
+  @@map("crm_opportunity_health")
 }
 
 // nov: crm-ops

@@ -133,6 +133,8 @@ export const CrmOpportunityRepository = {
       source?: string | null
       updatedById?: string
       wonAt?: Date | null
+      stageChangedAt?: Date
+      contactChangedAt?: Date
     },
   ): Promise<Result<CrmOpportunity>> {
     try {

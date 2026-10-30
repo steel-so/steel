@@ -1506,6 +1506,10 @@ export const ERROR_CODES = {
     code: 'STEEL_MCP_SERVER_UNREACHABLE',
     status: 502,
   },
+
+
+  // nov-health-scores: recompute on a deal that is already won or lost.
+  CRM_HEALTH_NOT_APPLICABLE: { code: 'CRM_HEALTH_NOT_APPLICABLE', status: 409 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

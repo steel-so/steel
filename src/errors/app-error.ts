@@ -2292,3 +2292,12 @@ export const steelMcpServerInvalid = (message: string): AppError =>
 
 export const steelMcpServerUnreachable = (message: string): AppError =>
   appError('STEEL_MCP_SERVER_UNREACHABLE', message)
+
+
+// ─── nov-health-scores ──────────────────────────────────────────────────────
+
+export const crmHealthNotApplicable = (): AppError =>
+  appError(
+    'CRM_HEALTH_NOT_APPLICABLE',
+    'A saúde só é calculada para negócios em andamento',
+  )

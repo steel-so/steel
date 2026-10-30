@@ -218,6 +218,84 @@ describe('CrmOpportunityService', () => {
       )
     })
 
+    it('should stamp stageChangedAt when the stage really changes', async () => {
+      mockedOpportunityRepo.findById.mockResolvedValue(
+        ok(
+          createFakeCrmOpportunity({
+            id: 'op1',
+            pipelineId: 'pl1',
+            stageId: 's1',
+          }),
+        ),
+      )
+      mockedPipelineRepo.findById.mockResolvedValue(
+        ok(createFakeCrmPipeline({ id: 'pl1' })),
+      )
+      mockedStageRepo.listByPipeline.mockResolvedValue(
+        ok([
+          createFakeCrmPipelineStage({ id: 's1', category: 'OPEN' }),
+          createFakeCrmPipelineStage({ id: 's2', category: 'OPEN' }),
+        ]),
+      )
+      mockedOpportunityRepo.update.mockResolvedValue(
+        ok(createFakeCrmOpportunity({ id: 'op1', stageId: 's2' })),
+      )
+
+      expectOk(
+        await CrmOpportunityService.update('u1', 'ws1', 'op1', {
+          stageId: 's2',
+        }),
+      )
+      expect(mockedOpportunityRepo.update).toHaveBeenCalledWith(
+        'op1',
+        expect.objectContaining({ stageChangedAt: expect.any(Date) }),
+      )
+
+      mockedOpportunityRepo.update.mockClear()
+      expectOk(
+        await CrmOpportunityService.update('u1', 'ws1', 'op1', {
+          stageId: 's1',
+        }),
+      )
+      expect(
+        mockedOpportunityRepo.update.mock.calls[0]?.[1],
+      ).not.toHaveProperty('stageChangedAt')
+    })
+
+    it('should stamp contactChangedAt only when an existing contact is replaced', async () => {
+      mockedOpportunityRepo.findById.mockResolvedValue(
+        ok(
+          createFakeCrmOpportunity({
+            id: 'op1',
+            pointOfContactId: 'p1',
+          }),
+        ),
+      )
+      mockedOpportunityRepo.update.mockResolvedValue(
+        ok(createFakeCrmOpportunity({ id: 'op1', pointOfContactId: 'p2' })),
+      )
+
+      expectOk(
+        await CrmOpportunityService.update('u1', 'ws1', 'op1', {
+          pointOfContactId: 'p2',
+        }),
+      )
+      expect(mockedOpportunityRepo.update).toHaveBeenCalledWith(
+        'op1',
+        expect.objectContaining({ contactChangedAt: expect.any(Date) }),
+      )
+
+      mockedOpportunityRepo.update.mockClear()
+      expectOk(
+        await CrmOpportunityService.update('u1', 'ws1', 'op1', {
+          pointOfContactId: 'p1',
+        }),
+      )
+      expect(
+        mockedOpportunityRepo.update.mock.calls[0]?.[1],
+      ).not.toHaveProperty('contactChangedAt')
+    })
+
     it('should resolve the first stage of the new pipeline when only pipelineId changes', async () => {
       mockedOpportunityRepo.findById.mockResolvedValue(
         ok(

@@ -78,6 +78,7 @@ export {
   crmEmailUnsubscribeInvalid,
   crmFormNotFound,
   crmFormNotPublished,
+  crmHealthNotApplicable,
   crmHookVaultItemNotFound,
   crmIntegrationKeyInvalid,
   crmIntegrationKeyNotFound,
