@@ -106,6 +106,24 @@ export function useCrmCnpjRuns(workspaceId: string, enabled = true) {
   })
 }
 
+/** Asks the worker to stop a run (cooperative: it stops between companies). */
+export function useCancelCnpjRun(workspaceId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (runId: string) =>
+      apiFetchJson<CrmCnpjRunDTO>(
+        `${base(workspaceId)}/enrichment-runs/${runId}/cancel`,
+        'POST',
+        {},
+        'Erro ao cancelar o reenriquecimento',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: crmCnpjKeys.runs(workspaceId),
+      }),
+  })
+}
+
 export function useStartCnpjRun(workspaceId: string) {
   const queryClient = useQueryClient()
   return useMutation({

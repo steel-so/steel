@@ -4,6 +4,7 @@ import type {
   CrmCompany,
 } from '@prisma/client'
 import { crmCnpjRunNotFound } from '@/src/errors'
+import { crmCnpjRunNotCancelable } from '@/src/errors/app-error'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
@@ -103,6 +104,58 @@ export const CrmCnpjRunRepository = {
       )
     } catch (error) {
       return err(dbError('Failed to update CNPJ enrichment run', error))
+    }
+  },
+
+  /**
+   * Asks the run to stop. A queued run is cancelled at once (the worker will
+   * find it finished); a running one only gets the flag, the worker stops
+   * between two companies. Anything else is not cancelable.
+   */
+  async requestCancel(
+    id: string,
+    workspaceId: string,
+  ): Promise<Result<CrmCnpjEnrichmentRun>> {
+    try {
+      const now = new Date()
+      const queued = await prisma.crmCnpjEnrichmentRun.updateMany({
+        where: { id, workspaceId, status: 'QUEUED' },
+        data: { status: 'CANCELED', cancelRequestedAt: now, finishedAt: now },
+      })
+      if (queued.count === 0) {
+        const running = await prisma.crmCnpjEnrichmentRun.updateMany({
+          where: { id, workspaceId, status: 'RUNNING' },
+          data: { cancelRequestedAt: now },
+        })
+        if (running.count === 0) {
+          const exists = await prisma.crmCnpjEnrichmentRun.findFirst({
+            where: { id, workspaceId },
+            select: { id: true },
+          })
+          return err(exists ? crmCnpjRunNotCancelable() : crmCnpjRunNotFound())
+        }
+      }
+      const row = await prisma.crmCnpjEnrichmentRun.findUnique({
+        where: { id },
+      })
+      return row ? ok(row) : err(crmCnpjRunNotFound())
+    } catch (error) {
+      return err(dbError('Failed to cancel CNPJ enrichment run', error))
+    }
+  },
+
+  /** Worker check between companies: did an admin ask to stop? */
+  async isCancelRequested(id: string): Promise<Result<boolean>> {
+    try {
+      const row = await prisma.crmCnpjEnrichmentRun.findUnique({
+        where: { id },
+        select: { cancelRequestedAt: true, status: true },
+      })
+      return ok(
+        Boolean(row && (row.cancelRequestedAt || row.status === 'CANCELED')),
+      )
+    } catch (error) {
+      return err(dbError('Failed to read CNPJ enrichment run', error))
     }
   },
 

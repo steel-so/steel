@@ -253,6 +253,31 @@ export const CrmCnpjEnrichmentService = {
     return ok(toCrmCnpjRunDTO(run.value))
   },
 
+  /**
+   * Stops a queued or running bulk run (OWNER/ADMIN). Cooperative: the worker
+   * reads the flag between two companies, so the one in flight still ends.
+   */
+  async cancelRun(
+    actorId: string,
+    workspaceId: string,
+    runId: string,
+  ): Promise<Result<CrmCnpjRunDTO>> {
+    const membership = await assertModulePrivileged(actorId, workspaceId, 'CRM')
+    if (!membership.ok) return membership
+
+    const run = await CrmCnpjRunRepository.requestCancel(runId, workspaceId)
+    if (!run.ok) return run
+
+    auditMutation({
+      entity: 'crm_cnpj_enrichment',
+      action: 'cancel',
+      actorId,
+      targetId: runId,
+      meta: { workspaceId, status: run.value.status },
+    })
+    return ok(toCrmCnpjRunDTO(run.value))
+  },
+
   async listRuns(
     actorId: string,
     workspaceId: string,

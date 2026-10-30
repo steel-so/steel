@@ -68,9 +68,14 @@ describe('crm-cnpj mapper', () => {
     expect(toCrmCnpjRunDTO(idle)).toMatchObject({
       id: idle.id,
       status: 'QUEUED',
+      cancelRequested: false,
       startedAt: null,
       finishedAt: null,
     })
+    expect(
+      toCrmCnpjRunDTO(createFakeCnpjRun({ cancelRequestedAt: new Date() }))
+        .cancelRequested,
+    ).toBe(true)
     const started = new Date('2026-11-03T10:00:00Z')
     const done = createFakeCnpjRun({
       status: 'COMPLETED',

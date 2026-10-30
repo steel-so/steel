@@ -92,6 +92,7 @@ export function createFakeCnpjRun(
     invalid: 0,
     failed: 0,
     error: null,
+    cancelRequestedAt: null,
     startedAt: null,
     finishedAt: null,
     createdAt: now,

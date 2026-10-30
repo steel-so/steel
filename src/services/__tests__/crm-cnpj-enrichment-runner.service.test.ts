@@ -21,11 +21,15 @@ vi.mock('@/lib/axiom/logger', () => ({
 }))
 vi.mock('@/src/repositories/crm-cnpj-run.repository')
 vi.mock('../crm-cnpj-enrichment.service', () => ({ enrichCompany: vi.fn() }))
+vi.mock('../crm-cnpj-notifications', () => ({
+  notifyCnpjRunFinished: vi.fn(async () => 1),
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { CrmCnpjRunRepository } from '@/src/repositories/crm-cnpj-run.repository'
 import { enrichCompany } from '../crm-cnpj-enrichment.service'
 import { CrmCnpjEnrichmentRunner } from '../crm-cnpj-enrichment-runner.service'
+import { notifyCnpjRunFinished } from '../crm-cnpj-notifications'
 
 const runs = vi.mocked(CrmCnpjRunRepository)
 const enrich = vi.mocked(enrichCompany)
@@ -38,6 +42,7 @@ beforeEach(() => {
   runs.findByIdForWorker.mockResolvedValue(
     ok(createFakeCnpjRun({ id: 'r1', workspaceId: 'ws1', createdById: 'u1' })),
   )
+  runs.isCancelRequested.mockResolvedValue(ok(false))
   runs.update.mockImplementation(async (id, data) =>
     ok(createFakeCnpjRun({ id, ...(data as object) })),
   )
@@ -81,6 +86,86 @@ describe('CrmCnpjEnrichmentRunner', () => {
       }),
     )
     expect(auditMutation).toHaveBeenCalled()
+  })
+
+  it('notifies whoever started the run when it completes', async () => {
+    runs.findByIdForWorker.mockResolvedValue(
+      ok(
+        createFakeCnpjRun({
+          id: 'r1',
+          workspaceId: 'ws1',
+          createdById: 'u1',
+          total: 2,
+        }),
+      ),
+    )
+    runs.listTargets
+      .mockResolvedValueOnce(ok([co('a'), co('b')]))
+      .mockResolvedValueOnce(ok([]))
+    enrich
+      .mockResolvedValueOnce(ok({} as never))
+      .mockResolvedValueOnce(err(crmCnpjNotFound()))
+
+    await CrmCnpjEnrichmentRunner.run('r1', sleep)
+
+    expect(notifyCnpjRunFinished).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      runId: 'r1',
+      createdById: 'u1',
+      status: 'COMPLETED',
+      total: 2,
+      processed: 2,
+      enriched: 1,
+      notFound: 1,
+      invalid: 0,
+      failed: 0,
+      error: undefined,
+    })
+  })
+
+  it('stops between companies when a cancel was requested', async () => {
+    runs.listTargets.mockResolvedValue(ok([co('a'), co('b'), co('c')]))
+    enrich.mockResolvedValue(ok({} as never))
+    runs.isCancelRequested
+      .mockResolvedValueOnce(ok(false))
+      .mockResolvedValueOnce(ok(true))
+
+    const summary = expectOk(await CrmCnpjEnrichmentRunner.run('r1', sleep))
+
+    expect(summary).toEqual({ status: 'CANCELED', processed: 1, enriched: 1 })
+    expect(enrich).toHaveBeenCalledTimes(1)
+    expect(runs.listTargets).toHaveBeenCalledTimes(1)
+    expect(runs.update).toHaveBeenLastCalledWith(
+      'r1',
+      expect.objectContaining({ status: 'CANCELED', processed: 1 }),
+    )
+    expect(notifyCnpjRunFinished).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'CANCELED', processed: 1 }),
+    )
+  })
+
+  it('ignores a failed cancel check and keeps enriching', async () => {
+    runs.listTargets
+      .mockResolvedValueOnce(ok([co('a')]))
+      .mockResolvedValueOnce(ok([]))
+    enrich.mockResolvedValue(ok({} as never))
+    runs.isCancelRequested.mockResolvedValue(err(databaseError('x')))
+
+    const summary = expectOk(await CrmCnpjEnrichmentRunner.run('r1', sleep))
+
+    expect(summary.status).toBe('COMPLETED')
+  })
+
+  it('does not replay a canceled run', async () => {
+    runs.findByIdForWorker.mockResolvedValue(
+      ok(createFakeCnpjRun({ status: 'CANCELED', processed: 3, enriched: 3 })),
+    )
+    expect(expectOk(await CrmCnpjEnrichmentRunner.run('r1', sleep))).toEqual({
+      status: 'CANCELED',
+      processed: 3,
+      enriched: 3,
+    })
+    expect(runs.update).not.toHaveBeenCalled()
   })
 
   it('backs off on a rate limit and retries the same company', async () => {
@@ -156,6 +241,12 @@ describe('CrmCnpjEnrichmentRunner', () => {
     expect(runs.update).toHaveBeenLastCalledWith(
       'r1',
       expect.objectContaining({ status: 'FAILED' }),
+    )
+    expect(notifyCnpjRunFinished).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'FAILED',
+        error: 'Falha ao ler as empresas do workspace',
+      }),
     )
   })
 

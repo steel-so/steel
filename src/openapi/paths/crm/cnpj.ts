@@ -89,7 +89,7 @@ const Run = dto(
     id: z.string(),
     workspaceId: z.string(),
     createdById: z.string(),
-    status: z.enum(['QUEUED', 'RUNNING', 'COMPLETED', 'FAILED']),
+    status: z.enum(['QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELED']),
     onlyMissing: z.boolean(),
     overwrite: z.boolean(),
     total: z.number().int(),
@@ -99,6 +99,7 @@ const Run = dto(
     invalid: z.number().int(),
     failed: z.number().int(),
     error: z.string().nullable(),
+    cancelRequested: z.boolean(),
     startedAt: dateTime().nullable(),
     finishedAt: dateTime().nullable(),
     createdAt: dateTime(),
@@ -222,6 +223,31 @@ export const crmCnpjRoutes: RouteConfig[] = [
       {
         code: 'CRM_CNPJ_RUN_NOT_FOUND',
         when: 'Execução inexistente no workspace',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: `${BASE}/enrichment-runs/{runId}/cancel`,
+    tags: [TAG],
+    summary: 'Cancelar um reenriquecimento',
+    description: describe(
+      'Pede ao worker para parar. Uma execução na fila vira `CANCELED` na hora; uma em andamento recebe `cancelRequested` e para entre duas empresas (a que está sendo consultada termina). Ao final, quem iniciou recebe uma notificação.',
+      SOURCE,
+      crmAccess('privileged'),
+    ),
+    consent: true,
+    params: { ...WORKSPACE, runId: 'Id da execução.' },
+    responses: { 200: { description: 'Execução atualizada.', schema: Run } },
+    errors: [
+      ...CRM_PRIVILEGED_ERRORS,
+      {
+        code: 'CRM_CNPJ_RUN_NOT_FOUND',
+        when: 'Execução inexistente no workspace',
+      },
+      {
+        code: 'CRM_CNPJ_RUN_NOT_CANCELABLE',
+        when: 'A execução já terminou',
       },
     ],
   },

@@ -1431,6 +1431,20 @@ export const ERROR_CODES = {
     code: 'CRM_CADENCE_STATE_CONFLICT',
     status: 409,
   },
+
+  // nov: ai-crm-followups
+  CRM_CNPJ_RUN_NOT_CANCELABLE: {
+    code: 'CRM_CNPJ_RUN_NOT_CANCELABLE',
+    status: 409,
+  },
+  STEEL_AGENT_SIM_GATE_INVALID: {
+    code: 'STEEL_AGENT_SIM_GATE_INVALID',
+    status: 422,
+  },
+  CRM_NL_SEARCH_ENTITY_UNSUPPORTED: {
+    code: 'CRM_NL_SEARCH_ENTITY_UNSUPPORTED',
+    status: 422,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

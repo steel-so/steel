@@ -2182,3 +2182,13 @@ export const crmCadenceInvalid = (message: string): AppError =>
 
 export const crmCadenceStateConflict = (message: string): AppError =>
   appError('CRM_CADENCE_STATE_CONFLICT', message)
+
+// nov: ai-crm-followups
+export const crmCnpjRunNotCancelable = (): AppError =>
+  appError(
+    'CRM_CNPJ_RUN_NOT_CANCELABLE',
+    'Este reenriquecimento já terminou e não pode ser cancelado',
+  )
+
+export const steelAgentSimGateInvalid = (message: string): AppError =>
+  appError('STEEL_AGENT_SIM_GATE_INVALID', message)

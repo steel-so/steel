@@ -48,7 +48,12 @@ export interface CrmCompanyEnrichResultDTO {
   applied: CrmCnpjAppliedField[]
 }
 
-export type CrmCnpjRunStatusDTO = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+export type CrmCnpjRunStatusDTO =
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELED'
 
 export interface CrmCnpjRunDTO {
   id: string
@@ -64,6 +69,8 @@ export interface CrmCnpjRunDTO {
   invalid: number
   failed: number
   error: string | null
+  /** True once an admin asked to stop (the worker stops between companies). */
+  cancelRequested: boolean
   startedAt: string | null
   finishedAt: string | null
   createdAt: string

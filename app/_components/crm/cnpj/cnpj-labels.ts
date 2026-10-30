@@ -22,6 +22,7 @@ export const RUN_STATUS_LABELS: Record<CrmCnpjRunStatusDTO, string> = {
   RUNNING: 'Consultando',
   COMPLETED: 'Concluído',
   FAILED: 'Falhou',
+  CANCELED: 'Cancelado',
 }
 
 export const RUN_STATUS_VARIANT: Record<
@@ -32,6 +33,7 @@ export const RUN_STATUS_VARIANT: Record<
   RUNNING: 'secondary',
   COMPLETED: 'default',
   FAILED: 'destructive',
+  CANCELED: 'outline',
 }
 
 /** `4711302` → `4711-3/02`, the notation used on the CNPJ card. */
