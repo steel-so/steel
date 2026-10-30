@@ -49,8 +49,18 @@ describe('toSurveyConfigDTO()', () => {
       delayMinutes: 5,
       cooldownDays: 30,
       emailFallback: true,
+      alertDetractors: true,
+      detractorMaxScore: null,
       questionText: null,
     })
+  })
+
+  it('reads the detractor alert settings of a saved rule', () => {
+    const dto = toSurveyConfigDTO(
+      'CONVERSATION_CLOSED',
+      createFakeSurveyConfig({ alertDetractors: false, detractorMaxScore: 4 }),
+    )
+    expect(dto).toMatchObject({ alertDetractors: false, detractorMaxScore: 4 })
   })
 
   it('reads the saved rule', () => {

@@ -209,6 +209,30 @@ describe('WhatsAppSettingsService', () => {
       )
     })
 
+    it('should keep the summary on transfer off by default and save the toggle', async () => {
+      asRole('ADMIN')
+      mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
+      expect(
+        expectOk(await WhatsAppSettingsService.get('u1', 'ws1'))
+          .copilotSummaryOnTransfer,
+      ).toBe(false)
+
+      mockedSettingsRepo.upsert.mockResolvedValue(
+        ok(row({ copilotSummaryOnTransfer: true })),
+      )
+      expect(
+        expectOk(
+          await WhatsAppSettingsService.update('u1', 'ws1', {
+            copilotSummaryOnTransfer: true,
+          }),
+        ).copilotSummaryOnTransfer,
+      ).toBe(true)
+      expect(mockedSettingsRepo.upsert).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ copilotSummaryOnTransfer: true }),
+      )
+    })
+
     it('should reject business hours that start and end at the same time', async () => {
       asRole('ADMIN')
       mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(row()))

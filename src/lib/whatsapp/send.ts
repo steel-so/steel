@@ -12,6 +12,7 @@ import type {
   WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
   WhatsAppOutboundFlow,
+  WhatsAppOutboundList,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
   WhatsAppOutboundTemplate,
@@ -183,6 +184,30 @@ export const WhatsAppSend = {
       to: input.to,
       cost: options?.cost,
     })
+  },
+
+  list(
+    connection: WhatsAppConnection,
+    input: WhatsAppOutboundList,
+    options?: WhatsAppSendOptions,
+  ): Promise<Result<WhatsAppSendResult>> {
+    return withProvider(
+      connection,
+      (client) => {
+        if (!client.sendList) {
+          throw new Error(
+            'Listas interativas só funcionam em conexões da API oficial da Meta',
+          )
+        }
+        return client.sendList(input)
+      },
+      {
+        metered: !options?.unmetered,
+        costKind: 'SERVICE',
+        to: input.to,
+        cost: options?.cost,
+      },
+    )
   },
 
   flow(

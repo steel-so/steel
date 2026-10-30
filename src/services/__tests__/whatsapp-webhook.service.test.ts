@@ -188,6 +188,29 @@ describe('WhatsAppWebhookService', () => {
       expect(aiReplyAdd).not.toHaveBeenCalled()
     })
 
+    it('should hold the "conversation waiting" notice while a chatbot owns the message', async () => {
+      arrangeNewConversation()
+      vi.mocked(emitWhatsAppConversationWaiting).mockClear()
+      vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockResolvedValue(
+        ok({ engaged: true }),
+      )
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(emitWhatsAppConversationWaiting).not.toHaveBeenCalled()
+    })
+
+    it('should still announce the waiting conversation when no chatbot takes it', async () => {
+      arrangeNewConversation()
+      vi.mocked(emitWhatsAppConversationWaiting).mockClear()
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'new', actorId: null }),
+      )
+    })
+
     it('should let the AI answer when no chatbot takes the message', async () => {
       arrangeNewConversation()
 

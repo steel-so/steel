@@ -21,6 +21,10 @@ vi.mock('@/lib/axiom/logger', () => ({
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/src/repositories/whatsapp-chatbot.repository')
 vi.mock('@/src/repositories/whatsapp-chatbot-session.repository')
+vi.mock('@/src/repositories/whatsapp-chatbot-node-stat.repository')
+vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
+  emitWhatsAppConversationWaiting: vi.fn(),
+}))
 vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
 vi.mock('@/src/repositories/whatsapp-message.repository')
@@ -28,7 +32,7 @@ vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-ai-config.repository')
 vi.mock('@/src/repositories/whatsapp-button-action.repository')
 vi.mock('@/src/lib/whatsapp/send', () => ({
-  WhatsAppSend: { text: vi.fn(), buttons: vi.fn() },
+  WhatsAppSend: { text: vi.fn(), buttons: vi.fn(), list: vi.fn() },
 }))
 vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
@@ -65,6 +69,7 @@ import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
 import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.repository'
+import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
@@ -72,11 +77,18 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { assertMember } from '@/src/services/authz'
 import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
+import { emitWhatsAppConversationWaiting } from '@/src/services/whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from '@/src/services/whatsapp-distribution.service'
 import { notifyWhatsAppUsers } from '@/src/services/whatsapp-notify'
 import { WhatsAppSlaService } from '@/src/services/whatsapp-sla.service'
-import { WhatsAppChatbotRuntimeService } from '../whatsapp-chatbot-runtime.service'
+import {
+  countNodeVisits,
+  metricsDay,
+  WhatsAppChatbotRuntimeService,
+} from '../whatsapp-chatbot-runtime.service'
 
+const statRepo = vi.mocked(WhatsAppChatbotNodeStatRepository)
+const waitingEmit = vi.mocked(emitWhatsAppConversationWaiting)
 const botRepo = vi.mocked(WhatsAppChatbotRepository)
 const sessionRepo = vi.mocked(WhatsAppChatbotSessionRepository)
 const convRepo = vi.mocked(WhatsAppConversationRepository)
@@ -139,6 +151,7 @@ beforeEach(() => {
   convRepo.update.mockResolvedValue(ok(createFakeWhatsAppConversation()))
   convRepo.findById.mockResolvedValue(ok(null))
   eventRepo.create.mockResolvedValue(ok({} as never))
+  statRepo.increment.mockResolvedValue(ok(1))
 })
 
 describe('claimInbound()', () => {
@@ -441,6 +454,7 @@ describe('runStep()', () => {
       ok(
         createFakeChatbotSession({
           id: 's1',
+          chatbotId: 'bot-1',
           definition: (options.flow ?? menuFlow()) as never,
           state: (options.state ?? initialChatbotState()) as never,
         }),
@@ -549,6 +563,183 @@ describe('runStep()', () => {
     expect(send.text).toHaveBeenCalled()
   })
 
+  describe('interactive list (Meta)', () => {
+    const options = Array.from({ length: 5 }, (_, index) => ({
+      id: `o${index}`,
+      label: `Opção ${index}`,
+    }))
+    const bigMenu: ChatbotFlow = {
+      nodes: [
+        { id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} },
+        {
+          id: 'menu',
+          type: 'menu',
+          position: { x: 0, y: 0 },
+          data: { text: 'Escolha', options, maxAttempts: 2 },
+        },
+      ],
+      edges: [
+        { id: 'e', source: 'start', sourceHandle: 'next', target: 'menu' },
+      ],
+    }
+    const metaConversation = () => ({
+      ...conversation(),
+      connection: { ...connection, provider: 'META' as const },
+    })
+
+    it('sends a menu of more than three options as a list and saves the rows', async () => {
+      prepare({ flow: bigMenu })
+      convRepo.findByIdWithConnection.mockResolvedValue(ok(metaConversation()))
+      send.list.mockResolvedValue(ok({ providerMessageId: 'p9' }))
+
+      const outcome = expectOk(
+        await WhatsAppChatbotRuntimeService.runStep(step),
+      )
+
+      expect(outcome).toMatchObject({ sessionStatus: 'RUNNING', sent: 1 })
+      expect(send.list).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'META' }),
+        {
+          to: '5511',
+          text: 'Escolha',
+          buttonLabel: 'Ver opções',
+          rows: options.map((option) => ({
+            id: `bot:menu:${option.id}`,
+            title: option.label,
+          })),
+        },
+        expect.any(Object),
+      )
+      expect(send.buttons).not.toHaveBeenCalled()
+      expect(send.text).not.toHaveBeenCalled()
+      expect(messageRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          direction: 'OUT',
+          providerMessageId: 'p9',
+          buttons: expect.arrayContaining([
+            expect.objectContaining({ id: 'bot:menu:o4', label: 'Opção 4' }),
+          ]),
+        }),
+      )
+    })
+
+    it('falls back to numbered text when Meta refuses the list', async () => {
+      prepare({ flow: bigMenu })
+      convRepo.findByIdWithConnection.mockResolvedValue(ok(metaConversation()))
+      send.list.mockResolvedValue(err(whatsappProviderError('no list')))
+
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+
+      expect(send.text).toHaveBeenCalledWith(
+        expect.anything(),
+        { to: '5511', text: expect.stringContaining('5. Opção 4') },
+        expect.any(Object),
+      )
+      expect(logger.warn).toHaveBeenCalledWith(
+        'whatsapp.chatbot.list_fallback',
+        expect.any(Object),
+      )
+    })
+
+    it('fails the step when the list was sent but cannot be saved', async () => {
+      prepare({ flow: bigMenu })
+      convRepo.findByIdWithConnection.mockResolvedValue(ok(metaConversation()))
+      send.list.mockResolvedValue(ok({ providerMessageId: 'p9' }))
+      messageRepo.create.mockResolvedValue(dbErr())
+      distribution.distributeConversation.mockResolvedValue(
+        ok({ assigned: false } as never),
+      )
+
+      const outcome = expectOk(
+        await WhatsAppChatbotRuntimeService.runStep(step),
+      )
+
+      expect(outcome).toMatchObject({ sessionStatus: 'FAILED' })
+    })
+
+    it('keeps reply buttons for a short menu on Meta', async () => {
+      prepare()
+      convRepo.findByIdWithConnection.mockResolvedValue(ok(metaConversation()))
+
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+
+      expect(send.buttons).toHaveBeenCalled()
+      expect(send.list).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('per-block metrics', () => {
+    it("adds the blocks of the run to today's totals", async () => {
+      prepare()
+
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+
+      expect(statRepo.increment).toHaveBeenCalledWith(
+        { workspaceId: 'ws', chatbotId: 'bot-1', day: metricsDay(new Date()) },
+        expect.arrayContaining([
+          { nodeId: 'start', entries: 1, exits: 1 },
+          { nodeId: 'menu', entries: 1, exits: 0 },
+        ]),
+      )
+    })
+
+    it('counts the answered menu as an exit', async () => {
+      prepare({
+        state: waitingMenuState,
+        buttonPayload: 'bot:menu:sales',
+        text: 'Comercial',
+      })
+      teamRepo.findTeam.mockResolvedValue(ok(null))
+      distribution.distributeConversation.mockResolvedValue(
+        ok({ assigned: true } as never),
+      )
+
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+
+      const counts = statRepo.increment.mock.calls[0][1]
+      expect(counts).toContainEqual({ nodeId: 'menu', entries: 0, exits: 1 })
+      expect(counts).toContainEqual({
+        nodeId: 'to-sales',
+        entries: 1,
+        exits: 0,
+      })
+    })
+
+    it('never fails the step when the metrics cannot be saved', async () => {
+      prepare()
+      statRepo.increment.mockResolvedValueOnce(dbErr())
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+      expect(logger.warn).toHaveBeenCalledWith(
+        'whatsapp.chatbot.node_stats_failed',
+        expect.objectContaining({ chatbotId: 'bot-1' }),
+      )
+
+      statRepo.increment.mockRejectedValueOnce(new Error('boom'))
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+      statRepo.increment.mockRejectedValueOnce('boom')
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+    })
+
+    it('folds entries and exits per block', () => {
+      expect(
+        countNodeVisits({
+          entered: ['a', 'b', 'a'],
+          exited: ['a', 'a', 'b'],
+        }),
+      ).toEqual([
+        { nodeId: 'a', entries: 2, exits: 2 },
+        { nodeId: 'b', entries: 1, exits: 1 },
+      ])
+      expect(countNodeVisits({ entered: [], exited: [] })).toEqual([])
+    })
+
+    it('stores the UTC calendar day', () => {
+      expect(
+        metricsDay(new Date('2026-11-03T23:59:59.000Z')).toISOString(),
+      ).toBe('2026-11-03T00:00:00.000Z')
+    })
+  })
+
   it('hands the conversation to a team queue on a menu choice', async () => {
     const flow = menuFlow()
     const handoff = flow.nodes.find((node) => node.id === 'to-sales')
@@ -587,6 +778,14 @@ describe('runStep()', () => {
     expect(notifyWhatsAppUsers).toHaveBeenCalledWith(
       expect.objectContaining({ userIds: ['u1', 'u2'] }),
     )
+    // The conversation was not "waiting" while the bot talked: it is now.
+    expect(waitingEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: 'returned_to_queue',
+        actorId: null,
+        contact,
+      }),
+    )
     expect(sessionRepo.finish).toHaveBeenCalledWith(
       's1',
       'HANDED_OFF_HUMAN',
@@ -609,6 +808,7 @@ describe('runStep()', () => {
     )
     expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
     expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
+    expect(waitingEmit).not.toHaveBeenCalled()
   })
 
   it('falls back to the general queue when the team is gone', async () => {

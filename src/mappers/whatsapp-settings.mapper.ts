@@ -35,6 +35,7 @@ export const WHATSAPP_SETTINGS_DEFAULTS = {
   whatsappCheckTtlDays: 30,
   marketingLiteEnabled: false,
   marketingLiteCloudFallback: true,
+  copilotSummaryOnTransfer: false,
 }
 
 export function toWhatsAppSettingsDTO(
@@ -81,5 +82,6 @@ export function toWhatsAppSettingsDTO(
     whatsappCheckTtlDays: settings.whatsappCheckTtlDays,
     marketingLiteEnabled: settings.marketingLiteEnabled,
     marketingLiteCloudFallback: settings.marketingLiteCloudFallback,
+    copilotSummaryOnTransfer: settings.copilotSummaryOnTransfer,
   }
 }

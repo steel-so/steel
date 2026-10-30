@@ -23,6 +23,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import {
   buildSurveyPayload,
   DEFAULT_SURVEY_THANK_YOU,
+  isDetractorScore,
   isScoreInScale,
   parseSurveyPayload,
   parseTypedScore,
@@ -63,6 +64,7 @@ import type {
   SurveyReportDTO,
 } from '@/types/satisfaction-survey'
 import { assertModuleMember, assertModulePrivileged } from './authz'
+import { notifyWhatsAppUsers, whatsAppAdminIds } from './whatsapp-notify'
 
 const CONFIG_TRIGGERS: SurveyConfigDTO['trigger'][] = [
   'CONVERSATION_CLOSED',
@@ -323,6 +325,12 @@ export const SatisfactionSurveyService = {
       ...(dto.emailFallback !== undefined
         ? { emailFallback: dto.emailFallback }
         : {}),
+      ...(dto.alertDetractors !== undefined
+        ? { alertDetractors: dto.alertDetractors }
+        : {}),
+      ...(dto.detractorMaxScore !== undefined
+        ? { detractorMaxScore: dto.detractorMaxScore }
+        : {}),
       ...(dto.questionText !== undefined
         ? { questionText: dto.questionText || null }
         : {}),
@@ -356,6 +364,8 @@ export const SatisfactionSurveyService = {
         trigger,
         enabled: saved.value.enabled,
         kind: saved.value.kind,
+        alertDetractors: saved.value.alertDetractors,
+        detractorMaxScore: saved.value.detractorMaxScore,
       },
     })
     return ok(toSurveyConfigDTO(trigger, saved.value))
@@ -919,13 +929,14 @@ async function recordAnswer(
     }
   }
 
+  const config = await SatisfactionSurveyRepository.findConfig(
+    survey.workspaceId,
+    survey.trigger,
+  )
+
   if (survey.channel === 'WHATSAPP') {
     const connection = await loadConnection(survey)
     if (connection && survey.recipientPhone) {
-      const config = await SatisfactionSurveyRepository.findConfig(
-        survey.workspaceId,
-        survey.trigger,
-      )
       const thanks =
         (config.ok && config.value?.thankYouText?.trim()) ||
         DEFAULT_SURVEY_THANK_YOU
@@ -962,5 +973,62 @@ async function recordAnswer(
     kind: survey.kind,
     score,
   })
+
+  await alertDetractor(survey, score, comment, config.ok ? config.value : null)
   return ok(true)
+}
+
+/**
+ * Tells the workspace admins/owner about a detractor answer. The rule is the
+ * trigger's config (alert on by default, ceiling per kind unless overridden);
+ * manual sends have no config and use the defaults. It never fails the answer:
+ * a notice must not lose the customer's rating.
+ */
+async function alertDetractor(
+  survey: SatisfactionSurvey,
+  score: number,
+  comment: string | undefined,
+  config: SatisfactionSurveyConfig | null,
+): Promise<void> {
+  try {
+    if (config && !config.alertDetractors) return
+    if (!isDetractorScore(survey.kind, score, config?.detractorMaxScore)) return
+
+    const who = survey.customerName ?? survey.recipientName ?? 'Um cliente'
+    const scale = SURVEY_SCALES[survey.kind]
+    const path = survey.conversationId
+      ? `/zap?conversa=${survey.conversationId}`
+      : '/zap/pesquisas'
+    const admins = await whatsAppAdminIds(survey.workspaceId)
+    const notified = await notifyWhatsAppUsers({
+      workspaceId: survey.workspaceId,
+      kind: 'WHATSAPP_SURVEY_DETRACTOR',
+      userIds: admins,
+      title: `Cliente insatisfeito: ${who}`,
+      body: `${who} deu nota ${score} (${survey.kind}, escala de ${scale.min} a ${scale.max})${
+        survey.assigneeName ? ` no atendimento de ${survey.assigneeName}` : ''
+      }.${comment ? ` Comentário: "${comment.slice(0, 200)}"` : ''}`,
+      path,
+      dedupeKey: `survey-detractor:${survey.id}`,
+      meta: { surveyId: survey.id, kind: survey.kind, score },
+    })
+    auditMutation({
+      entity: 'satisfaction_survey',
+      action: 'alert',
+      actorId: null,
+      targetId: survey.id,
+      meta: {
+        workspaceId: survey.workspaceId,
+        kind: survey.kind,
+        score,
+        notified,
+      },
+    })
+  } catch (error) {
+    logger.warn('satisfaction_survey.detractor_alert_failed', {
+      workspaceId: survey.workspaceId,
+      surveyId: survey.id,
+      cause: error instanceof Error ? error.message : String(error),
+    })
+  }
 }

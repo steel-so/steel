@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   purgeExpiredRecordings: vi.fn(),
   sweepOrphanRecordings: vi.fn(),
   pruneAccessLogs: vi.fn(),
+  pruneChatbotNodeStats: vi.fn(),
   prisma: {
     session: { deleteMany: vi.fn() },
     verification: { deleteMany: vi.fn() },
@@ -62,6 +63,11 @@ vi.mock('@/src/services/phone-call-recording.service', () => ({
 }))
 vi.mock('@/src/services/workspace-access-log.service', () => ({
   WorkspaceAccessLogService: { pruneOlderThan: mocks.pruneAccessLogs },
+}))
+vi.mock('@/src/repositories/whatsapp-chatbot-node-stat.repository', () => ({
+  WhatsAppChatbotNodeStatRepository: {
+    deleteBefore: mocks.pruneChatbotNodeStats,
+  },
 }))
 vi.mock('@/src/services/crm-notifications', () => ({
   notifyCrmCampaignFinished: mocks.notifyCampaignFinished,
@@ -126,6 +132,34 @@ describe('processTrialLifecycle', () => {
       processTrialLifecycle(fakeJob(TrialLifecycleJob.RevertExpiredTrials)),
     ).rejects.toThrow('revertExpiredTrials failed: DATABASE_ERROR')
     expect(mocks.workspaceCacheInvalidate).not.toHaveBeenCalled()
+  })
+
+  it('deletes chatbot block metrics older than 60 days', async () => {
+    mocks.pruneChatbotNodeStats.mockResolvedValue({ ok: true, value: 40 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.CleanupChatbotNodeStats),
+    )
+
+    expect(result.deleted).toBe(40)
+    const cutoff: Date = mocks.pruneChatbotNodeStats.mock.calls[0][0]
+    expect(cutoff.toISOString()).toBe(result.cutoff)
+    const days = (Date.now() - cutoff.getTime()) / 86_400_000
+    expect(Math.round(days)).toBe(60)
+    expect(mocks.loggerMock.info).toHaveBeenCalledWith(
+      'queue.data_retention.chatbot_node_stats_cleaned',
+      expect.objectContaining({ deleted: 40 }),
+    )
+  })
+
+  it('throws so BullMQ retries when pruning chatbot metrics fails', async () => {
+    mocks.pruneChatbotNodeStats.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'db down' },
+    })
+    await expect(
+      processDataRetention(fakeJob(DataRetentionJob.CleanupChatbotNodeStats)),
+    ).rejects.toThrow('db down')
   })
 
   it('throws on an unknown job name', async () => {

@@ -13,6 +13,7 @@ import { WhatsappSettingsBusinessHours } from '@/app/_components/whatsapp/settin
 import { WhatsappSettingsCallRecording } from '@/app/_components/whatsapp/settings/whatsapp-settings-call-recording'
 import { WhatsappSettingsCloseStatuses } from '@/app/_components/whatsapp/settings/whatsapp-settings-close-statuses'
 import { WhatsappSettingsConnections } from '@/app/_components/whatsapp/settings/whatsapp-settings-connections'
+import { WhatsappSettingsCopilot } from '@/app/_components/whatsapp/settings/whatsapp-settings-copilot'
 import { WhatsappSettingsDistribution } from '@/app/_components/whatsapp/settings/whatsapp-settings-distribution'
 import { WhatsappSettingsNumberCheck } from '@/app/_components/whatsapp/settings/whatsapp-settings-number-check'
 import { WhatsappSettingsPix } from '@/app/_components/whatsapp/settings/whatsapp-settings-pix'
@@ -73,6 +74,7 @@ export default async function ZapSettingsPage({
           </TabsContent>
           <TabsContent value='ai' className='space-y-6 pt-4'>
             <WhatsappSettingsAi workspaceId={workspaceId} />
+            <WhatsappSettingsCopilot workspaceId={workspaceId} />
             <WhatsappSettingsAiKnowledge workspaceId={workspaceId} />
           </TabsContent>
           <TabsContent value='service' className='space-y-6 pt-4'>

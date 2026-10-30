@@ -8,6 +8,29 @@ import {
   UpdateSurveyConfigSchema,
 } from '../satisfaction-survey.schema'
 
+describe('detractor alert fields', () => {
+  it('accepts the switch and a ceiling from 0 to 9 or null', () => {
+    expect(
+      UpdateSurveyConfigSchema.safeParse({
+        alertDetractors: false,
+        detractorMaxScore: null,
+      }).success,
+    ).toBe(true)
+    expect(
+      UpdateSurveyConfigSchema.safeParse({ detractorMaxScore: 9 }).success,
+    ).toBe(true)
+    expect(
+      UpdateSurveyConfigSchema.safeParse({ detractorMaxScore: 10 }).success,
+    ).toBe(false)
+    expect(
+      UpdateSurveyConfigSchema.safeParse({ detractorMaxScore: -1 }).success,
+    ).toBe(false)
+    expect(
+      UpdateSurveyConfigSchema.safeParse({ detractorMaxScore: 2.5 }).success,
+    ).toBe(false)
+  })
+})
+
 describe('satisfaction survey schemas', () => {
   it('accepts a partial config update and bounds the numbers', () => {
     expect(UpdateSurveyConfigSchema.safeParse({ enabled: true }).success).toBe(

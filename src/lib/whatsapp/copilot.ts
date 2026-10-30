@@ -159,6 +159,27 @@ export function parseSummaryResponse(
   }
 }
 
+/** Longest summary stored on the timeline (the reason column is free text). */
+export const WHATSAPP_TRANSFER_SUMMARY_MAX = 1_500
+
+/**
+ * Timeline text of a summary written on transfer: the summary, then the
+ * pending items as a dash list. Cut at the limit so a verbose model cannot
+ * flood the thread.
+ */
+export function formatTransferSummary(
+  summary: WhatsAppCopilotSummaryResult,
+): string {
+  const lines = [summary.summary]
+  if (summary.pending.length > 0) {
+    lines.push('', 'Pendente:', ...summary.pending.map((item) => `- ${item}`))
+  }
+  const text = lines.join('\n')
+  return text.length > WHATSAPP_TRANSFER_SUMMARY_MAX
+    ? `${text.slice(0, WHATSAPP_TRANSFER_SUMMARY_MAX - 1).trimEnd()}…`
+    : text
+}
+
 /** Models sometimes wrap the text in quotes or fences; strip them. */
 export function cleanCompletion(text: string): string {
   return text

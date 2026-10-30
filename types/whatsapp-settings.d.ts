@@ -46,4 +46,6 @@ export interface WhatsAppSettingsDTO {
   marketingLiteEnabled: boolean
   /** Allow Meta to fall back to the Cloud API when Lite can't deliver. */
   marketingLiteCloudFallback: boolean
+  /** Copilot writes an AI summary on the timeline when a conversation changes hands. */
+  copilotSummaryOnTransfer: boolean
 }

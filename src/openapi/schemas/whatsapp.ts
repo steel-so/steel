@@ -179,6 +179,7 @@ export const WhatsAppConversationEventDTO = dto(
         'SLA_BREACHED',
         'PIX_PAID',
         'CHATBOT_HANDOFF',
+        'TRANSFER_SUMMARY',
       ]),
       source: z.enum([
         'AGENT',
@@ -192,6 +193,7 @@ export const WhatsAppConversationEventDTO = dto(
         'SLA',
         'PIX',
         'CHATBOT',
+        'COPILOT',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -706,6 +708,10 @@ export const WhatsAppSettingsDTO = dto(
     marketingLiteCloudFallback: z.boolean().meta({
       description:
         'Permite que a Meta use a Cloud API comum quando a Lite não consegue entregar (padrão: ligado).',
+    }),
+    copilotSummaryOnTransfer: z.boolean().meta({
+      description:
+        'Ao transferir a conversa para outro atendente ou equipe, o copiloto escreve um resumo na linha do tempo (padrão: desligado; consome a cota de IA do workspace).',
     }),
   }),
 )
@@ -1510,6 +1516,25 @@ export const WhatsAppChatbotPublishDTO = dto(
   }),
 )
 
+export const WhatsAppChatbotNodeStatsDTO = dto(
+  'WhatsAppChatbotNodeStats',
+  z.object({
+    days: z.number().int().meta({ description: 'Janela das métricas, em dias.' }),
+    nodes: z.array(
+      z.object({
+        nodeId: z.string(),
+        entries: z.number().int().meta({
+          description: 'Vezes em que uma conversa chegou ao bloco.',
+        }),
+        exits: z.number().int().meta({
+          description:
+            'Vezes em que seguiu adiante (resposta válida ou bloco seguinte).',
+        }),
+      }),
+    ),
+  }),
+)
+
 export const WhatsAppChatbotSessionDTO = dto(
   'WhatsAppChatbotSession',
   z.object({
@@ -1551,6 +1576,12 @@ export const WhatsAppChatbotSimulationDTO = dto(
           text: z.string(),
           buttons: z
             .array(z.object({ id: z.string(), label: z.string() }))
+            .nullable(),
+          list: z
+            .object({
+              buttonLabel: z.string(),
+              rows: z.array(z.object({ id: z.string(), label: z.string() })),
+            })
             .nullable(),
           numbered: z.string(),
         }),

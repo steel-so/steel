@@ -16,6 +16,10 @@ export interface SurveyConfigDTO {
   expiresInHours: number
   cooldownDays: number
   emailFallback: boolean
+  /** Tells the workspace admins when a detractor answer arrives. */
+  alertDetractors: boolean
+  /** Highest score counted as a detractor; null = the default of the kind. */
+  detractorMaxScore: number | null
   questionText: string | null
   thankYouText: string | null
 }

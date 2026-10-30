@@ -1532,6 +1532,9 @@ enum WhatsAppConversationEventKind {
   CHATBOT_HANDOFF
   /// A Pix charge of the conversation was paid; `reason` = "R$ valor · descrição".
   PIX_PAID
+  /// Copilot summary written when the conversation changed hands; `reason`
+  /// is the summary text (internal: never sent to the contact).
+  TRANSFER_SUMMARY
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1557,6 +1560,8 @@ enum WhatsAppConversationEventSource {
   CHATBOT
   /// Pix payment notification (Z1).
   PIX
+  /// Agent copilot (Z7), e.g. the summary on transfer.
+  COPILOT
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -1831,6 +1836,9 @@ model WhatsAppSettings {
   /// Monthly cost budget (BRL) of the Comunicação module (ADR 0050). Only
   /// warns admins at 80% and 100%; never blocks a send. Null = no budget.
   monthlyCostBudget           Decimal? @map("monthly_cost_budget") @db.Decimal(12, 2)
+  /// Copilot (Z7): when a conversation is transferred to another agent or
+  /// team, writes an AI summary on the timeline. Off by default; uses the AI quota.
+  copilotSummaryOnTransfer    Boolean  @default(false) @map("copilot_summary_on_transfer")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -5582,6 +5590,8 @@ enum NotificationKind {
   CRM_NEWSLETTER_DIGEST_READY
   /// CRM newsletter (nl2-digest-ai): the digest was skipped or not sent.
   CRM_NEWSLETTER_DIGEST_SKIPPED
+  /// Comunicação (nov: zap-followups): a satisfaction survey got a detractor answer.
+  WHATSAPP_SURVEY_DETRACTOR
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
@@ -10706,6 +10716,7 @@ model WhatsAppChatbot {
   connection WhatsAppConnection?      @relation(fields: [connectionId], references: [id], onDelete: SetNull)
   createdBy  User?                    @relation("WhatsAppChatbotCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   sessions   WhatsAppChatbotSession[]
+  nodeStats  WhatsAppChatbotNodeStat[]
 
   @@index([workspaceId, status])
   @@index([connectionId])
@@ -10787,6 +10798,10 @@ model SatisfactionSurveyConfig {
   emailFallback  Boolean                   @default(true) @map("email_fallback")
   questionText   String?                   @map("question_text")
   thankYouText   String?                   @map("thank_you_text")
+  /// Tells the workspace admins when a detractor answer arrives.
+  alertDetractors Boolean                  @default(true) @map("alert_detractors")
+  /// Highest score that counts as a detractor; null = the default of the kind.
+  detractorMaxScore Int?                   @map("detractor_max_score")
   createdAt      DateTime                  @default(now()) @map("created_at")
   updatedAt      DateTime                  @updatedAt @map("updated_at")
 
@@ -11837,4 +11852,24 @@ model CrmCadenceRun {
   @@index([enrollmentId, createdAt])
   @@index([cadenceId, status])
   @@map("crm_cadence_runs")
+}
+
+// nov: zap-followups ──────────────────────────────────────────────────────
+
+/// Per-block metrics of a chatbot (Z2): how many times a block was entered
+/// and left, per day. The editor shows the last 30 days on the canvas.
+model WhatsAppChatbotNodeStat {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  chatbotId   String   @map("chatbot_id")
+  nodeId      String   @map("node_id")
+  day         DateTime @db.Date
+  entries     Int      @default(0)
+  exits       Int      @default(0)
+
+  chatbot WhatsAppChatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  @@unique([chatbotId, nodeId, day])
+  @@index([workspaceId, day])
+  @@map("whatsapp_chatbot_node_stats")
 }

@@ -49,6 +49,8 @@ export function toSurveyConfigDTO(
     expiresInHours: row?.expiresInHours ?? 72,
     cooldownDays: row?.cooldownDays ?? 30,
     emailFallback: row?.emailFallback ?? true,
+    alertDetractors: row?.alertDetractors ?? true,
+    detractorMaxScore: row?.detractorMaxScore ?? null,
     questionText: row?.questionText ?? null,
     thankYouText: row?.thankYouText ?? null,
   }

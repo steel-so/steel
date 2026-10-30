@@ -12,12 +12,14 @@ import { blankFlow, menuFlow } from '@/src/lib/whatsapp/chatbot/templates'
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-chatbot.repository')
 vi.mock('@/src/repositories/whatsapp-chatbot-session.repository')
+vi.mock('@/src/repositories/whatsapp-chatbot-node-stat.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-button-action.repository')
 
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
 import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.repository'
+import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import {
@@ -28,6 +30,7 @@ import {
 const membershipRepo = vi.mocked(MembershipRepository)
 const botRepo = vi.mocked(WhatsAppChatbotRepository)
 const sessionRepo = vi.mocked(WhatsAppChatbotSessionRepository)
+const statRepo = vi.mocked(WhatsAppChatbotNodeStatRepository)
 const connectionRepo = vi.mocked(WhatsAppConnectionRepository)
 const teamRepo = vi.mocked(WhatsAppButtonActionRepository)
 
@@ -681,6 +684,59 @@ describe('WhatsAppChatbotService', () => {
       )
       expect(result.status).toBe('COMPLETED')
       expect(result.closeConversation).toBe(true)
+    })
+  })
+
+  describe('nodeStats()', () => {
+    it('returns the 30-day window and drops blocks without traffic', async () => {
+      asRole('MEMBER')
+      botRepo.findById.mockResolvedValue(ok(createFakeChatbot({ id: 'b' })))
+      statRepo.totalsSince.mockResolvedValue(
+        ok([
+          { nodeId: 'menu', entries: 4, exits: 3 },
+          { nodeId: 'idle', entries: 0, exits: 0 },
+        ]),
+      )
+
+      const stats = expectOk(
+        await WhatsAppChatbotService.nodeStats('u', 'ws', 'b'),
+      )
+
+      expect(stats).toEqual({
+        days: 30,
+        nodes: [{ nodeId: 'menu', entries: 4, exits: 3 }],
+      })
+      const since: Date = statRepo.totalsSince.mock.calls[0][2]
+      const today = new Date()
+      const expected = Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate() - 29,
+      )
+      expect(since.getTime()).toBe(expected)
+      expect(statRepo.totalsSince).toHaveBeenCalledWith('ws', 'b', since)
+    })
+
+    it('propagates authorization, not found and database errors', async () => {
+      membershipRepo.findByUserAndWorkspace.mockResolvedValue(ok(null))
+      expectErr(
+        await WhatsAppChatbotService.nodeStats('u', 'ws', 'b'),
+        'FORBIDDEN',
+      )
+      asRole('MEMBER')
+      botRepo.findById.mockResolvedValue(ok(null))
+      expectErr(
+        await WhatsAppChatbotService.nodeStats('u', 'ws', 'b'),
+        'WHATSAPP_CHATBOT_NOT_FOUND',
+      )
+      botRepo.findById.mockResolvedValue(ok(createFakeChatbot()))
+      statRepo.totalsSince.mockResolvedValue(
+        err({ code: 'DATABASE_ERROR', message: 'x' }),
+      )
+      expectErr(
+        await WhatsAppChatbotService.nodeStats('u', 'ws', 'b'),
+        'DATABASE_ERROR',
+      )
     })
   })
 

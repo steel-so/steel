@@ -544,6 +544,7 @@ export const NotificationListDTO = dto(
           'WHATSAPP_SLA_BREACHED',
           'WHATSAPP_COST_BUDGET_WARNING',
           'WHATSAPP_COST_BUDGET_REACHED',
+          'WHATSAPP_SURVEY_DETRACTOR',
           'AGENT_APPROVAL_REQUESTED',
           'AGENT_RUN_FAILED',
           'AI_ACTION_EXPIRING',

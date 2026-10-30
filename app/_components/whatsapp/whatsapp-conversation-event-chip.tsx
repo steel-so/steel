@@ -39,6 +39,9 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
       return event.reason
         ? `Chatbot passou a conversa para: ${event.reason}`
         : 'Chatbot passou a conversa adiante'
+    // `reason` = the copilot summary (internal, never sent to the contact).
+    case 'TRANSFER_SUMMARY':
+      return 'Resumo da conversa para quem assume'
     // `reason` = "R$ valor · descrição" of the charge.
     case 'PIX_PAID':
       return `Pix recebido: ${event.reason ?? ''}`.trim()
@@ -81,6 +84,7 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   // The charge is already in the headline.
   if (event.kind === 'PIX_PAID') return null
   if (event.kind === 'SENTIMENT_ALERT') return event.reason
+  if (event.kind === 'TRANSFER_SUMMARY') return event.reason
   // The guardrail note says why the AI stopped.
   if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason
   if (event.kind === 'AI_ACTION') return event.reason
@@ -107,7 +111,9 @@ export function WhatsappConversationEventChip({
             locale: ptBR,
           })}
         </p>
-        {detail ? <p className='mt-0.5 italic'>{detail}</p> : null}
+        {detail ? (
+          <p className='mt-0.5 whitespace-pre-line italic'>{detail}</p>
+        ) : null}
       </div>
     </div>
   )

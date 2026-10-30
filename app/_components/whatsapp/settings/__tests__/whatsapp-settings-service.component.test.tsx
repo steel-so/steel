@@ -50,6 +50,7 @@ function settings(
     whatsappCheckTtlDays: 30,
     marketingLiteEnabled: false,
     marketingLiteCloudFallback: true,
+    copilotSummaryOnTransfer: false,
     ...overrides,
   }
 }

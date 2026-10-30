@@ -41,6 +41,17 @@ minutos), por quanto tempo a resposta vale (padrão: 72 horas), o intervalo para
 **não perguntar de novo ao mesmo cliente** (padrão: 30 dias), a pergunta, o
 agradecimento e se o **e-mail** entra como alternativa.
 
+### Aviso de detrator
+
+Quando chega uma nota ruim, os **proprietários e administradores** recebem um
+aviso na caixa de entrada (tipo *Cliente detrator na pesquisa*) com o cliente, a
+nota, o atendente e o link da conversa. Cada regra tem o interruptor **Avisar
+sobre detratores** (ligado por padrão) e a **nota máxima considerada
+detratora**. Vazio usa o padrão do tipo: NPS até 6, CSAT até 2 e CES até 3. Nos
+botões do WhatsApp, a opção mais baixa já dispara o aviso. Cada resposta avisa
+uma vez só, e quem silenciou esse tipo em **Preferências de notificação** não
+recebe.
+
 <Callout type='info'>
   Clientes que pediram para sair das mensagens (descadastro) não recebem
   pesquisas. Um chamado que já foi avaliado no portal também não recebe outra.
@@ -48,9 +59,17 @@ agradecimento e se o **e-mail** entra como alternativa.
 
 ## Enviar uma pesquisa avulsa (pós-venda)
 
-Pela API (`POST /workspaces/{id}/surveys`) você envia uma pesquisa na hora a
-um contato do WhatsApp ou a um e-mail, sem atraso e sem o intervalo por
-cliente. Veja a referência em **/dev/api**.
+Há um botão para isso em dois lugares:
+
+- No **cabeçalho da conversa** (estrela, ao lado de *Fechar*): envia ao contato
+  da conversa, pelo WhatsApp.
+- No menu **⋯ do chamado**, em *Enviar pesquisa de satisfação*: envia por
+  e-mail ao solicitante (aparece quando o chamado tem e-mail do contato ou do
+  solicitante).
+
+Você escolhe o tipo e envia na hora, sem atraso e sem o intervalo por cliente. A
+pesquisa avulsa aparece em **Envios** como *Avulsa*. Quem usa a API tem o mesmo
+envio em `POST /workspaces/{id}/surveys` (referência em **/dev/api**).
 
 ## O que o cliente vê
 

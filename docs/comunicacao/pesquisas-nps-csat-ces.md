@@ -41,9 +41,22 @@ Migração `nov_t1_nps_survey` (blocos `// nov: t1-nps-whatsapp` no schema):
 - Permissões: leitura/relatório exigem `conversations` × `VIEW`, envio avulso
   `conversations` × `EDIT`, regras só OWNER/ADMIN (módulo Comunicação).
 - Chamados sem WhatsApp vinculado usam e-mail do contato ou do solicitante.
+- **Alerta de detrator** (follow-up): `SatisfactionSurveyConfig.alertDetractors`
+  (padrão ligado) e `detractorMaxScore` (nulo = padrão do tipo: NPS 6, CSAT 2,
+  CES 3; limitado para nunca ser a nota máxima, `detractorMax` em
+  `src/lib/survey/scale.ts`). `recordAnswer` chama `alertDetractor`: aviso
+  `WHATSAPP_SURVEY_DETRACTOR` para os OWNER/ADMIN (`whatsAppAdminIds`, teto 20),
+  idempotente por `survey-detractor:<id>`, auditado (`satisfaction_survey` /
+  `alert`). Nunca derruba a resposta. A pesquisa avulsa não tem regra e usa os
+  padrões. O link leva à conversa; para chamado/e-mail, à lista de envios.
+- **Envio avulso na interface**: `SendSurveyDialog`
+  (`app/_components/whatsapp/surveys/send-survey-dialog.tsx`) no cabeçalho da
+  conversa (contato do WhatsApp) e no menu ⋯ do chamado (e-mail do contato ou do
+  solicitante). Chama a mesma rota de envio avulso; não vincula o chamado, então a
+  nota CSAT avulsa não é espelhada no chamado.
 - `public/openapi.json` regenerado; rotas em `src/openapi/paths/whatsapp/surveys.ts`.
 
 ## Fora do escopo
 
-Alerta de detrator, envio avulso pela interface (só API) e pesquisa por
-transcrição/voz.
+Pesquisa por transcrição/voz, vínculo do envio avulso com o chamado (espelhar
+a nota CSAT) e alerta ao atendente/líder da equipe (hoje só OWNER/ADMIN).

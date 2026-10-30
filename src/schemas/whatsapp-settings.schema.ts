@@ -140,6 +140,7 @@ export const UpdateWhatsAppSettingsSchema = z.object({
   whatsappCheckTtlDays: z.number().int().min(1).max(365).optional(),
   marketingLiteEnabled: z.boolean().optional(),
   marketingLiteCloudFallback: z.boolean().optional(),
+  copilotSummaryOnTransfer: z.boolean().optional(),
 })
 
 export type UpdateWhatsAppSettingsDTO = z.infer<

@@ -7,6 +7,15 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/user.repository')
 vi.mock('@/src/repositories/whatsapp-message.repository')
+vi.mock('@/src/repositories/whatsapp-settings.repository')
+vi.mock('@/src/repositories/whatsapp-conversation.repository')
+vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
+vi.mock('@/src/lib/whatsapp/realtime', () => ({
+  publishWhatsAppEvent: vi.fn(),
+}))
+vi.mock('@/src/mappers/whatsapp-conversation.mapper', () => ({
+  toWhatsAppConversationDTO: vi.fn(() => ({ id: 'conv1' })),
+}))
 vi.mock('@/src/services/ai-usage.service')
 vi.mock('@/src/services/authz')
 vi.mock('@/src/services/whatsapp-conversation-scope.service')
@@ -23,8 +32,12 @@ import {
   whatsappConversationNotFound,
 } from '@/src/errors'
 import type { AiChatResponse, AiProvider } from '@/src/lib/ai/types'
+import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { UserRepository } from '@/src/repositories/user.repository'
+import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import {
   AiUsageService,
   type PreparedAiCall,
@@ -312,5 +325,161 @@ describe('WhatsAppCopilotService.adjustTone', () => {
       }),
       'AI_QUOTA_EXCEEDED',
     )
+  })
+})
+
+describe('WhatsAppCopilotService.summarizeOnTransfer', () => {
+  const input = { actorId: 'u1', workspaceId: 'ws1', conversationId: 'conv1' }
+  const summaryJson = JSON.stringify({
+    summary: 'Cliente quer reagendar.',
+    pending: ['Confirmar horário'],
+  })
+
+  function setupTransfer(
+    options: { enabled?: boolean; chat?: AiProvider['chat'] } = {},
+  ) {
+    const chat =
+      options.chat ?? vi.fn().mockResolvedValue(response(summaryJson))
+    setup({ chat })
+    vi.mocked(WhatsAppSettingsRepository.findByWorkspace).mockResolvedValue(
+      ok({ copilotSummaryOnTransfer: options.enabled ?? true } as never),
+    )
+    vi.mocked(WhatsAppConversationRepository.findById).mockResolvedValue(
+      ok(
+        createFakeWhatsAppConversationWithPreview({
+          id: 'conv1',
+          workspaceId: 'ws1',
+        }) as never,
+      ),
+    )
+    vi.mocked(WhatsAppConversationEventRepository.create).mockResolvedValue(
+      ok({} as never),
+    )
+    return chat
+  }
+
+  it('writes the summary on the timeline, uses the quota and audits', async () => {
+    const chat = setupTransfer()
+    const result = expectOk(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+    )
+    expect(result).toEqual({ written: true })
+    expect(chat).toHaveBeenCalledTimes(1)
+    expect(mockedAiUsage.prepare).toHaveBeenCalledWith(
+      'ws1',
+      'WHATSAPP_REPLY',
+      'u1',
+    )
+    expect(WhatsAppConversationEventRepository.create).toHaveBeenCalledWith({
+      workspaceId: 'ws1',
+      conversationId: 'conv1',
+      kind: 'TRANSFER_SUMMARY',
+      source: 'COPILOT',
+      actorUserId: 'u1',
+      reason: 'Cliente quer reagendar.\n\nPendente:\n- Confirmar horário',
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: { copilot: 'summary', via: 'transfer' },
+      }),
+    )
+    expect(publishWhatsAppEvent).toHaveBeenCalledWith(
+      'ws1',
+      expect.objectContaining({ type: 'conversation.updated' }),
+    )
+  })
+
+  it('does nothing when the setting is off or was never saved', async () => {
+    const chat = setupTransfer({ enabled: false })
+    expect(
+      expectOk(await WhatsAppCopilotService.summarizeOnTransfer(input)),
+    ).toEqual({ written: false, reason: 'disabled' })
+    vi.mocked(WhatsAppSettingsRepository.findByWorkspace).mockResolvedValue(
+      ok(null),
+    )
+    expect(
+      expectOk(await WhatsAppCopilotService.summarizeOnTransfer(input)),
+    ).toEqual({ written: false, reason: 'disabled' })
+    expect(chat).not.toHaveBeenCalled()
+    expect(mockedAiUsage.prepare).not.toHaveBeenCalled()
+  })
+
+  it('skips a missing or deleted conversation', async () => {
+    setupTransfer()
+    vi.mocked(WhatsAppConversationRepository.findById).mockResolvedValue(
+      ok(null),
+    )
+    expect(
+      expectOk(await WhatsAppCopilotService.summarizeOnTransfer(input)),
+    ).toEqual({ written: false, reason: 'conversation_missing' })
+    vi.mocked(WhatsAppConversationRepository.findById).mockResolvedValue(
+      ok({ deletedAt: new Date() } as never),
+    )
+    expect(
+      expectOk(await WhatsAppCopilotService.summarizeOnTransfer(input)),
+    ).toEqual({ written: false, reason: 'conversation_missing' })
+  })
+
+  it('returns the quota error without writing anything', async () => {
+    setupTransfer()
+    mockedAiUsage.prepare.mockResolvedValue(err(aiQuotaExceeded(10, 10)))
+    expectErr(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+      'AI_QUOTA_EXCEEDED',
+    )
+    expect(WhatsAppConversationEventRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('fails on an unparseable answer, an empty conversation and database errors', async () => {
+    setupTransfer({ chat: vi.fn().mockResolvedValue(response('solto')) })
+    expectErr(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+      'WHATSAPP_COPILOT_FAILED',
+    )
+
+    setupTransfer()
+    mockedMessages.listLatestByConversation.mockResolvedValue(ok([]))
+    expectErr(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+      'WHATSAPP_COPILOT_NO_CONTEXT',
+    )
+
+    setupTransfer()
+    vi.mocked(WhatsAppSettingsRepository.findByWorkspace).mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+      'DATABASE_ERROR',
+    )
+
+    setupTransfer()
+    vi.mocked(WhatsAppConversationRepository.findById).mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+      'DATABASE_ERROR',
+    )
+
+    setupTransfer()
+    vi.mocked(WhatsAppConversationEventRepository.create).mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await WhatsAppCopilotService.summarizeOnTransfer(input),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('does not publish when the conversation cannot be reloaded', async () => {
+    setupTransfer()
+    vi.mocked(WhatsAppConversationRepository.findById)
+      .mockResolvedValueOnce(
+        ok(createFakeWhatsAppConversationWithPreview() as never),
+      )
+      .mockResolvedValueOnce(ok(null))
+    expectOk(await WhatsAppCopilotService.summarizeOnTransfer(input))
+    expect(publishWhatsAppEvent).not.toHaveBeenCalled()
   })
 })

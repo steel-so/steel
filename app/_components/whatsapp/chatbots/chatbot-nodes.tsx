@@ -49,10 +49,33 @@ export const NODE_ICON: Record<ChatbotNodeType, IconType> = {
   end: Tick02Icon,
 }
 
-/** Blocks with a problem (from "Verificar") get a destructive ring. */
+export interface ChatbotNodeTraffic {
+  entries: number
+  exits: number
+}
+
+/**
+ * Blocks with a problem (from "Verificar") get a destructive ring; `traffic`
+ * carries the per-block entries and exits of the last `trafficDays` days.
+ */
 export const ChatbotCanvasContext = createContext<{
   issueNodeIds: ReadonlySet<string>
-}>({ issueNodeIds: new Set() })
+  traffic: ReadonlyMap<string, ChatbotNodeTraffic>
+  trafficDays: number
+}>({ issueNodeIds: new Set(), traffic: new Map(), trafficDays: 30 })
+
+/** "12 entradas · 9 saídas" for the badge, `null` when nothing passed. */
+export function describeTraffic(
+  traffic: ChatbotNodeTraffic | undefined,
+): { entries: string; exits: string } | null {
+  if (!traffic || (traffic.entries === 0 && traffic.exits === 0)) return null
+  const plural = (count: number, one: string, many: string) =>
+    `${count.toLocaleString('pt-BR')} ${count === 1 ? one : many}`
+  return {
+    entries: plural(traffic.entries, 'entrada', 'entradas'),
+    exits: plural(traffic.exits, 'saída', 'saídas'),
+  }
+}
 
 export type ChatbotXyNode = Node<XyNode['data'], ChatbotNodeType>
 
@@ -125,7 +148,8 @@ function ChatbotNodeView({
   data,
   selected,
 }: NodeProps<ChatbotXyNode>) {
-  const { issueNodeIds } = useContext(ChatbotCanvasContext)
+  const { issueNodeIds, traffic, trafficDays } =
+    useContext(ChatbotCanvasContext)
   const updateInternals = useUpdateNodeInternals()
   const node = { id, type, data, position: { x: 0, y: 0 } } as ChatbotNode
   const handles = nodeHandles(node)
@@ -138,6 +162,7 @@ function ChatbotNodeView({
   const preview = previewOf(node)
   const single = outputs.length === 0 && handles.length === 1
   const hasIssue = issueNodeIds.has(id)
+  const counts = describeTraffic(traffic.get(id))
 
   return (
     <div
@@ -175,6 +200,18 @@ function ChatbotNodeView({
       {preview ? (
         <p className='mt-2 line-clamp-3 whitespace-pre-line break-words text-muted-foreground text-xs'>
           {preview}
+        </p>
+      ) : null}
+
+      {counts ? (
+        <p
+          className='mt-2 flex items-center gap-2 border-t pt-2 text-[11px] text-muted-foreground tabular-nums'
+          title={`Últimos ${trafficDays} dias: quantas vezes uma conversa chegou a este bloco e quantas seguiram adiante.`}
+          data-testid='chatbot-node-traffic'
+        >
+          <span>{counts.entries}</span>
+          <span aria-hidden>·</span>
+          <span>{counts.exits}</span>
         </p>
       ) : null}
 

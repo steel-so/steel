@@ -69,6 +69,23 @@ export interface WhatsAppOutboundButtons {
   }
 }
 
+export interface WhatsAppListRow {
+  id: string
+  /** Up to 24 characters (Meta limit). */
+  title: string
+  /** Up to 72 characters. */
+  description?: string
+}
+
+/** Interactive list (up to 10 rows, Meta only, 24h window). */
+export interface WhatsAppOutboundList {
+  to: string
+  text: string
+  /** Label of the button that opens the list (up to 20 characters). */
+  buttonLabel: string
+  rows: WhatsAppListRow[]
+}
+
 /** Interactive message that opens a WhatsApp Flow (Meta only, 24h window). */
 export interface WhatsAppOutboundFlow {
   to: string
@@ -95,6 +112,8 @@ export interface WhatsAppProviderClient {
   sendContact(input: WhatsAppOutboundContact): Promise<WhatsAppSendResult>
   sendButtons(input: WhatsAppOutboundButtons): Promise<WhatsAppSendResult>
   sendReaction(input: WhatsAppOutboundReaction): Promise<void>
+  /** Only the Meta client implements it. */
+  sendList?(input: WhatsAppOutboundList): Promise<WhatsAppSendResult>
   /** Only the Meta client implements it. */
   sendFlow?(input: WhatsAppOutboundFlow): Promise<WhatsAppSendResult>
   getConnectionStatus(): Promise<{

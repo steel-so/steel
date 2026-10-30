@@ -27,6 +27,40 @@ export function isScoreInScale(kind: SurveyKind, score: number): boolean {
   return Number.isInteger(score) && score >= scale.min && score <= scale.max
 }
 
+/**
+ * Highest score that still counts as a detractor, per kind. NPS follows the
+ * standard (0-6); CSAT 1-2 and CES 1-3 are the unhappy half of their scale.
+ * With the reply buttons (CSAT 1/3/5, CES 2/4/6) the lowest button trips it.
+ */
+export const DEFAULT_DETRACTOR_MAX: Record<SurveyKind, number> = {
+  NPS: 6,
+  CSAT: 2,
+  CES: 3,
+}
+
+/**
+ * The detractor ceiling in force: the configured one, kept inside the scale
+ * (never the top score, so "everyone is a detractor" cannot be configured),
+ * or the default of the kind.
+ */
+export function detractorMax(
+  kind: SurveyKind,
+  custom: number | null | undefined,
+): number {
+  if (custom === null || custom === undefined)
+    return DEFAULT_DETRACTOR_MAX[kind]
+  const scale = SURVEY_SCALES[kind]
+  return Math.min(Math.max(custom, scale.min), scale.max - 1)
+}
+
+export function isDetractorScore(
+  kind: SurveyKind,
+  score: number,
+  custom?: number | null,
+): boolean {
+  return isScoreInScale(kind, score) && score <= detractorMax(kind, custom)
+}
+
 export interface SurveyButtonOption {
   score: number
   /** Up to 20 characters: the WhatsApp reply-button limit. */

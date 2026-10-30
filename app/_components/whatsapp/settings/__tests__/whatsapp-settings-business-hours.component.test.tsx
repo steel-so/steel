@@ -24,6 +24,7 @@ const saved = {
   whatsappCheckTtlDays: 30,
   marketingLiteEnabled: false,
   marketingLiteCloudFallback: true,
+  copilotSummaryOnTransfer: false,
 }
 
 function setup() {

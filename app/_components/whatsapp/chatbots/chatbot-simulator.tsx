@@ -69,9 +69,14 @@ export function ChatbotSimulator({
       for (const output of outputs) {
         if (output.kind === 'text') {
           added.push({ id: nextId(), from: 'bot', text: output.text })
-        } else if (output.buttons) {
+        } else if (output.buttons ?? output.list) {
+          // Reply buttons, or the rows of the Meta interactive list (more
+          // than three options): tapping either sends the option's id.
           added.push({ id: nextId(), from: 'bot', text: output.text })
-          nextChips = { id: nextId(), buttons: output.buttons }
+          nextChips = {
+            id: nextId(),
+            buttons: output.buttons ?? output.list?.rows ?? [],
+          }
         } else {
           added.push({ id: nextId(), from: 'bot', text: output.numbered })
         }

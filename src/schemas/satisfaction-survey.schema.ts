@@ -35,6 +35,14 @@ export const UpdateSurveyConfigSchema = z.object({
     .max(365, 'O intervalo máximo é de 365 dias')
     .optional(),
   emailFallback: z.boolean().optional(),
+  alertDetractors: z.boolean().optional(),
+  detractorMaxScore: z
+    .number()
+    .int('Informe um número inteiro')
+    .min(0, 'A nota mínima é 0')
+    .max(9, 'A nota máxima do limite é 9')
+    .nullable()
+    .optional(),
   questionText: z
     .string()
     .trim()

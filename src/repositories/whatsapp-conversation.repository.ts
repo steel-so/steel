@@ -416,6 +416,8 @@ export const WhatsAppConversationRepository = {
           deletedAt: null,
           archivedAt: null,
           unassignedReminderAt: null,
+          // A chatbot is talking to the contact: nobody is "waiting" yet.
+          chatbotSessions: { none: { status: 'RUNNING' } },
           OR: [{ queuedAt: window }, { queuedAt: null, createdAt: window }],
         },
         include: conversationListInclude,

@@ -9,6 +9,7 @@ import type {
   WhatsAppChatbotDTO,
   WhatsAppChatbotFlowIssueDTO,
   WhatsAppChatbotListItemDTO,
+  WhatsAppChatbotNodeStatsDTO,
   WhatsAppChatbotPublishDTO,
   WhatsAppChatbotSessionDTO,
   WhatsAppChatbotSessionStatusDTO,
@@ -190,5 +191,26 @@ export function useWhatsAppChatbotSessions(
       ),
     enabled: enabled && Boolean(workspaceId && chatbotId),
     staleTime: 15 * 1000,
+  })
+}
+
+/**
+ * Entries and exits per block over the last 30 days, drawn on the canvas.
+ * Own key (outside the bot's): saving the draft must not refetch it.
+ */
+export function useWhatsAppChatbotNodeStats(
+  workspaceId: string,
+  chatbotId: string,
+) {
+  return useQuery({
+    queryKey: ['whatsapp-chatbot-node-stats', workspaceId, chatbotId] as const,
+    queryFn: () =>
+      apiFetch<WhatsAppChatbotNodeStatsDTO>(
+        `${base(workspaceId)}/${chatbotId}/stats`,
+        undefined,
+        'Erro ao buscar as métricas dos blocos',
+      ),
+    enabled: Boolean(workspaceId && chatbotId),
+    staleTime: 60 * 1000,
   })
 }

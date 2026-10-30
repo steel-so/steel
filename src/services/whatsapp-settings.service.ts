@@ -156,6 +156,8 @@ export const WhatsAppSettingsService = {
         dto.marketingLiteEnabled ?? current.marketingLiteEnabled,
       marketingLiteCloudFallback:
         dto.marketingLiteCloudFallback ?? current.marketingLiteCloudFallback,
+      copilotSummaryOnTransfer:
+        dto.copilotSummaryOnTransfer ?? current.copilotSummaryOnTransfer,
     })
     if (!saved.ok) return saved
 
@@ -187,6 +189,7 @@ export const WhatsAppSettingsService = {
         whatsappCheckTtlDays: saved.value.whatsappCheckTtlDays,
         marketingLiteEnabled: saved.value.marketingLiteEnabled,
         marketingLiteCloudFallback: saved.value.marketingLiteCloudFallback,
+        copilotSummaryOnTransfer: saved.value.copilotSummaryOnTransfer,
       },
     })
 
