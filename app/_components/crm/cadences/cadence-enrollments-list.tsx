@@ -14,6 +14,7 @@ import type {
   CrmCadenceEnrollmentStatusDTO,
 } from '@/types/crm-cadence'
 import {
+  describeEngagement,
   ENROLLMENT_STATUS_LABEL,
   formatCadenceDate,
   RUN_STATUS_LABEL,
@@ -174,6 +175,18 @@ export function CadenceEnrollmentsList({
                       {RUN_STATUS_LABEL[item.status]}
                       {item.detail ? ` — ${item.detail}` : ''}
                     </span>
+                    {item.type === 'EMAIL' && item.status === 'SENT' ? (
+                      <span
+                        className='text-muted-foreground'
+                        title={
+                          item.openedAt
+                            ? `Primeira abertura em ${formatCadenceDate(item.openedAt)}${item.clickedAt ? `; primeiro clique em ${formatCadenceDate(item.clickedAt)}` : ''}`
+                            : 'Ainda não abriu'
+                        }
+                      >
+                        · {describeEngagement(item)}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>

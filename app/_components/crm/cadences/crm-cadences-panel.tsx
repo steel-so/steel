@@ -1,16 +1,18 @@
 'use client'
 
 import {
+  Analytics01Icon,
   Delete02Icon,
   PauseIcon,
   PencilEdit02Icon,
   PlayIcon,
   PlusSignIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
@@ -20,6 +22,7 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { notify } from '@/lib/notify'
+import { cn } from '@/lib/utils'
 import {
   useCrmCadences,
   useDeleteCrmCadence,
@@ -188,6 +191,15 @@ export function CrmCadencesPanel({
                   />
                   {cadence.status === 'ACTIVE' ? 'Pausar' : 'Ativar'}
                 </Button>
+                <Link
+                  href={`/${slug}/crm/cadences/${cadence.id}`}
+                  className={cn(
+                    buttonVariants({ variant: 'outline', size: 'xs' }),
+                  )}
+                >
+                  <SteelIcon icon={Analytics01Icon} />
+                  Estatísticas
+                </Link>
                 <Button
                   size='xs'
                   variant='outline'
@@ -238,6 +250,7 @@ export function CrmCadencesPanel({
                   {detail.stopOnReply
                     ? 'para quando o lead responde'
                     : 'não para quando o lead responde'}
+                  {detail.stopOnClick ? ' · para quando clica em um link' : ''}
                 </SheetDescription>
               </SheetHeader>
               <div className='flex flex-col gap-4 px-4 pb-4'>
@@ -263,6 +276,9 @@ export function CrmCadencesPanel({
                         </span>
                         <span className='ml-auto text-muted-foreground text-xs'>
                           {counts?.sent ?? 0} feitos
+                          {step.type === 'EMAIL' && counts?.sent
+                            ? ` · ${counts.opened} abertos · ${counts.clicked} cliques`
+                            : ''}
                           {counts?.failed ? ` · ${counts.failed} falhas` : ''}
                         </span>
                       </li>
