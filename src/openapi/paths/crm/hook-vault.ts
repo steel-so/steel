@@ -6,7 +6,7 @@ import {
 } from '@/src/schemas/crm-hook-vault.schema'
 import { CrmNlSearchSchema } from '@/src/schemas/crm-nl-search.schema'
 import { CrmTextAiAssistSchema } from '@/src/schemas/crm-text-ai.schema'
-import type { RouteConfig } from '../../registry'
+import type { ErrorEntry, RouteConfig } from '../../registry'
 import { CrmTextAiReplyDTO } from '../../schemas/crm/forms'
 import { CrmHookVaultItemDTO } from '../../schemas/crm/hook-vault'
 import {
@@ -26,7 +26,7 @@ const HOOK_PARAM = { description: 'ID do item do Hook Vault.' }
 
 const HOOK_NOT_FOUND = notFoundError('CrmHookVaultItem', 'Item inexistente')
 
-const NL_SEARCH_ERRORS = [
+const NL_SEARCH_ERRORS: ErrorEntry[] = [
   ...CRM_ERRORS,
   {
     code: 'FEATURE_NOT_ENABLED',

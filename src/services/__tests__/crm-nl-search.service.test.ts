@@ -6,7 +6,7 @@ import { createFakeCrmPerson } from '@/src/__tests__/factories/crm-person.factor
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { aiQuotaExceeded, databaseError, featureNotEnabled } from '@/src/errors'
-import { err, ok } from '@/src/lib/result'
+import { err, ok, type Result } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -195,11 +195,31 @@ describe('CrmNlSearchService.searchOpportunities()', () => {
   })
 })
 
-describe.each([
+/** What the three entity results share, as the table below reads it. */
+interface NlEntityResult {
+  interpretation: string[]
+  truncated: boolean
+  items: { name: string }[]
+}
+
+interface NlEntityCase {
+  name: string
+  resource: string
+  repo: { search: ReturnType<typeof vi.fn> }
+  row: () => unknown
+  ask: (query: string) => Promise<Result<NlEntityResult>>
+  filter: Record<string, unknown>
+  chip: string
+  schemaName: string
+  invalid: Record<string, unknown>
+  expected: string[]
+}
+
+const ENTITY_CASES: NlEntityCase[] = [
   {
     name: 'searchLeads',
     resource: 'leads',
-    repo: vi.mocked(CrmLeadRepository),
+    repo: vi.mocked(CrmLeadRepository) as unknown as NlEntityCase['repo'],
     row: () => createFakeCrmLead({ name: 'Lead Acme' }),
     ask: (q: string) =>
       CrmNlSearchService.searchLeads(ACTOR, WS, { query: q }, NOW),
@@ -207,13 +227,12 @@ describe.each([
     chip: 'Parados há 7 dias ou mais',
     schemaName: 'crm_lead_filter',
     invalid: { scoreMin: -3 },
-    label: (r: { items: { name: string }[] }) => r.items.map((i) => i.name),
     expected: ['Lead Acme'],
   },
   {
     name: 'searchPeople',
     resource: 'people',
-    repo: vi.mocked(CrmPersonRepository),
+    repo: vi.mocked(CrmPersonRepository) as unknown as NlEntityCase['repo'],
     row: () => createFakeCrmPerson({ name: 'Maria' }),
     ask: (q: string) =>
       CrmNlSearchService.searchPeople(ACTOR, WS, { query: q }, NOW),
@@ -221,13 +240,12 @@ describe.each([
     chip: 'Cargo com “diretor”',
     schemaName: 'crm_person_filter',
     invalid: { sort: 'DROP' },
-    label: (r: { items: { name: string }[] }) => r.items.map((i) => i.name),
     expected: ['Maria'],
   },
   {
     name: 'searchCompanies',
     resource: 'companies',
-    repo: vi.mocked(CrmCompanyRepository),
+    repo: vi.mocked(CrmCompanyRepository) as unknown as NlEntityCase['repo'],
     row: () => createFakeCrmCompany({ name: 'Acme' }),
     ask: (q: string) =>
       CrmNlSearchService.searchCompanies(ACTOR, WS, { query: q }, NOW),
@@ -235,20 +253,21 @@ describe.each([
     chip: 'Atividade com “alimentos”',
     schemaName: 'crm_company_filter',
     invalid: { employeesMin: -1 },
-    label: (r: { items: { name: string }[] }) => r.items.map((i) => i.name),
     expected: ['Acme'],
   },
-])('CrmNlSearchService.$name()', (c) => {
+]
+
+describe.each(ENTITY_CASES)('CrmNlSearchService.$name()', (c) => {
   beforeEach(() => {
     provider.chat.mockResolvedValue(chat(JSON.stringify(c.filter)))
-    c.repo.search.mockResolvedValue(ok([c.row()] as never))
+    c.repo.search.mockResolvedValue(ok([c.row()]))
   })
 
   it('turns the question into a filter and runs it through the repository', async () => {
     const result = expectOk(await c.ask('a pergunta'))
 
     expect(result.interpretation).toContain(c.chip)
-    expect(c.label(result as never)).toEqual(c.expected)
+    expect(result.items.map((item) => item.name)).toEqual(c.expected)
     expect(result.truncated).toBe(false)
     expect(c.repo.search).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceId: WS, deletedAt: null }),
@@ -268,9 +287,7 @@ describe.each([
 
   it('flags truncation and caps the rows', async () => {
     c.repo.search.mockResolvedValue(
-      ok(
-        Array.from({ length: CRM_NL_SEARCH_LIMIT + 1 }, () => c.row()) as never,
-      ),
+      ok(Array.from({ length: CRM_NL_SEARCH_LIMIT + 1 }, () => c.row())),
     )
     const result = expectOk(await c.ask('a pergunta'))
     expect(result.truncated).toBe(true)
