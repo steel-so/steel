@@ -21,8 +21,10 @@ import {
   useUpdateSurveyConfig,
 } from '@/src/hooks/use-satisfaction-surveys'
 import {
+  DEFAULT_DETRACTOR_MAX,
   DEFAULT_SURVEY_QUESTIONS,
   DEFAULT_SURVEY_THANK_YOU,
+  detractorMax,
 } from '@/src/lib/survey/scale'
 import type {
   SurveyConfigDTO,
@@ -68,6 +70,8 @@ function ConfigCard({
           expiresInHours: Math.max(1, draft.expiresInHours),
           cooldownDays: draft.cooldownDays,
           emailFallback: draft.emailFallback,
+          alertDetractors: draft.alertDetractors,
+          detractorMaxScore: draft.detractorMaxScore,
           questionText: draft.questionText?.trim() || null,
           thankYouText: draft.thankYouText?.trim() || null,
         },
@@ -178,6 +182,51 @@ function ConfigCard({
           onCheckedChange={(v) => set('emailFallback', v)}
           aria-label='E-mail como alternativa'
         />
+      </div>
+
+      <div className='space-y-3 rounded-md border p-3'>
+        <div className='flex items-center justify-between gap-4'>
+          <div>
+            <p className='text-sm font-medium'>Avisar sobre detratores</p>
+            <p className='text-xs text-muted-foreground'>
+              Quando a nota fica abaixo do limite, os administradores recebem um
+              aviso na caixa de entrada com o cliente, a nota e o atendente.
+            </p>
+          </div>
+          <Switch
+            checked={draft.alertDetractors}
+            disabled={!canEdit}
+            onCheckedChange={(v) => set('alertDetractors', v)}
+            aria-label='Avisar sobre detratores'
+          />
+        </div>
+        {draft.alertDetractors ? (
+          <div className='space-y-1.5'>
+            <Label htmlFor={`detractor-${config.trigger}`}>
+              Nota máxima considerada detratora
+            </Label>
+            <Input
+              id={`detractor-${config.trigger}`}
+              type='number'
+              min={0}
+              max={9}
+              disabled={!canEdit}
+              placeholder={String(DEFAULT_DETRACTOR_MAX[draft.kind])}
+              value={draft.detractorMaxScore ?? ''}
+              onChange={(e) =>
+                set(
+                  'detractorMaxScore',
+                  e.target.value === '' ? null : num(e.target.value),
+                )
+              }
+            />
+            <p className='text-xs text-muted-foreground'>
+              Avisa com nota até{' '}
+              {detractorMax(draft.kind, draft.detractorMaxScore)}. Vazio usa o
+              padrão do tipo (NPS até 6, CSAT até 2, CES até 3).
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className='space-y-1.5'>

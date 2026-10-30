@@ -497,6 +497,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'alarm',
     color: 'rose',
   },
+  WHATSAPP_SURVEY_DETRACTOR: {
+    module: 'COMMUNICATION',
+    label: 'Cliente detrator na pesquisa',
+    icon: 'star',
+    color: 'rose',
+  },
   WHATSAPP_COST_BUDGET_WARNING: {
     module: 'COMMUNICATION',
     label: 'Custo do WhatsApp em 80% do orçamento',

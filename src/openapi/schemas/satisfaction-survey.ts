@@ -23,6 +23,14 @@ export const SurveyConfigDTO = dto(
     expiresInHours: z.number().int(),
     cooldownDays: z.number().int(),
     emailFallback: z.boolean(),
+    alertDetractors: z.boolean().meta({
+      description:
+        'Avisa os administradores quando chega uma resposta de detrator.',
+    }),
+    detractorMaxScore: z.number().int().nullable().meta({
+      description:
+        'Maior nota que conta como detrator; nulo usa o padrão do tipo (NPS 6, CSAT 2, CES 3).',
+    }),
     questionText: z.string().nullable(),
     thankYouText: z.string().nullable(),
   }),

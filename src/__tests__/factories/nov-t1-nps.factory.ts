@@ -60,6 +60,8 @@ export function createFakeSurveyConfig(
     expiresInHours: 72,
     cooldownDays: 30,
     emailFallback: true,
+    alertDetractors: true,
+    detractorMaxScore: null,
     questionText: null,
     thankYouText: null,
     createdAt: now,

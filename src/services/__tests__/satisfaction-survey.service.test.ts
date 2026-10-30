@@ -19,6 +19,7 @@ import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.reposit
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { assertModuleMember, assertModulePrivileged } from '../authz'
 import { SatisfactionSurveyService as Service } from '../satisfaction-survey.service'
+import { notifyWhatsAppUsers, whatsAppAdminIds } from '../whatsapp-notify'
 
 vi.mock('@/src/repositories/satisfaction-survey.repository')
 vi.mock('@/src/repositories/sd-ticket-csat.repository')
@@ -41,6 +42,10 @@ vi.mock('@/src/lib/queue/queues', () => ({
 vi.mock('../authz', () => ({
   assertModuleMember: vi.fn(),
   assertModulePrivileged: vi.fn(),
+}))
+vi.mock('../whatsapp-notify', () => ({
+  notifyWhatsAppUsers: vi.fn(),
+  whatsAppAdminIds: vi.fn(),
 }))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/lib/axiom/logger', () => ({
@@ -170,6 +175,23 @@ describe('SatisfactionSurveyService admin', () => {
       'ws',
       'TICKET_RESOLVED',
       {},
+    )
+  })
+
+  it('writes the detractor alert settings', async () => {
+    vi.mocked(Repo.upsertConfig).mockResolvedValue(
+      ok(createFakeSurveyConfig({ alertDetractors: false })),
+    )
+    expectOk(
+      await Service.updateConfig('u', 'ws', 'CONVERSATION_CLOSED', {
+        alertDetractors: false,
+        detractorMaxScore: 4,
+      }),
+    )
+    expect(Repo.upsertConfig).toHaveBeenCalledWith(
+      'ws',
+      'CONVERSATION_CLOSED',
+      { alertDetractors: false, detractorMaxScore: 4 },
     )
   })
 
@@ -1079,6 +1101,120 @@ describe('SatisfactionSurveyService.handleInbound', () => {
       await Service.handleInbound({ ...base, type: 'TEXT', text: 'oi' }),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('SatisfactionSurveyService detractor alert', () => {
+  const base = { workspaceId: 'ws', waId: '5511999990000' }
+  const answer = (surveyId: string, score: number) =>
+    Service.handleInbound({
+      ...base,
+      type: 'BUTTON',
+      buttonPayload: `stl:s:${surveyId}:${score}`,
+    })
+
+  beforeEach(() => {
+    vi.mocked(Repo.answer).mockResolvedValue(ok(true))
+    vi.mocked(Repo.findConfig).mockResolvedValue(ok(null))
+    vi.mocked(WhatsAppConnectionRepository.findById).mockResolvedValue(
+      ok(connection),
+    )
+    vi.mocked(whatsAppAdminIds).mockResolvedValue(['admin-1', 'admin-2'])
+    vi.mocked(notifyWhatsAppUsers).mockResolvedValue(2)
+  })
+
+  it('tells the admins about a CSAT of 1 with the conversation link', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(createFakeSurvey({ id: 's1', conversationId: 'cv1' })),
+    )
+    expectOk(await answer('s1', 1))
+    expect(notifyWhatsAppUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        kind: 'WHATSAPP_SURVEY_DETRACTOR',
+        userIds: ['admin-1', 'admin-2'],
+        path: '/zap?conversa=cv1',
+        dedupeKey: 'survey-detractor:s1',
+        title: 'Cliente insatisfeito: Ana',
+      }),
+    )
+  })
+
+  it('stays quiet for a happy answer', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(createFakeSurvey({ id: 's1' })),
+    )
+    expectOk(await answer('s1', 5))
+    expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
+  })
+
+  it('honours the configured ceiling and the off switch', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(createFakeSurvey({ id: 's1' })),
+    )
+    vi.mocked(Repo.findConfig).mockResolvedValue(
+      ok(createFakeSurveyConfig({ detractorMaxScore: 3 })),
+    )
+    expectOk(await answer('s1', 3))
+    expect(notifyWhatsAppUsers).toHaveBeenCalledTimes(1)
+
+    vi.mocked(Repo.findConfig).mockResolvedValue(
+      ok(createFakeSurveyConfig({ alertDetractors: false })),
+    )
+    expectOk(await answer('s1', 1))
+    expect(notifyWhatsAppUsers).toHaveBeenCalledTimes(1)
+  })
+
+  it('links ticket surveys to the survey list and mentions the comment and agent', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(
+        createFakeSurvey({
+          id: 's1',
+          kind: 'NPS',
+          ticketId: 'tk1',
+          customerName: null,
+          recipientName: null,
+          channel: 'EMAIL',
+          status: 'SENT',
+          recipientEmail: 'a@b.com',
+          token: 'tok'.padEnd(32, 'x'),
+        }),
+      ),
+    )
+    vi.mocked(Repo.findByToken).mockResolvedValue(
+      ok({
+        ...createFakeSurvey({
+          id: 's1',
+          kind: 'NPS',
+          ticketId: 'tk1',
+          customerName: null,
+          recipientName: null,
+          channel: 'EMAIL',
+          status: 'SENT',
+        }),
+        workspaceName: 'Acme',
+      } as never),
+    )
+    expectOk(
+      await Service.answerPublic('tok', {
+        score: 2,
+        comment: 'Demorou demais',
+      }),
+    )
+    const call = vi.mocked(notifyWhatsAppUsers).mock.calls[0][0]
+    expect(call.path).toBe('/zap/pesquisas')
+    expect(call.title).toBe('Cliente insatisfeito: Um cliente')
+    expect(call.body).toContain('Demorou demais')
+    expect(call.body).toContain('Carlos')
+  })
+
+  it('never loses the answer when the notice fails', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(createFakeSurvey({ id: 's1' })),
+    )
+    vi.mocked(whatsAppAdminIds).mockRejectedValue(new Error('boom'))
+    const result = expectOk(await answer('s1', 1))
+    expect(result.handled).toBe(true)
   })
 })
 

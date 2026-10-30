@@ -8,6 +8,7 @@ import {
   Download01Icon,
   MoneyReceive01Icon,
   RefreshIcon,
+  StarIcon,
   UserGroup03Icon,
   UserSwitchIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -92,6 +93,7 @@ import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 import { WhatsappPixChargeCard } from './pix/whatsapp-pix-charge-card'
 import { WhatsappPixChargeDialog } from './pix/whatsapp-pix-charge-dialog'
+import { SendSurveyDialog } from './surveys/send-survey-dialog'
 import { WhatsappAdReferralBanner } from './whatsapp-ad-referral-banner'
 import { WhatsappAiBanner } from './whatsapp-ai-banner'
 import { WhatsappCloseConversationDialog } from './whatsapp-close-conversation-dialog'
@@ -191,6 +193,7 @@ export function WhatsappConversationView({
   const [callOpen, setCallOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
+  const [surveyOpen, setSurveyOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [replyTarget, setReplyTarget] = useState<WhatsAppMessageDTO | null>(
     null,
@@ -598,6 +601,17 @@ export function WhatsappConversationView({
               <SteelIcon icon={Call02Icon} size={18} />
             </Button>
           )}
+          {canEdit && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Enviar pesquisa de satisfação'
+              title='Enviar pesquisa de satisfação'
+              onClick={() => setSurveyOpen(true)}
+            >
+              <SteelIcon icon={StarIcon} size={18} />
+            </Button>
+          )}
           <Button
             variant='ghost'
             size='icon-sm'
@@ -822,6 +836,17 @@ export function WhatsappConversationView({
         onConfirm={handleClose}
         isPending={closeConversation.isPending}
       />
+      {surveyOpen ? (
+        <SendSurveyDialog
+          workspaceId={workspaceId}
+          open
+          onOpenChange={setSurveyOpen}
+          recipient={{
+            whatsappContactId: conversation.contactId,
+            name: conversation.contactName,
+          }}
+        />
+      ) : null}
       {pixSettings.data?.enabled ? (
         <WhatsappPixChargeDialog
           workspaceId={workspaceId}

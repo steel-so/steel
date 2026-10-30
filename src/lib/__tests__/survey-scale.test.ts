@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { responseRate, summarizeScores } from '../survey/metrics'
 import {
   buildSurveyPayload,
+  detractorMax,
+  isDetractorScore,
   isScoreInScale,
   parseSurveyPayload,
   parseTypedScore,
@@ -100,5 +102,29 @@ describe('survey metrics', () => {
   it('computes the response rate', () => {
     expect(responseRate(0, 0)).toBeNull()
     expect(responseRate(4, 1)).toBe(25)
+  })
+})
+
+describe('detractor ceiling', () => {
+  it('uses the default of each kind', () => {
+    expect(detractorMax('NPS', null)).toBe(6)
+    expect(detractorMax('CSAT', undefined)).toBe(2)
+    expect(detractorMax('CES', null)).toBe(3)
+  })
+
+  it('keeps a custom ceiling inside the scale and below the top score', () => {
+    expect(detractorMax('CSAT', 3)).toBe(3)
+    expect(detractorMax('CSAT', 9)).toBe(4)
+    expect(detractorMax('CSAT', 0)).toBe(1)
+    expect(detractorMax('NPS', 0)).toBe(0)
+  })
+
+  it('classifies a score', () => {
+    expect(isDetractorScore('NPS', 6)).toBe(true)
+    expect(isDetractorScore('NPS', 7)).toBe(false)
+    expect(isDetractorScore('CSAT', 1)).toBe(true)
+    expect(isDetractorScore('CSAT', 3)).toBe(false)
+    expect(isDetractorScore('CSAT', 3, 3)).toBe(true)
+    expect(isDetractorScore('CSAT', 9)).toBe(false)
   })
 })

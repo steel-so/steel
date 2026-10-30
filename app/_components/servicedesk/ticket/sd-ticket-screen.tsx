@@ -12,6 +12,7 @@ import {
   Link01Icon,
   MoreHorizontalIcon,
   SidebarRightIcon,
+  StarIcon,
   Unlink01Icon,
   UserIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -26,6 +27,7 @@ import { ShortcutKbd } from '@/app/_components/shortcuts/shortcut-kbd'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiMenuItem } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { AskSteelAiDialog } from '@/app/_components/steel-ai-ask/ask-steel-ai-dialog'
+import { SendSurveyDialog } from '@/app/_components/whatsapp/surveys/send-survey-dialog'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -358,6 +360,7 @@ function Header({
   const [linkingParent, setLinkingParent] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [asking, setAsking] = useState(false)
+  const [surveying, setSurveying] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const headerRef = useRef<HTMLElement | null>(null)
   const update = useUpdateSdTicket(workspaceId, ticket.id)
@@ -487,6 +490,12 @@ function Header({
                 <ShortcutKbd id='global.copy-link' />
               </DropdownMenuItem>
               <AskSteelAiMenuItem onSelect={() => setAsking(true)} />
+              {ticket.contact?.email || ticket.requester?.email ? (
+                <DropdownMenuItem onClick={() => setSurveying(true)}>
+                  <SteelIcon icon={StarIcon} strokeWidth={2} />
+                  Enviar pesquisa de satisfação
+                </DropdownMenuItem>
+              ) : null}
               {me.isAdmin ? (
                 <>
                   <DropdownMenuSeparator />
@@ -503,6 +512,18 @@ function Header({
           </DropdownMenu>
         </div>
       </div>
+
+      {surveying ? (
+        <SendSurveyDialog
+          workspaceId={workspaceId}
+          open
+          onOpenChange={setSurveying}
+          recipient={{
+            email: ticket.contact?.email ?? ticket.requester?.email,
+            name: ticket.contact?.name ?? ticket.requester?.name,
+          }}
+        />
+      ) : null}
 
       {asking ? (
         <AskSteelAiDialog
