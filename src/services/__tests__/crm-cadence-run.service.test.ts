@@ -3,6 +3,7 @@ import {
   createFakeCrmCadenceStep,
   createFakeEnrollmentForRun,
 } from '@/src/__tests__/factories/nov-c1-sales-cadences.factory'
+import { createFakeCrmCadenceRun } from '@/src/__tests__/factories/nov-cadence-followups.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import {
   databaseError,
@@ -63,6 +64,11 @@ const task = (position: number, overrides = {}) =>
 
 beforeEach(() => {
   vi.resetAllMocks()
+  enrollRepo.beginRun.mockResolvedValue(
+    ok({ run: createFakeCrmCadenceRun({ id: 'run1' }), existed: false }),
+  )
+  enrollRepo.markRunSent.mockResolvedValue(ok(undefined))
+  enrollRepo.discardRun.mockResolvedValue(ok(undefined))
   enrollRepo.completeStep.mockResolvedValue(ok(true))
   enrollRepo.finish.mockResolvedValue(ok(1))
   enrollRepo.complete.mockResolvedValue(ok(undefined))
@@ -208,6 +214,7 @@ describe('e-mail steps', () => {
         text: expect.stringContaining('A Empresa SA cresce.'),
         html: expect.stringContaining('A Empresa SA cresce.'),
       }),
+      { idempotencyKey: `cadence-${enrollment.id}-0` },
     )
     expect(lastCompletion()).toMatchObject({
       status: 'SENT',
@@ -228,7 +235,10 @@ describe('e-mail steps', () => {
       cadence: { steps: [step({ position: 0, subject: null })] },
     })
     expectOk(await CrmCadenceRunService.processEnrollment(enrollment, now))
-    expect(mail).toHaveBeenCalledWith(expect.objectContaining({ subject: '' }))
+    expect(mail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: '' }),
+      expect.anything(),
+    )
   })
 
   it('should prefer the cadence reply-to and survive a contact attempt failure', async () => {
@@ -240,6 +250,7 @@ describe('e-mail steps', () => {
     expectOk(await CrmCadenceRunService.processEnrollment(enrollment, now))
     expect(mail).toHaveBeenCalledWith(
       expect.objectContaining({ replyTo: 'time@vendas.com.br' }),
+      expect.anything(),
     )
   })
 

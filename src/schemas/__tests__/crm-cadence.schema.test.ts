@@ -54,6 +54,7 @@ describe('CreateCrmCadenceSchema', () => {
     expect(parsed).toMatchObject({
       name: 'Outbound',
       stopOnReply: true,
+      stopOnClick: false,
       weekdaysOnly: true,
     })
   })

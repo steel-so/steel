@@ -66,6 +66,7 @@ interface Draft {
   emailReplyTo: string
   whatsappConnectionId: string | null
   stopOnReply: boolean
+  stopOnClick: boolean
   restrictWindow: boolean
   windowStartHour: number
   windowEndHour: number
@@ -98,6 +99,7 @@ function toDraft(cadence: CrmCadenceDTO | null): Draft {
       emailReplyTo: '',
       whatsappConnectionId: null,
       stopOnReply: true,
+      stopOnClick: false,
       restrictWindow: true,
       windowStartHour: 9,
       windowEndHour: 18,
@@ -112,6 +114,7 @@ function toDraft(cadence: CrmCadenceDTO | null): Draft {
     emailReplyTo: cadence.emailReplyTo ?? '',
     whatsappConnectionId: cadence.whatsappConnectionId,
     stopOnReply: cadence.stopOnReply,
+    stopOnClick: cadence.stopOnClick,
     restrictWindow: cadence.windowStartHour !== null,
     windowStartHour: cadence.windowStartHour ?? 9,
     windowEndHour: cadence.windowEndHour ?? 18,
@@ -198,6 +201,7 @@ export function CadenceEditorSheet({
       emailReplyTo: draft.emailReplyTo.trim() || null,
       whatsappConnectionId: needsWhatsApp ? draft.whatsappConnectionId : null,
       stopOnReply: draft.stopOnReply,
+      stopOnClick: draft.stopOnClick,
       windowStartHour: draft.restrictWindow ? draft.windowStartHour : null,
       windowEndHour: draft.restrictWindow ? draft.windowEndHour : null,
       weekdaysOnly: draft.weekdaysOnly,
@@ -478,6 +482,20 @@ export function CadenceEditorSheet({
                 id='cadence-stop-on-reply'
                 checked={draft.stopOnReply}
                 onCheckedChange={(checked) => patch({ stopOnReply: checked })}
+              />
+            </div>
+            <div className='flex items-center justify-between gap-3 text-sm'>
+              <Label htmlFor='cadence-stop-on-click' className='block'>
+                Parar quando o lead clicar em um link
+                <span className='block font-normal text-muted-foreground text-xs'>
+                  Vale para os links dos e-mails da cadência. Cliques logo após
+                  o envio, típicos de filtros de segurança, não contam.
+                </span>
+              </Label>
+              <Switch
+                id='cadence-stop-on-click'
+                checked={draft.stopOnClick}
+                onCheckedChange={(checked) => patch({ stopOnClick: checked })}
               />
             </div>
             <div className='flex items-center justify-between gap-3 text-sm'>

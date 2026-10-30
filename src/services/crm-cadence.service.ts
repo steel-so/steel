@@ -89,6 +89,8 @@ async function withStats(
   if (!enrollments.ok) return enrollments
   const runs = await CrmCadenceRepository.runCounts(ids)
   if (!runs.ok) return runs
+  const tracking = await CrmCadenceRepository.trackingCounts(ids)
+  if (!tracking.ok) return tracking
   return ok(
     cadences.map((cadence) =>
       toCrmCadenceDTO(
@@ -97,6 +99,7 @@ async function withStats(
           enrollments.value.filter((row) => row.cadenceId === cadence.id),
           runs.value.filter((row) => row.cadenceId === cadence.id),
           cadence.steps.length,
+          tracking.value.filter((row) => row.cadenceId === cadence.id),
         ),
       ),
     ),
@@ -256,6 +259,9 @@ export const CrmCadenceService = {
           : {}),
         ...(dto.stopOnReply !== undefined
           ? { stopOnReply: dto.stopOnReply }
+          : {}),
+        ...(dto.stopOnClick !== undefined
+          ? { stopOnClick: dto.stopOnClick }
           : {}),
         ...(dto.windowStartHour !== undefined
           ? { windowStartHour: dto.windowStartHour }

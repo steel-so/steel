@@ -55,6 +55,8 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/campaigns/c': 'signed click token',
   '/api/crm/campaigns/o': 'signed open-pixel token',
   '/api/crm/campaigns/resend-webhook': 'Svix signature',
+  '/api/crm/cadences/c': 'signed click token (run + destination)',
+  '/api/crm/cadences/o': 'signed open-pixel token',
   '/api/servicedesk/approvals': 'approval link token',
   '/api/surveys/public': 'survey link token',
   '/api/servicedesk/monitoring': 'monitoring source token',
@@ -91,6 +93,8 @@ const OPEN_ENDPOINTS: Record<string, string> = {
   'DELETE /api/servicedesk/portal/session':
     'portal logout, only clears the caller own cookie',
   'GET /api/crm/campaigns/o/[token]':
+    'open-tracking pixel, answers a GIF whatever the token',
+  'GET /api/crm/cadences/o/[token]':
     'open-tracking pixel, answers a GIF whatever the token',
   'POST /api/v1/auth/device': 'device authorization request (RFC 8628)',
   'GET /api/crm/unsubscribe/[token]':

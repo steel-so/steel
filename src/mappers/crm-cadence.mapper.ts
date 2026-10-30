@@ -34,13 +34,15 @@ export const EMPTY_CADENCE_STATS: CrmCadenceStatsDTO = {
   stopped: 0,
   replyRate: 0,
   sentByStep: [],
+  stoppedByClick: 0,
 }
 
 /** Folds the grouped counts of one cadence into its stats card. */
 export function buildCadenceStats(
-  enrollments: { status: string; n: number }[],
+  enrollments: { status: string; stopReason?: string | null; n: number }[],
   runs: { position: number; status: string; n: number }[],
   stepCount: number,
+  tracking: { position: number; opened: number; clicked: number }[] = [],
 ): CrmCadenceStatsDTO {
   const count = (status: string) =>
     enrollments
@@ -48,6 +50,16 @@ export function buildCadenceStats(
       .reduce((a, r) => a + r.n, 0)
   const enrolled = enrollments.reduce((acc, row) => acc + row.n, 0)
   const replied = count('REPLIED')
+  const runsAt = (position: number, ...statuses: string[]) =>
+    runs
+      .filter(
+        (row) => row.position === position && statuses.includes(row.status),
+      )
+      .reduce((acc, row) => acc + row.n, 0)
+  const trackedAt = (position: number, key: 'opened' | 'clicked') =>
+    tracking
+      .filter((row) => row.position === position)
+      .reduce((acc, row) => acc + row[key], 0)
   return {
     enrolled,
     active: count('ACTIVE'),
@@ -56,14 +68,17 @@ export function buildCadenceStats(
     completed: count('COMPLETED'),
     stopped: count('STOPPED'),
     replyRate: enrolled === 0 ? 0 : replied / enrolled,
+    stoppedByClick: enrollments
+      .filter((row) => row.stopReason === 'CLICKED')
+      .reduce((acc, row) => acc + row.n, 0),
     sentByStep: Array.from({ length: stepCount }, (_, position) => ({
       position,
-      sent: runs
-        .filter((row) => row.position === position && row.status === 'SENT')
-        .reduce((acc, row) => acc + row.n, 0),
-      failed: runs
-        .filter((row) => row.position === position && row.status === 'FAILED')
-        .reduce((acc, row) => acc + row.n, 0),
+      sent: runsAt(position, 'SENT'),
+      skipped: runsAt(position, 'SKIPPED'),
+      failed: runsAt(position, 'FAILED'),
+      opened: trackedAt(position, 'opened'),
+      clicked: trackedAt(position, 'clicked'),
+      reached: runsAt(position, 'SENT', 'SKIPPED', 'FAILED'),
     })),
   }
 }
@@ -82,6 +97,7 @@ export function toCrmCadenceDTO(
     emailReplyTo: cadence.emailReplyTo,
     whatsappConnectionId: cadence.whatsappConnectionId,
     stopOnReply: cadence.stopOnReply,
+    stopOnClick: cadence.stopOnClick,
     windowStartHour: cadence.windowStartHour,
     windowEndHour: cadence.windowEndHour,
     weekdaysOnly: cadence.weekdaysOnly,
@@ -101,6 +117,10 @@ export function toCrmCadenceRunDTO(run: CrmCadenceRun): CrmCadenceRunDTO {
     type: run.type,
     status: run.status,
     detail: run.detail,
+    openedAt: run.openedAt?.toISOString() ?? null,
+    clickedAt: run.clickedAt?.toISOString() ?? null,
+    openCount: run.openCount,
+    clickCount: run.clickCount,
     createdAt: run.createdAt.toISOString(),
   }
 }

@@ -11733,12 +11733,15 @@ enum CrmCadenceStopReason {
   LEAD_DELETED
   NO_CONTACT
   CADENCE_ARCHIVED
+  CLICKED
 }
 
 enum CrmCadenceRunStatus {
   SENT
   SKIPPED
   FAILED
+  /// Intent recorded before the send; settled by the same transaction that advances the enrollment.
+  PENDING
 }
 
 /// Sales cadence: a sequence of steps (e-mail, WhatsApp, task) with delays,
@@ -11756,6 +11759,8 @@ model CrmCadence {
   /// Connection used by the WhatsApp steps (COMMUNICATION module).
   whatsappConnectionId String?          @map("whatsapp_connection_id")
   stopOnReply          Boolean          @default(true) @map("stop_on_reply")
+  /// A click on a tracked link of an e-mail step also ends the enrollment (off by default).
+  stopOnClick          Boolean          @default(false) @map("stop_on_click")
   /// Send window, São Paulo time; both null = any hour.
   windowStartHour      Int?             @map("window_start_hour")
   windowEndHour        Int?             @map("window_end_hour")
@@ -11844,6 +11849,13 @@ model CrmCadenceRun {
   status            CrmCadenceRunStatus
   detail            String?
   providerMessageId String?             @map("provider_message_id")
+  /// `<enrollmentId>:<position>` on steps that send a message: one row per step, ever.
+  idempotencyKey    String?             @unique @map("idempotency_key")
+  /// E-mail tracking (pixel + link redirect); first event and totals.
+  openedAt          DateTime?           @map("opened_at")
+  clickedAt         DateTime?           @map("clicked_at")
+  openCount         Int                 @default(0) @map("open_count")
+  clickCount        Int                 @default(0) @map("click_count")
   createdAt         DateTime            @default(now()) @map("created_at")
 
   cadence    CrmCadence           @relation(fields: [cadenceId], references: [id], onDelete: Cascade)

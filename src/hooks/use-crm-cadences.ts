@@ -22,6 +22,8 @@ const base = (ws: string) => `/api/workspaces/${encodeURIComponent(ws)}/crm`
 export const crmCadenceKeys = {
   all: (ws: string) => ['crm-cadences', ws] as const,
   list: (ws: string) => ['crm-cadences', ws, 'list'] as const,
+  detail: (ws: string, cadenceId: string) =>
+    ['crm-cadences', ws, 'detail', cadenceId] as const,
   enrollments: (ws: string, filters: { cadenceId?: string; leadId?: string }) =>
     ['crm-cadences', ws, 'enrollments', filters] as const,
 }
@@ -36,6 +38,22 @@ export function useCrmCadences(workspaceId: string) {
         'Erro ao buscar as cadências',
       ),
     enabled: Boolean(workspaceId),
+  })
+}
+
+/** One cadence with its numbers (stats page). */
+export function useCrmCadence(workspaceId: string, cadenceId: string) {
+  return useQuery({
+    queryKey: crmCadenceKeys.detail(workspaceId, cadenceId),
+    queryFn: () =>
+      apiFetch<CrmCadenceDTO>(
+        `${base(workspaceId)}/cadences/${encodeURIComponent(cadenceId)}`,
+        undefined,
+        'Erro ao buscar a cadência',
+      ),
+    enabled: Boolean(workspaceId) && Boolean(cadenceId),
+    // Sends, opens and clicks keep arriving: keep the numbers fresh.
+    refetchInterval: 30_000,
   })
 }
 

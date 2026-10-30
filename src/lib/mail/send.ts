@@ -28,8 +28,14 @@ function primaryRecipient(to: CreateEmailOptions['to']): string | null {
   return first.toString().trim().toLowerCase() || null
 }
 
+export interface SendEmailOptions {
+  /** Sent as `Idempotency-Key`: the provider answers a repeat with the first message. */
+  idempotencyKey?: string
+}
+
 export async function sendEmail(
   params: SendEmailParams,
+  options: SendEmailOptions = {},
 ): Promise<CreateEmailResponseSuccess> {
   const recipient = primaryRecipient(params.to)
   if (!recipient) {
@@ -55,10 +61,15 @@ export async function sendEmail(
     )
   }
 
-  const { data, error } = await resend.emails.send({
+  const payload = {
     from: params.from ?? defaultFrom,
     ...params,
-  } as CreateEmailOptions)
+  } as CreateEmailOptions
+  const { data, error } = options.idempotencyKey
+    ? await resend.emails.send(payload, {
+        idempotencyKey: options.idempotencyKey,
+      })
+    : await resend.emails.send(payload)
 
   if (error || !data) {
     throw new Error(error?.message ?? 'Failed to send email')

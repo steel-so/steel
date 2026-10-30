@@ -51,6 +51,7 @@ export function createFakeCrmCadence(
     emailReplyTo: null,
     whatsappConnectionId: null,
     stopOnReply: true,
+    stopOnClick: false,
     windowStartHour: null,
     windowEndHour: null,
     weekdaysOnly: false,
@@ -133,6 +134,7 @@ export async function seedCrmCadence(
       | 'status'
       | 'emailFrom'
       | 'stopOnReply'
+      | 'stopOnClick'
       | 'deletedAt'
       | 'whatsappConnectionId'
     >

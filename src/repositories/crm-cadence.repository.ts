@@ -44,6 +44,7 @@ export interface CadenceFields {
   emailReplyTo?: string | null
   whatsappConnectionId?: string | null
   stopOnReply: boolean
+  stopOnClick: boolean
   windowStartHour?: number | null
   windowEndHour?: number | null
   weekdaysOnly: boolean
@@ -121,6 +122,7 @@ export const CrmCadenceRepository = {
             emailReplyTo: fields.emailReplyTo ?? null,
             whatsappConnectionId: fields.whatsappConnectionId ?? null,
             stopOnReply: fields.stopOnReply,
+            stopOnClick: fields.stopOnClick,
             windowStartHour: fields.windowStartHour ?? null,
             windowEndHour: fields.windowEndHour ?? null,
             weekdaysOnly: fields.weekdaysOnly,
@@ -188,17 +190,20 @@ export const CrmCadenceRepository = {
   },
 
   /** Enrollment counts by status, per cadence. */
-  async enrollmentCounts(
-    cadenceIds: string[],
-  ): Promise<
+  async enrollmentCounts(cadenceIds: string[]): Promise<
     Result<
-      { cadenceId: string; status: CrmCadenceEnrollmentStatus; n: number }[]
+      {
+        cadenceId: string
+        status: CrmCadenceEnrollmentStatus
+        stopReason: CrmCadenceStopReason | null
+        n: number
+      }[]
     >
   > {
     if (cadenceIds.length === 0) return ok([])
     try {
       const rows = await prisma.crmCadenceEnrollment.groupBy({
-        by: ['cadenceId', 'status'],
+        by: ['cadenceId', 'status', 'stopReason'],
         where: { cadenceId: { in: cadenceIds } },
         _count: { _all: true },
       })
@@ -206,6 +211,7 @@ export const CrmCadenceRepository = {
         rows.map((row) => ({
           cadenceId: row.cadenceId,
           status: row.status,
+          stopReason: row.stopReason,
           n: row._count._all,
         })),
       )
@@ -242,6 +248,37 @@ export const CrmCadenceRepository = {
       )
     } catch (error) {
       return err(dbError('Failed to count CRM cadence runs', error))
+    }
+  },
+
+  /** Distinct opened/clicked e-mail runs by step position, per cadence. */
+  async trackingCounts(cadenceIds: string[]): Promise<
+    Result<
+      {
+        cadenceId: string
+        position: number
+        opened: number
+        clicked: number
+      }[]
+    >
+  > {
+    if (cadenceIds.length === 0) return ok([])
+    try {
+      const rows = await prisma.crmCadenceRun.groupBy({
+        by: ['cadenceId', 'position'],
+        where: { cadenceId: { in: cadenceIds }, type: 'EMAIL' },
+        _count: { openedAt: true, clickedAt: true },
+      })
+      return ok(
+        rows.map((row) => ({
+          cadenceId: row.cadenceId,
+          position: row.position,
+          opened: row._count.openedAt,
+          clicked: row._count.clickedAt,
+        })),
+      )
+    } catch (error) {
+      return err(dbError('Failed to count CRM cadence e-mail tracking', error))
     }
   },
 
@@ -467,6 +504,8 @@ export const CrmCadenceEnrollmentRepository = {
     status: CrmCadenceRunStatus
     detail?: string | null
     providerMessageId?: string | null
+    /** The PENDING row recorded before the send: settled instead of creating one. */
+    runId?: string | null
     next: { position: number; runAt: Date } | null
     now: Date
   }): Promise<Result<boolean>> {
@@ -491,6 +530,20 @@ export const CrmCadenceEnrollmentRepository = {
                 finishedAt: input.now,
               },
         })
+        if (input.runId) {
+          // The message already left: the row is settled even if a stop won.
+          await tx.crmCadenceRun.update({
+            where: { id: input.runId },
+            data: {
+              status: input.status,
+              detail: input.detail ?? null,
+              ...(input.providerMessageId
+                ? { providerMessageId: input.providerMessageId }
+                : {}),
+            },
+          })
+          return moved.count > 0
+        }
         if (moved.count === 0) return false
         await tx.crmCadenceRun.create({
           data: {
@@ -510,6 +563,72 @@ export const CrmCadenceEnrollmentRepository = {
       return ok(applied)
     } catch (error) {
       return err(dbError('Failed to complete CRM cadence step', error))
+    }
+  },
+
+  /**
+   * Records the intent to send a step, before sending. The key is unique, so
+   * however many times the step is reached (crash, stale claim) there is one
+   * row: an existing one comes back untouched with `existed: true` (the
+   * previous attempt got at least as far as recording the intent).
+   */
+  async beginRun(input: {
+    workspaceId: string
+    cadenceId: string
+    enrollmentId: string
+    stepId: string
+    position: number
+    type: CrmCadenceStepType
+    idempotencyKey: string
+  }): Promise<Result<{ run: CrmCadenceRun; existed: boolean }>> {
+    try {
+      const found = await prisma.crmCadenceRun.findUnique({
+        where: { idempotencyKey: input.idempotencyKey },
+      })
+      if (found) return ok({ run: found, existed: true })
+      try {
+        const run = await prisma.crmCadenceRun.create({
+          data: { ...input, status: 'PENDING' },
+        })
+        return ok({ run, existed: false })
+      } catch (error) {
+        // Lost a race with another writer of the same key: take its row.
+        const raced = await prisma.crmCadenceRun.findUnique({
+          where: { idempotencyKey: input.idempotencyKey },
+        })
+        if (!raced) throw error
+        return ok({ run: raced, existed: true })
+      }
+    } catch (error) {
+      return err(dbError('Failed to record CRM cadence step intent', error))
+    }
+  },
+
+  /** Drops an intent whose send is known not to have happened (transient failure). */
+  async discardRun(runId: string): Promise<Result<void>> {
+    try {
+      await prisma.crmCadenceRun.deleteMany({
+        where: { id: runId, status: 'PENDING', providerMessageId: null },
+      })
+      return ok(undefined)
+    } catch (error) {
+      return err(dbError('Failed to discard CRM cadence step intent', error))
+    }
+  },
+
+  /** Stores the provider id as soon as the send returns, before the bookkeeping. */
+  async markRunSent(
+    runId: string,
+    providerMessageId: string,
+  ): Promise<Result<void>> {
+    try {
+      await prisma.crmCadenceRun.updateMany({
+        where: { id: runId, status: 'PENDING' },
+        data: { providerMessageId },
+      })
+      return ok(undefined)
+    } catch (error) {
+      return err(dbError('Failed to store CRM cadence provider id', error))
     }
   },
 
@@ -621,6 +740,73 @@ export const CrmCadenceEnrollmentRepository = {
       return ok(undefined)
     } catch (error) {
       return err(dbError('Failed to record CRM cadence run', error))
+    }
+  },
+}
+
+/** Open/click tracking of the cadence e-mail runs. */
+export type CrmCadenceRunForTracking = CrmCadenceRun & {
+  cadence: { stopOnClick: boolean }
+  enrollment: { status: CrmCadenceEnrollmentStatus }
+}
+
+export const CrmCadenceRunRepository = {
+  async findForTracking(
+    runId: string,
+  ): Promise<Result<CrmCadenceRunForTracking | null>> {
+    try {
+      const row = await prisma.crmCadenceRun.findFirst({
+        where: { id: runId, type: 'EMAIL' },
+        include: {
+          cadence: { select: { stopOnClick: true } },
+          enrollment: { select: { status: true } },
+        },
+      })
+      return ok(row)
+    } catch (error) {
+      return err(dbError('Failed to load CRM cadence run', error))
+    }
+  },
+
+  /** Counts the open; the first one also stamps `openedAt`. */
+  async recordOpen(runId: string, now: Date): Promise<Result<void>> {
+    try {
+      await prisma.$transaction([
+        prisma.crmCadenceRun.updateMany({
+          where: { id: runId, openedAt: null },
+          data: { openedAt: now },
+        }),
+        prisma.crmCadenceRun.updateMany({
+          where: { id: runId },
+          data: { openCount: { increment: 1 } },
+        }),
+      ])
+      return ok(undefined)
+    } catch (error) {
+      return err(dbError('Failed to record CRM cadence e-mail open', error))
+    }
+  },
+
+  /** Counts the click; the first one stamps `clickedAt` (and `openedAt` if blocked images hid the open). */
+  async recordClick(runId: string, now: Date): Promise<Result<void>> {
+    try {
+      await prisma.$transaction([
+        prisma.crmCadenceRun.updateMany({
+          where: { id: runId, clickedAt: null },
+          data: { clickedAt: now },
+        }),
+        prisma.crmCadenceRun.updateMany({
+          where: { id: runId, openedAt: null },
+          data: { openedAt: now },
+        }),
+        prisma.crmCadenceRun.updateMany({
+          where: { id: runId },
+          data: { clickCount: { increment: 1 } },
+        }),
+      ])
+      return ok(undefined)
+    } catch (error) {
+      return err(dbError('Failed to record CRM cadence e-mail click', error))
     }
   },
 }
