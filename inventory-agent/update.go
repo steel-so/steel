@@ -217,7 +217,7 @@ var smokeTest = runSelftest
 func runSelftest(ctx context.Context, binary, wantVersion string) error {
 	ctx, cancel := context.WithTimeout(ctx, selftestTimeout)
 	defer cancel()
-	output, err := exec.CommandContext(ctx, binary, "selftest").Output()
+	output, err := exec.CommandContext(ctx, binary, "selftest").Output() // nosemgrep: the binary is the agent's own just-downloaded, checksum-verified file
 	if err != nil {
 		if ctx.Err() != nil {
 			return fmt.Errorf("selftest did not finish in %s", selftestTimeout)

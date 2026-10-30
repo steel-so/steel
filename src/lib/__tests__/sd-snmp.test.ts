@@ -20,8 +20,13 @@ const netSnmp = vi.hoisted(() => {
 
 vi.mock('net-snmp', () => ({
   createSession: netSnmp.createSession,
+  createV3Session: vi.fn(),
   isVarbindError: netSnmp.isVarbindError,
   Version2c: 1,
+  Version3: 3,
+  AuthProtocols: { md5: 2, sha: 3, sha224: 4, sha256: 5, sha384: 6, sha512: 7 },
+  PrivProtocols: { des: 2, aes: 4, aes256b: 6, aes256r: 8 },
+  SecurityLevel: { noAuthNoPriv: 1, authNoPriv: 2, authPriv: 3 },
 }))
 
 import {

@@ -61,14 +61,14 @@ func (f *updateFixture) start(t *testing.T) *httptest.Server {
 				w.WriteHeader(f.status)
 				return
 			}
-			fmt.Fprintf(w, `{"success":true,"statusCode":200,"data":%s}`, f.manifest)
+			fmt.Fprintf(w, `{"success":true,"statusCode":200,"data":%s}`, f.manifest) // nosemgrep: test server, not HTML
 		case "/api/servicedesk/inventory/agent/download/2.0.0":
 			atomic.AddInt32(&f.downloadCalls, 1)
 			w.Header().Set("Content-Type", "application/octet-stream")
 			if f.headerSHA != "" {
 				w.Header().Set("X-Content-SHA256", f.headerSHA)
 			}
-			_, _ = w.Write(f.body)
+			_, _ = w.Write(f.body) // nosemgrep: test server, not HTML
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}

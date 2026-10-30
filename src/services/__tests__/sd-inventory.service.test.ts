@@ -25,7 +25,13 @@ const alerts = vi.mocked(SdInventoryAlertRepository)
 const settings = vi.mocked(SdInventorySettingsRepository)
 const WS = 'ws1'
 const NOW = new Date('2026-10-20T12:00:00.000Z')
-const query = { page: 1, pageSize: 25, hasAlert: false, stale: false }
+const query = {
+  page: 1,
+  pageSize: 25,
+  hasAlert: false,
+  stale: false,
+  discovered: false,
+}
 
 beforeEach(() => {
   actAs('agent')
@@ -35,7 +41,14 @@ beforeEach(() => {
   )
   devices.findById.mockResolvedValue(ok(createFakeSdInventoryDeviceDetail()))
   devices.summary.mockResolvedValue(
-    ok({ total: 1, agents: 1, snmp: 0, stale: 0, openAlerts: 0 }),
+    ok({
+      total: 1,
+      agents: 1,
+      snmp: 0,
+      discovered: 0,
+      stale: 0,
+      openAlerts: 0,
+    }),
   )
   devices.listSoftware.mockResolvedValue(
     ok({

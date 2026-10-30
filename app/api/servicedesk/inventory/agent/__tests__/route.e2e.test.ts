@@ -50,7 +50,7 @@ describe('public agent update endpoints', () => {
   it('validates the query', async () => {
     const { token } = await setup(true)
     expect((await get(`${versionUrl}?os=plan9&arch=amd64`, token)).status).toBe(
-      400,
+      422,
     )
     expect(
       (await get(`${downloadUrl}?os=linux&arch=amd64`, token)).status,
