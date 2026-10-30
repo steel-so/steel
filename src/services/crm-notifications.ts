@@ -415,3 +415,53 @@ export function notifyCrmCampaignSenderBlocked(input: {
     dedupeKey: `crm-campaign-sender-blocked:${input.campaign.id}`,
   })
 }
+
+// ─── nov-health-scores ──────────────────────────────────────────────────────
+
+interface HealthAlertInput {
+  workspaceId: string
+  recipientId: string | null | undefined
+  riskScore: number
+  levelLabel: string
+  /** Detail of the factor that scored the most. */
+  reason: string | null
+  nextAction: string
+  computedAt: Date
+}
+
+function healthBody(input: HealthAlertInput): string {
+  const reason = input.reason ? ` Motivo principal: ${input.reason}.` : ''
+  return `${input.levelLabel}: nota de risco ${input.riskScore}/100.${reason} Próxima ação sugerida: ${input.nextAction}.`
+}
+
+/** T4: the churn risk of a company entered the high band or jumped. */
+export function notifyCrmCustomerHealthDrop(
+  input: HealthAlertInput & { company: { id: string; name: string } },
+): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.recipientId],
+    actorId: null,
+    kind: 'CRM_CUSTOMER_HEALTH_DROP',
+    title: `Saúde do cliente em queda: ${input.company.name}`,
+    body: healthBody(input),
+    path: `/crm/companies?record=${input.company.id}`,
+    dedupeKey: `crm-customer-health:${input.company.id}:${input.computedAt.toISOString()}`,
+  })
+}
+
+/** C4: an open deal entered the high-risk band. */
+export function notifyCrmOpportunityAtRisk(
+  input: HealthAlertInput & { opportunity: { id: string; name: string } },
+): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.recipientId],
+    actorId: null,
+    kind: 'CRM_OPPORTUNITY_AT_RISK',
+    title: `Negócio em risco: ${input.opportunity.name}`,
+    body: healthBody(input),
+    path: opportunityPath(input.opportunity.id),
+    dedupeKey: `crm-opportunity-health:${input.opportunity.id}:${input.computedAt.toISOString()}`,
+  })
+}

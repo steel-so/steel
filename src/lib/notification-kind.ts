@@ -251,6 +251,18 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'alarm',
     color: 'amber',
   },
+  CRM_CUSTOMER_HEALTH_DROP: {
+    module: 'CRM',
+    label: 'Saúde do cliente em queda',
+    icon: 'alarm',
+    color: 'rose',
+  },
+  CRM_OPPORTUNITY_AT_RISK: {
+    module: 'CRM',
+    label: 'Negócio em risco',
+    icon: 'alarm',
+    color: 'orange',
+  },
   CRM_PROPOSAL_VIEWED: {
     module: 'CRM',
     label: 'Proposta visualizada',
