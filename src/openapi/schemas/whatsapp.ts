@@ -1227,6 +1227,10 @@ export const WhatsAppPriceDTO = dto(
       description: 'Preço por mensagem de template, na moeda.',
       example: 0.3625,
     }),
+    liteUnitPrice: z.number().nullable().meta({
+      description:
+        'Preço de uma mensagem enviada pela Marketing Messages Lite (só Marketing); `null` = igual a `unitPrice`.',
+    }),
     validFrom: z.string().meta({
       description: 'Vale para envios a partir deste instante (ISO 8601).',
     }),

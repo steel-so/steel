@@ -1728,6 +1728,9 @@ model WhatsAppPrice {
   country     String               @default("BR") @db.VarChar(2)
   currency    String               @default("BRL") @db.VarChar(3)
   unitPrice   Decimal              @map("unit_price") @db.Decimal(12, 6)
+  /// Price of a message sent through Marketing Messages Lite (BRL); null =
+  /// same as `unitPrice` (nov: meta-followups).
+  liteUnitPrice Decimal?           @map("lite_unit_price") @db.Decimal(12, 6)
   validFrom   DateTime             @map("valid_from")
   reference   Boolean              @default(false)
   createdById String?              @map("created_by_id")
@@ -1761,6 +1764,8 @@ model WhatsAppCostEntry {
   quantity       Int                  @default(1)
   unitPrice      Decimal              @map("unit_price") @db.Decimal(12, 6)
   estimatedCost  Decimal              @map("estimated_cost") @db.Decimal(14, 6)
+  /// Sent through Marketing Messages Lite (nov: meta-followups).
+  viaMarketingLite Boolean            @default(false) @map("via_marketing_lite")
 
   workspace  Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)

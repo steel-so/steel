@@ -82,6 +82,34 @@ describe('resolveUnitPrice', () => {
     ).toMatchObject({ unitPrice: 0, source: 'none' })
   })
 
+  it('prices a Marketing Messages Lite send with the Lite price when set', () => {
+    const lite = [
+      { ...row('MARKETING', 0.4, '2026-01-01T00:00:00Z'), liteUnitPrice: 0.35 },
+      { ...row('MARKETING', 0.9, '2026-01-01T00:00:00Z', 'US') },
+      { ...row('UTILITY', 0.04, '2026-01-01T00:00:00Z'), liteUnitPrice: 0.01 },
+    ]
+    const at = new Date('2026-08-01T00:00:00Z')
+    expect(
+      resolveUnitPrice(lite, 'MARKETING', 'BR', at, { lite: true }),
+    ).toMatchObject({ unitPrice: 0.35, source: 'country' })
+    // Not a Lite send: the regular price.
+    expect(resolveUnitPrice(lite, 'MARKETING', 'BR', at)).toMatchObject({
+      unitPrice: 0.4,
+    })
+    // Country fallback also reads the Lite column.
+    expect(
+      resolveUnitPrice(lite, 'MARKETING', 'AR', at, { lite: true }),
+    ).toMatchObject({ unitPrice: 0.35, source: 'default-country' })
+    // No Lite price on the row: same as the regular one.
+    expect(
+      resolveUnitPrice(lite, 'MARKETING', 'US', at, { lite: true }),
+    ).toMatchObject({ unitPrice: 0.9 })
+    // Lite only exists for MARKETING.
+    expect(
+      resolveUnitPrice(lite, 'UTILITY', 'BR', at, { lite: true }),
+    ).toMatchObject({ unitPrice: 0.04 })
+  })
+
   it('never charges the service window', () => {
     expect(
       resolveUnitPrice(rows, 'SERVICE', 'BR', new Date('2026-08-01')),

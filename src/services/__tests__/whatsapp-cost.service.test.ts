@@ -49,7 +49,11 @@ function asRole(role: 'VIEWER' | 'MEMBER' | 'ADMIN' | 'OWNER') {
   )
 }
 
-function priceRow(category: string, unitPrice: number): WhatsAppPrice {
+function priceRow(
+  category: string,
+  unitPrice: number,
+  liteUnitPrice: number | null = null,
+): WhatsAppPrice {
   return {
     id: `p-${category}`,
     workspaceId: 'ws1',
@@ -57,6 +61,7 @@ function priceRow(category: string, unitPrice: number): WhatsAppPrice {
     country: 'BR',
     currency: 'BRL',
     unitPrice,
+    liteUnitPrice,
     validFrom: new Date('2026-01-01T00:00:00Z'),
     reference: false,
     createdById: null,
@@ -129,6 +134,46 @@ describe('WhatsAppCostService.record()', () => {
     })
     expect(costs.createEntry).toHaveBeenCalledWith(
       expect.objectContaining({ category: 'MARKETING', estimatedCost: 0.4 }),
+    )
+  })
+
+  it('prices a Marketing Messages Lite send with the Lite price', async () => {
+    costs.listPrices.mockResolvedValue(
+      ok([priceRow('MARKETING', 0.4, 0.35), priceRow('UTILITY', 0.05, null)]),
+    )
+    await WhatsAppCostService.record({
+      connection: meta,
+      kind: 'TEMPLATE',
+      to: '5511999990000',
+      context: {
+        source: 'BROADCAST',
+        templateCategory: 'MARKETING',
+        viaMarketingLite: true,
+      },
+      now: NOW,
+    })
+    expect(costs.createEntry).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        category: 'MARKETING',
+        unitPrice: 0.35,
+        estimatedCost: 0.35,
+        viaMarketingLite: true,
+      }),
+    )
+
+    // Without the Lite flag the regular price applies and the flag is off.
+    await WhatsAppCostService.record({
+      connection: meta,
+      kind: 'TEMPLATE',
+      to: '5511999990000',
+      context: { source: 'BROADCAST', templateCategory: 'MARKETING' },
+      now: NOW,
+    })
+    expect(costs.createEntry).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        unitPrice: 0.4,
+        viaMarketingLite: false,
+      }),
     )
   })
 
@@ -467,6 +512,22 @@ describe('prices', () => {
         entity: 'whatsapp_cost_price',
         action: 'create',
       }),
+    )
+  })
+
+  it('saves the Marketing Messages Lite price with the price', async () => {
+    costs.upsertPrice.mockResolvedValue(ok(priceRow('MARKETING', 0.4, 0.35)))
+    const dto = expectOk(
+      await WhatsAppCostService.createPrice('u1', 'ws1', {
+        category: 'MARKETING',
+        country: 'BR',
+        unitPrice: 0.4,
+        liteUnitPrice: 0.35,
+      }),
+    )
+    expect(dto.liteUnitPrice).toBe(0.35)
+    expect(costs.upsertPrice).toHaveBeenCalledWith(
+      expect.objectContaining({ unitPrice: 0.4, liteUnitPrice: 0.35 }),
     )
   })
 

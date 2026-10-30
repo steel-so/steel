@@ -59,6 +59,8 @@ export interface PriceRow {
   country: string
   currency: string
   unitPrice: number
+  /** Price of a Marketing Messages Lite message; null/absent = `unitPrice`. */
+  liteUnitPrice?: number | null
   validFrom: Date
 }
 
@@ -89,21 +91,27 @@ function latestAt(
  * Unit price of a category at `at`: the row of the recipient's country with
  * the latest `validFrom` not after `at`, else the same rule for the default
  * country (BR), else zero (`source: 'none'` — the entry still counts volume).
- * `SERVICE` is always free.
+ * `SERVICE` is always free. A Marketing Messages Lite send (`options.lite`)
+ * uses the row's `liteUnitPrice` when it has one, else the regular price.
  */
 export function resolveUnitPrice(
   rows: PriceRow[],
   category: WhatsAppCostCategory,
   country: string,
   at: Date,
+  options: { lite?: boolean } = {},
 ): ResolvedPrice {
   if (category === 'SERVICE') {
     return { unitPrice: 0, currency: DEFAULT_CURRENCY, source: 'country' }
   }
+  const priceOf = (row: PriceRow) =>
+    options.lite && category === 'MARKETING' && row.liteUnitPrice != null
+      ? row.liteUnitPrice
+      : row.unitPrice
   const exact = latestAt(rows, category, country, at)
   if (exact) {
     return {
-      unitPrice: exact.unitPrice,
+      unitPrice: priceOf(exact),
       currency: exact.currency,
       source: 'country',
     }
@@ -111,7 +119,7 @@ export function resolveUnitPrice(
   const fallback = latestAt(rows, category, DEFAULT_COUNTRY, at)
   if (fallback) {
     return {
-      unitPrice: fallback.unitPrice,
+      unitPrice: priceOf(fallback),
       currency: fallback.currency,
       source: 'default-country',
     }

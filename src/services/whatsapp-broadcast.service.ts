@@ -15,6 +15,7 @@ import {
   resolveBroadcastMediaKind,
 } from '@/src/lib/whatsapp/broadcast-media'
 import {
+  describeMarketingLiteError,
   fetchMarketingLiteAnalytics,
   metaCredentialsOf,
 } from '@/src/lib/whatsapp/marketing-lite'
@@ -305,9 +306,7 @@ export const WhatsAppBroadcastService = {
         broadcastId: id,
         reason: error instanceof Error ? error.message : 'unknown',
       })
-      return unavailable(
-        'Não foi possível consultar as métricas na Meta agora.',
-      )
+      return unavailable(describeMarketingLiteError(error))
     }
   },
 
@@ -608,6 +607,7 @@ export const WhatsAppBroadcastService = {
             source: 'BROADCAST',
             broadcastId: list.id,
             templateCategory: template.value.category,
+            ...(marketingLite ? { viaMarketingLite: true } : {}),
           },
         },
       )

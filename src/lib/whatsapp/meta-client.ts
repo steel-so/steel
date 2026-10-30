@@ -22,6 +22,18 @@ export interface MetaCredentials {
   accessToken: string
 }
 
+/** Error of a Graph API call: the message plus the codes callers classify. */
+export class MetaApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: number,
+  ) {
+    super(message)
+    this.name = 'MetaApiError'
+  }
+}
+
 export async function metaRequest<T>(
   credentials: MetaCredentials,
   path: string,
@@ -47,13 +59,17 @@ export async function metaRequest<T>(
     })
     // 131062: this message type cannot go to a BSUID recipient.
     if (body?.error?.code === 131062) {
-      throw new Error(
+      throw new MetaApiError(
         'Este tipo de mensagem não pode ser enviado a um contato sem telefone (usuário com username)',
+        response.status,
+        131062,
       )
     }
-    throw new Error(
+    throw new MetaApiError(
       body?.error?.message ??
         `Falha na requisição Meta API (${response.status})`,
+      response.status,
+      typeof body?.error?.code === 'number' ? body.error.code : undefined,
     )
   }
 

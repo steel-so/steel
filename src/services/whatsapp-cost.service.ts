@@ -63,6 +63,7 @@ function toPriceDTO(row: {
   country: string
   currency: string
   unitPrice: { toString(): string } | number
+  liteUnitPrice?: { toString(): string } | number | null
   validFrom: Date
   reference: boolean
 }): WhatsAppPriceDTO {
@@ -72,6 +73,7 @@ function toPriceDTO(row: {
     country: row.country,
     currency: row.currency,
     unitPrice: Number(row.unitPrice),
+    liteUnitPrice: row.liteUnitPrice == null ? null : Number(row.liteUnitPrice),
     validFrom: row.validFrom.toISOString(),
     reference: row.reference,
   }
@@ -83,6 +85,7 @@ function toPriceRows(
     country: string
     currency: string
     unitPrice: { toString(): string } | number
+    liteUnitPrice?: { toString(): string } | number | null
     validFrom: Date
   }[],
 ): PriceRow[] {
@@ -91,6 +94,7 @@ function toPriceRows(
     country: row.country,
     currency: row.currency,
     unitPrice: Number(row.unitPrice),
+    liteUnitPrice: row.liteUnitPrice == null ? null : Number(row.liteUnitPrice),
     validFrom: row.validFrom,
   }))
 }
@@ -188,7 +192,9 @@ export const WhatsAppCostService = {
           stored.ok && stored.value.length > 0
             ? toPriceRows(stored.value)
             : referenceRows()
-        const price = resolveUnitPrice(rows, category, country, now)
+        const price = resolveUnitPrice(rows, category, country, now, {
+          lite: context.viaMarketingLite === true,
+        })
         unitPrice = price.unitPrice
         currency = price.currency
       }
@@ -211,6 +217,7 @@ export const WhatsAppCostService = {
         quantity: 1,
         unitPrice,
         estimatedCost,
+        viaMarketingLite: paid && context.viaMarketingLite === true,
       })
       if (!saved.ok) {
         logger.warn(
@@ -347,6 +354,7 @@ export const WhatsAppCostService = {
       country: dto.country,
       currency: DEFAULT_CURRENCY,
       unitPrice: dto.unitPrice,
+      liteUnitPrice: dto.liteUnitPrice ?? null,
       validFrom: dto.validFrom ? new Date(dto.validFrom) : new Date(),
       reference: false,
       createdById: actorId,
@@ -363,6 +371,7 @@ export const WhatsAppCostService = {
         category: dto.category,
         country: dto.country,
         unitPrice: dto.unitPrice,
+        liteUnitPrice: dto.liteUnitPrice ?? null,
       },
     })
     return ok(toPriceDTO(saved.value))

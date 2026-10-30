@@ -147,4 +147,6 @@ export interface WhatsAppCostContext {
   aiCampaignId?: string | null
   conversationId?: string | null
   userId?: string | null
+  /** The send went through Marketing Messages Lite (priced separately). */
+  viaMarketingLite?: boolean
 }
