@@ -34,9 +34,13 @@ UI em `app/_components/whatsapp/chatbots/*` e `zap/chatbots`.
    duplicar quando o provedor repete o webhook).
 3. O worker (`processWhatsappChatbot`) chama `runStep`: o motor (`startFlow` /
    `resumeFlow`) devolve as saídas e o estado; o service envia (botões de
-   resposta quando o menu cabe em 3 opções de até 20 caracteres, senão lista
-   numerada; se o provedor recusa botões, cai para a lista), grava as mensagens,
-   publica no tempo real e trata o desfecho.
+   resposta quando o menu cabe em 3 opções de até 20 caracteres; senão, na
+   conexão **Meta**, uma **lista interativa** (`WhatsAppSend.list`, botão “Ver
+   opções”, até 10 linhas; título cortado em 24 caracteres com o texto inteiro
+   na descrição); no Z-API, ou se o provedor recusa botões/lista, a lista
+   numerada em texto), grava as mensagens, publica no tempo real e trata o
+   desfecho. A linha escolhida volta como `list_reply.id` = `bot:<no>:<opção>`,
+   o mesmo payload dos botões.
 4. A fila roda com **concorrência 1** (padrão do BullMQ): duas respostas do mesmo
    contato nunca avançam a sessão em paralelo. Não aumentar sem trocar por uma
    trava por sessão.
@@ -66,18 +70,48 @@ redirecionamento, 8 s, resposta até 256 KB. Não há cabeçalhos configuráveis
 segredo no desenho do fluxo (decisão: o `draft` é legível por todo membro do
 módulo). O simulador nunca chama a URL.
 
+## Métricas por bloco
+
+O motor devolve, em cada passo, os blocos **alcançados** (`entered`) e os que o
+contato **deixou** (`exited`: bloco seguinte, resposta válida ou a saída
+“inválida” desenhada). `runStep` soma isso por dia em
+`WhatsAppChatbotNodeStat` (`chatbotId` + `nodeId` + dia UTC), com falha só em
+log. `GET .../chatbots/{id}/stats` devolve os totais dos últimos 30 dias e o
+editor desenha “N entradas · M saídas” em cada bloco. Entradas menos saídas é onde
+a conversa ficou (passou a uma pessoa, desistiu, expirou). O job de retenção
+`cleanup-chatbot-node-stats` apaga dias com mais de 60. Os números seguem o
+`nodeId`: ao apagar e recriar um bloco, ele começa do zero.
+
+## Alertas de “conversa aguardando”
+
+Enquanto uma sessão está `RUNNING`, a conversa **não está aguardando**: o webhook
+`communication.conversation.waiting` e o aviso à fila da equipe saem do
+`WhatsAppWebhookService` só depois do `claimInbound` e apenas se nenhum bot
+assumiu a mensagem, e o lembrete de conversa sem atendente
+(`listUnattendedForReminder`) ignora conversas com sessão `RUNNING`. Quando o bot
+passa para a fila sem distribuir a um atendente, `handoffToHuman` dispara o
+evento (`returned_to_queue`) e avisa os membros da equipe.
+
+## Salvamento automático
+
+O editor salva o rascunho dois segundos após a última alteração
+(`useChatbotAutosave`): sem permissão, com fluxo que o schema rejeita ou com
+outro salvamento em andamento ele não roda, e um rascunho que falhou só é
+tentado de novo depois de mudar. O indicador sob o nome mostra salvo / não
+salvo / salvando / falhou. Não publica nada.
+
 ## API
 
 `/api/workspaces/{id}/whatsapp/chatbots[...]`: CRUD, `publish`, `validate`,
-`status`, `simulate`, `sessions` (ver OpenAPI). Leitura para membros do módulo;
+`status`, `simulate`, `sessions`, `stats` (ver OpenAPI). Leitura para membros do módulo;
 escrita para dono e administradores. Eventos auditados: `whatsapp_chatbot`
 (`create`, `update`, `publish`, `activate`, `pause`, `delete`) e
 `whatsapp_chatbot_session` (`finish`).
 
 ## Limitações conhecidas
 
-- Os alertas de "conversa aguardando" e o evento
-  `communication.conversation.waiting` disparam na abertura da conversa, mesmo
-  com o bot conduzindo.
-- Sem mídia nem lista interativa da Meta nos menus (botões ou texto numerado).
-- Sem autosave no editor; sem teste A/B de fluxos nem métricas por bloco.
+- Sem mídia nos menus; a lista interativa existe só na API oficial da Meta.
+- Sem teste A/B de fluxos. As métricas por bloco contam passagens, não pessoas, e
+  não separam versões publicadas.
+- Cabeçalhos e segredos nas integrações continuam fora, por decisão de
+  segurança (o rascunho é legível por todo membro do módulo).

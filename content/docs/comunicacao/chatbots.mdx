@@ -45,7 +45,7 @@ num bloco para configurá-lo no painel da direita.
 | Bloco | O que faz |
 | --- | --- |
 | **Mensagem** | Envia um texto |
-| **Menu** | Mostra opções (de 2 a 10). Até 3 opções curtas viram botões; as demais, uma lista numerada. Cada opção tem a sua saída |
+| **Menu** | Mostra opções (de 2 a 10). Até 3 opções curtas viram botões. Com mais opções (ou rótulos longos), a conexão da **API oficial da Meta** envia uma **lista interativa** (botão *Ver opções*, até 10 linhas); no Z-API, ou se a Meta recusar, vai uma lista numerada em texto. Cada opção tem a sua saída |
 | **Pergunta** | Faz uma pergunta e guarda a resposta numa variável. Valida texto, número, e-mail, telefone, CPF, CNPJ ou data. Resposta inválida repete a pergunta |
 | **Condição** | Compara uma variável (igual, contém, maior que, está vazia...) e segue pelo primeiro ramo que bater, ou pela saída **senão** |
 | **Definir variável** | Guarda um valor, que pode usar outras variáveis |
@@ -53,6 +53,12 @@ num bloco para configurá-lo no painel da direita.
 | **Passar para atendente** | Envia uma mensagem opcional e coloca a conversa na fila de uma equipe, com um atendente ou na fila geral |
 | **Passar para a IA** | Liga a IA de atendimento, com uma instrução opcional para a primeira resposta |
 | **Encerrar** | Envia uma despedida e, se quiser, fecha a conversa |
+
+**Números sobre o desenho.** Cada bloco mostra, nos últimos 30 dias, quantas
+vezes uma conversa **chegou** a ele (entradas) e quantas vezes **seguiu
+adiante** (saídas). A diferença é onde as conversas ficaram: passaram para uma
+pessoa, desistiram ou expiraram. Blocos sem passagem ficam sem número. Passe o
+mouse sobre o número para ver a explicação.
 
 Use `{{nome_da_variavel}}` em qualquer texto para inserir o que o cliente
 respondeu. Já existem `{{contact_name}}` (nome do contato), `{{contact_phone}}`
@@ -72,6 +78,16 @@ até 8 segundos. Não envie senhas no desenho do fluxo: use um endereço com um
 código difícil de adivinhar. Se a chamada falhar, o fluxo segue pela saída de
 **erro** (ou pela saída normal, se não houver).
 
+## Salvamento automático
+
+O rascunho se **salva sozinho** dois segundos depois da última alteração. Sob o
+nome do chatbot, uma linha mostra o estado: *Alterações não salvas — salvando em
+instantes*, *Salvando o rascunho…* e *Rascunho salvo automaticamente*. Se um bloco
+estiver com erro de preenchimento, o salvamento automático espera você
+corrigir (o botão **Salvar rascunho** diz o que falta). Se o salvamento
+automático falhar, a linha avisa e o botão continua funcionando. Salvar não
+publica nada: o chatbot ativo só muda ao **Publicar**.
+
 ## Testar, verificar e publicar
 
 - **Testar** abre um simulador: você faz o papel do cliente e vê o que o bot
@@ -90,7 +106,12 @@ o desenho não muda o chatbot ativo até a próxima publicação: a lista mostra
 
 ## Como o chatbot convive com a equipe e a IA
 
-- Enquanto o bot conduz a conversa, a **IA de atendimento não responde**.
+- Enquanto o bot conduz a conversa, a **IA de atendimento não responde** e a
+  conversa **não conta como aguardando atendente**: não há aviso de conversa na
+  fila, nem o lembrete de conversa sem atendente, nem o evento
+  `communication.conversation.waiting` dos webhooks. Quando o bot passa para
+  uma pessoa e a conversa cai na fila sem responsável, esses avisos saem nessa
+  hora.
 - Se uma pessoa **assume** a conversa (atribuição manual ou por distribuição),
   o fluxo para na hora.
 - Ao **passar para atendente**, a conversa entra na fila (ou vai para quem você
