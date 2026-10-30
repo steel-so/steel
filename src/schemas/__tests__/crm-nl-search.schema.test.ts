@@ -12,3 +12,11 @@ describe('CrmNlSearchSchema', () => {
     expect(CrmNlSearchSchema.safeParse({ query }).success).toBe(false)
   })
 })
+
+describe('entity filters share the question schema', () => {
+  it('accepts the same trimmed question for leads, people and companies', () => {
+    expect(CrmNlSearchSchema.parse({ query: ' leads quentes ' }).query).toBe(
+      'leads quentes',
+    )
+  })
+})

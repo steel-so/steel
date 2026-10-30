@@ -24,6 +24,19 @@ export const CrmCompanyRepository = {
     }
   },
 
+  /** Natural-language search (C10): a prebuilt `where`/`orderBy`, capped. */
+  async search(
+    where: Prisma.CrmCompanyWhereInput,
+    orderBy: Prisma.CrmCompanyOrderByWithRelationInput[],
+    take: number,
+  ): Promise<Result<CrmCompany[]>> {
+    try {
+      return ok(await prisma.crmCompany.findMany({ where, orderBy, take }))
+    } catch (error) {
+      return err(dbError('Failed to search CRM companies', error))
+    }
+  },
+
   async findById(id: string, workspaceId: string): Promise<Result<CrmCompany>> {
     try {
       const company = await prisma.crmCompany.findFirst({

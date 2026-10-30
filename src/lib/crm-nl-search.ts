@@ -122,7 +122,7 @@ export function buildOpportunityOrderBy(
   }
 }
 
-const BRL = new Intl.NumberFormat('pt-BR', {
+export const BRL = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
   maximumFractionDigits: 0,
@@ -142,7 +142,7 @@ const SORT_LABEL = {
   CLOSE_DATE_ASC: 'Fechamento mais próximo primeiro',
 } as const
 
-function dayLabel(n: number): string {
+export function dayLabel(n: number): string {
   return n === 1 ? '1 dia' : `${n} dias`
 }
 

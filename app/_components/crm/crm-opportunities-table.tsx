@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { CrmNlSearchBar } from '@/app/_components/crm/crm-nl-search-bar'
+import {
+  applyNlResult,
+  type CrmNlAnyResult,
+} from '@/app/_components/crm/crm-nl-search-result'
 import { CrmOpportunityLineItems } from '@/app/_components/crm/crm-opportunity-line-items'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { DataTable } from '@/app/_components/crm/table/data-table'
@@ -15,7 +19,6 @@ import {
   type LookupKind,
   useCrmWorkspaceLookups,
 } from '@/src/hooks/use-crm-workspace-lookups'
-import type { CrmNlSearchResultDTO } from '@/types/crm-nl-search'
 import type { CrmOpportunityDTO } from '@/types/crm-opportunity'
 
 const LOOKUP_KINDS: LookupKind[] = [
@@ -113,15 +116,15 @@ export function CrmOpportunitiesTable({
     () => [...COLUMNS, ...customFieldColumns(customFields ?? [])],
     [customFields],
   )
-  const [nlResult, setNlResult] = useState<CrmNlSearchResultDTO | null>(null)
-  const rows = useMemo(() => {
-    const matched = nlResult
-      ? new Set(nlResult.opportunities.map((opportunity) => opportunity.id))
-      : null
-    return items
-      .filter((item) => !matched || matched.has(item.id))
-      .map((item) => ({ ...item, ...(item.customFields ?? {}) }))
-  }, [items, nlResult])
+  const [nlResult, setNlResult] = useState<CrmNlAnyResult | null>(null)
+  const rows = useMemo(
+    () =>
+      applyNlResult(items, nlResult).map((item) => ({
+        ...item,
+        ...(item.customFields ?? {}),
+      })),
+    [items, nlResult],
+  )
 
   return (
     <div className='flex h-full min-h-0 flex-col'>

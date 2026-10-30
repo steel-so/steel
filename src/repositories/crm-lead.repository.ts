@@ -10,6 +10,7 @@ import type {
   CrmLeadQualification,
   CrmLeadReopening,
   CrmLeadStage,
+  Prisma,
 } from '@prisma/client'
 import { crmLeadReopenNotAllowed, notFound } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
@@ -17,6 +18,19 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
 
 export const CrmLeadRepository = {
+  /** Natural-language search (C10): a prebuilt `where`/`orderBy`, capped. */
+  async search(
+    where: Prisma.CrmLeadWhereInput,
+    orderBy: Prisma.CrmLeadOrderByWithRelationInput[],
+    take: number,
+  ): Promise<Result<CrmLead[]>> {
+    try {
+      return ok(await prisma.crmLead.findMany({ where, orderBy, take }))
+    } catch (error) {
+      return err(dbError('Failed to search CRM leads', error))
+    }
+  },
+
   async listByWorkspace(
     workspaceId: string,
     filters?: { stage?: CrmLeadStage },

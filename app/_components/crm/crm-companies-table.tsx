@@ -1,8 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { CnpjBulkDialog } from '@/app/_components/crm/cnpj/cnpj-bulk-dialog'
 import { CompanyEnrichmentPanel } from '@/app/_components/crm/cnpj/company-enrichment-panel'
+import { CrmNlSearchBar } from '@/app/_components/crm/crm-nl-search-bar'
+import {
+  applyNlResult,
+  type CrmNlAnyResult,
+} from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
@@ -101,44 +106,58 @@ export function CrmCompaniesTable({
   )
   // Achata `customFields.cf_<id>` para o topo do registro — as colunas
   // dinâmicas leem `row.original[col.key]` (`cf_<id>`) diretamente.
+  const [nlResult, setNlResult] = useState<CrmNlAnyResult | null>(null)
   const rows = useMemo(
-    () => items.map((item) => ({ ...item, ...(item.customFields ?? {}) })),
-    [items],
+    () =>
+      applyNlResult(items, nlResult).map((item) => ({
+        ...item,
+        ...(item.customFields ?? {}),
+      })),
+    [items, nlResult],
   )
 
   return (
-    <DataTable
-      columns={columns}
-      data={rows}
-      workspaceId={workspaceId}
-      slug={slug}
-      resource='companies'
-      createTitle='empresa'
-      lookups={lookups}
-      isLoading={isLoading}
-      searchPlaceholder='Buscar empresas…'
-      refetch={refetch}
-      headerExtra={
-        isPrivileged ? (
-          <CnpjBulkDialog workspaceId={workspaceId} onFinished={refetch} />
-        ) : null
-      }
-      renderRecordExtra={(record) => (
-        <div className='flex flex-col gap-4'>
-          <CompanyEnrichmentPanel
-            workspaceId={workspaceId}
-            companyId={record.id}
-            cnpj={record.cnpj}
-            canEdit={canEdit}
-            onApplied={refetch}
-          />
-          <CrmRecordTimeline
-            workspaceId={workspaceId}
-            companyId={record.id}
-            userMap={lookups.maps.users}
-          />
-        </div>
-      )}
-    />
+    <div className='flex h-full min-h-0 flex-col'>
+      <CrmNlSearchBar
+        workspaceId={workspaceId}
+        entity='companies'
+        onResult={setNlResult}
+      />
+      <div className='min-h-0 flex-1'>
+        <DataTable
+          columns={columns}
+          data={rows}
+          workspaceId={workspaceId}
+          slug={slug}
+          resource='companies'
+          createTitle='empresa'
+          lookups={lookups}
+          isLoading={isLoading}
+          searchPlaceholder='Buscar empresas…'
+          refetch={refetch}
+          headerExtra={
+            isPrivileged ? (
+              <CnpjBulkDialog workspaceId={workspaceId} onFinished={refetch} />
+            ) : null
+          }
+          renderRecordExtra={(record) => (
+            <div className='flex flex-col gap-4'>
+              <CompanyEnrichmentPanel
+                workspaceId={workspaceId}
+                companyId={record.id}
+                cnpj={record.cnpj}
+                canEdit={canEdit}
+                onApplied={refetch}
+              />
+              <CrmRecordTimeline
+                workspaceId={workspaceId}
+                companyId={record.id}
+                userMap={lookups.maps.users}
+              />
+            </div>
+          )}
+        />
+      </div>
+    </div>
   )
 }
