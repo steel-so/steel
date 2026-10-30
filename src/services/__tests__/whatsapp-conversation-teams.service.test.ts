@@ -17,6 +17,14 @@ import type { SearchDocumentHit } from '@/src/lib/search/search-document'
  */
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-copilot.service', () => ({
+  WhatsAppCopilotService: {
+    summarizeOnTransfer: vi.fn(async () => ({
+      ok: true,
+      value: { written: false, reason: 'disabled' },
+    })),
+  },
+}))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))
@@ -58,6 +66,7 @@ import { WhatsAppPhoneCallRepository } from '@/src/repositories/whatsapp-phone-c
 import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import { SearchService } from '../search.service'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
+import { WhatsAppCopilotService } from '../whatsapp-copilot.service'
 import { WhatsAppMessageService } from '../whatsapp-message.service'
 import { notifyWhatsAppUsers } from '../whatsapp-notify'
 import { WhatsAppPhoneCallService } from '../whatsapp-phone-call.service'
@@ -672,6 +681,87 @@ describe('SearchService.dropUnviewableConversations()', () => {
         hits,
       ),
       'DATABASE_ERROR',
+    )
+  })
+})
+
+describe('summary on transfer (Z7)', () => {
+  const summarize = vi.mocked(WhatsAppCopilotService.summarizeOnTransfer)
+
+  beforeEach(() => {
+    summarize.mockClear()
+  })
+
+  it('asks for a summary when a conversation moves to another agent', async () => {
+    conversation({ assignedUserId: 'ana', teamId: 'sales' })
+    expectOk(
+      await WhatsAppConversationService.assign('own', 'ws1', 'conv1', 'bia'),
+    )
+    expect(summarize).toHaveBeenCalledWith({
+      actorId: 'own',
+      workspaceId: 'ws1',
+      conversationId: 'conv1',
+    })
+  })
+
+  it('asks for a summary when someone else hands over a queue item', async () => {
+    conversation({ assignedUserId: null, teamId: 'sales' })
+    expectOk(
+      await WhatsAppConversationService.assign('lia', 'ws1', 'conv1', 'ana'),
+    )
+    expect(summarize).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not summarize when an agent picks a queue item up themselves', async () => {
+    conversation({ assignedUserId: null, teamId: 'sales' })
+    expectOk(
+      await WhatsAppConversationService.assign('ana', 'ws1', 'conv1', 'ana'),
+    )
+    expect(summarize).not.toHaveBeenCalled()
+  })
+
+  it('does not summarize when handing back to the queue or when nothing changed', async () => {
+    conversation({ assignedUserId: 'ana', teamId: 'sales' })
+    expectOk(
+      await WhatsAppConversationService.assign('ana', 'ws1', 'conv1', null),
+    )
+    conversation({ assignedUserId: 'ana', status: 'CLOSED' })
+    expectOk(
+      await WhatsAppConversationService.assign('own', 'ws1', 'conv1', 'ana'),
+    )
+    expect(summarize).not.toHaveBeenCalled()
+  })
+
+  it('asks for a summary when a conversation moves to another team, not out of one', async () => {
+    conversation({ assignedUserId: 'ana', teamId: null })
+    expectOk(
+      await WhatsAppConversationService.setTeam('own', 'ws1', 'conv1', 'sales'),
+    )
+    expect(summarize).toHaveBeenCalledTimes(1)
+
+    summarize.mockClear()
+    conversation({ assignedUserId: null, teamId: 'sales' })
+    expectOk(
+      await WhatsAppConversationService.setTeam('own', 'ws1', 'conv1', null),
+    )
+    expect(summarize).not.toHaveBeenCalled()
+  })
+
+  it('never lets a failing summary reach the transfer', async () => {
+    conversation({ assignedUserId: 'ana', teamId: 'sales' })
+    summarize.mockResolvedValueOnce(err(databaseError()))
+    expectOk(
+      await WhatsAppConversationService.assign('own', 'ws1', 'conv1', 'bia'),
+    )
+    conversation({ assignedUserId: 'ana', teamId: 'sales' })
+    summarize.mockRejectedValueOnce(new Error('boom'))
+    expectOk(
+      await WhatsAppConversationService.assign('own', 'ws1', 'conv1', 'bia'),
+    )
+    conversation({ assignedUserId: 'ana', teamId: 'sales' })
+    summarize.mockRejectedValueOnce('boom')
+    expectOk(
+      await WhatsAppConversationService.assign('own', 'ws1', 'conv1', 'bia'),
     )
   })
 })

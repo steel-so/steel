@@ -179,6 +179,7 @@ export const WhatsAppConversationEventDTO = dto(
         'SLA_BREACHED',
         'PIX_PAID',
         'CHATBOT_HANDOFF',
+        'TRANSFER_SUMMARY',
       ]),
       source: z.enum([
         'AGENT',
@@ -192,6 +193,7 @@ export const WhatsAppConversationEventDTO = dto(
         'SLA',
         'PIX',
         'CHATBOT',
+        'COPILOT',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',
@@ -706,6 +708,10 @@ export const WhatsAppSettingsDTO = dto(
     marketingLiteCloudFallback: z.boolean().meta({
       description:
         'Permite que a Meta use a Cloud API comum quando a Lite não consegue entregar (padrão: ligado).',
+    }),
+    copilotSummaryOnTransfer: z.boolean().meta({
+      description:
+        'Ao transferir a conversa para outro atendente ou equipe, o copiloto escreve um resumo na linha do tempo (padrão: desligado; consome a cota de IA do workspace).',
     }),
   }),
 )

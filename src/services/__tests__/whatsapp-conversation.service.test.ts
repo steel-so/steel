@@ -7,6 +7,14 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { err, ok } from '@/src/lib/result'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
+vi.mock('@/src/services/whatsapp-copilot.service', () => ({
+  WhatsAppCopilotService: {
+    summarizeOnTransfer: vi.fn(async () => ({
+      ok: true,
+      value: { written: false, reason: 'disabled' },
+    })),
+  },
+}))
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))

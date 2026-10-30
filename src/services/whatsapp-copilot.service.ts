@@ -7,6 +7,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import {
   buildTranscript,
   cleanCompletion,
+  formatTransferSummary,
   parseSummaryResponse,
   SUMMARY_JSON_SCHEMA,
   suggestSystemPrompt,
@@ -14,8 +15,13 @@ import {
   toneSystemPrompt,
   WHATSAPP_COPILOT_HISTORY_LIMIT,
 } from '@/src/lib/whatsapp/copilot'
+import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
+import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { UserRepository } from '@/src/repositories/user.repository'
+import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
 import type {
   AdjustWhatsAppCopilotToneDTO,
   SuggestWhatsAppCopilotReplyDTO,
@@ -126,17 +132,101 @@ async function complete(input: {
   }
 }
 
-function audit(actorId: string, conversationId: string, action: CopilotAction) {
+function audit(
+  actorId: string,
+  conversationId: string,
+  action: CopilotAction,
+  via?: 'transfer',
+) {
   auditMutation({
     entity: 'whatsapp_conversation',
     action: 'update',
     actorId,
     targetId: conversationId,
-    meta: { copilot: action },
+    meta: { copilot: action, ...(via ? { via } : {}) },
   })
 }
 
+export type TransferSummaryOutcome =
+  | { written: false; reason: 'disabled' | 'conversation_missing' }
+  | { written: true }
+
 export const WhatsAppCopilotService = {
+  /**
+   * Optional summary on transfer: when the workspace turned it on and a
+   * conversation changes hands (another agent, another team), writes the
+   * summary and pending items on the timeline as an internal event. Runs
+   * after the transfer and is **never awaited by it**: a failure (quota,
+   * provider, empty conversation) comes back as an `err` for the caller to
+   * log, and the transfer is already done. The AI call counts against the
+   * workspace quota like any other copilot call, attributed to the actor.
+   */
+  async summarizeOnTransfer(input: {
+    actorId: string
+    workspaceId: string
+    conversationId: string
+  }): Promise<Result<TransferSummaryOutcome>> {
+    const { actorId, workspaceId, conversationId } = input
+    const settings =
+      await WhatsAppSettingsRepository.findByWorkspace(workspaceId)
+    if (!settings.ok) return settings
+    if (!settings.value?.copilotSummaryOnTransfer) {
+      return ok({ written: false, reason: 'disabled' })
+    }
+
+    const conversation = await WhatsAppConversationRepository.findById(
+      conversationId,
+      workspaceId,
+    )
+    if (!conversation.ok) return conversation
+    if (!conversation.value || conversation.value.deletedAt) {
+      return ok({ written: false, reason: 'conversation_missing' })
+    }
+
+    const transcript = await loadTranscript(
+      conversationId,
+      conversation.value.clearedAt,
+    )
+    if (!transcript.ok) return transcript
+
+    const completion = await complete({
+      actorId,
+      workspaceId,
+      conversationId,
+      action: 'summary',
+      system: summarySystemPrompt(),
+      messages: [{ role: 'user', content: transcript.value }],
+      jsonSchema: { name: 'conversation_summary', schema: SUMMARY_JSON_SCHEMA },
+    })
+    if (!completion.ok) return completion
+
+    const parsed = parseSummaryResponse(completion.value)
+    if (!parsed) return err(whatsappCopilotFailed())
+
+    const event = await WhatsAppConversationEventRepository.create({
+      workspaceId,
+      conversationId,
+      kind: 'TRANSFER_SUMMARY',
+      source: 'COPILOT',
+      actorUserId: actorId,
+      reason: formatTransferSummary(parsed),
+    })
+    if (!event.ok) return event
+
+    audit(actorId, conversationId, 'summary', 'transfer')
+    const fresh = await WhatsAppConversationRepository.findById(
+      conversationId,
+      workspaceId,
+    )
+    if (fresh.ok && fresh.value) {
+      await publishWhatsAppEvent(workspaceId, {
+        type: 'conversation.updated',
+        conversation: toWhatsAppConversationDTO(fresh.value),
+      })
+    }
+    return ok({ written: true })
+  },
+
   async suggestReply(
     actorId: string,
     workspaceId: string,

@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   buildTranscript,
   cleanCompletion,
+  formatTransferSummary,
   parseSummaryResponse,
   suggestSystemPrompt,
   toneSystemPrompt,
   transcriptLine,
   WHATSAPP_COPILOT_TONES,
+  WHATSAPP_TRANSFER_SUMMARY_MAX,
 } from '@/src/lib/whatsapp/copilot'
 
 const base = {
@@ -120,5 +122,28 @@ describe('cleanCompletion', () => {
     expect(cleanCompletion('  "Olá!"  ')).toBe('Olá!')
     expect(cleanCompletion('```\nOlá!\n```')).toBe('Olá!')
     expect(cleanCompletion('Olá!')).toBe('Olá!')
+  })
+})
+
+describe('formatTransferSummary()', () => {
+  it('lists the pending items under the summary', () => {
+    expect(
+      formatTransferSummary({ summary: 'Resumo', pending: ['a', 'b'] }),
+    ).toBe('Resumo\n\nPendente:\n- a\n- b')
+  })
+
+  it('is just the summary when nothing is pending', () => {
+    expect(formatTransferSummary({ summary: 'Resumo', pending: [] })).toBe(
+      'Resumo',
+    )
+  })
+
+  it('cuts a verbose summary at the limit', () => {
+    const text = formatTransferSummary({
+      summary: 'x'.repeat(WHATSAPP_TRANSFER_SUMMARY_MAX + 500),
+      pending: [],
+    })
+    expect(text).toHaveLength(WHATSAPP_TRANSFER_SUMMARY_MAX)
+    expect(text.endsWith('…')).toBe(true)
   })
 })

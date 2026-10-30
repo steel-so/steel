@@ -73,6 +73,7 @@ import {
   whatsAppTeamMemberIds,
 } from './whatsapp-conversation-scope.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
+import { WhatsAppCopilotService } from './whatsapp-copilot.service'
 import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
   notifyWhatsAppUsers,
@@ -81,6 +82,39 @@ import {
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
+
+/**
+ * Z7: summary on transfer. Fire-and-forget on purpose — the AI call takes
+ * seconds and must never delay or fail the transfer that already happened.
+ * It is a no-op unless the workspace turned the setting on.
+ */
+function summarizeAfterTransfer(
+  actorId: string,
+  workspaceId: string,
+  conversationId: string,
+): void {
+  void WhatsAppCopilotService.summarizeOnTransfer({
+    actorId,
+    workspaceId,
+    conversationId,
+  })
+    .then((summary) => {
+      if (!summary.ok) {
+        logger.warn('whatsapp.copilot.transfer_summary_failed', {
+          component: 'WhatsAppConversationService',
+          conversationId,
+          reason: summary.error.code,
+        })
+      }
+    })
+    .catch((error) => {
+      logger.warn('whatsapp.copilot.transfer_summary_failed', {
+        component: 'WhatsAppConversationService',
+        conversationId,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    })
+}
 
 /** Máximo de conversas fechadas por inatividade a cada tick do job. */
 const AUTO_CLOSE_BATCH = 500
@@ -858,6 +892,17 @@ export const WhatsAppConversationService = {
       })
     }
 
+    // Picking an unassigned conversation up yourself is not a transfer: the
+    // summary is for someone who receives a conversation another person (or
+    // agent) was handling.
+    if (
+      assignedUserId &&
+      changed &&
+      (existing.assignedUserId !== null || assignedUserId !== actorId)
+    ) {
+      summarizeAfterTransfer(actorId, workspaceId, id)
+    }
+
     void indexSearchDocument('zap-conversation', workspaceId, id)
     return ok(dto)
   },
@@ -930,6 +975,8 @@ export const WhatsAppConversationService = {
         meta: { conversationId: id, teamId, via: 'team_queue' },
       })
     }
+
+    if (teamId) summarizeAfterTransfer(actorId, workspaceId, id)
 
     void indexSearchDocument('zap-conversation', workspaceId, id)
     return published

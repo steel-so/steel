@@ -82,7 +82,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/settings',
     tags: [TAG],
     summary: 'Atualizar configurações de atendimento',
-    description: `Upsert parcial (omitido = mantém). Fila e distribuição (ADR 0047): \`unassignedAlertNotifyInApp\`/\`unassignedAlertNotifyEmail\` e \`unassignedReminderMinutes\` (0–1440; 0 desliga o lembrete) controlam o aviso aos supervisores de conversas sem atendente; \`distributionMode\` (\`OFF\`, \`ROUND_ROBIN\`, \`LEAST_LOADED\`), \`distributionMaxOpenPerAgent\` (1–500 ou \`null\`), \`distributionOnlyAvailable\` e \`distributionRespectBusinessHours\` controlam a entrega automática da fila. \`autoCloseAfterHours\`: 0 desliga, máximo 720 (30 dias) — o worker fecha conversas sem mensagem além dessa janela. Alerta de sentimento: quando a média da conversa cai abaixo de \`sentimentAlertThreshold\` (-1 a 0), avisa os destinatários (in-app e/ou e-mail; vazio = todos os OWNER/ADMIN), opcionalmente atribui a conversa a \`sentimentAlertAssignToId\` e respeita \`sentimentAlertCooldownHours\` (1–168) por conversa. Destinatários e supervisor precisam ser membros do workspace. Marketing Messages Lite (Z11): \`marketingLiteEnabled\` (padrão desligado) envia os templates de marketing das conexões Meta pela API \`/marketing_messages\`; \`marketingLiteCloudFallback\` (padrão ligado) deixa a Meta usar a Cloud API comum quando a Lite não entrega. Auditado. ${PRIVILEGED}`,
+    description: 'Upsert parcial (omitido = mantém). Fila e distribuição (ADR 0047): `unassignedAlertNotifyInApp`/`unassignedAlertNotifyEmail` e `unassignedReminderMinutes` (0–1440; 0 desliga o lembrete) controlam o aviso aos supervisores de conversas sem atendente; `distributionMode` (`OFF`, `ROUND_ROBIN`, `LEAST_LOADED`), `distributionMaxOpenPerAgent` (1–500 ou `null`), `distributionOnlyAvailable` e `distributionRespectBusinessHours` controlam a entrega automática da fila. `autoCloseAfterHours`: 0 desliga, máximo 720 (30 dias) — o worker fecha conversas sem mensagem além dessa janela. Alerta de sentimento: quando a média da conversa cai abaixo de `sentimentAlertThreshold` (-1 a 0), avisa os destinatários (in-app e/ou e-mail; vazio = todos os OWNER/ADMIN), opcionalmente atribui a conversa a `sentimentAlertAssignToId` e respeita `sentimentAlertCooldownHours` (1–168) por conversa. Destinatários e supervisor precisam ser membros do workspace. Marketing Messages Lite (Z11): `marketingLiteEnabled` (padrão desligado) envia os templates de marketing das conexões Meta pela API `/marketing_messages`; `marketingLiteCloudFallback` (padrão ligado) deixa a Meta usar a Cloud API comum quando a Lite não entrega. Resumo na transferência (Z7): 'copilotSummaryOnTransfer` (padrão desligado) faz o copiloto escrever um resumo interno na linha do tempo quando a conversa muda de atendente ou de equipe; usa a cota de IA e nunca bloqueia a transferência. Auditado. ${PRIVILEGED}`,
     body: UpdateWhatsAppSettingsSchema,
     responses: {
       200: {
@@ -225,7 +225,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/media/upload',
     tags: [TAG],
     summary: 'Enviar mídia para mensagens',
-    description: `Hospeda um arquivo no MinIO (bucket \`whatsapp-media\`) e devolve a URL pública para usar em \`POST .../messages/media\`, transmissões e respostas rápidas. O corpo é o **binário cru** do arquivo (não multipart), com o \`Content-Type\` real (ex.: \`image/jpeg\`, \`application/pdf\`); máximo 16 MB, o limite do próprio WhatsApp. ${perm('conversations', 'CREATE')}`,
+    description: `Hospeda um arquivo no MinIO (bucket \`whatsapp-media\`) e devolve a URL pública para usar em \`POST .../messages/media\`, transmissões e respostas rápidas. O corpo é o **binário cru** do arquivo (não multipart), com o \`Content-Type\` real (ex.: \`image/jpeg\`, \`application/pdf\`); máximo 16 MB, o limite do próprio WhatsApp. $perm('conversations', 'CREATE')`,
     rateLimit: 'upload',
     body: {
       contentType: '*/*',
@@ -261,7 +261,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/costs',
     tags: [TAG],
     summary: 'Análise de custos',
-    description: `Custo estimado do WhatsApp no período (padrão: mês corrente, America/Sao_Paulo): totais, tendência diária, por conexão e provedor (Meta x Z-API lado a lado), categoria, origem, transmissão, campanha de IA e atendente, custo por conversa e por conversa resolvida, projeção do mês pelo ritmo atual e consumo do orçamento. Meta: valores **estimados** (categoria do template x tabela de preços do workspace no momento do envio); Z-API: mensalidade da conexão diluída no volume. O histórico começa no deploy do recurso. ${PRIVILEGED}`,
+    description: `Custo estimado do WhatsApp no período (padrão: mês corrente, America/Sao_Paulo): totais, tendência diária, por conexão e provedor (Meta x Z-API lado a lado), categoria, origem, transmissão, campanha de IA e atendente, custo por conversa e por conversa resolvida, projeção do mês pelo ritmo atual e consumo do orçamento. Meta: valores **estimados** (categoria do template x tabela de preços do workspace no momento do envio); Z-API: mensalidade da conexão diluída no volume. O histórico começa no deploy do recurso. $PRIVILEGED`,
     query: z.object({
       from: z.string().optional().meta({
         description: 'Início (AAAA-MM-DD, inclusivo).',
@@ -311,7 +311,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/costs/prices',
     tags: [TAG],
     summary: 'Tabela de preços da Meta',
-    description: `Preço por mensagem de template, por categoria e país, com vigência (\`validFrom\`). Na primeira consulta o workspace recebe valores de **referência** (marcados com \`reference: true\`) — a Meta muda os preços, então confira na sua conta Meta. ${PRIVILEGED}`,
+    description: `Preço por mensagem de template, por categoria e país, com vigência (\`validFrom\`). Na primeira consulta o workspace recebe valores de **referência** (marcados com \`reference: true\`) — a Meta muda os preços, então confira na sua conta Meta. $PRIVILEGED`,
     responses: {
       200: { description: 'Preços.', schema: z.array(WhatsAppPriceDTO) },
     },
@@ -322,7 +322,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/costs/prices',
     tags: [TAG],
     summary: 'Definir preço',
-    description: `Cria um preço válido a partir de \`validFrom\` (padrão: agora); envios anteriores mantêm o valor gravado. Mesma categoria, país e instante substitui o valor. País sem preço usa o de BR. Auditado. ${PRIVILEGED}`,
+    description: `Cria um preço válido a partir de \`validFrom\` (padrão: agora); envios anteriores mantêm o valor gravado. Mesma categoria, país e instante substitui o valor. País sem preço usa o de BR. Auditado. $PRIVILEGED`,
     body: CreateWhatsAppPriceSchema,
     responses: {
       201: { description: 'Preço salvo.', schema: WhatsAppPriceDTO },
@@ -334,7 +334,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/costs/prices/{priceId}',
     tags: [TAG],
     summary: 'Excluir preço',
-    description: `Remove uma linha da tabela (sem preço, o envio cai no valor de referência). Auditado. ${PRIVILEGED}`,
+    description: `Remove uma linha da tabela (sem preço, o envio cai no valor de referência). Auditado. $PRIVILEGED`,
     params: { priceId: 'Id do preço.' },
     responses: {
       200: { description: 'Preço excluído.', schema: DeletedIdDTO },
@@ -346,7 +346,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/costs/settings',
     tags: [TAG],
     summary: 'Orçamento e mensalidades',
-    description: `Orçamento mensal de custo e mensalidade fixa de cada conexão. ${PRIVILEGED}`,
+    description: `Orçamento mensal de custo e mensalidade fixa de cada conexão. $PRIVILEGED`,
     responses: {
       200: { description: 'Configurações.', schema: WhatsAppCostSettingsDTO },
     },
@@ -372,7 +372,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/ads',
     tags: [TAG],
     summary: 'Anúncios Click-to-WhatsApp: funil e ROI',
-    description: `Agrupa por anúncio (id da Meta) as mensagens que chegaram com o bloco \`referral\` de um anúncio Click-to-WhatsApp no período (padrão: mês corrente, America/Sao_Paulo): cliques, conversas, contatos, leads abertos, leads ganhos, receita (valor fechado dos leads ganhos), gasto digitado (proporcional aos dias do período), custo por conversa e por lead e ROI. Um anúncio com gasto e sem cliques também aparece. ${PRIVILEGED}`,
+    description: `Agrupa por anúncio (id da Meta) as mensagens que chegaram com o bloco \`referral\` de um anúncio Click-to-WhatsApp no período (padrão: mês corrente, America/Sao_Paulo): cliques, conversas, contatos, leads abertos, leads ganhos, receita (valor fechado dos leads ganhos), gasto digitado (proporcional aos dias do período), custo por conversa e por lead e ROI. Um anúncio com gasto e sem cliques também aparece. $PRIVILEGED`,
     query: z.object({
       from: z.string().optional().meta({
         description: 'Início (AAAA-MM-DD, inclusivo).',
@@ -396,7 +396,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/ads/export',
     tags: [TAG],
     summary: 'Exportar anúncios (CSV)',
-    description: `Mesma tabela da tela em CSV (UTF-8 com BOM). Aceita os mesmos filtros de \`GET .../whatsapp/ads\`. ${PRIVILEGED}`,
+    description: `Mesma tabela da tela em CSV (UTF-8 com BOM). Aceita os mesmos filtros de \`GET .../whatsapp/ads\`. $PRIVILEGED`,
     query: z.object({
       from: z.string().optional(),
       to: z.string().optional(),
@@ -416,7 +416,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/ads/settings',
     tags: [TAG],
     summary: 'Configuração da atribuição de anúncios',
-    description: `Chave geral (desligada por padrão) e regras de criação de lead. ${PRIVILEGED}`,
+    description: `Chave geral (desligada por padrão) e regras de criação de lead. $PRIVILEGED`,
     responses: {
       200: { description: 'Configuração.', schema: WhatsAppAdSettingsDTO },
     },
@@ -429,12 +429,10 @@ export const settingsRoutes: RouteConfig[] = [
     summary: 'Definir a atribuição de anúncios',
     description: `Upsert parcial (omitido = mantém; \`leadOwnerId: null\` limpa o responsável). Com \`enabled\` ligado o webhook da Meta guarda a origem de cada conversa que veio de um anúncio; com \`createLeads\` também abre (ou reaproveita, pelo telefone) um lead no CRM com \`channel = WhatsApp\` e a origem contendo o título do anúncio. O \`leadOwnerId\` precisa ser membro do workspace. Auditado. ${PRIVILEGED}`,
     body: UpdateWhatsAppAdSettingsSchema,
-    responses: {
-      200: {
+    responses: 
+      200: 
         description: 'Configuração salva.',
-        schema: WhatsAppAdSettingsDTO,
-      },
-    },
+        schema: WhatsAppAdSettingsDTO,,,
     errors: [...PRIVILEGED_ERRORS, 'VALIDATION_ERROR'],
   },
   {
@@ -442,7 +440,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/ads/spends',
     tags: [TAG],
     summary: 'Gastos com anúncios',
-    description: `Lançamentos de gasto digitados por anúncio e período (a Meta Ads não está conectada). ${PRIVILEGED}`,
+    description: `Lançamentos de gasto digitados por anúncio e período (a Meta Ads não está conectada). $PRIVILEGED`,
     responses: {
       200: { description: 'Gastos.', schema: z.array(WhatsAppAdSpendDTO) },
     },
@@ -453,7 +451,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/ads/spends',
     tags: [TAG],
     summary: 'Lançar gasto de um anúncio',
-    description: `Registra quanto foi gasto num anúncio (ou publicação) entre duas datas. O relatório divide o valor igualmente pelos dias do lançamento e soma só os dias que caem no período consultado. Auditado. ${PRIVILEGED}`,
+    description: `Registra quanto foi gasto num anúncio (ou publicação) entre duas datas. O relatório divide o valor igualmente pelos dias do lançamento e soma só os dias que caem no período consultado. Auditado. $PRIVILEGED`,
     body: CreateWhatsAppAdSpendSchema,
     responses: {
       201: { description: 'Gasto registrado.', schema: WhatsAppAdSpendDTO },
@@ -465,7 +463,7 @@ export const settingsRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/ads/spends/{spendId}',
     tags: [TAG],
     summary: 'Excluir gasto de anúncio',
-    description: `Remove um lançamento de gasto. Auditado. ${PRIVILEGED}`,
+    description: `Remove um lançamento de gasto. Auditado. $PRIVILEGED`,
     params: { spendId: 'Id do lançamento de gasto.' },
     responses: {
       200: { description: 'Gasto excluído.', schema: DeletedIdDTO },
