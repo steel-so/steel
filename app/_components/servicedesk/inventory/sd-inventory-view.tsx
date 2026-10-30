@@ -11,6 +11,16 @@ import {
   SdFilterSelect,
 } from '@/app/_components/servicedesk/table/sd-data-table'
 import { useSdTableState } from '@/app/_components/servicedesk/table/use-sd-table-state'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Sheet,
   SheetContent,
@@ -20,9 +30,11 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { notify } from '@/lib/notify'
 import {
   useSdInventoryAlerts,
   useSdInventoryDevice,
+  useSdInventoryDeviceActions,
   useSdInventoryDevices,
   useSdInventorySoftware,
   useSdInventorySummary,
@@ -51,6 +63,12 @@ function worstDisk(device: SdInventoryDeviceDTO): number | null {
   return Math.max(...device.disks.map((d) => d.usedPercent))
 }
 
+const SOURCE_TONE = {
+  AGENT: SD_TONE.indigo,
+  SNMP: SD_TONE.teal,
+  DISCOVERY: SD_TONE.slate,
+} as const
+
 const DEVICE_COLUMNS: SdColumn<SdInventoryDeviceDTO>[] = [
   {
     id: 'hostname',
@@ -69,7 +87,7 @@ const DEVICE_COLUMNS: SdColumn<SdInventoryDeviceDTO>[] = [
     id: 'source',
     header: 'Origem',
     cell: (d) => (
-      <SdPill className={d.source === 'AGENT' ? SD_TONE.indigo : SD_TONE.teal}>
+      <SdPill className={SOURCE_TONE[d.source]}>
         {SD_INVENTORY_SOURCE_LABEL[d.source]}
       </SdPill>
     ),
@@ -132,6 +150,10 @@ const DEVICE_COLUMNS: SdColumn<SdInventoryDeviceDTO>[] = [
 const SOURCE_OPTIONS = [
   { value: 'AGENT', label: 'Agente' },
   { value: 'SNMP', label: 'SNMP' },
+  { value: 'DISCOVERY', label: 'Descoberto' },
+]
+const DISCOVERED_FILTER_OPTIONS = [
+  { value: 'true', label: 'Descobertos, para adotar' },
 ]
 const ALERT_FILTER_OPTIONS = [{ value: 'true', label: 'Com alerta aberto' }]
 const STALE_FILTER_OPTIONS = [{ value: 'true', label: 'Sem sinal' }]
@@ -142,11 +164,12 @@ function SummaryCards({ workspaceId }: { workspaceId: string }) {
     { label: 'Equipamentos', value: data?.total },
     { label: 'Com agente', value: data?.agents },
     { label: 'Descobertos por SNMP', value: data?.snmp },
+    { label: 'Para adotar', value: data?.discovered },
     { label: 'Sem sinal', value: data?.stale },
     { label: 'Alertas abertos', value: data?.openAlerts },
   ]
   return (
-    <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5'>
+    <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6'>
       {items.map((item) => (
         <div
           key={item.label}
@@ -166,18 +189,120 @@ function SummaryCards({ workspaceId }: { workspaceId: string }) {
   )
 }
 
+/** Escolhe outro equipamento para juntar ao que está aberto (mescla manual). */
+function MergeDialog({
+  workspaceId,
+  device,
+  onClose,
+}: {
+  workspaceId: string
+  device: { id: string; hostname: string }
+  onClose: () => void
+}) {
+  const [term, setTerm] = useState('')
+  const search = term.trim() || undefined
+  const managed = useSdInventoryDevices(workspaceId, {
+    search,
+    page: 1,
+    pageSize: 8,
+  })
+  const discovered = useSdInventoryDevices(workspaceId, {
+    search,
+    page: 1,
+    pageSize: 8,
+    discovered: true,
+  })
+  const actions = useSdInventoryDeviceActions(workspaceId)
+  const options = [
+    ...(managed.data?.items ?? []),
+    ...(discovered.data?.items ?? []),
+  ].filter((item) => item.id !== device.id)
+
+  function mergeIn(other: SdInventoryDeviceDTO) {
+    actions.merge.mutate(
+      { deviceId: other.id, data: { intoId: device.id } },
+      {
+        onSuccess: () => {
+          notify.success(
+            `"${other.hostname}" foi juntado a "${device.hostname}"`,
+          )
+          onClose()
+        },
+        onError: (err) => notify.error(err),
+      },
+    )
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent className='sm:max-w-lg'>
+        <DialogHeader>
+          <DialogTitle>Juntar outro equipamento</DialogTitle>
+          <DialogDescription>
+            Escolha a ficha que é a mesma máquina de "{device.hostname}". Ela
+            passa a aparecer dentro desta e deixa de duplicar o item da CMDB.
+          </DialogDescription>
+        </DialogHeader>
+        <Input
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder='Nome, série ou IP…'
+          autoFocus
+        />
+        {options.length === 0 ? (
+          <p className='text-muted-foreground text-sm'>
+            Nenhum equipamento encontrado.
+          </p>
+        ) : (
+          <ul className='flex max-h-72 flex-col divide-y divide-border overflow-y-auto rounded-lg border border-border'>
+            {options.map((item) => (
+              <li
+                key={item.id}
+                className='flex items-center justify-between gap-3 px-3 py-2'
+              >
+                <div className='flex min-w-0 flex-col'>
+                  <span className='truncate font-medium text-sm'>
+                    {item.hostname}
+                  </span>
+                  <span className='truncate text-muted-foreground text-xs'>
+                    {SD_INVENTORY_SOURCE_LABEL[item.source]}
+                    {item.ipAddresses[0] ? ` · ${item.ipAddresses[0]}` : ''}
+                    {item.serialNumber ? ` · ${item.serialNumber}` : ''}
+                  </span>
+                </div>
+                <Button
+                  size='xs'
+                  variant='outline'
+                  disabled={actions.merge.isPending}
+                  onClick={() => mergeIn(item)}
+                >
+                  Juntar
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function DeviceSheet({
   workspaceId,
   slug,
   deviceId,
+  isAdmin,
   onClose,
 }: {
   workspaceId: string
   slug: string
   deviceId: string | null
+  isAdmin: boolean
   onClose: () => void
 }) {
   const { data, isLoading } = useSdInventoryDevice(workspaceId, deviceId)
+  const actions = useSdInventoryDeviceActions(workspaceId)
+  const [merging, setMerging] = useState(false)
   return (
     <Sheet open={!!deviceId} onOpenChange={(open) => (open ? null : onClose())}>
       <SheetContent className='w-full gap-0 overflow-y-auto sm:max-w-xl'>
@@ -197,6 +322,46 @@ function DeviceSheet({
           </div>
         ) : (
           <div className='flex flex-col gap-5 p-4'>
+            {data.managed ? null : (
+              <div className='flex flex-col gap-2 rounded-lg border border-border bg-muted px-3 py-2.5'>
+                <p className='text-sm'>
+                  Descoberto por ping/ARP e ainda sem gestão: não está na CMDB.
+                </p>
+                {isAdmin ? (
+                  <div className='flex gap-2'>
+                    <Button
+                      size='xs'
+                      disabled={actions.adopt.isPending}
+                      onClick={() =>
+                        actions.adopt.mutate(data.id, {
+                          onSuccess: () =>
+                            notify.success('Equipamento adotado'),
+                          onError: (err) => notify.error(err),
+                        })
+                      }
+                    >
+                      Adotar
+                    </Button>
+                    <Button
+                      size='xs'
+                      variant='outline'
+                      disabled={actions.dismiss.isPending}
+                      onClick={() =>
+                        actions.dismiss.mutate(data.id, {
+                          onSuccess: () => {
+                            notify.success('Equipamento descartado')
+                            onClose()
+                          },
+                          onError: (err) => notify.error(err),
+                        })
+                      }
+                    >
+                      Descartar
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            )}
             <dl>
               <SdInfoRow label='Sistema'>
                 {[data.osName, data.osVersion, data.arch]
@@ -240,6 +405,61 @@ function DeviceSheet({
                 ) : null}
               </SdInfoRow>
             </dl>
+
+            <section className='flex flex-col gap-2'>
+              <div className='flex items-center justify-between gap-2'>
+                <h4 className='font-semibold text-sm'>
+                  Mesma máquina em outras origens ({data.mergedSources.length})
+                </h4>
+                {isAdmin ? (
+                  <Button
+                    size='xs'
+                    variant='outline'
+                    onClick={() => setMerging(true)}
+                  >
+                    Juntar outro
+                  </Button>
+                ) : null}
+              </div>
+              {data.mergedSources.length === 0 ? (
+                <p className='text-muted-foreground text-xs'>
+                  Nenhuma. Quando o agente e o SNMP enxergam a mesma máquina
+                  (mesma série, MAC ou nome), as fichas são juntadas sozinhas.
+                </p>
+              ) : (
+                <ul className='flex flex-col gap-1.5'>
+                  {data.mergedSources.map((source) => (
+                    <li
+                      key={source.id}
+                      className='flex items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2 text-sm'
+                    >
+                      <span className='flex min-w-0 items-center gap-2'>
+                        <Badge variant='outline'>
+                          {SD_INVENTORY_SOURCE_LABEL[source.source]}
+                        </Badge>
+                        <span className='truncate'>{source.hostname}</span>
+                      </span>
+                      {isAdmin ? (
+                        <Button
+                          size='xs'
+                          variant='ghost'
+                          disabled={actions.unmerge.isPending}
+                          onClick={() =>
+                            actions.unmerge.mutate(source.id, {
+                              onSuccess: () =>
+                                notify.success('Mescla desfeita'),
+                              onError: (err) => notify.error(err),
+                            })
+                          }
+                        >
+                          Separar
+                        </Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
             <section className='flex flex-col gap-2'>
               <h4 className='font-semibold text-sm'>Discos</h4>
@@ -298,6 +518,13 @@ function DeviceSheet({
           </div>
         )}
       </SheetContent>
+      {merging && data ? (
+        <MergeDialog
+          workspaceId={workspaceId}
+          device={{ id: data.id, hostname: data.hostname }}
+          onClose={() => setMerging(false)}
+        />
+      ) : null}
     </Sheet>
   )
 }
@@ -305,19 +532,26 @@ function DeviceSheet({
 function DevicesTab({
   workspaceId,
   slug,
+  isAdmin,
 }: {
   workspaceId: string
   slug: string
+  isAdmin: boolean
 }) {
   const table = useSdTableState({
     sort: 'hostname',
-    filters: { source: '', hasAlert: '', stale: '' },
+    filters: { source: '', hasAlert: '', stale: '', discovered: '' },
   })
   const { data, isLoading, error } = useSdInventoryDevices(workspaceId, {
     search: table.q || undefined,
     page: table.page,
     pageSize: table.pageSize,
-    source: (table.filters.source || undefined) as 'AGENT' | 'SNMP' | undefined,
+    source: (table.filters.source || undefined) as
+      | 'AGENT'
+      | 'SNMP'
+      | 'DISCOVERY'
+      | undefined,
+    discovered: table.filters.discovered === 'true',
     hasAlert: table.filters.hasAlert === 'true',
     stale: table.filters.stale === 'true',
   })
@@ -360,6 +594,14 @@ function DevicesTab({
                 allLabel='Todos'
               />
             </SdFilterField>
+            <SdFilterField label='Situação'>
+              <SdFilterSelect
+                value={table.filters.discovered}
+                onChange={(v) => table.setFilter('discovered', v)}
+                options={DISCOVERED_FILTER_OPTIONS}
+                allLabel='Geridos'
+              />
+            </SdFilterField>
             <SdFilterField label='Contato'>
               <SdFilterSelect
                 value={table.filters.stale}
@@ -371,12 +613,13 @@ function DevicesTab({
           </>
         }
         emptyTitle='Nenhum equipamento no inventário'
-        emptyDescription='Instale o agente nas máquinas ou cadastre uma faixa de rede para a varredura SNMP em Ajustes > Inventário.'
+        emptyDescription='Instale o agente nas máquinas ou cadastre uma faixa de rede para a varredura SNMP ou a descoberta por ping em Ajustes > Inventário.'
       />
       <DeviceSheet
         workspaceId={workspaceId}
         slug={slug}
         deviceId={detailId}
+        isAdmin={isAdmin}
         onClose={() => setDetailId(null)}
       />
     </>
@@ -522,9 +765,11 @@ function SoftwareTab({ workspaceId }: { workspaceId: string }) {
 export function SdInventoryView({
   workspaceId,
   slug,
+  isAdmin,
 }: {
   workspaceId: string
   slug: string
+  isAdmin: boolean
 }) {
   return (
     <div className='flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4'>
@@ -536,7 +781,7 @@ export function SdInventoryView({
           <TabsTrigger value='software'>Software</TabsTrigger>
         </TabsList>
         <TabsContent value='devices'>
-          <DevicesTab workspaceId={workspaceId} slug={slug} />
+          <DevicesTab workspaceId={workspaceId} slug={slug} isAdmin={isAdmin} />
         </TabsContent>
         <TabsContent value='alerts'>
           <AlertsTab workspaceId={workspaceId} />

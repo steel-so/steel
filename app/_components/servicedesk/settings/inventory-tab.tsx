@@ -28,6 +28,9 @@ import { NEXT_PUBLIC_URL } from '@/lib/env/env'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
+  useSdInventoryAgentReleases,
+  useSdInventoryDiscoveryMutations,
+  useSdInventoryDiscoveryRanges,
   useSdInventorySettings,
   useSdInventorySettingsMutation,
   useSdInventoryTargetMutations,
@@ -35,7 +38,13 @@ import {
   useSdInventoryTokenMutations,
   useSdInventoryTokens,
 } from '@/src/hooks/use-sd-inventory'
-import type { SdInventorySnmpTargetDTO } from '@/types/sd-inventory'
+import type {
+  SdInventoryDiscoveryRangeDTO,
+  SdInventorySnmpTargetDTO,
+  SdSnmpAuthProtocolDTO,
+  SdSnmpPrivProtocolDTO,
+  SdSnmpVersionDTO,
+} from '@/types/sd-inventory'
 import {
   ConfirmDeleteButton,
   EmptyState,
@@ -137,6 +146,29 @@ function TokenDialog({
   )
 }
 
+function AgentReleasesNote({
+  workspaceId,
+  enabled,
+}: {
+  workspaceId: string
+  enabled: boolean
+}) {
+  const { data } = useSdInventoryAgentReleases(workspaceId, enabled)
+  if (!enabled) return null
+  const releases = data ?? []
+  return (
+    <p className='text-muted-foreground text-xs'>
+      {releases.length === 0
+        ? 'Nenhuma versão do agente foi publicada ainda: os agentes seguem na versão instalada.'
+        : `Versão publicada: ${releases
+            .map(
+              (release) => `${release.version} (${release.os}/${release.arch})`,
+            )
+            .join(', ')}.`}
+    </p>
+  )
+}
+
 function SettingsBlock({
   workspaceId,
   canEdit,
@@ -209,6 +241,14 @@ function SettingsBlock({
             disabled={!canEdit || !data}
             onCheckedChange={(checked) => save({ syncConfigItems: checked })}
           />
+          <ToggleRow
+            label='Atualizar o agente automaticamente'
+            description='Os agentes consultam a versão publicada, baixam o novo binário, conferem o SHA-256 e voltam à versão anterior se o novo não iniciar. Desligado por padrão.'
+            checked={data?.agentAutoUpdate ?? false}
+            disabled={!canEdit || !data}
+            onCheckedChange={(checked) => save({ agentAutoUpdate: checked })}
+          />
+          <AgentReleasesNote workspaceId={workspaceId} enabled={canEdit} />
         </div>
       )}
     </SettingsSection>
@@ -346,10 +386,35 @@ const INTERVAL_OPTIONS = [
   { value: '10080', label: 'Uma vez por semana' },
 ]
 
+const SNMP_VERSION_OPTIONS = [
+  { value: 'V2C', label: 'SNMP v2c (community)' },
+  { value: 'V3', label: 'SNMP v3 (usuário e chaves)' },
+]
+const AUTH_PROTOCOL_OPTIONS = [
+  { value: 'SHA', label: 'SHA' },
+  { value: 'SHA256', label: 'SHA-256' },
+  { value: 'SHA384', label: 'SHA-384' },
+  { value: 'SHA512', label: 'SHA-512' },
+  { value: 'SHA224', label: 'SHA-224' },
+  { value: 'MD5', label: 'MD5 (legado)' },
+]
+const PRIV_PROTOCOL_OPTIONS = [
+  { value: 'AES', label: 'AES-128' },
+  { value: 'AES256B', label: 'AES-256 (Blumenthal)' },
+  { value: 'AES256R', label: 'AES-256 (Reeder)' },
+  { value: 'DES', label: 'DES (legado)' },
+]
+
 interface TargetValues {
   name: string
   ranges: string
+  snmpVersion: SdSnmpVersionDTO
   community: string
+  v3Username: string
+  v3AuthProtocol: SdSnmpAuthProtocolDTO
+  v3AuthKey: string
+  v3PrivProtocol: SdSnmpPrivProtocolDTO
+  v3PrivKey: string
   port: number
   intervalMinutes: string
   active: boolean
@@ -369,7 +434,13 @@ function TargetDialog({
   const [values, setValues] = useState<TargetValues>({
     name: target?.name ?? '',
     ranges: target?.ranges.join('\n') ?? '',
+    snmpVersion: target?.snmpVersion ?? 'V2C',
     community: '',
+    v3Username: target?.v3Username ?? '',
+    v3AuthProtocol: target?.v3AuthProtocol ?? 'SHA',
+    v3AuthKey: '',
+    v3PrivProtocol: target?.v3PrivProtocol ?? 'AES',
+    v3PrivKey: '',
     port: target?.port ?? 161,
     intervalMinutes: String(target?.intervalMinutes ?? 1440),
     active: target?.active ?? true,
@@ -377,10 +448,21 @@ function TargetDialog({
   function set<K extends keyof TargetValues>(key: K, value: TargetValues[K]) {
     setValues((current) => ({ ...current, [key]: value }))
   }
+  const isV3 = values.snmpVersion === 'V3'
+  const keptV3 = target?.snmpVersion === 'V3'
+  const keptV2c = target?.snmpVersion === 'V2C'
+  const authReady =
+    values.v3AuthKey.length >= 8 ||
+    (keptV3 && !!target?.hasV3AuthKey && values.v3AuthKey === '')
+  const credentialsReady = isV3
+    ? values.v3Username.trim() !== '' &&
+      (values.v3AuthKey === '' || values.v3AuthKey.length >= 8) &&
+      (values.v3PrivKey === '' || values.v3PrivKey.length >= 8) &&
+      // Privacidade exige autenticação (chave nova ou já guardada).
+      (values.v3PrivKey === '' || authReady)
+    : values.community !== '' || keptV2c
   const valid =
-    values.name.trim() !== '' &&
-    values.ranges.trim() !== '' &&
-    (target !== null || values.community !== '')
+    values.name.trim() !== '' && values.ranges.trim() !== '' && credentialsReady
 
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
@@ -390,8 +472,8 @@ function TargetDialog({
             {target ? 'Editar alvo SNMP' : 'Novo alvo de varredura SNMP'}
           </DialogTitle>
           <DialogDescription>
-            O worker varre as faixas na frequência escolhida, em SNMP v2c, e
-            leva o que encontrar para o inventário e a CMDB.
+            O worker varre as faixas na frequência escolhida, em SNMP v2c ou v3,
+            e leva o que encontrar para o inventário e a CMDB.
           </DialogDescription>
         </DialogHeader>
         <div className='flex max-h-[60vh] flex-col gap-4 overflow-y-auto'>
@@ -415,23 +497,101 @@ function TargetDialog({
               placeholder={'10.0.0.0/24\n192.168.1.10'}
             />
           </FieldBlock>
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            <FieldBlock
-              label='Community'
-              hint={
-                target
-                  ? 'Deixe em branco para manter a atual.'
-                  : 'Guardada cifrada; não volta a ser exibida.'
+          <FieldBlock label='Versão do SNMP'>
+            <SimpleSelect
+              value={values.snmpVersion}
+              onChange={(value) =>
+                value && set('snmpVersion', value as SdSnmpVersionDTO)
               }
-            >
-              <Input
-                type='password'
-                autoComplete='off'
-                value={values.community}
-                onChange={(e) => set('community', e.target.value)}
-                maxLength={128}
-              />
-            </FieldBlock>
+              options={SNMP_VERSION_OPTIONS}
+            />
+          </FieldBlock>
+          {isV3 ? (
+            <div className='flex flex-col gap-4 rounded-lg border border-border p-3'>
+              <FieldBlock label='Usuário'>
+                <Input
+                  aria-label='Usuário SNMPv3'
+                  autoComplete='off'
+                  value={values.v3Username}
+                  onChange={(e) => set('v3Username', e.target.value)}
+                  maxLength={64}
+                />
+              </FieldBlock>
+              <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                <FieldBlock label='Autenticação'>
+                  <SimpleSelect
+                    value={values.v3AuthProtocol}
+                    onChange={(value) =>
+                      value &&
+                      set('v3AuthProtocol', value as SdSnmpAuthProtocolDTO)
+                    }
+                    options={AUTH_PROTOCOL_OPTIONS}
+                  />
+                </FieldBlock>
+                <FieldBlock
+                  label='Chave de autenticação'
+                  hint={
+                    target?.hasV3AuthKey
+                      ? 'Em branco mantém a atual. Mínimo de 8 caracteres.'
+                      : 'Opcional; mínimo de 8 caracteres. Guardada cifrada.'
+                  }
+                >
+                  <Input
+                    type='password'
+                    autoComplete='off'
+                    value={values.v3AuthKey}
+                    onChange={(e) => set('v3AuthKey', e.target.value)}
+                    maxLength={128}
+                  />
+                </FieldBlock>
+                <FieldBlock label='Privacidade'>
+                  <SimpleSelect
+                    value={values.v3PrivProtocol}
+                    onChange={(value) =>
+                      value &&
+                      set('v3PrivProtocol', value as SdSnmpPrivProtocolDTO)
+                    }
+                    options={PRIV_PROTOCOL_OPTIONS}
+                  />
+                </FieldBlock>
+                <FieldBlock
+                  label='Chave de privacidade'
+                  hint={
+                    target?.hasV3PrivKey
+                      ? 'Em branco mantém a atual. Mínimo de 8 caracteres.'
+                      : 'Opcional; exige a chave de autenticação. Guardada cifrada.'
+                  }
+                >
+                  <Input
+                    type='password'
+                    autoComplete='off'
+                    value={values.v3PrivKey}
+                    onChange={(e) => set('v3PrivKey', e.target.value)}
+                    maxLength={128}
+                  />
+                </FieldBlock>
+              </div>
+            </div>
+          ) : null}
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+            {isV3 ? null : (
+              <FieldBlock
+                label='Community'
+                hint={
+                  keptV2c
+                    ? 'Deixe em branco para manter a atual.'
+                    : 'Guardada cifrada; não volta a ser exibida.'
+                }
+              >
+                <Input
+                  type='password'
+                  autoComplete='off'
+                  value={values.community}
+                  onChange={(e) => set('community', e.target.value)}
+                  maxLength={128}
+                />
+              </FieldBlock>
+            )}
             <FieldBlock label='Porta'>
               <NumberInput
                 value={values.port}
@@ -490,9 +650,20 @@ function TargetsBlock({ workspaceId }: { workspaceId: string }) {
         .map((line) => line.trim())
         .filter(Boolean),
       port: values.port,
+      snmpVersion: values.snmpVersion,
       intervalMinutes: Number(values.intervalMinutes),
       active: values.active,
-      ...(values.community ? { community: values.community } : {}),
+      ...(values.snmpVersion === 'V2C'
+        ? values.community
+          ? { community: values.community }
+          : {}
+        : {
+            v3Username: values.v3Username.trim(),
+            v3AuthProtocol: values.v3AuthProtocol,
+            v3PrivProtocol: values.v3PrivProtocol,
+            ...(values.v3AuthKey ? { v3AuthKey: values.v3AuthKey } : {}),
+            ...(values.v3PrivKey ? { v3PrivKey: values.v3PrivKey } : {}),
+          }),
     }
     try {
       if (dialog?.mode === 'edit') {
@@ -502,10 +673,7 @@ function TargetsBlock({ workspaceId }: { workspaceId: string }) {
         })
         notify.success('Alvo salvo')
       } else {
-        await mutations.create.mutateAsync({
-          ...payload,
-          community: values.community,
-        })
+        await mutations.create.mutateAsync(payload)
         notify.success('Alvo criado — a primeira varredura roda em instantes')
       }
       setDialog(null)
@@ -561,7 +729,8 @@ function TargetsBlock({ workspaceId }: { workspaceId: string }) {
                   ) : null}
                 </div>
                 <span className='font-mono text-muted-foreground text-xs'>
-                  {target.ranges.join(' · ')}
+                  {target.ranges.join(' · ')} ·{' '}
+                  {target.snmpVersion === 'V3' ? 'SNMPv3' : 'SNMPv2c'}
                 </span>
                 <span className='text-muted-foreground text-xs'>
                   Última varredura {formatInventoryDateTime(target.lastRunAt)} ·{' '}
@@ -625,9 +794,258 @@ function TargetsBlock({ workspaceId }: { workspaceId: string }) {
   )
 }
 
+const DISCOVERY_INTERVAL_OPTIONS = INTERVAL_OPTIONS
+
+interface DiscoveryValues {
+  name: string
+  cidr: string
+  intervalMinutes: string
+  enabled: boolean
+}
+
+function DiscoveryDialog({
+  range,
+  saving,
+  onClose,
+  onSave,
+}: {
+  range: SdInventoryDiscoveryRangeDTO | null
+  saving: boolean
+  onClose: () => void
+  onSave: (values: DiscoveryValues) => void
+}) {
+  const [values, setValues] = useState<DiscoveryValues>({
+    name: range?.name ?? '',
+    cidr: range?.cidr ?? '',
+    intervalMinutes: String(range?.intervalMinutes ?? 1440),
+    enabled: range?.enabled ?? false,
+  })
+  function set<K extends keyof DiscoveryValues>(
+    key: K,
+    value: DiscoveryValues[K],
+  ) {
+    setValues((current) => ({ ...current, [key]: value }))
+  }
+  return (
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent className='sm:max-w-lg'>
+        <DialogHeader>
+          <DialogTitle>
+            {range ? 'Editar faixa de descoberta' : 'Nova faixa de descoberta'}
+          </DialogTitle>
+          <DialogDescription>
+            O worker faz ping e consulta a tabela ARP da faixa. O que responder
+            entra no inventário como "descoberto" e só vai para a CMDB quando
+            você adota.
+          </DialogDescription>
+        </DialogHeader>
+        <div className='flex flex-col gap-4'>
+          <FieldBlock label='Nome'>
+            <Input
+              value={values.name}
+              onChange={(e) => set('name', e.target.value)}
+              maxLength={120}
+              placeholder='VLAN de estações'
+              autoFocus
+            />
+          </FieldBlock>
+          <FieldBlock
+            label='Faixa de endereços'
+            hint='CIDR de rede privada (ex.: 10.0.1.0/24), até 1.024 endereços. Redes públicas são recusadas.'
+          >
+            <Input
+              value={values.cidr}
+              onChange={(e) => set('cidr', e.target.value)}
+              maxLength={64}
+              placeholder='10.0.1.0/24'
+            />
+          </FieldBlock>
+          <FieldBlock
+            label='Frequência'
+            hint='No máximo 40 sondas por segundo.'
+          >
+            <SimpleSelect
+              value={values.intervalMinutes}
+              onChange={(value) => value && set('intervalMinutes', value)}
+              options={DISCOVERY_INTERVAL_OPTIONS}
+            />
+          </FieldBlock>
+          <ToggleRow
+            label='Varrer esta faixa'
+            description='Nada é sondado enquanto estiver desligado.'
+            checked={values.enabled}
+            onCheckedChange={(checked) => set('enabled', checked)}
+          />
+        </div>
+        <DialogFooter>
+          <Button size='sm' variant='outline' onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            size='sm'
+            disabled={
+              values.name.trim() === '' || values.cidr.trim() === '' || saving
+            }
+            onClick={() => onSave(values)}
+          >
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+type DiscoveryDialogState =
+  | { mode: 'create' }
+  | { mode: 'edit'; range: SdInventoryDiscoveryRangeDTO }
+  | null
+
+function DiscoveryBlock({ workspaceId }: { workspaceId: string }) {
+  const { data, isLoading, error } = useSdInventoryDiscoveryRanges(workspaceId)
+  const mutations = useSdInventoryDiscoveryMutations(workspaceId)
+  const [dialog, setDialog] = useState<DiscoveryDialogState>(null)
+  const ranges = data ?? []
+
+  async function save(values: DiscoveryValues) {
+    const payload = {
+      name: values.name.trim(),
+      cidr: values.cidr.trim(),
+      intervalMinutes: Number(values.intervalMinutes),
+      enabled: values.enabled,
+    }
+    try {
+      if (dialog?.mode === 'edit') {
+        await mutations.update.mutateAsync({
+          id: dialog.range.id,
+          data: payload,
+        })
+        notify.success('Faixa salva')
+      } else {
+        await mutations.create.mutateAsync(payload)
+        notify.success('Faixa criada')
+      }
+      setDialog(null)
+    } catch (err) {
+      notify.error(err)
+    }
+  }
+
+  return (
+    <SettingsSection
+      title='Descoberta por ping e ARP'
+      description='Acha computadores e equipamentos que não têm agente nem SNMP. Cada faixa só é varrida com a opção ligada, e os achados esperam a sua adoção.'
+      actions={
+        <Button size='sm' onClick={() => setDialog({ mode: 'create' })}>
+          <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+          Nova faixa
+        </Button>
+      }
+    >
+      {error ? (
+        <EmptyState>{error.message}</EmptyState>
+      ) : !isLoading && ranges.length === 0 ? (
+        <EmptyState>
+          Nenhuma faixa cadastrada. A descoberta só roda nas redes que você
+          liberar aqui.
+        </EmptyState>
+      ) : (
+        <ul className='flex flex-col gap-2'>
+          {ranges.map((range) => (
+            <li
+              key={range.id}
+              className={cn(
+                'flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border p-3',
+                !range.enabled && 'opacity-60',
+              )}
+            >
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <span className='font-medium text-sm'>{range.name}</span>
+                  {range.enabled ? null : (
+                    <Badge variant='secondary'>Desligada</Badge>
+                  )}
+                  {range.lastStatus ? (
+                    <Badge
+                      variant={
+                        range.lastStatus === 'FAILED'
+                          ? 'destructive'
+                          : 'outline'
+                      }
+                    >
+                      {SD_INVENTORY_SCAN_STATUS_LABEL[range.lastStatus]}
+                    </Badge>
+                  ) : null}
+                </div>
+                <span className='font-mono text-muted-foreground text-xs'>
+                  {range.cidr}
+                </span>
+                <span className='text-muted-foreground text-xs'>
+                  Última varredura {formatInventoryDateTime(range.lastRunAt)} ·{' '}
+                  {range.lastFound} achado(s) de {range.lastProbed} endereços ·
+                  próxima {formatInventoryDateTime(range.nextRunAt)}
+                </span>
+                {range.lastError ? (
+                  <span className='text-destructive text-xs'>
+                    {range.lastError}
+                  </span>
+                ) : null}
+              </div>
+              <div className='flex shrink-0 items-center gap-1'>
+                <Button
+                  size='xs'
+                  variant='outline'
+                  disabled={mutations.scanNow.isPending || !range.enabled}
+                  onClick={() =>
+                    mutations.scanNow.mutate(range.id, {
+                      onSuccess: () => notify.success('Descoberta na fila'),
+                      onError: (err) => notify.error(err),
+                    })
+                  }
+                >
+                  <SteelIcon icon={RefreshIcon} strokeWidth={2} />
+                  Varrer agora
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon-xs'
+                  aria-label={`Editar ${range.name}`}
+                  onClick={() => setDialog({ mode: 'edit', range })}
+                >
+                  <SteelIcon icon={PencilEdit02Icon} strokeWidth={2} />
+                </Button>
+                <ConfirmDeleteButton
+                  title='Excluir faixa'
+                  description={`"${range.name}" deixa de ser varrida. Os equipamentos já descobertos continuam no inventário.`}
+                  pending={mutations.remove.isPending}
+                  onConfirm={() =>
+                    mutations.remove.mutate(range.id, {
+                      onError: (err) => notify.error(err),
+                    })
+                  }
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {dialog ? (
+        <DiscoveryDialog
+          range={dialog.mode === 'edit' ? dialog.range : null}
+          saving={mutations.create.isPending || mutations.update.isPending}
+          onClose={() => setDialog(null)}
+          onSave={save}
+        />
+      ) : null}
+    </SettingsSection>
+  )
+}
+
 /**
  * Aba "Inventário" das configurações do ServiceDesk: limiares de alerta, os
- * tokens do agente (mostrados uma única vez) e os alvos da varredura SNMP.
+ * tokens do agente (mostrados uma única vez), os alvos da varredura SNMP e as
+ * faixas da descoberta por ping/ARP.
  * Tokens e alvos são só de admin; os demais veem os limiares em leitura.
  */
 export function SdInventoryTab() {
@@ -640,6 +1058,7 @@ export function SdInventoryTab() {
         <>
           <TokensBlock workspaceId={workspaceId} />
           <TargetsBlock workspaceId={workspaceId} />
+          <DiscoveryBlock workspaceId={workspaceId} />
         </>
       ) : null}
     </div>

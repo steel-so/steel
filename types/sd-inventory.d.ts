@@ -4,7 +4,16 @@
  * na criação e a community nunca volta (só `hasCommunity`).
  */
 
-export type SdInventorySourceDTO = 'AGENT' | 'SNMP'
+export type SdInventorySourceDTO = 'AGENT' | 'SNMP' | 'DISCOVERY'
+export type SdSnmpVersionDTO = 'V2C' | 'V3'
+export type SdSnmpAuthProtocolDTO =
+  | 'MD5'
+  | 'SHA'
+  | 'SHA224'
+  | 'SHA256'
+  | 'SHA384'
+  | 'SHA512'
+export type SdSnmpPrivProtocolDTO = 'DES' | 'AES' | 'AES256B' | 'AES256R'
 export type SdInventoryAlertKindDTO = 'DISK' | 'RAM'
 export type SdInventoryAlertStatusDTO = 'OPEN' | 'RESOLVED'
 export type SdInventoryScanStatusDTO = 'SUCCESS' | 'PARTIAL' | 'FAILED'
@@ -39,6 +48,12 @@ export interface SdInventoryDeviceDTO {
   agentVersion: string | null
   configItemId: string | null
   snmpTargetId: string | null
+  /** `false` = descoberto por ping/ARP, ainda sem gestão (não está na CMDB). */
+  managed: boolean
+  /** Ficha principal quando esta é a mesma máquina vista por outra origem. */
+  mergedIntoId: string | null
+  /** Depois de um "desfazer mescla" a mescla automática não repete. */
+  mergeLocked: boolean
   firstSeenAt: string
   lastSeenAt: string
   /** Sem contato há mais que o configurado em `staleAfterDays`. */
@@ -66,8 +81,17 @@ export interface SdInventoryAlertDTO {
   resolvedAt: string | null
 }
 
+export interface SdInventoryMergedSourceDTO {
+  id: string
+  hostname: string
+  source: SdInventorySourceDTO
+}
+
 export interface SdInventoryDeviceDetailDTO extends SdInventoryDeviceDTO {
   configItemName: string | null
+  mergedIntoHostname: string | null
+  /** Fichas de outras origens que são a mesma máquina. */
+  mergedSources: SdInventoryMergedSourceDTO[]
   software: SdInventorySoftwareDTO[]
   alerts: SdInventoryAlertDTO[]
 }
@@ -83,6 +107,8 @@ export interface SdInventorySummaryDTO {
   total: number
   agents: number
   snmp: number
+  /** Descobertos por ping/ARP e ainda não adotados. */
+  discovered: number
   stale: number
   openAlerts: number
 }
@@ -93,6 +119,8 @@ export interface SdInventorySettingsDTO {
   staleAfterDays: number
   syncConfigItems: boolean
   defaultTypeId: string | null
+  /** O agente consulta a versão e se atualiza sozinho. */
+  agentAutoUpdate: boolean
 }
 
 export interface SdInventoryTokenDTO {
@@ -116,7 +144,13 @@ export interface SdInventorySnmpTargetDTO {
   intervalMinutes: number
   active: boolean
   customerId: string | null
+  snmpVersion: SdSnmpVersionDTO
   hasCommunity: boolean
+  v3Username: string | null
+  v3AuthProtocol: SdSnmpAuthProtocolDTO | null
+  v3PrivProtocol: SdSnmpPrivProtocolDTO | null
+  hasV3AuthKey: boolean
+  hasV3PrivKey: boolean
   nextRunAt: string | null
   lastRunAt: string | null
   lastStatus: SdInventoryScanStatusDTO | null
@@ -132,4 +166,45 @@ export interface SdInventoryIngestResultDTO {
   created: boolean
   openedAlerts: number
   resolvedAlerts: number
+}
+
+export interface SdInventoryDiscoveryRangeDTO {
+  id: string
+  name: string
+  cidr: string
+  enabled: boolean
+  intervalMinutes: number
+  customerId: string | null
+  nextRunAt: string | null
+  lastRunAt: string | null
+  lastStatus: SdInventoryScanStatusDTO | null
+  lastProbed: number
+  lastFound: number
+  lastError: string | null
+  createdAt: string
+}
+
+export interface SdInventoryAgentReleaseDTO {
+  id: string
+  version: string
+  os: string
+  arch: string
+  sha256: string
+  sizeBytes: number
+  active: boolean
+  publishedAt: string
+}
+
+/** Resposta de `GET /api/servicedesk/inventory/agent/version`. */
+export interface SdInventoryAgentVersionDTO {
+  updateAvailable: boolean
+  version: string | null
+  sha256: string | null
+  size: number | null
+  downloadPath: string | null
+}
+
+export interface SdInventoryAdoptResultDTO {
+  deviceId: string
+  configItemId: string | null
 }

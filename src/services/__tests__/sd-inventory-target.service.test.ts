@@ -56,6 +56,7 @@ const NOW = new Date('2026-10-20T12:00:00.000Z')
 const createDto = {
   name: 'Rede da matriz',
   ranges: ['10.0.0.0/30'],
+  snmpVersion: 'V2C' as const,
   community: 'public',
   port: 161,
   intervalMinutes: 60,
@@ -160,8 +161,180 @@ describe('admin CRUD', () => {
       }),
     )
     expect(targets.update).toHaveBeenLastCalledWith('tgt-1', WS, {
+      snmpVersion: 'V2C',
       communityEnc: 'enc(novo)',
+      v3Username: null,
+      v3AuthProtocol: null,
+      v3AuthKeyEnc: null,
+      v3PrivProtocol: null,
+      v3PrivKeyEnc: null,
     })
+  })
+
+  it('creates an SNMPv3 target with encrypted keys and an empty community', async () => {
+    expectOk(
+      await SdInventoryTargetService.create('u1', WS, {
+        ...createDto,
+        snmpVersion: 'V3',
+        community: undefined,
+        v3Username: 'monitor',
+        v3AuthKey: 'auth-secret-1',
+        v3PrivKey: 'priv-secret-1',
+        v3PrivProtocol: 'AES256B',
+      }),
+    )
+    expect(targets.create.mock.calls[0]?.[0]).toMatchObject({
+      snmpVersion: 'V3',
+      communityEnc: '',
+      v3Username: 'monitor',
+      v3AuthProtocol: 'SHA',
+      v3AuthKeyEnc: 'enc(auth-secret-1)',
+      v3PrivProtocol: 'AES256B',
+      v3PrivKeyEnc: 'enc(priv-secret-1)',
+    })
+  })
+
+  it('creates an SNMPv3 noAuthNoPriv target without keys', async () => {
+    expectOk(
+      await SdInventoryTargetService.create('u1', WS, {
+        ...createDto,
+        snmpVersion: 'V3',
+        community: undefined,
+        v3Username: 'monitor',
+      }),
+    )
+    expect(targets.create.mock.calls[0]?.[0]).toMatchObject({
+      v3AuthProtocol: null,
+      v3AuthKeyEnc: null,
+      v3PrivProtocol: null,
+      v3PrivKeyEnc: null,
+    })
+  })
+
+  it('rejects credentials that do not fit the chosen version', async () => {
+    expectErr(
+      await SdInventoryTargetService.create('u1', WS, {
+        ...createDto,
+        community: undefined,
+      }),
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    )
+    expectErr(
+      await SdInventoryTargetService.create('u1', WS, {
+        ...createDto,
+        snmpVersion: 'V3',
+        community: undefined,
+      }),
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    )
+    expectErr(
+      await SdInventoryTargetService.create('u1', WS, {
+        ...createDto,
+        snmpVersion: 'V3',
+        community: undefined,
+        v3Username: 'monitor',
+        v3PrivKey: 'priv-secret-1',
+      }),
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    )
+    expect(targets.create).not.toHaveBeenCalled()
+  })
+
+  it('switches a v2c target to v3 and back, keeping stored keys when omitted', async () => {
+    expectOk(
+      await SdInventoryTargetService.update('u1', WS, 'tgt-1', {
+        snmpVersion: 'V3',
+        v3Username: 'monitor',
+        v3AuthKey: 'auth-secret-1',
+      }),
+    )
+    expect(targets.update).toHaveBeenLastCalledWith(
+      'tgt-1',
+      WS,
+      expect.objectContaining({
+        snmpVersion: 'V3',
+        communityEnc: '',
+        v3AuthKeyEnc: 'enc(auth-secret-1)',
+      }),
+    )
+
+    // Alvo v3 já guardado: editar só o usuário mantém as chaves e protocolos.
+    const stored = createFakeSdInventoryTarget({
+      snmpVersion: 'V3',
+      communityEnc: '',
+      v3Username: 'monitor',
+      v3AuthProtocol: 'SHA256',
+      v3AuthKeyEnc: 'enc(a)',
+      v3PrivProtocol: 'AES',
+      v3PrivKeyEnc: 'enc(p)',
+    })
+    targets.findById.mockResolvedValue(ok(stored))
+    expectOk(
+      await SdInventoryTargetService.update('u1', WS, 'tgt-1', {
+        v3Username: 'outro',
+      }),
+    )
+    expect(targets.update).toHaveBeenLastCalledWith(
+      'tgt-1',
+      WS,
+      expect.objectContaining({
+        v3Username: 'outro',
+        v3AuthProtocol: 'SHA256',
+        v3AuthKeyEnc: 'enc(a)',
+        v3PrivProtocol: 'AES',
+        v3PrivKeyEnc: 'enc(p)',
+      }),
+    )
+
+    // De volta ao v2c sem community nova: recusa; com ela, limpa o v3.
+    expectErr(
+      await SdInventoryTargetService.update('u1', WS, 'tgt-1', {
+        snmpVersion: 'V2C',
+      }),
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    )
+    expectOk(
+      await SdInventoryTargetService.update('u1', WS, 'tgt-1', {
+        snmpVersion: 'V2C',
+        community: 'public',
+      }),
+    )
+    expect(targets.update).toHaveBeenLastCalledWith(
+      'tgt-1',
+      WS,
+      expect.objectContaining({
+        communityEnc: 'enc(public)',
+        v3Username: null,
+        v3AuthKeyEnc: null,
+      }),
+    )
+  })
+
+  it('refuses to switch to v3 without a username', async () => {
+    expectErr(
+      await SdInventoryTargetService.update('u1', WS, 'tgt-1', {
+        snmpVersion: 'V3',
+      }),
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    )
+  })
+
+  it('refuses privacy without authentication on an existing v3 target', async () => {
+    targets.findById.mockResolvedValue(
+      ok(
+        createFakeSdInventoryTarget({
+          snmpVersion: 'V3',
+          communityEnc: '',
+          v3Username: 'monitor',
+        }),
+      ),
+    )
+    expectErr(
+      await SdInventoryTargetService.update('u1', WS, 'tgt-1', {
+        v3PrivKey: 'priv-secret-1',
+      }),
+      'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
+    )
   })
 
   it('does not update or delete a target of another workspace', async () => {
@@ -450,7 +623,7 @@ describe('runScan', () => {
     expect(scan).not.toHaveBeenCalled()
   })
 
-  it('records a failure when the stored community cannot be decrypted', async () => {
+  it('records a failure when the stored credentials cannot be decrypted', async () => {
     vi.mocked(decryptConnectionSecret).mockRejectedValueOnce(
       new Error('bad key'),
     )
@@ -461,9 +634,51 @@ describe('runScan', () => {
     expect(targets.markRun).toHaveBeenCalledWith(
       'tgt-1',
       expect.objectContaining({
-        lastError: 'Não foi possível ler a community guardada',
+        lastError: 'Não foi possível ler as credenciais SNMP guardadas',
       }),
     )
+  })
+
+  it('opens a v3 session with the decrypted keys', async () => {
+    targets.findByIdUnscoped.mockResolvedValue(
+      ok(
+        createFakeSdInventoryTarget({
+          snmpVersion: 'V3',
+          communityEnc: '',
+          v3Username: 'monitor',
+          v3AuthProtocol: 'SHA256',
+          v3AuthKeyEnc: 'enc(auth-secret-1)',
+          v3PrivProtocol: 'AES',
+          v3PrivKeyEnc: 'enc(priv-secret-1)',
+        }),
+      ),
+    )
+    expectOk(await SdInventoryTargetService.runScan('tgt-1', { now: NOW }))
+    expect(scan.mock.calls[0]?.[2]).toMatchObject({
+      v3: {
+        username: 'monitor',
+        authProtocol: 'SHA256',
+        authKey: 'auth-secret-1',
+        privProtocol: 'AES',
+        privKey: 'priv-secret-1',
+      },
+    })
+  })
+
+  it('opens a v3 session without keys (noAuthNoPriv)', async () => {
+    targets.findByIdUnscoped.mockResolvedValue(
+      ok(
+        createFakeSdInventoryTarget({
+          snmpVersion: 'V3',
+          communityEnc: '',
+          v3Username: 'monitor',
+        }),
+      ),
+    )
+    expectOk(await SdInventoryTargetService.runScan('tgt-1', { now: NOW }))
+    expect(scan.mock.calls[0]?.[2]).toMatchObject({
+      v3: { username: 'monitor', authKey: null, privKey: null },
+    })
   })
 
   it('propagates a failure to record the run', async () => {

@@ -55,6 +55,7 @@
     "ai:index": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/ai-index.ts",
     "backup:workspace": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/trigger-workspace-backup.ts",
     "backup:full": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/trigger-full-backup.ts",
+    "inventory-agent:publish": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/publish-inventory-agent.ts",
     "restore:full": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/restore-full-backup.ts",
     "restore:workspace": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/restore-workspace-backup.ts",
     "backup:decrypt": "tsx --tsconfig tsconfig.worker.json --env-file=.env scripts/decrypt-backup-file.ts",

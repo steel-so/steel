@@ -1,4 +1,6 @@
 import type {
+  SdInventoryAgentRelease,
+  SdInventoryDiscoveryRange,
   SdInventorySettings,
   SdInventorySnmpTarget,
   SdInventoryToken,
@@ -11,9 +13,11 @@ import type {
   SdInventorySoftwareGroup,
 } from '@/src/repositories/sd-inventory-device.repository'
 import type {
+  SdInventoryAgentReleaseDTO,
   SdInventoryAlertDTO,
   SdInventoryDeviceDetailDTO,
   SdInventoryDeviceDTO,
+  SdInventoryDiscoveryRangeDTO,
   SdInventoryDiskDTO,
   SdInventorySettingsDTO,
   SdInventorySnmpTargetDTO,
@@ -29,6 +33,7 @@ export const SD_INVENTORY_DEFAULT_SETTINGS: SdInventorySettingsDTO = {
   staleAfterDays: 7,
   syncConfigItems: true,
   defaultTypeId: null,
+  agentAutoUpdate: false,
 }
 
 export function toSdInventorySettingsDTO(
@@ -41,6 +46,7 @@ export function toSdInventorySettingsDTO(
     staleAfterDays: settings.staleAfterDays,
     syncConfigItems: settings.syncConfigItems,
     defaultTypeId: settings.defaultTypeId,
+    agentAutoUpdate: settings.agentAutoUpdate,
   }
 }
 
@@ -94,6 +100,9 @@ export function toSdInventoryDeviceDTO(
     agentVersion: row.agentVersion,
     configItemId: row.configItemId,
     snmpTargetId: row.snmpTargetId,
+    managed: row.managed,
+    mergedIntoId: row.mergedIntoId,
+    mergeLocked: row.mergeLocked,
     firstSeenAt: row.firstSeenAt.toISOString(),
     lastSeenAt: row.lastSeenAt.toISOString(),
     stale: isInventoryStale(
@@ -129,6 +138,12 @@ export function toSdInventoryDeviceDetailDTO(
   return {
     ...toSdInventoryDeviceDTO(row, options),
     configItemName: row.configItem?.name ?? null,
+    mergedIntoHostname: row.mergedInto?.hostname ?? null,
+    mergedSources: row.mergedFrom.map((child) => ({
+      id: child.id,
+      hostname: child.hostname,
+      source: child.source,
+    })),
     software: row.software.map((item) => ({
       id: item.id,
       name: item.name,
@@ -187,12 +202,53 @@ export function toSdInventorySnmpTargetDTO(
     intervalMinutes: target.intervalMinutes,
     active: target.active,
     customerId: target.customerId,
+    snmpVersion: target.snmpVersion,
     hasCommunity: target.communityEnc !== '',
+    v3Username: target.v3Username,
+    v3AuthProtocol: target.v3AuthProtocol,
+    v3PrivProtocol: target.v3PrivProtocol,
+    hasV3AuthKey: !!target.v3AuthKeyEnc,
+    hasV3PrivKey: !!target.v3PrivKeyEnc,
     nextRunAt: target.nextRunAt?.toISOString() ?? null,
     lastRunAt: target.lastRunAt?.toISOString() ?? null,
     lastStatus: target.lastStatus,
     lastFound: target.lastFound,
     lastError: target.lastError,
     createdAt: target.createdAt.toISOString(),
+  }
+}
+
+export function toSdInventoryDiscoveryRangeDTO(
+  range: SdInventoryDiscoveryRange,
+): SdInventoryDiscoveryRangeDTO {
+  return {
+    id: range.id,
+    name: range.name,
+    cidr: range.cidr,
+    enabled: range.enabled,
+    intervalMinutes: range.intervalMinutes,
+    customerId: range.customerId,
+    nextRunAt: range.nextRunAt?.toISOString() ?? null,
+    lastRunAt: range.lastRunAt?.toISOString() ?? null,
+    lastStatus: range.lastStatus,
+    lastProbed: range.lastProbed,
+    lastFound: range.lastFound,
+    lastError: range.lastError,
+    createdAt: range.createdAt.toISOString(),
+  }
+}
+
+export function toSdInventoryAgentReleaseDTO(
+  release: SdInventoryAgentRelease,
+): SdInventoryAgentReleaseDTO {
+  return {
+    id: release.id,
+    version: release.version,
+    os: release.os,
+    arch: release.arch,
+    sha256: release.sha256,
+    sizeBytes: release.sizeBytes,
+    active: release.active,
+    publishedAt: release.publishedAt.toISOString(),
   }
 }

@@ -10,10 +10,13 @@ import (
 )
 
 // Config is what the installer writes and the agent reads on every start.
+// AutoUpdate (default true) lets the agent replace itself with the release the
+// server publishes; the workspace has its own server-side switch on top.
 type Config struct {
-	URL      string `json:"url"`
-	Token    string `json:"token"`
-	Interval string `json:"interval,omitempty"`
+	URL        string `json:"url"`
+	Token      string `json:"token"`
+	Interval   string `json:"interval,omitempty"`
+	AutoUpdate bool   `json:"autoUpdate"`
 }
 
 const (
@@ -65,7 +68,7 @@ func loadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var cfg Config
+	cfg := Config{AutoUpdate: true} // files written before auto-update existed keep it on
 	if err := json.Unmarshal(raw, &cfg); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}

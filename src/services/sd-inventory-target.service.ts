@@ -1,6 +1,9 @@
 import type { SdInventorySnmpTarget } from '@prisma/client'
 import { logger } from '@/lib/axiom/logger'
-import { sdConfigNotFound } from '@/src/errors'
+import {
+  sdConfigNotFound,
+  sdInventorySnmpCredentialsInvalid,
+} from '@/src/errors'
 import {
   decryptConnectionSecret,
   encryptConnectionSecret,
@@ -13,6 +16,7 @@ import {
   createNetSnmpSession,
   type SnmpHostInfo,
   type SnmpSessionFactory,
+  type SnmpV3Credentials,
   scanSnmpHosts,
 } from '@/src/lib/servicedesk/snmp'
 import { toSdInventorySnmpTargetDTO } from '@/src/mappers/sd-inventory.mapper'
@@ -46,7 +50,7 @@ export interface SdInventoryScanDeps {
   now?: Date
 }
 
-async function assertCustomer(
+export async function assertInventoryCustomer(
   workspaceId: string,
   customerId: string | null | undefined,
 ): Promise<Result<true>> {
@@ -72,6 +76,109 @@ export function snmpExternalKey(info: SnmpHostInfo): string {
   if (info.serialNumber) return `snmp:sn:${info.serialNumber.toLowerCase()}`
   if (info.macAddresses[0]) return `snmp:mac:${info.macAddresses[0]}`
   return `snmp:ip:${info.ip}`
+}
+
+/** Colunas de credencial do alvo (v2c ou v3), com os segredos já cifrados. */
+interface SnmpCredentialColumns {
+  snmpVersion: 'V2C' | 'V3'
+  communityEnc: string
+  v3Username: string | null
+  v3AuthProtocol: SdInventorySnmpTarget['v3AuthProtocol']
+  v3AuthKeyEnc: string | null
+  v3PrivProtocol: SdInventorySnmpTarget['v3PrivProtocol']
+  v3PrivKeyEnc: string | null
+}
+
+type SnmpCredentialInput = Pick<
+  CreateSdInventorySnmpTargetDTO,
+  | 'community'
+  | 'v3Username'
+  | 'v3AuthProtocol'
+  | 'v3AuthKey'
+  | 'v3PrivProtocol'
+  | 'v3PrivKey'
+>
+
+const V2C_CLEARED_V3 = {
+  v3Username: null,
+  v3AuthProtocol: null,
+  v3AuthKeyEnc: null,
+  v3PrivProtocol: null,
+  v3PrivKeyEnc: null,
+} as const
+
+/**
+ * Monta as colunas de credencial a partir do que veio no corpo e, na edição,
+ * do alvo atual (segredo omitido = mantém o guardado). Os segredos saem
+ * cifrados com `CONNECTION_SECRETS`, como a community sempre foi.
+ */
+export async function buildSnmpCredentialColumns(
+  version: 'V2C' | 'V3',
+  input: SnmpCredentialInput,
+  current: SdInventorySnmpTarget | null,
+): Promise<Result<SnmpCredentialColumns>> {
+  if (version === 'V2C') {
+    const keepsCommunity = current?.snmpVersion === 'V2C'
+    if (!input.community && !keepsCommunity) {
+      return err(sdInventorySnmpCredentialsInvalid('Informe a community'))
+    }
+    return ok({
+      snmpVersion: 'V2C',
+      communityEnc: input.community
+        ? await encryptConnectionSecret(input.community)
+        : (current?.communityEnc ?? ''),
+      ...V2C_CLEARED_V3,
+    })
+  }
+
+  const previous = current?.snmpVersion === 'V3' ? current : null
+  const username = input.v3Username ?? previous?.v3Username ?? null
+  if (!username) {
+    return err(sdInventorySnmpCredentialsInvalid('Informe o usuário SNMPv3'))
+  }
+  const authKeyEnc = input.v3AuthKey
+    ? await encryptConnectionSecret(input.v3AuthKey)
+    : (previous?.v3AuthKeyEnc ?? null)
+  const privKeyEnc = input.v3PrivKey
+    ? await encryptConnectionSecret(input.v3PrivKey)
+    : (previous?.v3PrivKeyEnc ?? null)
+  if (privKeyEnc && !authKeyEnc) {
+    return err(
+      sdInventorySnmpCredentialsInvalid(
+        'A privacidade exige autenticação (informe a chave de autenticação)',
+      ),
+    )
+  }
+  return ok({
+    snmpVersion: 'V3',
+    communityEnc: '',
+    v3Username: username,
+    v3AuthProtocol: authKeyEnc
+      ? (input.v3AuthProtocol ?? previous?.v3AuthProtocol ?? 'SHA')
+      : null,
+    v3AuthKeyEnc: authKeyEnc,
+    v3PrivProtocol: privKeyEnc
+      ? (input.v3PrivProtocol ?? previous?.v3PrivProtocol ?? 'AES')
+      : null,
+    v3PrivKeyEnc: privKeyEnc,
+  })
+}
+
+/** Credencial v3 em claro, só dentro do worker, para abrir a sessão. */
+async function decryptV3Credentials(
+  target: SdInventorySnmpTarget,
+): Promise<SnmpV3Credentials> {
+  return {
+    username: target.v3Username ?? '',
+    authProtocol: target.v3AuthProtocol,
+    authKey: target.v3AuthKeyEnc
+      ? await decryptConnectionSecret(target.v3AuthKeyEnc)
+      : null,
+    privProtocol: target.v3PrivProtocol,
+    privKey: target.v3PrivKeyEnc
+      ? await decryptConnectionSecret(target.v3PrivKeyEnc)
+      : null,
+  }
 }
 
 function failure(message: string): string {
@@ -102,15 +209,24 @@ export const SdInventoryTargetService = {
       action: 'create',
       targetId: (value) => value.id,
       run: async () => {
-        const customer = await assertCustomer(workspaceId, dto.customerId)
+        const customer = await assertInventoryCustomer(
+          workspaceId,
+          dto.customerId,
+        )
         if (!customer.ok) return customer
+        const credentials = await buildSnmpCredentialColumns(
+          dto.snmpVersion,
+          dto,
+          null,
+        )
+        if (!credentials.ok) return credentials
         const created = await SdInventoryTargetRepository.create({
           workspaceId,
           createdById: actorId,
           name: dto.name,
           ranges: dto.ranges,
           port: dto.port,
-          communityEnc: await encryptConnectionSecret(dto.community),
+          ...credentials.value,
           intervalMinutes: dto.intervalMinutes,
           active: dto.active,
           customerId: dto.customerId ?? null,
@@ -141,19 +257,53 @@ export const SdInventoryTargetService = {
           workspaceId,
         )
         if (!existing.ok) return existing
-        const customer = await assertCustomer(workspaceId, dto.customerId)
+        const customer = await assertInventoryCustomer(
+          workspaceId,
+          dto.customerId,
+        )
         if (!customer.ok) return customer
 
-        const { community, ...rest } = dto
+        const {
+          community,
+          v3Username,
+          v3AuthProtocol,
+          v3AuthKey,
+          v3PrivProtocol,
+          v3PrivKey,
+          snmpVersion,
+          ...rest
+        } = dto
+        const touchesCredentials =
+          snmpVersion !== undefined ||
+          [
+            community,
+            v3Username,
+            v3AuthProtocol,
+            v3AuthKey,
+            v3PrivProtocol,
+            v3PrivKey,
+          ].some((value) => value !== undefined)
+        let credentialColumns: Partial<SnmpCredentialColumns> = {}
+        if (touchesCredentials) {
+          const credentials = await buildSnmpCredentialColumns(
+            snmpVersion ?? existing.value.snmpVersion,
+            {
+              community,
+              v3Username,
+              v3AuthProtocol,
+              v3AuthKey,
+              v3PrivProtocol,
+              v3PrivKey,
+            },
+            existing.value,
+          )
+          if (!credentials.ok) return credentials
+          credentialColumns = credentials.value
+        }
         const updated = await SdInventoryTargetRepository.update(
           targetId,
           workspaceId,
-          {
-            ...rest,
-            ...(community !== undefined
-              ? { communityEnc: await encryptConnectionSecret(community) }
-              : {}),
-          },
+          { ...rest, ...credentialColumns },
         )
         if (!updated.ok) return updated
         return ok(toSdInventorySnmpTargetDTO(updated.value))
@@ -286,17 +436,22 @@ export const SdInventoryTargetService = {
     const hosts = expandInventoryRanges(target.ranges)
     if (!hosts.ok) return failed(hosts.message)
 
-    let community: string
+    let community = ''
+    let v3: SnmpV3Credentials | undefined
     try {
-      community = await decryptConnectionSecret(target.communityEnc)
+      if (target.snmpVersion === 'V3') {
+        v3 = await decryptV3Credentials(target)
+      } else {
+        community = await decryptConnectionSecret(target.communityEnc)
+      }
     } catch {
-      return failed('Não foi possível ler a community guardada')
+      return failed('Não foi possível ler as credenciais SNMP guardadas')
     }
 
     const scan = await scanSnmpHosts(
       hosts.hosts,
       deps.factory ?? createNetSnmpSession,
-      { community, port: target.port, timeoutMs: SNMP_TIMEOUT_MS },
+      { community, v3, port: target.port, timeoutMs: SNMP_TIMEOUT_MS },
     )
 
     let syncFailures = 0

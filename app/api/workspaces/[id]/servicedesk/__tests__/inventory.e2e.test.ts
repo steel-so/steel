@@ -382,3 +382,209 @@ describe('inventory queries', () => {
     }
   })
 })
+
+describe('inventory discovery, adoption and merge', () => {
+  it('only lets admins manage discovery ranges (private networks, opt-in)', async () => {
+    const { owner, agent, requester, workspace } = await setup()
+    const url = `${api(workspace.id)}/discovery-ranges`
+
+    const created = await postJson(
+      url,
+      { name: 'VLAN', cidr: '10.0.1.0/24' },
+      owner.cookie,
+    )
+    expect(created.status).toBe(201)
+    const range = (await created.json()).data
+    expect(range.enabled).toBe(false)
+
+    expect(
+      (
+        await postJson(
+          url,
+          { name: 'Internet', cidr: '8.8.8.0/24' },
+          owner.cookie,
+        )
+      ).status,
+    ).toBe(422)
+
+    // Varredura só com o opt-in ligado.
+    expect(
+      (await postJson(`${url}/${range.id}/scan`, {}, owner.cookie)).status,
+    ).toBe(422)
+    const enabled = await patchJson(
+      `${url}/${range.id}`,
+      { enabled: true },
+      owner.cookie,
+    )
+    expect((await enabled.json()).data.enabled).toBe(true)
+
+    for (const who of [agent, requester]) {
+      expect((await getJson(url, who.cookie)).status).toBe(403)
+      expect(
+        (await postJson(url, { name: 'x', cidr: '10.9.0.0/24' }, who.cookie))
+          .status,
+      ).toBe(403)
+    }
+
+    expect((await deleteJson(`${url}/${range.id}`, owner.cookie)).status).toBe(
+      200,
+    )
+    expect((await (await getJson(url, owner.cookie)).json()).data).toHaveLength(
+      0,
+    )
+  })
+
+  it('adopts a discovered device and dismisses another', async () => {
+    const { owner, agent, workspace } = await setup()
+    const found = await prisma.sdInventoryDevice.create({
+      data: {
+        workspaceId: workspace.id,
+        source: 'DISCOVERY',
+        externalKey: 'disc:ip:10.0.1.9',
+        hostname: 'impressora',
+        managed: false,
+        ipAddresses: ['10.0.1.9'],
+      },
+    })
+    const spare = await prisma.sdInventoryDevice.create({
+      data: {
+        workspaceId: workspace.id,
+        source: 'DISCOVERY',
+        externalKey: 'disc:ip:10.0.1.10',
+        hostname: 'camera',
+        managed: false,
+      },
+    })
+    const devices = `${api(workspace.id)}/devices`
+
+    const listed = (
+      await (await getJson(`${devices}?discovered=true`, owner.cookie)).json()
+    ).data
+    expect(
+      listed.items.map((d: { hostname: string }) => d.hostname).sort(),
+    ).toEqual(['camera', 'impressora'])
+
+    expect(
+      (await postJson(`${devices}/${found.id}/adopt`, {}, agent.cookie)).status,
+    ).toBe(403)
+    const adopted = await postJson(
+      `${devices}/${found.id}/adopt`,
+      {},
+      owner.cookie,
+    )
+    expect(adopted.status).toBe(200)
+    expect((await adopted.json()).data.configItemId).toBeTruthy()
+    // Já adotado: não adota duas vezes.
+    expect(
+      (await postJson(`${devices}/${found.id}/adopt`, {}, owner.cookie)).status,
+    ).toBe(409)
+
+    expect(
+      (await deleteJson(`${devices}/${spare.id}`, owner.cookie)).status,
+    ).toBe(200)
+    const after = (
+      await (await getJson(`${devices}?discovered=true`, owner.cookie)).json()
+    ).data
+    expect(after.items).toHaveLength(0)
+  })
+
+  it('merges two devices manually and unmerges them', async () => {
+    const { owner, workspace } = await setup()
+    const [primary, other] = await Promise.all(
+      ['PC-A', 'switch-a'].map((hostname, index) =>
+        prisma.sdInventoryDevice.create({
+          data: {
+            workspaceId: workspace.id,
+            source: index === 0 ? 'AGENT' : 'SNMP',
+            externalKey: `k:${hostname}`,
+            hostname,
+          },
+        }),
+      ),
+    )
+    const devices = `${api(workspace.id)}/devices`
+
+    expect(
+      (
+        await postJson(
+          `${devices}/${primary.id}/merge`,
+          { intoId: primary.id },
+          owner.cookie,
+        )
+      ).status,
+    ).toBe(409)
+    expect(
+      (
+        await postJson(
+          `${devices}/${other.id}/merge`,
+          { intoId: primary.id },
+          owner.cookie,
+        )
+      ).status,
+    ).toBe(200)
+
+    const list = (await (await getJson(devices, owner.cookie)).json()).data
+    expect(list.items.map((d: { id: string }) => d.id)).toEqual([primary.id])
+    const detail = (
+      await (await getJson(`${devices}/${primary.id}`, owner.cookie)).json()
+    ).data
+    expect(detail.mergedSources).toEqual([
+      { id: other.id, hostname: 'switch-a', source: 'SNMP' },
+    ])
+
+    expect(
+      (await postJson(`${devices}/${other.id}/unmerge`, {}, owner.cookie))
+        .status,
+    ).toBe(200)
+    expect(
+      (await postJson(`${devices}/${other.id}/unmerge`, {}, owner.cookie))
+        .status,
+    ).toBe(409)
+    const again = (await (await getJson(devices, owner.cookie)).json()).data
+    expect(again.items).toHaveLength(2)
+  })
+
+  it('stores SNMPv3 targets without ever returning the keys', async () => {
+    const { owner, workspace } = await setup()
+    const url = `${api(workspace.id)}/snmp-targets`
+    const created = await postJson(
+      url,
+      {
+        name: 'Core v3',
+        ranges: ['10.0.0.1'],
+        snmpVersion: 'V3',
+        v3Username: 'monitor',
+        v3AuthKey: 'auth-secret-1',
+        v3PrivKey: 'priv-secret-1',
+      },
+      owner.cookie,
+    )
+    expect(created.status).toBe(201)
+    const target = (await created.json()).data
+    expect(target).toMatchObject({
+      snmpVersion: 'V3',
+      hasCommunity: false,
+      hasV3AuthKey: true,
+      hasV3PrivKey: true,
+    })
+    expect(JSON.stringify(target)).not.toContain('secret')
+
+    // v3 sem usuário é recusado.
+    expect(
+      (
+        await postJson(
+          url,
+          { name: 'x', ranges: ['10.0.0.2'], snmpVersion: 'V3' },
+          owner.cookie,
+        )
+      ).status,
+    ).toBe(422)
+  })
+
+  it('exposes the latest published agent version to admins', async () => {
+    const { owner, agent, workspace } = await setup()
+    const url = `${api(workspace.id)}/agent-releases`
+    expect((await getJson(url, owner.cookie)).status).toBe(200)
+    expect((await getJson(url, agent.cookie)).status).toBe(403)
+  })
+})

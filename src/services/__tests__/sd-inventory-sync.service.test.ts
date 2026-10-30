@@ -11,6 +11,7 @@ import {
 } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -28,6 +29,7 @@ import { SdInventoryAlertRepository } from '@/src/repositories/sd-inventory-aler
 import { SdInventoryDeviceRepository } from '@/src/repositories/sd-inventory-device.repository'
 import { SdInventorySettingsRepository } from '@/src/repositories/sd-inventory-settings.repository'
 import {
+  ensureConfigItemForDevice,
   SD_INVENTORY_DEFAULT_TYPE_NAMES,
   type SdInventoryDeviceInput,
   syncInventoryDevice,
@@ -78,6 +80,7 @@ beforeEach(() => {
     ok(createFakeSdInventoryDevice({ configItemId: null })),
   )
   devices.linkConfigItem.mockResolvedValue(ok(undefined))
+  devices.findMergeCandidates.mockResolvedValue(ok([]))
   devices.replaceSoftware.mockResolvedValue(ok(1))
   devices.findAdoptableConfigItem.mockResolvedValue(ok(null))
   devices.ensureConfigItemType.mockResolvedValue(ok({ id: 'type-default' }))
@@ -143,7 +146,37 @@ describe('syncInventoryDevice: new device', () => {
           { mount: 'C:', label: null, fs: null, totalMb: 1000, usedMb: 500 },
         ],
       }),
+      { managed: true, discoveryRangeId: null },
     )
+  })
+
+  it('passes the unmanaged flag and range of a discovered host on creation', async () => {
+    devices.upsert.mockResolvedValue(
+      ok(createFakeSdInventoryDevice({ managed: false, configItemId: null })),
+    )
+    expectOk(
+      await syncInventoryDevice(
+        WS,
+        'u1',
+        input({
+          source: 'DISCOVERY',
+          externalKey: 'disc:mac:aa:bb:cc:dd:ee:ff',
+          managed: false,
+          discoveryRangeId: 'rng-1',
+          software: null,
+        }),
+        NOW,
+      ),
+    )
+    expect(devices.upsert).toHaveBeenCalledWith(
+      WS,
+      'disc:mac:aa:bb:cc:dd:ee:ff',
+      expect.objectContaining({ source: 'DISCOVERY' }),
+      { managed: false, discoveryRangeId: 'rng-1' },
+    )
+    // Sem gestão: nada de item na CMDB.
+    expect(items.create).not.toHaveBeenCalled()
+    expect(devices.replaceSoftware).not.toHaveBeenCalled()
   })
 
   it('evaluates alerts with the workspace thresholds', async () => {
@@ -405,5 +438,278 @@ describe('syncInventoryDevice: error propagation', () => {
     expectOk(await syncInventoryDevice(WS, 'u1', input()))
     const written = devices.upsert.mock.calls[0]?.[2]
     expect(written?.lastSeenAt).toBeInstanceOf(Date)
+  })
+})
+
+describe('syncInventoryDevice: merging the same machine', () => {
+  const sibling = () =>
+    createFakeSdInventoryDevice({
+      id: 'dev-snmp',
+      source: 'SNMP',
+      externalKey: 'snmp:ip:10.0.0.20',
+      hostname: '10.0.0.20',
+      serialNumber: 'sn-1',
+      macAddresses: [],
+      configItemId: 'ci-old',
+    })
+
+  beforeEach(() => {
+    devices.mergeInto.mockResolvedValue(
+      ok({ movedConfigItemId: 'ci-old', orphanedConfigItemId: null }),
+    )
+    devices.upsert.mockResolvedValue(
+      ok(
+        createFakeSdInventoryDevice({
+          configItemId: null,
+          serialNumber: 'SN-1',
+        }),
+      ),
+    )
+  })
+
+  it('merges an agent report into the SNMP sibling and reuses its CMDB item', async () => {
+    devices.upsert.mockResolvedValue(
+      ok(
+        createFakeSdInventoryDevice({
+          configItemId: null,
+          serialNumber: 'SN-1',
+        }),
+      ),
+    )
+    devices.findMergeCandidates.mockResolvedValue(ok([sibling()]))
+    // Depois da mescla o item do SNMP foi para a ficha do agente.
+    devices.findRowById.mockResolvedValue(
+      ok(createFakeSdInventoryDevice({ configItemId: 'ci-old' })),
+    )
+
+    const result = expectOk(await syncInventoryDevice(WS, 'u1', input(), NOW))
+
+    expect(devices.mergeInto).toHaveBeenCalledWith(WS, 'dev-snmp', 'dev-1', {
+      lock: false,
+    })
+    expect(result.configItemId).toBe('ci-old')
+    expect(items.create).not.toHaveBeenCalled()
+  })
+
+  it('turns an SNMP report into a secondary of the agent device and enriches the primary', async () => {
+    const primary = createFakeSdInventoryDevice({
+      id: 'dev-agent',
+      serialNumber: null,
+      manufacturer: null,
+      model: null,
+      ipAddresses: ['10.0.0.20'],
+      macAddresses: [],
+      configItemId: 'ci-1',
+    })
+    devices.upsert.mockResolvedValue(
+      ok(
+        createFakeSdInventoryDevice({
+          id: 'dev-snmp',
+          source: 'SNMP',
+          hostname: 'switch-matriz',
+          serialNumber: 'SN-9',
+          manufacturer: 'Cisco',
+          model: 'C2960',
+          ipAddresses: ['10.0.0.30'],
+          macAddresses: ['aa:bb:cc:dd:ee:ff'],
+          configItemId: null,
+        }),
+      ),
+    )
+    devices.findMergeCandidates.mockResolvedValue(
+      ok([{ ...primary, hostname: 'switch-matriz', serialNumber: 'sn-9' }]),
+    )
+    devices.findRowById
+      // recarga depois da mescla (agora com mergedIntoId)
+      .mockResolvedValueOnce(
+        ok(
+          createFakeSdInventoryDevice({
+            id: 'dev-snmp',
+            source: 'SNMP',
+            hostname: 'switch-matriz',
+            serialNumber: 'SN-9',
+            manufacturer: 'Cisco',
+            model: 'C2960',
+            ipAddresses: ['10.0.0.30'],
+            macAddresses: ['aa:bb:cc:dd:ee:ff'],
+            mergedIntoId: 'dev-agent',
+            configItemId: null,
+          }),
+        ),
+      )
+      // principal, para enriquecer
+      .mockResolvedValueOnce(ok(primary))
+      // principal depois de enriquecido
+      .mockResolvedValueOnce(ok({ ...primary, serialNumber: 'SN-9' }))
+    devices.updateFacts.mockResolvedValue(ok(undefined))
+
+    const result = expectOk(
+      await syncInventoryDevice(
+        WS,
+        'u1',
+        input({
+          source: 'SNMP',
+          externalKey: 'snmp:ip:10.0.0.30',
+          hostname: 'switch-matriz',
+          serialNumber: 'SN-9',
+        }),
+        NOW,
+      ),
+    )
+
+    expect(devices.mergeInto).toHaveBeenCalledWith(
+      WS,
+      'dev-snmp',
+      'dev-agent',
+      { lock: false },
+    )
+    expect(devices.updateFacts).toHaveBeenCalledWith('dev-agent', {
+      serialNumber: 'SN-9',
+      manufacturer: 'Cisco',
+      model: 'C2960',
+      ipAddresses: ['10.0.0.20', '10.0.0.30'],
+      macAddresses: ['aa:bb:cc:dd:ee:ff'],
+    })
+    // A secundária não cria nem toca item: o da principal vale.
+    expect(items.create).not.toHaveBeenCalled()
+    expect(result.configItemId).toBe('ci-1')
+  })
+
+  it('skips candidates that were manually unmerged', async () => {
+    devices.findMergeCandidates.mockResolvedValue(
+      ok([{ ...sibling(), mergeLocked: true }]),
+    )
+    expectOk(await syncInventoryDevice(WS, 'u1', input(), NOW))
+    expect(devices.mergeInto).not.toHaveBeenCalled()
+  })
+
+  it('does not look for matches when the device is locked or already merged', async () => {
+    devices.upsert.mockResolvedValue(
+      ok(
+        createFakeSdInventoryDevice({ mergeLocked: true, configItemId: null }),
+      ),
+    )
+    expectOk(await syncInventoryDevice(WS, 'u1', input(), NOW))
+    expect(devices.findMergeCandidates).not.toHaveBeenCalled()
+  })
+
+  it('leaves the device alone when nothing matches', async () => {
+    devices.findMergeCandidates.mockResolvedValue(
+      ok([
+        createFakeSdInventoryDevice({
+          id: 'other',
+          source: 'SNMP',
+          hostname: 'switch-2',
+          serialNumber: 'zzz-999',
+          macAddresses: [],
+        }),
+      ]),
+    )
+    expectOk(await syncInventoryDevice(WS, 'u1', input(), NOW))
+    expect(devices.mergeInto).not.toHaveBeenCalled()
+  })
+
+  it('propagates database errors from the candidate search and the merge', async () => {
+    devices.findMergeCandidates.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await syncInventoryDevice(WS, 'u1', input(), NOW))
+
+    devices.findMergeCandidates.mockResolvedValue(ok([sibling()]))
+    devices.mergeInto.mockResolvedValue(err(databaseError('x')))
+    expectErr(await syncInventoryDevice(WS, 'u1', input(), NOW))
+  })
+
+  it('propagates a failure reloading the merged device or the primary', async () => {
+    devices.findMergeCandidates.mockResolvedValue(ok([sibling()]))
+    devices.findRowById.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await syncInventoryDevice(WS, 'u1', input(), NOW))
+
+    devices.upsert.mockResolvedValue(
+      ok(createFakeSdInventoryDevice({ mergedIntoId: 'dev-agent' })),
+    )
+    devices.findMergeCandidates.mockResolvedValue(ok([]))
+    devices.findRowById.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await syncInventoryDevice(WS, 'u1', input(), NOW))
+  })
+
+  it('keeps the primary untouched when the secondary knows nothing new', async () => {
+    const primary = createFakeSdInventoryDevice({ id: 'dev-agent' })
+    devices.upsert.mockResolvedValue(
+      ok(
+        createFakeSdInventoryDevice({
+          mergedIntoId: 'dev-agent',
+          ipAddresses: primary.ipAddresses,
+          macAddresses: primary.macAddresses,
+          serialNumber: null,
+          manufacturer: null,
+          model: null,
+        }),
+      ),
+    )
+    devices.findMergeCandidates.mockResolvedValue(ok([]))
+    devices.findRowById.mockResolvedValue(ok(primary))
+    expectOk(await syncInventoryDevice(WS, 'u1', input(), NOW))
+    expect(devices.updateFacts).not.toHaveBeenCalled()
+  })
+
+  it('propagates a failure updating the primary facts', async () => {
+    devices.upsert.mockResolvedValue(
+      ok(createFakeSdInventoryDevice({ mergedIntoId: 'dev-agent' })),
+    )
+    devices.findMergeCandidates.mockResolvedValue(ok([]))
+    devices.findRowById.mockResolvedValue(
+      ok(
+        createFakeSdInventoryDevice({
+          id: 'dev-agent',
+          ipAddresses: [],
+          serialNumber: null,
+        }),
+      ),
+    )
+    devices.updateFacts.mockResolvedValue(err(databaseError('x')))
+    expectErr(await syncInventoryDevice(WS, 'u1', input(), NOW))
+  })
+})
+
+describe('ensureConfigItemForDevice', () => {
+  it('creates the item for an adopted device from its stored facts', async () => {
+    const row = createFakeSdInventoryDevice({
+      source: 'DISCOVERY',
+      configItemId: null,
+      hostname: 'impressora',
+      disks: [{ mount: '/', totalMb: 10, usedMb: 1 }],
+    })
+    const itemId = expectOk(
+      await ensureConfigItemForDevice(WS, 'u1', row, 'cust-1'),
+    )
+    expect(itemId).toBe('ci-new')
+    expect(devices.ensureConfigItemType).toHaveBeenCalledWith(
+      WS,
+      SD_INVENTORY_DEFAULT_TYPE_NAMES.DISCOVERY,
+    )
+    expect(items.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'impressora',
+        customerId: 'cust-1',
+        notes: expect.stringContaining('ping/ARP'),
+      }),
+    )
+  })
+
+  it('does nothing when the workspace turned CMDB sync off', async () => {
+    settings.find.mockResolvedValue(
+      ok(createFakeSdInventorySettings({ syncConfigItems: false })),
+    )
+    const row = createFakeSdInventoryDevice({ configItemId: 'ci-1' })
+    expect(expectOk(await ensureConfigItemForDevice(WS, 'u1', row))).toBe(
+      'ci-1',
+    )
+    expect(items.create).not.toHaveBeenCalled()
+  })
+
+  it('propagates a settings failure', async () => {
+    settings.find.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await ensureConfigItemForDevice(WS, 'u1', createFakeSdInventoryDevice()),
+    )
   })
 })

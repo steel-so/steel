@@ -83,6 +83,8 @@ export const ServicedeskReportsCron = '10 * * * *' as const
  */
 export const ServicedeskRiskCron = '*/10 * * * *' as const
 export const ServicedeskInventoryCron = '*/5 * * * *' as const
+/** Descoberta por ping/ARP: faixas com opt-in cuja hora chegou. */
+export const ServicedeskDiscoveryCron = '*/10 * * * *' as const
 
 /**
  * Agrupamento de incidentes repetidos (candidatos a problema): de hora em

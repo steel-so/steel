@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CreateSdInventoryDiscoveryRangeSchema,
   CreateSdInventorySnmpTargetSchema,
   CreateSdInventoryTokenSchema,
   ListSdInventoryAlertsSchema,
   ListSdInventoryDevicesSchema,
   ListSdInventorySoftwareSchema,
+  MergeSdInventoryDeviceSchema,
+  PublishSdInventoryAgentReleaseSchema,
+  SdInventoryAgentDownloadQuerySchema,
   SdInventoryAgentIdSchema,
+  SdInventoryAgentVersionQuerySchema,
   SdInventoryReportSchema,
   SdInventoryTokenValueSchema,
+  UpdateSdInventoryDiscoveryRangeSchema,
   UpdateSdInventorySettingsSchema,
   UpdateSdInventorySnmpTargetSchema,
 } from '../sd-inventory.schema'
@@ -210,5 +216,177 @@ describe('list query schemas', () => {
       search: 'fire',
       page: 1,
     })
+  })
+})
+
+describe('SNMPv3 targets', () => {
+  const v3 = {
+    name: 'Core',
+    ranges: ['10.0.0.0/30'],
+    snmpVersion: 'V3' as const,
+    v3Username: 'monitor',
+  }
+
+  it('defaults to v2c and still requires a community there', () => {
+    const base = { name: 'a', ranges: ['10.0.0.1'] }
+    expect(CreateSdInventorySnmpTargetSchema.safeParse(base).success).toBe(
+      false,
+    )
+    expect(
+      CreateSdInventorySnmpTargetSchema.parse({ ...base, community: 'public' })
+        .snmpVersion,
+    ).toBe('V2C')
+  })
+
+  it('accepts v3 with and without keys', () => {
+    expect(CreateSdInventorySnmpTargetSchema.safeParse(v3).success).toBe(true)
+    expect(
+      CreateSdInventorySnmpTargetSchema.safeParse({
+        ...v3,
+        v3AuthProtocol: 'SHA256',
+        v3AuthKey: 'auth-secret-1',
+        v3PrivProtocol: 'AES256B',
+        v3PrivKey: 'priv-secret-1',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('requires the username, 8+ character keys and authentication for privacy', () => {
+    const fails = (patch: object) =>
+      CreateSdInventorySnmpTargetSchema.safeParse({ ...v3, ...patch }).success
+    expect(fails({ v3Username: undefined })).toBe(false)
+    expect(fails({ v3AuthKey: 'short' })).toBe(false)
+    expect(fails({ v3PrivKey: 'priv-secret-1' })).toBe(false)
+    expect(fails({ v3AuthProtocol: 'SHA999' })).toBe(false)
+    expect(fails({ v3PrivProtocol: 'ROT13', v3AuthKey: 'auth-secret-1' })).toBe(
+      false,
+    )
+  })
+
+  it('lets an update omit every secret', () => {
+    expect(
+      UpdateSdInventorySnmpTargetSchema.safeParse({ snmpVersion: 'V3' })
+        .success,
+    ).toBe(true)
+    expect(
+      UpdateSdInventorySnmpTargetSchema.safeParse({ v3AuthKey: 'x' }).success,
+    ).toBe(false)
+  })
+})
+
+describe('discovery ranges', () => {
+  const base = { name: 'VLAN de estações', cidr: '10.0.1.0/24' }
+
+  it('is opt-in: disabled unless the admin turns it on', () => {
+    expect(CreateSdInventoryDiscoveryRangeSchema.parse(base)).toMatchObject({
+      enabled: false,
+      intervalMinutes: 1440,
+    })
+    expect(
+      CreateSdInventoryDiscoveryRangeSchema.parse({ ...base, enabled: true })
+        .enabled,
+    ).toBe(true)
+  })
+
+  it('only accepts private networks of at most 1024 hosts', () => {
+    const ok = (cidr: string) =>
+      CreateSdInventoryDiscoveryRangeSchema.safeParse({ ...base, cidr }).success
+    expect(ok('192.168.0.0/22')).toBe(true)
+    expect(ok('8.8.8.0/24')).toBe(false)
+    expect(ok('10.0.0.0/8')).toBe(false)
+    expect(ok('10.0.0.0/33')).toBe(false)
+    expect(ok('lixo')).toBe(false)
+  })
+
+  it('enforces a one hour minimum interval', () => {
+    const interval = (intervalMinutes: number) =>
+      CreateSdInventoryDiscoveryRangeSchema.safeParse({
+        ...base,
+        intervalMinutes,
+      }).success
+    expect(interval(60)).toBe(true)
+    expect(interval(59)).toBe(false)
+    expect(interval(10_081)).toBe(false)
+  })
+
+  it('validates updates and refuses an empty one', () => {
+    expect(
+      UpdateSdInventoryDiscoveryRangeSchema.safeParse({ enabled: true })
+        .success,
+    ).toBe(true)
+    expect(UpdateSdInventoryDiscoveryRangeSchema.safeParse({}).success).toBe(
+      false,
+    )
+    expect(
+      UpdateSdInventoryDiscoveryRangeSchema.safeParse({ cidr: '1.1.1.0/24' })
+        .success,
+    ).toBe(false)
+  })
+})
+
+describe('merge, device filters and agent update', () => {
+  it('needs the target device id', () => {
+    expect(MergeSdInventoryDeviceSchema.safeParse({}).success).toBe(false)
+    expect(MergeSdInventoryDeviceSchema.parse({ intoId: 'dev-1' })).toEqual({
+      intoId: 'dev-1',
+    })
+  })
+
+  it('lists discovered devices on demand and accepts the DISCOVERY source', () => {
+    expect(ListSdInventoryDevicesSchema.parse({}).discovered).toBe(false)
+    expect(
+      ListSdInventoryDevicesSchema.parse({
+        discovered: 'true',
+        source: 'DISCOVERY',
+      }),
+    ).toMatchObject({ discovered: true, source: 'DISCOVERY' })
+  })
+
+  it('validates the version and download queries', () => {
+    expect(
+      SdInventoryAgentVersionQuerySchema.parse({ os: 'linux', arch: 'amd64' }),
+    ).toEqual({ os: 'linux', arch: 'amd64', current: 'dev' })
+    expect(
+      SdInventoryAgentVersionQuerySchema.safeParse({
+        os: 'plan9',
+        arch: 'amd64',
+      }).success,
+    ).toBe(false)
+    expect(
+      SdInventoryAgentDownloadQuerySchema.safeParse({
+        os: 'windows',
+        arch: 'arm64',
+        version: '2026.11.01',
+      }).success,
+    ).toBe(true)
+    expect(
+      SdInventoryAgentDownloadQuerySchema.safeParse({
+        os: 'linux',
+        arch: 'amd64',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('validates a release to publish', () => {
+    expect(
+      PublishSdInventoryAgentReleaseSchema.safeParse({
+        version: '2026.11.01',
+        os: 'linux',
+        arch: 'amd64',
+      }).success,
+    ).toBe(true)
+    expect(
+      PublishSdInventoryAgentReleaseSchema.safeParse({
+        version: '../etc',
+        os: 'linux',
+        arch: 'amd64',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('accepts agentAutoUpdate in the settings', () => {
+    expect(
+      UpdateSdInventorySettingsSchema.parse({ agentAutoUpdate: true }),
+    ).toEqual({ agentAutoUpdate: true })
   })
 })

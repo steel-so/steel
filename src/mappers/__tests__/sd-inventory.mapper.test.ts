@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createFakeSdInventoryAgentRelease,
+  createFakeSdInventoryDiscoveryRange,
+} from '@/src/__tests__/factories/nov-inventory-followups.factory'
+import {
   createFakeSdInventoryAlert,
   createFakeSdInventoryDevice,
   createFakeSdInventoryDeviceDetail,
@@ -10,9 +14,11 @@ import {
 import {
   parseSdInventoryDisks,
   SD_INVENTORY_DEFAULT_SETTINGS,
+  toSdInventoryAgentReleaseDTO,
   toSdInventoryAlertDTO,
   toSdInventoryDeviceDetailDTO,
   toSdInventoryDeviceDTO,
+  toSdInventoryDiscoveryRangeDTO,
   toSdInventorySettingsDTO,
   toSdInventorySnmpTargetDTO,
   toSdInventorySoftwareCatalogRowDTO,
@@ -43,6 +49,7 @@ describe('toSdInventorySettingsDTO', () => {
       staleAfterDays: 7,
       syncConfigItems: true,
       defaultTypeId: 't1',
+      agentAutoUpdate: false,
     })
   })
 })
@@ -241,5 +248,89 @@ describe('token and target DTOs', () => {
       deviceCount: 3,
     }
     expect(toSdInventorySoftwareCatalogRowDTO(row)).toEqual(row)
+  })
+})
+
+describe('merge and discovery mapping', () => {
+  it('maps the merged sources and primary hostname on the detail', () => {
+    const dto = toSdInventoryDeviceDetailDTO(
+      createFakeSdInventoryDeviceDetail({
+        mergedInto: { hostname: 'PC-PRINCIPAL' },
+        mergedFrom: [{ id: 'dev-2', hostname: 'pc-01', source: 'SNMP' }],
+      }),
+      { staleAfterDays: 7, now: NOW },
+    )
+    expect(dto.mergedIntoHostname).toBe('PC-PRINCIPAL')
+    expect(dto.mergedSources).toEqual([
+      { id: 'dev-2', hostname: 'pc-01', source: 'SNMP' },
+    ])
+    expect(dto).toMatchObject({
+      managed: true,
+      mergedIntoId: null,
+      mergeLocked: false,
+    })
+  })
+
+  it('maps a discovery range, with and without a previous run', () => {
+    expect(
+      toSdInventoryDiscoveryRangeDTO(createFakeSdInventoryDiscoveryRange()),
+    ).toMatchObject({
+      cidr: '10.0.1.0/24',
+      enabled: true,
+      lastRunAt: null,
+      nextRunAt: null,
+      lastStatus: null,
+    })
+    expect(
+      toSdInventoryDiscoveryRangeDTO(
+        createFakeSdInventoryDiscoveryRange({
+          lastRunAt: new Date('2026-10-02T00:00:00.000Z'),
+          nextRunAt: new Date('2026-10-03T00:00:00.000Z'),
+          lastStatus: 'SUCCESS',
+          lastProbed: 254,
+          lastFound: 12,
+        }),
+      ),
+    ).toMatchObject({
+      lastRunAt: '2026-10-02T00:00:00.000Z',
+      nextRunAt: '2026-10-03T00:00:00.000Z',
+      lastProbed: 254,
+      lastFound: 12,
+    })
+  })
+
+  it('maps an agent release without exposing the storage key', () => {
+    const dto = toSdInventoryAgentReleaseDTO(
+      createFakeSdInventoryAgentRelease(),
+    )
+    expect(dto).not.toHaveProperty('storageKey')
+    expect(dto).toMatchObject({
+      version: '2026.11.01',
+      os: 'linux',
+      publishedAt: '2026-10-01T12:00:00.000Z',
+    })
+  })
+
+  it('never exposes SNMPv3 keys, only whether they exist', () => {
+    const dto = toSdInventorySnmpTargetDTO(
+      createFakeSdInventoryTarget({
+        snmpVersion: 'V3',
+        communityEnc: '',
+        v3Username: 'monitor',
+        v3AuthProtocol: 'SHA256',
+        v3AuthKeyEnc: 'enc(a)',
+        v3PrivProtocol: 'AES',
+        v3PrivKeyEnc: null,
+      }),
+    )
+    expect(dto).not.toHaveProperty('v3AuthKeyEnc')
+    expect(dto).not.toHaveProperty('v3PrivKeyEnc')
+    expect(dto).toMatchObject({
+      snmpVersion: 'V3',
+      hasCommunity: false,
+      v3Username: 'monitor',
+      hasV3AuthKey: true,
+      hasV3PrivKey: false,
+    })
   })
 })

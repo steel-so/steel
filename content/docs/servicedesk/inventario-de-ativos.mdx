@@ -1,17 +1,19 @@
 ---
 title: Inventário e descoberta de ativos
-description: Agente para Windows e Linux e varredura SNMP que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
+description: Agente para Windows e Linux, varredura SNMP (v2c e v3) e descoberta por ping que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
 section: servicedesk
 order: 13
 ---
 
 O **Inventário** descobre os equipamentos sozinho e mantém os **Itens de
-configuração** em dia, sem cadastro manual. Há dois caminhos que se somam:
+configuração** em dia, sem cadastro manual. Há três caminhos que se somam:
 
 - o **agente**, instalado em computadores Windows e Linux: envia hardware,
   sistema, rede, discos, memória e os programas instalados;
 - a **varredura SNMP**, que percorre faixas de rede e descobre switches,
-  impressoras, firewalls e servidores sem instalar nada neles.
+  impressoras, firewalls e servidores sem instalar nada neles;
+- a **descoberta por ping e ARP**, que acha o que não tem agente nem SNMP e
+  espera a sua adoção.
 
 <Callout type='admin'>
   A configuração fica em **ServiceDesk › Configurações › Inventário** e é
@@ -46,14 +48,32 @@ collect`.
 
 Para tirar o agente de uma máquina, rode `steel-inventory-agent uninstall`.
 
+### Atualização automática do agente
+
+Em **Configurações › Inventário**, ligue **Atualizar o agente automaticamente**
+(desligado por padrão). Com ela ligada, cada agente pergunta ao Steel se há
+versão nova, baixa o binário e **confere o SHA-256** antes de trocar o
+executável. Se o novo não iniciar, o agente **volta sozinho à versão anterior**.
+A tela mostra a última versão publicada por sistema.
+
+<Callout type='nota'>
+  A atualização vale para agentes que já estão instalados; a primeira instalação
+  continua sendo manual. Os binários do Windows ainda não têm assinatura de
+  código, então o SmartScreen pode avisar na primeira execução.
+</Callout>
+
 ## Varredura SNMP
 
 Em **Configurações › Inventário › Varredura SNMP**, crie um **alvo** com:
 
 - as **faixas de endereço**, uma por linha (`10.0.0.0/24` ou um IP avulso), com
   até 1.024 endereços no total;
-- a **community** somente leitura do SNMP v2c (ela é guardada cifrada e nunca é
-  exibida de novo) e a porta;
+- a **versão do SNMP**: **v2c** pede a **community** somente leitura; **v3**
+  pede o **usuário** e, conforme o equipamento exige, a **autenticação**
+  (SHA, SHA-256 etc.) e a **privacidade** (AES ou DES) com suas chaves, de 8
+  caracteres ou mais. Community e chaves são guardadas cifradas e nunca são
+  exibidas de novo; ao editar, deixe em branco para manter as atuais;
+- a porta;
 - a **frequência**: de hora em hora até uma vez por semana.
 
 A primeira varredura roda em poucos minutos; **Varrer agora** força outra. A
@@ -61,14 +81,48 @@ lista mostra o resultado da última (concluída, parcial ou falhou), quantos
 equipamentos foram encontrados e o motivo quando algo deu errado. Endereços sem
 equipamento não são erro.
 
+## Descoberta por ping e ARP
+
+Para achar o que não tem agente nem SNMP, cadastre uma **faixa de descoberta**
+em **Configurações › Inventário › Descoberta por ping e ARP**:
+
+- informe uma rede **privada** (por exemplo `10.0.1.0/24`, até 1.024
+  endereços); redes públicas são recusadas;
+- escolha a frequência (de hora em hora até uma vez por semana);
+- ligue **Varrer esta faixa**. Cada faixa só é varrida com essa opção ligada:
+  nada é sondado sem a sua autorização.
+
+O Steel testa os endereços com ritmo limitado (no máximo 40 por segundo) e lê o
+endereço MAC pela tabela ARP quando o equipamento está na mesma rede do
+servidor. O que responder aparece em **ServiceDesk › Inventário** como
+**Descoberto**, fora da CMDB. Use o filtro **Situação › Descobertos, para
+adotar** e, na ficha do equipamento:
+
+- **Adotar**: passa a ser um equipamento gerido e ganha o item de configuração;
+- **Descartar**: some da lista e a descoberta não o traz de volta.
+
+Equipamentos que o agente ou o SNMP já conhecem não são recriados.
+
+## A mesma máquina vista por mais de uma origem
+
+Quando o agente e o SNMP (ou a descoberta) enxergam a mesma máquina, o
+inventário **junta as fichas** sozinho, comparando o **número de série**, os
+**endereços MAC** e o **nome**. Fica uma só linha na lista e **um só item na
+CMDB**; as outras origens aparecem na ficha, em **Mesma máquina em outras
+origens**. Duas séries diferentes nunca são juntadas.
+
+Para casos que o inventário não reconhece, abra a ficha e use **Juntar outro**
+para escolher a outra ficha. Para desfazer, use **Separar**: a ficha volta a
+ser um equipamento próprio e não é juntada de novo automaticamente.
+
 ## O que aparece no inventário
 
 A tela **ServiceDesk › Inventário** tem três abas:
 
-- **Equipamentos**: nome, origem (agente ou SNMP), sistema, IP, memória, pior
+- **Equipamentos**: nome, origem (agente, SNMP ou descoberto), sistema, IP, memória, pior
   disco, alertas e último contato. Clique para ver o hardware completo, os
   discos, o software instalado e o item da CMDB. Filtre por origem, só com
-  alerta aberto ou só **sem sinal**.
+  alerta aberto, só **sem sinal** ou só os **descobertos para adotar**.
 - **Alertas**: discos e memória que passaram do limiar.
 - **Software**: todos os programas, agrupados por nome e versão, com quantos
   equipamentos têm cada um.
