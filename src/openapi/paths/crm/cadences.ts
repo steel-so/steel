@@ -217,4 +217,44 @@ export const crmCadenceRoutes: RouteConfig[] = [
       },
     ],
   },
+
+  /* ------------------------------- públicas ------------------------------- */
+  {
+    method: 'get',
+    path: '/crm/cadences/c/{token}',
+    tags: ['CRM público · Campanhas'],
+    summary: 'Link rastreado de e-mail de cadência',
+    description:
+      'Registra o clique e redireciona (302) para o endereço `u`, que o token assina: só links escritos pela própria cadência são seguidos. Com `stopOnClick` ligado na cadência, o clique encerra a inscrição (motivo `CLICKED`), exceto nos primeiros segundos após o envio, que costumam ser filtros de segurança do destinatário.',
+    auth: 'public',
+    rateLimit: 'ip',
+    params: { token: 'Token assinado `<runId>.<assinatura>`.' },
+    query: z.object({
+      u: z.string().meta({
+        description: 'Endereço de destino (http ou https), o mesmo do token.',
+      }),
+    }),
+    queryValidationError: false,
+    responses: {
+      302: { description: 'Redireciona ao destino.', envelope: false },
+    },
+    errors: [
+      {
+        code: 'CRM_CAMPAIGN_LINK_INVALID',
+        when: 'Token inválido ou destino diferente do assinado',
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/crm/cadences/o/{token}',
+    tags: ['CRM público · Campanhas'],
+    summary: 'Pixel de abertura de e-mail de cadência',
+    description:
+      'Imagem GIF 1×1 do e-mail do passo; conta a abertura. Sempre responde a imagem.',
+    auth: 'public',
+    rateLimit: false,
+    params: { token: 'Token assinado do passo de e-mail.' },
+    responses: { 200: { description: 'GIF 1×1.', envelope: false } },
+  },
 ]

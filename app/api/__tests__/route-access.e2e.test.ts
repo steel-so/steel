@@ -55,6 +55,8 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/campaigns/c': 'signed click token',
   '/api/crm/campaigns/o': 'signed open-pixel token',
   '/api/crm/campaigns/resend-webhook': 'Svix signature',
+  '/api/crm/cadences/c': 'signed click token (run + destination)',
+  '/api/crm/cadences/o': 'signed open-pixel token',
   '/api/servicedesk/approvals': 'approval link token',
   '/api/surveys/public': 'survey link token',
   '/api/servicedesk/monitoring': 'monitoring source token',

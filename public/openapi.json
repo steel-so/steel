@@ -5438,6 +5438,71 @@
         "security": []
       }
     },
+    "/crm/cadences/c/{token}": {
+      "get": {
+        "tags": ["CRM público · Campanhas"],
+        "summary": "Link rastreado de e-mail de cadência",
+        "operationId": "getCrmCadencesCByToken",
+        "description": "Registra o clique e redireciona (302) para o endereço `u`, que o token assina: só links escritos pela própria cadência são seguidos. Com `stopOnClick` ligado na cadência, o clique encerra a inscrição (motivo `CLICKED`), exceto nos primeiros segundos após o envio, que costumam ser filtros de segurança do destinatário.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado `<runId>.<assinatura>`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "u",
+            "in": "query",
+            "required": true,
+            "description": "Endereço de destino (http ou https), o mesmo do token.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redireciona ao destino."
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_CAMPAIGN_LINK_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/crm/cadences/o/{token}": {
+      "get": {
+        "tags": ["CRM público · Campanhas"],
+        "summary": "Pixel de abertura de e-mail de cadência",
+        "operationId": "getCrmCadencesOByToken",
+        "description": "Imagem GIF 1×1 do e-mail do passo; conta a abertura. Sempre responde a imagem.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token assinado do passo de e-mail.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GIF 1×1."
+          }
+        },
+        "security": []
+      }
+    },
     "/crm/campaigns/c/{token}": {
       "get": {
         "tags": ["CRM público · Campanhas"],
@@ -5460,7 +5525,7 @@
             "description": "Redireciona ao destino."
           },
           "404": {
-            "$ref": "#/components/responses/404_CRM_CAMPAIGN_LINK_INVALID"
+            "$ref": "#/components/responses/404_CRM_CAMPAIGN_LINK_INVALID_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -24608,6 +24673,10 @@
                     "default": true,
                     "type": "boolean"
                   },
+                  "stopOnClick": {
+                    "default": false,
+                    "type": "boolean"
+                  },
                   "windowStartHour": {
                     "anyOf": [
                       {
@@ -24904,6 +24973,9 @@
                     ]
                   },
                   "stopOnReply": {
+                    "type": "boolean"
+                  },
+                  "stopOnClick": {
                     "type": "boolean"
                   },
                   "windowStartHour": {
@@ -158342,6 +158414,29 @@
             },
             "examples": {
               "CRM_CAMPAIGN_LINK_INVALID": {
+                "summary": "CRM_CAMPAIGN_LINK_INVALID — Token inválido ou destino diferente do assinado",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Link de campanha inválido",
+                  "error": {
+                    "code": "CRM_CAMPAIGN_LINK_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_CAMPAIGN_LINK_INVALID_2": {
+        "description": "Não encontrado: `CRM_CAMPAIGN_LINK_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_CAMPAIGN_LINK_INVALID": {
                 "summary": "CRM_CAMPAIGN_LINK_INVALID — Token inválido ou destino removido",
                 "value": {
                   "success": false,
@@ -186331,6 +186426,10 @@
           "stopOnReply": {
             "type": "boolean"
           },
+          "stopOnClick": {
+            "type": "boolean",
+            "description": "Um clique em link rastreado de e-mail também encerra a inscrição."
+          },
           "windowStartHour": {
             "anyOf": [
               {
@@ -186396,6 +186495,7 @@
           "emailReplyTo",
           "whatsappConnectionId",
           "stopOnReply",
+          "stopOnClick",
           "windowStartHour",
           "windowEndHour",
           "weekdaysOnly",
@@ -186510,6 +186610,7 @@
                   "LEAD_CLOSED",
                   "LEAD_DELETED",
                   "NO_CONTACT",
+                  "CLICKED",
                   "CADENCE_ARCHIVED"
                 ]
               },
@@ -186599,7 +186700,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["SENT", "SKIPPED", "FAILED"]
+            "enum": ["SENT", "SKIPPED", "FAILED", "PENDING"]
           },
           "detail": {
             "anyOf": [
@@ -186611,12 +186712,56 @@
               }
             ]
           },
+          "openedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clickedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "openCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "clickCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           }
         },
-        "required": ["id", "stepId", "position", "type", "status", "detail", "createdAt"]
+        "required": [
+          "id",
+          "stepId",
+          "position",
+          "type",
+          "status",
+          "detail",
+          "openedAt",
+          "clickedAt",
+          "openCount",
+          "clickCount",
+          "createdAt"
+        ]
       },
       "CrmCadenceStats": {
         "type": "object",
@@ -186655,6 +186800,12 @@
             "type": "number",
             "description": "Fração (0 a 1) das inscrições que terminaram com resposta."
           },
+          "stoppedByClick": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Inscrições encerradas por clique (`stopOnClick`)."
+          },
           "sentByStep": {
             "type": "array",
             "items": {
@@ -186670,13 +186821,36 @@
                   "minimum": -9007199254740991,
                   "maximum": 9007199254740991
                 },
+                "skipped": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
                 "failed": {
                   "type": "integer",
                   "minimum": -9007199254740991,
                   "maximum": 9007199254740991
+                },
+                "opened": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "E-mails distintos abertos (só passos de e-mail)."
+                },
+                "clicked": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "E-mails distintos com algum link clicado."
+                },
+                "reached": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Inscrições que passaram pelo passo (enviado, pulado ou falho)."
                 }
               },
-              "required": ["position", "sent", "failed"]
+              "required": ["position", "sent", "skipped", "failed", "opened", "clicked", "reached"]
             }
           }
         },
@@ -186688,6 +186862,7 @@
           "completed",
           "stopped",
           "replyRate",
+          "stoppedByClick",
           "sentByStep"
         ]
       },

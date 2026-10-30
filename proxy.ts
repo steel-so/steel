@@ -64,6 +64,8 @@ const PUBLIC_ROUTES = [
   // CRM multichannel campaigns: click redirect + open pixel (signed token)
   // and the Resend webhook (Svix signature) — no session.
   '/api/crm/campaigns/c', '/api/crm/campaigns/o',
+  // Sales cadence e-mails: same pair, signed run token.
+  '/api/crm/cadences/c', '/api/crm/cadences/o',
   '/api/crm/campaigns/resend-webhook',
   // CRM newsletter (ADR 0054): public subscribe, double opt-in confirmation,
   // preference center and unsubscribe (one-click RFC 8058) — signed tokens,
