@@ -19,6 +19,7 @@ const hooks = vi.hoisted(() => ({
   enrich: vi.fn(),
   runs: vi.fn(),
   start: vi.fn(),
+  cancel: vi.fn(),
 }))
 
 vi.mock('@/src/hooks/use-crm-cnpj-enrichment', () => ({
@@ -27,6 +28,7 @@ vi.mock('@/src/hooks/use-crm-cnpj-enrichment', () => ({
   useEnrichCrmCompany: hooks.enrich,
   useCrmCnpjRuns: hooks.runs,
   useStartCnpjRun: hooks.start,
+  useCancelCnpjRun: hooks.cancel,
 }))
 vi.mock('@/lib/notify', () => ({
   notify: { success: vi.fn(), error: vi.fn() },
@@ -72,6 +74,7 @@ beforeEach(() => {
   hooks.enrich.mockReturnValue(mutation())
   hooks.runs.mockReturnValue({ data: [] })
   hooks.start.mockReturnValue(mutation())
+  hooks.cancel.mockReturnValue(mutation())
 })
 
 const panel = (
@@ -182,6 +185,43 @@ describe('<CnpjBulkDialog />', () => {
       { onlyMissing: true, overwrite: true },
       expect.anything(),
     )
+  })
+
+  it('cancels a live run and shows the pending cancel', () => {
+    const mutate = vi.fn()
+    hooks.cancel.mockReturnValue(mutation({ mutate }))
+    const live = toCrmCnpjRunDTO(
+      createFakeCnpjRun({ id: 'run1', status: 'RUNNING', total: 10 }),
+    )
+    hooks.runs.mockReturnValue({ data: [live] })
+    open()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(mutate).toHaveBeenCalledWith('run1', expect.anything())
+  })
+
+  it('disables the cancel button once the cancel was requested', () => {
+    hooks.runs.mockReturnValue({
+      data: [
+        toCrmCnpjRunDTO(
+          createFakeCnpjRun({
+            status: 'RUNNING',
+            cancelRequestedAt: new Date(),
+          }),
+        ),
+      ],
+    })
+    open()
+    const button = screen.getByRole('button', { name: 'Cancelando…' })
+    expect(button.hasAttribute('disabled')).toBe(true)
+  })
+
+  it('does not offer cancel for a finished run', () => {
+    hooks.runs.mockReturnValue({
+      data: [toCrmCnpjRunDTO(createFakeCnpjRun({ status: 'CANCELED' }))],
+    })
+    open()
+    expect(screen.getByText('Cancelado')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).toBeNull()
   })
 
   it('lists past runs and locks the button while one is live', () => {
