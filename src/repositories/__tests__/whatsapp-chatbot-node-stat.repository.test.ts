@@ -120,7 +120,7 @@ describe('WhatsAppChatbotNodeStatRepository', () => {
     expect(expectOk(await Stats.deleteBefore(day('2026-09-01')))).toBe(1)
     expect(await prisma.whatsAppChatbotNodeStat.count()).toBe(1)
 
-    await WhatsAppChatbotRepository.delete(bot.id, workspace.id)
+    await WhatsAppChatbotRepository.delete(bot.id)
     expect(await prisma.whatsAppChatbotNodeStat.count()).toBe(0)
   })
 
