@@ -1,0 +1,70 @@
+---
+title: Ações da IA em sistemas externos
+description: Deixe a IA consultar um pedido, redefinir uma senha ou liberar um acesso no sistema da sua empresa, com aprovação e trilha de auditoria.
+section: steel-ai
+order: 12
+---
+
+<Callout type='admin'>
+  Só o dono e os administradores configuram as ações, em **Ajustes › Steel IA ›
+  Ações da IA**. O recurso vem **desligado** em todo workspace.
+</Callout>
+
+Além de abrir chamados e criar leads, a Steel AI pode **agir nos sistemas da
+sua empresa** durante uma conversa, um chamado ou a execução de um agente:
+consultar um pedido, redefinir uma senha, liberar um acesso. Nada vem
+embutido: você cadastra os **conectores**, e a IA só alcança o que estiver na
+lista.
+
+## Cadastrar um conector
+
+1. Em **Ações da IA**, ligue **Permitir ações da IA neste workspace**.
+2. Clique em **Novo conector** e preencha:
+   - **Nome** e **Quando a IA deve usar**: é a instrução que a IA lê para
+     escolher o conector.
+   - **Tipo**: **Consulta** só lê (GET) e roda sem aprovação; **Ação** altera
+     dados (POST, PUT, PATCH ou DELETE).
+   - **URL**: um endereço **HTTPS público**. Use `{nome}` no caminho para o
+     que a IA preenche, por exemplo `https://api.suaempresa.com.br/pedidos/{orderId}`.
+     Endereços privados, locais ou com usuário e senha na URL são recusados.
+   - **Parâmetros**: um por linha, `nome: descrição`. Termine o nome com `?`
+     para opcional.
+   - **Cabeçalhos**: por exemplo `Authorization: Bearer ...`. Ficam cifrados e
+     nunca voltam para a tela.
+3. Use o interruptor do conector para pausá-lo sem apagar.
+
+Cada workspace pode ter até 25 conectores.
+
+## Como a IA usa
+
+A IA ganha três ferramentas: listar os conectores, **consultar** (conectores do
+tipo Consulta) e **executar ação** (conectores do tipo Ação). Elas aparecem na
+lista de ferramentas dos [Steel Agents](/docs/steel-ai/agentes), do assistente
+e da resposta automática do WhatsApp.
+
+- Uma **ação** segue o modo configurado: **Roda sozinha** ou **Pede
+  aprovação**. A aprovação chega na caixa de entrada, em **Pendências da IA**,
+  com o que será enviado.
+- Toda ação leva uma **chave de idempotência**: repetir a mesma ação com os
+  mesmos dados em até 24 horas não a executa de novo; a IA recebe o resultado
+  da primeira vez.
+- Cada execução fica na trilha de ações da IA e na auditoria.
+
+## Resposta automática do WhatsApp
+
+Em **Resposta automática do WhatsApp**, escolha quais ferramentas a IA pode
+usar enquanto conversa com o cliente: consultar sistema externo, executar ação
+externa, abrir chamado e criar lead. Para cada uma:
+
+- **Permitir** liga a ferramenta; **Roda sozinha** dispensa a aprovação.
+- A ferramenta roda com as permissões da **identidade** escolhida (um dono ou
+  administrador). Sem identidade, a resposta automática não usa nenhuma
+  ferramenta.
+- Se a mensagem do cliente tentar dar ordens à IA, mesmo as ferramentas que
+  rodam sozinhas passam a pedir aprovação. Exclusões sempre pedem.
+- Quem aprova é a identidade escolhida, em **Pendências da IA**.
+
+<Callout type='aviso'>
+  Ações em sistemas externos não podem ser desfeitas pelo Steel. Comece com
+  **Pede aprovação** e só libere **Roda sozinha** em ações que você testou.
+</Callout>

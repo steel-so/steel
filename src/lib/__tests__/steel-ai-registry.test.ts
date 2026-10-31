@@ -241,6 +241,7 @@ describe('tool registry validation: MCP hints', () => {
       .map((t) => t.name)
       .sort()
     expect(customerFacing).toEqual([
+      'act_run',
       'sd_cancel_ticket',
       'sd_move_ticket_phase',
       'sd_reply_to_requester',

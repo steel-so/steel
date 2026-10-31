@@ -1,4 +1,5 @@
 import { SKILL_AI_TOOLS } from '../context/skill-tool'
+import { ACTION_AI_TOOLS } from './actions'
 import { CRM_AI_TOOLS } from './crm'
 import { INSIGHT_AI_TOOLS } from './insights'
 import { KNOWLEDGE_AI_TOOLS } from './knowledge'
@@ -19,6 +20,7 @@ export const STEEL_AI_TOOLS: readonly AnySteelAiTool[] = [
   ...CRM_AI_TOOLS,
   ...WHATSAPP_AI_TOOLS,
   ...SKILL_AI_TOOLS,
+  ...ACTION_AI_TOOLS,
 ]
 
 export type * from './types'

@@ -250,6 +250,8 @@ export type AuditEntity =
   | 'integration_grant'
   // Outbound webhooks (ADR 0036): endpoints and manual re-deliveries
   | 'webhook_endpoint'
+  | 'ai_action_connector'
+  | 'ai_action_settings'
   | 'webhook_delivery'
   // Steel AI quality (ADR 0039): feedback, eval sets/cases/runs, CSV
   | 'ai_feedback'

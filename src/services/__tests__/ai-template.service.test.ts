@@ -4,6 +4,7 @@ import { createFakeWorkspaceModuleAccess } from '@/src/__tests__/factories/works
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'
 import { STEEL_AGENT_TEMPLATES } from '@/src/lib/ai/templates/agent-templates'
+import { CRM_SALES_AGENT_TEMPLATES } from '@/src/lib/ai/templates/crm-sales-agent-templates'
 import { AI_SKILL_TEMPLATES } from '@/src/lib/ai/templates/skill-templates'
 import { SYSTEM_PROFILE_PERMISSIONS } from '@/src/lib/permissions'
 import { err, ok } from '@/src/lib/result'
@@ -69,7 +70,7 @@ describe('AiTemplateService.list', () => {
     expect(result.canUse).toBe(true)
     expect(result.agentModeEnabled).toBe(true)
     expect(result.agents.map((t) => t.id)).toEqual(
-      STEEL_AGENT_TEMPLATES.map((t) => t.id),
+      [...STEEL_AGENT_TEMPLATES, ...CRM_SALES_AGENT_TEMPLATES].map((t) => t.id),
     )
     expect(result.skills.map((t) => t.id)).toEqual(
       AI_SKILL_TEMPLATES.map((t) => t.id),

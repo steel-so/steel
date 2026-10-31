@@ -1525,6 +1525,29 @@ export const ERROR_CODES = {
   SD_NL_CONFIG_FAILED: { code: 'SD_NL_CONFIG_FAILED', status: 502 },
   SD_NL_CONFIG_INVALID: { code: 'SD_NL_CONFIG_INVALID', status: 422 },
   SD_WFM_SETTINGS_INVALID: { code: 'SD_WFM_SETTINGS_INVALID', status: 422 },
+  // nov: ai-actions
+  AI_ACTION_CONNECTOR_NOT_FOUND: {
+    code: 'AI_ACTION_CONNECTOR_NOT_FOUND',
+    status: 404,
+  },
+  AI_ACTION_CONNECTOR_LIMIT_REACHED: {
+    code: 'AI_ACTION_CONNECTOR_LIMIT_REACHED',
+    status: 409,
+  },
+  AI_ACTION_CONNECTOR_KEY_TAKEN: {
+    code: 'AI_ACTION_CONNECTOR_KEY_TAKEN',
+    status: 409,
+  },
+  AI_ACTION_CONNECTOR_INVALID: {
+    code: 'AI_ACTION_CONNECTOR_INVALID',
+    status: 422,
+  },
+  // The customer system answered with an error or timed out.
+  AI_ACTION_CONNECTOR_FAILED: { code: 'AI_ACTION_CONNECTOR_FAILED', status: 502 },
+  // The AI actions switch of the workspace is off.
+  AI_ACTIONS_DISABLED: { code: 'AI_ACTIONS_DISABLED', status: 403 },
+  // The same write (idempotency key) is still running.
+  AI_ACTION_IN_PROGRESS: { code: 'AI_ACTION_IN_PROGRESS', status: 409 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

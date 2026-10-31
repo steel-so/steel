@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { SteelAiTopBar } from '@/app/_components/steel-ai/steel-ai-top-bar'
+import { SteelAgentGuidedDialog } from '@/app/_components/steel-ai-templates/steel-agent-guided-dialog'
 import { SteelAiTemplateGallery } from '@/app/_components/steel-ai-templates/steel-ai-template-gallery'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
@@ -31,15 +32,19 @@ import {
 export function SteelAgentsList({
   workspaceId,
   slug,
+  currentUserId,
 }: {
   workspaceId: string
   slug: string
+  /** Owner of agents created with the guided flow. */
+  currentUserId?: string
 }) {
   const agents = useSteelAgents(workspaceId)
   const catalog = useSteelAgentCatalog(workspaceId)
   const templates = useAiTemplates(workspaceId)
   const router = useRouter()
   const [gallery, setGallery] = useState(false)
+  const [guided, setGuided] = useState(false)
   const canManage = catalog.data?.canManage ?? false
   const canCreate = canManage || (catalog.data?.canCreate ?? false)
   // Templates are an OWNER/ADMIN gallery; creating still needs `canManage`.
@@ -76,6 +81,18 @@ export function SteelAgentsList({
                 >
                   <SteelIcon icon={DashboardSquare02Icon} strokeWidth={2} />
                   <span className='hidden sm:inline'>Modelos</span>
+                </Button>
+              ) : null}
+              {canUseTemplates && currentUserId ? (
+                <Button
+                  size='sm'
+                  variant='outline'
+                  aria-label='Criar com ajuda'
+                  className='max-sm:size-8 max-sm:px-0'
+                  onClick={() => setGuided(true)}
+                >
+                  <SteelIcon icon={AiBrain01Icon} strokeWidth={2} />
+                  <span className='hidden sm:inline'>Criar com ajuda</span>
                 </Button>
               ) : null}
               {canCreate ? (
@@ -218,6 +235,16 @@ export function SteelAgentsList({
           )}
         </div>
       </div>
+      {canUseTemplates && templates.data && currentUserId ? (
+        <SteelAgentGuidedDialog
+          open={guided}
+          onOpenChange={setGuided}
+          workspaceId={workspaceId}
+          slug={slug}
+          ownerId={currentUserId}
+          templates={templates.data.agents}
+        />
+      ) : null}
       {canUseTemplates && templates.data ? (
         <SteelAiTemplateGallery
           kind='agents'

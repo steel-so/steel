@@ -33,7 +33,9 @@ interface AiTemplateBase {
 }
 
 export interface SteelAgentTemplate extends AiTemplateBase {
-  triggerType: 'SCHEDULE' | 'MANUAL'
+  triggerType: 'SCHEDULE' | 'EVENT' | 'MANUAL'
+  /** Event key (EVENT only), from `STEEL_AGENT_EVENTS`. */
+  eventKey?: string | null
   /** Five-field cron, in `timezone` (SCHEDULE only). */
   cron: string | null
   /** pt-BR description of the schedule, shown in the gallery. */

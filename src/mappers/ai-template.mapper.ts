@@ -99,7 +99,7 @@ export function toSteelAgentTemplateDTO(
     cron: template.cron,
     scheduleLabel: template.scheduleLabel,
     timezone: template.timezone,
-    eventKey: null,
+    eventKey: template.eventKey ?? null,
     maxToolRounds: template.maxToolRounds,
   }
 }
