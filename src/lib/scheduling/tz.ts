@@ -1,5 +1,5 @@
 /**
- * Time-zone helpers of the meeting scheduler (C5). Everything is built on
+ * Time-zone and calendar-day helpers of the shared scheduling engine (ADR 0059). Everything is built on
  * `Intl`, so no date library is needed and the result never depends on the
  * server's own zone (CI runs in UTC).
  */
@@ -109,4 +109,37 @@ export function localDateKey(date: Date, timezone: string): string {
 export function parseClock(value: string): number | null {
   const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(value)
   return match ? Number(match[1]) * 60 + Number(match[2]) : null
+}
+
+/** The instant at which the zone's wall clock reads `dateKey` + `minuteOfDay`. */
+export function zonedDateKeyToUtc(
+  dateKey: string,
+  minuteOfDay: number,
+  timezone: string,
+): Date {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return zonedTimeToUtc(
+    {
+      year,
+      month,
+      day,
+      hour: Math.floor(minuteOfDay / 60),
+      minute: minuteOfDay % 60,
+    },
+    timezone,
+  )
+}
+
+/** Weekday (0 = Sunday) of a `YYYY-MM-DD` calendar date. */
+export function weekdayOfDateKey(dateKey: string): number {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+}
+
+/** `dateKey` shifted by `days` calendar days. */
+export function addDaysToDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day + days))
+    .toISOString()
+    .slice(0, 10)
 }

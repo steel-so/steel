@@ -1,5 +1,5 @@
-import type { Interval } from './slots'
-import { localParts, zonedTimeToUtc } from './tz'
+import type { Interval } from '@/src/lib/scheduling/slots'
+import { localParts, zonedTimeToUtc } from '@/src/lib/scheduling/tz'
 
 /**
  * Minimal iCalendar (RFC 5545) reader and writer for the meeting scheduler.

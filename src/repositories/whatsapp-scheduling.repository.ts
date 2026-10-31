@@ -9,6 +9,7 @@ import type {
 } from '@prisma/client'
 import { whatsappSchedSlotTaken } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
+import { bufferedOverlap } from '@/src/lib/scheduling/slots'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
 
@@ -324,8 +325,14 @@ export const WhatsAppSchedAppointmentRepository = {
           })
           // A neighbour's own buffer must not reach our start.
           const reaches = (row: (typeof candidates)[number]) =>
-            row.endsAt.getTime() + row.service.bufferMinutes * MINUTE_MS >
-            input.startsAt.getTime()
+            bufferedOverlap(
+              { start: input.startsAt, end: input.endsAt },
+              { start: row.startsAt, end: row.endsAt },
+              {
+                afterCandidateMinutes: bufferMinutes,
+                afterOtherMinutes: row.service.bufferMinutes,
+              },
+            )
           if (candidates.some(reaches)) return null
           return tx.whatsAppSchedAppointment.create({
             data,

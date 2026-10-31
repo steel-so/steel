@@ -2,7 +2,7 @@ import type { CrmMeetingAvailability, CrmMeetingBooking } from '@prisma/client'
 import {
   DEFAULT_WEEKLY_HOURS,
   type WeeklyHours,
-} from '@/src/lib/crm-meetings/slots'
+} from '@/src/lib/scheduling/slots'
 import type {
   MeetingBookingWithPage,
   MeetingPageWithHosts,

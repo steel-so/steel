@@ -57,7 +57,7 @@ fica atrás de uma chave que o dono liga depois de cumprir os passos abaixo.
   profissional). O cliente responde CONFIRMAR ou CANCELAR (texto ou botão do template).
 - Reuso do Z3: o formulário com o modelo "Agendamento" marca o primeiro horário livre do dia e
   período escolhidos (títulos das opções iguais aos nomes dos serviços).
-- Reuso do C5: o cálculo de horários livres e de fuso usa `src/lib/crm-meetings/slots.ts` e `tz.ts`
+- Reuso do C5: o cálculo de horários livres e de fuso usa `src/lib/scheduling/slots.ts` e `tz.ts` (motor único, ADR 0059)
   por meio de adaptadores finos em `src/lib/whatsapp/scheduling/`. Não coube reaproveitar: as
   reservas (tabelas, links públicos, e-mail e .ics do C5 são por vendedor e por reunião) e o
   limite de conflito, que o C5 aplica com o intervalo do serviço oferecido nos dois lados,

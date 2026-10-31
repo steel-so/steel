@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isValidTimezone, parseClock } from '@/src/lib/crm-meetings/tz'
+import { isValidTimezone, parseClock } from '@/src/lib/scheduling/tz'
 
 const TimezoneSchema = z
   .string()

@@ -7,7 +7,7 @@ import type {
 } from '@prisma/client'
 import { crmMeetingSlotTaken, crmMeetingSlugTaken } from '@/src/errors'
 import type { AppError } from '@/src/errors/app-error'
-import type { Interval } from '@/src/lib/crm-meetings/slots'
+import type { Interval } from '@/src/lib/scheduling/slots'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'

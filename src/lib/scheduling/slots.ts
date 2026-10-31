@@ -1,3 +1,8 @@
+/**
+ * Shared slot/availability engine (ADR 0059). Used by the CRM meeting pages
+ * (C5) and by the WhatsApp native scheduling (Z10): weekly windows in an IANA
+ * zone, step, minimum notice, horizon and buffer-aware conflict checks.
+ */
 import { type LocalParts, localParts, parseClock, zonedTimeToUtc } from './tz'
 
 export interface Interval {
@@ -56,6 +61,26 @@ export function windowsOf(
   return out.sort((a, b) => a.startMin - b.startMin)
 }
 
+/**
+ * Buffer-aware conflict between a candidate and one neighbour. The candidate
+ * needs `afterCandidateMinutes` of room before the neighbour starts and the
+ * neighbour needs `afterOtherMinutes` before the candidate may start. C5 uses
+ * the page buffer for both, Z10 uses the candidate's service buffer on the
+ * first and the neighbour's own service buffer on the second.
+ */
+export function bufferedOverlap(
+  candidate: Interval,
+  other: Interval,
+  buffers: { afterCandidateMinutes: number; afterOtherMinutes: number },
+): boolean {
+  return (
+    other.start.getTime() <
+      candidate.end.getTime() + buffers.afterCandidateMinutes * MINUTE_MS &&
+    other.end.getTime() + buffers.afterOtherMinutes * MINUTE_MS >
+      candidate.start.getTime()
+  )
+}
+
 /** Does `[start, end)` collide with a busy interval (buffer on both sides)? */
 export function collides(
   start: Date,
@@ -63,14 +88,12 @@ export function collides(
   busy: Interval[],
   bufferMinutes: number,
 ): boolean {
-  const buffer = bufferMinutes * MINUTE_MS
-  const s = start.getTime()
-  const e = end.getTime()
-  return busy.some(
-    (interval) =>
-      interval.start.getTime() - buffer < e &&
-      interval.end.getTime() + buffer > s,
-  )
+  const candidate = { start, end }
+  const buffers = {
+    afterCandidateMinutes: bufferMinutes,
+    afterOtherMinutes: bufferMinutes,
+  }
+  return busy.some((interval) => bufferedOverlap(candidate, interval, buffers))
 }
 
 /**
