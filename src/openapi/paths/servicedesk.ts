@@ -13,6 +13,7 @@ import { sdKcsRoutes } from './servicedesk/kcs'
 import { sdMailRoutes } from './servicedesk/mail'
 import { sdMajorIncidentRoutes } from './servicedesk/major-incident'
 import { sdMonitoringRoutes } from './servicedesk/monitoring'
+import { sdNlConfigRoutes } from './servicedesk/nl-config'
 import { sdNotificationRoutes } from './servicedesk/notifications'
 import { sdOnCallRoutes } from './servicedesk/oncall'
 import { sdRecurringRoutes } from './servicedesk/recurring'
@@ -51,6 +52,7 @@ const routes: RouteConfig[] = [
   ...sdMajorIncidentRoutes,
   ...sdInventoryRoutes,
   ...sdInventoryFollowupRoutes,
+  ...sdNlConfigRoutes,
 ]
 
 export function registerServiceDeskPaths(registry: OpenApiRegistry): void {

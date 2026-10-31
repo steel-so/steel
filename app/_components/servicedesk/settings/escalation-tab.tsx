@@ -35,6 +35,7 @@ import type {
   SdEscalationRuleDTO,
   SdEscalationTriggerDTO,
 } from '@/types/sd-config'
+import { SdNlConfigButton } from './nl-config-dialog'
 import {
   SD_DEFAULT_ESCALATION_ACTIONS,
   SdConditionBuilder,
@@ -101,10 +102,17 @@ export function SdEscalationTab() {
       description='Avaliadas pelo relógio de SLA do worker, na ordem da lista. "Em risco" usa o percentual de Geral > SLA em risco.'
       actions={
         canEdit ? (
-          <Button size='sm' onClick={() => setEditing('new')}>
-            <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-            Nova regra
-          </Button>
+          <>
+            <SdNlConfigButton
+              workspaceId={workspaceId}
+              kind='ESCALATION'
+              existing={data ?? []}
+            />
+            <Button size='sm' onClick={() => setEditing('new')}>
+              <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+              Nova regra
+            </Button>
+          </>
         ) : null
       }
     >
