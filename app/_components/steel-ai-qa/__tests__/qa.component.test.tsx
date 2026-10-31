@@ -141,9 +141,9 @@ describe('<QaCoachingPanel />', () => {
     expect(screen.getByText('Confirme o protocolo')).toBeTruthy()
     expect(screen.getByLabelText('Evolução por semana')).toBeTruthy()
 
-    // The customer name also shows in the worst-review row, so take the first
-    // match: any of them opens the same review.
-    fireEvent.click(screen.getAllByText('Ana', { exact: false })[0])
+    // The customer name shows outside the worst-review button too, so go
+    // through the button role.
+    fireEvent.click(screen.getAllByRole('button', { name: /Ana/ })[0])
     expect(await screen.findByText('Avaliação do atendimento')).toBeTruthy()
     expect(await screen.findByText('Faltou resolver.')).toBeTruthy()
     expect(screen.getByText('Dicas para o atendente')).toBeTruthy()
