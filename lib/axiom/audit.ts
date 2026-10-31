@@ -319,9 +319,6 @@ export type AuditEntity =
   // nov: crm-ops
   | 'crm_duplicate'
   | 'crm_merge'
-  | 'crm_meeting_page'
-  | 'crm_meeting_booking'
-  | 'crm_meeting_availability'
   // nov-health-scores
   | 'crm_customer_health'
   | 'crm_opportunity_health'

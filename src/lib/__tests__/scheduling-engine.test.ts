@@ -227,7 +227,7 @@ describe('computeFreeSlots', () => {
   })
 })
 
-describe('bufferedOverlap (C5 and Z10 buffer rules)', () => {
+describe('bufferedOverlap (Z10 buffer rules)', () => {
   const at = (hhmm: string) => new Date(`2026-11-02T${hhmm}:00Z`)
   const candidate = { start: at('10:00'), end: at('11:00') }
 

@@ -14,7 +14,6 @@ import { crmHealthRoutes } from './crm/health'
 import { crmHookVaultRoutes } from './crm/hook-vault'
 import { crmIntegrationsRoutes } from './crm/integrations'
 import { crmLeadsRoutes } from './crm/leads'
-import { crmMeetingRoutes } from './crm/meetings'
 import { crmNewsletterAutomationRoutes } from './crm/newsletter-automation'
 import { crmNewsletterBridgeRoutes } from './crm/newsletter-bridge'
 import { crmNewsletterEngageRoutes } from './crm/newsletter-engage'
@@ -54,7 +53,6 @@ const routes: RouteConfig[] = [
   ...crmCadenceRoutes,
   ...crmDuplicateRoutes,
   ...crmDealsRoutes,
-  ...crmMeetingRoutes,
   ...crmHealthRoutes,
   ...crmProspectingRoutes,
   ...crmEmailRoutes,

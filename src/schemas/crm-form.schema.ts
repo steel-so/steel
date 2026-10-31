@@ -201,8 +201,6 @@ export const UpdateCrmFormSchema = z
     redirectUrl: z.string().max(500).optional(),
     /** Newsletter the consent box subscribes to (ADR 0054); null = none. */
     newsletterId: z.string().min(1).nullable().optional(),
-    /** Booking page offered after the submission (crm-ops C5); null = none. */
-    bookingPageId: z.string().min(1).nullable().optional(),
   })
   .superRefine((data, ctx) => {
     // Só valida a referência cruzada quando os dois vêm juntos no PATCH — se

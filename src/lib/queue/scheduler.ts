@@ -10,7 +10,6 @@ import {
   CrmDealsJob,
   CrmDuplicatesJob,
   CrmHealthJob,
-  CrmMeetingsJob,
   CrmNewsletterAutomationJob,
   CrmNewsletterJob,
   CrmProposalExpiryJob,
@@ -55,7 +54,6 @@ import {
   getCrmDealsQueue,
   getCrmDuplicatesQueue,
   getCrmHealthQueue,
-  getCrmMeetingsQueue,
   getCrmNewsletterAutomationQueue,
   getCrmNewsletterQueue,
   getCrmProposalExpiryQueue,
@@ -102,7 +100,6 @@ import {
   CrmDealsCron,
   CrmDuplicatesCron,
   CrmHealthCron,
-  CrmMeetingsCron,
   CrmNewsletterAbTickCron,
   CrmNewsletterAutomationCron,
   CrmNewsletterDigestTickCron,
@@ -582,21 +579,6 @@ export async function scheduleCrmDuplicatesJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_duplicates_registered', {
     component: 'Worker',
     pattern: CrmDuplicatesCron,
-    timezone: RetentionTimezone,
-  })
-}
-
-export async function scheduleCrmMeetingsJobs(): Promise<void> {
-  const queue = getCrmMeetingsQueue()
-  await queue.upsertJobScheduler(
-    CrmMeetingsJob.RunReminders,
-    { pattern: CrmMeetingsCron, tz: RetentionTimezone },
-    { name: CrmMeetingsJob.RunReminders, data: {} },
-  )
-
-  logger.info('queue.scheduler.crm_meetings_registered', {
-    component: 'Worker',
-    pattern: CrmMeetingsCron,
     timezone: RetentionTimezone,
   })
 }

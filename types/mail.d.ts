@@ -105,18 +105,3 @@ export interface WhatsAppUnassignedConversationEmailProps extends EmailProps {
   teamName: string | null
   redirectUrl: string
 }
-
-// nov: crm-ops (C5 meeting booking e-mails)
-export interface CrmMeetingEmailProps extends EmailProps {
-  kind: 'confirmation' | 'reminder' | 'canceled'
-  workspaceName: string
-  pageTitle: string
-  hostName: string
-  /** Date and time already formatted in the guest's time zone. */
-  whenLabel: string
-  timezone: string
-  /** Video-call link or address; empty for the canceled notice. */
-  location: string | null
-  /** Link to cancel (confirmation and reminder) or to book again. */
-  manageUrl: string
-}

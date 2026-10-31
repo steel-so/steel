@@ -31,8 +31,6 @@ import {
   type CrmDealsJobPayload,
   type CrmHealthJob,
   type CrmHealthJobPayload,
-  type CrmMeetingsJob,
-  type CrmMeetingsJobPayload,
   type CrmNewsletterAutomationJob,
   type CrmNewsletterAutomationJobPayload,
   type CrmNewsletterJob,
@@ -161,7 +159,6 @@ let whatsappAutomationsQueue: Queue | null = null
 let crmHealthQueue: Queue | null = null
 let crmDealsQueue: Queue | null = null
 let crmDuplicatesQueue: Queue | null = null
-let crmMeetingsQueue: Queue | null = null
 let crmSocialPostsTickQueue: Queue | null = null
 let crmSocialPublishQueue: Queue | null = null
 let changelogQueue: Queue | null = null
@@ -964,7 +961,6 @@ export async function closeQueues(): Promise<void> {
     crmHealthQueue?.close(),
     crmDealsQueue?.close(),
     crmDuplicatesQueue?.close(),
-    crmMeetingsQueue?.close(),
     servicedeskTaskRemindersQueue?.close(),
     steelAgentsQueue?.close(),
     searchReindexQueue?.close(),
@@ -1000,7 +996,6 @@ export async function closeQueues(): Promise<void> {
   crmHealthQueue = null
   crmDealsQueue = null
   crmDuplicatesQueue = null
-  crmMeetingsQueue = null
   crmSocialPostsTickQueue = null
   crmSocialPublishQueue = null
   changelogQueue = null
@@ -1047,25 +1042,6 @@ export function getCrmDuplicatesQueue(): Queue<
     CrmDuplicatesJobPayload[CrmDuplicatesJob],
     unknown,
     CrmDuplicatesJob
-  >
-}
-
-/** Meeting reminders tick (crm-ops C5). */
-export function getCrmMeetingsQueue(): Queue<
-  CrmMeetingsJobPayload[CrmMeetingsJob],
-  unknown,
-  CrmMeetingsJob
-> {
-  if (!crmMeetingsQueue) {
-    crmMeetingsQueue = new Queue(QueueName.CrmMeetings, {
-      connection: getQueueConnection(),
-      defaultJobOptions,
-    })
-  }
-  return crmMeetingsQueue as Queue<
-    CrmMeetingsJobPayload[CrmMeetingsJob],
-    unknown,
-    CrmMeetingsJob
   >
 }
 
@@ -1417,7 +1393,6 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmHealth]: getCrmHealthQueue,
   [QueueName.CrmDeals]: getCrmDealsQueue,
   [QueueName.CrmDuplicates]: getCrmDuplicatesQueue,
-  [QueueName.CrmMeetings]: getCrmMeetingsQueue,
   [QueueName.ServicedeskTaskReminders]: getServicedeskTaskRemindersQueue,
   [QueueName.SteelAgents]: getSteelAgentsQueue,
   [QueueName.Notifications]: getNotificationsQueue,

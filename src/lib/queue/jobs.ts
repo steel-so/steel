@@ -35,7 +35,6 @@ export const QueueName = {
   WhatsappAutomations: 'whatsapp-automations',
   CrmHealth: 'crm-health',
   CrmDuplicates: 'crm-duplicates',
-  CrmMeetings: 'crm-meetings',
   CrmDeals: 'crm-deals',
   ServicedeskTaskReminders: 'servicedesk-task-reminders',
   SteelAgents: 'steel-agents',
@@ -729,21 +728,6 @@ export type CrmDuplicatesJob =
 
 export type CrmDuplicatesJobPayload = {
   [CrmDuplicatesJob.RunScan]: Record<string, never>
-}
-
-/**
- * Meeting booking (crm-ops C5): every 5 minutes the worker sends the
- * reminder e-mail of the bookings that start soon.
- */
-export const CrmMeetingsJob = {
-  RunReminders: 'run-reminders',
-} as const
-
-export type CrmMeetingsJob =
-  (typeof CrmMeetingsJob)[keyof typeof CrmMeetingsJob]
-
-export type CrmMeetingsJobPayload = {
-  [CrmMeetingsJob.RunReminders]: Record<string, never>
 }
 
 /**

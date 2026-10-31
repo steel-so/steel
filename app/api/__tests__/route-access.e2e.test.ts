@@ -58,9 +58,6 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/campaigns/resend-webhook': 'Svix signature',
   '/api/crm/cadences/c': 'signed click token (run + destination)',
   '/api/crm/cadences/o': 'signed open-pixel token',
-  '/api/crm/meetings':
-    'public booking page: slug of an active page, rate limited, consent required to book',
-  '/api/crm/meeting-bookings': 'guest manage token',
   '/api/crm/deal-rooms': 'deal room link token (rate limited)',
   '/api/crm/payments': 'payment provider signature over the raw body',
   '/api/servicedesk/approvals': 'approval link token',

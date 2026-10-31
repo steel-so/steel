@@ -593,12 +593,6 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'report',
     color: 'amber',
   },
-  CRM_MEETING_BOOKED: {
-    module: 'CRM',
-    label: 'Reunião agendada',
-    icon: 'task',
-    color: 'sky',
-  },
   AI_ACTION_EXPIRING: {
     module: 'OTHER',
     label: 'Ação da IA expirando',
