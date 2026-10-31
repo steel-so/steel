@@ -1,6 +1,7 @@
 import { createId } from '@paralleldrive/cuid2'
 import { describe, expect, it } from 'vitest'
 import { authenticatedOwner } from '@/src/__tests__/helpers/e2e'
+import { signAbacatePayBody } from '@/src/lib/abacatepay-webhook'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 import { prisma } from '@/src/lib/prisma'
 
@@ -9,13 +10,20 @@ const SECRET = process.env.ABACATE_PAY_WEBHOOK_SECRET ?? ''
 // so each state of the billing flag runs its own cases.
 const BILLING_ON = process.env.BILLING_ENABLED === 'true'
 
-async function postWebhook(body: unknown, secret: string | null = SECRET) {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (secret !== null) headers['x-webhook-secret'] = secret
-  return fetch(`${BASE_URL}/api/payment/webhook`, {
+async function postWebhook(
+  body: unknown,
+  secret: string | null = SECRET,
+  signature?: string,
+) {
+  const raw = JSON.stringify(body)
+  const query = secret === null ? '' : `?webhookSecret=${encodeURIComponent(secret)}`
+  return fetch(`${BASE_URL}/api/payment/webhook${query}`, {
     method: 'POST',
-    headers,
-    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      'x-webhook-signature': signature ?? signAbacatePayBody(raw),
+    },
+    body: raw,
   })
 }
 
@@ -57,7 +65,7 @@ describe.runIf(!BILLING_ON)('POST /api/payment/webhook — billing off', () => {
 })
 
 describe.runIf(BILLING_ON)('POST /api/payment/webhook', () => {
-  it('should return 401 when x-webhook-secret header is missing', async () => {
+  it('should return 401 when webhookSecret query param is missing', async () => {
     const res = await postWebhook(
       { event: 'subscription.completed', data: { id: 'bill_x' } },
       null,
@@ -65,12 +73,29 @@ describe.runIf(BILLING_ON)('POST /api/payment/webhook', () => {
     expect(res.status).toBe(401)
   })
 
-  it('should return 401 when x-webhook-secret is wrong', async () => {
+  it('should return 401 when webhookSecret is wrong', async () => {
     const res = await postWebhook(
       { event: 'subscription.completed', data: { id: 'bill_x' } },
       'wrong-secret',
     )
     expect(res.status).toBe(401)
+  })
+
+  it('should return 401 when the body signature is wrong', async () => {
+    const res = await postWebhook(
+      { event: 'subscription.completed', data: { id: 'bill_x' } },
+      SECRET,
+      'AAAA',
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it('should read the id from data.subscription.id (v2 payload)', async () => {
+    const res = await postWebhook({
+      event: 'subscription.renewed',
+      data: { subscription: { id: 'bill_unknown_v2' } },
+    })
+    expect(res.status).not.toBe(422)
   })
 
   it('should return 422 when payload is missing event or data.id', async () => {

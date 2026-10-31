@@ -1526,7 +1526,15 @@ const billing: RouteConfig[] = [
       schema: z.object({
         event: z.string().meta({ example: 'subscription.completed' }),
         data: z.object({
-          id: z.string().meta({ description: 'ID da cobrança (`billId`).' }),
+          id: z
+            .string()
+            .optional()
+            .meta({ description: 'ID da cobrança (`billId`), quando plano.' }),
+          subscription: z
+            .object({ id: z.string() })
+            .optional()
+            .meta({ description: 'Formato v2: `data.subscription.id` (`billId`).' }),
+          checkout: z.object({ id: z.string() }).optional(),
         }),
       }),
     },
@@ -1537,7 +1545,7 @@ const billing: RouteConfig[] = [
       {
         code: 'UNAUTHORIZED',
         message: 'Invalid webhook secret',
-        when: 'Segredo ausente ou inválido',
+        when: 'Segredo na URL ou assinatura do corpo ausente ou inválido',
       },
       {
         code: 'RESOURCE_NOT_FOUND',

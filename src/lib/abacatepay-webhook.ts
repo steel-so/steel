@@ -27,6 +27,26 @@ function safeEqual(expected: string, received: string | null): boolean {
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
+/**
+ * Origin (secret in the URL) and integrity (body signature) checks only; the
+ * body is not parsed. Shared by billing, Pix and boleto webhooks.
+ */
+export function verifyAbacatePayWebhook(
+  secret: string | undefined,
+  headers: Headers,
+  rawBody: string,
+  query?: URLSearchParams,
+): boolean {
+  if (!secret) return false
+  if (!safeEqual(secret, query?.get(ABACATEPAY_SECRET_PARAM) ?? null)) {
+    return false
+  }
+  return safeEqual(
+    signAbacatePayBody(rawBody),
+    headers.get(ABACATEPAY_SIGNATURE_HEADER),
+  )
+}
+
 const ChargeSchema = z.object({
   id: z.string().min(1).optional(),
   amount: z.number().optional(),
@@ -67,18 +87,7 @@ export function readAbacatePayWebhook(
   rawBody: string,
   query?: URLSearchParams,
 ): AbacatePayWebhookEvent | null {
-  if (!secret) return null
-  if (!safeEqual(secret, query?.get(ABACATEPAY_SECRET_PARAM) ?? null)) {
-    return null
-  }
-  if (
-    !safeEqual(
-      signAbacatePayBody(rawBody),
-      headers.get(ABACATEPAY_SIGNATURE_HEADER),
-    )
-  ) {
-    return null
-  }
+  if (!verifyAbacatePayWebhook(secret, headers, rawBody, query)) return null
   let json: unknown
   try {
     json = JSON.parse(rawBody)
