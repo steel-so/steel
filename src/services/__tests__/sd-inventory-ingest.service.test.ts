@@ -15,6 +15,7 @@ vi.mock('@/lib/axiom/logger', () => ({
 }))
 vi.mock('@/src/repositories/sd-inventory-token.repository')
 vi.mock('../sd-inventory-sync.service')
+vi.mock('../sd-remote.service')
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
@@ -22,6 +23,7 @@ import { SdInventoryTokenRepository } from '@/src/repositories/sd-inventory-toke
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { SdInventoryIngestService } from '../sd-inventory-ingest.service'
 import { syncInventoryDevice } from '../sd-inventory-sync.service'
+import { SdRemoteService } from '../sd-remote.service'
 
 const tokens = vi.mocked(SdInventoryTokenRepository)
 const sync = vi.mocked(syncInventoryDevice)
@@ -43,6 +45,55 @@ beforeEach(() => {
   tokens.touch.mockResolvedValue(ok(undefined))
   moduleEnabled.mockResolvedValue(ok(true))
   sync.mockResolvedValue(synced())
+})
+
+describe('SdInventoryIngestService.ingest remote ids (S4)', () => {
+  it('forwards the remote ids the agent found to the CMDB item', async () => {
+    vi.mocked(SdRemoteService.saveInventoryEndpoints).mockResolvedValue(ok(1))
+    await SdInventoryIngestService.ingest(
+      token,
+      createSdInventoryReport({ remote: { rustdesk: '123456789' } }),
+    )
+    expect(SdRemoteService.saveInventoryEndpoints).toHaveBeenCalledWith(
+      'ws1',
+      'ci-1',
+      { rustdesk: '123456789' },
+    )
+  })
+
+  it('still accepts the report when saving the remote ids fails', async () => {
+    vi.mocked(SdRemoteService.saveInventoryEndpoints).mockResolvedValue(
+      err(databaseError()),
+    )
+    expectOk(
+      await SdInventoryIngestService.ingest(
+        token,
+        createSdInventoryReport({ remote: { anydesk: '987654321' } }),
+      ),
+    )
+    expect(logger.warn).toHaveBeenCalledWith(
+      'servicedesk.inventory.remote_ids_failed',
+      expect.objectContaining({ workspaceId: 'ws1' }),
+    )
+  })
+
+  it('skips the remote ids when there is no CMDB item or none were sent', async () => {
+    sync.mockResolvedValue(
+      ok({
+        device: createFakeSdInventoryDevice(),
+        created: false,
+        configItemId: null,
+        openedAlerts: 0,
+        resolvedAlerts: 0,
+      }),
+    )
+    await SdInventoryIngestService.ingest(
+      token,
+      createSdInventoryReport({ remote: { rustdesk: '123456789' } }),
+    )
+    await SdInventoryIngestService.ingest(token, createSdInventoryReport())
+    expect(SdRemoteService.saveInventoryEndpoints).not.toHaveBeenCalled()
+  })
 })
 
 describe('SdInventoryIngestService.ingest', () => {
