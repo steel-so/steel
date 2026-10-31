@@ -42,6 +42,7 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/talk-to-sales': 'public contact form (rate limited)',
   '/api/payment/webhook': 'payment provider signature',
   '/api/whatsapp/webhook': 'Meta/Z-API signature or verify token',
+  '/api/boleto/webhook': 'PSP webhookSecret in the URL plus body signature',
   '/api/pabx/calls/webhook': 'PABX webhook secret',
   '/api/pabx/voice-agent': 'voice agent shared secret',
   '/api/crm/proposals': 'proposal link token',
