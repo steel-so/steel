@@ -70,8 +70,8 @@ de sandbox).
   origem) e o header `X-Webhook-Signature` (HMAC-SHA256 base64 do corpo cru com
   a chave pública da doc) garante a integridade. Outros eventos são
   autenticados e ignorados.
-- **Boleto**: não construído (fora do escopo da Z1). A doc do AbacatePay lista
-  `POST /transparents/create` com boleto; fica para uma entrega própria.
+- **Cliente HTTP**: `lib/abacatepay-transparent.ts` (API v2, módulo próprio;
+  `lib/abacatepay.ts` segue só com a cobrança de assinaturas e já usa `/v2`).
 - **A confirmar na homologação**: o formato exato de `data` em
   `transparent.completed` não está na doc pública; o parser aceita
   `data.transparent`, `data.checkout` ou `data` plano (`id`, `paidAmount` ou
@@ -83,6 +83,7 @@ de sandbox).
 | --- | --- |
 | `PIX_PROVIDER` | Provedor das novas cobranças (`mock` ou `abacatepay`). |
 | `ABACATE_PAY` | Chave de API do AbacatePay (compartilhada com a cobrança de assinaturas). |
+| `BOLETO_PROVIDER` / `BOLETO_WEBHOOK_SECRET` | Provedor de boleto (`mock` ou `abacatepay`) e o `webhookSecret` (mín. 16 caracteres) da URL do webhook. |
 | `PIX_WEBHOOK_SECRET` | No `abacatepay`, o `webhookSecret` da URL. No `mock`: segredo (mínimo 16 caracteres) do HMAC-SHA256 do webhook do `mock`, enviado em `x-pix-signature`. Sem ele o webhook recusa toda chamada. |
 
 ## Pontos de atenção
@@ -98,3 +99,21 @@ de sandbox).
 - **Fora do escopo desta entrega**: confirmação automática ao cliente
   ("recebemos seu Pix"), aviso no inbox ao atendente, reembolso/estorno e
   conciliação. Dependem do PSP escolhido.
+
+## Boleto (AbacatePay API v2)
+
+Mesma ideia do Pix, atrás de `BoletoProvider` (`src/lib/boleto/`): `mock`
+(padrão) e `abacatepay` (`POST /v2/transparents/create` com `method: BOLETO`;
+exige nome e CPF/CNPJ do pagador, vencimento opcional de até 365 dias, juros e
+multa opcionais). `BOLETO_PROVIDER` escolhe o provedor e
+`BOLETO_WEBHOOK_SECRET` é o `webhookSecret` da URL
+`https://<host>/api/boleto/webhook/abacatepay?webhookSecret=<segredo>`.
+
+- Webhook: `transparent.completed` = pago, `transparent.refunded` = estornado,
+  `transparent.expired` = vencido (a doc não lista esse evento; o vencimento
+  também se lê por `getChargeStatus`, que vira `EXPIRED` após a data).
+- Não há rota de cancelamento na doc.
+- **Estado**: camada de provedor, rota de webhook (autentica, registra e
+  confirma) e testes. Ainda **não há** tabela de cobranças de boleto, tela de
+  cobrança na conversa (Z1) nem baixa em proposta (C6); entram numa entrega
+  própria, desligadas por workspace até um admin ligar.

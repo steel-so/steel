@@ -10,10 +10,12 @@ const env = vi.hoisted(() => ({
 vi.mock('@/lib/env/server', () => env)
 
 import {
-  ABACATEPAY_PIX_PROVIDER_ID,
   ABACATEPAY_SIGNATURE_HEADER,
-  createAbacatePayPixProvider,
   signAbacatePayBody,
+} from '../abacatepay-webhook'
+import {
+  ABACATEPAY_PIX_PROVIDER_ID,
+  createAbacatePayPixProvider,
 } from '../pix/abacatepay-provider'
 import { getActivePixProvider, getPixProviderById } from '../pix/registry'
 
