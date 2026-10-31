@@ -13199,6 +13199,7 @@ model WhatsAppCoexistenceSync {
 
   @@index([workspaceId])
   @@map("whatsapp_coexistence_syncs")
+}
 
 // nov: pwa-push
 

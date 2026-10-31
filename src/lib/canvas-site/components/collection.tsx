@@ -71,7 +71,7 @@ function ValueView({ value }: { value: SiteCmsValue }) {
     case 'reference':
     case 'product': {
       const href = safeHref(value.url)
-      return href ? <a href={href}>{value.text}</a> : <>{value.text}</>
+      return href ? <a href={href}>{value.text}</a> : value.text
     }
     default:
       return <>{value.text}</>
