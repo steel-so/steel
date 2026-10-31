@@ -1,0 +1,106 @@
+---
+title: Agendamento de reuniões
+description: Páginas de agendamento para o cliente marcar uma reunião com a equipe de vendas, com rodízio, agenda conectada, lembretes e incorporação.
+section: crm
+order: 19
+---
+
+Uma **página de agendamento** é um link público em que o cliente escolhe um
+horário livre da sua equipe, sem troca de e-mails. O Steel cria o lead, marca a
+reunião na agenda do vendedor e avisa os dois lados.
+
+## Criar uma página
+
+Abra **CRM › Agendamentos** e clique em **Nova página de agendamento**.
+
+| Campo | Para que serve |
+| --- | --- |
+| **Título** e **Descrição** | O que o cliente lê ao abrir a página |
+| **Duração (min)** | Tamanho da reunião |
+| **Intervalo entre horários (min)** | De quanto em quanto tempo a página oferece um horário |
+| **Folga entre reuniões (min)** | Respiro que o vendedor mantém antes e depois de cada reunião |
+| **Antecedência mínima (min)** | Quanto tempo antes um horário deixa de ser oferecido |
+| **Agendar até (dias)** | Até quantos dias à frente o cliente pode marcar |
+| **Online** ou **Presencial**, e o **local** | Link da chamada ou endereço, enviado no e-mail de confirmação |
+| **Lembrete (min antes)** | Quando o cliente recebe o lembrete; 0 desliga |
+| **Fuso da página** | Fuso usado nos textos do vendedor. O cliente vê os horários no fuso dele |
+| **Vendedores** | Quem atende. Todos precisam ser membros do workspace |
+
+O endereço sai do título (`/m/conversa-com-vendas`). Dá para escolher outro, e
+ele precisa ser único em toda a plataforma. Desativar a página tira o link do ar
+sem apagá-la; excluir a remove da lista (as reuniões já marcadas continuam).
+
+## Rodízio entre vendedores
+
+Com mais de um vendedor, o cliente vê o horário se **pelo menos um** estiver
+livre. Na hora de marcar, o Steel escolhe quem está **há mais tempo sem receber
+uma reunião** daquela página. Dois clientes nunca marcam o mesmo vendedor no
+mesmo horário: o segundo recebe a mensagem de que o horário foi preenchido e
+escolhe outro.
+
+## Disponibilidade de cada vendedor
+
+Em **Agendamentos › Minha disponibilidade**, cada vendedor define:
+
+- **Seu fuso horário** e as **janelas de cada dia da semana** (por exemplo,
+  segunda a sexta, das 9h às 12h e das 14h às 18h). Sem configuração, vale
+  segunda a sexta, das 9h às 18h, no horário de Brasília.
+- **Agenda do Google ou do Outlook**: cole o endereço secreto no formato iCal
+  (`.ics`). O Steel passa a esconder os horários em que você já tem
+  compromisso. Para achar o endereço:
+  - **Google Agenda**: Configurações da agenda › *Integrar agenda* › **Endereço
+    secreto no formato iCal**.
+  - **Outlook**: Configurações › Calendário › Calendários compartilhados ›
+    *Publicar um calendário* › copie o link **ICS**.
+
+Os compromissos que o vendedor já tem na **agenda do CRM** e as reuniões marcadas
+por essas páginas também bloqueiam horários.
+
+<Callout type='nota'>
+  O endereço secreto é guardado criptografado e só é lido pelo servidor. Quem
+  tem o endereço enxerga a agenda inteira, então não o compartilhe. Para
+  trocá-lo, cole outro; para desconectar, limpe o campo e salve. A conexão
+  direta por login do Google ou da Microsoft ainda **não está disponível**: ela
+  depende de o Steel ser registrado como aplicativo nesses serviços.
+</Callout>
+
+## O que acontece quando o cliente marca
+
+1. O cliente abre o link, escolhe o dia e o horário e informa nome, e-mail e,
+   se quiser, telefone e um recado. Ele precisa **concordar** com o uso dos
+   dados para agendar.
+2. O Steel cria o **lead** (ou reaproveita o que já existe com aquele e-mail ou
+   telefone), com a origem definida na página e o vendedor como responsável se
+   o lead ainda não tinha dono. Uma **reunião** é registrada no lead e uma
+   atividade aparece na linha do tempo.
+3. O horário entra na **agenda do vendedor** no CRM.
+4. O cliente recebe um **e-mail de confirmação** com o convite de calendário
+   (`.ics`) e um link para **ver ou cancelar**. O vendedor recebe uma
+   notificação.
+5. No horário do lembrete, o cliente recebe outro e-mail (o worker verifica a
+   cada 5 minutos).
+
+O cliente cancela pelo link do e-mail até o início da reunião; o horário volta
+a ficar livre e o vendedor recebe uma notificação. O vendedor, ou qualquer pessoa com permissão de
+edição no CRM, cancela em **Agendamentos**, na lista de reuniões, e o cliente
+recebe o aviso de cancelamento.
+
+## Compartilhar e incorporar
+
+Cada página tem **Copiar link** e **Copiar código de incorporação**. O código é
+um `iframe` apontando para `/m/<endereço>/embed`, a versão sem moldura da página
+que você pode colocar em seu site. Essa é a única página do Steel que aceita
+ser exibida dentro de outro site.
+
+## Oferecer o agendamento depois de um formulário
+
+Em **CRM › Formulários**, ao editar um formulário, escolha uma **página de
+agendamento**. Quando o visitante envia o formulário, a página de sucesso
+oferece os horários na hora, sem ele sair do site. A oferta só aparece se a
+página estiver ativa.
+
+## Permissões
+
+Ver páginas, disponibilidade e reuniões vale para qualquer membro do CRM
+(inclusive visualizador). Criar e editar páginas é de membros, administradores e
+do dono; excluir é de administradores e do dono.
