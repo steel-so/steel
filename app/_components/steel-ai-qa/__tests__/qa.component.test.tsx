@@ -141,7 +141,9 @@ describe('<QaCoachingPanel />', () => {
     expect(screen.getByText('Confirme o protocolo')).toBeTruthy()
     expect(screen.getByLabelText('Evolução por semana')).toBeTruthy()
 
-    fireEvent.click(screen.getByText('Ana', { exact: false }))
+    // The customer name also shows in the worst-review row, so take the first
+    // match: any of them opens the same review.
+    fireEvent.click(screen.getAllByText('Ana', { exact: false })[0])
     expect(await screen.findByText('Avaliação do atendimento')).toBeTruthy()
     expect(await screen.findByText('Faltou resolver.')).toBeTruthy()
     expect(screen.getByText('Dicas para o atendente')).toBeTruthy()
