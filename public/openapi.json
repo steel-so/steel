@@ -321,10 +321,6 @@
       "description": "Inventário e descoberta de ativos: o agente (Windows e Linux) envia hardware, software e uso de disco e memória com um token por workspace; a varredura SNMP do worker descobre equipamentos de rede por faixa de IP; ambos alimentam a CMDB, abrem alertas de disco e memória e formam o catálogo de software."
     },
     {
-      "name": "ServiceDesk · Acesso remoto",
-      "description": "Botão \"Conectar\" no chamado e no ativo da CMDB: o workspace escolhe o provedor (RustDesk ou AnyDesk), cada ativo guarda o ID público da máquina (digitado ou vindo do inventário) e cada conexão fica registrada no histórico do chamado e na auditoria. Nenhuma senha é guardada."
-    },
-    {
       "name": "ServiceDesk · Incidente maior",
       "description": "Incidente maior declarado a partir de um chamado de incidente: agrupa os chamados filhos (com sugestões por categoria, item de configuração e cliente), abre a sala de guerra (swarming) e publica atualizações nas páginas de status. Só agentes."
     },
@@ -583,7 +579,6 @@
         "ServiceDesk · Agente de IA",
         "ServiceDesk · Monitoramento",
         "ServiceDesk · Inventário",
-        "ServiceDesk · Acesso remoto",
         "ServiceDesk · Incidente maior",
         "ServiceDesk · Páginas de status",
         "ServiceDesk · E-mail",
@@ -9965,520 +9960,6 @@
           },
           "503": {
             "$ref": "#/components/responses/503_SD_INTEGRATION_NOT_CONFIGURED"
-          }
-        },
-        "security": []
-      }
-    },
-    "/servicedesk/inventory/agent/download": {
-      "get": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Baixar o binário do agente (público)",
-        "operationId": "getServicedeskInventoryAgentDownload",
-        "description": "Mesmo acesso da consulta de versão. Devolve o binário (`application/octet-stream`) com o SHA-256 em `X-Content-SHA256`; o servidor só entrega arquivos que batem com o hash publicado. Exige a atualização automática ligada no workspace.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "os",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["linux", "windows", "darwin"]
-            }
-          },
-          {
-            "name": "arch",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["386", "amd64", "arm64", "arm"]
-            }
-          },
-          {
-            "name": "version",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 40
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "description": "Token do agente: `Bearer <token>`.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Binário do agente.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "null"
-                        }
-                      }
-                    }
-                  ]
-                },
-                "example": {
-                  "success": true,
-                  "statusCode": 200,
-                  "data": null
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_SD_INVENTORY_TOKEN_INVALID"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_MODULE_DISABLED_2"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_SD_INVENTORY_RELEASE_INVALID"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": []
-      }
-    },
-    "/servicedesk/inventory/agent/version": {
-      "get": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Consultar a versão do agente (público)",
-        "operationId": "getServicedeskInventoryAgentVersion",
-        "description": "Sem sessão: o token do workspace vai em `Authorization: Bearer <token>`. O agente informa sistema, arquitetura e a versão que roda; a resposta diz se há versão nova publicada, o SHA-256 e o caminho do download. Só responde `updateAvailable: true` quando o workspace ligou a atualização automática (desligada por padrão); builds `dev` nunca se atualizam.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "os",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["linux", "windows", "darwin"]
-            }
-          },
-          {
-            "name": "arch",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["386", "amd64", "arm64", "arm"]
-            }
-          },
-          {
-            "name": "current",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "default": "dev",
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 40
-            }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "description": "Token do agente: `Bearer <token>`.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Versão disponível (ou não).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdInventoryAgentVersion"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_SD_INVENTORY_TOKEN_INVALID"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_MODULE_DISABLED_2"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": []
-      }
-    },
-    "/servicedesk/inventory/report": {
-      "post": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Receber relatório do agente de inventário (público)",
-        "operationId": "postServicedeskInventoryReport",
-        "description": "Sem sessão: o token do workspace vai em `Authorization: Bearer <token>`. Corpo de até 2 MB.\n\nO equipamento é identificado por `agentId` (estável por máquina) dentro do workspace do token: o primeiro relatório cria a ficha e o item da CMDB; os seguintes atualizam. Um item cadastrado à mão com o mesmo número de série é aproveitado, não duplicado. A lista de software é substituída por inteiro. Discos e memória acima dos limiares abrem alertas, que fecham sozinhos quando o uso normaliza.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "description": "Token do agente: `Bearer <token>`.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Relatório de hardware, rede, discos e software.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "agentId": {
-                    "type": "string",
-                    "minLength": 8,
-                    "maxLength": 80,
-                    "pattern": "^[A-Za-z0-9._:-]+$"
-                  },
-                  "agentVersion": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "maxLength": 40
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "hostname": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 255
-                  },
-                  "os": {
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 120
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "version": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 120
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "arch": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 40
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  "hardware": {
-                    "type": "object",
-                    "properties": {
-                      "manufacturer": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 120
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "model": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 120
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "serialNumber": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 120
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "cpuModel": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 200
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "cpuCores": {
-                        "anyOf": [
-                          {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 4096
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "ramTotalMb": {
-                        "anyOf": [
-                          {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "ramUsedMb": {
-                        "anyOf": [
-                          {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  "ipAddresses": {
-                    "default": [],
-                    "maxItems": 32,
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 64
-                    }
-                  },
-                  "macAddresses": {
-                    "default": [],
-                    "maxItems": 32,
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 40
-                    }
-                  },
-                  "disks": {
-                    "maxItems": 64,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "mount": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 120
-                        },
-                        "label": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 120
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "fs": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 40
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "totalMb": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 1000000000
-                        },
-                        "usedMb": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 1000000000
-                        }
-                      },
-                      "required": ["mount", "totalMb", "usedMb"]
-                    }
-                  },
-                  "software": {
-                    "maxItems": 5000,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "version": {
-                          "default": "",
-                          "type": "string",
-                          "maxLength": 120
-                        },
-                        "publisher": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 255
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["name"]
-                    }
-                  },
-                  "remote": {
-                    "type": "object",
-                    "properties": {
-                      "rustdesk": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "anydesk": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    }
-                  }
-                },
-                "required": ["agentId", "hostname"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Relatório gravado.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdInventoryIngestResult"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_SD_INVENTORY_TOKEN_INVALID"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_MODULE_DISABLED_2"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_SD_INVENTORY_PAYLOAD_INVALID"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": []
@@ -90094,7 +89575,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -91038,7 +90519,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -93583,7 +93064,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -93681,7 +93162,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND"
@@ -93792,7 +93273,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND"
@@ -93861,7 +93342,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND"
@@ -94460,7 +93941,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CEP_NOT_FOUND"
@@ -96453,7 +95934,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_DEPARTMENT_NOT_FOUND_SD_CUSTOMER_NOT_FOUND_SD_CONFIG_ITEM_NOT_FOUND_SD_CONFIG_ITEM_TYPE_NOT_FOUND"
@@ -96936,7 +96417,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_DEPARTMENT_NOT_FOUND_SD_CUSTOMER_NOT_FOUND_SD_CONFIG_ITEM_NOT_FOUND_SD_CONFIG_ITEM_TYPE_NOT_FOUND"
@@ -97005,7 +96486,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_ITEM_NOT_FOUND"
@@ -97435,7 +96916,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CUSTOMER_NOT_FOUND_2"
@@ -97521,7 +97002,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -98043,7 +97524,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CUSTOMER_NOT_FOUND_SD_CONTACT_NOT_FOUND"
@@ -98112,7 +97593,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
@@ -100123,7 +99604,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "409": {
             "$ref": "#/components/responses/409_SD_CUSTOMER_DOCUMENT_CONFLICT"
@@ -100213,7 +99694,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -100663,7 +100144,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CUSTOMER_NOT_FOUND"
@@ -100735,7 +100216,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CUSTOMER_NOT_FOUND"
@@ -100859,7 +100340,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -101028,7 +100509,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
@@ -101090,7 +100571,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
@@ -101153,7 +100634,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
@@ -101834,7 +101315,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
@@ -101950,7 +101431,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
@@ -102063,7 +101544,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
@@ -102134,7 +101615,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
@@ -102936,7 +102417,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -103714,7 +103195,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           }
         },
         "security": [
@@ -104111,7 +103592,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -104976,7 +104457,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_INTEGRATION_NOT_FOUND_3"
@@ -104989,66 +104470,6 @@
           },
           "503": {
             "$ref": "#/components/responses/503_SD_INTEGRATION_NOT_CONFIGURED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/inventory/agent-releases": {
-      "get": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Versões do agente publicadas",
-        "operationId": "getWorkspacesByIdServicedeskInventoryAgentReleases",
-        "description": "A última versão ativa de cada sistema e arquitetura, para a tela de ajustes. Acesso: sessão + módulo **ServiceDesk** habilitado; só **admins do módulo** (OWNER/ADMIN ou perfil com `sd-settings` × `EDIT`).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Versões.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/SdInventoryAgentRelease"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": [
@@ -105144,7 +104565,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -105295,7 +104716,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -105364,7 +104785,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_INVENTORY_DEVICE_NOT_FOUND"
@@ -105749,7 +105170,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -106175,7 +105596,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -106239,9 +105660,6 @@
                         "type": "null"
                       }
                     ]
-                  },
-                  "agentAutoUpdate": {
-                    "type": "boolean"
                   }
                 }
               }
@@ -106341,7 +105759,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -106905,7 +106323,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -106965,217 +106383,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/inventory/tokens": {
-      "get": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Listar tokens do agente",
-        "operationId": "getWorkspacesByIdServicedeskInventoryTokens",
-        "description": "Inclui os revogados. O valor do token **nunca** volta aqui. Acesso: sessão + módulo **ServiceDesk** habilitado; só **admins do módulo** (OWNER/ADMIN ou perfil com `sd-settings` × `EDIT`).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Tokens.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/SdInventoryToken"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Criar token do agente",
-        "operationId": "postWorkspacesByIdServicedeskInventoryTokens",
-        "description": "Sorteia 32 bytes em base64url, guarda só o SHA-256 e devolve o valor **uma única vez**. Acesso: sessão + módulo **ServiceDesk** habilitado; só **admins do módulo** (OWNER/ADMIN ou perfil com `sd-settings` × `EDIT`).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
-                  }
-                },
-                "required": ["name"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Token criado (com o valor em claro).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdInventoryTokenWithValue"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_3"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/inventory/tokens/{tokenId}": {
-      "delete": {
-        "tags": ["ServiceDesk · Inventário"],
-        "summary": "Revogar token do agente",
-        "operationId": "deleteWorkspacesByIdServicedeskInventoryTokensByTokenId",
-        "description": "Os agentes que usam o token passam a receber 401 na hora. Os equipamentos já inventariados continuam. Acesso: sessão + módulo **ServiceDesk** habilitado; só **admins do módulo** (OWNER/ADMIN ou perfil com `sd-settings` × `EDIT`).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "tokenId",
-            "in": "path",
-            "required": true,
-            "description": "Id do token.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Token revogado.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "null"
-                        }
-                      }
-                    }
-                  ]
-                },
-                "example": {
-                  "success": true,
-                  "statusCode": 200,
-                  "data": null
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_3"
-          },
-          "404": {
-            "$ref": "#/components/responses/404_SD_INVENTORY_TOKEN_NOT_FOUND"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -112516,7 +111724,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -112614,7 +111822,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_MONITOR_ALERT_NOT_FOUND"
@@ -112689,7 +111897,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -114434,7 +113642,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -114647,7 +113855,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -114856,7 +114064,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -114958,7 +114166,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -115219,7 +114427,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_ONCALL_SCHEDULE_NOT_FOUND"
@@ -115892,7 +115100,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_ONCALL_SCHEDULE_NOT_FOUND"
@@ -115970,7 +115178,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -118693,565 +117901,6 @@
         ]
       }
     },
-    "/workspaces/{id}/servicedesk/remote/connect": {
-      "post": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Conectar ao ativo",
-        "operationId": "postWorkspacesByIdServicedeskRemoteConnect",
-        "description": "Resolve o link do provedor do workspace para o ativo, grava a sessão (e, com `ticketId`, o evento `remote.session_started` no histórico do chamado) e a auditoria. O navegador abre o link e o cliente RustDesk/AnyDesk instalado assume. Acesso: sessão + módulo **ServiceDesk** habilitado; só **agentes** (membros de um departamento) e admins do módulo.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "configItemId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  },
-                  "ticketId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  }
-                },
-                "required": ["configItemId"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Link e sessão.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdRemoteConnect"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
-          },
-          "404": {
-            "$ref": "#/components/responses/404_SD_TICKET_NOT_FOUND_SD_CONFIG_ITEM_NOT_FOUND_SD_REMOTE_ENDPOINT_NOT_FOUND"
-          },
-          "409": {
-            "$ref": "#/components/responses/409_SD_REMOTE_DISABLED"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/remote/endpoints": {
-      "get": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Listar os IDs de acesso remoto de um ativo",
-        "operationId": "getWorkspacesByIdServicedeskRemoteEndpoints",
-        "description": "Acesso: sessão + módulo **ServiceDesk** habilitado; só **agentes** (membros de um departamento) e admins do módulo.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "configItemId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "IDs por provedor.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/SdRemoteEndpoint"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
-          },
-          "404": {
-            "$ref": "#/components/responses/404_SD_CONFIG_ITEM_NOT_FOUND"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "put": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Cadastrar o ID de acesso remoto de um ativo",
-        "operationId": "putWorkspacesByIdServicedeskRemoteEndpoints",
-        "description": "Um ID por provedor e ativo (substitui o anterior). O ID é público; senhas não são aceitas nem guardadas. IDs vindos do relatório do agente de inventário usam a origem `INVENTORY` e nunca sobrescrevem um ID digitado à mão. Acesso: sessão + módulo **ServiceDesk** habilitado; só **agentes** (membros de um departamento) e admins do módulo.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "configItemId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  },
-                  "provider": {
-                    "type": "string",
-                    "enum": ["RUSTDESK", "ANYDESK"]
-                  },
-                  "remoteId": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": ["configItemId", "provider", "remoteId"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "ID salvo.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdRemoteEndpoint"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
-          },
-          "404": {
-            "$ref": "#/components/responses/404_SD_CONFIG_ITEM_NOT_FOUND"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/remote/endpoints/{endpointId}": {
-      "delete": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Remover um ID de acesso remoto",
-        "operationId": "deleteWorkspacesByIdServicedeskRemoteEndpointsByEndpointId",
-        "description": "Acesso: sessão + módulo **ServiceDesk** habilitado; só **agentes** (membros de um departamento) e admins do módulo.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "endpointId",
-            "in": "path",
-            "required": true,
-            "description": "Id do cadastro de acesso remoto.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Removido.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["id"]
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
-          },
-          "404": {
-            "$ref": "#/components/responses/404_SD_REMOTE_ENDPOINT_NOT_FOUND"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/remote/sessions": {
-      "get": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Listar as sessões remotas de um ativo",
-        "operationId": "getWorkspacesByIdServicedeskRemoteSessions",
-        "description": "Acesso: sessão + módulo **ServiceDesk** habilitado; só **agentes** (membros de um departamento) e admins do módulo.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "configItemId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 64
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Sessões, da mais recente para a mais antiga.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/SdRemoteSession"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
-          },
-          "404": {
-            "$ref": "#/components/responses/404_SD_CONFIG_ITEM_NOT_FOUND"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/workspaces/{id}/servicedesk/remote/settings": {
-      "get": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Ler os ajustes de acesso remoto",
-        "operationId": "getWorkspacesByIdServicedeskRemoteSettings",
-        "description": "Sem ajuste salvo, devolve o padrão (desligado, RustDesk). Acesso: sessão + módulo **ServiceDesk** habilitado; só **agentes** (membros de um departamento) e admins do módulo.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ajustes.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdRemoteSettings"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "patch": {
-        "tags": ["ServiceDesk · Acesso remoto"],
-        "summary": "Salvar os ajustes de acesso remoto",
-        "operationId": "patchWorkspacesByIdServicedeskRemoteSettings",
-        "description": "Liga o recurso e escolhe o provedor do workspace. O modelo do link, se informado, precisa conter `{id}` e usar `rustdesk://`, `anydesk:` ou `https://`. Acesso: sessão + módulo **ServiceDesk** habilitado; só **admins do módulo** (OWNER/ADMIN ou perfil com `sd-settings` × `EDIT`).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Id do workspace.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "enabled": {
-                    "type": "boolean"
-                  },
-                  "provider": {
-                    "type": "string",
-                    "enum": ["RUSTDESK", "ANYDESK"]
-                  },
-                  "linkTemplate": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "maxLength": 300
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Ajustes salvos.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessEnvelope"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/SdRemoteSettings"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/401_UNAUTHORIZED"
-          },
-          "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_3"
-          },
-          "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR"
-          },
-          "429": {
-            "$ref": "#/components/responses/429_RATE_LIMITED"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
     "/workspaces/{id}/servicedesk/reports": {
       "get": {
         "tags": ["ServiceDesk · Relatórios de SLA"],
@@ -119454,7 +118103,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_3"
@@ -119652,7 +118301,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_REPORT_NOT_FOUND"
@@ -119938,7 +118587,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_REPORT_NOT_FOUND"
@@ -120000,7 +118649,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_REPORT_NOT_FOUND"
@@ -120637,7 +119286,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -120800,7 +119449,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
@@ -120869,7 +119518,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
@@ -124757,7 +123406,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
@@ -125281,7 +123930,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -125335,7 +123984,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -128139,7 +126788,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_TICKET_NOT_FOUND_SD_DEPARTMENT_NOT_FOUND"
@@ -137486,7 +136135,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_TEMPLATE_NOT_FOUND"
@@ -137688,7 +136337,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -137751,7 +136400,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -137971,7 +136620,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -138044,7 +136693,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -149411,7 +148060,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -149561,7 +148210,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_GROUP_NOT_FOUND"
@@ -149648,7 +148297,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
@@ -149736,7 +148385,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
@@ -149812,7 +148461,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
@@ -149881,7 +148530,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
@@ -149971,7 +148620,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_GROUP_NOT_FOUND"
@@ -150247,7 +148896,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
@@ -151856,7 +150505,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -152388,7 +151037,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
@@ -153006,7 +151655,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
@@ -153077,7 +151726,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
@@ -163596,29 +162245,6 @@
           }
         }
       },
-      "401_SD_INVENTORY_TOKEN_INVALID": {
-        "description": "Não autenticado: `SD_INVENTORY_TOKEN_INVALID`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "SD_INVENTORY_TOKEN_INVALID": {
-                "summary": "SD_INVENTORY_TOKEN_INVALID — Token ausente, malformado, desconhecido ou revogado",
-                "value": {
-                  "success": false,
-                  "statusCode": 401,
-                  "message": "Token de inventário inválido ou revogado",
-                  "error": {
-                    "code": "SD_INVENTORY_TOKEN_INVALID"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "401_SD_MONITOR_TOKEN_INVALID": {
         "description": "Não autenticado: `SD_MONITOR_TOKEN_INVALID`",
         "content": {
@@ -165423,51 +164049,6 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro ou não é admin do módulo",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Apenas administradores do ServiceDesk podem alterar a configuração",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `EDIT`",
                 "value": {
                   "success": false,
@@ -165504,7 +164085,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165549,7 +164130,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165616,7 +164197,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165661,7 +164242,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_19": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165706,7 +164287,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_20": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165738,6 +164319,51 @@
               },
               "MODULE_DISABLED": {
                 "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_21": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro ou não é admin do módulo",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Apenas administradores do ServiceDesk podem alterar a configuração",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -168998,7 +167624,18 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace",
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -169054,18 +167691,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Consentimento LGPD pendente",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Consentimento obrigatório",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
+                "summary": "FORBIDDEN — Não é membro do workspace",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -169434,73 +168060,6 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              },
-              "SD_NOT_AGENT": {
-                "summary": "SD_NOT_AGENT — Solicitante (sem departamento)",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Apenas agentes (membros de um departamento) podem fazer isso",
-                  "error": {
-                    "code": "SD_NOT_AGENT"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `SD_NOT_AGENT`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Consentimento LGPD pendente",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Consentimento obrigatório",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
                 "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
                 "value": {
                   "success": false,
@@ -169535,6 +168094,73 @@
               },
               "SD_NOT_AGENT": {
                 "summary": "SD_NOT_AGENT — Solicitante (sem departamento) tentou uma ação de agente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Apenas agentes (membros de um departamento) podem fazer isso",
+                  "error": {
+                    "code": "SD_NOT_AGENT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_9": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `SD_NOT_AGENT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "SD_NOT_AGENT": {
+                "summary": "SD_NOT_AGENT — Solicitante (sem departamento)",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -181154,29 +179780,6 @@
           }
         }
       },
-      "404_SD_INVENTORY_TOKEN_NOT_FOUND": {
-        "description": "Não encontrado: `SD_INVENTORY_TOKEN_NOT_FOUND`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "SD_INVENTORY_TOKEN_NOT_FOUND": {
-                "summary": "SD_INVENTORY_TOKEN_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Token de inventário não encontrado",
-                  "error": {
-                    "code": "SD_INVENTORY_TOKEN_NOT_FOUND"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "404_SD_KB_ARTICLE_NOT_FOUND": {
         "description": "Não encontrado: `SD_KB_ARTICLE_NOT_FOUND`",
         "content": {
@@ -181727,29 +180330,6 @@
                   "message": "Chamado recorrente não encontrado",
                   "error": {
                     "code": "SD_RECURRING_NOT_FOUND"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "404_SD_REMOTE_ENDPOINT_NOT_FOUND": {
-        "description": "Não encontrado: `SD_REMOTE_ENDPOINT_NOT_FOUND`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "SD_REMOTE_ENDPOINT_NOT_FOUND": {
-                "summary": "SD_REMOTE_ENDPOINT_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Este ativo não tem um ID de acesso remoto cadastrado",
-                  "error": {
-                    "code": "SD_REMOTE_ENDPOINT_NOT_FOUND"
                   }
                 }
               }
@@ -182364,51 +180944,6 @@
                   "message": "Configuração do ServiceDesk não encontrada",
                   "error": {
                     "code": "SD_CONFIG_NOT_FOUND"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "404_SD_TICKET_NOT_FOUND_SD_CONFIG_ITEM_NOT_FOUND_SD_REMOTE_ENDPOINT_NOT_FOUND": {
-        "description": "Não encontrado: `SD_TICKET_NOT_FOUND`, `SD_CONFIG_ITEM_NOT_FOUND`, `SD_REMOTE_ENDPOINT_NOT_FOUND`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "SD_REMOTE_ENDPOINT_NOT_FOUND": {
-                "summary": "SD_REMOTE_ENDPOINT_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Este ativo não tem um ID de acesso remoto cadastrado",
-                  "error": {
-                    "code": "SD_REMOTE_ENDPOINT_NOT_FOUND"
-                  }
-                }
-              },
-              "SD_CONFIG_ITEM_NOT_FOUND": {
-                "summary": "SD_CONFIG_ITEM_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Item de configuração não encontrado",
-                  "error": {
-                    "code": "SD_CONFIG_ITEM_NOT_FOUND"
-                  }
-                }
-              },
-              "SD_TICKET_NOT_FOUND": {
-                "summary": "SD_TICKET_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Chamado não encontrado",
-                  "error": {
-                    "code": "SD_TICKET_NOT_FOUND"
                   }
                 }
               }
@@ -187982,29 +186517,6 @@
                   "message": "Já existe uma troca de plantão neste período",
                   "error": {
                     "code": "SD_ONCALL_OVERRIDE_OVERLAP"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "409_SD_REMOTE_DISABLED": {
-        "description": "Conflito com o estado atual: `SD_REMOTE_DISABLED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "SD_REMOTE_DISABLED": {
-                "summary": "SD_REMOTE_DISABLED",
-                "value": {
-                  "success": false,
-                  "statusCode": 409,
-                  "message": "O acesso remoto não está habilitado neste workspace",
-                  "error": {
-                    "code": "SD_REMOTE_DISABLED"
                   }
                 }
               }
@@ -195224,81 +193736,6 @@
                   "message": "CPF/CNPJ inválido",
                   "error": {
                     "code": "SD_DOCUMENT_INVALID"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "422_VALIDATION_ERROR_SD_INVENTORY_PAYLOAD_INVALID": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`, `SD_INVENTORY_PAYLOAD_INVALID`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              },
-              "SD_INVENTORY_PAYLOAD_INVALID": {
-                "summary": "SD_INVENTORY_PAYLOAD_INVALID — JSON inválido, corpo acima de 2 MB ou fora do formato",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Relatório de inventário em formato inválido",
-                  "error": {
-                    "code": "SD_INVENTORY_PAYLOAD_INVALID"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "422_VALIDATION_ERROR_SD_INVENTORY_RELEASE_INVALID": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`, `SD_INVENTORY_RELEASE_INVALID`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "SD_INVENTORY_RELEASE_INVALID": {
-                "summary": "SD_INVENTORY_RELEASE_INVALID — Atualização automática desligada, versão inexistente ou binário corrompido",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Versão do agente inválida",
-                  "error": {
-                    "code": "SD_INVENTORY_RELEASE_INVALID"
                   }
                 }
               }
@@ -230392,16 +228829,12 @@
           "SD_MONITOR_ALERT_NOT_FOUND",
           "SD_MONITOR_TOKEN_INVALID",
           "SD_MONITOR_PAYLOAD_INVALID",
-          "SD_INVENTORY_TOKEN_NOT_FOUND",
-          "SD_INVENTORY_TOKEN_INVALID",
-          "SD_INVENTORY_PAYLOAD_INVALID",
           "SD_INVENTORY_TARGET_NOT_FOUND",
           "SD_INVENTORY_DEVICE_NOT_FOUND",
           "SD_INVENTORY_RANGE_INVALID",
           "SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND",
           "SD_INVENTORY_DEVICE_STATE_INVALID",
           "SD_INVENTORY_SNMP_CREDENTIALS_INVALID",
-          "SD_INVENTORY_RELEASE_INVALID",
           "SD_PORTAL_LINK_INVALID",
           "SD_PORTAL_LINK_EXPIRED",
           "SD_PORTAL_SESSION_EXPIRED",
@@ -230643,9 +229076,6 @@
           "STEEL_MCP_SERVER_INVALID",
           "STEEL_MCP_SERVER_UNREACHABLE",
           "CRM_HEALTH_NOT_APPLICABLE",
-          "SD_REMOTE_DISABLED",
-          "SD_REMOTE_ENDPOINT_NOT_FOUND",
-          "SD_REMOTE_ENDPOINT_INVALID",
           "SD_LICENSE_NOT_FOUND",
           "SD_LICENSE_INVALID",
           "SD_NL_CONFIG_FAILED",
@@ -230692,7 +229122,7 @@
           "AI_PROCEDURE_INVALID",
           "AI_PROCEDURE_LIMIT_REACHED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TOKEN_NOT_FOUND` | 404 |\n| `SD_INVENTORY_TOKEN_INVALID` | 401 |\n| `SD_INVENTORY_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_INVENTORY_RELEASE_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `QA_REVIEW_NOT_FOUND` | 404 |\n| `QA_SUBJECT_NOT_FOUND` | 404 |\n| `QA_CRITERIA_INVALID` | 422 |\n| `QA_DISABLED` | 409 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `BOLETO_PROVIDER_ERROR` | 502 |\n| `BOLETO_WEBHOOK_INVALID` | 401 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `CRM_DUPLICATE_NOT_FOUND` | 404 |\n| `CRM_DUPLICATE_INVALID` | 422 |\n| `CRM_MERGE_NOT_FOUND` | 404 |\n| `CRM_MERGE_UNDO_EXPIRED` | 409 |\n| `CRM_MEETING_PAGE_NOT_FOUND` | 404 |\n| `CRM_MEETING_BOOKING_NOT_FOUND` | 404 |\n| `CRM_MEETING_SLOT_TAKEN` | 409 |\n| `CRM_MEETING_INVALID` | 422 |\n| `CRM_MEETING_SLUG_TAKEN` | 409 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |\n| `CRM_HEALTH_NOT_APPLICABLE` | 409 |\n| `SD_REMOTE_DISABLED` | 409 |\n| `SD_REMOTE_ENDPOINT_NOT_FOUND` | 404 |\n| `SD_REMOTE_ENDPOINT_INVALID` | 422 |\n| `SD_LICENSE_NOT_FOUND` | 404 |\n| `SD_LICENSE_INVALID` | 422 |\n| `SD_NL_CONFIG_FAILED` | 502 |\n| `SD_NL_CONFIG_INVALID` | 422 |\n| `SD_WFM_SETTINGS_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_NOT_FOUND` | 404 |\n| `AI_ACTION_CONNECTOR_LIMIT_REACHED` | 409 |\n| `AI_ACTION_CONNECTOR_KEY_TAKEN` | 409 |\n| `AI_ACTION_CONNECTOR_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_FAILED` | 502 |\n| `AI_ACTIONS_DISABLED` | 403 |\n| `AI_ACTION_IN_PROGRESS` | 409 |\n| `CRM_DEALS_PAYMENT_DISABLED` | 422 |\n| `CRM_PROPOSAL_CHARGE_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_CHARGE_INVALID` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_REQUIRED` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_INVALID` | 422 |\n| `CRM_CONTRACT_NOT_FOUND` | 404 |\n| `CRM_CONTRACT_INVALID` | 422 |\n| `WIDGET_NOT_AVAILABLE` | 404 |\n| `WIDGET_ORIGIN_NOT_ALLOWED` | 403 |\n| `WIDGET_VISITOR_INVALID` | 401 |\n| `META_CHANNEL_PAGE_NOT_FOUND` | 404 |\n| `META_CHANNEL_COMMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_CATALOG_DISABLED` | 409 |\n| `WHATSAPP_CATALOG_PRODUCT_NOT_FOUND` | 404 |\n| `WHATSAPP_CATALOG_INVALID` | 422 |\n| `WHATSAPP_CATALOG_SYNC_FAILED` | 502 |\n| `WHATSAPP_STORE_NOT_FOUND` | 404 |\n| `WHATSAPP_STORE_INVALID` | 422 |\n| `WHATSAPP_ECOM_TRIGGER_INVALID` | 422 |\n| `WHATSAPP_SCHED_DISABLED` | 409 |\n| `WHATSAPP_SCHED_SERVICE_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_PROFESSIONAL_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_APPOINTMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_SLOT_TAKEN` | 409 |\n| `WHATSAPP_SCHED_INVALID` | 422 |\n| `WHATSAPP_SCHED_STATE_CONFLICT` | 409 |\n| `AI_PROCEDURE_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_RUN_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_VERSION_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_INVALID` | 422 |\n| `AI_PROCEDURE_LIMIT_REACHED` | 409 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `QA_REVIEW_NOT_FOUND` | 404 |\n| `QA_SUBJECT_NOT_FOUND` | 404 |\n| `QA_CRITERIA_INVALID` | 422 |\n| `QA_DISABLED` | 409 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `BOLETO_PROVIDER_ERROR` | 502 |\n| `BOLETO_WEBHOOK_INVALID` | 401 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `CRM_DUPLICATE_NOT_FOUND` | 404 |\n| `CRM_DUPLICATE_INVALID` | 422 |\n| `CRM_MERGE_NOT_FOUND` | 404 |\n| `CRM_MERGE_UNDO_EXPIRED` | 409 |\n| `CRM_MEETING_PAGE_NOT_FOUND` | 404 |\n| `CRM_MEETING_BOOKING_NOT_FOUND` | 404 |\n| `CRM_MEETING_SLOT_TAKEN` | 409 |\n| `CRM_MEETING_INVALID` | 422 |\n| `CRM_MEETING_SLUG_TAKEN` | 409 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |\n| `CRM_HEALTH_NOT_APPLICABLE` | 409 |\n| `SD_LICENSE_NOT_FOUND` | 404 |\n| `SD_LICENSE_INVALID` | 422 |\n| `SD_NL_CONFIG_FAILED` | 502 |\n| `SD_NL_CONFIG_INVALID` | 422 |\n| `SD_WFM_SETTINGS_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_NOT_FOUND` | 404 |\n| `AI_ACTION_CONNECTOR_LIMIT_REACHED` | 409 |\n| `AI_ACTION_CONNECTOR_KEY_TAKEN` | 409 |\n| `AI_ACTION_CONNECTOR_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_FAILED` | 502 |\n| `AI_ACTIONS_DISABLED` | 403 |\n| `AI_ACTION_IN_PROGRESS` | 409 |\n| `CRM_DEALS_PAYMENT_DISABLED` | 422 |\n| `CRM_PROPOSAL_CHARGE_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_CHARGE_INVALID` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_REQUIRED` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_INVALID` | 422 |\n| `CRM_CONTRACT_NOT_FOUND` | 404 |\n| `CRM_CONTRACT_INVALID` | 422 |\n| `WIDGET_NOT_AVAILABLE` | 404 |\n| `WIDGET_ORIGIN_NOT_ALLOWED` | 403 |\n| `WIDGET_VISITOR_INVALID` | 401 |\n| `META_CHANNEL_PAGE_NOT_FOUND` | 404 |\n| `META_CHANNEL_COMMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_CATALOG_DISABLED` | 409 |\n| `WHATSAPP_CATALOG_PRODUCT_NOT_FOUND` | 404 |\n| `WHATSAPP_CATALOG_INVALID` | 422 |\n| `WHATSAPP_CATALOG_SYNC_FAILED` | 502 |\n| `WHATSAPP_STORE_NOT_FOUND` | 404 |\n| `WHATSAPP_STORE_INVALID` | 422 |\n| `WHATSAPP_ECOM_TRIGGER_INVALID` | 422 |\n| `WHATSAPP_SCHED_DISABLED` | 409 |\n| `WHATSAPP_SCHED_SERVICE_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_PROFESSIONAL_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_APPOINTMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_SLOT_TAKEN` | 409 |\n| `WHATSAPP_SCHED_INVALID` | 422 |\n| `WHATSAPP_SCHED_STATE_CONFLICT` | 409 |\n| `AI_PROCEDURE_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_RUN_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_VERSION_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_INVALID` | 422 |\n| `AI_PROCEDURE_LIMIT_REACHED` | 409 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -240088,94 +238518,6 @@
         },
         "required": ["deviceId", "configItemId"]
       },
-      "SdInventoryAgentRelease": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string"
-          },
-          "os": {
-            "type": "string",
-            "example": "linux"
-          },
-          "arch": {
-            "type": "string",
-            "example": "amd64"
-          },
-          "sha256": {
-            "type": "string"
-          },
-          "sizeBytes": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "publishedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": ["id", "version", "os", "arch", "sha256", "sizeBytes", "active", "publishedAt"]
-      },
-      "SdInventoryAgentVersion": {
-        "type": "object",
-        "properties": {
-          "updateAvailable": {
-            "type": "boolean"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "sha256": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "SHA-256 (hex minúsculo) que o agente confere ao baixar."
-          },
-          "size": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "downloadPath": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Caminho do download, com o mesmo `Authorization: Bearer`."
-          }
-        },
-        "required": ["updateAvailable", "version", "sha256", "size", "downloadPath"]
-      },
       "SdInventoryAlert": {
         "type": "object",
         "properties": {
@@ -240432,16 +238774,6 @@
               "required": ["mount", "label", "fs", "totalMb", "usedMb", "usedPercent"]
             }
           },
-          "agentVersion": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "configItemId": {
             "anyOf": [
               {
@@ -240518,7 +238850,6 @@
           "ipAddresses",
           "macAddresses",
           "disks",
-          "agentVersion",
           "configItemId",
           "snmpTargetId",
           "managed",
@@ -240723,16 +239054,6 @@
               "required": ["mount", "label", "fs", "totalMb", "usedMb", "usedPercent"]
             }
           },
-          "agentVersion": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "configItemId": {
             "anyOf": [
               {
@@ -240883,7 +239204,6 @@
           "ipAddresses",
           "macAddresses",
           "disks",
-          "agentVersion",
           "configItemId",
           "snmpTargetId",
           "managed",
@@ -241006,39 +239326,6 @@
           "createdAt"
         ]
       },
-      "SdInventoryIngestResult": {
-        "type": "object",
-        "properties": {
-          "deviceId": {
-            "type": "string"
-          },
-          "configItemId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "created": {
-            "type": "boolean",
-            "description": "Primeiro relatório do equipamento."
-          },
-          "openedAlerts": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "resolvedAlerts": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": ["deviceId", "configItemId", "created", "openedAlerts", "resolvedAlerts"]
-      },
       "SdInventorySettings": {
         "type": "object",
         "properties": {
@@ -241073,10 +239360,6 @@
                 "type": "null"
               }
             ]
-          },
-          "agentAutoUpdate": {
-            "type": "boolean",
-            "description": "O agente consulta a versão publicada e se atualiza sozinho. Desligado por padrão."
           }
         },
         "required": [
@@ -241084,8 +239367,7 @@
           "ramThresholdPercent",
           "staleAfterDays",
           "syncConfigItems",
-          "defaultTypeId",
-          "agentAutoUpdate"
+          "defaultTypeId"
         ]
       },
       "SdInventorySnmpTarget": {
@@ -241314,89 +239596,6 @@
           }
         },
         "required": ["total", "agents", "snmp", "discovered", "stale", "openAlerts"]
-      },
-      "SdInventoryToken": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string",
-            "example": "Matriz — estações"
-          },
-          "lastUsedAt": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "revokedAt": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": ["id", "name", "lastUsedAt", "createdAt", "revokedAt"]
-      },
-      "SdInventoryTokenWithValue": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string",
-            "example": "Matriz — estações"
-          },
-          "lastUsedAt": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "revokedAt": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "token": {
-            "type": "string",
-            "description": "Valor do token, em claro. **Só aparece aqui** — o banco guarda apenas o SHA-256.",
-            "example": "q8Zr4m2XoV0n1bQ5d7T3k9Wc6yLpA2sHjE4uR8tN0fG"
-          }
-        },
-        "required": ["id", "name", "lastUsedAt", "createdAt", "revokedAt", "token"]
       },
       "SdKbArticle": {
         "type": "object",
@@ -247722,124 +245921,6 @@
           "reason",
           "createdAt"
         ]
-      },
-      "SdRemoteConnect": {
-        "type": "object",
-        "properties": {
-          "sessionId": {
-            "type": "string"
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["RUSTDESK", "ANYDESK"]
-          },
-          "remoteId": {
-            "type": "string"
-          },
-          "link": {
-            "type": "string",
-            "description": "Link a abrir no navegador (abre o cliente instalado). Só carrega o ID público da máquina."
-          }
-        },
-        "required": ["sessionId", "provider", "remoteId", "link"]
-      },
-      "SdRemoteEndpoint": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "configItemId": {
-            "type": "string"
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["RUSTDESK", "ANYDESK"]
-          },
-          "remoteId": {
-            "type": "string",
-            "example": "123456789"
-          },
-          "source": {
-            "type": "string",
-            "enum": ["MANUAL", "INVENTORY"]
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": ["id", "configItemId", "provider", "remoteId", "source", "updatedAt"]
-      },
-      "SdRemoteSession": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "configItemId": {
-            "type": "string"
-          },
-          "ticketId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["RUSTDESK", "ANYDESK"]
-          },
-          "remoteId": {
-            "type": "string"
-          },
-          "startedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "user": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": ["id", "name"]
-          }
-        },
-        "required": ["id", "configItemId", "ticketId", "provider", "remoteId", "startedAt", "user"]
-      },
-      "SdRemoteSettings": {
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "description": "Desligado por padrão."
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["RUSTDESK", "ANYDESK"]
-          },
-          "linkTemplate": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Modelo do link com `{id}`; nulo usa o padrão do provedor (`rustdesk://connection/new/{id}` ou `anydesk:{id}`)."
-          }
-        },
-        "required": ["enabled", "provider", "linkTemplate"]
       },
       "SdRepoProviderOption": {
         "type": "object",
