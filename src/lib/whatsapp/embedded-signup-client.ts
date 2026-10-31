@@ -47,7 +47,11 @@ export function parseEmbeddedSignupMessage(event: {
         'A Meta não conseguiu concluir o cadastro',
     }
   }
-  if (payload.event === 'FINISH') {
+  // Coexistence ends with its own event name; the ids have the same shape.
+  if (
+    payload.event === 'FINISH' ||
+    payload.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
+  ) {
     const phoneNumberId = payload.data?.phone_number_id
     const wabaId = payload.data?.waba_id
     if (!phoneNumberId || !wabaId) {
@@ -64,7 +68,9 @@ export function parseEmbeddedSignupMessage(event: {
 interface FacebookSdk {
   init: (options: Record<string, unknown>) => void
   login: (
-    callback: (response: { authResponse?: { code?: string } | null }) => void,
+    callback: (response: {
+      authResponse?: { code?: string; accessToken?: string } | null
+    }) => void,
     options: Record<string, unknown>,
   ) => void
 }
@@ -115,6 +121,11 @@ export function loadFacebookSdk(appId: string): Promise<FacebookSdk> {
 export async function launchEmbeddedSignup(options: {
   appId: string
   configId: string
+  /**
+   * Coexistence: onboard a number that is also used in the WhatsApp Business
+   * app (history and contacts are shared). Same popup, other feature type.
+   */
+  coexistence?: boolean
 }): Promise<
   | { ok: true; code: string; phoneNumberId: string; wabaId: string }
   | { ok: false; reason: 'cancel' | 'error'; message: string }
@@ -187,8 +198,67 @@ export async function launchEmbeddedSignup(options: {
         override_default_response_type: true,
         // v4: the products live in the Facebook Login for Business
         // configuration (`config_id`); v2/v3 were retired on 2026-10-15.
-        extras: { setup: {} },
+        extras: options.coexistence
+          ? {
+              setup: {},
+              featureType: 'whatsapp_business_app_onboarding',
+              sessionInfoVersion: '3',
+            }
+          : { setup: {} },
       },
+    )
+  })
+}
+
+/** Permissions asked for Messenger and Instagram Direct (and their comments). */
+export const META_CHANNELS_SCOPES = [
+  'pages_show_list',
+  'pages_messaging',
+  'pages_manage_metadata',
+  'pages_read_engagement',
+  'pages_manage_engagement',
+  'instagram_basic',
+  'instagram_manage_messages',
+  'instagram_manage_comments',
+]
+
+/**
+ * Facebook Login for the Instagram / Messenger channels: resolves with a
+ * short-lived user token. The server swaps it for a long-lived Page token and
+ * never stores the user token.
+ */
+export async function launchMetaChannelsLogin(options: {
+  appId: string
+}): Promise<
+  | { ok: true; accessToken: string }
+  | { ok: false; reason: 'cancel' | 'error'; message: string }
+> {
+  let fb: FacebookSdk
+  try {
+    fb = await loadFacebookSdk(options.appId)
+  } catch {
+    return {
+      ok: false,
+      reason: 'error',
+      message:
+        'Não foi possível carregar o login da Meta. Verifique bloqueadores e tente de novo.',
+    }
+  }
+  return new Promise((resolve) => {
+    fb.login(
+      (response) => {
+        const accessToken = response.authResponse?.accessToken
+        resolve(
+          accessToken
+            ? { ok: true, accessToken }
+            : {
+                ok: false,
+                reason: 'cancel',
+                message: 'Login com a Meta não concluído.',
+              },
+        )
+      },
+      { scope: META_CHANNELS_SCOPES.join(','), return_scopes: true },
     )
   })
 }

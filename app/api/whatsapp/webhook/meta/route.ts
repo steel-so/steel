@@ -10,6 +10,12 @@ import { parseMetaReferral } from '@/src/lib/whatsapp/ad-referral'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { assertModuleEnabled } from '@/src/services/authz'
 import {
+  COEXISTENCE_WEBHOOK_FIELDS,
+  type CoexistenceWebhookField,
+  type CoexistenceWebhookValue,
+  WhatsAppCoexistenceService,
+} from '@/src/services/whatsapp-coexistence.service'
+import {
   metaConnectionError,
   WhatsAppConnectionHealthService,
 } from '@/src/services/whatsapp-connection-health.service'
@@ -280,6 +286,19 @@ export const POST = withAxiom(async (request: NextRequest) => {
       return new Response('Erro interno', { status: 500 })
     }
     return new Response('FLOW_UPDATE_RECEIVED', { status: 200 })
+  }
+
+  // Coexistence (number also in the WhatsApp Business app): contacts, chat
+  // history and messages typed in the app. Ignored for any other number.
+  if (change.field && COEXISTENCE_WEBHOOK_FIELDS.includes(change.field)) {
+    const applied = await WhatsAppCoexistenceService.applyWebhook({
+      field: change.field as CoexistenceWebhookField,
+      value: value as unknown as CoexistenceWebhookValue,
+    })
+    if (!applied.ok) {
+      return new Response('Erro interno', { status: 500 })
+    }
+    return new Response('COEXISTENCE_RECEIVED', { status: 200 })
   }
 
   const phoneNumberId = value.metadata?.phone_number_id

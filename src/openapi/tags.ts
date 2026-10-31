@@ -298,6 +298,11 @@ export const TAG_GROUPS = [
         description:
           'Widget de chat para o site (E1): configuração e chave pública (OWNER/ADMIN) e os endpoints públicos que o script colado no site chama, protegidos por chave e lista de sites autorizados.',
       },
+      {
+        name: 'Comunicação · Canais da Meta',
+        description:
+          'Instagram Direct e Messenger na mesma caixa do WhatsApp (mensagens e comentários) e número em Coexistência (aplicativo e API juntos, com importação do histórico). Tudo desligado por padrão: a revisão do app na Meta é um passo à parte.',
+      },
     ],
   },
   {
