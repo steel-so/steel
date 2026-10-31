@@ -1546,34 +1546,6 @@ export const ERROR_CODES = {
   AI_ACTION_IN_PROGRESS: { code: 'AI_ACTION_IN_PROGRESS', status: 409 },
 
 
-  // nov-prospecting-agent: prospecting agent (T5).
-  CRM_PROSPECTING_DISABLED: { code: 'CRM_PROSPECTING_DISABLED', status: 403 },
-  CRM_PROSPECT_LIMIT_REACHED: {
-    code: 'CRM_PROSPECT_LIMIT_REACHED',
-    status: 429,
-  },
-  CRM_PROSPECT_DRAFT_NOT_FOUND: {
-    code: 'CRM_PROSPECT_DRAFT_NOT_FOUND',
-    status: 404,
-  },
-  CRM_PROSPECT_DRAFT_INVALID: {
-    code: 'CRM_PROSPECT_DRAFT_INVALID',
-    status: 422,
-  },
-  CRM_PROSPECT_DRAFT_DUPLICATE: {
-    code: 'CRM_PROSPECT_DRAFT_DUPLICATE',
-    status: 409,
-  },
-  CRM_PROSPECT_DRAFT_NOT_PENDING: {
-    code: 'CRM_PROSPECT_DRAFT_NOT_PENDING',
-    status: 409,
-  },
-  CRM_PROSPECT_WEB_FAILED: { code: 'CRM_PROSPECT_WEB_FAILED', status: 502 },
-  CRM_PROSPECT_SEARCH_NOT_CONFIGURED: {
-    code: 'CRM_PROSPECT_SEARCH_NOT_CONFIGURED',
-    status: 503,
-  },
-
   // nov: crm-deals (C6 proposal signature/payment, C8 deal room, C9 contracts)
   CRM_DEALS_PAYMENT_DISABLED: {
     code: 'CRM_DEALS_PAYMENT_DISABLED',

@@ -78,9 +78,6 @@ export default async function CrmLayout({
           <NavItem href={`${base}/cadences`} icon={Route01Icon}>
             Cadências
           </NavItem>
-          <NavItem href={`${base}/prospecting`} icon={UserSearch02Icon}>
-            Prospecção
-          </NavItem>
           <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
             Oportunidades
           </NavItem>
