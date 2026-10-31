@@ -1,0 +1,115 @@
+---
+title: Agente de prospecção e enriquecimento
+description: Um agente que pesquisa a empresa na web, completa os dados, encontra sinais de compra e escreve o primeiro contato para você aprovar. Ele nunca envia sozinho.
+section: crm
+order: 19
+---
+
+O **agente de prospecção** faz o trabalho de pesquisa que antecede o primeiro
+contato. Para um lead ou uma empresa que você escolher, ele:
+
+1. lê o registro e o histórico, para não procurar quem você já está atendendo;
+2. consulta o **CNPJ** na Receita e propõe preencher o que está vazio na empresa;
+3. pesquisa a empresa na web e lê as páginas mais úteis (site, vagas, notícias);
+4. busca quem decide na **Apollo**, se a Apollo estiver conectada;
+5. anota os **sinais de compra** que realmente encontrou, cada um com a frase
+   que o comprova e o endereço da página;
+6. escreve um **rascunho** de primeiro contato, por e-mail ou WhatsApp.
+
+> O agente **nunca envia mensagem**. O rascunho vai para uma fila e uma pessoa
+> revisa, ajusta, aprova e envia. Tudo que ele grava começa em aprovação.
+
+## Ligar a prospecção
+
+A prospecção vem **desligada**. Um proprietário ou administrador liga em
+**CRM › Prospecção › Configurações**:
+
+- **Prospecção com IA**: a chave geral. Desligada, nenhuma ferramenta de
+  pesquisa ou de rascunho funciona;
+- **Pesquisas por mês**: o limite de buscas e leituras de página. Passou do
+  limite, o agente para e avisa no resumo;
+- **Rascunhos por mês**: quantos rascunhos ele pode salvar;
+- **Canais liberados**: e-mail, WhatsApp ou os dois;
+- **O que vocês vendem**: umas linhas, nas suas palavras. O agente usa isso para
+  escrever um contato que faça sentido;
+- **Termos de sinal de compra**: palavras suas (por exemplo, "PABX" ou "call
+  center") que o detector destaca nas páginas, além dos sinais padrão.
+
+O consumo do mês aparece logo abaixo, com barras.
+
+> A busca na web depende de uma chave configurada pelo administrador da
+> plataforma. Sem ela, o agente ainda lê páginas por endereço, mas não pesquisa.
+> A tela avisa quando é o caso.
+
+## Criar o agente
+
+Na mesma aba, em **Agente de prospecção**, escolha como ele começa:
+
+- **Roda quando um lead é atribuído a ele**: abra um lead e atribua ao agente,
+  como faria com um colega. É a forma mais controlada;
+- **Roda a cada lead novo**: o agente pesquisa cada lead que entra no CRM (com
+  teto de 200 execuções por mês).
+
+O agente criado é um **Steel Agent comum**: você o encontra em
+**Steel AI › Agentes**, pode editar as instruções, trocar as ferramentas e ver
+cada execução passo a passo. As ferramentas de leitura (pesquisar, ler página,
+consultar CNPJ, buscar contatos) rodam sozinhas; **preencher a empresa e salvar o
+rascunho começam em aprovação**, e você decide se algum dia passam a ser
+automáticos (um administrador pode restringir isso em **Governança**).
+
+## Revisar os rascunhos
+
+Em **CRM › Prospecção › Rascunhos** ficam os textos escritos pelo agente. Cada
+cartão mostra:
+
+- para quem é, por qual canal e quando foi escrito;
+- o **resumo da pesquisa**;
+- os **sinais de compra**, com a frase da página e o link da fonte;
+- o texto da mensagem e as **páginas lidas**.
+
+Você pode:
+
+- **Editar** o assunto e o texto enquanto o rascunho espera revisão;
+- **Aprovar**: libera o texto. Aparece um botão para abrir a mensagem pronta no
+  seu programa de e-mail ou no WhatsApp, e você envia por lá;
+- **Recusar**, com o motivo, que fica registrado;
+- **Marcar como enviado**, depois que você mandou a mensagem.
+
+O Steel guarda quem aprovou, recusou ou marcou cada rascunho, e quando.
+
+## Que sinais ele procura
+
+| Sinal | Exemplos de frases |
+| --- | --- |
+| Contratando | "estamos contratando", "vagas abertas" |
+| Investimento | "rodada de investimento", "série A" |
+| Expansão | "nova filial", "inauguração" |
+| Mudança de tecnologia | "migração para a nuvem", "novo ERP" |
+| Mudança de liderança | "novo diretor" |
+| Licitação | "licitação", "pregão eletrônico" |
+| Lançamento | "lançamento", "novo produto" |
+| Dor declarada | "instabilidade", "queda de serviço" |
+
+O detector só destaca o trecho. Quem decide se aquilo é mesmo um sinal de
+compra é o agente (e, depois, você, na revisão).
+
+## Segurança e privacidade
+
+- As páginas da web são tratadas como **conteúdo de terceiros**: o agente não
+  obedece a ordens escritas nelas, e o Steel avisa quando uma página parece
+  tentar dar instruções a uma IA.
+- Só páginas públicas, com **https**, são abertas. Endereços internos, privados
+  ou locais são recusados, inclusive quando um redirecionamento tenta levar até
+  eles.
+- Cada pesquisa e cada rascunho entram no registro de auditoria do workspace.
+- Os rascunhos guardam dados de contato de pessoas. Recuse e exclua o que não
+  for usar, e siga a política de privacidade da sua empresa para o primeiro
+  contato comercial.
+
+## Quem pode o quê
+
+| Ação | Quem |
+| --- | --- |
+| Ver rascunhos, configurações e consumo | quem vê leads no CRM |
+| Editar, aprovar, recusar e marcar como enviado | quem edita leads |
+| Ligar a prospecção, ajustar limites e criar o agente | proprietários e administradores |

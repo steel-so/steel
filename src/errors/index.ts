@@ -478,6 +478,19 @@ export {
   workspaceStatusConflict,
   workspaceSuspended,
 } from './app-error'
+
+export {
+  crmProspectDraftDuplicate,
+  crmProspectDraftInvalid,
+  crmProspectDraftNotFound,
+  crmProspectDraftNotPending,
+  crmProspectingDisabled,
+  crmProspectLimitReached,
+  crmProspectSearchNotConfigured,
+  crmProspectWebFailed,
+} from './app-error'
+
+
 // nov: crm-deals
 export {
   crmContractInvalid,
