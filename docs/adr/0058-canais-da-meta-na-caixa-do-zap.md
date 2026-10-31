@@ -1,6 +1,6 @@
 # 0058 — Instagram, Messenger e Coexistência na caixa do zap, desligados por padrão
 
-- **Status:** Aceita
+- **Status:** Aceita (parte de Instagram e Messenger substituída pelo [ADR 0060](./0060-remocao-do-instagram-e-messenger-da-caixa-do-zap.md); a Coexistência segue valendo)
 - **Data:** 2026-10-30
 - **Decisores:** Claude (com a autorização do dono do produto para decidir dentro da fatia meta-channels)
 
