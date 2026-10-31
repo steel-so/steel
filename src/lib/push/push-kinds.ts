@@ -41,7 +41,7 @@ const GENERIC_BODY = 'Toque para abrir no Steel.'
 
 /** Only same-app paths are accepted as click targets. */
 export function safePushUrl(href: string | null | undefined): string {
-  if (!href || !href.startsWith('/') || href.startsWith('//')) return '/'
+  if (!href?.startsWith('/') || href.startsWith('//')) return '/'
   return href
 }
 
