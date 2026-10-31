@@ -119,6 +119,7 @@ import {
   ServicedeskDiscoveryCron,
   ServicedeskIntegrationsCron,
   ServicedeskInventoryCron,
+  ServicedeskLicenseExpiryCron,
   ServicedeskMailCron,
   ServicedeskRecurringCron,
   ServicedeskReportsCron,
@@ -535,6 +536,11 @@ export async function scheduleServicedeskInventoryJobs(): Promise<void> {
     ServicedeskInventoryJob.DiscoveryDue,
     { pattern: ServicedeskDiscoveryCron, tz: RetentionTimezone },
     { name: ServicedeskInventoryJob.DiscoveryDue, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    ServicedeskInventoryJob.LicenseExpiry,
+    { pattern: ServicedeskLicenseExpiryCron, tz: RetentionTimezone },
+    { name: ServicedeskInventoryJob.LicenseExpiry, data: {} },
   )
 
   logger.info('queue.scheduler.servicedesk_inventory_registered', {

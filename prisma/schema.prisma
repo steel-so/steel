@@ -5574,6 +5574,7 @@ enum NotificationKind {
   SD_TASK_DUE
   /// Plantão: troca pontual ou entrada no rodízio.
   SD_ONCALL_SHIFT
+  SD_LICENSE_EXPIRING
   /// Contrato: franquia em 80% ou excedente no período.
   SD_CONTRACT_FRANCHISE
   /// Comentário num artigo da base de conhecimento.

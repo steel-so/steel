@@ -392,11 +392,11 @@ export const SD_NOTIFICATION_EVENTS: SdNotificationEventSpec[] = [
     kind: 'SD_LICENSE_EXPIRING',
     label: 'Licença de software perto de vencer',
     description:
-      'Uma licença de software vence em breve ou venceu. Enviado aos administradores do ServiceDesk.',
+      'Uma licença de software vence em breve ou venceu. Avisa os administradores.',
     audience: [],
-    channels: ALL,
-    defaultChannels: APP_MAIL,
-    agentOnly: true,
+    channels: ['IN_APP'],
+    defaultChannels: ['IN_APP'],
+    // Sem `agentOnly`: donos e administradores recebem mesmo sem departamento.
   },
   {
     key: 'monitor.alert',

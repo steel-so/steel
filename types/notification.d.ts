@@ -49,6 +49,7 @@ export type NotificationKindDTO =
   | 'SD_APPROVAL_EXPIRED'
   | 'SD_TASK_DUE'
   | 'SD_ONCALL_SHIFT'
+  | 'SD_LICENSE_EXPIRING'
   | 'SD_CONTRACT_FRANCHISE'
   | 'SD_KB_COMMENT'
   | 'SD_MONITOR_ALERT'
