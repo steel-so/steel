@@ -3,7 +3,7 @@ import {
   type HourWindow,
   type Interval,
   type WeeklyHours,
-} from '@/src/lib/crm-meetings/slots'
+} from '@/src/lib/scheduling/slots'
 import {
   addDaysToDateKey,
   zonedDateKey,
@@ -11,7 +11,7 @@ import {
 } from './time'
 
 /**
- * Thin adapter over the C5 slot engine (`crm-meetings/slots`). The agenda
+ * Thin adapter over the shared slot engine (`scheduling/slots`). The agenda
  * keeps its own inputs (a day, a service with duration and buffer, the
  * professional's busy ranges) and hands the arithmetic to `computeFreeSlots`.
  *

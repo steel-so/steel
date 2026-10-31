@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bufferedOverlap,
   collides,
   computeFreeSlots,
   DEFAULT_WEEKLY_HOURS,
   type SlotRules,
   windowsOf,
-} from '../crm-meetings/slots'
+} from '../scheduling/slots'
 import {
+  addDaysToDateKey,
   isValidTimezone,
   localDateKey,
   localParts,
   parseClock,
+  weekdayOfDateKey,
+  zonedDateKeyToUtc,
   zonedTimeToUtc,
-} from '../crm-meetings/tz'
+} from '../scheduling/tz'
 
 describe('tz helpers', () => {
   it('validates zones', () => {
@@ -220,5 +224,52 @@ describe('computeFreeSlots', () => {
 
   it('ships a Monday-to-Friday default', () => {
     expect(Object.keys(DEFAULT_WEEKLY_HOURS)).toEqual(['1', '2', '3', '4', '5'])
+  })
+})
+
+describe('bufferedOverlap (C5 and Z10 buffer rules)', () => {
+  const at = (hhmm: string) => new Date(`2026-11-02T${hhmm}:00Z`)
+  const candidate = { start: at('10:00'), end: at('11:00') }
+
+  it('keeps the symmetric buffer of the meeting pages', () => {
+    const buffers = { afterCandidateMinutes: 15, afterOtherMinutes: 15 }
+    expect(
+      bufferedOverlap(candidate, { start: at('11:10'), end: at('12:00') }, buffers),
+    ).toBe(true)
+    expect(
+      bufferedOverlap(candidate, { start: at('11:15'), end: at('12:00') }, buffers),
+    ).toBe(false)
+    expect(
+      bufferedOverlap(candidate, { start: at('09:00'), end: at('09:50') }, buffers),
+    ).toBe(true)
+  })
+
+  it('honours the neighbour own buffer (Z10 slot taken rule)', () => {
+    const buffers = { afterCandidateMinutes: 0, afterOtherMinutes: 30 }
+    const before = { start: at('09:00'), end: at('09:40') }
+    expect(bufferedOverlap(candidate, before, buffers)).toBe(true)
+    expect(
+      bufferedOverlap(candidate, { start: at('09:00'), end: at('09:30') }, buffers),
+    ).toBe(false)
+    expect(
+      bufferedOverlap(candidate, { start: at('11:00'), end: at('12:00') }, buffers),
+    ).toBe(false)
+  })
+})
+
+describe('calendar-day helpers', () => {
+  it('shifts date keys across months', () => {
+    expect(addDaysToDateKey('2026-11-30', 1)).toBe('2026-12-01')
+    expect(addDaysToDateKey('2026-03-01', -1)).toBe('2026-02-28')
+  })
+
+  it('reads the weekday of a date key', () => {
+    expect(weekdayOfDateKey('2026-11-02')).toBe(1)
+  })
+
+  it('maps a date key and minute of day to the instant', () => {
+    expect(
+      zonedDateKeyToUtc('2026-11-02', 9 * 60 + 30, 'America/Sao_Paulo').toISOString(),
+    ).toBe('2026-11-02T12:30:00.000Z')
   })
 })

@@ -6,7 +6,7 @@ import {
   createFakeMeetingHost,
   createFakeMeetingPage,
 } from '@/src/__tests__/factories/nov-crm-ops.factory'
-import { DEFAULT_WEEKLY_HOURS } from '@/src/lib/crm-meetings/slots'
+import { DEFAULT_WEEKLY_HOURS } from '@/src/lib/scheduling/slots'
 import {
   toCrmMeetingAvailabilityDTO,
   toCrmMeetingBookingDTO,

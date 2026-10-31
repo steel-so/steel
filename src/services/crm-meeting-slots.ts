@@ -5,7 +5,7 @@ import {
   fetchIcs,
   ICS_FAILURE_MESSAGES,
 } from '@/src/lib/crm-meetings/ics-fetch'
-import { computeFreeSlots, type Interval } from '@/src/lib/crm-meetings/slots'
+import { computeFreeSlots, type Interval } from '@/src/lib/scheduling/slots'
 import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { ensureRedisConnected, redis } from '@/src/lib/redis'
 import { ok, type Result } from '@/src/lib/result'

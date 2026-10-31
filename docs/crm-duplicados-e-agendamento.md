@@ -40,7 +40,7 @@ Códigos de erro: `CRM_DUPLICATE_NOT_FOUND`, `CRM_DUPLICATE_INVALID`, `CRM_MERGE
 
 ### Motor de horários
 
-`src/services/crm-meeting-slots.ts` junta, por vendedor, o horário semanal (padrão: segunda a sexta, 9h–18h, Brasília), as reservas confirmadas, a agenda do CRM e o iCal (`src/lib/crm-meetings/ics.ts`, cache de 5 minutos no Redis, falha de leitura nunca derruba a página). `computeFreeSlots` (`src/lib/crm-meetings/slots.ts`) respeita duração, folga, passo, antecedência e a janela máxima, calculando em fuso IANA (inclusive horário de verão).
+`src/services/crm-meeting-slots.ts` junta, por vendedor, o horário semanal (padrão: segunda a sexta, 9h–18h, Brasília), as reservas confirmadas, a agenda do CRM e o iCal (`src/lib/crm-meetings/ics.ts`, cache de 5 minutos no Redis, falha de leitura nunca derruba a página). `computeFreeSlots` (`src/lib/scheduling/slots.ts`, motor compartilhado com o WhatsApp, ADR 0059) respeita duração, folga, passo, antecedência e a janela máxima, calculando em fuso IANA (inclusive horário de verão).
 
 ### Rodízio e corrida
 
