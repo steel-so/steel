@@ -6,6 +6,7 @@ import {
   BrainIcon,
   ChartLineData01Icon,
   MagicWand01Icon,
+  Task01Icon,
   TestTube01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
@@ -22,6 +23,7 @@ export const STEEL_AI_AREA_LINKS: {
 }[] = [
   { segment: 'skills', label: 'Skills', icon: MagicWand01Icon },
   { segment: 'agents', label: 'Agentes', icon: AiBrain01Icon },
+  { segment: 'procedures', label: 'Procedimentos', icon: Task01Icon },
   { segment: 'usage', label: 'Uso', icon: ChartLineData01Icon },
   { segment: 'analytics', label: 'Análises', icon: Analytics01Icon },
   { segment: 'evals', label: 'Avaliações', icon: TestTube01Icon },

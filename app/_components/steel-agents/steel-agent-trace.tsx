@@ -3,6 +3,7 @@
 import {
   AiBrain01Icon,
   CheckmarkBadge01Icon,
+  Task01Icon,
   Shield01Icon,
   Wrench01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -23,6 +24,7 @@ const STEP_ICON = {
   TOOL: Wrench01Icon,
   APPROVAL: CheckmarkBadge01Icon,
   GUARDRAIL: Shield01Icon,
+  PROCEDURE: Task01Icon,
 } as const
 
 function Disclosure({
@@ -73,6 +75,9 @@ function TraceItem({
         </span>
         {entry.kind === 'GUARDRAIL' ? (
           <Badge variant='outline'>Guardrail</Badge>
+        ) : null}
+        {entry.kind === 'PROCEDURE' ? (
+          <Badge variant='outline'>Procedimento</Badge>
         ) : null}
         <span className='text-muted-foreground text-xs'>
           {entry.kind === 'GUARDRAIL'
@@ -161,6 +166,9 @@ export function SteelAgentTrace({
         </span>
         {summary.approvals > 0
           ? ` · ${summary.approvals} pedido(s) de aprovação`
+          : ''}
+        {summary.procedureSteps > 0
+          ? ` · ${summary.procedureSteps} passo(s) de procedimento`
           : ''}
       </p>
       <ol className='relative ml-3 space-y-4 border-border/80 border-l pl-5'>

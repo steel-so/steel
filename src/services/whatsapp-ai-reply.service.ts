@@ -43,6 +43,7 @@ import {
   checkAutoReplyGuardrails,
   reportAutoReplyGuardrailHit,
 } from './ai-guardrails.service'
+import { AiProcedureRuntime } from './ai-procedure-runtime.service'
 import { AiUsageService } from './ai-usage.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import { WhatsAppAiCampaignService } from './whatsapp-ai-campaign.service'
@@ -383,7 +384,28 @@ export const WhatsAppAiReplyService = {
     )
     const knowledgeBaseSection = await buildKnowledgeBaseSection(workspaceId)
     const zapTools = await loadZapAiTools(workspaceId)
-    const system =
+    // A5: mandatory-step procedures (null = nothing to offer this turn).
+    const procedureStart = await AiProcedureRuntime.beginTurn({
+      workspaceId,
+      subjectType: 'WHATSAPP_CONVERSATION',
+      subjectId: conversationId,
+      channel: 'WHATSAPP',
+      resolveVariables: async (): Promise<Record<string, string>> => {
+        const found = await WhatsAppContactRepository.findById(
+          conversation.contactId,
+          workspaceId,
+        )
+        return found.ok && found.value
+          ? {
+              contact_name: found.value.name ?? '',
+              contact_phone: found.value.waId,
+            }
+          : {}
+      },
+    })
+    const procedureTurn = procedureStart.ok ? procedureStart.value : null
+
+    const baseSystem =
       config.systemPrompt +
       (zapTools ? ZAP_TOOLS_SYSTEM_SECTION : '') +
       HANDOFF_SYSTEM_INSTRUCTION +
@@ -402,39 +424,48 @@ export const WhatsAppAiReplyService = {
       (instruction
         ? `\n\nInstrução para esta resposta (o cliente clicou num botão): ${instruction}`
         : '')
+    const systemNow = () => baseSystem + (procedureTurn?.section() ?? '')
 
     const campaignActions = campaignContext?.actions ?? []
-    const tools = [
+    const baseTools = [
       CHECK_APPOINTMENT_TOOL,
       ...buildAiCampaignActionTools(campaignActions),
       ...(zapTools?.specs ?? []),
     ]
+    const toolsNow = () => [...baseTools, ...(procedureTurn?.tools() ?? [])]
     const actionRequests: AiCampaignActionRequest[] = []
     let replyText: string
     const usage: AiUsageTokens = { inputTokens: 0, outputTokens: 0 }
     try {
       let response = await call.provider.chat({
         model: call.model.model,
-        system,
+        system: systemNow(),
         messages,
-        tools,
+        tools: toolsNow(),
       })
       usage.inputTokens += response.usage.inputTokens
       usage.outputTokens += response.usage.outputTokens
 
-      const maxRounds = zapTools ? ZAP_TOOL_ROUNDS : 1
+      const maxRounds = Math.max(
+        zapTools ? ZAP_TOOL_ROUNDS : 1,
+        procedureTurn ? 3 : 1,
+      )
       let rounds = 0
       while (response.stopReason === 'tool_use' && rounds < maxRounds) {
         rounds++
         messages.push(response.message)
         for (const toolCall of response.toolCalls) {
-          const actionRequest = parseAiCampaignActionCall(
-            campaignActions,
-            toolCall,
-          )
+          const procedureContent = procedureTurn?.owns(toolCall.name)
+            ? await procedureTurn.handle(toolCall)
+            : null
+          const actionRequest = procedureContent
+            ? null
+            : parseAiCampaignActionCall(campaignActions, toolCall)
           if (actionRequest) actionRequests.push(actionRequest)
           let content: string
-          if (zapTools?.names.has(toolCall.name)) {
+          if (procedureContent) {
+            content = procedureContent
+          } else if (zapTools?.names.has(toolCall.name)) {
             content = await zapTools.run({
               toolCall,
               conversationId,
@@ -465,9 +496,9 @@ export const WhatsAppAiReplyService = {
         // loop of tool calls can never keep the customer waiting.
         response = await call.provider.chat({
           model: call.model.model,
-          system,
+          system: systemNow(),
           messages,
-          tools,
+          tools: toolsNow(),
           ...(rounds >= maxRounds && { toolChoice: 'none' as const }),
         })
         usage.inputTokens += response.usage.inputTokens
@@ -510,6 +541,19 @@ export const WhatsAppAiReplyService = {
       return selected.length
     }
 
+    // A5: the engine decides what the customer receives (fixed messages,
+    // the model's words for the current step) and whether a human takes over.
+    let procedureHandoff = false
+    if (procedureTurn) {
+      const modelWantsHandoff = replyText.includes(WHATSAPP_AI_HANDOFF_MARKER)
+      const finished = await procedureTurn.finish(
+        replyText.replaceAll(WHATSAPP_AI_HANDOFF_MARKER, '').trim(),
+        { modelRequestedHandoff: modelWantsHandoff },
+      )
+      replyText = finished.reply
+      procedureHandoff = finished.handoff || modelWantsHandoff
+    }
+
     if (!replyText) {
       // The AI may act without writing (e.g. close a finished conversation).
       await runCampaignActions()
@@ -525,7 +569,9 @@ export const WhatsAppAiReplyService = {
       reply: replyText.replaceAll(WHATSAPP_AI_HANDOFF_MARKER, ''),
     })
     const shouldHandoff =
-      Boolean(guardrail) || replyText.includes(WHATSAPP_AI_HANDOFF_MARKER)
+      Boolean(guardrail) ||
+      procedureHandoff ||
+      replyText.includes(WHATSAPP_AI_HANDOFF_MARKER)
     const textToSend = guardrail
       ? HANDOFF_FALLBACK_MESSAGE
       : shouldHandoff

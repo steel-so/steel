@@ -35,6 +35,7 @@ export interface TraceSummary {
   tools: number
   guardrails: number
   approvals: number
+  procedureSteps: number
 }
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -105,6 +106,28 @@ export function traceEntry(step: SteelAgentRunStepDTO): TraceEntry {
     }
   }
 
+  if (step.kind === 'PROCEDURE') {
+    const stepStatus = text(output.stepStatus)
+    const label =
+      stepStatus === 'SKIPPED'
+        ? 'dispensado'
+        : stepStatus === 'REJECTED'
+          ? 'bloqueado'
+          : null
+    return {
+      ...base,
+      title: `Procedimento: ${text(output.title) ?? 'passo'}${label ? ` (${label})` : ''}`,
+      body:
+        step.error ??
+        text(output.message) ??
+        text(output.reason) ??
+        (output.saved && Array.isArray(output.saved)
+          ? `Guardou: ${output.saved.join(', ')}`
+          : null),
+      input: prettyInput(step.input),
+    }
+  }
+
   if (step.kind === 'APPROVAL') {
     return {
       ...base,
@@ -139,5 +162,6 @@ export function summarizeTrace(steps: SteelAgentRunStepDTO[]): TraceSummary {
     tools: steps.filter((s) => s.kind === 'TOOL').length,
     guardrails: steps.filter((s) => s.kind === 'GUARDRAIL').length,
     approvals: steps.filter((s) => s.kind === 'APPROVAL').length,
+    procedureSteps: steps.filter((s) => s.kind === 'PROCEDURE').length,
   }
 }

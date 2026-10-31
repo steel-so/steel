@@ -117,10 +117,36 @@ describe('traceEntry', () => {
       tools: 1,
       guardrails: 1,
       approvals: 1,
+      procedureSteps: 0,
     })
     render(<SteelAgentTrace steps={[STEPS[0]]} timezone='UTC' emptyText='' />)
     expect(screen.getByTestId('trace-summary').textContent).not.toContain(
       'aprovação',
     )
+  })
+
+  it('should show procedure steps with their status', () => {
+    const blocked = traceEntry(
+      step({
+        kind: 'PROCEDURE',
+        output: { title: 'Informar CPF', stepStatus: 'REJECTED' },
+        error: 'Fora de ordem',
+      }),
+    )
+    expect(blocked.title).toBe('Procedimento: Informar CPF (bloqueado)')
+    expect(blocked.body).toBe('Fora de ordem')
+    const skipped = traceEntry(
+      step({
+        kind: 'PROCEDURE',
+        output: { title: 'Consultar', stepStatus: 'SKIPPED', reason: 'condição' },
+      }),
+    )
+    expect(skipped.title).toBe('Procedimento: Consultar (dispensado)')
+    expect(skipped.body).toBe('condição')
+    const saved = traceEntry(
+      step({ kind: 'PROCEDURE', output: { title: 'Consultar', saved: ['link'] } }),
+    )
+    expect(saved.body).toBe('Guardou: link')
+    expect(summarizeTrace([step({ kind: 'PROCEDURE' })]).procedureSteps).toBe(1)
   })
 })
