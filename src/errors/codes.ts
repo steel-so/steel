@@ -1483,6 +1483,29 @@ export const ERROR_CODES = {
   // Finished or canceled windows do not accept changes.
   SD_MAINTENANCE_CLOSED: { code: 'SD_MAINTENANCE_CLOSED', status: 409 },
   SD_MAINTENANCE_INVALID: { code: 'SD_MAINTENANCE_INVALID', status: 422 },
+  // nov: ai-governance
+  STEEL_AGENTS_PAUSED: { code: 'STEEL_AGENTS_PAUSED', status: 409 },
+  STEEL_AGENT_CREATE_FORBIDDEN: {
+    code: 'STEEL_AGENT_CREATE_FORBIDDEN',
+    status: 403,
+  },
+  STEEL_AGENT_AUTO_NOT_ALLOWED: {
+    code: 'STEEL_AGENT_AUTO_NOT_ALLOWED',
+    status: 403,
+  },
+  STEEL_AGENT_DELEGATE_INVALID: {
+    code: 'STEEL_AGENT_DELEGATE_INVALID',
+    status: 422,
+  },
+  STEEL_MCP_SERVER_NOT_FOUND: {
+    code: 'STEEL_MCP_SERVER_NOT_FOUND',
+    status: 404,
+  },
+  STEEL_MCP_SERVER_INVALID: { code: 'STEEL_MCP_SERVER_INVALID', status: 422 },
+  STEEL_MCP_SERVER_UNREACHABLE: {
+    code: 'STEEL_MCP_SERVER_UNREACHABLE',
+    status: 502,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

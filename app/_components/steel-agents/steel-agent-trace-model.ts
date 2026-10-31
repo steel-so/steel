@@ -26,6 +26,8 @@ export interface TraceEntry {
   /** Tools a MODEL step asked for. */
   toolCalls: string[]
   rule: string | null
+  /** A7: run started by a delegation (TOOL step of `delegate_to_agent`). */
+  child: { agentId: string; runId: string; agentName: string | null } | null
 }
 
 export interface TraceSummary {
@@ -71,6 +73,7 @@ export function traceEntry(step: SteelAgentRunStepDTO): TraceEntry {
     tokens: null as number | null,
     toolCalls: [] as string[],
     rule: null as string | null,
+    child: null as TraceEntry['child'],
   }
   const toolName = step.toolLabel ?? step.toolName ?? 'Ferramenta'
 
@@ -111,12 +114,22 @@ export function traceEntry(step: SteelAgentRunStepDTO): TraceEntry {
     }
   }
 
+  const childRunId = text(output.childRunId)
+  const childAgentId = text(output.childAgentId)
   return {
     ...base,
     title: toolName,
     body: step.error ?? text(output.summary) ?? text(output.title),
     input: prettyInput(step.input),
     context: contextOf(output),
+    child:
+      childRunId && childAgentId
+        ? {
+            agentId: childAgentId,
+            runId: childRunId,
+            agentName: text(output.childAgentName),
+          }
+        : null,
   }
 }
 

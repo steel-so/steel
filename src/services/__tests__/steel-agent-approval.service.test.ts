@@ -42,6 +42,13 @@ vi.mock('@/src/services/ai-pending-action.service', () => ({
   executeClaimedAction: vi.fn(),
 }))
 
+vi.mock('@/src/repositories/steel-agent-governance.repository')
+vi.mock('@/src/repositories/steel-mcp-server.repository')
+
+import {
+  createFakeSteelAgentPolicy,
+  createFakeSteelMcpServer,
+} from '@/src/__tests__/factories/nov-ai-governance.factory'
 import { resolveToolAccess } from '@/src/lib/ai/tools/registry'
 import { enqueueSteelAgentRun } from '@/src/lib/steel-agents/enqueue'
 import { currentSteelAgentContext } from '@/src/lib/steel-agents/run-context'
@@ -50,6 +57,8 @@ import {
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
+import { SteelMcpServerRepository } from '@/src/repositories/steel-mcp-server.repository'
 import {
   assertPreviewUnchanged,
   executeClaimedAction,
@@ -145,6 +154,7 @@ function setup(
 }
 
 beforeEach(() => {
+  vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(ok(null))
   registry.tools = [createTool]
 })
 
@@ -679,6 +689,106 @@ describe('SteelAgentApprovalService.reject', () => {
     expectErr(
       await SteelAgentApprovalService.reject('m1', 'ws1', 'run1', 'act1'),
       'FORBIDDEN',
+    )
+  })
+})
+
+describe('SteelAgentApprovalService.approve — governance (A6/A8)', () => {
+  it('should refuse to execute anything while the emergency switch is on', async () => {
+    setup()
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      ok(createFakeSteelAgentPolicy({ killedAt: NOW })),
+    )
+    expectErr(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+      'STEEL_AGENTS_PAUSED',
+    )
+    expect(execute).not.toHaveBeenCalled()
+
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should resolve and execute an approved MCP tool', async () => {
+    const server = createFakeSteelMcpServer({
+      workspaceId: 'ws1',
+      allowedTools: ['create_issue'],
+    })
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      ok([server]),
+    )
+    setup({
+      tools: ['mcp_github__create_issue'],
+      action: { toolName: 'mcp_github__create_issue' },
+    })
+    expectOk(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+    )
+    expect(execute).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ name: 'mcp_github__create_issue' }),
+      expect.anything(),
+    )
+  })
+
+  it('should refuse an MCP tool that left the allow-list and surface load errors', async () => {
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      ok([createFakeSteelMcpServer({ workspaceId: 'ws1', allowedTools: [] })]),
+    )
+    setup({
+      tools: ['mcp_github__create_issue'],
+      action: { toolName: 'mcp_github__create_issue' },
+    })
+    expectErr(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+      'AI_TOOL_NOT_ALLOWED',
+    )
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await SteelAgentApprovalService.approve(
+        'admin1',
+        'ws1',
+        'run1',
+        'act1',
+        {},
+        NOW,
+      ),
+      'DATABASE_ERROR',
     )
   })
 })

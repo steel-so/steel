@@ -6,6 +6,7 @@ import {
   Shield01Icon,
   Wrench01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -44,9 +45,11 @@ function Disclosure({
 function TraceItem({
   entry,
   timezone,
+  slug,
 }: {
   entry: TraceEntry
   timezone: string
+  slug?: string
 }) {
   const failed = entry.status === 'FAILED'
   return (
@@ -88,6 +91,15 @@ function TraceItem({
           {entry.body}
         </p>
       ) : null}
+      {entry.child && slug ? (
+        <Link
+          href={`/${slug}/ai/agents/${entry.child.agentId}/runs/${entry.child.runId}`}
+          className='mt-0.5 inline-block text-primary text-xs underline'
+        >
+          Ver a execução
+          {entry.child.agentName ? ` de ${entry.child.agentName}` : ' delegada'}
+        </Link>
+      ) : null}
       {entry.kind === 'MODEL' &&
       (entry.toolCalls.length > 0 || entry.tokens) ? (
         <p className='mt-0.5 text-muted-foreground text-xs'>
@@ -127,10 +139,13 @@ export function SteelAgentTrace({
   steps,
   timezone,
   emptyText,
+  slug,
 }: {
   steps: SteelAgentRunStepDTO[]
   timezone: string
   emptyText: string
+  /** Workspace slug, to link delegated runs. */
+  slug?: string
 }) {
   if (steps.length === 0) {
     return <p className='text-muted-foreground text-sm'>{emptyText}</p>
@@ -154,6 +169,7 @@ export function SteelAgentTrace({
             key={step.id}
             entry={traceEntry(step)}
             timezone={timezone}
+            slug={slug}
           />
         ))}
       </ol>

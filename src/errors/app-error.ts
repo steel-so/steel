@@ -2262,3 +2262,33 @@ export const sdMaintenanceClosed = (): AppError =>
 
 export const sdMaintenanceInvalid = (message: string): AppError =>
   appError('SD_MAINTENANCE_INVALID', message)
+// nov: ai-governance
+export const steelAgentsPaused = (): AppError =>
+  appError(
+    'STEEL_AGENTS_PAUSED',
+    'Os agentes do workspace estão pausados por emergência. Retome-os na governança para executar.',
+  )
+
+export const steelAgentCreateForbidden = (): AppError =>
+  appError(
+    'STEEL_AGENT_CREATE_FORBIDDEN',
+    'O seu perfil não pode criar agentes neste workspace.',
+  )
+
+export const steelAgentAutoNotAllowed = (toolName: string): AppError =>
+  appError(
+    'STEEL_AGENT_AUTO_NOT_ALLOWED',
+    `O perfil não libera o modo automático para a ferramenta "${toolName}". Deixe-a em "Requer aprovação".`,
+  )
+
+export const steelAgentDelegateInvalid = (message: string): AppError =>
+  appError('STEEL_AGENT_DELEGATE_INVALID', message)
+
+export const steelMcpServerNotFound = (): AppError =>
+  appError('STEEL_MCP_SERVER_NOT_FOUND', 'Servidor MCP não encontrado')
+
+export const steelMcpServerInvalid = (message: string): AppError =>
+  appError('STEEL_MCP_SERVER_INVALID', message)
+
+export const steelMcpServerUnreachable = (message: string): AppError =>
+  appError('STEEL_MCP_SERVER_UNREACHABLE', message)

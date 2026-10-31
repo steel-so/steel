@@ -18,12 +18,20 @@ export interface SteelAgentToolSelection {
   mode: SteelAgentToolModeDTO
 }
 
-const GROUP_ORDER: (AiModuleDTO | 'PLATFORM')[] = [
+type ToolGroup = AiModuleDTO | 'PLATFORM' | 'MCP'
+
+const GROUP_ORDER: ToolGroup[] = [
   'PLATFORM',
   'SERVICE_DESK',
   'CRM',
   'COMMUNICATION',
+  'MCP',
 ]
+
+function groupOf(tool: SteelAgentToolCatalogItemDTO): ToolGroup {
+  if (tool.external) return 'MCP'
+  return tool.module ?? 'PLATFORM'
+}
 
 const KIND_LABEL: Record<SteelAgentToolCatalogItemDTO['kind'], string> = {
   READ: 'Leitura',
@@ -33,8 +41,10 @@ const KIND_LABEL: Record<SteelAgentToolCatalogItemDTO['kind'], string> = {
   ACTION: 'Ação',
 }
 
-function groupLabel(group: AiModuleDTO | 'PLATFORM'): string {
-  return group === 'PLATFORM' ? 'Plataforma' : STEEL_AI_MODULE_META[group].label
+function groupLabel(group: ToolGroup): string {
+  if (group === 'PLATFORM') return 'Plataforma'
+  if (group === 'MCP') return 'Servidores MCP externos'
+  return STEEL_AI_MODULE_META[group].label
 }
 
 /**
@@ -47,11 +57,14 @@ export function SteelAgentToolPicker({
   value,
   onChange,
   disabled,
+  autoAllowedTools = null,
 }: {
   tools: SteelAgentToolCatalogItemDTO[]
   value: SteelAgentToolSelection[]
   onChange: (next: SteelAgentToolSelection[]) => void
   disabled?: boolean
+  /** A8: tools the caller's role may set to AUTO (null = no limit). */
+  autoAllowedTools?: string[] | null
 }) {
   const selected = new Map(value.map((t) => [t.toolName, t.mode]))
 
@@ -75,7 +88,7 @@ export function SteelAgentToolPicker({
 
   const groups = GROUP_ORDER.map((group) => ({
     group,
-    items: tools.filter((t) => (t.module ?? 'PLATFORM') === group),
+    items: tools.filter((t) => groupOf(t) === group),
   })).filter((g) => g.items.length > 0)
 
   if (groups.length === 0) {
@@ -95,7 +108,7 @@ export function SteelAgentToolPicker({
           className='space-y-1.5'
         >
           <h4 className='flex items-center gap-1.5 font-medium text-muted-foreground text-xs'>
-            {group !== 'PLATFORM' ? (
+            {group !== 'PLATFORM' && group !== 'MCP' ? (
               <SteelIcon
                 icon={STEEL_AI_MODULE_META[group].icon}
                 strokeWidth={2}
@@ -117,6 +130,10 @@ export function SteelAgentToolPicker({
               const isWrite = tool.kind !== 'READ'
               const locked = tool.kind === 'DELETE'
               const auto = !locked && mode === 'AUTO'
+              const roleBlocked =
+                isWrite &&
+                autoAllowedTools !== null &&
+                !autoAllowedTools.includes(tool.name)
               const id = `agent-tool-${tool.name}`
               return (
                 <li
@@ -159,6 +176,15 @@ export function SteelAgentToolPicker({
                             className='size-3.5'
                           />
                           Sempre requer aprovação
+                        </span>
+                      ) : roleBlocked && !auto ? (
+                        <span className='flex items-center gap-1 text-muted-foreground'>
+                          <SteelIcon
+                            icon={LockIcon}
+                            strokeWidth={2}
+                            className='size-3.5'
+                          />
+                          Seu perfil não libera o automático
                         </span>
                       ) : (
                         <>

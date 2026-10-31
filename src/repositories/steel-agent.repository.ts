@@ -22,6 +22,7 @@ import { dbError } from './db-error'
 
 const AGENT_INCLUDE = {
   tools: { orderBy: { toolName: 'asc' } },
+  delegates: { select: { targetAgentId: true } },
   owner: { select: { id: true, name: true, email: true, image: true } },
   runs: {
     // Test runs ("Testar agente") never show as the agent's last run.
@@ -120,12 +121,20 @@ export const SteelAgentRepository = {
       workspaceId: string
       createdById: string
       tools: SteelAgentToolInput[]
+      /** A7: agents this one may delegate to. */
+      delegateIds?: string[]
     },
   ): Promise<Result<SteelAgentWithRelations>> {
-    const { tools, ...fields } = data
+    const { tools, delegateIds = [], ...fields } = data
     try {
       const agent = await prisma.steelAgent.create({
-        data: { ...fields, tools: { create: tools } },
+        data: {
+          ...fields,
+          tools: { create: tools },
+          delegates: {
+            create: delegateIds.map((targetAgentId) => ({ targetAgentId })),
+          },
+        },
         include: AGENT_INCLUDE,
       })
       return ok(agent)
@@ -139,9 +148,21 @@ export const SteelAgentRepository = {
     id: string,
     data: Partial<SteelAgentWriteInput>,
     tools?: SteelAgentToolInput[],
+    delegateIds?: string[],
   ): Promise<Result<SteelAgentWithRelations>> {
     try {
       const agent = await prisma.$transaction(async (tx) => {
+        if (delegateIds) {
+          await tx.steelAgentDelegate.deleteMany({ where: { agentId: id } })
+          if (delegateIds.length > 0) {
+            await tx.steelAgentDelegate.createMany({
+              data: delegateIds.map((targetAgentId) => ({
+                agentId: id,
+                targetAgentId,
+              })),
+            })
+          }
+        }
         if (tools) {
           await tx.steelAgentTool.deleteMany({ where: { agentId: id } })
           if (tools.length > 0) {
@@ -253,6 +274,9 @@ export const SteelAgentRunRepository = {
     isTest?: boolean
     /** Run this test re-executes (A4). */
     rerunOfId?: string | null
+    /** A7: run that delegated this one, and how deep the chain is. */
+    parentRunId?: string | null
+    depth?: number
   }): Promise<Result<SteelAgentRun>> {
     try {
       const run = await prisma.steelAgentRun.create({ data })
@@ -495,6 +519,91 @@ export const SteelAgentAssignmentRepository = {
       return ok(count)
     } catch (error) {
       return err(dbError('Failed to unassign steel agent', error))
+    }
+  },
+}
+
+export interface DelegateTargetRow {
+  id: string
+  name: string
+  description: string | null
+  enabled: boolean
+}
+
+/** Delegation graph between agents (A7). */
+export const SteelAgentDelegateRepository = {
+  /** Agents `agentId` may delegate to (same workspace by construction). */
+  async listTargets(agentId: string): Promise<Result<DelegateTargetRow[]>> {
+    try {
+      const rows = await prisma.steelAgentDelegate.findMany({
+        where: { agentId },
+        select: {
+          target: {
+            select: { id: true, name: true, description: true, enabled: true },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      })
+      return ok(rows.map((row) => row.target))
+    } catch (error) {
+      return err(dbError('Failed to list steel agent delegates', error))
+    }
+  },
+
+  /** Ids of agents of `workspaceId` among `ids` (validation on save). */
+  async existingInWorkspace(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<string[]>> {
+    if (ids.length === 0) return ok([])
+    try {
+      const rows = await prisma.steelAgent.findMany({
+        where: { workspaceId, id: { in: ids } },
+        select: { id: true },
+      })
+      return ok(rows.map((row) => row.id))
+    } catch (error) {
+      return err(dbError('Failed to check steel agent delegates', error))
+    }
+  },
+
+  /**
+   * Edges of the delegation graph of a workspace: `agentId → targetAgentId`
+   * (cycle check on save).
+   */
+  async edges(
+    workspaceId: string,
+  ): Promise<Result<{ agentId: string; targetAgentId: string }[]>> {
+    try {
+      return ok(
+        await prisma.steelAgentDelegate.findMany({
+          where: { agent: { workspaceId } },
+          select: { agentId: true, targetAgentId: true },
+        }),
+      )
+    } catch (error) {
+      return err(dbError('Failed to list steel agent delegations', error))
+    }
+  },
+
+  /** `parentRunId` links, root first, for the cycle guard of a run. */
+  async runChain(runId: string): Promise<Result<string[]>> {
+    try {
+      const chain: string[] = []
+      let cursor: string | null = runId
+      for (let hop = 0; cursor && hop < 10; hop++) {
+        const run: { agentId: string; parentRunId: string | null } | null =
+          await prisma.steelAgentRun.findUnique({
+            where: { id: cursor },
+            select: { agentId: true, parentRunId: true },
+          })
+        if (!run) break
+        chain.unshift(run.agentId)
+        cursor = run.parentRunId
+      }
+      return ok(chain)
+    } catch (error) {
+      return err(dbError('Failed to read the delegation chain', error))
     }
   },
 }

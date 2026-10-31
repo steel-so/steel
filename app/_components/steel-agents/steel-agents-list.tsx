@@ -4,6 +4,7 @@ import {
   AiBrain01Icon,
   DashboardSquare02Icon,
   PlusSignIcon,
+  Shield01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -40,6 +41,7 @@ export function SteelAgentsList({
   const router = useRouter()
   const [gallery, setGallery] = useState(false)
   const canManage = catalog.data?.canManage ?? false
+  const canCreate = canManage || (catalog.data?.canCreate ?? false)
   // Templates are an OWNER/ADMIN gallery; creating still needs `canManage`.
   const canUseTemplates = canManage && (templates.data?.canUse ?? false)
   const list = agents.data ?? []
@@ -49,8 +51,21 @@ export function SteelAgentsList({
       <SteelAiTopBar
         title='Agentes'
         actions={
-          canManage ? (
+          canCreate || canManage ? (
             <div className='flex items-center gap-1'>
+              {canManage ? (
+                <Button
+                  size='sm'
+                  variant='outline'
+                  aria-label='Governança'
+                  className='max-sm:size-8 max-sm:px-0'
+                  render={<Link href={`/${slug}/ai/agents/governance`} />}
+                  nativeButton={false}
+                >
+                  <SteelIcon icon={Shield01Icon} strokeWidth={2} />
+                  <span className='hidden sm:inline'>Governança</span>
+                </Button>
+              ) : null}
               {canUseTemplates ? (
                 <Button
                   size='sm'
@@ -63,16 +78,18 @@ export function SteelAgentsList({
                   <span className='hidden sm:inline'>Modelos</span>
                 </Button>
               ) : null}
-              <Button
-                size='sm'
-                aria-label='Novo agente'
-                className='max-sm:size-8 max-sm:px-0'
-                render={<Link href={`/${slug}/ai/agents/new`} />}
-                nativeButton={false}
-              >
-                <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-                <span className='hidden sm:inline'>Novo agente</span>
-              </Button>
+              {canCreate ? (
+                <Button
+                  size='sm'
+                  aria-label='Novo agente'
+                  className='max-sm:size-8 max-sm:px-0'
+                  render={<Link href={`/${slug}/ai/agents/new`} />}
+                  nativeButton={false}
+                >
+                  <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+                  <span className='hidden sm:inline'>Novo agente</span>
+                </Button>
+              ) : null}
             </div>
           ) : null
         }
@@ -107,7 +124,7 @@ export function SteelAgentsList({
               />
               <p className='font-medium text-sm'>Nenhum agente ainda</p>
               <p className='max-w-sm text-muted-foreground text-sm'>
-                {canManage
+                {canCreate
                   ? 'Crie um agente para triar chamados, acompanhar leads ou resumir o dia automaticamente.'
                   : 'Peça a um administrador para criar o primeiro agente.'}
               </p>

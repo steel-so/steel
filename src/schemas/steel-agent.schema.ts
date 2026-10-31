@@ -1,4 +1,5 @@
 import z from 'zod'
+import { MAX_DELEGATES_PER_AGENT } from '@/src/lib/steel-agents/delegation'
 import { STEEL_AGENT_EVENT_KEYS } from '@/src/lib/steel-agents/events'
 import {
   STEEL_AGENT_DEFAULT_TIMEZONE,
@@ -61,6 +62,10 @@ const baseFields = {
   maxToolRounds: z.number().int().min(1).max(STEEL_AGENT_MAX_TOOL_ROUNDS),
   monthlyRunCap: z.number().int().min(1).max(100_000).nullable(),
   tools: toolsField,
+  /** A7: agents this one may delegate to (as a tool). */
+  delegateAgentIds: z
+    .array(z.string().trim().min(1).max(64))
+    .max(MAX_DELEGATES_PER_AGENT),
   /** A2: eval set (target STEEL_AGENT) that gates new versions. */
   evalSetId: z
     .string()
@@ -102,6 +107,7 @@ export const CreateSteelAgentSchema = z
     maxToolRounds: baseFields.maxToolRounds.default(8),
     monthlyRunCap: baseFields.monthlyRunCap.optional(),
     tools: toolsField.default([]),
+    delegateAgentIds: baseFields.delegateAgentIds.default([]),
     evalSetId: baseFields.evalSetId.optional(),
     evalMinPassRate: baseFields.evalMinPassRate.default(0.8),
   })

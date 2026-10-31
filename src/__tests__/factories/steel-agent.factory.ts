@@ -76,6 +76,7 @@ export function createFakeSteelAgentWithRelations(
         }
       : null,
     runs: [],
+    delegates: [],
     ...overrides,
   }
 }
@@ -104,6 +105,9 @@ export function createFakeSteelAgentRun(
     isTest: false,
     rerunOfId: null,
     versionId: null,
+    parentRunId: null,
+    depth: 0,
+    delegatedCostUsd: new Prisma.Decimal(0),
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
@@ -191,6 +195,10 @@ export async function seedSteelAgentRun(data: {
   isTest?: boolean
   versionId?: string | null
   rounds?: number
+  costUsd?: number
+  delegatedCostUsd?: number
+  parentRunId?: string | null
+  depth?: number
 }) {
   return prisma.steelAgentRun.create({
     data: { triggerType: 'MANUAL', ...data },
