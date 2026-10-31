@@ -12198,6 +12198,8 @@ model CrmMeetingBooking {
   @@index([pageId])
   @@index([status, startsAt])
   @@map("crm_meeting_bookings")
+}
+
 // nov: sd-followups
 
 /// State of one component (service) shown on a public status page.
