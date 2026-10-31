@@ -528,8 +528,3 @@ export {
   widgetOriginNotAllowed,
   widgetVisitorInvalid,
 } from './app-error'
-// nov: meta-channels
-export {
-  metaChannelCommentNotFound,
-  metaChannelPageNotFound,
-} from './app-error'
