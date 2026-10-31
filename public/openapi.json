@@ -21782,7 +21782,6 @@
                     "type": "boolean"
                   },
                   "agentIds": {
-                    "default": [],
                     "maxItems": 50,
                     "type": "array",
                     "items": {
