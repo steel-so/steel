@@ -136,7 +136,10 @@ function collect(
   }
 
   // Exact keys (e-mail, phone, CNPJ, domain).
-  const byKey = new Map<string, Array<{ item: Item; weight: number; reason: DuplicateReason }>>()
+  const byKey = new Map<
+    string,
+    Array<{ item: Item; weight: number; reason: DuplicateReason }>
+  >()
   for (const item of items) {
     for (const entry of item.exact) {
       const list = byKey.get(entry.key) ?? []
@@ -181,8 +184,12 @@ function collect(
         if (oversize && a.nameKey !== b.nameKey) continue
         const similarity = nameSimilarity(a.nameKey, b.nameKey)
         const sameCompany =
-          sameCompanyBonus && a.companyId !== null && a.companyId === b.companyId
-        const threshold = sameCompany ? NAME_THRESHOLD_SAME_COMPANY : NAME_THRESHOLD
+          sameCompanyBonus &&
+          a.companyId !== null &&
+          a.companyId === b.companyId
+        const threshold = sameCompany
+          ? NAME_THRESHOLD_SAME_COMPANY
+          : NAME_THRESHOLD
         if (similarity < threshold) continue
         const signals = touch(a, b)
         signals.reasons.add('name')
@@ -230,16 +237,18 @@ export function findPersonMatches(
   probe: PersonRecord,
   others: PersonRecord[],
 ): DuplicatePair[] {
-  return findPersonDuplicates([probe, ...others.filter((o) => o.id !== probe.id)]).filter(
-    (pair) => pair.leftId === probe.id || pair.rightId === probe.id,
-  )
+  return findPersonDuplicates([
+    probe,
+    ...others.filter((o) => o.id !== probe.id),
+  ]).filter((pair) => pair.leftId === probe.id || pair.rightId === probe.id)
 }
 
 export function findCompanyMatches(
   probe: CompanyRecord,
   others: CompanyRecord[],
 ): DuplicatePair[] {
-  return findCompanyDuplicates([probe, ...others.filter((o) => o.id !== probe.id)]).filter(
-    (pair) => pair.leftId === probe.id || pair.rightId === probe.id,
-  )
+  return findCompanyDuplicates([
+    probe,
+    ...others.filter((o) => o.id !== probe.id),
+  ]).filter((pair) => pair.leftId === probe.id || pair.rightId === probe.id)
 }

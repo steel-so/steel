@@ -57,7 +57,7 @@ export function weeklyHoursOf(row: CrmMeetingAvailability | null): WeeklyHours {
   }
   return Object.keys(stored).length === 0
     ? DEFAULT_WEEKLY_HOURS
-    : (stored as WeeklyHours)
+    : (stored as unknown as WeeklyHours)
 }
 
 export function toCrmMeetingAvailabilityDTO(

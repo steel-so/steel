@@ -52,6 +52,7 @@ export function normalizeName(value: string | null | undefined): string {
 /** Company name without the legal form ("Acme Ltda" -> "acme"). */
 export function normalizeCompanyName(value: string | null | undefined): string {
   const tokens = normalizeName(value)
+    .replace(/\bs a\b/g, 'sa')
     .split(' ')
     .filter((token) => token && !LEGAL_SUFFIXES.has(token))
   return tokens.join(' ')
@@ -107,8 +108,9 @@ export function phoneKey(value: string | null | undefined): string | null {
   if (digits.length < 8) return null
   const last8 = digits.slice(-8)
   if (/^(\d)\1+$/.test(last8)) return null
-  if (digits.length >= 10) return `${digits.slice(-11, -9).padStart(2, '0')}${last8}`
-  return last8
+  if (digits.length < 10) return last8
+  const national = digits.slice(digits.length >= 11 ? -11 : -10)
+  return `${national.slice(0, 2)}${last8}`
 }
 
 function bigrams(text: string): Map<string, number> {

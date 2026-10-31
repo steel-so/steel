@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   BookCrmMeetingDTO,
   CreateCrmMeetingPageDTO,
-  UpdateCrmMeetingAvailabilityDTO,
+  UpdateCrmMeetingAvailabilityInput,
   UpdateCrmMeetingPageDTO,
 } from '@/src/schemas/crm-meeting.schema'
 import type {
@@ -151,7 +151,7 @@ export function useCancelCrmMeetingBooking(workspaceId: string) {
 export function useSaveCrmMeetingAvailability(workspaceId: string) {
   const refresh = useRefresh(workspaceId)
   return useMutation({
-    mutationFn: (input: UpdateCrmMeetingAvailabilityDTO) =>
+    mutationFn: (input: UpdateCrmMeetingAvailabilityInput) =>
       apiFetchJson<CrmMeetingAvailabilityDTO>(
         `${base(workspaceId)}/meeting-availability`,
         'PUT',

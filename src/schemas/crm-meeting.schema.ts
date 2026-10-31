@@ -39,32 +39,25 @@ export type WeeklyHoursInput = z.infer<typeof WeeklyHoursSchema>
 const PageFields = {
   title: z.string().trim().min(2, 'Informe o título').max(120),
   description: z.string().trim().max(1000).nullish(),
-  durationMinutes: z.number().int().min(10).max(240).default(30),
-  bufferMinutes: z.number().int().min(0).max(120).default(0),
+  durationMinutes: z.number().int().min(10).max(240),
+  bufferMinutes: z.number().int().min(0).max(120),
   minNoticeMinutes: z
     .number()
     .int()
     .min(0)
-    .max(60 * 24 * 14)
-    .default(120),
-  maxDaysAhead: z.number().int().min(1).max(180).default(30),
-  slotStepMinutes: z.number().int().min(5).max(120).default(30),
-  timezone: TimezoneSchema.default('America/Sao_Paulo'),
-  format: MeetingFormatSchema.default('ONLINE'),
+    .max(60 * 24 * 14),
+  maxDaysAhead: z.number().int().min(1).max(180),
+  slotStepMinutes: z.number().int().min(5).max(120),
+  timezone: TimezoneSchema,
+  format: MeetingFormatSchema,
   location: z.string().trim().max(300).nullish(),
   reminderMinutes: z
     .number()
     .int()
     .min(0)
-    .max(60 * 48)
-    .default(60),
-  leadSource: z
-    .string()
-    .trim()
-    .min(1)
-    .max(80)
-    .default('Agendamento de reunião'),
-  active: z.boolean().default(true),
+    .max(60 * 48),
+  leadSource: z.string().trim().min(1).max(80),
+  active: z.boolean(),
   hostUserIds: z
     .array(z.string().trim().min(1))
     .min(1, 'Escolha ao menos um vendedor')
@@ -73,10 +66,21 @@ const PageFields = {
 
 export const CreateCrmMeetingPageSchema = z.object({
   ...PageFields,
+  durationMinutes: PageFields.durationMinutes.default(30),
+  bufferMinutes: PageFields.bufferMinutes.default(0),
+  minNoticeMinutes: PageFields.minNoticeMinutes.default(120),
+  maxDaysAhead: PageFields.maxDaysAhead.default(30),
+  slotStepMinutes: PageFields.slotStepMinutes.default(30),
+  timezone: PageFields.timezone.default('America/Sao_Paulo'),
+  format: PageFields.format.default('ONLINE'),
+  reminderMinutes: PageFields.reminderMinutes.default(60),
+  leadSource: PageFields.leadSource.default('Agendamento de reunião'),
+  active: PageFields.active.default(true),
   slug: MeetingSlugSchema.optional(),
 })
 export type CreateCrmMeetingPageDTO = z.infer<typeof CreateCrmMeetingPageSchema>
 
+/** Partial on purpose WITHOUT defaults: a PATCH only touches what it sends. */
 export const UpdateCrmMeetingPageSchema = z
   .object({ ...PageFields, slug: MeetingSlugSchema })
   .partial()
@@ -95,6 +99,9 @@ export const UpdateCrmMeetingAvailabilitySchema = z.object({
     .transform((v) => (v ? v : null)),
 })
 export type UpdateCrmMeetingAvailabilityDTO = z.infer<
+  typeof UpdateCrmMeetingAvailabilitySchema
+>
+export type UpdateCrmMeetingAvailabilityInput = z.input<
   typeof UpdateCrmMeetingAvailabilitySchema
 >
 
