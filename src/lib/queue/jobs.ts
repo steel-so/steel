@@ -47,6 +47,7 @@ export const QueueName = {
   CrmWorkflowDelay: 'crm-workflow-delay',
   WhatsappButtonActions: 'whatsapp-button-actions',
   SatisfactionSurvey: 'satisfaction-survey',
+  QaReview: 'qa-review',
   SitePosts: 'site-posts',
   WebhooksDelivery: 'webhooks-delivery',
   AiIndex: 'ai-index',
@@ -1212,4 +1213,17 @@ export type ServicedeskInventoryJobPayload = {
   [ServicedeskInventoryJob.DiscoveryDue]: Record<string, never>
   [ServicedeskInventoryJob.DiscoveryRange]: { rangeId: string }
   [ServicedeskInventoryJob.LicenseExpiry]: Record<string, never>
+}
+
+/** Automatic QA by AI (t2-qa-review): one job per conversation or ticket. */
+export const QaReviewJob = {
+  Review: 'review',
+} as const
+
+export type QaReviewJob = (typeof QaReviewJob)[keyof typeof QaReviewJob]
+
+export type QaReviewJobPayload = {
+  [QaReviewJob.Review]: {
+    reviewId: string
+  }
 }
