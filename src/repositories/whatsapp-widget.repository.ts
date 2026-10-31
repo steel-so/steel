@@ -61,9 +61,9 @@ export const WhatsAppWidgetSettingsRepository = {
         await prisma.whatsAppWidgetSettings.upsert({
           where: { workspaceId },
           create: {
+            ...(data as Prisma.WhatsAppWidgetSettingsUncheckedCreateInput),
             workspaceId,
             publicKey,
-            ...(data as Prisma.WhatsAppWidgetSettingsUncheckedCreateInput),
           },
           update: data,
         }),

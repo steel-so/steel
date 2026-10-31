@@ -332,7 +332,7 @@ async function whatsappIssues(
   }
   return ok(
     validateCampaignWhatsApp({
-      provider: connection.value.provider,
+      provider: connection.value.provider === 'META' ? 'META' : 'ZAPI',
       template,
       quickReply,
       variables:
@@ -820,7 +820,7 @@ export const CrmCampaignService = {
         connections: connections.map((connection) => ({
           id: connection.id,
           label: connection.label,
-          provider: connection.provider,
+          provider: connection.provider === 'META' ? 'META' : 'ZAPI',
           phoneNumber: connection.phoneNumber,
           templates:
             connection.provider === 'META'

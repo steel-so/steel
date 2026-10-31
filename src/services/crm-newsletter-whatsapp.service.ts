@@ -158,7 +158,7 @@ async function evaluate(
   }
   problems.push(
     ...newsletterWhatsAppProblems({
-      provider: connection.value.provider,
+      provider: connection.value.provider === 'META' ? 'META' : 'ZAPI',
       template,
       variables: toWhatsAppVariables(config.variables),
       text: config.text,
@@ -748,7 +748,11 @@ export const CrmNewsletterWhatsAppService = {
         config.value.connectionId,
       )
       if (!connection.ok) return connection
-      provider = connection.value?.provider ?? null
+      provider = connection.value
+        ? connection.value.provider === 'META'
+          ? 'META'
+          : 'ZAPI'
+        : null
     }
     return ok({
       enabled: config.value?.enabled ?? false,
