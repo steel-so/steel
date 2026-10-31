@@ -13116,6 +13116,7 @@ model WhatsAppWidgetVisitor {
   @@index([workspaceId])
   @@index([contactId])
   @@map("whatsapp_widget_visitors")
+}
 
 // nov: meta-channels (Z5 Instagram Direct and Messenger, Z6 Coexistence)
 
