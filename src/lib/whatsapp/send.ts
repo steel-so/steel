@@ -15,7 +15,6 @@ import type {
   WhatsAppOutboundFlow,
   WhatsAppOutboundList,
   WhatsAppOutboundMedia,
-  WhatsAppOutboundProducts,
   WhatsAppOutboundReaction,
   WhatsAppOutboundTemplate,
   WhatsAppOutboundText,
@@ -242,30 +241,6 @@ export const WhatsAppSend = {
           )
         }
         return client.sendFlow(input)
-      },
-      {
-        metered: !options?.unmetered,
-        costKind: 'SERVICE',
-        to: input.to,
-        cost: options?.cost,
-      },
-    )
-  },
-
-  products(
-    connection: WhatsAppConnection,
-    input: WhatsAppOutboundProducts,
-    options?: WhatsAppSendOptions,
-  ): Promise<Result<WhatsAppSendResult>> {
-    return withProvider(
-      connection,
-      (client) => {
-        if (!client.sendProducts) {
-          throw new Error(
-            'O catálogo só funciona em conexões da API oficial da Meta',
-          )
-        }
-        return client.sendProducts(input)
       },
       {
         metered: !options?.unmetered,

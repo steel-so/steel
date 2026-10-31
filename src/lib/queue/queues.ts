@@ -1107,7 +1107,7 @@ export function getCrmDealsQueue(): Queue<
   >
 }
 
-/** Store events and appointment messages (zap-ecom). */
+/** Appointment confirmations and reminders. */
 export function getWhatsappAutomationsQueue(): Queue<
   WhatsappAutomationsJobPayload[WhatsappAutomationsJob],
   unknown,
