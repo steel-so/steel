@@ -194,6 +194,10 @@ export async function seedSteelAgentRun(data: {
   isTest?: boolean
   versionId?: string | null
   rounds?: number
+  costUsd?: number
+  delegatedCostUsd?: number
+  parentRunId?: string | null
+  depth?: number
 }) {
   return prisma.steelAgentRun.create({
     data: { triggerType: 'MANUAL', ...data },

@@ -58,6 +58,10 @@ export const SteelAgentDTO = dto(
           }),
         }),
       ),
+      delegateAgentIds: z.array(z.string()).meta({
+        description:
+          'A7: agentes a quem este pode delegar tarefas, como uma ferramenta (`delegate_to_agent`). Até 10; sem ciclos.',
+      }),
       lastRun: z
         .object({
           id: z.string(),
@@ -198,6 +202,10 @@ export const SteelAgentCatalogDTO = dto(
         description: z.string(),
         module: AiModule.nullable(),
         kind: z.enum(['READ', 'CREATE', 'UPDATE', 'DELETE', 'ACTION']),
+        external: z.boolean().optional().meta({
+          description:
+            'A8: ferramenta de um servidor MCP externo (`mcp_<servidor>__<ferramenta>`).',
+        }),
       }),
     ),
     events: z.array(
@@ -210,6 +218,18 @@ export const SteelAgentCatalogDTO = dto(
     ),
     agentModeEnabled: z.boolean(),
     canManage: z.boolean(),
+    canCreate: z.boolean().meta({
+      description:
+        'A8: o usuário pode criar agentes (política de criação ou matriz de permissões).',
+    }),
+    autoRestricted: z.boolean().meta({
+      description:
+        'A8: o modo automático é limitado por perfil neste workspace.',
+    }),
+    autoAllowedTools: z.array(z.string()).nullable().meta({
+      description:
+        'A8: ferramentas que o perfil do usuário pode deixar em `AUTO` (`null` = sem limite).',
+    }),
   }),
 )
 
@@ -242,6 +262,17 @@ export const SteelAgentRunDTO = dto(
     versionId: z.string().nullable().meta({
       description:
         'Versão do agente que atendeu a execução (`null` em testes e execuções anteriores às versões).',
+    }),
+    parentRunId: z.string().nullable().meta({
+      description:
+        'A7: execução que delegou esta (`null` = não é uma execução delegada).',
+    }),
+    depth: z.number().int().meta({
+      description: 'A7: profundidade da delegação (0 = execução principal).',
+    }),
+    delegatedCostUsd: z.number().meta({
+      description:
+        'A7: custo das execuções delegadas, já incluído em `costUsd`.',
     }),
     createdAt: dateTime(),
   }),
@@ -399,4 +430,172 @@ export const SteelAgentSimulationScenarioDraftDTO = dto(
     openingMessage: z.string(),
     criteria: z.array(z.string()),
   }),
+)
+
+// nov: ai-governance — A6 painel, A7 delegação e A8 servidores MCP
+
+const GovRole = z.enum(['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'])
+const AutoRule = z.object({
+  mode: z.enum(['ALL', 'NONE', 'LIST']),
+  tools: z.array(z.string()),
+})
+
+export const SteelAgentPolicyDTO = dto(
+  'SteelAgentPolicy',
+  z
+    .object({
+      restrictCreators: z.boolean().meta({
+        description:
+          'Ligado: só OWNER/ADMIN e os perfis de `creatorRoles` criam agentes. Desligado: vale a matriz de permissões.',
+      }),
+      creatorRoles: z.array(GovRole),
+      restrictAuto: z.boolean().meta({
+        description:
+          'Ligado: o modo automático depende do perfil (de quem configura e do responsável do agente ao rodar). O OWNER nunca é limitado.',
+      }),
+      autoRules: z.object({
+        OWNER: AutoRule,
+        ADMIN: AutoRule,
+        MEMBER: AutoRule,
+        VIEWER: AutoRule,
+      }),
+    })
+    .meta({ description: 'Política de criação e de modo automático (A8).' }),
+)
+
+export const SteelKillSwitchDTO = dto(
+  'SteelKillSwitch',
+  z.object({
+    active: z.boolean(),
+    at: dateTime().nullable(),
+    byName: z.string().nullable(),
+    reason: z.string().nullable(),
+  }),
+)
+
+const GovTool = z.object({
+  toolName: z.string(),
+  label: z.string(),
+  kind: z.enum(['READ', 'CREATE', 'UPDATE', 'DELETE', 'ACTION', 'UNKNOWN']),
+  module: AiModule.nullable(),
+  mode: ToolMode,
+  external: z.boolean(),
+})
+
+export const SteelGovernanceDTO = dto(
+  'SteelGovernance',
+  z
+    .object({
+      periodDays: z.number().int(),
+      since: dateTime(),
+      killSwitch: SteelKillSwitchDTO,
+      policy: SteelAgentPolicyDTO,
+      totals: z.object({
+        agents: z.number().int(),
+        active: z.number().int(),
+        withoutOwner: z.number().int(),
+        runs: z.number().int(),
+        costUsd: z.number(),
+        applied: z.number().int(),
+        approvalRate: z.number().nullable(),
+      }),
+      agents: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          description: z.string().nullable(),
+          enabled: z.boolean(),
+          triggerType: TriggerType,
+          owner: z
+            .object({
+              id: z.string(),
+              name: z.string(),
+              email: z.string(),
+              role: GovRole.nullable().meta({
+                description: '`null` = já não é membro do workspace.',
+              }),
+            })
+            .nullable(),
+          createdByName: z.string().nullable(),
+          tools: z.array(GovTool),
+          delegates: z.array(z.object({ id: z.string(), name: z.string() })),
+          modules: z.array(AiModule),
+          risks: z.array(
+            z.enum([
+              'NO_OWNER',
+              'AUTO_WRITES',
+              'CONTACTS_THIRD_PARTIES',
+              'DELEGATES',
+            ]),
+          ),
+          metrics: z.object({
+            runs: z.number().int(),
+            succeeded: z.number().int(),
+            failed: z.number().int(),
+            skipped: z.number().int(),
+            costUsd: z.number().meta({
+              description: 'Custo próprio, sem as execuções delegadas.',
+            }),
+            delegatedCostUsd: z.number(),
+            applied: z.number().int().meta({
+              description: 'Escritas que passaram (automáticas ou aprovadas).',
+            }),
+            approvals: z.object({
+              approved: z.number().int(),
+              rejected: z.number().int(),
+              expired: z.number().int(),
+              pending: z.number().int(),
+            }),
+            approvalRate: z.number().nullable(),
+            rejectionRate: z.number().nullable(),
+            costPerApplied: z.number().nullable(),
+            lastRunAt: dateTime().nullable(),
+          }),
+        }),
+      ),
+    })
+    .meta({
+      description:
+        'Painel de governança: inventário de agentes com responsável, permissões, taxas de aprovação e rejeição e custo frente ao impacto.',
+    }),
+)
+
+export const SteelKillResultDTO = dto(
+  'SteelKillResult',
+  z.object({
+    killSwitch: SteelKillSwitchDTO,
+    canceledRuns: z.number().int(),
+    canceledActions: z.number().int(),
+  }),
+)
+
+export const SteelMcpServerDTO = dto(
+  'SteelMcpServer',
+  z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      slug: z.string().meta({ example: 'github' }),
+      url: z.string().meta({ example: 'https://mcp.example.com/mcp' }),
+      authHeaderName: z.string().meta({ example: 'Authorization' }),
+      hasAuth: z.boolean().meta({
+        description: 'Há credencial guardada; o valor nunca é devolvido.',
+      }),
+      enabled: z.boolean(),
+      tools: z.array(
+        z.object({
+          name: z.string(),
+          agentToolName: z
+            .string()
+            .meta({ example: 'mcp_github__list_issues' }),
+          description: z.string(),
+          readOnly: z.boolean(),
+          allowed: z.boolean(),
+        }),
+      ),
+      discoveredAt: dateTime().nullable(),
+      lastError: z.string().nullable(),
+      createdAt: dateTime(),
+    })
+    .meta({ description: 'Servidor MCP externo que os agentes podem chamar.' }),
 )
