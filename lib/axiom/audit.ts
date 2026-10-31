@@ -325,10 +325,6 @@ export type AuditEntity =
   // nov-health-scores
   | 'crm_customer_health'
   | 'crm_opportunity_health'
-  // nov-prospecting-agent
-  | 'crm_prospecting_settings'
-  | 'crm_prospect_draft'
-  | 'crm_prospect_web'
 
   // nov: crm-deals
   | 'crm_proposal_charge'
@@ -336,8 +332,6 @@ export type AuditEntity =
   | 'crm_deals_settings'
   | 'crm_deal_room'
   | 'crm_contract'
-  // nov: pwa-push
-  | 'push_subscription'
 
 export type AuditAction =
   | 'create'

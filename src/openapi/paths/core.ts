@@ -37,10 +37,6 @@ import {
 } from '@/src/schemas/project.schema'
 import { AddProjectMemberSchema } from '@/src/schemas/project-member.schema'
 import {
-  CreatePushSubscriptionSchema,
-  DeletePushSubscriptionSchema,
-} from '@/src/schemas/push-subscription.schema'
-import {
   CreateShortLinkSchema,
   UpdateShortLinkSchema,
 } from '@/src/schemas/short-link.schema'
@@ -92,7 +88,6 @@ import {
   ProfileDTO,
   ProjectDTO,
   ProjectMemberDTO,
-  PushStatusDTO,
   ShortLinkDTO,
   StatusSnapshotDTO,
   StickyNoteDTO,
@@ -151,34 +146,6 @@ const InviteToProjectResult = z.discriminatedUnion('kind', [
 ])
 
 const user: RouteConfig[] = [
-  {
-    method: 'get',
-    path: '/push/subscriptions',
-    tags: ['Usuário'],
-    summary: 'Estado do push do usuário',
-    description:
-      'Informa se o servidor tem as chaves VAPID (sem elas o push fica desligado e inerte), a chave pública para assinar e quantos dispositivos do usuário estão registrados.',
-    responses: { 200: { description: 'Estado.', schema: PushStatusDTO } },
-  },
-  {
-    method: 'post',
-    path: '/push/subscriptions',
-    tags: ['Usuário'],
-    summary: 'Registrar este dispositivo para push',
-    description:
-      'Recebe o `PushSubscription.toJSON()` do navegador. Guarda no máximo 10 dispositivos por usuário (os mais antigos saem). Com o push desligado no servidor nada é gravado.',
-    body: CreatePushSubscriptionSchema,
-    responses: { 200: { description: 'Estado.', schema: PushStatusDTO } },
-  },
-  {
-    method: 'delete',
-    path: '/push/subscriptions',
-    tags: ['Usuário'],
-    summary: 'Remover este dispositivo do push',
-    description: 'Idempotente; só remove dispositivos do próprio usuário.',
-    body: DeletePushSubscriptionSchema,
-    responses: { 200: { description: 'Estado.', schema: PushStatusDTO } },
-  },
   {
     method: 'get',
     path: '/users/me',

@@ -32,7 +32,6 @@ import type {
   NotificationSnoozeResultDTO,
 } from '@/types/notification'
 import { assertMember } from './authz'
-import { PushService } from './push.service'
 
 const LIST_LIMIT = 50
 
@@ -313,15 +312,6 @@ export const NotificationService = {
       title: input.title,
       body: input.body,
       href: input.href ?? null,
-    })
-
-    // Web Push for the few kinds that need to reach a closed app. Same
-    // recipients as the inbox (already minus the muted); never fails the call.
-    await PushService.notifyUsers({
-      workspaceId: input.workspaceId,
-      userIds,
-      kind: input.kind,
-      href: input.href,
     })
 
     return created

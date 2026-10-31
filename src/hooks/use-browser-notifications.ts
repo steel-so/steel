@@ -17,8 +17,6 @@ import {
  * while the tab is hidden. The per-user switch lives on the server
  * (`/notifications/preferences/delivery`); localStorage is only a cache so
  * the first event after a reload does not wait for the request.
- *
- * Future: a service worker + Web Push would deliver with the app closed.
  */
 
 export type BrowserPermission = NotificationPermission | 'unsupported'

@@ -86,7 +86,6 @@ model User {
   notifications                       Notification[]
   notificationPreferences             NotificationPreference[]
   notificationDeliverySettings        NotificationDeliverySetting[]
-  pushSubscriptions                   PushSubscription[]
 
   crmCompaniesCreated                CrmCompany[]                  @relation("CrmCompanyCreatedBy")
   crmCompaniesOwned                  CrmCompany[]                  @relation("CrmCompanyAccountOwner")
@@ -539,9 +538,6 @@ model Workspace {
   aiSettings                WorkspaceAiSettings?
   steelAgentPolicy          SteelAgentPolicy?
   steelMcpServers           SteelMcpServer[]
-  crmProspectingSettings    CrmProspectingSettings?
-  crmProspectDrafts         CrmProspectDraft[]
-  crmProspectUsage          CrmProspectUsage[]
   aiGuardrails              WorkspaceAiGuardrails?
   aiUserPreferences         UserAiPreference[]
   aiUsage                   AiUsage[]
@@ -12975,99 +12971,6 @@ model AiActionExecution {
   @@map("ai_action_executions")
 }
 
-// nov: prospecting-agent
-
-enum CrmProspectChannel {
-  EMAIL
-  WHATSAPP
-}
-
-enum CrmProspectDraftStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SENT
-}
-
-/// T5: workspace switches of the prospecting agent. No row = everything off.
-model CrmProspectingSettings {
-  id                String               @id @default(cuid())
-  workspaceId       String               @unique @map("workspace_id")
-  enabled           Boolean              @default(false)
-  /// Web searches + page fetches per month (UTC).
-  monthlyWebLimit   Int                  @default(300) @map("monthly_web_limit")
-  /// Drafts the agent may save per month (UTC).
-  monthlyDraftLimit Int                  @default(100) @map("monthly_draft_limit")
-  allowedChannels   CrmProspectChannel[] @map("allowed_channels")
-  /// What the workspace sells, in the seller's words (context for the draft).
-  valueProposition  String?              @map("value_proposition") @db.Text
-  /// Extra phrases the signal detector looks for (besides the built-in ones).
-  signalKeywords    String[]             @map("signal_keywords")
-  updatedById       String?              @map("updated_by_id")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("crm_prospecting_settings")
-}
-
-/// T5: first-contact message written by the agent, waiting for a human. The
-/// platform never sends it: a person approves (and sends) it.
-model CrmProspectDraft {
-  id          String                 @id @default(cuid())
-  workspaceId String                 @map("workspace_id")
-  /// The record the draft is about (ids are checked by the service; no FK so
-  /// the draft survives the record being merged or deleted).
-  leadId      String?                @map("lead_id")
-  companyId   String?                @map("company_id")
-  personId    String?                @map("person_id")
-  targetName  String                 @map("target_name")
-  channel     CrmProspectChannel
-  subject     String?
-  body        String                 @db.Text
-  toEmail     String?                @map("to_email")
-  toPhone     String?                @map("to_phone")
-  /// Short research summary written by the agent.
-  summary     String?                @db.Text
-  /// `[{ type, label, evidence, sourceUrl? }]`
-  signals     Json                   @default("[]")
-  /// `[{ url, title? }]` pages the research read.
-  sources     Json                   @default("[]")
-  status      CrmProspectDraftStatus @default(PENDING)
-  agentId     String?                @map("agent_id")
-  createdById String                 @map("created_by_id")
-  decidedById String?                @map("decided_by_id")
-  decidedAt   DateTime?              @map("decided_at")
-  rejectReason String?               @map("reject_reason") @db.Text
-  createdAt   DateTime               @default(now()) @map("created_at")
-  updatedAt   DateTime               @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId, status, createdAt])
-  @@index([workspaceId, leadId])
-  @@index([workspaceId, companyId])
-  @@map("crm_prospect_drafts")
-}
-
-/// T5: monthly counters behind the quota (one row per workspace and month).
-model CrmProspectUsage {
-  id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
-  /// First day of the month, 00:00 UTC.
-  period      DateTime
-  searches    Int      @default(0)
-  fetches     Int      @default(0)
-  drafts      Int      @default(0)
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, period])
-  @@map("crm_prospect_usage")
-}
-
 // nov: site-widget
 /// Site chat widget (E1): per-workspace switch (off by default), the public
 /// key the pasted `<script>` carries, the origins allowed to use it and the
@@ -13630,28 +13533,6 @@ model QaReview {
   @@index([workspaceId, agentUserId, reviewedAt])
   @@index([workspaceId, lowScore, reviewedAt])
   @@map("qa_reviews")
-}
-
-// nov: pwa-push
-
-/// A browser/device registered for Web Push. The row is the opt-in: no row, no
-/// push. `endpoint` is the push service URL and is unique per device.
-model PushSubscription {
-  id         String    @id @default(cuid())
-  userId     String    @map("user_id")
-  endpoint   String    @unique
-  /// Client public key (base64url, uncompressed P-256 point).
-  p256dh     String
-  /// Client auth secret (base64url, 16 bytes).
-  auth       String
-  userAgent  String?   @map("user_agent")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  lastUsedAt DateTime? @map("last_used_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("push_subscriptions")
 }
 
 // nov: a5-procedures ──────────────────────────────────────────────────────

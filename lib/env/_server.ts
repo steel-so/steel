@@ -50,7 +50,6 @@ const serverEnv = {
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-  WEB_SEARCH_API_KEY: process.env.WEB_SEARCH_API_KEY,
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
   SOCIAL_TOKEN_ENCRYPTION_KEY: process.env.SOCIAL_TOKEN_ENCRYPTION_KEY,
   FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID,
@@ -65,9 +64,6 @@ const serverEnv = {
   GOOGLE_ADS_DEVELOPER_TOKEN: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
   DISABLE_AUTH_RATE_LIMIT: process.env.DISABLE_AUTH_RATE_LIMIT,
   MAIL_DRY_RUN: process.env.MAIL_DRY_RUN,
-  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
-  VAPID_SUBJECT: process.env.VAPID_SUBJECT,
   WORKBENCH_USER: process.env.WORKBENCH_USER,
   WORKBENCH_PASS: process.env.WORKBENCH_PASS,
   STATUS_APP_PROBE_URL: process.env.STATUS_APP_PROBE_URL,
@@ -306,11 +302,6 @@ export const serverEnvSchema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
-  // Web search of the prospecting agent (Brave Search API); inert without it.
-  WEB_SEARCH_API_KEY: z.preprocess(
-    (v) => (v === '' ? undefined : v),
-    z.string().min(1).optional(),
-  ),
   ANTHROPIC_MODEL: z.string().min(1).optional(),
   // Cifra tokens OAuth de redes sociais em repouso (AES-256-GCM). Sem ela,
   // isTokenCryptoConfigured() é false e o handshake OAuth fica indisponível.
@@ -332,12 +323,6 @@ export const serverEnvSchema = z.object({
   DISABLE_AUTH_RATE_LIMIT: flag,
   // Kill-switch de envio de e-mail: nada sai pelo Resend quando `'true'`.
   MAIL_DRY_RUN: flag,
-  // Web Push (PWA): VAPID key pair (base64url; public = 65-byte uncompressed
-  // P-256 point, private = 32-byte scalar) and the contact (`mailto:` or
-  // https URL). Without the pair push stays OFF and inert.
-  VAPID_PUBLIC_KEY: blankOptional,
-  VAPID_PRIVATE_KEY: blankOptional,
-  VAPID_SUBJECT: blankOptional,
   // Basic auth do dashboard de filas (`/jobs`, Workbench).
   WORKBENCH_USER: blankOptional,
   WORKBENCH_PASS: blankOptional,
@@ -555,7 +540,6 @@ export const {
   OPENAI_API_KEY,
   OPENAI_MODEL,
   ANTHROPIC_API_KEY,
-  WEB_SEARCH_API_KEY,
   ANTHROPIC_MODEL,
   SOCIAL_TOKEN_ENCRYPTION_KEY,
   FACEBOOK_APP_ID,
@@ -570,9 +554,6 @@ export const {
   GOOGLE_ADS_DEVELOPER_TOKEN,
   DISABLE_AUTH_RATE_LIMIT,
   MAIL_DRY_RUN,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY,
-  VAPID_SUBJECT,
   WORKBENCH_USER,
   WORKBENCH_PASS,
   STATUS_APP_PROBE_URL,
