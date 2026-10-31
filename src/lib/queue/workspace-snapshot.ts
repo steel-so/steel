@@ -24,6 +24,9 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   }),
   whatsAppGroupParticipant: (ws) => ({ group: { workspaceId: ws } }),
   whatsAppTeamMember: (ws) => ({ team: { workspaceId: ws } }),
+  whatsAppSchedProfessionalService: (ws) => ({
+    professional: { workspaceId: ws },
+  }),
   whatsAppAiCampaignRecipient: (ws) => ({
     campaign: { workspaceId: ws },
   }),

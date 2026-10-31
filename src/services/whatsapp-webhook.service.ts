@@ -25,6 +25,7 @@ import {
   communicationMessageReceivedData,
 } from '@/src/lib/webhooks/payloads'
 import type { InboundAdReferral } from '@/src/lib/whatsapp/ad-referral'
+import type { MetaOrderBlock } from '@/src/lib/whatsapp/catalog/order'
 import {
   isWhatsAppOptOutKeyword,
   WHATSAPP_OPT_OUT_CONFIRMATION,
@@ -54,10 +55,12 @@ import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppAdAttributionService } from './whatsapp-ad-attribution.service'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
+import { WhatsAppCatalogOrderService } from './whatsapp-catalog-order.service'
 import { WhatsAppChatbotRuntimeService } from './whatsapp-chatbot-runtime.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppFlowResponseService } from './whatsapp-flow-response.service'
+import { WhatsAppSchedulingReplyService } from './whatsapp-scheduling-reply.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
 import { WhatsAppTeamService } from './whatsapp-team.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
@@ -87,6 +90,8 @@ export interface InboundWhatsAppMessage {
    * reopened without a team). Used by the site chat widget routing.
    */
   routeTeamId?: string
+  /** Cart sent from the catalog (`order` message, Z8). */
+  orderBlock?: MetaOrderBlock
 }
 
 /**
@@ -467,6 +472,60 @@ export const WhatsAppWebhookService = {
         flowAfterPublish = reply.value.afterPublish
         // The row is the one published below: show the summary right away.
         if (reply.value.text) message.value.text = reply.value.text
+      }
+    }
+
+    // Cart from the catalog (Z8): lead + deal + optional Pix; the timeline
+    // shows the cart instead of the placeholder.
+    if (input.orderBlock && !serviceDesk) {
+      const cart = await WhatsAppCatalogOrderService.handleInbound({
+        workspaceId,
+        connection,
+        contact: contact.value,
+        conversationId,
+        messageId: message.value.id,
+        providerMessageId: input.providerMessageId,
+        order: input.orderBlock,
+      })
+      if (!cart.ok) {
+        logger.warn('whatsapp.catalog.order_failed', {
+          workspaceId,
+          conversationId,
+          reason: cart.error.code,
+        })
+      } else if (cart.value.handled) {
+        flowHandled = true
+        if (cart.value.text) message.value.text = cart.value.text
+        const previous = flowAfterPublish
+        const cartAfter = cart.value.afterPublish
+        flowAfterPublish = async () => {
+          await previous?.()
+          await cartAfter?.()
+        }
+      }
+    }
+
+    // Answer to an appointment confirmation / reminder (Z10).
+    if (
+      !serviceDesk &&
+      (input.type === 'TEXT' || input.type === 'BUTTON') &&
+      input.text
+    ) {
+      const answered = await WhatsAppSchedulingReplyService.handleInbound({
+        workspaceId,
+        connection,
+        contact: contact.value,
+        conversationId,
+        text: input.text,
+      })
+      if (!answered.ok) {
+        logger.warn('whatsapp.scheduling.reply_failed', {
+          workspaceId,
+          conversationId,
+          reason: answered.error.code,
+        })
+      } else if (answered.value.handled) {
+        flowHandled = true
       }
     }
 
