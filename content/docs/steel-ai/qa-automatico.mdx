@@ -1,0 +1,84 @@
+---
+title: QA automático dos atendimentos
+description: Nota por IA em cada conversa do zap e em cada chamado, humano ou bot, por critérios que você define, com painel de coaching por atendente e aviso de nota baixa.
+section: steel-ai
+order: 13
+---
+
+<Callout type='admin'>
+  O QA vem **desligado**. O dono e os administradores ligam e ajustam os
+  critérios em **Steel AI › Qualidade › Configuração**. Cada avaliação consome a
+  cota mensal de IA do espaço de trabalho.
+</Callout>
+
+O **QA automático** lê cada atendimento depois que ele termina e dá uma nota de
+0 a 100. Não é amostragem: toda conversa do zap encerrada e todo chamado
+resolvido entra, seja de um atendente, do chatbot ou da resposta automática da IA.
+
+## Como a nota é calculada
+
+A IA recebe a conversa inteira e a lista de **critérios**. Para cada critério
+ela dá uma nota e cita o trecho que justifica. A nota final é a **média dos
+critérios ativos, ponderada pelo peso** de cada um.
+
+O Steel já traz quatro critérios:
+
+| Critério | O que olha | Peso |
+| -------- | ---------- | ---- |
+| **Tom** | Linguagem cordial, profissional e clara | 2 |
+| **Resolução** | O cliente teve o problema resolvido ou o encaminhamento certo | 4 |
+| **Conformidade** | Segue o processo, não promete o que não pode e não expõe dados | 3 |
+| **Empatia** | Reconhece a situação do cliente e quer ajudar | 2 |
+
+Você pode editar, remover e criar critérios (até 12), mudar o peso (1 a 10) e
+escolher onde cada um vale: zap, chamados ou os dois.
+
+<Callout type='aviso'>
+  A IA só julga o que está escrito na conversa. Sem evidência, o critério não
+  passa de 50. A nota ajuda a priorizar o coaching, não substitui a leitura de
+  um supervisor em casos graves.
+</Callout>
+
+## O que não é avaliado
+
+Um atendimento fica de fora, com o motivo guardado, quando:
+
+- ninguém respondeu o cliente;
+- tem menos mensagens que o mínimo configurado (padrão: 4);
+- foi atendido só pelo bot e você desligou **Incluir atendimentos só do bot**;
+- nenhum critério ativo vale para aquele tipo;
+- a cota mensal de IA acabou (um administrador pode pedir a avaliação de novo
+  quando houver cota).
+
+## Painel de coaching
+
+Em **Steel AI › Qualidade › Coaching** os atendentes aparecem do menor para o
+maior desempenho, para quem precisa de ajuda ficar no topo. Para cada um:
+
+- nota média e quantas avaliações tiveram nota baixa;
+- média por critério e o **ponto a melhorar** (o critério mais fraco);
+- evolução semana a semana;
+- as **dicas** que a IA mais repetiu para essa pessoa;
+- as piores avaliações do período, que abrem com a nota por critério e a
+  evidência.
+
+Os atendimentos feitos só pelo bot formam uma linha própria (**Bot / sem
+responsável**), e o topo mostra a média do bot contra a dos humanos.
+
+<Callout type='nota'>
+  Administradores veem todos os atendentes. Os demais membros veem só as
+  próprias notas.
+</Callout>
+
+## Aviso de nota baixa
+
+Quando a nota fica abaixo do limite (padrão: 60), os donos e administradores
+recebem uma notificação com o atendente e um link direto para a avaliação.
+Dá para desligar o aviso na configuração.
+
+## Avaliar de novo
+
+Na aba **Avaliações** você filtra por tipo, situação e nota baixa. Os
+administradores também podem pedir a avaliação de uma conversa ou de um chamado
+específico (por exemplo, depois de ajustar os critérios): o resultado novo
+substitui o anterior.

@@ -455,6 +455,8 @@ export const WhatsAppPixService = {
     conversationId: string
     amount: number
     description: string
+    /** CRM deal that gets the payment note (catalog orders). */
+    opportunityId?: string
   }): Promise<Result<WhatsAppPixChargeDTO>> {
     const enabled = await requireEnabled(input.workspaceId)
     if (!enabled.ok) return enabled
@@ -483,6 +485,7 @@ export const WhatsAppPixService = {
       amount: input.amount,
       description: input.description,
       expiresInMinutes: enabled.value.settings.defaultExpiresMinutes,
+      opportunityId: input.opportunityId,
       provider: enabled.value.provider,
     })
   },

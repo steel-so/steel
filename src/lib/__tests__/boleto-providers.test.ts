@@ -5,6 +5,7 @@ const env = vi.hoisted(() => ({
   BOLETO_PROVIDER: 'mock' as string | undefined,
   BOLETO_WEBHOOK_SECRET: 'secret-secret-secret' as string | undefined,
   ABACATE_PAY: 'abc_dev_key' as string | undefined,
+  ABACATE_PAY_CANCEL_PATH: undefined,
 }))
 vi.mock('@/lib/env/server', () => env)
 

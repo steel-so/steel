@@ -4,6 +4,7 @@ import {
   AiBrain01Icon,
   Analytics01Icon,
   BrainIcon,
+  CheckmarkBadge01Icon,
   ChartLineData01Icon,
   MagicWand01Icon,
   Task01Icon,
@@ -27,6 +28,7 @@ export const STEEL_AI_AREA_LINKS: {
   { segment: 'usage', label: 'Uso', icon: ChartLineData01Icon },
   { segment: 'analytics', label: 'Análises', icon: Analytics01Icon },
   { segment: 'evals', label: 'Avaliações', icon: TestTube01Icon },
+  { segment: 'qualidade', label: 'Qualidade', icon: CheckmarkBadge01Icon },
   { segment: 'memory', label: 'Memória', icon: BrainIcon },
 ]
 

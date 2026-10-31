@@ -265,6 +265,16 @@ export const TAG_GROUPS = [
           'WhatsApp Flows: telas nativas da Meta (cadastro, agendamento, pesquisa) montadas no Steel, publicadas na WABA e enviadas por mensagem ou template, com a resposta gravada no contato e no CRM.',
       },
       {
+        name: 'Comunicação · Catálogo e lojas',
+        description:
+          'Catálogo e carrinho do WhatsApp (produtos, pedidos, Pix por pedido) e lojas Tray, Nuvemshop e VTEX que disparam mensagens automáticas por webhook assinado.',
+      },
+      {
+        name: 'Comunicação · Agendamento',
+        description:
+          'Agenda de serviços e profissionais com confirmação e lembrete pelo WhatsApp.',
+      },
+      {
         name: 'Comunicação · Tempo real e webhooks',
         description: 'SSE de eventos e webhooks de entrada da Meta e da Z-API.',
       },

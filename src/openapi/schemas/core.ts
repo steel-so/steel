@@ -507,6 +507,7 @@ export const NotificationListDTO = dto(
           'CRM_DEAL_CLOSED',
           'CRM_TASK_ASSIGNED',
           'CRM_TASK_DUE',
+          'QA_LOW_SCORE',
           'CRM_CUSTOMER_HEALTH_DROP',
           'CRM_OPPORTUNITY_AT_RISK',
           'CRM_CONTRACT_EXPIRING',
@@ -653,22 +654,6 @@ export const NotificationDeliveryDTO = dto(
       description:
         'Notificações do navegador para tipos urgentes enquanto a aba está em segundo plano. Desligado até o usuário ativar.',
     }),
-  }),
-)
-
-export const PushStatusDTO = dto(
-  'PushStatus',
-  z.object({
-    enabled: z.boolean().meta({
-      description: 'O servidor tem as chaves VAPID; falso = push desligado.',
-    }),
-    publicKey: z.string().nullable().meta({
-      description: 'Chave pública VAPID para `pushManager.subscribe`.',
-    }),
-    devices: z
-      .number()
-      .int()
-      .meta({ description: 'Dispositivos do usuário com push ativo.' }),
   }),
 )
 

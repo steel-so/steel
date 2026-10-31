@@ -329,8 +329,8 @@ global de atalhos — ver [`docs/shortcuts.md`](../shortcuts.md).
   `localStorage` é só cache). Saem do mesmo SSE, só com a aba em segundo
   plano e só para tipos urgentes (SLA violado/em risco, aprovação
   solicitada, aprovação de agente, chamado ou conversa atribuída, ação da IA
-  expirando). Sem service worker nem Web Push por enquanto — com o app
-  fechado não há aviso; fica como evolução.
+  expirando). Não há service worker nem Web Push — com o app
+  fechado não há aviso.
 
 - **Modelo**: `Notification` (workspace, usuário, `kind`, título, corpo,
   `href`, `readAt`, `archivedAt`, `deletedAt`). Arquivar e excluir são
@@ -410,6 +410,7 @@ Registra um `Worker` por fila e agenda os jobs repetíveis no boot
 | `crm-cadences` | executa os passos vencidos das cadências de vendas (e-mail, WhatsApp, tarefa) e encerra a inscrição do lead que respondeu; ver `docs/crm-cadencias.md` | cron a cada 1 min |
 | `crm-health` | recalcula a saúde do cliente (risco de churn) e do negócio em andamento e avisa o responsável de quem entrou na faixa de risco alto; ver [`docs/crm-saude.md`](../crm-saude.md) e a [ADR 0057](../adr/0057-saude-do-cliente-e-do-negocio-pela-mesma-heuristica-do-risco-preditivo.md) | cron de hora em hora (minuto 20) |
 | `crm-deals` | varredura diária dos contratos dos clientes: avisa o responsável na janela de renovação, abre a oportunidade de renovação, avança os contratos que renovam sozinhos e encerra os vencidos; ver [`docs/crm-negocios.md`](../crm-negocios.md) | cron diário às 06:30 |
+| `qa-review` | avalia por IA cada conversa do zap encerrada e cada chamado resolvido (nota por critérios, dicas de coaching, aviso de nota baixa); ver [`docs/steel-ai/qa-automatico.md`](./steel-ai/qa-automatico.md) | job sob demanda (atraso de 60 s após o fechamento) |
 | `crm-social-posts-tick` | publica posts sociais vencidos | a cada 1 min |
 | `notifications` | `ai-action-expiry-tick`: avisa ~5 min antes de uma ação pendente do Steel AI expirar (uma vez por ação, `dedupeKey`) | a cada 1 min |
 | `steel-agents` | Steel Agents: `tick` dispara agentes de agenda (cron + `lastRunAt`) e expira aprovações vencidas; `run` executa ou retoma uma execução, com as permissões do responsável ([ADR 0020](../adr/0020-steel-agents-owner-identity-and-approvals.md), [Steel AI](../steel-ai/README.md#steel-agents)) | a cada 1 min + sob demanda (tentativa única) |

@@ -25,6 +25,11 @@ vi.mock('@/src/repositories/crm-company.repository')
 vi.mock('../crm-lead.service', () => ({
   CrmLeadService: { intake: vi.fn() },
 }))
+vi.mock('../whatsapp-scheduling.service', () => ({
+  WhatsAppSchedulingService: {
+    bookFromFlow: vi.fn(async () => ({ ok: true, value: { handled: false } })),
+  },
+}))
 vi.mock('@/src/lib/whatsapp/send', () => ({
   WhatsAppSend: { text: vi.fn() },
 }))

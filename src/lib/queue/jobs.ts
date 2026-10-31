@@ -32,6 +32,7 @@ export const QueueName = {
   ServicedeskIntegrations: 'servicedesk-integrations',
   CrmTaskReminders: 'crm-task-reminders',
   CrmCadences: 'crm-cadences',
+  WhatsappAutomations: 'whatsapp-automations',
   CrmHealth: 'crm-health',
   CrmDuplicates: 'crm-duplicates',
   CrmMeetings: 'crm-meetings',
@@ -47,6 +48,7 @@ export const QueueName = {
   CrmWorkflowDelay: 'crm-workflow-delay',
   WhatsappButtonActions: 'whatsapp-button-actions',
   SatisfactionSurvey: 'satisfaction-survey',
+  QaReview: 'qa-review',
   SitePosts: 'site-posts',
   WebhooksDelivery: 'webhooks-delivery',
   AiIndex: 'ai-index',
@@ -745,6 +747,24 @@ export type CrmMeetingsJobPayload = {
 }
 
 /**
+ * WhatsApp automations (zap-ecom): every minute the worker sends the store
+ * events (abandoned cart, shipped, post-purchase) whose time has come and the
+ * appointment confirmations and reminders that are due.
+ */
+export const WhatsappAutomationsJob = {
+  EcomTick: 'ecom-tick',
+  SchedulingTick: 'scheduling-tick',
+} as const
+
+export type WhatsappAutomationsJob =
+  (typeof WhatsappAutomationsJob)[keyof typeof WhatsappAutomationsJob]
+
+export type WhatsappAutomationsJobPayload = {
+  [WhatsappAutomationsJob.EcomTick]: Record<string, never>
+  [WhatsappAutomationsJob.SchedulingTick]: Record<string, never>
+}
+
+/**
  * Due-date notices of ticket tasks (`SdTaskReminderService`): every 15 min
  * the tick tells each assignee once when a task is due within the hour and
  * once when it is past due. Idempotent through the stamps on the task.
@@ -1212,4 +1232,17 @@ export type ServicedeskInventoryJobPayload = {
   [ServicedeskInventoryJob.DiscoveryDue]: Record<string, never>
   [ServicedeskInventoryJob.DiscoveryRange]: { rangeId: string }
   [ServicedeskInventoryJob.LicenseExpiry]: Record<string, never>
+}
+
+/** Automatic QA by AI (t2-qa-review): one job per conversation or ticket. */
+export const QaReviewJob = {
+  Review: 'review',
+} as const
+
+export type QaReviewJob = (typeof QaReviewJob)[keyof typeof QaReviewJob]
+
+export type QaReviewJobPayload = {
+  [QaReviewJob.Review]: {
+    reviewId: string
+  }
 }

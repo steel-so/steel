@@ -17,6 +17,8 @@ import {
   type CrmApolloImportJobPayload,
   type CrmCadencesJob,
   type CrmCadencesJobPayload,
+  type WhatsappAutomationsJob,
+  type WhatsappAutomationsJobPayload,
   type CrmCampaignsJob,
   type CrmCampaignsJobPayload,
   type CrmCnpjEnrichmentJob,
@@ -59,6 +61,8 @@ import {
   type NotificationsJobPayload,
   type PhoneCallAiJob,
   type PhoneCallAiJobPayload,
+  type QaReviewJob,
+  type QaReviewJobPayload,
   QueueName,
   type SatisfactionSurveyJob,
   type SatisfactionSurveyJobPayload,
@@ -139,6 +143,7 @@ let whatsappMediaQueue: Queue | null = null
 let whatsappAiReplyQueue: Queue | null = null
 let whatsappButtonActionsQueue: Queue | null = null
 let satisfactionSurveyQueue: Queue | null = null
+let qaReviewQueue: Queue | null = null
 let sitePostsQueue: Queue | null = null
 let whatsappSentimentQueue: Queue | null = null
 let whatsappBroadcastQueue: Queue | null = null
@@ -152,6 +157,7 @@ let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
 let crmCadencesQueue: Queue | null = null
+let whatsappAutomationsQueue: Queue | null = null
 let crmHealthQueue: Queue | null = null
 let crmDealsQueue: Queue | null = null
 let crmDuplicatesQueue: Queue | null = null
@@ -330,6 +336,24 @@ export function getSatisfactionSurveyQueue(): Queue<
     SatisfactionSurveyJobPayload[SatisfactionSurveyJob],
     unknown,
     SatisfactionSurveyJob
+  >
+}
+
+export function getQaReviewQueue(): Queue<
+  QaReviewJobPayload[QaReviewJob],
+  unknown,
+  QaReviewJob
+> {
+  if (!qaReviewQueue) {
+    qaReviewQueue = new Queue(QueueName.QaReview, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return qaReviewQueue as Queue<
+    QaReviewJobPayload[QaReviewJob],
+    unknown,
+    QaReviewJob
   >
 }
 
@@ -936,6 +960,7 @@ export async function closeQueues(): Promise<void> {
     servicedeskIntegrationsQueue?.close(),
     crmTaskRemindersQueue?.close(),
     crmCadencesQueue?.close(),
+    whatsappAutomationsQueue?.close(),
     crmHealthQueue?.close(),
     crmDealsQueue?.close(),
     crmDuplicatesQueue?.close(),
@@ -971,6 +996,7 @@ export async function closeQueues(): Promise<void> {
   crmProposalExpiryQueue = null
   crmTaskRemindersQueue = null
   crmCadencesQueue = null
+  whatsappAutomationsQueue = null
   crmHealthQueue = null
   crmDealsQueue = null
   crmDuplicatesQueue = null
@@ -1078,6 +1104,25 @@ export function getCrmDealsQueue(): Queue<
     CrmDealsJobPayload[CrmDealsJob],
     unknown,
     CrmDealsJob
+  >
+}
+
+/** Store events and appointment messages (zap-ecom). */
+export function getWhatsappAutomationsQueue(): Queue<
+  WhatsappAutomationsJobPayload[WhatsappAutomationsJob],
+  unknown,
+  WhatsappAutomationsJob
+> {
+  if (!whatsappAutomationsQueue) {
+    whatsappAutomationsQueue = new Queue(QueueName.WhatsappAutomations, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return whatsappAutomationsQueue as Queue<
+    WhatsappAutomationsJobPayload[WhatsappAutomationsJob],
+    unknown,
+    WhatsappAutomationsJob
   >
 }
 
@@ -1368,6 +1413,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.ServicedeskIntegrations]: getServicedeskIntegrationsQueue,
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
   [QueueName.CrmCadences]: getCrmCadencesQueue,
+  [QueueName.WhatsappAutomations]: getWhatsappAutomationsQueue,
   [QueueName.CrmHealth]: getCrmHealthQueue,
   [QueueName.CrmDeals]: getCrmDealsQueue,
   [QueueName.CrmDuplicates]: getCrmDuplicatesQueue,
@@ -1383,6 +1429,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmWorkflowDelay]: getCrmWorkflowDelayQueue,
   [QueueName.WhatsappButtonActions]: getWhatsappButtonActionsQueue,
   [QueueName.SatisfactionSurvey]: getSatisfactionSurveyQueue,
+  [QueueName.QaReview]: getQaReviewQueue,
   [QueueName.SitePosts]: getSitePostsQueue,
   [QueueName.WebhooksDelivery]: getWebhooksDeliveryQueue,
   [QueueName.AiIndex]: getAiIndexQueue,

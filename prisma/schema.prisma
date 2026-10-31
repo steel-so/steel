@@ -86,7 +86,6 @@ model User {
   notifications                       Notification[]
   notificationPreferences             NotificationPreference[]
   notificationDeliverySettings        NotificationDeliverySetting[]
-  pushSubscriptions                   PushSubscription[]
 
   crmCompaniesCreated                CrmCompany[]                  @relation("CrmCompanyCreatedBy")
   crmCompaniesOwned                  CrmCompany[]                  @relation("CrmCompanyAccountOwner")
@@ -476,6 +475,16 @@ model Workspace {
   whatsappChatbotSessions      WhatsAppChatbotSession[]
   whatsappFlows                WhatsAppFlow[]
   whatsappFlowResponses        WhatsAppFlowResponse[]
+  whatsappCommerceSettings     WhatsAppCommerceSettings?
+  whatsappCatalogProducts      WhatsAppCatalogProduct[]
+  whatsappCatalogOrders        WhatsAppCatalogOrder[]
+  whatsappStoreIntegrations    WhatsAppStoreIntegration[]
+  whatsappEcomTriggers         WhatsAppEcomTrigger[]
+  whatsappEcomEvents           WhatsAppEcomEvent[]
+  whatsappSchedulingSettings   WhatsAppSchedulingSettings?
+  whatsappSchedServices        WhatsAppSchedService[]
+  whatsappSchedProfessionals   WhatsAppSchedProfessional[]
+  whatsappSchedAppointments    WhatsAppSchedAppointment[]
   whatsappTeams                WhatsAppTeam[]
   whatsappBroadcastLists       WhatsAppBroadcastList[]
   whatsappTemplates            WhatsAppTemplate[]
@@ -531,9 +540,6 @@ model Workspace {
   aiSettings                WorkspaceAiSettings?
   steelAgentPolicy          SteelAgentPolicy?
   steelMcpServers           SteelMcpServer[]
-  crmProspectingSettings    CrmProspectingSettings?
-  crmProspectDrafts         CrmProspectDraft[]
-  crmProspectUsage          CrmProspectUsage[]
   aiGuardrails              WorkspaceAiGuardrails?
   aiUserPreferences         UserAiPreference[]
   aiUsage                   AiUsage[]
@@ -669,6 +675,9 @@ model Workspace {
   crmDealRooms              CrmDealRoom[]
   aiProcedures              AiProcedure[]
   satisfactionSurveyConfigs SatisfactionSurveyConfig[]
+  qaReviewConfig            QaReviewConfig?
+  qaCriteria                QaCriterion[]
+  qaReviews                 QaReview[]
   satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
   crmNewsletterUsage        CrmNewsletterUsageMonthly[]
@@ -1301,6 +1310,8 @@ model WhatsAppContact {
   broadcastRecipients  WhatsAppBroadcastRecipient[]
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
   flowResponses        WhatsAppFlowResponse[]
+  catalogOrders        WhatsAppCatalogOrder[]
+  schedAppointments    WhatsAppSchedAppointment[]
   widgetVisitors       WhatsAppWidgetVisitor[]
 
   @@unique([workspaceId, waId])
@@ -5024,6 +5035,8 @@ enum AiUsageFeature {
   PROACTIVE_DIGEST
   /// IVR voice attendant (ADR 0046): realtime audio tokens of the call.
   VOICE_AGENT
+  /// T2: automatic QA review of a conversation or ticket.
+  QA_REVIEW
 }
 
 /// Livro-razão de consumo de IA de todas as funcionalidades — base da cota
@@ -5536,6 +5549,8 @@ model AiEvalResult {
 // ─── Notificações no app ─────────────────────────────────────────────────────
 
 enum NotificationKind {
+  /// T2: an automatic QA review scored below the workspace threshold.
+  QA_LOW_SCORE
   WHATSAPP_NEGATIVE_SENTIMENT
   SD_TICKET_ASSIGNED
   SD_TICKET_MESSAGE
@@ -12970,99 +12985,6 @@ model AiActionExecution {
   @@map("ai_action_executions")
 }
 
-// nov: prospecting-agent
-
-enum CrmProspectChannel {
-  EMAIL
-  WHATSAPP
-}
-
-enum CrmProspectDraftStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SENT
-}
-
-/// T5: workspace switches of the prospecting agent. No row = everything off.
-model CrmProspectingSettings {
-  id                String               @id @default(cuid())
-  workspaceId       String               @unique @map("workspace_id")
-  enabled           Boolean              @default(false)
-  /// Web searches + page fetches per month (UTC).
-  monthlyWebLimit   Int                  @default(300) @map("monthly_web_limit")
-  /// Drafts the agent may save per month (UTC).
-  monthlyDraftLimit Int                  @default(100) @map("monthly_draft_limit")
-  allowedChannels   CrmProspectChannel[] @map("allowed_channels")
-  /// What the workspace sells, in the seller's words (context for the draft).
-  valueProposition  String?              @map("value_proposition") @db.Text
-  /// Extra phrases the signal detector looks for (besides the built-in ones).
-  signalKeywords    String[]             @map("signal_keywords")
-  updatedById       String?              @map("updated_by_id")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("crm_prospecting_settings")
-}
-
-/// T5: first-contact message written by the agent, waiting for a human. The
-/// platform never sends it: a person approves (and sends) it.
-model CrmProspectDraft {
-  id          String                 @id @default(cuid())
-  workspaceId String                 @map("workspace_id")
-  /// The record the draft is about (ids are checked by the service; no FK so
-  /// the draft survives the record being merged or deleted).
-  leadId      String?                @map("lead_id")
-  companyId   String?                @map("company_id")
-  personId    String?                @map("person_id")
-  targetName  String                 @map("target_name")
-  channel     CrmProspectChannel
-  subject     String?
-  body        String                 @db.Text
-  toEmail     String?                @map("to_email")
-  toPhone     String?                @map("to_phone")
-  /// Short research summary written by the agent.
-  summary     String?                @db.Text
-  /// `[{ type, label, evidence, sourceUrl? }]`
-  signals     Json                   @default("[]")
-  /// `[{ url, title? }]` pages the research read.
-  sources     Json                   @default("[]")
-  status      CrmProspectDraftStatus @default(PENDING)
-  agentId     String?                @map("agent_id")
-  createdById String                 @map("created_by_id")
-  decidedById String?                @map("decided_by_id")
-  decidedAt   DateTime?              @map("decided_at")
-  rejectReason String?               @map("reject_reason") @db.Text
-  createdAt   DateTime               @default(now()) @map("created_at")
-  updatedAt   DateTime               @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId, status, createdAt])
-  @@index([workspaceId, leadId])
-  @@index([workspaceId, companyId])
-  @@map("crm_prospect_drafts")
-}
-
-/// T5: monthly counters behind the quota (one row per workspace and month).
-model CrmProspectUsage {
-  id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
-  /// First day of the month, 00:00 UTC.
-  period      DateTime
-  searches    Int      @default(0)
-  fetches     Int      @default(0)
-  drafts      Int      @default(0)
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, period])
-  @@map("crm_prospect_usage")
-}
-
 // nov: site-widget
 /// Site chat widget (E1): per-workspace switch (off by default), the public
 /// key the pasted `<script>` carries, the origins allowed to use it and the
@@ -13208,26 +13130,456 @@ model WhatsAppCoexistenceSync {
   @@map("whatsapp_coexistence_syncs")
 }
 
-// nov: pwa-push
+// nov: zap-ecom ──────────────────────────────────────────────────────────────
+// Z8 catalog and cart, Z9 e-commerce triggers, Z10 native scheduling.
 
-/// A browser/device registered for Web Push. The row is the opt-in: no row, no
-/// push. `endpoint` is the push service URL and is unique per device.
-model PushSubscription {
-  id         String    @id @default(cuid())
-  userId     String    @map("user_id")
-  endpoint   String    @unique
-  /// Client public key (base64url, uncompressed P-256 point).
-  p256dh     String
-  /// Client auth secret (base64url, 16 bytes).
-  auth       String
-  userAgent  String?   @map("user_agent")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  lastUsedAt DateTime? @map("last_used_at")
+enum WhatsAppCatalogSource {
+  CRM
+  TRAY
+  NUVEMSHOP
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum WhatsAppStoreProvider {
+  TRAY
+  NUVEMSHOP
+  VTEX
+}
 
-  @@index([userId])
-  @@map("push_subscriptions")
+enum WhatsAppEcomEventKind {
+  CART_ABANDONED
+  ORDER_CREATED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+}
+
+enum WhatsAppEcomTriggerKind {
+  ABANDONED_CART
+  ORDER_SHIPPED
+  POST_PURCHASE
+}
+
+enum WhatsAppEcomEventStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+enum WhatsAppSchedAppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  COMPLETED
+  NO_SHOW
+}
+
+enum WhatsAppSchedAppointmentSource {
+  AGENT
+  FLOW
+  CONTACT
+}
+
+/// Commerce switches of a workspace (Z8 + Z9). Everything is off by default:
+/// the catalog needs a Meta catalog linked to the WABA and the triggers need
+/// approved templates, so nothing starts before an admin turns it on.
+model WhatsAppCommerceSettings {
+  id                      String                @id @default(cuid())
+  workspaceId             String                @unique @map("workspace_id")
+  /// Z8 product messages and order intake.
+  catalogEnabled          Boolean               @default(false) @map("catalog_enabled")
+  /// Catalog id at Meta Commerce Manager (linked to the WABA by the owner).
+  metaCatalogId           String?               @map("meta_catalog_id")
+  catalogSource           WhatsAppCatalogSource @default(CRM) @map("catalog_source")
+  /// Store integration the TRAY / NUVEMSHOP source reads from.
+  catalogIntegrationId    String?               @map("catalog_integration_id")
+  /// Pulls products from the store adapter (off: only the CRM source runs).
+  storeSyncEnabled        Boolean               @default(false) @map("store_sync_enabled")
+  lastCatalogSyncAt       DateTime?             @map("last_catalog_sync_at")
+  /// An order message creates a lead + opportunity.
+  orderCreatesOpportunity Boolean               @default(true) @map("order_creates_opportunity")
+  orderPipelineId         String?               @map("order_pipeline_id")
+  /// Sends a Pix charge (mock provider only) when an order arrives.
+  orderPixEnabled         Boolean               @default(false) @map("order_pix_enabled")
+  /// Member that owns what the automation creates (leads, deals, notes).
+  ownerUserId             String?               @map("owner_user_id")
+  /// Z9 store triggers.
+  triggersEnabled         Boolean               @default(false) @map("triggers_enabled")
+  /// Minimum hours between two automatic messages to the same contact.
+  throttleHours           Int                   @default(24) @map("throttle_hours")
+  createdAt               DateTime              @default(now()) @map("created_at")
+  updatedAt               DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_commerce_settings")
+}
+
+/// A product offered in the WhatsApp catalog (mirror of the CRM products or
+/// of a store). `retailerId` is the id Meta's catalog knows it by.
+model WhatsAppCatalogProduct {
+  id          String                @id @default(cuid())
+  workspaceId String                @map("workspace_id")
+  source      WhatsAppCatalogSource
+  /// Id in the source (CRM product id or store product id).
+  externalId  String                @map("external_id")
+  retailerId  String                @map("retailer_id")
+  name        String
+  description String?
+  price       Decimal               @db.Decimal(14, 2)
+  currency    String                @default("BRL")
+  imageUrl    String?               @map("image_url")
+  url         String?
+  available   Boolean               @default(true)
+  syncedAt    DateTime              @default(now()) @map("synced_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, retailerId])
+  @@index([workspaceId, available])
+  @@map("whatsapp_catalog_products")
+}
+
+/// Cart the contact sent from the catalog (Meta `order` message).
+model WhatsAppCatalogOrder {
+  id                String   @id @default(cuid())
+  workspaceId       String   @map("workspace_id")
+  contactId         String   @map("contact_id")
+  conversationId    String?  @map("conversation_id")
+  providerMessageId String   @unique @map("provider_message_id")
+  metaCatalogId     String?  @map("meta_catalog_id")
+  note              String?
+  /// `[{ retailerId, name, quantity, unitPrice }]`.
+  items             Json
+  total             Decimal  @db.Decimal(14, 2)
+  currency          String   @default("BRL")
+  leadId            String?  @map("lead_id")
+  opportunityId     String?  @map("opportunity_id")
+  pixChargeId       String?  @map("pix_charge_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([conversationId])
+  @@map("whatsapp_catalog_orders")
+}
+
+/// A connected store (Z9; Z8 reads the catalog from it). Secrets are
+/// encrypted with `CONNECTION_SECRETS`; the webhook secret signs every call.
+model WhatsAppStoreIntegration {
+  id                     String                @id @default(cuid())
+  workspaceId            String                @map("workspace_id")
+  provider               WhatsAppStoreProvider
+  name                   String
+  /// WhatsApp connection the automatic messages leave through.
+  connectionId           String                @map("connection_id")
+  enabled                Boolean               @default(false)
+  /// Public host of the store API (`https://loja.com.br`, VTEX account...).
+  storeUrl               String?               @map("store_url")
+  encryptedWebhookSecret String                @map("encrypted_webhook_secret")
+  /// Store API credentials, only for the catalog adapters (optional).
+  encryptedCredentials   String?               @map("encrypted_credentials")
+  lastEventAt            DateTime?             @map("last_event_at")
+  createdById            String?               @map("created_by_id")
+  createdAt              DateTime              @default(now()) @map("created_at")
+  updatedAt              DateTime              @updatedAt @map("updated_at")
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  events    WhatsAppEcomEvent[]
+
+  @@index([workspaceId])
+  @@map("whatsapp_store_integrations")
+}
+
+/// One automatic template message per kind of store event (Z9).
+model WhatsAppEcomTrigger {
+  id           String                  @id @default(cuid())
+  workspaceId  String                  @map("workspace_id")
+  kind         WhatsAppEcomTriggerKind
+  enabled      Boolean                 @default(false)
+  /// Approved Meta template sent when the trigger fires.
+  templateId   String?                 @map("template_id")
+  /// Wait before sending: abandoned cart (minutes since the cart), post
+  /// purchase (minutes after delivery). Shipped notices go out at once.
+  delayMinutes Int                     @default(0) @map("delay_minutes")
+  /// Body variables in order, tokens such as `{nome}` / `{pedido}`.
+  variables    Json                    @default("[]")
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, kind])
+  @@map("whatsapp_ecom_triggers")
+}
+
+/// A store event waiting for (or already past) its automatic message. The
+/// unique key makes the store's webhook retries harmless.
+model WhatsAppEcomEvent {
+  id                String                  @id @default(cuid())
+  workspaceId       String                  @map("workspace_id")
+  integrationId     String                  @map("integration_id")
+  kind              WhatsAppEcomEventKind
+  /// Cart / order id in the store.
+  externalId        String                  @map("external_id")
+  waId              String                  @map("wa_id")
+  contactName       String?                 @map("contact_name")
+  /// Normalized fields the template variables read.
+  data              Json
+  status            WhatsAppEcomEventStatus @default(PENDING)
+  skipReason        String?                 @map("skip_reason")
+  scheduledAt       DateTime                @map("scheduled_at")
+  claimedAt         DateTime?               @map("claimed_at")
+  processedAt       DateTime?               @map("processed_at")
+  providerMessageId String?                 @map("provider_message_id")
+  createdAt         DateTime                @default(now()) @map("created_at")
+
+  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  integration WhatsAppStoreIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, kind, externalId])
+  @@index([status, scheduledAt])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, waId])
+  @@map("whatsapp_ecom_events")
+}
+
+/// Scheduling switches and defaults of a workspace (Z10), off by default.
+model WhatsAppSchedulingSettings {
+  id                     String   @id @default(cuid())
+  workspaceId            String   @unique @map("workspace_id")
+  enabled                Boolean  @default(false)
+  /// Connection the confirmations and reminders leave through.
+  connectionId           String?  @map("connection_id")
+  /// IANA zone the agenda reads in.
+  timezone               String   @default("America/Sao_Paulo")
+  /// Grid the offered times step on.
+  slotMinutes            Int      @default(30) @map("slot_minutes")
+  minNoticeMinutes       Int      @default(60) @map("min_notice_minutes")
+  maxDaysAhead           Int      @default(30) @map("max_days_ahead")
+  /// Approved templates: `{{1}} name, {{2}} service, {{3}} date and time,
+  /// {{4}} professional`. Outside the 24h window Meta only delivers these.
+  confirmationTemplateId String?  @map("confirmation_template_id")
+  reminderTemplateId     String?  @map("reminder_template_id")
+  /// Minutes before the start a reminder is sent (each value sends once).
+  reminderOffsets        Int[]    @default([1440]) @map("reminder_offsets")
+  /// Z3 form that books by WhatsApp (fields `servico`, `data`, `periodo`).
+  bookingFlowId          String?  @map("booking_flow_id")
+  ownerUserId            String?  @map("owner_user_id")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_scheduling_settings")
+}
+
+/// Something that can be booked (haircut, consultation...).
+model WhatsAppSchedService {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  name            String
+  description     String?
+  durationMinutes Int      @map("duration_minutes")
+  /// Free minutes after each appointment.
+  bufferMinutes   Int      @default(0) @map("buffer_minutes")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workspace     Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  professionals WhatsAppSchedProfessionalService[]
+  appointments  WhatsAppSchedAppointment[]
+
+  @@index([workspaceId])
+  @@map("whatsapp_sched_services")
+}
+
+/// Person (or room) that attends, with weekly working windows.
+model WhatsAppSchedProfessional {
+  id           String   @id @default(cuid())
+  workspaceId  String   @map("workspace_id")
+  name         String
+  /// Workspace member that sees the agenda as theirs (optional).
+  userId       String?  @map("user_id")
+  active       Boolean  @default(true)
+  /// `{ "1": [{ "start": "09:00", "end": "12:00" }] }`, keys 0 = Sunday.
+  workingHours Json     @default("{}") @map("working_hours")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace    Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  services     WhatsAppSchedProfessionalService[]
+  appointments WhatsAppSchedAppointment[]
+
+  @@index([workspaceId])
+  @@map("whatsapp_sched_professionals")
+}
+
+model WhatsAppSchedProfessionalService {
+  professionalId String @map("professional_id")
+  serviceId      String @map("service_id")
+
+  professional WhatsAppSchedProfessional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  service      WhatsAppSchedService      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([professionalId, serviceId])
+  @@index([serviceId])
+  @@map("whatsapp_sched_professional_services")
+}
+
+/// A booking. The migration adds a partial unique index on
+/// `(professional_id, starts_at)` for PENDING / CONFIRMED rows, so two
+/// concurrent requests cannot take the same start.
+model WhatsAppSchedAppointment {
+  id                 String                         @id @default(cuid())
+  workspaceId        String                         @map("workspace_id")
+  serviceId          String                         @map("service_id")
+  professionalId     String                         @map("professional_id")
+  contactId          String                         @map("contact_id")
+  conversationId     String?                        @map("conversation_id")
+  startsAt           DateTime                       @map("starts_at")
+  endsAt             DateTime                       @map("ends_at")
+  status             WhatsAppSchedAppointmentStatus @default(PENDING)
+  source             WhatsAppSchedAppointmentSource @default(AGENT)
+  notes              String?
+  createdById        String?                        @map("created_by_id")
+  confirmationSentAt DateTime?                      @map("confirmation_sent_at")
+  confirmedAt        DateTime?                      @map("confirmed_at")
+  canceledAt         DateTime?                      @map("canceled_at")
+  cancelReason       String?                        @map("cancel_reason")
+  /// Reminder offsets (minutes) already sent.
+  remindersSent      Int[]                          @default([]) @map("reminders_sent")
+  createdAt          DateTime                       @default(now()) @map("created_at")
+  updatedAt          DateTime                       @updatedAt @map("updated_at")
+
+  workspace    Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  service      WhatsAppSchedService      @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  professional WhatsAppSchedProfessional @relation(fields: [professionalId], references: [id], onDelete: Restrict)
+  contact      WhatsAppContact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, startsAt])
+  @@index([professionalId, startsAt])
+  @@index([contactId, status])
+  @@index([status, startsAt])
+  @@map("whatsapp_sched_appointments")
+}
+
+// nov: t2-qa-review ──────────────────────────────────────────────────────────
+
+enum QaSubjectType {
+  CONVERSATION
+  TICKET
+}
+
+enum QaReviewStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+/// Who answered the customer: a person, the bot/AI, or both.
+enum QaHandlerKind {
+  HUMAN
+  BOT
+  MIXED
+}
+
+enum QaCriterionScope {
+  BOTH
+  CONVERSATION
+  TICKET
+}
+
+/// Per-workspace switch and limits of the automatic QA. Off by default.
+model QaReviewConfig {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @unique @map("workspace_id")
+  enabled            Boolean  @default(false)
+  reviewConversations Boolean @default(true) @map("review_conversations")
+  reviewTickets      Boolean  @default(true) @map("review_tickets")
+  /// Also scores attendances answered only by the bot / AI.
+  includeBots        Boolean  @default(true) @map("include_bots")
+  /// Attendances with fewer messages are not worth a review.
+  minMessages        Int      @default(4) @map("min_messages")
+  /// Scores below this value (0-100) are "low" and notify the managers.
+  lowScoreThreshold  Int      @default(60) @map("low_score_threshold")
+  alertLowScore      Boolean  @default(true) @map("alert_low_score")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("qa_review_configs")
+}
+
+/// One configurable scoring criterion (tone, resolution, compliance, empathy
+/// are seeded). The weight is relative: the final score is the weighted mean.
+model QaCriterion {
+  id          String           @id @default(cuid())
+  workspaceId String           @map("workspace_id")
+  key         String
+  name        String
+  /// What the reviewer must look for; goes into the AI prompt.
+  description String
+  weight      Int              @default(1)
+  appliesTo   QaCriterionScope @default(BOTH) @map("applies_to")
+  active      Boolean          @default(true)
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+  @@index([workspaceId, active, position])
+  @@map("qa_criteria")
+}
+
+/// The score of one conversation or ticket. Names are snapshots so the panel
+/// survives renames. No FK to the subject (it may be purged).
+model QaReview {
+  id             String         @id @default(cuid())
+  workspaceId    String         @map("workspace_id")
+  subjectType    QaSubjectType  @map("subject_type")
+  conversationId String?        @unique @map("conversation_id")
+  ticketId       String?        @unique @map("ticket_id")
+  subjectLabel   String?        @map("subject_label")
+  status         QaReviewStatus @default(PENDING)
+  handlerKind    QaHandlerKind? @map("handler_kind")
+  agentUserId    String?        @map("agent_user_id")
+  agentName      String?        @map("agent_name")
+  customerName   String?        @map("customer_name")
+  /// 0-100, weighted mean of the criteria.
+  score          Int?
+  summary        String?
+  /// [{ key, name, weight, score, evidence }]
+  criteriaResults Json          @default("[]") @map("criteria_results")
+  /// Short pt-BR coaching suggestions for the agent.
+  coachingTips   Json           @default("[]") @map("coaching_tips")
+  lowScore       Boolean        @default(false) @map("low_score")
+  skipReason     String?        @map("skip_reason")
+  provider       String?
+  model          String?
+  inputTokens    Int            @default(0) @map("input_tokens")
+  outputTokens   Int            @default(0) @map("output_tokens")
+  costUsd        Decimal        @default(0) @map("cost_usd") @db.Decimal(14, 6)
+  /// When the attendance ended (the review window anchor of the panel).
+  subjectEndedAt DateTime?      @map("subject_ended_at")
+  reviewedAt     DateTime?      @map("reviewed_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status, reviewedAt])
+  @@index([workspaceId, agentUserId, reviewedAt])
+  @@index([workspaceId, lowScore, reviewedAt])
+  @@map("qa_reviews")
 }
 
 // nov: a5-procedures ──────────────────────────────────────────────────────

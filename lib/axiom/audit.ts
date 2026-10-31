@@ -42,6 +42,14 @@ export type AuditEntity =
   | 'whatsapp_chatbot_session'
   | 'whatsapp_flow'
   | 'whatsapp_flow_response'
+  | 'whatsapp_commerce_settings'
+  | 'whatsapp_catalog_order'
+  | 'whatsapp_store_integration'
+  | 'whatsapp_ecom_trigger'
+  | 'whatsapp_scheduling_settings'
+  | 'whatsapp_sched_service'
+  | 'whatsapp_sched_professional'
+  | 'whatsapp_sched_appointment'
   | 'whatsapp_settings'
   | 'whatsapp_widget_settings'
   | 'whatsapp_usage_limits'
@@ -299,6 +307,9 @@ export type AuditEntity =
   // t1-nps-whatsapp: satisfaction surveys (NPS/CSAT/CES)
   | 'satisfaction_survey'
   | 'satisfaction_survey_config'
+  // t2-qa-review: automatic QA by AI
+  | 'qa_review'
+  | 'qa_config'
   // Z1 Pix in the conversation: charges and the workspace switch
   | 'whatsapp_pix_charge'
   | 'whatsapp_pix_settings'
@@ -314,10 +325,6 @@ export type AuditEntity =
   // nov-health-scores
   | 'crm_customer_health'
   | 'crm_opportunity_health'
-  // nov-prospecting-agent
-  | 'crm_prospecting_settings'
-  | 'crm_prospect_draft'
-  | 'crm_prospect_web'
 
   // nov: crm-deals
   | 'crm_proposal_charge'
@@ -325,8 +332,6 @@ export type AuditEntity =
   | 'crm_deals_settings'
   | 'crm_deal_room'
   | 'crm_contract'
-  // nov: pwa-push
-  | 'push_subscription'
 
 export type AuditAction =
   | 'create'

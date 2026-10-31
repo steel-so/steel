@@ -2369,49 +2369,6 @@ export const aiActionInProgress = (): AppError =>
     'Esta mesma ação já está em andamento. Aguarde alguns instantes.',
   )
 
-// ─── nov-prospecting-agent ──────────────────────────────────────────────────
-
-export const crmProspectingDisabled = (): AppError =>
-  appError(
-    'CRM_PROSPECTING_DISABLED',
-    'A prospecção com IA está desligada neste workspace. Ligue em CRM > Prospecção.',
-  )
-
-export const crmProspectLimitReached = (what: 'web' | 'draft'): AppError =>
-  appError(
-    'CRM_PROSPECT_LIMIT_REACHED',
-    what === 'web'
-      ? 'O limite mensal de pesquisas na web da prospecção foi atingido'
-      : 'O limite mensal de rascunhos da prospecção foi atingido',
-  )
-
-export const crmProspectDraftNotFound = (): AppError =>
-  appError('CRM_PROSPECT_DRAFT_NOT_FOUND', 'Rascunho não encontrado')
-
-export const crmProspectDraftInvalid = (message: string): AppError =>
-  appError('CRM_PROSPECT_DRAFT_INVALID', message)
-
-export const crmProspectDraftDuplicate = (): AppError =>
-  appError(
-    'CRM_PROSPECT_DRAFT_DUPLICATE',
-    'Já existe um rascunho pendente de revisão para este contato',
-  )
-
-export const crmProspectDraftNotPending = (): AppError =>
-  appError(
-    'CRM_PROSPECT_DRAFT_NOT_PENDING',
-    'Este rascunho já foi decidido e não pode mais ser alterado',
-  )
-
-export const crmProspectWebFailed = (message: string): AppError =>
-  appError('CRM_PROSPECT_WEB_FAILED', message)
-
-export const crmProspectSearchNotConfigured = (): AppError =>
-  appError(
-    'CRM_PROSPECT_SEARCH_NOT_CONFIGURED',
-    'A busca na web não está configurada neste ambiente. Peça ao administrador da plataforma.',
-  )
-
 
 // ─── nov: crm-deals ─────────────────────────────────────────────────────────
 
@@ -2468,6 +2425,79 @@ export const metaChannelPageNotFound = (): AppError =>
 
 export const metaChannelCommentNotFound = (): AppError =>
   appError('META_CHANNEL_COMMENT_NOT_FOUND', 'Comentário não encontrado')
+
+export const qaReviewNotFound = (): AppError =>
+  appError('QA_REVIEW_NOT_FOUND', 'Avaliação não encontrada')
+
+export const qaSubjectNotFound = (): AppError =>
+  appError('QA_SUBJECT_NOT_FOUND', 'Conversa ou chamado não encontrado')
+
+export const qaCriteriaInvalid = (
+  message = 'Os critérios de avaliação são inválidos',
+): AppError => appError('QA_CRITERIA_INVALID', message)
+
+export const qaDisabled = (): AppError =>
+  appError('QA_DISABLED', 'O QA automático está desligado neste workspace')
+
+// ─── zap-ecom · catalog, store triggers, scheduling ─────────────────────────
+
+export const whatsappCatalogDisabled = (): AppError =>
+  appError(
+    'WHATSAPP_CATALOG_DISABLED',
+    'O catálogo do WhatsApp está desativado neste workspace',
+  )
+
+export const whatsappCatalogProductNotFound = (): AppError =>
+  appError(
+    'WHATSAPP_CATALOG_PRODUCT_NOT_FOUND',
+    'Produto do catálogo não encontrado',
+  )
+
+export const whatsappCatalogInvalid = (message: string): AppError =>
+  appError('WHATSAPP_CATALOG_INVALID', message)
+
+export const whatsappCatalogSyncFailed = (message: string): AppError =>
+  appError('WHATSAPP_CATALOG_SYNC_FAILED', message)
+
+export const whatsappStoreNotFound = (): AppError =>
+  appError('WHATSAPP_STORE_NOT_FOUND', 'Loja não encontrada')
+
+export const whatsappStoreInvalid = (message: string): AppError =>
+  appError('WHATSAPP_STORE_INVALID', message)
+
+export const whatsappEcomTriggerInvalid = (message: string): AppError =>
+  appError('WHATSAPP_ECOM_TRIGGER_INVALID', message)
+
+export const whatsappSchedDisabled = (): AppError =>
+  appError(
+    'WHATSAPP_SCHED_DISABLED',
+    'O agendamento pelo WhatsApp está desativado neste workspace',
+  )
+
+export const whatsappSchedServiceNotFound = (): AppError =>
+  appError('WHATSAPP_SCHED_SERVICE_NOT_FOUND', 'Serviço não encontrado')
+
+export const whatsappSchedProfessionalNotFound = (): AppError =>
+  appError(
+    'WHATSAPP_SCHED_PROFESSIONAL_NOT_FOUND',
+    'Profissional não encontrado',
+  )
+
+export const whatsappSchedAppointmentNotFound = (): AppError =>
+  appError('WHATSAPP_SCHED_APPOINTMENT_NOT_FOUND', 'Agendamento não encontrado')
+
+export const whatsappSchedSlotTaken = (): AppError =>
+  appError(
+    'WHATSAPP_SCHED_SLOT_TAKEN',
+    'Esse horário já foi ocupado. Escolha outro.',
+  )
+
+export const whatsappSchedInvalid = (message: string): AppError =>
+  appError('WHATSAPP_SCHED_INVALID', message)
+
+export const whatsappSchedStateConflict = (message: string): AppError =>
+  appError('WHATSAPP_SCHED_STATE_CONFLICT', message)
+
 export const aiProcedureNotFound = (): AppError =>
   appError('AI_PROCEDURE_NOT_FOUND', 'Procedimento não encontrado')
 

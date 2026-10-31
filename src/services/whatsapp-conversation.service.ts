@@ -61,6 +61,7 @@ import {
   assertModuleMember,
   type MembershipContext,
 } from './authz'
+import { QaReviewService } from './qa-review.service'
 import { SatisfactionSurveyService } from './satisfaction-survey.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import {
@@ -235,6 +236,16 @@ async function applyClose(
       workspaceId: conversation.workspaceId,
       conversationId: conversation.id,
       reason: survey.error.code,
+    })
+  }
+
+  // Automatic QA by AI (t2-qa-review); never fails the close.
+  const qa = await QaReviewService.onConversationClosed(conversation)
+  if (!qa.ok) {
+    logger.warn('whatsapp.conversation.qa_schedule_failed', {
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      reason: qa.error.code,
     })
   }
 
