@@ -173,6 +173,8 @@ export const WhatsAppBroadcastRepository = {
     Result<
       | (WhatsAppBroadcastRecipient & {
           contact: {
+            id: string
+            name: string | null
             waId: string
             broadcastOptedOutAt: Date | null
             hasWhatsapp: boolean | null
