@@ -13,7 +13,7 @@ type Report struct {
 	Disks        []Disk     `json:"disks"`
 	Software     []Software `json:"software"`
 	// Remote holds the RustDesk/AnyDesk IDs found on the machine (optional).
-	Remote       *RemoteIDs `json:"remote,omitempty"`
+	Remote *RemoteIDs `json:"remote,omitempty"`
 }
 
 type OSInfo struct {
