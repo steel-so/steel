@@ -82,6 +82,22 @@ export interface SdMajorIncidentDTO extends SdMajorIncidentSummaryDTO {
   pages: SdMajorIncidentPageRefDTO[]
 }
 
+/** Outcome of one child ticket when the incident resolves in bulk. */
+export interface SdMajorIncidentChildResolutionDTO {
+  ticketId: string
+  code: string
+  title: string
+  /** RESOLVED: moved to the resolved phase; SKIPPED: nothing to do; FAILED: the engine refused. */
+  outcome: 'RESOLVED' | 'SKIPPED' | 'FAILED'
+  /** Why it was skipped or failed (pt-BR). */
+  reason: string | null
+}
+
+/** The resolved incident plus what happened to the children asked for. */
+export interface SdMajorIncidentResolveDTO extends SdMajorIncidentDTO {
+  childResults: SdMajorIncidentChildResolutionDTO[]
+}
+
 export interface SdMajorIncidentListDTO {
   items: SdMajorIncidentSummaryDTO[]
 }

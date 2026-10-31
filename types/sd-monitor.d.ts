@@ -28,6 +28,8 @@ export interface SdMonitorSourceDTO {
   /** `HOST`: alerta da mesma máquina entra no chamado aberto. */
   correlationMode: SdMonitorCorrelationModeDTO
   correlationWindowMinutes: number
+  /** Correlated alert more severe than the ticket raises its priority. */
+  raisePriorityOnCorrelation: boolean
   /** Último alerta recebido (`null` = nunca recebeu nada). */
   lastEventAt: string | null
   /** Caminho público do webhook, sem o domínio (só na criação/regeração). */
@@ -64,6 +66,8 @@ export interface SdMonitorAlertDTO {
   correlated: boolean
   /** Quantas vezes o mesmo alerta chegou (deduplicação). */
   occurrences: number
+  /** Arrived in a maintenance window: no ticket was opened for it. */
+  suppressed: boolean
   lastSeenAt: string
   startedAt: string
   resolvedAt: string | null
@@ -80,6 +84,7 @@ export interface SdMonitorIngestDTO {
     | 'ticket_reopened'
     | 'alert_updated'
     | 'alert_correlated'
+    | 'alert_suppressed'
     | 'ticket_resolved'
     | 'alert_resolved'
   ticket: { id: string; number: number; code: string } | null

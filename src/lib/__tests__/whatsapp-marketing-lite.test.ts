@@ -9,10 +9,12 @@ vi.mock('@/src/lib/crypto', () => ({
 }))
 
 import {
+  describeMarketingLiteError,
   fetchMarketingLiteAnalytics,
+  MarketingLiteTemplateNotFoundError,
   metaCredentialsOf,
 } from '@/src/lib/whatsapp/marketing-lite'
-import { createMetaClient } from '@/src/lib/whatsapp/meta-client'
+import { createMetaClient, MetaApiError } from '@/src/lib/whatsapp/meta-client'
 
 const credentials = { phoneNumberId: 'phone', wabaId: 'waba', accessToken: 't' }
 
@@ -161,15 +163,75 @@ describe('fetchMarketingLiteAnalytics()', () => {
     expect(decodeURIComponent(analyticsUrl)).toContain('template_ids=["tpl-1"]')
   })
 
-  it('should return zeros when Meta has no template with that language', async () => {
+  it('should fail clearly when Meta has no template with that language', async () => {
     stubFetch({ data: [{ id: 'x', language: 'en_US' }] })
-    expect(
-      await fetchMarketingLiteAnalytics(credentials, template, period),
-    ).toEqual({ sent: 0, delivered: 0, read: 0, clicked: 0 })
+    await expect(
+      fetchMarketingLiteAnalytics(credentials, template, period),
+    ).rejects.toBeInstanceOf(MarketingLiteTemplateNotFoundError)
   })
 
-  it('should tolerate empty responses', async () => {
-    stubFetch({}, {})
+  it('should fail clearly when the lookup answers without a list', async () => {
+    stubFetch({})
+    await expect(
+      fetchMarketingLiteAnalytics(credentials, template, period),
+    ).rejects.toBeInstanceOf(MarketingLiteTemplateNotFoundError)
+  })
+
+  it('should ignore malformed analytics values', async () => {
+    stubFetch(
+      { data: [{ id: 'tpl', language: 'pt_BR' }] },
+      {
+        data: [
+          null,
+          { data_points: 'nope' },
+          {
+            data_points: [
+              null,
+              { sent: 'x', delivered: Number.NaN, clicked: 'no' },
+              { sent: 2, clicked: [null, { count: 'a' }, { count: 3 }] },
+            ],
+          },
+        ],
+      },
+    )
+    expect(
+      await fetchMarketingLiteAnalytics(credentials, template, period),
+    ).toEqual({ sent: 2, delivered: 0, read: 0, clicked: 3 })
+  })
+
+  it('should keep the window inside the 90 days Meta accepts', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2027-03-01T00:00:00Z'))
+    try {
+      const spy = stubFetch(
+        { data: [{ id: 'tpl', language: 'pt_BR' }] },
+        { data: [] },
+      )
+      await fetchMarketingLiteAnalytics(credentials, template, {
+        from: new Date('2026-10-01T00:00:00Z'),
+        // In the future: clamped to now.
+        to: new Date('2027-04-01T00:00:00Z'),
+      })
+      const query = new URL(String(spy.mock.calls[1][0])).searchParams
+      const end = Number(query.get('end'))
+      const start = Number(query.get('start'))
+      expect(end).toBe(Date.parse('2027-03-01T00:00:00Z') / 1000)
+      expect(end - start).toBe(90 * 86_400)
+
+      // A same-instant window still spans a day, so Meta accepts it.
+      stubFetch({ data: [{ id: 'tpl', language: 'pt_BR' }] }, { data: [] })
+      const same = new Date('2027-02-28T00:00:00Z')
+      await fetchMarketingLiteAnalytics(credentials, template, {
+        from: same,
+        to: same,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('should tolerate empty analytics responses', async () => {
+    stubFetch({ data: [{ id: 'tpl', language: 'pt_BR' }] }, {})
     expect(
       await fetchMarketingLiteAnalytics(credentials, template, period),
     ).toEqual({ sent: 0, delivered: 0, read: 0, clicked: 0 })
@@ -177,5 +239,57 @@ describe('fetchMarketingLiteAnalytics()', () => {
     expect(
       await fetchMarketingLiteAnalytics(credentials, template, period),
     ).toEqual({ sent: 0, delivered: 0, read: 0, clicked: 0 })
+  })
+})
+
+describe('describeMarketingLiteError()', () => {
+  it.each([
+    [new MarketingLiteTemplateNotFoundError(), 'não encontrou o template'],
+    [new MetaApiError('x', 400, 190), 'token de acesso'],
+    [new MetaApiError('x', 401), 'token de acesso'],
+    [new MetaApiError('x', 400, 200), 'permissão'],
+    [new MetaApiError('x', 400, 10), 'permissão'],
+    [new MetaApiError('x', 403), 'permissão'],
+    [new MetaApiError('x', 400, 80_004), 'limitou'],
+    [new MetaApiError('x', 429), 'limitou'],
+    [new MetaApiError('x', 503), 'instável'],
+    [new MetaApiError('x', 400, 100), 'Não foi possível'],
+    [new Error('boom'), 'Não foi possível'],
+    ['weird', 'Não foi possível'],
+  ])('maps %o to a pt-BR reason', (error, expected) => {
+    expect(describeMarketingLiteError(error)).toContain(expected)
+  })
+
+  it('maps a request timeout to a reason', () => {
+    const timeout = new DOMException('The operation timed out', 'TimeoutError')
+    expect(describeMarketingLiteError(timeout)).toContain('demorou demais')
+    const aborted = new DOMException('aborted', 'AbortError')
+    expect(describeMarketingLiteError(aborted)).toContain('demorou demais')
+  })
+})
+
+describe('Meta request errors', () => {
+  it('should carry the status and Meta code on the thrown error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ error: { code: 190, message: 'Token expired' } }),
+            { status: 401 },
+          ),
+        ),
+    )
+    const client = createMetaClient(credentials)
+    const failure = await client
+      .sendText({ to: '5511999990000', text: 'oi' })
+      .catch((error) => error)
+    expect(failure).toBeInstanceOf(MetaApiError)
+    expect(failure).toMatchObject({
+      message: 'Token expired',
+      status: 401,
+      code: 190,
+    })
   })
 })

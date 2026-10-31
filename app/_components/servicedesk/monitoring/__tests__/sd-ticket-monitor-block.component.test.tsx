@@ -28,6 +28,7 @@ function alert(overrides: Partial<SdMonitorAlertDTO> = {}): SdMonitorAlertDTO {
     ticket: { id: 't1', number: 42, title: 'Servidor fora', phase: 'Novo' },
     correlated: false,
     occurrences: 1,
+    suppressed: false,
     lastSeenAt: '2026-10-01T12:00:00.000Z',
     startedAt: '2026-10-01T12:00:00.000Z',
     resolvedAt: null,

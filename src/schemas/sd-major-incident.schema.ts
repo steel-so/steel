@@ -2,6 +2,7 @@ import z from 'zod'
 import {
   SD_MAJOR_INCIDENT_IMPACTS,
   SD_MAJOR_INCIDENT_MAX_LINK_BATCH,
+  SD_MAJOR_INCIDENT_MAX_RESOLVE_BATCH,
   SD_MAJOR_INCIDENT_STATUSES,
 } from '@/src/lib/servicedesk/major-incident'
 import { SD_SWARM_MAX_MEMBERS } from '@/src/lib/servicedesk/swarm'
@@ -68,6 +69,14 @@ export const ResolveSdMajorIncidentSchema = z.object({
   /** Internal note: what fixed it (kept on the incident and master ticket). */
   resolution: z.string().trim().max(4000).optional(),
   publish: z.boolean().default(true),
+  /**
+   * Child tickets to resolve together with the incident (the agent confirms
+   * the list in the dialog). Only linked, still open children are touched.
+   */
+  childTicketIds: z
+    .array(Id)
+    .max(SD_MAJOR_INCIDENT_MAX_RESOLVE_BATCH)
+    .optional(),
 })
 
 export const LinkSdMajorIncidentTicketsSchema = z.object({

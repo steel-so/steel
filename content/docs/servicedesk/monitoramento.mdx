@@ -117,6 +117,35 @@ normaliza**. Os anteriores deixam uma nota interna dizendo quantos ainda estão
 abertos. Na tela do chamado, o bloco **Monitoramento** mostra o alerta que o
 abriu e a lista dos alertas correlacionados.
 
+### Prioridade quando o alerta correlacionado é mais grave
+
+Se o alerta que entra num chamado já aberto é **mais grave** que a prioridade
+atual do chamado (pela tabela de severidade da origem), a prioridade do chamado
+**sobe** para a do alerta. Isso fica numa nota interna e no histórico do
+chamado. A prioridade **nunca baixa** por esse caminho, e um alerta mais leve
+não muda nada. A opção **Subir a prioridade quando o alerta correlacionado for
+mais grave** é por origem e vem ligada; desligue-a na origem para manter a
+prioridade que o primeiro alerta definiu.
+
+## Incidente maior
+
+Quando já existe um **incidente maior ativo** cujo chamado principal está no
+mesmo **item da CMDB** do alerta, o chamado que o alerta abre (ou reabre, ou em
+que ele entra) é vinculado a esse incidente automaticamente, com a origem
+**Monitoramento**. Assim os alertas da mesma falha aparecem como chamados
+filhos sem ninguém precisar vinculá-los. Alertas sem item da CMDB não são
+vinculados.
+
+## Manutenção programada
+
+Uma [manutenção programada](/docs/servicedesk/incidente-maior)
+pode **suprimir os chamados do monitoramento** nos itens da CMDB que ela cobre.
+Enquanto a janela está em andamento, o alerta desses itens chega e fica
+registrado (a lista de alertas mostra "em manutenção, sem chamado"), mas **não
+abre chamado**. Se o alerta ainda estiver ativo e chegar de novo depois do fim
+da janela, o chamado é aberto normalmente. Alerta que entra num chamado já
+aberto continua entrando, e alerta sem item da CMDB nunca é suprimido.
+
 ## Ligação com a CMDB
 
 O Steel procura o item da CMDB pelo **nome**, **código** ou **endereço IP**,

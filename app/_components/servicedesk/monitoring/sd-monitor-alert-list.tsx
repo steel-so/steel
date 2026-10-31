@@ -67,6 +67,7 @@ export function SdConfigItemAlerts({
               <span>{alert.occurrences} ocorrências</span>
             ) : null}
             {alert.correlated ? <span>correlacionado</span> : null}
+            {alert.suppressed ? <span>em manutenção, sem chamado</span> : null}
             {alert.ticket ? (
               <Link
                 href={`/${slug}/servicedesk/tickets/${alert.ticket.number}`}

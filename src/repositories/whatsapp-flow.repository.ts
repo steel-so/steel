@@ -38,6 +38,39 @@ export const WhatsAppFlowRepository = {
     }
   },
 
+  /** Flows of the given connections that Meta knows under this flow id. */
+  async listByMetaFlowId(
+    metaFlowId: string,
+    connectionIds: string[],
+  ): Promise<Result<WhatsAppFlow[]>> {
+    try {
+      return ok(
+        await prisma.whatsAppFlow.findMany({
+          where: { metaFlowId, connectionId: { in: connectionIds } },
+        }),
+      )
+    } catch (error) {
+      return err(dbError('Failed to list whatsapp flows by meta id', error))
+    }
+  },
+
+  /** The flow of a workspace behind a Meta flow id (template FLOW buttons). */
+  async findByMetaFlowId(
+    workspaceId: string,
+    metaFlowId: string,
+  ): Promise<Result<WhatsAppFlow | null>> {
+    try {
+      return ok(
+        await prisma.whatsAppFlow.findFirst({
+          where: { workspaceId, metaFlowId },
+          orderBy: { createdAt: 'desc' },
+        }),
+      )
+    } catch (error) {
+      return err(dbError('Failed to find whatsapp flow by meta id', error))
+    }
+  },
+
   async create(data: {
     workspaceId: string
     connectionId: string

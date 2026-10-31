@@ -1227,6 +1227,10 @@ export const WhatsAppPriceDTO = dto(
       description: 'Preço por mensagem de template, na moeda.',
       example: 0.3625,
     }),
+    liteUnitPrice: z.number().nullable().meta({
+      description:
+        'Preço de uma mensagem enviada pela Marketing Messages Lite (só Marketing); `null` = igual a `unitPrice`.',
+    }),
     validFrom: z.string().meta({
       description: 'Vale para envios a partir deste instante (ISO 8601).',
     }),
@@ -1519,7 +1523,10 @@ export const WhatsAppChatbotPublishDTO = dto(
 export const WhatsAppChatbotNodeStatsDTO = dto(
   'WhatsAppChatbotNodeStats',
   z.object({
-    days: z.number().int().meta({ description: 'Janela das métricas, em dias.' }),
+    days: z
+      .number()
+      .int()
+      .meta({ description: 'Janela das métricas, em dias.' }),
     nodes: z.array(
       z.object({
         nodeId: z.string(),
@@ -1570,6 +1577,14 @@ export const WhatsAppChatbotSimulationDTO = dto(
     outputs: z.array(
       z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('text'), text: z.string() }),
+        z.object({
+          kind: z.literal('form'),
+          nodeId: z.string(),
+          flowId: z.string(),
+          bodyText: z.string().optional(),
+          ctaLabel: z.string().optional(),
+          fallbackText: z.string().optional(),
+        }),
         z.object({
           kind: z.literal('menu'),
           nodeId: z.string(),

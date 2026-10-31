@@ -95,6 +95,33 @@ formulário publicado, clique em **Criar template** no editor. O Steel envia à
 Meta um template com o botão do formulário, que aparece em **Templates** e pode
 ser usado depois da aprovação.
 
+## Já preenchido com os dados do contato
+
+Ao enviar (na conversa, em transmissão ou pelo chatbot), o Steel preenche os
+campos de texto da **primeira tela** com o que sabe do contato: o **nome**
+(campos guardados em "Contato (nome)", "Lead (nome)" ou "Pessoa (nome)") e o
+**telefone** (campos de telefone). O cliente só confere e corrige. Os outros
+campos abrem vazios. Formulários publicados antes dessa melhoria passam a
+preencher depois da próxima publicação.
+
+## Enviar para muitos contatos
+
+Crie o template do formulário (**Criar template**) e use-o numa
+[transmissão](/docs/comunicacao/transmissoes): cada pessoa recebe o botão do
+formulário com um código próprio e já preenchido, e as respostas aparecem na
+aba **Respostas**. A transmissão respeita as mesmas regras de qualquer template
+(aprovação da Meta, descadastro e pular números sem WhatsApp).
+
+Para enviar automaticamente quando alguém escreve, use o bloco **Enviar
+formulário** do [chatbot](/docs/comunicacao/chatbots).
+
+## O status vem da Meta
+
+Se o dono do app da Meta tiver assinado o campo `flows` do webhook, o Steel
+acompanha sozinho quando a Meta publica, descontinua, **bloqueia** ou **limita**
+um formulário, e mostra o aviso no topo do editor. Quem administra a
+integração encontra o passo a passo no runbook interno.
+
 ## O que acontece com a resposta
 
 Quando o cliente envia o formulário:

@@ -2,6 +2,12 @@ import {
   sdStatusPageOverall,
   sdStatusPagePath,
 } from '@/src/lib/servicedesk/major-incident'
+import {
+  toSdPublicComponentDTO,
+  toSdPublicMaintenanceDTO,
+} from '@/src/mappers/sd-status-maintenance.mapper'
+import type { SdStatusComponentRow } from '@/src/repositories/sd-status-component.repository'
+import type { SdStatusMaintenanceRow } from '@/src/repositories/sd-status-maintenance.repository'
 import type {
   SdPublicIncidentRow,
   SdStatusPageRow,
@@ -82,16 +88,28 @@ export function toSdPublicStatusPageDTO(input: {
   workspaceName: string
   services: string[]
   incidents: SdPublicIncidentRow[]
+  components?: SdStatusComponentRow[]
+  maintenances?: SdStatusMaintenanceRow[]
+  now?: Date
 }): SdPublicStatusPageDTO {
   const active = input.incidents.filter((i) => i.status !== 'RESOLVED')
   const recent = input.incidents.filter((i) => i.status === 'RESOLVED')
+  const components = input.components ?? []
+  const now = input.now ?? new Date()
   return {
     name: input.page.name,
     description: input.page.description,
     workspaceName: input.workspaceName,
     timeZone: input.page.timeZone,
-    overall: sdStatusPageOverall(active.map((i) => i.impact)),
+    overall: sdStatusPageOverall(
+      active.map((i) => i.impact),
+      components.map((c) => c.state),
+    ),
     services: input.services,
+    components: components.map(toSdPublicComponentDTO),
+    maintenances: (input.maintenances ?? []).map((m) =>
+      toSdPublicMaintenanceDTO(m, now),
+    ),
     allowSubscriptions: input.page.allowSubscriptions,
     active: active.map(toPublicIncident),
     recent: recent.map(toPublicIncident),

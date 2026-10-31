@@ -99,6 +99,26 @@ describe('/api/workspaces/[id]/whatsapp/costs', () => {
     expect((await again.json()).error.code).toBe('WHATSAPP_PRICE_NOT_FOUND')
   })
 
+  it('should save a Marketing Messages Lite price only for MARKETING', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const url = `/api/workspaces/${workspace.id}/whatsapp/costs/prices`
+
+    const created = await postJson(
+      url,
+      { category: 'MARKETING', unitPrice: 0.4, liteUnitPrice: 0.35 },
+      user.cookie,
+    )
+    expect(created.status).toBe(201)
+    expect((await created.json()).data.liteUnitPrice).toBe(0.35)
+
+    const refused = await postJson(
+      url,
+      { category: 'UTILITY', unitPrice: 0.04, liteUnitPrice: 0.03 },
+      user.cookie,
+    )
+    expect(refused.status).toBe(422)
+  })
+
   it('should reject an invalid price', async () => {
     const { user, workspace } = await authenticatedOwner()
     const res = await postJson(

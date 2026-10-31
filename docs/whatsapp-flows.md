@@ -84,6 +84,63 @@ o token carrega o id local (`stlf.<flowId>.<nonce>`).
    publicou o evento, envia o agradecimento (`afterPublish`).
 5. Resposta tratada = IA, chatbot e botões ficam quietos para essa mensagem.
 
+## Preenchimento a partir do contato
+
+`src/lib/whatsapp/flows/prefill.ts`. Para Flows estáticos a Meta aceita dados
+na primeira tela: `flow_action_payload.data` na mensagem interativa e
+`flow_action_data` no botão FLOW de um template. O Flow JSON lê esses dados
+com `init-value: ${data.<chave>}` nos campos de texto da **primeira tela**
+(`text`, `email`, `phone`, `number`, `textarea`), e a tela declara os dados em
+`data`. As telas seguintes continuam recebendo só as respostas anteriores.
+
+- Nome: campo mapeado para `contact.name`, `lead.name` ou `person.name`
+  (empresa não: o nome do contato não é o da empresa).
+- Telefone: campo `phone` (mapeado para `phone` ou sem mapeamento), só quando o
+  contato tem telefone real (não um BSUID).
+- Os demais campos vão vazios: o `data` é sempre completo para todo
+  `${data.x}` resolver. A Meta recusa `data` vazio, então ele só vai quando há
+  algum campo preenchível.
+- Vale para os três caminhos de envio (conversa, transmissão e chatbot). Um
+  formulário publicado antes desta versão não declara `init-value`: o dado
+  extra é ignorado e o formulário abre vazio até a próxima publicação.
+
+## Transmissão em massa
+
+Uma transmissão (`WhatsAppBroadcastService.sendToRecipient`) com um template
+que tem botão FLOW envia, a cada destinatário, o componente `button` /
+`sub_type: flow` com **um `flow_token` próprio** e o preenchimento. O Flow é
+achado pelo `flow_id` do botão do template (`WhatsAppFlowRepository.findByMetaFlowId`);
+se o Flow não é do Steel ou foi descontinuado, o template sai sem token e a
+resposta cai no caminho de sempre (pelo envio mais recente da conversa). Depois
+do envio, `WhatsAppFlowDispatchService.recordSent` grava a linha `SENT`, e a
+resposta chega à aba Respostas do formulário como qualquer outra. Só conexões
+Meta (Z-API nunca procura Flow). O custo segue a categoria do template
+(UTILITY/MARKETING), inclusive a Marketing Messages Lite quando ligada.
+
+## Nó "Enviar formulário" no chatbot
+
+Bloco `send-form` do construtor (Z2): `flowId`, mensagem e texto do botão
+opcionais (aceitam `{{variáveis}}`) e um texto de contingência. O motor só emite
+a saída `form`; quem envia é `sendForm` em `whatsapp-chatbot-runtime.service.ts`,
+via `WhatsAppFlowDispatchService.prepareInteractive` (mensagem interativa com o
+preenchimento, dentro das 24 h da conversa em andamento) e `recordSent`. O bot
+**segue para o próximo bloco sem esperar** a resposta, que entra pelo caminho
+normal do `nfm_reply`. Publicar o bot exige formulário existente, publicado e
+não descontinuado. Em runtime, formulário indisponível (linha Z-API, outra
+conexão, descontinuado) envia o texto de contingência, se houver, e o fluxo
+continua; falha do provedor sem contingência passa a conversa para a fila, como
+qualquer envio que falha.
+
+## Webhook `flows` (status)
+
+`app/api/whatsapp/webhook/meta`: `field = flows` vai para
+`WhatsAppFlowWebhookService.applyStatusChange`. `FLOW_STATUS_CHANGE` grava
+`meta_status` (`PUBLISHED`, `DRAFT`, `DEPRECATED`, `BLOCKED`, `THROTTLED`);
+`DEPRECATED` também descontinua o formulário e `BLOCKED`/`THROTTLED` preenchem
+o aviso do editor (`publish_error`), que sai quando o status se recupera. Os
+outros eventos são ignorados. O dono do app precisa assinar o campo: ver
+[o runbook](./runbooks/whatsapp-flows-webhook.md).
+
 ## Decisões
 
 - Só conexões Meta: Flow é recurso da Cloud API.
@@ -93,8 +150,12 @@ o token carrega o id local (`stlf.<flowId>.<nonce>`).
   (a Meta não deixa); o antigo fica de pé para quem ainda não respondeu.
 - Excluir só antes do primeiro envio; depois, descontinuar (preserva as
   respostas, dado pessoal sob a LGPD).
-- Não há endpoint de dados (Flow dinâmico, `data_exchange`) nesta versão: todas
-  as telas são estáticas. Também ficam fora: disparo em massa de Flows pelas
-  transmissões e um nó "enviar formulário" no chatbot.
+- Não há endpoint de dados (Flow dinâmico, `data_exchange`, com criptografia)
+  nesta versão: todas as telas são estáticas. O preenchimento do contato cobre
+  o que um Flow estático permite.
+- O nó do chatbot não espera a resposta do formulário: a resposta pode demorar
+  e chega por um caminho próprio (o bot não reaproveita o estado de pergunta).
+- A transmissão não tem tela própria para Flows: usa o template criado em
+  "Criar template" do formulário, como qualquer outro template.
 - Aprovação do app pela Meta para Flows na produção não bloqueia o código: sem
   ela, a publicação devolve a recusa da Meta no editor.

@@ -43,6 +43,10 @@ import {
   ToggleRow,
 } from '../settings/sd-settings-kit'
 import { formatIncidentDateTime } from './sd-major-incident-meta'
+import {
+  SdComponentsDialog,
+  SdMaintenanceSection,
+} from './sd-status-maintenance-panels'
 
 interface PageForm {
   name: string
@@ -392,6 +396,7 @@ function PageCard({
   isAdmin,
   onEdit,
   onSubscribers,
+  onComponents,
   onDelete,
   deleting,
 }: {
@@ -399,6 +404,7 @@ function PageCard({
   isAdmin: boolean
   onEdit: () => void
   onSubscribers: () => void
+  onComponents: () => void
   onDelete: () => void
   deleting: boolean
 }) {
@@ -428,6 +434,9 @@ function PageCard({
           </a>
         </div>
         <div className='flex items-center gap-2'>
+          <Button size='sm' variant='outline' onClick={onComponents}>
+            Componentes
+          </Button>
           <Button size='sm' variant='outline' onClick={onSubscribers}>
             Assinantes ({page.subscriberCount})
           </Button>
@@ -470,6 +479,9 @@ export function SdStatusPagesView({
   const remove = useDeleteSdStatusPage(workspaceId)
   const [editing, setEditing] = useState<SdStatusPageDTO | 'new' | null>(null)
   const [subscribers, setSubscribers] = useState<SdStatusPageDTO | null>(null)
+  const [componentsPage, setComponentsPage] = useState<SdStatusPageDTO | null>(
+    null,
+  )
   const isAdmin = me.data?.isAdmin ?? false
   const items = pages.data?.items ?? []
 
@@ -524,6 +536,7 @@ export function SdStatusPagesView({
               deleting={remove.isPending}
               onEdit={() => setEditing(page)}
               onSubscribers={() => setSubscribers(page)}
+              onComponents={() => setComponentsPage(page)}
               onDelete={() =>
                 remove
                   .mutateAsync(page.id)
@@ -535,6 +548,8 @@ export function SdStatusPagesView({
         </ul>
       )}
 
+      <SdMaintenanceSection workspaceId={workspaceId} />
+
       <PageFormDialog
         workspaceId={workspaceId}
         page={editing === 'new' ? null : editing}
@@ -545,6 +560,12 @@ export function SdStatusPagesView({
         workspaceId={workspaceId}
         page={subscribers}
         onOpenChange={(open) => !open && setSubscribers(null)}
+      />
+      <SdComponentsDialog
+        workspaceId={workspaceId}
+        page={componentsPage}
+        isAdmin={isAdmin}
+        onOpenChange={(open) => !open && setComponentsPage(null)}
       />
     </div>
   )

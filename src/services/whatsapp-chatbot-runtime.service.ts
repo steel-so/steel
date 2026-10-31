@@ -50,6 +50,7 @@ import { assertMember } from './authz'
 import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from './whatsapp-distribution.service'
+import { WhatsAppFlowDispatchService } from './whatsapp-flow-dispatch.service'
 import {
   notifyWhatsAppUsers,
   WHATSAPP_NOTIFY_ADMIN_CAP,
@@ -221,6 +222,67 @@ async function sendMenu(
   return sendText(conversation, contact, output.numbered)
 }
 
+/**
+ * The "send form" node: a WhatsApp Flow (Z3) as an interactive message,
+ * prefilled from the contact. A form that cannot go out (Z-API line, retired
+ * or not published, other connection) sends the node's fallback text instead
+ * and the bot keeps going; a provider failure with no fallback hands the
+ * conversation to a person, like any other failed send.
+ */
+async function sendForm(
+  conversation: ConversationWithConnection,
+  contact: WhatsAppContact,
+  output: Extract<ChatbotOutput, { kind: 'form' }>,
+): Promise<Result<void>> {
+  const fallback = async (reason: string): Promise<Result<void>> => {
+    logger.warn('whatsapp.chatbot.form_fallback', {
+      conversationId: conversation.id,
+      flowId: output.flowId,
+      reason,
+    })
+    return output.fallbackText
+      ? sendText(conversation, contact, output.fallbackText)
+      : ok(undefined)
+  }
+
+  const prepared = await WhatsAppFlowDispatchService.prepareInteractive(
+    conversation.workspaceId,
+    conversation.connection,
+    output.flowId,
+    { id: contact.id, name: contact.name, waId: contact.waId },
+    { bodyText: output.bodyText, ctaLabel: output.ctaLabel },
+  )
+  if (!prepared.ok) return prepared
+  if (prepared.value.kind === 'blocked') {
+    return fallback(prepared.value.reason)
+  }
+
+  const { flow, input } = prepared.value
+  const sent = await WhatsAppSend.flow(
+    conversation.connection,
+    { to: contact.waId, ...input },
+    { cost: { source: 'OTHER', conversationId: conversation.id } },
+  )
+  if (!sent.ok) {
+    if (output.fallbackText) return fallback(sent.error.code)
+    return sent
+  }
+  const saved = await persistOutbound({
+    conversation,
+    text: `Formulário enviado: ${flow.name}`,
+    providerMessageId: sent.value.providerMessageId,
+  })
+  await WhatsAppFlowDispatchService.recordSent({
+    workspaceId: conversation.workspaceId,
+    flowId: flow.id,
+    contactId: contact.id,
+    conversationId: conversation.id,
+    flowToken: input.flowToken,
+    messageId: saved.ok ? saved.value.id : null,
+  })
+  return saved.ok ? ok(undefined) : saved
+}
+
 async function dispatchOutputs(
   conversation: ConversationWithConnection,
   contact: WhatsAppContact,
@@ -231,7 +293,9 @@ async function dispatchOutputs(
     const result =
       output.kind === 'text'
         ? await sendText(conversation, contact, output.text)
-        : await sendMenu(conversation, contact, output)
+        : output.kind === 'form'
+          ? await sendForm(conversation, contact, output)
+          : await sendMenu(conversation, contact, output)
     if (!result.ok) return result
     sent += 1
   }

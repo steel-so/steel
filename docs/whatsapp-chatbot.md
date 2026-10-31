@@ -17,8 +17,8 @@ UI em `app/_components/whatsapp/chatbots/*` e `zap/chatbots`.
   uma sessão ativa por conversa; a criação concorrente vira `null` e quem perdeu
   reaproveita a vencedora.
 - O fluxo é um grafo no formato do React Flow: `nodes` (`start`, `message`,
-  `menu`, `question`, `condition`, `set-variable`, `webhook`, `handoff-human`,
-  `handoff-ai`, `end`) e `edges` com `sourceHandle` (`next`, id da opção do menu,
+  `menu`, `question`, `condition`, `set-variable`, `webhook`, `send-form`,
+  `handoff-human`, `handoff-ai`, `end`) e `edges` com `sourceHandle` (`next`, id da opção do menu,
   id do ramo da condição, `else`, `invalid`, `error`). Limites em
   `CHATBOT_LIMITS` (100 blocos, 300 ligações, 10 opções por menu).
 
@@ -61,6 +61,17 @@ preguiçosa, na próxima mensagem.
   bloco. Com a IA desligada no workspace, vai para a fila de atendimento.
 - Falha de envio, laço (limite de 40 blocos por execução), bloco ausente ou
   resposta inválida sem saída desenhada também terminam em fila de atendimento.
+
+## Enviar formulário (`send-form`)
+
+Envia um WhatsApp Flow (Z3) como mensagem interativa, já preenchido com o nome
+e o telefone do contato. O motor só devolve a saída `form`; o envio, o
+registro da resposta pendente e a contingência (texto quando o formulário não
+pode sair: linha Z-API, outra conexão, formulário descontinuado) ficam em
+`sendForm`, no runtime. O bot segue para o próximo bloco sem esperar a resposta,
+que entra pelo caminho normal do `nfm_reply`. Publicar exige formulário
+existente, publicado na Meta e não descontinuado. Detalhes e o preenchimento:
+[docs/whatsapp-flows.md](./whatsapp-flows.md).
 
 ## Integração (webhook)
 

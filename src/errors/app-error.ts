@@ -2245,3 +2245,20 @@ export const crmMeetingInvalid = (message: string): AppError =>
 
 export const crmMeetingSlugTaken = (): AppError =>
   appError('CRM_MEETING_SLUG_TAKEN', 'Esse endereço já está em uso')
+export const sdStatusComponentNotFound = (): AppError =>
+  appError(
+    'SD_STATUS_COMPONENT_NOT_FOUND',
+    'Componente da página de status não encontrado',
+  )
+
+export const sdMaintenanceNotFound = (): AppError =>
+  appError('SD_MAINTENANCE_NOT_FOUND', 'Manutenção programada não encontrada')
+
+export const sdMaintenanceClosed = (): AppError =>
+  appError(
+    'SD_MAINTENANCE_CLOSED',
+    'A manutenção já terminou ou foi cancelada e não aceita alterações',
+  )
+
+export const sdMaintenanceInvalid = (message: string): AppError =>
+  appError('SD_MAINTENANCE_INVALID', message)

@@ -22,6 +22,7 @@ export const NODE_TYPE_LABEL: Record<ChatbotNodeType, string> = {
   condition: 'Condição',
   'set-variable': 'Definir variável',
   webhook: 'Integração (HTTP)',
+  'send-form': 'Enviar formulário',
   'handoff-human': 'Passar para atendente',
   'handoff-ai': 'Passar para a IA',
   end: 'Encerrar',
@@ -35,6 +36,7 @@ export const NODE_TYPE_DESCRIPTION: Record<ChatbotNodeType, string> = {
   condition: 'Segue um caminho conforme uma variável',
   'set-variable': 'Guarda um valor para usar depois',
   webhook: 'Chama um endereço HTTPS e lê a resposta',
+  'send-form': 'Envia um formulário do WhatsApp (Flow) ao contato',
   'handoff-human': 'Entrega a conversa a uma equipe ou pessoa',
   'handoff-ai': 'Entrega a conversa à IA do Comunicação',
   end: 'Termina o fluxo, com opção de fechar a conversa',
@@ -44,7 +46,7 @@ export const PALETTE_GROUPS: Array<{
   title: string
   types: ChatbotNodeType[]
 }> = [
-  { title: 'Mensagens', types: ['message', 'menu'] },
+  { title: 'Mensagens', types: ['message', 'menu', 'send-form'] },
   {
     title: 'Perguntas e lógica',
     types: ['question', 'condition', 'set-variable'],
@@ -164,6 +166,8 @@ export function defaultNodeData(type: ChatbotNodeType): ChatbotNode['data'] {
       return { variable: 'variavel', value: '' }
     case 'webhook':
       return { url: 'https://exemplo.com.br/api', method: 'POST' }
+    case 'send-form':
+      return { flowId: '' }
     case 'handoff-human':
       return { text: 'Já vou chamar um atendente para ajudar você.' }
     case 'handoff-ai':

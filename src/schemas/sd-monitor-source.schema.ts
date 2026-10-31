@@ -68,6 +68,7 @@ export const CreateSdMonitorSourceSchema = z.object({
   flappingWindowMinutes: flappingWindowMinutes.default(30),
   correlationMode: SdMonitorCorrelationModeEnum.default('HOST'),
   correlationWindowMinutes: correlationWindowMinutes.default(60),
+  raisePriorityOnCorrelation: z.boolean().default(true),
 })
 export type CreateSdMonitorSourceDTO = z.infer<
   typeof CreateSdMonitorSourceSchema
@@ -87,6 +88,7 @@ export const UpdateSdMonitorSourceSchema = z
     flappingWindowMinutes: flappingWindowMinutes.optional(),
     correlationMode: SdMonitorCorrelationModeEnum.optional(),
     correlationWindowMinutes: correlationWindowMinutes.optional(),
+    raisePriorityOnCorrelation: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Informe ao menos um campo',

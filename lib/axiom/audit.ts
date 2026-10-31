@@ -148,6 +148,8 @@ export type AuditEntity =
   | 'sd_major_incident'
   | 'sd_status_page'
   | 'sd_status_subscriber'
+  | 'sd_status_component'
+  | 'sd_status_maintenance'
   // ServiceDesk — portal do contato externo (link mágico)
   | 'sd_portal_access'
   | 'sd_portal_session'
@@ -329,6 +331,8 @@ export type AuditAction =
   | 'finish'
   | 'reopen'
   | 'alert'
+  | 'priority_raise'
+  | 'bulk_resolve'
   | 'suspend'
   | 'reactivate'
   | 'download'

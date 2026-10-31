@@ -505,6 +505,8 @@ export const ServicedeskMailJob = {
   SyncMailbox: 'sync-mailbox',
   /** Status-page notices of a major incident update (e-mail + WhatsApp). */
   NotifyStatusUpdate: 'notify-status-update',
+  /** Status-page notice of a scheduled maintenance window (scheduled, rescheduled or canceled). */
+  NotifyMaintenance: 'notify-maintenance',
 } as const
 
 export type ServicedeskMailJob =
@@ -514,6 +516,10 @@ export type ServicedeskMailJobPayload = {
   [ServicedeskMailJob.PollMailboxes]: Record<string, never>
   [ServicedeskMailJob.SyncMailbox]: { mailboxId: string }
   [ServicedeskMailJob.NotifyStatusUpdate]: { updateId: string }
+  [ServicedeskMailJob.NotifyMaintenance]: {
+    maintenanceId: string
+    kind: 'scheduled' | 'rescheduled' | 'canceled'
+  }
 }
 
 /**

@@ -19,6 +19,8 @@ export interface WhatsAppPriceDTO {
   country: string
   currency: string
   unitPrice: number
+  /** Marketing Messages Lite price; null = same as `unitPrice`. */
+  liteUnitPrice: number | null
   validFrom: string
   /** Seeded default — "valores de referência", confirm on the Meta account. */
   reference: boolean

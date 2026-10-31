@@ -34,6 +34,7 @@ import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.r
 import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
+import { WhatsAppFlowRepository } from '@/src/repositories/whatsapp-flow.repository'
 import type {
   ChatbotFlow,
   CreateWhatsAppChatbotDTO,
@@ -107,13 +108,37 @@ function statsFor(
   return stats
 }
 
-/** Teams and agents named by handoff nodes must exist in the workspace. */
+/** Teams, agents and forms named by nodes must exist in the workspace. */
 async function referenceIssues(
   workspaceId: string,
   flow: ChatbotFlow,
 ): Promise<Result<ChatbotFlowIssue[]>> {
   const issues: ChatbotFlowIssue[] = []
   for (const node of flow.nodes) {
+    if (node.type === 'send-form') {
+      // An empty choice is already reported by the structural check.
+      if (!node.data.flowId) continue
+      const form = await WhatsAppFlowRepository.findById(
+        node.data.flowId,
+        workspaceId,
+      )
+      if (!form.ok) return form
+      const problem = !form.value
+        ? 'o formulário escolhido não existe mais'
+        : form.value.status === 'DEPRECATED'
+          ? 'o formulário escolhido foi descontinuado'
+          : !form.value.metaFlowId
+            ? 'publique o formulário na Meta antes de usá-lo'
+            : null
+      if (problem) {
+        issues.push({
+          severity: 'error',
+          nodeId: node.id,
+          message: `Enviar formulário: ${problem}`,
+        })
+      }
+      continue
+    }
     if (node.type !== 'handoff-human') continue
     if (node.data.teamId) {
       const team = await WhatsAppButtonActionRepository.findTeam(

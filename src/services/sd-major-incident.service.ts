@@ -38,10 +38,12 @@ import type {
   UpdateSdMajorIncidentInput,
 } from '@/src/schemas/sd-major-incident.schema'
 import type {
+  SdMajorIncidentChildResolutionDTO,
   SdMajorIncidentDeclareDTO,
   SdMajorIncidentDTO,
   SdMajorIncidentLinkResultDTO,
   SdMajorIncidentListDTO,
+  SdMajorIncidentResolveDTO,
   SdMajorIncidentSuggestionListDTO,
   SdTicketMajorIncidentDTO,
 } from '@/types/sd-major-incident'
@@ -49,7 +51,12 @@ import { SdAccess, type SdAccessContext } from './sd-access'
 import { SdMajorIncidentLinker } from './sd-major-incident-link'
 import { notifySdEvent } from './sd-notification.service'
 import { SdSwarmService } from './sd-swarm.service'
-import { SdTicketEngine, sdTicketCode } from './sd-ticket-engine'
+import {
+  type SdEngineConfig,
+  SdTicketEngine,
+  sdTicketCode,
+  sdUserActor,
+} from './sd-ticket-engine'
 import {
   recordSdTicketEvent,
   type SdTicketEventInput,
@@ -74,7 +81,13 @@ async function agentScope(
   actorId: string,
   workspaceId: string,
   action: 'VIEW' | 'EDIT',
-): Promise<Result<{ ctx: SdAccessContext; prefixes: SdTicketPrefixes }>> {
+): Promise<
+  Result<{
+    ctx: SdAccessContext
+    prefixes: SdTicketPrefixes
+    config: SdEngineConfig
+  }>
+> {
   const ctx = await SdAccess.requireAgent(actorId, workspaceId, {
     resource: 'sd-tickets',
     action,
@@ -82,7 +95,11 @@ async function agentScope(
   if (!ctx.ok) return ctx
   const config = await SdTicketEngine.loadConfig(workspaceId)
   if (!config.ok) return config
-  return ok({ ctx: ctx.value, prefixes: config.value.prefixes })
+  return ok({
+    ctx: ctx.value,
+    prefixes: config.value.prefixes,
+    config: config.value,
+  })
 }
 
 async function toDTO(
@@ -537,7 +554,7 @@ export const SdMajorIncidentService = {
     workspaceId: string,
     incidentId: string,
     input: ResolveSdMajorIncidentInput,
-  ): Promise<Result<SdMajorIncidentDTO>> {
+  ): Promise<Result<SdMajorIncidentResolveDTO>> {
     const scope = await agentScope(actorId, workspaceId, 'EDIT')
     if (!scope.ok) return scope
     const current = await loadActive(incidentId, workspaceId)
@@ -598,7 +615,18 @@ export const SdMajorIncidentService = {
       targetId: incidentId,
       meta: { workspaceId, status: 'RESOLVED', published: publish },
     })
-    return reload(incidentId, workspaceId, config)
+
+    const childResults = await resolveChildTickets({
+      workspaceId,
+      actorId,
+      incident: current.value,
+      ticketIds: input.childTicketIds ?? [],
+      note: input.resolution ?? input.message,
+      scope: scope.value,
+    })
+    const dto = await reload(incidentId, workspaceId, config)
+    if (!dto.ok) return dto
+    return ok({ ...dto.value, childResults })
   },
 
   /** Agent action: link child tickets by id, number or code. */
@@ -748,6 +776,118 @@ export const SdMajorIncidentService = {
       })),
     })
   },
+}
+
+/**
+ * Moves the confirmed child tickets of a resolved incident to the resolved
+ * phase of their type. One ticket never blocks the others: each one comes
+ * back with its own outcome (resolved, skipped or failed with the reason).
+ */
+async function resolveChildTickets(params: {
+  workspaceId: string
+  actorId: string
+  incident: SdMajorIncidentRow
+  ticketIds: string[]
+  note: string
+  scope: {
+    ctx: SdAccessContext
+    prefixes: SdTicketPrefixes
+    config: SdEngineConfig
+  }
+}): Promise<SdMajorIncidentChildResolutionDTO[]> {
+  const { workspaceId, actorId, incident, scope } = params
+  const ids = Array.from(new Set(params.ticketIds))
+  if (ids.length === 0) return []
+
+  const solution = `Resolvido junto com o incidente maior "${incident.title}": ${params.note}`
+  const actor = sdUserActor(scope.ctx)
+  const linked = new Set(incident.links.map((link) => link.ticketId))
+  const results: SdMajorIncidentChildResolutionDTO[] = []
+
+  for (const ticketId of ids) {
+    const found = await SdTicketEngine.resolveRef(
+      workspaceId,
+      ticketId,
+      scope.prefixes,
+    )
+    if (!found.ok || !linked.has(found.value.id)) {
+      results.push({
+        ticketId,
+        code: ticketId,
+        title: '',
+        outcome: 'SKIPPED',
+        reason: found.ok
+          ? 'Não é filho deste incidente'
+          : 'Chamado não encontrado',
+      })
+      continue
+    }
+    const ticket = found.value
+    const row = {
+      ticketId: ticket.id,
+      code: sdTicketCode(ticket, scope.prefixes),
+      title: ticket.title,
+    }
+    if (['RESOLVED', 'CLOSED', 'CANCELED'].includes(ticket.phase.category)) {
+      results.push({
+        ...row,
+        outcome: 'SKIPPED',
+        reason: 'O chamado já estava encerrado',
+      })
+      continue
+    }
+    const phase = await SdTicketContextRepository.findFirstPhaseByCategory(
+      workspaceId,
+      ticket.type,
+      'RESOLVED',
+    )
+    if (!phase.ok || !phase.value) {
+      results.push({
+        ...row,
+        outcome: 'FAILED',
+        reason: phase.ok
+          ? 'O tipo do chamado não tem fase de resolução ativa'
+          : 'Não foi possível consultar as fases do chamado',
+      })
+      continue
+    }
+    const moved = await SdTicketEngine.changePhase(
+      ticket,
+      phase.value.id,
+      actor,
+      scope.config,
+      {
+        solution,
+        comment: solution,
+        reason: 'major_incident.bulk_resolve',
+      },
+    )
+    results.push(
+      moved.ok
+        ? { ...row, outcome: 'RESOLVED', reason: null }
+        : { ...row, outcome: 'FAILED', reason: moved.error.message },
+    )
+  }
+
+  const resolved = results.filter((r) => r.outcome === 'RESOLVED').length
+  auditMutation({
+    entity: 'sd_major_incident',
+    action: 'bulk_resolve',
+    actorId,
+    targetId: incident.id,
+    meta: {
+      workspaceId,
+      requested: ids.length,
+      resolved,
+      failed: results.filter((r) => r.outcome === 'FAILED').length,
+    },
+  })
+  logger.info('servicedesk.major_incident.children_resolved', {
+    incidentId: incident.id,
+    requested: ids.length,
+    resolved,
+  })
+  return results
 }
 
 async function reload(

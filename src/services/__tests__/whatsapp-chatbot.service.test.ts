@@ -5,6 +5,10 @@ import {
   createFakeChatbotSession,
   createFakePublishedChatbot,
 } from '@/src/__tests__/factories/nov-z2-chatbot-builder.factory'
+import {
+  createFakeFlow,
+  createFakePublishedFlow,
+} from '@/src/__tests__/factories/nov-z3-whatsapp-flows.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { err, ok } from '@/src/lib/result'
 import { blankFlow, menuFlow } from '@/src/lib/whatsapp/chatbot/templates'
@@ -15,6 +19,7 @@ vi.mock('@/src/repositories/whatsapp-chatbot-session.repository')
 vi.mock('@/src/repositories/whatsapp-chatbot-node-stat.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-button-action.repository')
+vi.mock('@/src/repositories/whatsapp-flow.repository')
 
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
@@ -22,6 +27,7 @@ import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.r
 import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
+import { WhatsAppFlowRepository } from '@/src/repositories/whatsapp-flow.repository'
 import {
   WHATSAPP_CHATBOT_MAX_PER_WORKSPACE,
   WhatsAppChatbotService,
@@ -33,6 +39,7 @@ const sessionRepo = vi.mocked(WhatsAppChatbotSessionRepository)
 const statRepo = vi.mocked(WhatsAppChatbotNodeStatRepository)
 const connectionRepo = vi.mocked(WhatsAppConnectionRepository)
 const teamRepo = vi.mocked(WhatsAppButtonActionRepository)
+const flowRepo = vi.mocked(WhatsAppFlowRepository)
 
 const asRole = (role: 'OWNER' | 'ADMIN' | 'MEMBER') =>
   membershipRepo.findByUserAndWorkspace.mockResolvedValue(
@@ -421,6 +428,75 @@ describe('WhatsAppChatbotService', () => {
         'WHATSAPP_CHATBOT_INVALID_FLOW',
       )
       teamRepo.findTeam.mockResolvedValue(
+        err({ code: 'DATABASE_ERROR', message: 'x' }),
+      )
+      expectErr(
+        await WhatsAppChatbotService.publish('u', 'ws', 'b'),
+        'DATABASE_ERROR',
+      )
+    })
+
+    const formDraft = () =>
+      ({
+        nodes: [
+          { id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} },
+          {
+            id: 'f',
+            type: 'send-form',
+            position: { x: 0, y: 0 },
+            data: { flowId: 'flow-1' },
+          },
+        ],
+        edges: [
+          { id: 'e', source: 'start', sourceHandle: 'next', target: 'f' },
+        ],
+      }) as never
+
+    it.each([
+      ['does not exist', null],
+      ['was retired', createFakePublishedFlow({ status: 'DEPRECATED' })],
+      ['was never published', createFakeFlow({ metaFlowId: null })],
+    ])('refuses a send form block whose form %s', async (_name, flow) => {
+      botRepo.findById.mockResolvedValue(
+        ok(createFakeChatbot({ draft: formDraft() })),
+      )
+      flowRepo.findById.mockResolvedValue(ok(flow))
+      const error = expectErr(
+        await WhatsAppChatbotService.publish('u', 'ws', 'b'),
+        'WHATSAPP_CHATBOT_INVALID_FLOW',
+      )
+      expect(error.message).toContain('Enviar formulário')
+      expect(flowRepo.findById).toHaveBeenCalledWith('flow-1', 'ws')
+    })
+
+    it('refuses a send form block with no form chosen, without a lookup', async () => {
+      const draft = formDraft() as unknown as {
+        nodes: { data: { flowId?: string } }[]
+      }
+      draft.nodes[1].data.flowId = ''
+      botRepo.findById.mockResolvedValue(
+        ok(createFakeChatbot({ draft: draft as never })),
+      )
+      expectErr(
+        await WhatsAppChatbotService.publish('u', 'ws', 'b'),
+        'WHATSAPP_CHATBOT_INVALID_FLOW',
+      )
+      expect(flowRepo.findById).not.toHaveBeenCalled()
+    })
+
+    it('accepts a send form block with a published form', async () => {
+      botRepo.findById.mockResolvedValue(
+        ok(createFakeChatbot({ draft: formDraft() })),
+      )
+      flowRepo.findById.mockResolvedValue(ok(createFakePublishedFlow()))
+      expectOk(await WhatsAppChatbotService.publish('u', 'ws', 'b'))
+    })
+
+    it('propagates a failure while checking the form', async () => {
+      botRepo.findById.mockResolvedValue(
+        ok(createFakeChatbot({ draft: formDraft() })),
+      )
+      flowRepo.findById.mockResolvedValue(
         err({ code: 'DATABASE_ERROR', message: 'x' }),
       )
       expectErr(

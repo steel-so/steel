@@ -16,6 +16,7 @@ export const CHATBOT_NODE_TYPES = [
   'condition',
   'set-variable',
   'webhook',
+  'send-form',
   'handoff-human',
   'handoff-ai',
   'end',
@@ -197,6 +198,23 @@ export const ChatbotNodeSchema = z.discriminatedUnion('type', [
       responseVariable: VariableNameSchema.optional(),
       /** Dot path in the JSON answer, e.g. `data.protocol`. */
       responsePath: z.string().max(128).optional(),
+    }),
+  }),
+  z.object({
+    ...nodeBase,
+    type: z.literal('send-form'),
+    data: z.object({
+      /**
+       * Id of the WhatsApp Flow (Z3) the contact receives. Empty while the
+       * block is a draft; publishing requires it (see `validateChatbotFlow`).
+       */
+      flowId: z.string().trim().max(40),
+      /** Replaces the message of the Flow; `{{variable}}` is replaced. */
+      bodyText: OptionalTextSchema,
+      /** Replaces the label of the button that opens the Flow. */
+      ctaLabel: z.string().trim().max(30).optional(),
+      /** Sent instead when the form cannot be delivered (Z-API, retired). */
+      fallbackText: OptionalTextSchema,
     }),
   }),
   z.object({

@@ -55,6 +55,32 @@ describe('WhatsAppSend.flow', () => {
     })
   })
 
+  it('sends the prefill as the data of the first screen, only when filled', async () => {
+    const fetchMock = mockFetch(() =>
+      jsonResponse({ messages: [{ id: 'wamid.1' }] }),
+    )
+    const connection = createFakeWhatsAppConnection({
+      provider: 'META',
+      metaPhoneNumberId: 'phone1',
+      metaWabaId: 'waba1',
+      encryptedMetaAccessToken: 'enc',
+    })
+    expectOk(
+      await WhatsAppSend.flow(connection, { ...input, data: { nome: 'Ana' } }),
+    )
+    expectOk(await WhatsAppSend.flow(connection, { ...input, data: {} }))
+    const [withData, withoutData] = fetchMock
+      .calls()
+      .map((call) => JSON.parse(call.init?.body as string))
+    expect(withData.interactive.action.parameters.flow_action_payload).toEqual({
+      screen: 'SCREEN_A',
+      data: { nome: 'Ana' },
+    })
+    expect(
+      withoutData.interactive.action.parameters.flow_action_payload,
+    ).toEqual({ screen: 'SCREEN_A' })
+  })
+
   it('explains that Z-API connections cannot send flows', async () => {
     const error = expectErr(
       await WhatsAppSend.flow(

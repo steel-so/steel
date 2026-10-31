@@ -3,6 +3,7 @@ import type {
   FlowField,
   FlowScreen,
 } from '@/src/schemas/whatsapp-flow.schema'
+import { isPrefillable } from './prefill'
 
 /** Flow JSON version this generator targets (Meta Flows). */
 export const META_FLOW_JSON_VERSION = '7.2'
@@ -60,13 +61,15 @@ function dataModel(field: FlowField): Json {
   }
 }
 
-function component(field: FlowField): Json {
+function component(field: FlowField, prefill = false): Json {
   const common = { name: field.key, label: field.label }
+  // First-screen text fields start with what the sender passed in `data`.
+  const initial = prefill ? { 'init-value': `\${data.${field.key}}` } : {}
   const required = field.required ? { required: true } : {}
   const helper = field.helperText ? { 'helper-text': field.helperText } : {}
   switch (field.type) {
     case 'textarea':
-      return { type: 'TextArea', ...common, ...required, ...helper }
+      return { type: 'TextArea', ...common, ...required, ...helper, ...initial }
     case 'select':
       return {
         type: 'Dropdown',
@@ -98,6 +101,7 @@ function component(field: FlowField): Json {
         ...common,
         ...required,
         ...helper,
+        ...initial,
         'input-type': INPUT_TYPES[field.type] ?? 'text',
       }
   }
@@ -131,7 +135,9 @@ function buildScreen(
     type: 'Form',
     name: 'form',
     children: [
-      ...screen.fields.map(component),
+      ...screen.fields.map((field) =>
+        component(field, index === 0 && isPrefillable(field)),
+      ),
       {
         type: 'Footer',
         label: screen.submitLabel || (last ? 'Enviar' : 'Continuar'),
@@ -148,12 +154,17 @@ function buildScreen(
 
   const data: Json = {}
   for (const field of before) data[field.key] = dataModel(field)
+  if (index === 0) {
+    for (const field of screen.fields.filter(isPrefillable)) {
+      data[field.key] = dataModel(field)
+    }
+  }
 
   return {
     id: screenId(index),
     title: screen.title,
     ...(last ? { terminal: true, success: true } : {}),
-    ...(before.length > 0 ? { data } : {}),
+    ...(Object.keys(data).length > 0 ? { data } : {}),
     layout: { type: 'SingleColumnLayout', children },
   }
 }

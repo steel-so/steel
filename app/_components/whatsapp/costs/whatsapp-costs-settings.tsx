@@ -71,6 +71,7 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
   const [category, setCategory] = useState<PriceCategory>('MARKETING')
   const [country, setCountry] = useState('BR')
   const [price, setPrice] = useState('')
+  const [litePrice, setLitePrice] = useState('')
   const [validFrom, setValidFrom] = useState('')
 
   async function handleAdd(event: FormEvent) {
@@ -80,15 +81,26 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
       notify.error('Informe um preço válido (ex.: 0,3625).')
       return
     }
+    // Marketing Messages Lite price: MARKETING only, blank = same price.
+    const lite =
+      category === 'MARKETING' && litePrice.trim() !== ''
+        ? parseMoneyInput(litePrice)
+        : null
+    if (lite === undefined) {
+      notify.error('Informe um preço válido para a Marketing Messages Lite.')
+      return
+    }
     try {
       await createPrice.mutateAsync({
         category,
         country: country.trim() || 'BR',
         unitPrice,
+        liteUnitPrice: lite,
         // Midnight of the chosen day in São Paulo.
         ...(validFrom ? { validFrom: `${validFrom}T03:00:00.000Z` } : {}),
       })
       setPrice('')
+      setLitePrice('')
       setValidFrom('')
       notify.success('Preço salvo.')
     } catch (err) {
@@ -111,7 +123,8 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
         <CardDescription>
           Preço por mensagem de template, por categoria e país. Cada envio
           guarda o preço vigente no momento; alterar a tabela não muda o
-          histórico.
+          histórico. Em Marketing, o preço da Marketing Messages Lite é
+          opcional: em branco, as mensagens enviadas por ela custam o mesmo.
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
@@ -137,6 +150,7 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
                   <TableHead>Categoria</TableHead>
                   <TableHead>País</TableHead>
                   <TableHead className='text-right'>Preço</TableHead>
+                  <TableHead className='text-right'>Marketing Lite</TableHead>
                   <TableHead>Vale a partir de</TableHead>
                   <TableHead className='w-10'>
                     <span className='sr-only'>Ações</span>
@@ -152,6 +166,12 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
                     <TableCell>{row.country}</TableCell>
                     <TableCell className='text-right tabular-nums'>
                       {formatBrlPrice(row.unitPrice)}
+                    </TableCell>
+                    <TableCell className='text-right tabular-nums'>
+                      {row.liteUnitPrice === null ||
+                      row.liteUnitPrice === undefined
+                        ? '—'
+                        : formatBrlPrice(row.liteUnitPrice)}
                     </TableCell>
                     <TableCell>
                       {row.reference ? (
@@ -181,7 +201,7 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
 
         <form
           onSubmit={handleAdd}
-          className='grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end'
+          className='grid gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:items-end'
         >
           <div className='space-y-1.5'>
             <Label htmlFor='costPriceCategory'>Categoria</Label>
@@ -222,6 +242,17 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
               placeholder='0,3625'
               value={price}
               onChange={(event) => setPrice(event.target.value)}
+            />
+          </div>
+          <div className='space-y-1.5'>
+            <Label htmlFor='costPriceLite'>Marketing Lite (R$)</Label>
+            <Input
+              id='costPriceLite'
+              inputMode='decimal'
+              placeholder='Igual ao preço'
+              disabled={category !== 'MARKETING'}
+              value={litePrice}
+              onChange={(event) => setLitePrice(event.target.value)}
             />
           </div>
           <div className='space-y-1.5'>

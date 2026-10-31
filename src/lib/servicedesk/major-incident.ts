@@ -54,12 +54,25 @@ const IMPACT_RANK: Record<SdMajorIncidentImpactValue, number> = {
   MAJOR_OUTAGE: 3,
 }
 
-/** Worst impact among the active incidents of a page. */
+/**
+ * Worst impact among the active incidents of a page and its components: a
+ * degraded component counts as `DEGRADED`, a component in outage as
+ * `PARTIAL_OUTAGE` (or `MAJOR_OUTAGE` when every component is down).
+ */
 export function sdStatusPageOverall(
   activeImpacts: SdMajorIncidentImpactValue[],
+  componentStates: ('OPERATIONAL' | 'DEGRADED' | 'OUTAGE')[] = [],
 ): SdStatusPageOverall {
+  const impacts = [...activeImpacts]
+  const outages = componentStates.filter((s) => s === 'OUTAGE').length
+  if (outages > 0) {
+    impacts.push(
+      outages === componentStates.length ? 'MAJOR_OUTAGE' : 'PARTIAL_OUTAGE',
+    )
+  }
+  if (componentStates.includes('DEGRADED')) impacts.push('DEGRADED')
   let worst: SdMajorIncidentImpactValue | null = null
-  for (const impact of activeImpacts) {
+  for (const impact of impacts) {
     if (!worst || IMPACT_RANK[impact] > IMPACT_RANK[worst]) worst = impact
   }
   return worst ?? 'OPERATIONAL'
@@ -70,6 +83,9 @@ export const SD_STATUS_PAGE_HISTORY_DAYS = 30
 
 /** Max child tickets linked in one call. */
 export const SD_MAJOR_INCIDENT_MAX_LINK_BATCH = 100
+
+/** Max child tickets resolved in one call when the incident resolves. */
+export const SD_MAJOR_INCIDENT_MAX_RESOLVE_BATCH = 200
 
 /** Suggestions window (hours back) and size. */
 export const SD_MAJOR_INCIDENT_SUGGEST_HOURS = 24

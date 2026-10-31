@@ -1010,6 +1010,8 @@ describe('send()', () => {
       ctaLabel: 'Cadastrar',
     })
     expect(input.flowToken).toMatch(/^stlf\./)
+    // The published copy goes along, so the first screen can be prefilled.
+    expect(input.definition?.screens.length).toBeGreaterThan(0)
     expect(responseRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         contactId: 'contact-1',

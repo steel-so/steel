@@ -128,6 +128,7 @@ const prices: WhatsAppPriceDTO[] = [
     country: 'BR',
     currency: 'BRL',
     unitPrice: 0.3625,
+    liteUnitPrice: 0.3,
     validFrom: '2000-01-01T00:00:00.000Z',
     reference: true,
   },
@@ -137,6 +138,7 @@ const prices: WhatsAppPriceDTO[] = [
     country: 'BR',
     currency: 'BRL',
     unitPrice: 0.05,
+    liteUnitPrice: null,
     validFrom: '2026-07-01T03:00:00.000Z',
     reference: false,
   },
@@ -372,6 +374,75 @@ describe('cost settings form', () => {
       category: 'MARKETING',
       country: 'BR',
       unitPrice: 0.07,
+    })
+  })
+
+  it('shows the Lite price column and saves a Lite price for marketing', async () => {
+    const spy = setup([
+      {
+        method: 'POST',
+        match: `${BASE}/costs/prices`,
+        data: prices[0],
+        status: 201,
+      },
+    ])
+    renderWithQuery(<WhatsAppCostsTab workspaceId='ws_1' />)
+
+    await screen.findByText('Referência')
+    expect(screen.getByText('Marketing Lite')).toBeTruthy()
+    // Marketing has a Lite price; Utility shows a dash.
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+
+    fireEvent.change(screen.getByLabelText('Preço (R$)'), {
+      target: { value: '0,40' },
+    })
+    fireEvent.change(screen.getByLabelText('Marketing Lite (R$)'), {
+      target: { value: '0,35' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar preço' }))
+
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Preço salvo.'),
+    )
+    expect(fetchBody(spy, '/costs/prices')).toMatchObject({
+      category: 'MARKETING',
+      unitPrice: 0.4,
+      liteUnitPrice: 0.35,
+    })
+  })
+
+  it('sends no Lite price when the field is blank, and rejects a bad one', async () => {
+    const spy = setup([
+      {
+        method: 'POST',
+        match: `${BASE}/costs/prices`,
+        data: prices[0],
+        status: 201,
+      },
+    ])
+    renderWithQuery(<WhatsAppCostsTab workspaceId='ws_1' />)
+    await screen.findByText('Referência')
+
+    fireEvent.change(screen.getByLabelText('Preço (R$)'), {
+      target: { value: '0,40' },
+    })
+    fireEvent.change(screen.getByLabelText('Marketing Lite (R$)'), {
+      target: { value: 'abc' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar preço' }))
+    expect(notify.error).toHaveBeenCalledWith(
+      'Informe um preço válido para a Marketing Messages Lite.',
+    )
+
+    fireEvent.change(screen.getByLabelText('Marketing Lite (R$)'), {
+      target: { value: '' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar preço' }))
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Preço salvo.'),
+    )
+    expect(fetchBody(spy, '/costs/prices')).toMatchObject({
+      liteUnitPrice: null,
     })
   })
 

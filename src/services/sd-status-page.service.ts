@@ -16,12 +16,15 @@ import {
   sdStatusPageAutoSlug,
   sdStatusSubscriptionPath,
 } from '@/src/lib/servicedesk/major-incident'
+import { SD_STATUS_MAINTENANCE_LOOKAHEAD_DAYS } from '@/src/lib/servicedesk/status-maintenance'
 import {
   maskStatusAddress,
   toSdPublicStatusPageDTO,
   toSdStatusPageDTO,
   toSdStatusSubscriberDTO,
 } from '@/src/mappers/sd-status-page.mapper'
+import { SdStatusComponentRepository } from '@/src/repositories/sd-status-component.repository'
+import { SdStatusMaintenanceRepository } from '@/src/repositories/sd-status-maintenance.repository'
 import {
   SdStatusPageRepository,
   type SdStatusPageRow,
@@ -323,17 +326,29 @@ export const SdStatusPageService = {
     const since = new Date(
       Date.now() - SD_STATUS_PAGE_HISTORY_DAYS * 86_400_000,
     )
-    const [incidents, names, workspace] = await Promise.all([
-      SdStatusPageRepository.listIncidents(row.id, since),
-      SdStatusPageRepository.findNames(row.workspaceId, {
-        serviceIds: row.serviceIds,
-        customerId: null,
-      }),
-      SdStatusPageRepository.findWorkspaceName(row.workspaceId),
-    ])
+    const now = new Date()
+    const [incidents, names, workspace, components, maintenances] =
+      await Promise.all([
+        SdStatusPageRepository.listIncidents(row.id, since),
+        SdStatusPageRepository.findNames(row.workspaceId, {
+          serviceIds: row.serviceIds,
+          customerId: null,
+        }),
+        SdStatusPageRepository.findWorkspaceName(row.workspaceId),
+        SdStatusComponentRepository.listByPage(row.id, row.workspaceId),
+        SdStatusMaintenanceRepository.listForPage(
+          row.id,
+          now,
+          new Date(
+            now.getTime() + SD_STATUS_MAINTENANCE_LOOKAHEAD_DAYS * 86_400_000,
+          ),
+        ),
+      ])
     if (!incidents.ok) return incidents
     if (!names.ok) return names
     if (!workspace.ok) return workspace
+    if (!components.ok) return components
+    if (!maintenances.ok) return maintenances
     return ok(
       toSdPublicStatusPageDTO({
         page: row,
@@ -342,6 +357,9 @@ export const SdStatusPageService = {
           .map((id) => names.value.services.get(id))
           .filter((name): name is string => Boolean(name)),
         incidents: incidents.value,
+        components: components.value,
+        maintenances: maintenances.value,
+        now,
       }),
     )
   },

@@ -58,6 +58,33 @@ describe('CreateWhatsAppPriceSchema', () => {
   })
 })
 
+describe('CreateWhatsAppPriceSchema Lite price', () => {
+  it('accepts the Lite price for MARKETING, null or omitted', () => {
+    expect(
+      CreateWhatsAppPriceSchema.parse({
+        category: 'MARKETING',
+        unitPrice: 0.4,
+        liteUnitPrice: 0.35,
+      }).liteUnitPrice,
+    ).toBe(0.35)
+    expect(
+      CreateWhatsAppPriceSchema.parse({
+        category: 'UTILITY',
+        unitPrice: 0.04,
+        liteUnitPrice: null,
+      }).liteUnitPrice,
+    ).toBeNull()
+  })
+
+  it.each([
+    [{ category: 'UTILITY', unitPrice: 0.04, liteUnitPrice: 0.03 }],
+    [{ category: 'MARKETING', unitPrice: 0.4, liteUnitPrice: -1 }],
+    [{ category: 'MARKETING', unitPrice: 0.4, liteUnitPrice: 5000 }],
+  ])('rejects %j', (input) => {
+    expect(CreateWhatsAppPriceSchema.safeParse(input).success).toBe(false)
+  })
+})
+
 describe('UpdateWhatsAppCostSettingsSchema', () => {
   it('allows omitted, null and numeric values', () => {
     expect(UpdateWhatsAppCostSettingsSchema.parse({})).toEqual({})
