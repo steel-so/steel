@@ -20,7 +20,7 @@ function json(body: unknown, status = 200) {
 
 describe('createBraveSearchProvider()', () => {
   it('should map the results, keeping only https and stripping tags', async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
       json({
         web: {
           results: [
@@ -44,20 +44,17 @@ describe('createBraveSearchProvider()', () => {
         snippet: 'Líder em logística',
       },
     ])
-    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ]
+    const [url, init] = fetchImpl.mock.calls[0]
     expect(url).toContain('q=acme')
     expect(url).toContain('count=5')
     expect(
-      (init.headers as Record<string, string>)['X-Subscription-Token'],
+      (init?.headers as Record<string, string>)['X-Subscription-Token'],
     ).toBe('key-1')
     expect(provider.source).toBe('brave')
   })
 
   it('should clamp the count and tolerate an empty answer', async () => {
-    const fetchImpl = vi.fn(async () => json({}))
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL) => json({}))
     const provider = createBraveSearchProvider('k', fetchImpl)
     expect(expectOk(await provider.search('x', 99))).toEqual([])
     expect(expectOk(await provider.search('x', 0))).toEqual([])
