@@ -206,6 +206,9 @@ export type AuditEntity =
   | 'steel_agent_policy'
   | 'steel_agent_governance'
   | 'steel_mcp_server'
+  // A5: mandatory-step procedures
+  | 'ai_procedure'
+  | 'ai_procedure_run'
   // Workspace-level integrations (Slack, GitHub, GitLab — ADR 0024)
   | 'workspace_integration'
   // CRM: Apollo.io lead import runs

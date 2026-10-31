@@ -24,6 +24,8 @@ export type SteelAgentRunStepKindDTO =
   | 'TOOL'
   | 'APPROVAL'
   | 'GUARDRAIL'
+  /** A5: a step of a mandatory-step procedure. */
+  | 'PROCEDURE'
 export type SteelAgentRunStepStatusDTO =
   | 'OK'
   | 'FAILED'

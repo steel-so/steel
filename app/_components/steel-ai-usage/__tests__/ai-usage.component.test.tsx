@@ -200,6 +200,7 @@ describe('<SteelAiAreaNav />', () => {
     expect(links.map((l) => l.textContent)).toEqual([
       'Skills',
       'Agentes',
+      'Procedimentos',
       'Uso',
       'Análises',
       'Avaliações',
