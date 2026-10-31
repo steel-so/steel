@@ -270,7 +270,6 @@ describe('<SdInventoryTab />', () => {
       { match: SETTINGS, data: settings },
       { match: TARGETS, data: [] },
       { match: RANGES, data: [] },
-      { match: RELEASES, data: [] },
       { method: 'POST', match: TARGETS, status: 201, data: target },
     ])
     renderTab()
@@ -345,7 +344,6 @@ describe('<SdInventoryTab />', () => {
       { match: SETTINGS, data: settings },
       { match: TARGETS, data: [v3Target] },
       { match: RANGES, data: [] },
-      { match: RELEASES, data: [] },
       { method: 'PATCH', match: `${TARGETS}/tgt-1`, data: v3Target },
     ])
     renderTab()
@@ -371,7 +369,6 @@ describe('<SdInventoryTab />', () => {
       { match: SETTINGS, data: settings },
       { match: TARGETS, data: [] },
       { match: RANGES, data: [] },
-      { match: RELEASES, data: [] },
       { method: 'POST', match: RANGES, status: 201, data: range },
     ])
     renderTab()
@@ -405,7 +402,6 @@ describe('<SdInventoryTab />', () => {
           { ...range, id: 'rng-2', name: 'Visitantes', enabled: false },
         ],
       },
-      { match: RELEASES, data: [] },
       { method: 'POST', match: `${RANGES}/rng-1/scan`, data: null },
       { method: 'PATCH', match: `${RANGES}/rng-1`, data: range },
     ])
