@@ -31,8 +31,11 @@ próprio só pode usar os esquemas `rustdesk`, `anydesk` ou `https` e precisa de
 
 O relatório do agente aceita `remote: { rustdesk?, anydesk? }`. Os IDs viram
 `SdRemoteEndpoint` com origem `INVENTORY` no item de CMDB do equipamento e
-**nunca** sobrescrevem um ID digitado à mão. O agente em Go ainda não lê esses
-IDs da máquina (ver pendências no PR): hoje o campo é aceito pela API.
+**nunca** sobrescrevem um ID digitado à mão. O agente em Go
+(`inventory-agent/remote_ids.go`) lê o ID com `rustdesk --get-id` e
+`anydesk --get-id` (timeout de 5 s, sem ler senha nem arquivo de configuração)
+e só envia o campo quando uma das ferramentas responde. O código não foi
+compilado nesta máquina (sem Go): o CI do agente é quem valida.
 
 ## Rotas
 
