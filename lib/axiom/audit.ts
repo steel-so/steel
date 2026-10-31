@@ -336,8 +336,6 @@ export type AuditEntity =
   | 'crm_deals_settings'
   | 'crm_deal_room'
   | 'crm_contract'
-  // nov: pwa-push
-  | 'push_subscription'
 
 export type AuditAction =
   | 'create'

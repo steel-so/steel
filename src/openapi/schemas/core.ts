@@ -657,22 +657,6 @@ export const NotificationDeliveryDTO = dto(
   }),
 )
 
-export const PushStatusDTO = dto(
-  'PushStatus',
-  z.object({
-    enabled: z.boolean().meta({
-      description: 'O servidor tem as chaves VAPID; falso = push desligado.',
-    }),
-    publicKey: z.string().nullable().meta({
-      description: 'Chave pública VAPID para `pushManager.subscribe`.',
-    }),
-    devices: z
-      .number()
-      .int()
-      .meta({ description: 'Dispositivos do usuário com push ativo.' }),
-  }),
-)
-
 export const NotificationSnoozeResultDTO = dto(
   'NotificationSnoozeResult',
   z.object({
