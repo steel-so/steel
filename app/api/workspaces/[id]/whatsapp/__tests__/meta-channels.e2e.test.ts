@@ -48,7 +48,7 @@ describe('Meta channels settings', () => {
     const base = `/api/workspaces/${workspace.id}/whatsapp/meta-channels`
 
     const empty = await patchJson(`${base}/settings`, {}, user.cookie)
-    expect(empty.status).toBe(400)
+    expect(empty.status).toBe(422)
 
     const read = await getJson(`${base}/settings`, member.cookie)
     expect(read.status).toBe(200)
@@ -81,7 +81,7 @@ describe('Meta channels settings', () => {
     expect(connect.status).toBe(403)
 
     const invalid = await postJson(`${base}/connect`, {}, user.cookie)
-    expect(invalid.status).toBe(400)
+    expect(invalid.status).toBe(422)
   })
 
   it('lists no social connections for a fresh workspace', async () => {
@@ -113,7 +113,7 @@ describe('Coexistence', () => {
       { code: 'abc' },
       user.cookie,
     )
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
   })
 
   it('answers 404 for the sync of an unknown connection', async () => {
@@ -143,7 +143,7 @@ describe('Social comments', () => {
       { text: '' },
       user.cookie,
     )
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
   })
 })
 
