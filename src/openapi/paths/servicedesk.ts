@@ -19,6 +19,7 @@ import { sdOnCallRoutes } from './servicedesk/oncall'
 import { sdRecurringRoutes } from './servicedesk/recurring'
 import { sdReportRoutes } from './servicedesk/reports'
 import { sdRiskRoutes } from './servicedesk/risk'
+import { sdWfmRoutes } from './servicedesk/wfm'
 import { sdSwarmRoutes } from './servicedesk/swarm'
 import { sdTicketTabRoutes } from './servicedesk/ticket-tabs'
 import { sdWhatsappAiRoutes } from './servicedesk/whatsapp-ai'
@@ -45,6 +46,7 @@ const routes: RouteConfig[] = [
   ...sdChangeCabRoutes,
   ...sdContractRoutes,
   ...sdRiskRoutes,
+  ...sdWfmRoutes,
   ...sdKcsRoutes,
   ...sdAiComparisonRoutes,
   ...sdIntegrationRoutes,

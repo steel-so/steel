@@ -18,6 +18,7 @@ import {
   Ticket01Icon,
   TicketStarIcon,
   UserAccountIcon,
+  UserGroupIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
@@ -111,6 +112,9 @@ export default async function ServiceDeskLayout({
             </NavItem>
             <NavItem href={`${base}/risk`} icon={AlertDiamondIcon}>
               Análise de risco
+            </NavItem>
+            <NavItem href={`${base}/demand`} icon={UserGroupIcon}>
+              Demanda e escala
             </NavItem>
             <NavItem href={`${base}/ai-comparison`} icon={AiMagicIcon}>
               IA vs. técnico

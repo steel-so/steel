@@ -1,0 +1,57 @@
+---
+title: Demanda e escala
+description: Veja quantos chamados esperar por hora e por dia e quantos atendentes cada turno precisa, comparado com o plantão e com o time.
+section: servicedesk
+order: 21
+---
+
+A tela **Demanda e escala** olha o histórico de chamados do seu ServiceDesk e
+mostra o que deve acontecer nos próximos dias. Não usa IA: é uma conta simples
+e explicável.
+
+## O que aparece
+
+- **Mapa de calor da semana**: a média de chamados por hora, de segunda a
+  domingo. Quanto mais escuro, mais movimento. Passe o mouse para ver o número.
+- **Previsão dos próximos 14 dias**: o volume esperado por dia. A haste em cada
+  barra mostra a faixa entre o cenário baixo e o alto.
+- **Escala sugerida por turno**: para cada dia e turno, os chamados esperados, os
+  agentes sugeridos e a situação.
+
+Os horários seguem o fuso do calendário padrão do ServiceDesk.
+
+## Como a previsão é feita
+
+Para cada hora da semana, o Steel faz a média do que aconteceu nas últimas
+semanas, dando mais peso às mais recentes. Se o volume vem subindo ou caindo, a
+previsão acompanha (limitada a -30% e +50%). Com menos de 20 chamados ou menos de
+duas semanas com movimento, a tela avisa que os números são só indicativos.
+
+## Agentes por turno
+
+```
+agentes = chamados do turno ÷ (chamados por atendente por hora × horas do turno × ocupação alvo)
+```
+
+O resultado é arredondado para cima e nunca fica abaixo do mínimo por turno.
+
+A coluna ao lado mostra quem existe hoje: se o departamento tem uma
+[escala de plantão](/docs/servicedesk/canais-e-automacoes), as pessoas de plantão
+no início do turno (considerando as trocas); sem escala, o tamanho do time.
+
+- **Faltam pessoas**: há menos gente do que o sugerido.
+- **Acima do time**: o sugerido é maior que o time inteiro. Vale remanejar ou
+  contratar.
+
+Use o filtro de departamento para ver só uma equipe.
+
+## Ajustes
+
+Administradores do ServiceDesk abrem **Ajustes** para definir:
+
+- semanas de histórico (2 a 26);
+- chamados que um atendente resolve por hora;
+- ocupação alvo (o resto é folga para picos e pausas);
+- mínimo de agentes por turno;
+- os turnos, com início e fim em hora local. Um turno que termina antes de
+  começar, como 22h–6h, atravessa a meia-noite e conta no dia em que começa.

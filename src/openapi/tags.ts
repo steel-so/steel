@@ -419,6 +419,11 @@ export const TAG_GROUPS = [
           'Risco de violação de SLA por heurística explicável (ADR 0016 — nada passa por LLM): a fila por risco, a previsão de um chamado com os fatores que pegaram e a frase do motivo de cada um, e os agrupamentos de incidentes repetidos como sugestão de problema (abrir o problema e descartar são ações do agente).',
       },
       {
+        name: 'ServiceDesk · Demanda e escala',
+        description:
+          'Previsão de volume de chamados por hora e dia a partir do histórico, com sugestão de agentes por turno comparada ao plantão e ao time (S5).',
+      },
+      {
         name: 'ServiceDesk · IA vs. técnico',
         description:
           'Painel que compara o que a IA sugeriu (triagem automática e copiloto) com o que o técnico fez: precisão por campo da classificação, calibração da confiança, aproveitamento das respostas e soluções sugeridas, desfecho do pré-atendimento e o consumo da cota de IA do ServiceDesk. Só leitura, só agentes, nada chama a IA.',
