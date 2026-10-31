@@ -44,7 +44,7 @@ export const POST = withAxiom(async (request: NextRequest) => {
       ABACATE_PAY_WEBHOOK_SECRET,
       request.headers,
       rawBody,
-      request.nextUrl.searchParams,
+      new URL(request.url).searchParams,
     )
   ) {
     return standardError('UNAUTHORIZED', 'Invalid webhook secret')
