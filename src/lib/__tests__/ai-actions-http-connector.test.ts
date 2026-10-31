@@ -142,7 +142,8 @@ describe('guardConnectorUrl / callConnector', () => {
 
   it('should send headers, body and the idempotency key without following redirects', async () => {
     const fetchImpl = vi.fn(
-      async () => new Response('{"done":true}', { status: 201 }),
+      async (_url: URL | string, _init?: RequestInit) =>
+        new Response('{"done":true}', { status: 201 }),
     )
     const result = expectOk(
       await callConnector({
