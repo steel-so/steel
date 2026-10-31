@@ -9,6 +9,24 @@ import {
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 
+async function seedFunnel(workspaceId: string, cookie: string) {
+  const pipeline = await (
+    await postJson(
+      `/api/workspaces/${workspaceId}/crm/pipelines`,
+      { name: 'Vendas' },
+      cookie,
+    )
+  ).json()
+  const stage = await (
+    await postJson(
+      `/api/workspaces/${workspaceId}/crm/pipelines/${pipeline.data.id}/stages`,
+      { name: 'Novo' },
+      cookie,
+    )
+  ).json()
+  return { pipelineId: pipeline.data.id, stageId: stage.data.id }
+}
+
 describe('GET /api/workspaces/[id]/crm/health/companies', () => {
   it('should return 401 via middleware when unauthenticated', async () => {
     const res = await fetch(
@@ -117,9 +135,10 @@ describe('opportunity health lifecycle', () => {
     const { user, workspace } = await authenticatedOwner()
     const base = `/api/workspaces/${workspace.id}/crm`
 
+    const funnel = await seedFunnel(workspace.id, user.cookie)
     const created = await postJson(
       `${base}/opportunities`,
-      { name: 'Renovação anual' },
+      { name: 'Renovação anual', ...funnel },
       user.cookie,
     )
     expect(created.status).toBe(201)
