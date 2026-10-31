@@ -72,15 +72,19 @@ describe('SubscriptionRepository', () => {
   describe('findActiveByWorkspaceId()', () => {
     it('should return the most recent PAID subscription', async () => {
       const ws = await seedWorkspace()
+      // Explicit, distinct timestamps: two rows created back to back can share
+      // the same createdAt and the "most recent" would be a coin flip.
       await seedSubscription({
         workspaceId: ws.id,
         billId: 'bill_old',
         status: 'PAID',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
       })
       const newer = await seedSubscription({
         workspaceId: ws.id,
         billId: 'bill_new',
         status: 'PAID',
+        createdAt: new Date('2026-02-01T00:00:00.000Z'),
       })
 
       const result = await SubscriptionRepository.findActiveByWorkspaceId(ws.id)
