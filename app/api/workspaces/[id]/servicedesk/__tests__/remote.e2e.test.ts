@@ -98,7 +98,7 @@ describe('ServiceDesk remote access', () => {
       { configItemId: item.id, provider: 'RUSTDESK', remoteId: 'a b;c' },
       cookie,
     )
-    expect(bad.status).toBe(400)
+    expect(bad.status).toBe(422)
     const saved = await putJson(
       sd(workspace.id, 'endpoints'),
       { configItemId: item.id, provider: 'RUSTDESK', remoteId: '123 456 789' },

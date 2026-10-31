@@ -70,6 +70,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   sdTicketKbLink: (ws) => ({ ticket: { workspaceId: ws } }),
   sdKbComment: (ws) => ({ article: { workspaceId: ws } }),
   sdInventorySoftware: (ws) => ({ device: { workspaceId: ws } }),
+  sdSoftwareLicenseAsset: (ws) => ({ license: { workspaceId: ws } }),
   // Fundação da leva de contratos/CAB/plantão (commit 00384d45): modelos-filhos
   // sem `workspaceId` que chegam ao workspace pelo pai.
   sdContractRate: (ws) => ({ contract: { workspaceId: ws } }),

@@ -83,6 +83,6 @@ describe('ServiceDesk demand forecast (WFM)', () => {
       { historyWeeks: 1 },
       owner.cookie,
     )
-    expect(invalid.status).toBe(400)
+    expect(invalid.status).toBe(422)
   })
 })

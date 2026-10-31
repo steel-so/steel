@@ -126,7 +126,7 @@ describe('ServiceDesk software licenses', () => {
       { ...body, seats: -3 },
       owner.cookie,
     )
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
   })
 
   it('assigns assets, lists them per asset and archives', async () => {

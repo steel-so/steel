@@ -491,7 +491,12 @@ export const SD_NOTIFICATION_GROUPS: SdNotificationGroup[] = [
   { label: 'Resumos', events: [SD_DIGEST_EVENT] },
   {
     label: 'Plantão, monitoramento e contratos',
-    events: ['oncall.shift', 'monitor.alert', 'contract.franchise'],
+    events: [
+      'oncall.shift',
+      'monitor.alert',
+      'contract.franchise',
+      'license.expiring',
+    ],
   },
 ]
 
