@@ -1,0 +1,77 @@
+---
+title: Duplicados e mesclagem
+description: Como o Steel encontra pessoas e empresas repetidas, como revisar cada par, mesclar e desfazer em até 24 horas.
+section: crm
+order: 18
+---
+
+Cadastros repetidos atrapalham: a mesma pessoa recebe duas campanhas, o
+histórico fica dividido e o relatório conta em dobro. O Steel procura esses
+pares sozinho e deixa a decisão com você, numa fila em **CRM › Duplicados**.
+
+## Como o Steel encontra os pares
+
+A busca roda todo dia de madrugada em cada workspace com o CRM ligado. Ela
+também olha **na hora** cada pessoa ou empresa que acaba de chegar por um
+formulário, por um fluxo do WhatsApp ou por um cadastro manual, então um
+repetido aparece na fila sem esperar a próxima rodada.
+
+| Sinal | O que conta |
+| --- | --- |
+| **Mesmo e-mail** | O mesmo endereço, sem diferenciar maiúsculas. E-mails genéricos (como `contato@` ou `vendas@`) não bastam |
+| **Mesmo telefone** | O mesmo número, ignorando DDI, espaços e traços |
+| **Nome parecido** | Nomes quase iguais (por exemplo "Ana Souza" e "Ana S."). Entre pessoas da mesma empresa, o Steel aceita uma semelhança menor |
+| **Mesmo CNPJ** | Empresas com o mesmo número de CNPJ |
+| **Mesmo domínio** | Empresas com o mesmo site, sem o `www` |
+
+Cada par recebe uma **pontuação** de 0 a 100. Só entram na fila os pares com 60
+pontos ou mais; vários sinais juntos pontuam mais que um sinal sozinho.
+
+Quando há pares novos, o dono e os administradores recebem **uma notificação por
+dia** com a contagem. Você também pode usar **Procurar duplicados** a qualquer
+momento.
+
+## Revisar um par
+
+Abra **CRM › Duplicados** e escolha **Pessoas** ou **Empresas**. Cada linha
+mostra os dois cadastros lado a lado, o motivo, a pontuação e quantos itens
+(notas, tarefas e oportunidades) acompanham cada um. Para cada par você pode:
+
+- **Mesclar**: escolha qual cadastro **fica**. O outro é arquivado.
+- **Descartar**: o par não é repetido (duas pessoas diferentes com o mesmo
+  nome, por exemplo). Ele sai da fila e o Steel não volta a propor esse par.
+
+Use as abas **Pendentes**, **Mesclados** e **Descartados** para consultar o que
+já foi decidido.
+
+## O que a mesclagem faz
+
+- O cadastro que fica **mantém os próprios dados** e recebe, do outro, o que
+  estava em branco. E-mails e telefones dos dois são **somados**.
+- Notas, tarefas, oportunidades, leads, atividades, e-mails, propostas,
+  ligações, listas e campanhas do cadastro arquivado **passam para o que
+  ficou**. Numa empresa, as pessoas dela vão junto.
+- O CNPJ e o domínio da empresa arquivada passam para a que ficou, se ela não
+  tinha.
+- Os outros pares que envolviam o cadastro arquivado saem da fila.
+- Uma atividade **Mesclado** fica na linha do tempo do cadastro mantido.
+
+<Callout type='atencao'>
+  Mesclar exclui um cadastro da vista, então só o **dono e os administradores**
+  podem fazê-lo. Membros veem a fila, procuram duplicados e descartam pares,
+  mas não mesclam.
+</Callout>
+
+## Desfazer
+
+Em **Mesclagens recentes** cada mesclagem tem um botão **Desfazer** por **24
+horas**. Ele devolve o cadastro arquivado, leva de volta tudo o que foi movido e
+restaura os campos do cadastro mantido.
+
+- O que alguém **editou depois** da mesclagem não é sobrescrito: se você mudou a
+  cidade do cadastro mantido, ela continua como você deixou.
+- Um item que já foi movido de novo (uma nota que você passou para uma terceira
+  pessoa, por exemplo) fica onde está.
+- Passadas as 24 horas, ou se o cadastro mantido foi excluído, o botão some e a
+  mesclagem fica definitiva.
+- O par volta para a fila de pendentes.

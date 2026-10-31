@@ -130,3 +130,18 @@ describe('public schemas', () => {
     })
   })
 })
+
+describe('WeeklyHoursSchema windows', () => {
+  it.each([
+    ['unparseable start', { start: 'xx', end: '10:00' }],
+    ['unparseable end', { start: '09:00', end: 'yy' }],
+    ['end before start', { start: '10:00', end: '09:00' }],
+  ])('rejects %s', (_name, window) => {
+    expect(
+      UpdateCrmMeetingAvailabilitySchema.safeParse({
+        timezone: 'America/Sao_Paulo',
+        weeklyHours: { '1': [window] },
+      }).success,
+    ).toBe(false)
+  })
+})
