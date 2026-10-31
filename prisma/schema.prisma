@@ -12633,6 +12633,31 @@ model AiActionSettings {
   zapTools    Json     @default("[]") @map("zap_tools")
   /// User whose permissions the auto-reply tools run with (OWNER/ADMIN).
   zapActorId  String?  @map("zap_actor_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("ai_action_settings")
+}
+
+/// Idempotency ledger of AI writes on customer systems: the same key within
+/// the window replays the stored outcome instead of calling the system again.
+model AiActionExecution {
+  id             String                  @id @default(cuid())
+  workspaceId    String                  @map("workspace_id")
+  idempotencyKey String                  @map("idempotency_key")
+  connectorKey   String                  @map("connector_key")
+  status         AiActionExecutionStatus @default(PENDING)
+  httpStatus     Int?                    @map("http_status")
+  response       Json?
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([createdAt])
+  @@map("ai_action_executions")
 }
 
 // nov: prospecting-agent
@@ -12723,29 +12748,6 @@ model CrmProspectUsage {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("ai_action_settings")
-}
-
-/// Idempotency ledger of AI writes on customer systems: the same key within
-/// the window replays the stored outcome instead of calling the system again.
-model AiActionExecution {
-  id             String                  @id @default(cuid())
-  workspaceId    String                  @map("workspace_id")
-  idempotencyKey String                  @map("idempotency_key")
-  connectorKey   String                  @map("connector_key")
-  status         AiActionExecutionStatus @default(PENDING)
-  httpStatus     Int?                    @map("http_status")
-  response       Json?
-  createdAt      DateTime                @default(now()) @map("created_at")
-  updatedAt      DateTime                @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, idempotencyKey])
-  @@index([createdAt])
-  @@map("ai_action_executions")
-}
 
   @@unique([workspaceId, period])
   @@map("crm_prospect_usage")
