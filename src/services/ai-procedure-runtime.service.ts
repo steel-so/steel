@@ -140,7 +140,7 @@ function makeExecutors(
       if (subject.simulate && request.method === 'POST') {
         return { ok: true, json: null }
       }
-      const result = await callChatbotWebhook(request)
+      const result = await callChatbotWebhook({ body: undefined, ...request })
       return result.ok ? { ok: true, json: result.json } : result
     },
     async tool(name, args) {

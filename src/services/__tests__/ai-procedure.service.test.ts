@@ -408,7 +408,9 @@ describe('AiProcedureService.update', () => {
   it('should validate new steps, owner and agents', async () => {
     expectErr(
       await AiProcedureService.update('u', 'ws1', 'p1', {
-        steps: [{ ...BOLETO_STEPS[1], url: 'https://x/{{nada}}' }],
+        steps: [
+          { ...BOLETO_STEPS[1], url: 'https://x/{{nada}}' } as ProcedureStep,
+        ],
       }),
       'AI_PROCEDURE_INVALID',
     )

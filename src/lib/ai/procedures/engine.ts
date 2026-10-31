@@ -265,7 +265,7 @@ export type SubmitResult =
       expected?: string
       attemptsLeft?: number
       /** The attempts ran out: the procedure failed. */
-      failed?: ProcedureOutcome
+      failed?: Extract<ProcedureOutcome, { kind: 'failed' }>
     }
 
 /**

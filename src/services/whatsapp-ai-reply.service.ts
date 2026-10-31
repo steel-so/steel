@@ -390,7 +390,7 @@ export const WhatsAppAiReplyService = {
       subjectType: 'WHATSAPP_CONVERSATION',
       subjectId: conversationId,
       channel: 'WHATSAPP',
-      resolveVariables: async () => {
+      resolveVariables: async (): Promise<Record<string, string>> => {
         const found = await WhatsAppContactRepository.findById(
           conversation.contactId,
           workspaceId,
