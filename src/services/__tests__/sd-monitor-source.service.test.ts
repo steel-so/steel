@@ -194,6 +194,7 @@ describe('SdMonitorSourceService writes', () => {
         flappingWindowMinutes: 10,
         correlationMode: 'OFF',
         correlationWindowMinutes: 15,
+        raisePriorityOnCorrelation: false,
       }),
     )
     const [, payload] = sources.create.mock.calls[0]
@@ -209,6 +210,7 @@ describe('SdMonitorSourceService writes', () => {
       flappingWindowMinutes: 10,
       correlationMode: 'OFF',
       correlationWindowMinutes: 15,
+      raisePriorityOnCorrelation: false,
     })
 
     expectOk(

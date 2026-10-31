@@ -2210,3 +2210,21 @@ export const crmCnpjRunNotCancelable = (): AppError =>
 
 export const steelAgentSimGateInvalid = (message: string): AppError =>
   appError('STEEL_AGENT_SIM_GATE_INVALID', message)
+
+export const sdStatusComponentNotFound = (): AppError =>
+  appError(
+    'SD_STATUS_COMPONENT_NOT_FOUND',
+    'Componente da página de status não encontrado',
+  )
+
+export const sdMaintenanceNotFound = (): AppError =>
+  appError('SD_MAINTENANCE_NOT_FOUND', 'Manutenção programada não encontrada')
+
+export const sdMaintenanceClosed = (): AppError =>
+  appError(
+    'SD_MAINTENANCE_CLOSED',
+    'A manutenção já terminou ou foi cancelada e não aceita alterações',
+  )
+
+export const sdMaintenanceInvalid = (message: string): AppError =>
+  appError('SD_MAINTENANCE_INVALID', message)

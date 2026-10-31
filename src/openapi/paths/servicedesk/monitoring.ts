@@ -124,7 +124,7 @@ export const sdMonitoringRoutes: RouteConfig[] = [
     path: SOURCE,
     tags: [TAG],
     summary: 'Atualizar origem de monitoramento',
-    description: `Padrões do chamado, mapa severidade → prioridade, encerramento automático, janela de instabilidade e correlação (\`correlationMode\`, \`correlationWindowMinutes\`). Não troca o token. ${ADMIN}`,
+    description: `Padrões do chamado, mapa severidade → prioridade, encerramento automático, janela de instabilidade e correlação (\`correlationMode\`, \`correlationWindowMinutes\`), subida de prioridade (\`raisePriorityOnCorrelation\`). Não troca o token. ${ADMIN}`,
     consent: true,
     params: SOURCE_PARAM,
     body: UpdateSdMonitorSourceSchema,

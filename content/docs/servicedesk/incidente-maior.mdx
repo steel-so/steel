@@ -42,8 +42,21 @@ Em **Incidentes maiores** (menu do ServiceDesk) abra o incidente. Ali você:
    interna do que resolveu.
 
 Os chamados filhos recebem uma entrada no histórico a cada atualização
-publicada. Resolver o incidente **não resolve** os filhos: feche cada um pelo
-fluxo normal.
+publicada.
+
+### Resolver os chamados filhos junto
+
+Ao resolver o incidente, o Steel lista os chamados filhos que ainda estão
+abertos. Ligue **Resolver também os chamados filhos abertos**, confirme (ou
+desmarque) cada chamado da lista e clique em **Resolver incidente e N
+chamados**. Cada chamado vai para a fase de resolução do tipo dele, com a
+solução "Resolvido junto com o incidente maior" seguida da nota interna.
+
+Depois, uma janela mostra o **resultado de cada chamado**: *Resolvido*,
+*Ignorado* (por exemplo, já estava encerrado) ou *Não resolvido*, com o motivo
+(por exemplo, a fase de resolução exige um campo que está faltando). Um chamado
+que falha não impede os outros e continua como estava, para você tratar pelo
+fluxo normal. Sem confirmar a lista, os filhos não são tocados.
 
 ## Páginas de status
 
@@ -54,6 +67,39 @@ mostra o estado geral (o pior impacto entre os incidentes ativos), os
 incidentes em andamento com a linha do tempo e os resolvidos nos últimos 30
 dias. Ela só mostra o que foi escrito para o cliente, nunca dados do chamado.
 Despublicar fecha o endereço.
+
+### Estado por serviço
+
+Em **Componentes** de cada página, o administrador cadastra os serviços que o
+cliente acompanha (opcionalmente ligados a um serviço do catálogo). Cada
+componente tem o próprio estado: **Operacional**, **Desempenho degradado** ou
+**Indisponível**. Quem atende o incidente (qualquer agente com permissão de
+edição) troca o estado na hora; o administrador cria, renomeia e remove.
+
+O estado geral da página passa a ser o pior entre os incidentes ativos e os
+componentes: um componente degradado deixa a página em *Desempenho degradado*,
+um componente indisponível em *Indisponibilidade parcial*, e todos
+indisponíveis em *Indisponibilidade total*.
+
+## Manutenção programada
+
+Em **Páginas de status**, na seção **Manutenções programadas**, agende uma
+janela com título, descrição, início, término (horário de Brasília) e as
+páginas em que ela aparece. A janela aparece como um **aviso** na página
+pública a partir de 14 dias antes e some quando termina ou é cancelada. Ela não
+muda o estado geral da página.
+
+- **Aviso aos assinantes**: ao agendar, o Steel envia e-mail e WhatsApp aos
+  assinantes confirmados das páginas escolhidas. Se você mudar o horário de uma
+  janela já avisada, eles recebem um aviso de reagendamento; ao cancelar,
+  recebem o cancelamento. Cada aviso sai no máximo uma vez. Desligue **Avisar os
+  assinantes** para não enviar nada.
+- **Sem chamados do monitoramento**: com essa opção e a lista de itens da CMDB
+  cobertos, os alertas desses itens deixam de abrir chamado durante a janela
+  (veja [Monitoramento](/docs/servicedesk/monitoramento)). É preciso escolher ao
+  menos um item.
+- Uma janela dura no máximo 30 dias e precisa terminar no futuro. Janelas
+  concluídas ou canceladas não podem ser alteradas.
 
 ### Assinantes
 

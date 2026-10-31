@@ -23,6 +23,7 @@ import {
   useUpdateSdMajorIncident,
 } from '@/src/hooks/use-sd-major-incidents'
 import type {
+  SdMajorIncidentChildResolutionDTO,
   SdMajorIncidentDTO,
   SdMajorIncidentImpactDTO,
   SdMajorIncidentStatusDTO,
@@ -36,8 +37,10 @@ import {
 } from '../settings/sd-settings-kit'
 import { SdUserAvatar } from '../ticket/sd-ticket-badges'
 import {
+  openIncidentChildren,
   SdLinkTicketsDialog,
   SdResolveIncidentDialog,
+  SdResolveResultDialog,
   StatusPagePicker,
 } from './sd-major-incident-dialogs'
 import {
@@ -422,6 +425,9 @@ export function SdMajorIncidentDetail({
   const query = useSdMajorIncident(workspaceId, incidentId)
   const resolve = useResolveSdMajorIncident(workspaceId, incidentId)
   const [resolving, setResolving] = useState(false)
+  const [childResults, setChildResults] = useState<
+    SdMajorIncidentChildResolutionDTO[] | null
+  >(null)
   const incident = query.data
 
   if (query.error) {
@@ -541,17 +547,25 @@ export function SdMajorIncidentDetail({
       <SdResolveIncidentDialog
         open={resolving}
         hasPages={incident.pages.length > 0}
+        openChildren={openIncidentChildren(incident.children)}
         pending={resolve.isPending}
         onOpenChange={setResolving}
         onSubmit={async (data) => {
           try {
-            await resolve.mutateAsync(data)
+            const resolved = await resolve.mutateAsync(data)
             setResolving(false)
             notify.success('Incidente maior resolvido')
+            if (resolved.childResults.length > 0) {
+              setChildResults(resolved.childResults)
+            }
           } catch (error) {
             notify.error(error)
           }
         }}
+      />
+      <SdResolveResultDialog
+        results={childResults}
+        onClose={() => setChildResults(null)}
       />
     </div>
   )

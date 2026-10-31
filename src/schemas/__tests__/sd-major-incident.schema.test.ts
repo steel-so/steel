@@ -74,6 +74,23 @@ describe('sd-major-incident schemas', () => {
     ).toBe(true)
   })
 
+  it('takes the children to resolve together and caps the batch', () => {
+    const base = { message: 'Tudo normal' }
+    expect(
+      ResolveSdMajorIncidentSchema.parse(base).childTicketIds,
+    ).toBeUndefined()
+    expect(
+      ResolveSdMajorIncidentSchema.parse({ ...base, childTicketIds: ['t1'] })
+        .childTicketIds,
+    ).toEqual(['t1'])
+    expect(
+      ResolveSdMajorIncidentSchema.safeParse({
+        ...base,
+        childTicketIds: Array.from({ length: 201 }, (_, i) => `t${i}`),
+      }).success,
+    ).toBe(false)
+  })
+
   it('bounds the ticket refs and the list query', () => {
     expect(
       LinkSdMajorIncidentTicketsSchema.safeParse({ ticketRefs: [] }).success,

@@ -53,6 +53,7 @@ function source(
     flappingWindowMinutes: 30,
     correlationMode: 'HOST',
     correlationWindowMinutes: 60,
+    raisePriorityOnCorrelation: true,
     lastEventAt: '2026-10-01T12:00:00.000Z',
     createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-01T10:00:00.000Z',
@@ -76,6 +77,7 @@ function alert(overrides: Partial<SdMonitorAlertDTO> = {}): SdMonitorAlertDTO {
     ticket: { id: 't1', number: 42, title: 'Servidor fora', phase: 'Novo' },
     correlated: false,
     occurrences: 1,
+    suppressed: false,
     lastSeenAt: '2026-10-01T12:00:00.000Z',
     startedAt: '2026-10-01T12:00:00.000Z',
     resolvedAt: null,
@@ -179,6 +181,7 @@ describe('<SdMonitoringTab />', () => {
     expect(body.flappingWindowMinutes).toBe(30)
     expect(body.correlationMode).toBe('HOST')
     expect(body.correlationWindowMinutes).toBe(60)
+    expect(body.raisePriorityOnCorrelation).toBe(true)
 
     expect(
       screen.getByText(/\/api\/servicedesk\/monitoring\/tok-123/),

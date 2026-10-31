@@ -24,3 +24,33 @@ export async function enqueueSdStatusUpdateNotice(
     })
   }
 }
+
+/**
+ * Enqueues the e-mail/WhatsApp notice of a maintenance window (queue
+ * `servicedesk-mail`). A rescheduled window gets a fresh job id so BullMQ does
+ * not drop it as a duplicate of the first announcement. Never throws.
+ */
+export async function enqueueSdMaintenanceNotice(
+  maintenanceId: string,
+  kind: 'scheduled' | 'rescheduled' | 'canceled',
+): Promise<void> {
+  try {
+    await getServicedeskMailQueue().add(
+      ServicedeskMailJob.NotifyMaintenance,
+      { maintenanceId, kind },
+      {
+        jobId:
+          kind === 'rescheduled'
+            ? `maintenance-${kind}-${maintenanceId}-${Date.now()}`
+            : `maintenance-${kind}-${maintenanceId}`,
+      },
+    )
+  } catch (error) {
+    logger.error('servicedesk.status.enqueue_failed', {
+      job: ServicedeskMailJob.NotifyMaintenance,
+      maintenanceId,
+      kind,
+      message: error instanceof Error ? error.message : String(error),
+    })
+  }
+}

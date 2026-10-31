@@ -39,7 +39,9 @@ chamado quando um alerta chega com problema e encerra quando o alerta
 normaliza. O mesmo `externalId` nunca abre dois chamados. A resposta diz o que
 aconteceu em `outcome`: `ticket_created`, `ticket_reopened`, `alert_updated`,
 `alert_correlated` (o alerta entrou num chamado já aberto da mesma máquina),
-`ticket_resolved` ou `alert_resolved`.
+`alert_suppressed` (o alerta chegou numa janela de manutenção que suprime
+chamados do item da CMDB e foi registrado sem abrir chamado; a resposta traz
+`ticket: null`), `ticket_resolved` ou `alert_resolved`.
 
 O Grafana e o Alertmanager mandam vários alertas por envio (`alerts[]`, até
 50): a resposta traz o primeiro nos campos de sempre e todos em `alerts`.

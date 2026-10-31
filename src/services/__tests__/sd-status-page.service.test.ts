@@ -5,6 +5,10 @@ import {
   createFakeSdStatusPage,
   createFakeSdStatusSubscriber,
 } from '@/src/__tests__/factories/nov-s2-major-incident.factory'
+import {
+  createFakeSdStatusComponent,
+  createFakeSdStatusMaintenance,
+} from '@/src/__tests__/factories/nov-sd-followups.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import {
   databaseError,
@@ -16,6 +20,8 @@ import { err, ok } from '@/src/lib/result'
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/sd-access.repository')
 vi.mock('@/src/repositories/sd-status-page.repository')
+vi.mock('@/src/repositories/sd-status-component.repository')
+vi.mock('@/src/repositories/sd-status-maintenance.repository')
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/lib/mail/servicedesk/send-sd-status-update', () => ({
   sendSdStatusConfirmEmail: vi.fn(),
@@ -24,10 +30,14 @@ vi.mock('@/src/lib/mail/servicedesk/send-sd-status-update', () => ({
 import { sendSdStatusConfirmEmail } from '@/src/lib/mail/servicedesk/send-sd-status-update'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { SdAccessRepository } from '@/src/repositories/sd-access.repository'
+import { SdStatusComponentRepository } from '@/src/repositories/sd-status-component.repository'
+import { SdStatusMaintenanceRepository } from '@/src/repositories/sd-status-maintenance.repository'
 import { SdStatusPageRepository } from '@/src/repositories/sd-status-page.repository'
 import { SdStatusPageService } from '../sd-status-page.service'
 
 const repo = vi.mocked(SdStatusPageRepository)
+const components = vi.mocked(SdStatusComponentRepository)
+const maintenances = vi.mocked(SdStatusMaintenanceRepository)
 const WS = 'ws1'
 const page = createFakeSdStatusPage({ customerId: 'c1', serviceIds: ['s1'] })
 const sub = createFakeSdStatusSubscriber()
@@ -57,6 +67,8 @@ const createInput = {
 beforeEach(() => {
   vi.clearAllMocks()
   as('admin')
+  components.listByPage.mockResolvedValue(ok([]))
+  maintenances.listForPage.mockResolvedValue(ok([]))
   repo.list.mockResolvedValue(ok([page]))
   repo.findById.mockResolvedValue(ok(page))
   repo.create.mockResolvedValue(ok(page))
@@ -323,6 +335,40 @@ describe('SdStatusPageService public', () => {
     )
     repo.findWorkspaceName.mockResolvedValue(err(databaseError()))
     expectErr(await SdStatusPageService.getPublic('x'), 'DATABASE_ERROR')
+    repo.findWorkspaceName.mockResolvedValue(ok('Stratus'))
+    components.listByPage.mockResolvedValue(err(databaseError()))
+    expectErr(await SdStatusPageService.getPublic('x'), 'DATABASE_ERROR')
+    components.listByPage.mockResolvedValue(ok([]))
+    maintenances.listForPage.mockResolvedValue(err(databaseError()))
+    expectErr(await SdStatusPageService.getPublic('x'), 'DATABASE_ERROR')
+  })
+
+  it('shows the components, the maintenance windows and the overall state they imply', async () => {
+    components.listByPage.mockResolvedValue(
+      ok([
+        createFakeSdStatusComponent({ name: 'Telefonia', state: 'OUTAGE' }),
+        createFakeSdStatusComponent({
+          id: 'cmp2',
+          name: 'Portal',
+          state: 'OPERATIONAL',
+        }),
+      ]),
+    )
+    maintenances.listForPage.mockResolvedValue(
+      ok([createFakeSdStatusMaintenance()]),
+    )
+    const out = expectOk(await SdStatusPageService.getPublic('acme-abc123'))
+    expect(out.overall).toBe('PARTIAL_OUTAGE')
+    expect(out.components).toEqual([
+      { name: 'Telefonia', state: 'OUTAGE' },
+      { name: 'Portal', state: 'OPERATIONAL' },
+    ])
+    expect(out.maintenances).toMatchObject([
+      { id: 'mw1', title: 'Troca do switch', inProgress: false },
+    ])
+    const [pageId, now, until] = maintenances.listForPage.mock.calls[0]
+    expect(pageId).toBe(page.id)
+    expect(until.getTime() - now.getTime()).toBe(14 * 86_400_000)
   })
 
   it('subscribes by e-mail with a normalized address and the confirmation mail', async () => {

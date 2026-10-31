@@ -113,3 +113,38 @@ describe('sdPageMatchesTicket', () => {
     ).toBe(false)
   })
 })
+
+describe('sdStatusPageOverall with components', () => {
+  it('keeps the incident-only behavior', () => {
+    expect(sdStatusPageOverall([])).toBe('OPERATIONAL')
+    expect(sdStatusPageOverall(['DEGRADED', 'MAJOR_OUTAGE'])).toBe(
+      'MAJOR_OUTAGE',
+    )
+  })
+
+  it('maps a degraded component to DEGRADED and an outage to a partial outage', () => {
+    expect(sdStatusPageOverall([], ['OPERATIONAL', 'OPERATIONAL'])).toBe(
+      'OPERATIONAL',
+    )
+    expect(sdStatusPageOverall([], ['OPERATIONAL', 'DEGRADED'])).toBe(
+      'DEGRADED',
+    )
+    expect(sdStatusPageOverall([], ['OPERATIONAL', 'OUTAGE'])).toBe(
+      'PARTIAL_OUTAGE',
+    )
+  })
+
+  it('is a major outage when every component is down', () => {
+    expect(sdStatusPageOverall([], ['OUTAGE'])).toBe('MAJOR_OUTAGE')
+    expect(sdStatusPageOverall([], ['OUTAGE', 'OUTAGE'])).toBe('MAJOR_OUTAGE')
+  })
+
+  it('takes the worst of incidents and components', () => {
+    expect(sdStatusPageOverall(['MAJOR_OUTAGE'], ['DEGRADED'])).toBe(
+      'MAJOR_OUTAGE',
+    )
+    expect(sdStatusPageOverall(['DEGRADED'], ['OPERATIONAL', 'OUTAGE'])).toBe(
+      'PARTIAL_OUTAGE',
+    )
+  })
+})

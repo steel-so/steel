@@ -7270,6 +7270,8 @@ model SdMonitorSource {
   /// Correlação: novo alerta da mesma máquina entra no chamado aberto.
   correlationMode          SdMonitorCorrelationMode @default(HOST) @map("correlation_mode")
   correlationWindowMinutes Int                      @default(60) @map("correlation_window_minutes")
+  /// Correlated alert more severe than the ticket raises its priority (never lowers).
+  raisePriorityOnCorrelation Boolean  @default(true) @map("raise_priority_on_correlation")
   lastEventAt           DateTime?     @map("last_event_at")
   createdById           String        @map("created_by_id")
   createdAt             DateTime      @default(now()) @map("created_at")
@@ -7309,6 +7311,8 @@ model SdMonitorAlert {
   /// Quantas vezes o mesmo alerta chegou (deduplicação).
   occurrences  Int                  @default(1)
   lastSeenAt   DateTime             @default(now()) @map("last_seen_at")
+  /// Received inside a maintenance window that suppresses ticket creation.
+  suppressedAt DateTime?            @map("suppressed_at")
 
   workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   source     SdMonitorSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
@@ -11594,8 +11598,10 @@ model SdStatusPage {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  incidents   SdMajorIncidentPage[]
-  subscribers SdStatusSubscriber[]
+  incidents    SdMajorIncidentPage[]
+  subscribers  SdStatusSubscriber[]
+  components   SdStatusComponent[]
+  maintenances SdStatusMaintenancePage[]
 
   @@index([workspaceId])
   @@map("sd_status_pages")
@@ -12001,4 +12007,81 @@ model SdInventoryAgentRelease {
   @@unique([version, os, arch])
   @@index([os, arch, active, publishedAt])
   @@map("sd_inventory_agent_releases")
+}
+
+// nov: sd-followups
+
+/// State of one component (service) shown on a public status page.
+enum SdStatusComponentState {
+  OPERATIONAL
+  DEGRADED
+  OUTAGE
+}
+
+/// A service listed on a status page with its own state, set by agents.
+/// `serviceId` is the catalog service it mirrors (no FK, like the page).
+model SdStatusComponent {
+  id             String                 @id @default(cuid())
+  workspaceId    String                 @map("workspace_id")
+  pageId         String                 @map("page_id")
+  name           String
+  serviceId      String?                @map("service_id")
+  state          SdStatusComponentState @default(OPERATIONAL)
+  position       Int                    @default(0)
+  stateChangedAt DateTime               @default(now()) @map("state_changed_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  page SdStatusPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, position])
+  @@index([workspaceId])
+  @@map("sd_status_components")
+}
+
+/// Scheduled maintenance window: shown as a banner on the status pages it is
+/// attached to, announced to the subscribers and, optionally, it suppresses
+/// the ticket creation of monitoring alerts for the covered CMDB items.
+/// `announcedAt` / `canceledNoticeAt` are claimed by the delivery job before
+/// it sends (at-most-once).
+model SdStatusMaintenance {
+  id                 String    @id @default(cuid())
+  workspaceId        String    @map("workspace_id")
+  title              String
+  description        String?
+  startsAt           DateTime  @map("starts_at")
+  endsAt             DateTime  @map("ends_at")
+  suppressMonitoring Boolean   @default(false) @map("suppress_monitoring")
+  /// CMDB items covered by the window (ids, no FK).
+  configItemIds      String[]  @default([]) @map("config_item_ids")
+  notifySubscribers  Boolean   @default(true) @map("notify_subscribers")
+  announcedAt        DateTime? @map("announced_at")
+  canceledAt         DateTime? @map("canceled_at")
+  canceledNoticeAt   DateTime? @map("canceled_notice_at")
+  notifyTotal        Int       @default(0) @map("notify_total")
+  notifySent         Int       @default(0) @map("notify_sent")
+  notifyFailed       Int       @default(0) @map("notify_failed")
+  createdById        String?   @map("created_by_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  pages SdStatusMaintenancePage[]
+
+  @@index([workspaceId, startsAt])
+  @@index([workspaceId, suppressMonitoring, startsAt, endsAt])
+  @@map("sd_status_maintenances")
+}
+
+model SdStatusMaintenancePage {
+  maintenanceId String @map("maintenance_id")
+  pageId        String @map("page_id")
+  workspaceId   String @map("workspace_id")
+
+  maintenance SdStatusMaintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+  page        SdStatusPage        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([maintenanceId, pageId])
+  @@index([pageId])
+  @@index([workspaceId])
+  @@map("sd_status_maintenance_pages")
 }
