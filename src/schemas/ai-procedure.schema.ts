@@ -136,7 +136,7 @@ export const UpdateAiProcedureSchema = z
       .max(PROCEDURE_LIMITS.attempts.max),
     handoffMessage: definition.handoffMessage,
     whatsappEnabled: z.boolean(),
-    agentIds: definition.agentIds,
+    agentIds: z.array(z.string()).max(50),
     ownerId: definition.ownerId,
     status: ProcedureStatusSchema,
     /** Goes into the history when the edit creates a version. */

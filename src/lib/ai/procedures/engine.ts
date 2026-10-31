@@ -375,7 +375,7 @@ export function completeMessage(
   text: string,
 ): { state: ProcedureState; events: ProcedureEvent[] } {
   const step = currentStep(definition, previous)
-  if (!step || step.kind !== 'MESSAGE' || step.text) {
+  if (step?.kind !== 'MESSAGE' || step.text) {
     return { state: previous, events: [] }
   }
   const state: ProcedureState = {

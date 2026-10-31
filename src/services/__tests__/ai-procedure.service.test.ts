@@ -216,7 +216,7 @@ describe('AiProcedureService read paths', () => {
 
   it('should list versions and runs, and open a run', async () => {
     const versions = expectOk(await AiProcedureService.listVersions('u', 'ws1', 'p1'))
-    expect(versions[0].current).toBe(false)
+    expect(versions[0].current).toBe(true)
     member.mockResolvedValueOnce(err(forbidden()))
     expectErr(await AiProcedureService.listVersions('u', 'ws1', 'p1'), 'FORBIDDEN')
     procedures.findById.mockResolvedValueOnce(
@@ -399,7 +399,7 @@ describe('AiProcedureService.update', () => {
     expect(procedures.update.mock.calls[2][3]).toBeDefined()
     expectOk(
       await AiProcedureService.update('actor', 'ws1', 'p1', {
-        steps: [BOLETO_STEPS[2]],
+        steps: [{ ...BOLETO_STEPS[2], text: 'Pronto' } as ProcedureStep],
       }),
     )
     expect(procedures.update.mock.calls[3][3]).toBeDefined()

@@ -45,7 +45,6 @@ function SavesEditor({
     <Field>
       <FieldLabel>Guardar da resposta</FieldLabel>
       {saves.map((save, index) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: rows have no stable id
         <div key={index} className='flex flex-wrap items-center gap-2'>
           <Input
             aria-label='Nome da variável'
@@ -448,16 +447,18 @@ export function AiProcedureStepForm({
       ) : null}
 
       <div className='flex flex-wrap items-center gap-x-6 gap-y-2'>
-        <label className='flex items-center gap-2 text-sm'>
+        <div className='flex items-center gap-2 text-sm'>
           <Switch
+            aria-label='Obrigatório'
             checked={step.required}
             disabled={disabled}
             onCheckedChange={(checked) => patch({ required: checked })}
           />
           Obrigatório
-        </label>
-        <label className='flex items-center gap-2 text-sm'>
+        </div>
+        <div className='flex items-center gap-2 text-sm'>
           <Switch
+            aria-label='Só quando'
             checked={Boolean(condition)}
             disabled={disabled}
             onCheckedChange={(checked) =>
@@ -469,7 +470,7 @@ export function AiProcedureStepForm({
             }
           />
           Só quando…
-        </label>
+        </div>
       </div>
 
       {condition ? (

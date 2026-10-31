@@ -276,14 +276,15 @@ export function AiProcedureEditor({
             Só procedimentos ativos são oferecidos à IA.
           </FieldDescription>
         </Field>
-        <label className='flex items-center gap-2 text-sm'>
+        <div className='flex items-center gap-2 text-sm'>
           <Switch
+            aria-label='Disponível na resposta automática do WhatsApp'
             checked={form.whatsappEnabled}
             disabled={disabled}
             onCheckedChange={(checked) => set('whatsappEnabled', checked)}
           />
           Disponível na resposta automática do WhatsApp
-        </label>
+        </div>
         <Field>
           <FieldLabel>Agentes que podem iniciar</FieldLabel>
           {(catalog.data?.agents ?? []).length === 0 ? (
@@ -293,8 +294,9 @@ export function AiProcedureEditor({
           ) : (
             <div className='grid gap-2 sm:grid-cols-2'>
               {catalog.data?.agents.map((agent) => (
-                <label key={agent.id} className='flex items-center gap-2 text-sm'>
+                <div key={agent.id} className='flex items-center gap-2 text-sm'>
                   <Switch
+                    aria-label={agent.name}
                     checked={form.agentIds.includes(agent.id)}
                     disabled={disabled}
                     onCheckedChange={(checked) =>
@@ -307,7 +309,7 @@ export function AiProcedureEditor({
                     }
                   />
                   {agent.name}
-                </label>
+                </div>
               ))}
             </div>
           )}
