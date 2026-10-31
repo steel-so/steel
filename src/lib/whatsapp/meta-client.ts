@@ -1,9 +1,11 @@
 import 'server-only'
 import { logger } from '@/lib/axiom/logger'
+import { buildMetaProductsMessage } from './catalog/message'
 import type {
   WhatsAppOutboundButtons,
   WhatsAppOutboundContact,
   WhatsAppOutboundFlow,
+  WhatsAppOutboundProducts,
   WhatsAppOutboundList,
   WhatsAppOutboundMedia,
   WhatsAppOutboundReaction,
@@ -444,6 +446,25 @@ export function createMetaClient(
             ...metaRecipient(input.to),
             type: 'interactive',
             interactive: buildMetaListMessage(input),
+          }),
+        },
+      )
+      return { providerMessageId: result.messages[0].id }
+    },
+
+    async sendProducts(
+      input: WhatsAppOutboundProducts,
+    ): Promise<WhatsAppSendResult> {
+      const result = await metaRequest<{ messages: { id: string }[] }>(
+        credentials,
+        messagesPath,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            ...metaRecipient(input.to),
+            type: 'interactive',
+            interactive: buildMetaProductsMessage(input),
           }),
         },
       )

@@ -30,6 +30,7 @@ import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.r
 import { assertModuleEnabled } from './authz'
 import { CrmDuplicateService } from './crm-duplicate.service'
 import { CrmLeadService } from './crm-lead.service'
+import { WhatsAppSchedulingService } from './whatsapp-scheduling.service'
 
 export interface InboundFlowReply {
   workspaceId: string
@@ -333,7 +334,24 @@ export const WhatsAppFlowResponseService = {
       flow.name,
       summarizeAnswers(definition, answers),
     )
-    const confirmation = flow.confirmationText
+    // The booking Flow (Z10) books a slot; what it tells the contact replaces
+    // the Flow's generic thank-you.
+    const booking = await WhatsAppSchedulingService.bookFromFlow({
+      workspaceId: input.workspaceId,
+      flowId: flow.id,
+      contact: input.contact,
+      conversationId: input.conversationId,
+      answers,
+    })
+    if (!booking.ok) {
+      logger.warn('whatsapp.flow.booking_failed', {
+        workspaceId: input.workspaceId,
+        flowId: flow.id,
+        reason: booking.error.code,
+      })
+    }
+    const confirmation =
+      (booking.ok && booking.value.text) || flow.confirmationText
 
     auditMutation({
       entity: 'whatsapp_flow_response',

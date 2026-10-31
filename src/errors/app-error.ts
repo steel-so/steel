@@ -2468,3 +2468,62 @@ export const metaChannelPageNotFound = (): AppError =>
 
 export const metaChannelCommentNotFound = (): AppError =>
   appError('META_CHANNEL_COMMENT_NOT_FOUND', 'Comentário não encontrado')
+
+// ─── zap-ecom · catalog, store triggers, scheduling ─────────────────────────
+
+export const whatsappCatalogDisabled = (): AppError =>
+  appError(
+    'WHATSAPP_CATALOG_DISABLED',
+    'O catálogo do WhatsApp está desativado neste workspace',
+  )
+
+export const whatsappCatalogProductNotFound = (): AppError =>
+  appError(
+    'WHATSAPP_CATALOG_PRODUCT_NOT_FOUND',
+    'Produto do catálogo não encontrado',
+  )
+
+export const whatsappCatalogInvalid = (message: string): AppError =>
+  appError('WHATSAPP_CATALOG_INVALID', message)
+
+export const whatsappCatalogSyncFailed = (message: string): AppError =>
+  appError('WHATSAPP_CATALOG_SYNC_FAILED', message)
+
+export const whatsappStoreNotFound = (): AppError =>
+  appError('WHATSAPP_STORE_NOT_FOUND', 'Loja não encontrada')
+
+export const whatsappStoreInvalid = (message: string): AppError =>
+  appError('WHATSAPP_STORE_INVALID', message)
+
+export const whatsappEcomTriggerInvalid = (message: string): AppError =>
+  appError('WHATSAPP_ECOM_TRIGGER_INVALID', message)
+
+export const whatsappSchedDisabled = (): AppError =>
+  appError(
+    'WHATSAPP_SCHED_DISABLED',
+    'O agendamento pelo WhatsApp está desativado neste workspace',
+  )
+
+export const whatsappSchedServiceNotFound = (): AppError =>
+  appError('WHATSAPP_SCHED_SERVICE_NOT_FOUND', 'Serviço não encontrado')
+
+export const whatsappSchedProfessionalNotFound = (): AppError =>
+  appError(
+    'WHATSAPP_SCHED_PROFESSIONAL_NOT_FOUND',
+    'Profissional não encontrado',
+  )
+
+export const whatsappSchedAppointmentNotFound = (): AppError =>
+  appError('WHATSAPP_SCHED_APPOINTMENT_NOT_FOUND', 'Agendamento não encontrado')
+
+export const whatsappSchedSlotTaken = (): AppError =>
+  appError(
+    'WHATSAPP_SCHED_SLOT_TAKEN',
+    'Esse horário já foi ocupado. Escolha outro.',
+  )
+
+export const whatsappSchedInvalid = (message: string): AppError =>
+  appError('WHATSAPP_SCHED_INVALID', message)
+
+export const whatsappSchedStateConflict = (message: string): AppError =>
+  appError('WHATSAPP_SCHED_STATE_CONFLICT', message)
