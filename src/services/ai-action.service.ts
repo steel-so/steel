@@ -341,7 +341,7 @@ export const AiActionService = {
       connectorKey,
     )
     if (!found.ok) return found
-    if (!found.value || !found.value.enabled || found.value.kind !== kind) {
+    if (!found.value?.enabled || found.value.kind !== kind) {
       return err(aiActionConnectorNotFound())
     }
     return ok(found.value)
