@@ -16,14 +16,12 @@ steel-inventory-agent uninstall
 - **Token**: created in Settings > Inventory (shown once). Sent as
   `Authorization: Bearer`. A rejected token (401/403) stops `run` and is not
   retried; other failures retry with exponential backoff and again next tick.
-- **Config**: `/etc/steel-inventory-agent.json` (Linux) or
-  `%ProgramData%\SteelInventoryAgent\config.json` (Windows), mode `0600`.
+- **Config**: `/etc/steel-inventory-agent.json`, mode `0600`.
   `STEEL_INVENTORY_URL` / `STEEL_INVENTORY_TOKEN` and flags override it.
-- **Identity**: `sha256(machine-id)` (Linux `/etc/machine-id`, Windows
-  `MachineGuid`), so reinstalling keeps the same device.
+- **Identity**: `sha256(machine-id)` (Linux `/etc/machine-id`), so reinstalling keeps the same device.
 - **Wire format**: `Report` in `report.go`, mirrored by `SdInventoryReportSchema`
   (`src/schemas/sd-inventory.schema.ts`). Keep both in sync.
-- **Platform code**: `collect_linux.go`, `collect_windows.go` (one PowerShell run),
+- **Platform code**: `collect_linux.go`,
   `collect_other.go` (portable stub so the tests run anywhere). Pure parsers live
   in `parse.go` and `flexible.go`.
 
@@ -48,7 +46,7 @@ the first report) and in the `update` command:
    `ok <version>` with the manifest version. `selftest` reads no config and
    touches no network.
 4. Swap: the current binary is renamed to `<exe>.old`, `<exe>.new` becomes the
-   executable (renaming a running executable works on Linux and Windows), and
+   executable (renaming a running executable works on Linux), and
    `<exe>.update.json` records `fromVersion`, `toVersion`, `attempts: 0` and
    `createdAt`. If the second rename fails the first one is undone.
 5. `run` returns and the process exits with code 0 so the supervisor starts the
@@ -70,23 +68,12 @@ Turning it off locally: `--no-auto-update` (also stored by `install`),
 `STEEL_INVENTORY_AUTO_UPDATE=false`, or `"autoUpdate": false` in the config file.
 The default is on, including for config files written before this option existed.
 
-Windows: the scheduled task runs `once`, which has no long-lived process, so
-`install` registers a second daily task, `Steel Inventory Agent Update`, that runs
-`update`; the next `once` run simply starts the new binary and no restart is needed
-(`once` also does the rollback check and confirms the update). Machines installed
-before this feature need `install` run again to get that task.
-
-Windows binaries are still unsigned: auto-update trusts the SHA-256 served over
-TLS by your Steel server, and code signing is out of scope for now.
-
 ## Develop
 
 ```bash
 go vet ./... && go test ./...
-GOOS=windows GOARCH=amd64 go build -o steel-inventory-agent.exe .
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=dev" .
 ```
 
 CI (`.github/workflows/inventory-agent.yml`) checks gofmt, vets, tests on Linux
-and Windows and cross-builds `linux/amd64`, `linux/arm64` and `windows/amd64`.
-Windows binaries are not code signed yet (pending product decision).
+and cross-builds `linux/amd64` and `linux/arm64`.

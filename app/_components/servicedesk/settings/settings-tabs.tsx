@@ -230,7 +230,7 @@ export const SD_SETTINGS_TABS: SdSettingsTabDefinition[] = [
     label: 'Inventário',
     icon: HardDriveIcon,
     description:
-      'Agente de inventário para Windows e Linux (tokens por workspace), varredura SNMP de faixas de rede, limiares de alerta de disco e memória e a sincronização com a CMDB.',
+      'Agente de inventário para Linux (tokens por workspace), varredura SNMP de faixas de rede, limiares de alerta de disco e memória e a sincronização com a CMDB.',
     component: SdInventoryTab,
   },
   {

@@ -29,10 +29,10 @@ Usage:
 
 Commands:
   run         report now, then every interval until stopped (default)
-  once        report once and exit (used by the Windows scheduled task)
+  once        report once and exit (for external schedulers)
   collect     print the report as JSON without sending it
   update      check for a new agent release and install it (no report)
-  install     install as a service / scheduled task (needs --url and --token)
+  install     install as a systemd service (needs --url and --token)
   uninstall   remove the service / scheduled task and the config
   version     print the version
 

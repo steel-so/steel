@@ -1,6 +1,6 @@
 ---
 title: Inventário e descoberta de ativos
-description: Agente para Windows e Linux, varredura SNMP (v2c e v3) e descoberta por ping que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
+description: Agente para Linux, varredura SNMP (v2c e v3) e descoberta por ping que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
 section: servicedesk
 order: 13
 ---
@@ -8,7 +8,7 @@ order: 13
 O **Inventário** descobre os equipamentos sozinho e mantém os **Itens de
 configuração** em dia, sem cadastro manual. Há três caminhos que se somam:
 
-- o **agente**, instalado em computadores Windows e Linux: envia hardware,
+- o **agente**, instalado em computadores Linux: envia hardware,
   sistema, rede, discos, memória e os programas instalados;
 - a **varredura SNMP**, que percorre faixas de rede e descobre switches,
   impressoras, firewalls e servidores sem instalar nada neles;
@@ -33,11 +33,9 @@ configuração** em dia, sem cadastro manual. Há três caminhos que se somam:
 | Sistema | Comando |
 | --- | --- |
 | Linux (como root) | `sudo ./steel-inventory-agent install --url https://seu-steel --token <token>` |
-| Windows (PowerShell como administrador) | `.\steel-inventory-agent.exe install --url https://seu-steel --token <token>` |
 
-No Linux o agente vira um serviço (`steel-inventory-agent`); no Windows, uma
-tarefa agendada que roda a cada 6 horas. Em ambos o primeiro relatório sai na
-hora. Para ver o que seria enviado, sem enviar, rode `steel-inventory-agent
+No Linux o agente vira um serviço (`steel-inventory-agent`) e o primeiro
+relatório sai na hora. Para ver o que seria enviado, sem enviar, rode `steel-inventory-agent
 collect`.
 
 <Callout type='aviso'>
@@ -58,8 +56,7 @@ A tela mostra a última versão publicada por sistema.
 
 <Callout type='nota'>
   A atualização vale para agentes que já estão instalados; a primeira instalação
-  continua sendo manual. Os binários do Windows ainda não têm assinatura de
-  código, então o SmartScreen pode avisar na primeira execução.
+  continua sendo manual.
 </Callout>
 
 ## Varredura SNMP

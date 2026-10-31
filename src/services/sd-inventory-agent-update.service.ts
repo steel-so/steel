@@ -40,8 +40,7 @@ const NO_UPDATE: SdInventoryAgentVersionDTO = {
 export function sdInventoryAgentStorageKey(
   release: Pick<PublishSdInventoryAgentReleaseDTO, 'version' | 'os' | 'arch'>,
 ): string {
-  const ext = release.os === 'windows' ? '.exe' : ''
-  return `${release.version}/steel-inventory-agent-${release.os}-${release.arch}${ext}`
+  return `${release.version}/steel-inventory-agent-${release.os}-${release.arch}`
 }
 
 export function sdInventoryAgentDownloadPath(

@@ -77,7 +77,6 @@ async function copyText(text: string) {
 export function sdInventoryInstallSnippets(origin: string, token: string) {
   return {
     linux: `sudo ./steel-inventory-agent install --url ${origin} --token ${token}`,
-    windows: `.\\steel-inventory-agent.exe install --url ${origin} --token ${token}`,
   }
 }
 
@@ -126,10 +125,6 @@ function TokenDialog({
           <CodeRow
             label='Instalar no Linux (como root)'
             value={snippets.linux}
-          />
-          <CodeRow
-            label='Instalar no Windows (PowerShell como administrador)'
-            value={snippets.windows}
           />
           <p className='text-[11px] text-muted-foreground'>
             O token vale para todas as máquinas desta workspace que o usarem.
@@ -279,7 +274,7 @@ function TokensBlock({ workspaceId }: { workspaceId: string }) {
   return (
     <SettingsSection
       title='Agente de inventário'
-      description='O agente roda nos computadores Windows e Linux e envia hardware, software e uso de disco e memória. Cada token identifica a workspace; use um por site ou por lote de máquinas para poder revogar separado.'
+      description='O agente roda nos computadores Linux e envia hardware, software e uso de disco e memória. Cada token identifica a workspace; use um por site ou por lote de máquinas para poder revogar separado.'
       actions={
         <Button size='sm' onClick={() => setCreating(true)}>
           <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
