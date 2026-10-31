@@ -23,7 +23,7 @@ import {
   permErrors,
 } from './shared'
 
-const TAG = 'Comunicação · Instagram, Messenger e Coexistência' as const
+const TAG = 'Comunicação · Canais da Meta' as const
 
 const Channel = z.enum(['WHATSAPP', 'INSTAGRAM', 'MESSENGER'])
 
