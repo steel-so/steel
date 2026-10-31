@@ -6,10 +6,8 @@ import {
 import {
   computeSlots,
   dateKeysFrom,
-  hhmmToMinutes,
   isOfferedSlot,
   periodOf,
-  windowsOf,
 } from '../whatsapp/scheduling/slots'
 import {
   addDaysToDateKey,
@@ -95,15 +93,6 @@ describe('slots', () => {
       hour: '2-digit',
       minute: '2-digit',
     }).format(d)
-
-  it('parses hours and drops malformed windows', () => {
-    expect(hhmmToMinutes('09:30')).toBe(570)
-    expect(windowsOf(hours, 3)).toHaveLength(2)
-    expect(windowsOf(hours, 4)).toEqual([])
-    expect(windowsOf(hours, 5)).toEqual([])
-    expect(windowsOf(hours, 0)).toEqual([])
-    expect(windowsOf({ '1': 'x' as never }, 1)).toEqual([])
-  })
 
   it('offers every start that fits the windows', () => {
     expect(computeSlots(base).map(hhmm)).toEqual([

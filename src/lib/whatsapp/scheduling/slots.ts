@@ -1,46 +1,27 @@
 import {
+  computeFreeSlots,
+  type HourWindow,
+  type Interval,
+  type WeeklyHours,
+} from '@/src/lib/crm-meetings/slots'
+import {
   addDaysToDateKey,
-  weekdayOfDateKey,
   zonedDateKey,
   zonedToUtc,
 } from './time'
 
-export interface WorkingWindow {
-  /** `HH:mm` */
-  start: string
-  /** `HH:mm`, exclusive. */
-  end: string
-}
-
-/** Weekday (`"0"` = Sunday) -> windows. */
-export type WeeklyHours = Record<string, WorkingWindow[]>
-
-export interface BusyRange {
-  startsAt: Date
-  endsAt: Date
-}
-
-export const HOUR_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
-
-export function hhmmToMinutes(value: string): number {
-  const [hours, minutes] = value.split(':').map(Number)
-  return hours * 60 + minutes
-}
-
-/** Windows of a weekday, dropping malformed or inverted ones. */
-export function windowsOf(
-  hours: WeeklyHours,
-  weekday: number,
-): WorkingWindow[] {
-  const windows = hours[String(weekday)]
-  if (!Array.isArray(windows)) return []
-  return windows.filter(
-    (w) =>
-      HOUR_PATTERN.test(w?.start ?? '') &&
-      HOUR_PATTERN.test(w?.end ?? '') &&
-      hhmmToMinutes(w.start) < hhmmToMinutes(w.end),
-  )
-}
+/**
+ * Thin adapter over the C5 slot engine (`crm-meetings/slots`). The agenda
+ * keeps its own inputs (a day, a service with duration and buffer, the
+ * professional's busy ranges) and hands the arithmetic to `computeFreeSlots`.
+ *
+ * One difference to know: C5 applies the buffer on both sides of every busy
+ * range using the buffer of the service being offered. The booking repository
+ * (`createIfFree`) is the authority on conflicts and uses each booked
+ * service's own buffer; the two agree whenever services share a buffer.
+ */
+export type { HourWindow as WorkingWindow, WeeklyHours }
+export type BusyRange = { startsAt: Date; endsAt: Date }
 
 export interface SlotInput {
   /** Calendar day in the agenda's zone, `YYYY-MM-DD`. */
@@ -56,38 +37,28 @@ export interface SlotInput {
   minNoticeMinutes: number
 }
 
-const MINUTE_MS = 60_000
+/** Horizon given to C5: the service bounds the booking window itself. */
+const NO_HORIZON_DAYS = 3650
 
-/**
- * Start times offered on one day. A start is free when the appointment plus
- * its buffer fits inside a working window, no live appointment overlaps it
- * (the busy ranges already include their own buffers) and it respects the
- * minimum notice.
- */
+/** Start times offered on one day. */
 export function computeSlots(input: SlotInput): Date[] {
-  const earliest = input.now.getTime() + input.minNoticeMinutes * MINUTE_MS
-  const occupied = input.durationMinutes + input.bufferMinutes
-  const slots: Date[] = []
-  for (const window of windowsOf(
-    input.hours,
-    weekdayOfDateKey(input.dateKey),
-  )) {
-    const end = hhmmToMinutes(window.end)
-    for (
-      let minute = hhmmToMinutes(window.start);
-      minute + input.durationMinutes <= end;
-      minute += input.stepMinutes
-    ) {
-      const startsAt = zonedToUtc(input.dateKey, minute, input.timeZone)
-      const endsAt = new Date(startsAt.getTime() + occupied * MINUTE_MS)
-      if (startsAt.getTime() < earliest) continue
-      const clash = input.busy.some(
-        (range) => startsAt < range.endsAt && endsAt > range.startsAt,
-      )
-      if (!clash) slots.push(startsAt)
-    }
-  }
-  return slots
+  const busy: Interval[] = input.busy.map((range) => ({
+    start: range.startsAt,
+    end: range.endsAt,
+  }))
+  return computeFreeSlots({
+    from: zonedToUtc(input.dateKey, 0, input.timeZone),
+    to: zonedToUtc(addDaysToDateKey(input.dateKey, 1), 0, input.timeZone),
+    now: input.now,
+    durationMinutes: input.durationMinutes,
+    bufferMinutes: input.bufferMinutes,
+    stepMinutes: input.stepMinutes,
+    minNoticeMinutes: input.minNoticeMinutes,
+    maxDaysAhead: NO_HORIZON_DAYS,
+    timezone: input.timeZone,
+    weeklyHours: input.hours,
+    busy,
+  })
 }
 
 /** Whether `startsAt` is one of the offered starts of its day. */

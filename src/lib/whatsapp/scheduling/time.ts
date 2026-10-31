@@ -1,74 +1,40 @@
-/** Wall-clock parts of an instant in an IANA zone. */
-export interface ZonedParts {
-  year: number
-  month: number
-  day: number
-  hour: number
-  minute: number
-  /** 0 = Sunday ... 6 = Saturday. */
-  weekday: number
-}
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-export function isValidTimeZone(timeZone: string): boolean {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone })
-    return true
-  } catch {
-    return false
-  }
-}
-
-export function zonedParts(date: Date, timeZone: string): ZonedParts {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      hourCycle: 'h23',
-      weekday: 'short',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-      .formatToParts(date)
-      .map((part) => [part.type, part.value]),
-  )
-  return {
-    year: Number(parts.year),
-    month: Number(parts.month),
-    day: Number(parts.day),
-    hour: Number(parts.hour),
-    minute: Number(parts.minute),
-    weekday: WEEKDAYS.indexOf(parts.weekday),
-  }
-}
-
-/** `YYYY-MM-DD` of the instant in the zone. */
-export function zonedDateKey(date: Date, timeZone: string): string {
-  const p = zonedParts(date, timeZone)
-  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`
-}
+import {
+  isValidTimezone,
+  type LocalParts,
+  localDateKey,
+  localParts,
+  zonedTimeToUtc,
+} from '@/src/lib/crm-meetings/tz'
 
 /**
- * The instant at which the zone's wall clock reads `date` + `minuteOfDay`.
- * Two passes absorb the zone offset (and a DST jump on that day).
+ * Thin adapter over the C5 meeting scheduler helpers (`crm-meetings/tz`):
+ * the agenda reuses its zone math and only adds the calendar-day helpers and
+ * the pt-BR date text the WhatsApp messages need.
  */
+export type ZonedParts = LocalParts
+
+export const isValidTimeZone = isValidTimezone
+export const zonedParts = localParts
+/** `YYYY-MM-DD` of the instant in the zone. */
+export const zonedDateKey = localDateKey
+
+/** The instant at which the zone's wall clock reads `dateKey` + `minuteOfDay`. */
 export function zonedToUtc(
   dateKey: string,
   minuteOfDay: number,
   timeZone: string,
 ): Date {
   const [year, month, day] = dateKey.split('-').map(Number)
-  const wall = Date.UTC(year, month - 1, day, 0, minuteOfDay)
-  let guess = wall
-  for (let pass = 0; pass < 2; pass += 1) {
-    const p = zonedParts(new Date(guess), timeZone)
-    const shown = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute)
-    guess += wall - shown
-  }
-  return new Date(guess)
+  return zonedTimeToUtc(
+    {
+      year,
+      month,
+      day,
+      hour: Math.floor(minuteOfDay / 60),
+      minute: minuteOfDay % 60,
+    },
+    timeZone,
+  )
 }
 
 /** Weekday (0 = Sunday) of a `YYYY-MM-DD` calendar date. */
