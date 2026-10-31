@@ -39,6 +39,7 @@ import {
   TrialLifecycleJob,
   UsageRollupJob,
   WhatsappArchiveJob,
+  WhatsappAutomationsJob,
   WhatsappBroadcastJob,
   WhatsappConversationLifecycleJob,
   WorkspaceExportJob,
@@ -83,6 +84,7 @@ import {
   getTrialLifecycleQueue,
   getUsageRollupQueue,
   getWhatsappArchiveQueue,
+  getWhatsappAutomationsQueue,
   getWhatsappBroadcastQueue,
   getWhatsappConversationLifecycleQueue,
   getWorkspaceExportQueue,
@@ -134,6 +136,7 @@ import {
   SteelAgentsTickCron,
   UsageRollupCron,
   WhatsappArchiveCron,
+  WhatsappAutomationsCron,
   WhatsappBroadcastScheduleCron,
   WhatsappConversationAutoCloseCron,
   WhatsappDistributionTickCron,
@@ -639,6 +642,26 @@ export async function scheduleCrmCadencesJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_cadences_registered', {
     component: 'Worker',
     pattern: CrmCadencesCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleWhatsappAutomationsJobs(): Promise<void> {
+  const queue = getWhatsappAutomationsQueue()
+  for (const name of [
+    WhatsappAutomationsJob.EcomTick,
+    WhatsappAutomationsJob.SchedulingTick,
+  ]) {
+    await queue.upsertJobScheduler(
+      name,
+      { pattern: WhatsappAutomationsCron, tz: RetentionTimezone },
+      { name, data: {} },
+    )
+  }
+
+  logger.info('queue.scheduler.whatsapp_automations_registered', {
+    component: 'Worker',
+    pattern: WhatsappAutomationsCron,
     timezone: RetentionTimezone,
   })
 }

@@ -149,6 +149,9 @@ export const CrmDealsCron = '30 6 * * *' as const
 /** Sales cadences: due steps run every minute. */
 export const CrmCadencesCron = '* * * * *' as const
 
+/** WhatsApp automations: store events and appointment messages, each minute. */
+export const WhatsappAutomationsCron = '* * * * *' as const
+
 /**
  * Due-date notices of ticket tasks: every 15 minutes, so "due within the
  * hour" is announced with at least 45 minutes to spare.
