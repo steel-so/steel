@@ -19,7 +19,7 @@ type RemoteIDs struct {
 // remoteIDPattern mirrors isValidRemoteId on the server.
 var (
 	remoteIDPattern = regexp.MustCompile(`^[A-Za-z0-9._@-]{4,64}$`)
-	digitsOnly     = regexp.MustCompile(`^\d+$`)
+	digitsOnly      = regexp.MustCompile(`^\d+$`)
 )
 
 // parseRemoteID extracts the ID from the output of `<tool> --get-id`: the first
