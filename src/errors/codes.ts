@@ -1517,16 +1517,7 @@ export const ERROR_CODES = {
   // nov-health-scores: recompute on a deal that is already won or lost.
   CRM_HEALTH_NOT_APPLICABLE: { code: 'CRM_HEALTH_NOT_APPLICABLE', status: 409 },
 
-  // ServiceDesk — nov3 sd-ops (acesso remoto, licenças, config em linguagem natural, WFM)
-  SD_REMOTE_DISABLED: { code: 'SD_REMOTE_DISABLED', status: 409 },
-  SD_REMOTE_ENDPOINT_NOT_FOUND: {
-    code: 'SD_REMOTE_ENDPOINT_NOT_FOUND',
-    status: 404,
-  },
-  SD_REMOTE_ENDPOINT_INVALID: {
-    code: 'SD_REMOTE_ENDPOINT_INVALID',
-    status: 422,
-  },
+  // ServiceDesk — nov3 sd-ops (licenças, config em linguagem natural, WFM)
   SD_LICENSE_NOT_FOUND: { code: 'SD_LICENSE_NOT_FOUND', status: 404 },
   SD_LICENSE_INVALID: { code: 'SD_LICENSE_INVALID', status: 422 },
   SD_NL_CONFIG_FAILED: { code: 'SD_NL_CONFIG_FAILED', status: 502 },

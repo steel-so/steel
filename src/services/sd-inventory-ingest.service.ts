@@ -9,7 +9,6 @@ import type { SdInventoryIngestResultDTO } from '@/types/sd-inventory'
 import { assertModuleEnabled } from './authz'
 import { syncInventoryDevice } from './sd-inventory-sync.service'
 import { hashSdInventoryToken } from './sd-inventory-token.service'
-import { SdRemoteService } from './sd-remote.service'
 
 /**
  * Entrada pública do agente (`POST /api/servicedesk/inventory/report`): sem
@@ -78,20 +77,6 @@ export const SdInventoryIngestService = {
         code: synced.error.code,
       })
       return synced
-    }
-
-    if (report.remote && synced.value.configItemId) {
-      const remote = await SdRemoteService.saveInventoryEndpoints(
-        token.workspaceId,
-        synced.value.configItemId,
-        report.remote,
-      )
-      if (!remote.ok) {
-        logger.warn('servicedesk.inventory.remote_ids_failed', {
-          workspaceId: token.workspaceId,
-          code: remote.error.code,
-        })
-      }
     }
 
     // Falha em carimbar o último uso não derruba um relatório já gravado.

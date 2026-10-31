@@ -2301,21 +2301,6 @@ export const crmHealthNotApplicable = (): AppError =>
     'A saúde só é calculada para negócios em andamento',
   )
 
-export const sdRemoteDisabled = (): AppError =>
-  appError(
-    'SD_REMOTE_DISABLED',
-    'O acesso remoto não está habilitado neste workspace',
-  )
-
-export const sdRemoteEndpointNotFound = (): AppError =>
-  appError(
-    'SD_REMOTE_ENDPOINT_NOT_FOUND',
-    'Este ativo não tem um ID de acesso remoto cadastrado',
-  )
-
-export const sdRemoteEndpointInvalid = (message: string): AppError =>
-  appError('SD_REMOTE_ENDPOINT_INVALID', message)
-
 export const sdLicenseNotFound = (): AppError =>
   appError('SD_LICENSE_NOT_FOUND', 'Licença não encontrada')
 
