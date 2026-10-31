@@ -10,16 +10,20 @@ import { sdIntegrationRoutes } from './servicedesk/integrations'
 import { sdInventoryRoutes } from './servicedesk/inventory'
 import { sdInventoryFollowupRoutes } from './servicedesk/inventory-followups'
 import { sdKcsRoutes } from './servicedesk/kcs'
+import { sdLicenseRoutes } from './servicedesk/licenses'
 import { sdMailRoutes } from './servicedesk/mail'
 import { sdMajorIncidentRoutes } from './servicedesk/major-incident'
 import { sdMonitoringRoutes } from './servicedesk/monitoring'
+import { sdNlConfigRoutes } from './servicedesk/nl-config'
 import { sdNotificationRoutes } from './servicedesk/notifications'
 import { sdOnCallRoutes } from './servicedesk/oncall'
 import { sdRecurringRoutes } from './servicedesk/recurring'
+import { sdRemoteRoutes } from './servicedesk/remote'
 import { sdReportRoutes } from './servicedesk/reports'
 import { sdRiskRoutes } from './servicedesk/risk'
 import { sdSwarmRoutes } from './servicedesk/swarm'
 import { sdTicketTabRoutes } from './servicedesk/ticket-tabs'
+import { sdWfmRoutes } from './servicedesk/wfm'
 import { sdWhatsappAiRoutes } from './servicedesk/whatsapp-ai'
 
 /**
@@ -44,6 +48,7 @@ const routes: RouteConfig[] = [
   ...sdChangeCabRoutes,
   ...sdContractRoutes,
   ...sdRiskRoutes,
+  ...sdWfmRoutes,
   ...sdKcsRoutes,
   ...sdAiComparisonRoutes,
   ...sdIntegrationRoutes,
@@ -51,6 +56,9 @@ const routes: RouteConfig[] = [
   ...sdMajorIncidentRoutes,
   ...sdInventoryRoutes,
   ...sdInventoryFollowupRoutes,
+  ...sdLicenseRoutes,
+  ...sdNlConfigRoutes,
+  ...sdRemoteRoutes,
 ]
 
 export function registerServiceDeskPaths(registry: OpenApiRegistry): void {

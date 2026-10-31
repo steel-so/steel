@@ -2,6 +2,7 @@ import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { SdInventoryDiscoveryService } from '@/src/services/sd-inventory-discovery.service'
 import { SdInventoryTargetService } from '@/src/services/sd-inventory-target.service'
+import { SdLicenseService } from '@/src/services/sd-license.service'
 import { ServicedeskInventoryJob } from '../jobs'
 
 /**
@@ -11,7 +12,9 @@ import { ServicedeskInventoryJob } from '../jobs'
  * - `scan-target` varre um alvo e grava os equipamentos na CMDB;
  * - `discovery-due` (a cada 10 min) enfileira as faixas de descoberta (ping/ARP)
  *   com opt-in ligado cuja hora chegou;
- * - `discovery-range` sonda uma faixa e grava os achados como "descobertos".
+ * - `discovery-range` sonda uma faixa e grava os achados como "descobertos";
+ * - `license-expiry` (diário, 07:00) avisa os administradores de licenças de
+ *   software perto de vencer ou vencidas (S7).
  *
  * Falha de infraestrutura (banco, Redis) lança para o BullMQ registrar; falha
  * da varredura em si (host mudo, community errada) não lança — fica no
@@ -88,6 +91,20 @@ export async function processServicedeskInventory(
         jobId: job.id,
         rangeId,
         ...(result.value ?? { skipped: true }),
+      })
+      return result.value
+    }
+    case ServicedeskInventoryJob.LicenseExpiry: {
+      const result = await SdLicenseService.runExpiryTick()
+      if (!result.ok) {
+        throw new Error(
+          `servicedesk-inventory license-expiry failed: ${result.error.code} ${result.error.message}`,
+        )
+      }
+      logger.info('queue.servicedesk_inventory.license_expiry_completed', {
+        component: 'Worker',
+        jobId: job.id,
+        ...result.value,
       })
       return result.value
     }

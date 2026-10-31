@@ -369,6 +369,11 @@ export const TAG_GROUPS = [
           'Inventário e descoberta de ativos: o agente (Windows e Linux) envia hardware, software e uso de disco e memória com um token por workspace; a varredura SNMP do worker descobre equipamentos de rede por faixa de IP; ambos alimentam a CMDB, abrem alertas de disco e memória e formam o catálogo de software.',
       },
       {
+        name: 'ServiceDesk · Acesso remoto',
+        description:
+          'Botão "Conectar" no chamado e no ativo da CMDB: o workspace escolhe o provedor (RustDesk ou AnyDesk), cada ativo guarda o ID público da máquina (digitado ou vindo do inventário) e cada conexão fica registrada no histórico do chamado e na auditoria. Nenhuma senha é guardada.',
+      },
+      {
         name: 'ServiceDesk · Incidente maior',
         description:
           'Incidente maior declarado a partir de um chamado de incidente: agrupa os chamados filhos (com sugestões por categoria, item de configuração e cliente), abre a sala de guerra (swarming) e publica atualizações nas páginas de status. Só agentes.',
@@ -417,6 +422,11 @@ export const TAG_GROUPS = [
         name: 'ServiceDesk · Risco preditivo',
         description:
           'Risco de violação de SLA por heurística explicável (ADR 0016 — nada passa por LLM): a fila por risco, a previsão de um chamado com os fatores que pegaram e a frase do motivo de cada um, e os agrupamentos de incidentes repetidos como sugestão de problema (abrir o problema e descartar são ações do agente).',
+      },
+      {
+        name: 'ServiceDesk · Demanda e escala',
+        description:
+          'Previsão de volume de chamados por hora e dia a partir do histórico, com sugestão de agentes por turno comparada ao plantão e ao time (S5).',
       },
       {
         name: 'ServiceDesk · IA vs. técnico',

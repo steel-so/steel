@@ -1,0 +1,49 @@
+---
+title: Configuração em linguagem natural
+description: Descreva uma política de SLA, uma automação ou uma regra de escalonamento em texto, confira a prévia e só então aplique.
+section: servicedesk
+order: 20
+---
+
+Em vez de montar condições e ações campo a campo, você escreve o que precisa e
+a IA monta a configuração. **Nada é salvo até você clicar em Aplicar.**
+
+## Onde fica
+
+Em **Configurações do ServiceDesk**, nas abas **SLA**, **Automações** e
+**Escalonamento**, ao lado do botão de criar há o botão **Descrever com IA**.
+Só administradores do ServiceDesk veem o botão.
+
+## Como usar
+
+1. Clique em **Descrever com IA** e escreva o pedido. Exemplos:
+   - SLA: "Para chamados de prioridade Alta, primeira resposta em 15 minutos e
+     resolução em 4 horas, no horário comercial."
+   - Automação: "Quando um incidente for criado com VPN no título, encaminhar
+     para o departamento de Redes e avisar o líder."
+   - Escalonamento: "Se a resolução estiver em risco, avisar o responsável e
+     subir a prioridade."
+2. Para **ajustar** algo que já existe, escolha a regra em **Aplicar em** e
+   descreva só a mudança ("aumente a primeira resposta para 30 minutos").
+3. Clique em **Ver prévia**. Você vê a configuração em português, os avisos da
+   IA e, nos ajustes, o que muda campo a campo (antes e depois).
+4. Gostou? **Aplicar**. Não gostou? **Ajustar o pedido** ou **Descartar**.
+
+## O que a IA vê
+
+Só o seu texto e os **nomes** de prioridades, calendários, departamentos,
+categorias, fases e usuários do workspace. Dados de chamados e de clientes
+**nunca** são enviados. Ao ajustar uma regra, a configuração dela também vai
+junto.
+
+## Limites e cuidados
+
+- A configuração proposta passa pelas mesmas validações da criação manual. Se a
+  IA citar algo que não existe (um departamento, por exemplo), a prévia é
+  recusada com a explicação, e nada é criado.
+- A política de SLA marcada como padrão não perde o posto por um ajuste em
+  texto.
+- Cada prévia consome a **cota mensal de IA** do workspace. Com a IA do
+  ServiceDesk desligada em **Geral**, o botão responde que ela está desativada.
+- Aplicar fica registrado na auditoria, como qualquer outra alteração de
+  configuração.

@@ -12,12 +12,14 @@ import {
   FireIcon,
   HardDriveIcon,
   Home01Icon,
+  Key01Icon,
   Megaphone01Icon,
   ServerStack01Icon,
   Settings02Icon,
   Ticket01Icon,
   TicketStarIcon,
   UserAccountIcon,
+  UserGroupIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
@@ -112,6 +114,9 @@ export default async function ServiceDeskLayout({
             <NavItem href={`${base}/risk`} icon={AlertDiamondIcon}>
               Análise de risco
             </NavItem>
+            <NavItem href={`${base}/demand`} icon={UserGroupIcon}>
+              Demanda e escala
+            </NavItem>
             <NavItem href={`${base}/ai-comparison`} icon={AiMagicIcon}>
               IA vs. técnico
             </NavItem>
@@ -131,6 +136,9 @@ export default async function ServiceDeskLayout({
             </NavItem>
             <NavItem href={`${base}/inventory`} icon={HardDriveIcon}>
               Inventário
+            </NavItem>
+            <NavItem href={`${base}/licenses`} icon={Key01Icon}>
+              Licenças de software
             </NavItem>
           </NavGroup>
           <NavGroup>

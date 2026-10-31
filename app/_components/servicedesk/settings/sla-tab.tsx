@@ -45,6 +45,7 @@ import type {
   SdWeekDayDTO,
   SdWeeklyScheduleDTO,
 } from '@/types/sd-config'
+import { SdNlConfigButton } from './nl-config-dialog'
 import {
   SdConditionBuilder,
   summarizeSdConditions,
@@ -170,10 +171,17 @@ function PoliciesSection() {
       description='Na abertura, vale a primeira política ativa (na ordem abaixo) cujas condições casam com o chamado; senão, a padrão. Metas em minutos úteis do calendário.'
       actions={
         canEdit ? (
-          <Button size='sm' onClick={() => setEditing('new')}>
-            <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-            Nova política
-          </Button>
+          <>
+            <SdNlConfigButton
+              workspaceId={workspaceId}
+              kind='SLA'
+              existing={policies}
+            />
+            <Button size='sm' onClick={() => setEditing('new')}>
+              <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+              Nova política
+            </Button>
+          </>
         ) : null
       }
     >

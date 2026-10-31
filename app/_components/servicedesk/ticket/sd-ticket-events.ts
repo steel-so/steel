@@ -80,6 +80,7 @@ const SWARM_TITLES: Record<string, string> = {
 }
 
 const ACTIVITY_TITLES: Record<string, string> = {
+  'remote.session_started': 'iniciou um acesso remoto',
   'message.posted': 'publicou uma mensagem',
   'message.created': 'publicou uma mensagem',
   'note.created': 'adicionou uma nota interna',

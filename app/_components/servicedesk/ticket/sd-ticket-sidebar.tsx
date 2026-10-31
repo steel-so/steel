@@ -11,6 +11,7 @@ import { SdAiCopilotPanel } from '@/app/_components/servicedesk/ai/copilot-panel
 import { SdPortalAccessButton } from '@/app/_components/servicedesk/external-portal'
 import { SdTicketIntegrationLinks } from '@/app/_components/servicedesk/integrations/sd-ticket-integration-links'
 import { SdTicketMonitorBlock } from '@/app/_components/servicedesk/monitoring/sd-ticket-monitor-block'
+import { SdRemoteConnectButton } from '@/app/_components/servicedesk/remote/sd-remote-connect-button'
 import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -591,6 +592,16 @@ export function SdTicketSidebar({
           </div>
         ) : null}
         {field('configItemId', 'Item de configuração')}
+        {ticket.configItem ? (
+          <div className='pl-[7rem]'>
+            <SdRemoteConnectButton
+              workspaceId={workspaceId}
+              configItemId={ticket.configItem.id}
+              ticketId={ticket.id}
+              size='xs'
+            />
+          </div>
+        ) : null}
       </SdSidebarSection>
 
       {customFields.length > 0 ? (

@@ -388,6 +388,17 @@ export const SD_NOTIFICATION_EVENTS: SdNotificationEventSpec[] = [
     agentOnly: true,
   },
   {
+    key: 'license.expiring',
+    kind: 'SD_LICENSE_EXPIRING',
+    label: 'Licença de software perto de vencer',
+    description:
+      'Uma licença de software vence em breve ou venceu. Avisa os administradores.',
+    audience: [],
+    channels: ['IN_APP'],
+    defaultChannels: ['IN_APP'],
+    // Sem `agentOnly`: donos e administradores recebem mesmo sem departamento.
+  },
+  {
     key: 'monitor.alert',
     kind: 'SD_MONITOR_ALERT',
     label: 'Alerta no seu plantão',
@@ -480,7 +491,12 @@ export const SD_NOTIFICATION_GROUPS: SdNotificationGroup[] = [
   { label: 'Resumos', events: [SD_DIGEST_EVENT] },
   {
     label: 'Plantão, monitoramento e contratos',
-    events: ['oncall.shift', 'monitor.alert', 'contract.franchise'],
+    events: [
+      'oncall.shift',
+      'monitor.alert',
+      'contract.franchise',
+      'license.expiring',
+    ],
   },
 ]
 

@@ -1183,6 +1183,8 @@ export const ServicedeskInventoryJob = {
   /** Faixas de descoberta por ping/ARP com opt-in ligado e a hora chegada. */
   DiscoveryDue: 'discovery-due',
   DiscoveryRange: 'discovery-range',
+  /** nov: sd-ops (S7) — avisos diários de licença perto de vencer ou vencida. */
+  LicenseExpiry: 'license-expiry',
 } as const
 
 export type ServicedeskInventoryJob =
@@ -1193,4 +1195,5 @@ export type ServicedeskInventoryJobPayload = {
   [ServicedeskInventoryJob.ScanTarget]: { targetId: string }
   [ServicedeskInventoryJob.DiscoveryDue]: Record<string, never>
   [ServicedeskInventoryJob.DiscoveryRange]: { rangeId: string }
+  [ServicedeskInventoryJob.LicenseExpiry]: Record<string, never>
 }

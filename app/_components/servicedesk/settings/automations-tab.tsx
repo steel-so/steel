@@ -37,6 +37,7 @@ import type {
   SdAutomationEventDTO,
   SdAutomationRuleDTO,
 } from '@/types/sd-config'
+import { SdNlConfigButton } from './nl-config-dialog'
 import {
   SdAutomationActionsBuilder,
   SdConditionBuilder,
@@ -139,10 +140,17 @@ export function SdAutomationsTab() {
       description='Para cada evento, as regras ativas são avaliadas de cima para baixo; "parar de processar" interrompe as seguintes do mesmo evento.'
       actions={
         canEdit ? (
-          <Button size='sm' onClick={() => setEditing('new')}>
-            <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-            Nova automação
-          </Button>
+          <>
+            <SdNlConfigButton
+              workspaceId={workspaceId}
+              kind='AUTOMATION'
+              existing={data ?? []}
+            />
+            <Button size='sm' onClick={() => setEditing('new')}>
+              <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+              Nova automação
+            </Button>
+          </>
         ) : null
       }
     >
