@@ -12,6 +12,7 @@ import {
   FireIcon,
   HardDriveIcon,
   Home01Icon,
+  Key01Icon,
   Megaphone01Icon,
   ServerStack01Icon,
   Settings02Icon,
@@ -135,6 +136,9 @@ export default async function ServiceDeskLayout({
             </NavItem>
             <NavItem href={`${base}/inventory`} icon={HardDriveIcon}>
               Inventário
+            </NavItem>
+            <NavItem href={`${base}/licenses`} icon={Key01Icon}>
+              Licenças de software
             </NavItem>
           </NavGroup>
           <NavGroup>
