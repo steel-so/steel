@@ -1,0 +1,73 @@
+---
+title: Licenças de software
+description: Compare as licenças compradas com o software instalado no inventário, veja quem está sem licença e receba aviso antes do vencimento.
+section: servicedesk
+order: 22
+---
+
+**Licenças de software** mostra, para cada produto que a empresa licencia,
+quantas licenças foram compradas, quantas máquinas realmente têm o programa
+instalado e quando a licença vence. Os números de instalação vêm do
+[Inventário](/docs/servicedesk/inventario-de-ativos): sem agente nem varredura,
+a tela não tem o que comparar.
+
+<Callout type='admin'>
+  Qualquer agente consulta a tela em **ServiceDesk › Licenças de software**.
+  Cadastrar, editar, arquivar e atribuir ativos é exclusivo de administradores
+  do módulo.
+</Callout>
+
+## Cadastrar uma licença
+
+1. Clique em **Nova licença**.
+2. Informe o **nome**, o **fornecedor** e a **quantidade de licenças**.
+3. Em **Software no inventário**, escreva um trecho do nome do programa como ele
+   aparece nas máquinas (por exemplo, `Microsoft Office`). A comparação não
+   diferencia maiúsculas de minúsculas e pega todas as versões.
+4. Preencha a data de compra, o vencimento e o custo por licença, se quiser.
+5. Em **Avisar com antecedência**, escolha quantos dias antes do vencimento os
+   administradores devem ser avisados (30 por padrão).
+
+<Callout type='info'>
+  A chave de ativação **não é guardada**. Mantenha-a no cofre de senhas da
+  empresa.
+</Callout>
+
+## Como ler a situação
+
+| Situação | O que significa |
+| --- | --- |
+| **Em conformidade** | O número de máquinas com o programa é igual ao de licenças. |
+| **Faltam licenças** | Há mais instalações do que licenças: risco em uma auditoria. |
+| **Licenças sobrando** | Há licenças pagas que ninguém usa; dá para reduzir na renovação. |
+| **Perto de vencer** | O vencimento está dentro do prazo de aviso. |
+| **Vencida** | A data de vencimento passou. |
+
+Quando mais de uma situação vale, a tela mostra a mais urgente: vencida, depois
+faltam licenças, depois perto de vencer. Os cartões no topo resumem o conjunto
+inteiro, e o filtro **Situação** refina a lista.
+
+## Ativos cobertos
+
+Abra uma licença para ver as máquinas que têm o programa instalado. Em **Ativos
+com licença**, o administrador marca quais itens da CMDB estão cobertos. Quem
+tem o programa e não foi marcado aparece como **Sem atribuição**, e o total
+fica em **Sem licença atribuída**. No detalhe de cada item de configuração, o
+bloco **Licenças de software** lista o que foi atribuído a ele.
+
+## Avisos de vencimento
+
+Todo dia, às 07h (horário de Brasília), o Steel avisa **donos e
+administradores** no sino de notificações quando uma licença:
+
+- entra no prazo de aviso; ou
+- venceu nos últimos 30 dias.
+
+Cada licença gera um aviso por situação, sem repetir a cada dia. Mudar o
+vencimento ou o prazo de aviso rearma os avisos. Para silenciar, desligue o
+evento **Licença de software perto de vencer** em **Notificações**.
+
+## Arquivar
+
+**Arquivar** tira a licença da lista e dos avisos, sem apagar o histórico. Use
+o filtro **Arquivadas › Incluir arquivadas** para encontrá-la e **Restaurar**.
