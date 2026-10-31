@@ -664,6 +664,7 @@ model Workspace {
   crmDealsSettings          CrmDealsSettings?
   crmContracts              CrmContract[]
   crmDealRooms              CrmDealRoom[]
+  aiProcedures              AiProcedure[]
   satisfactionSurveyConfigs SatisfactionSurveyConfig[]
   satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
@@ -8289,6 +8290,8 @@ enum SteelAgentRunStepKind {
   APPROVAL
   /// nov: a4-run-trace — a guardrail rule that fired during the run.
   GUARDRAIL
+  /// nov: a5-procedures — a step of a mandatory-step procedure.
+  PROCEDURE
 }
 
 enum SteelAgentRunStepStatus {
@@ -13198,4 +13201,132 @@ model WhatsAppCoexistenceSync {
 
   @@index([workspaceId])
   @@map("whatsapp_coexistence_syncs")
+}
+
+// nov: a5-procedures ──────────────────────────────────────────────────────
+
+enum AiProcedureStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum AiProcedureRunSubject {
+  WHATSAPP_CONVERSATION
+  STEEL_AGENT_RUN
+  TEST
+}
+
+enum AiProcedureRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  HANDED_OFF
+  CANCELED
+}
+
+enum AiProcedureRunStepStatus {
+  OK
+  FAILED
+  SKIPPED
+  REJECTED
+}
+
+/// Natural-language runbook with conditions and mandatory steps. The engine
+/// (not the model) enforces order and required steps. Columns mirror the
+/// latest version.
+model AiProcedure {
+  id             String            @id @default(cuid())
+  workspaceId    String            @map("workspace_id")
+  name           String
+  description    String?           @db.Text
+  /// When the procedure applies, in natural language (shown to the model).
+  whenToUse      String            @map("when_to_use") @db.Text
+  status         AiProcedureStatus @default(DRAFT)
+  /// `[ProcedureStep]` (see src/lib/ai/procedures/types.ts).
+  steps          Json
+  /// Failed attempts of a COLLECT step before the human takes over.
+  maxAttempts    Int               @default(3) @map("max_attempts")
+  /// Sent to the customer when the run falls back to a human.
+  handoffMessage String?           @map("handoff_message") @db.Text
+  whatsappEnabled Boolean          @default(true) @map("whatsapp_enabled")
+  /// Steel Agents allowed to start it.
+  agentIds       String[]          @default([]) @map("agent_ids")
+  /// Whose permissions the TOOL steps run with.
+  ownerId        String?           @map("owner_id")
+  currentVersion Int               @default(1) @map("current_version")
+  createdById    String?           @map("created_by_id")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  versions  AiProcedureVersion[]
+  runs      AiProcedureRun[]
+
+  @@index([workspaceId, status])
+  @@map("ai_procedures")
+}
+
+/// Immutable snapshot taken on every definition edit.
+model AiProcedureVersion {
+  id             String   @id @default(cuid())
+  workspaceId    String   @map("workspace_id")
+  procedureId    String   @map("procedure_id")
+  number         Int
+  whenToUse      String   @map("when_to_use") @db.Text
+  steps          Json
+  maxAttempts    Int      @map("max_attempts")
+  handoffMessage String?  @map("handoff_message") @db.Text
+  changeNote     String?  @map("change_note") @db.Text
+  createdById    String?  @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  procedure AiProcedure @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+
+  @@unique([procedureId, number])
+  @@map("ai_procedure_versions")
+}
+
+/// One execution of a procedure; `state` is the engine state kept per
+/// conversation (or agent run).
+model AiProcedureRun {
+  id            String                @id @default(cuid())
+  workspaceId   String                @map("workspace_id")
+  procedureId   String                @map("procedure_id")
+  versionNumber Int                   @map("version_number")
+  subjectType   AiProcedureRunSubject @map("subject_type")
+  subjectId     String                @map("subject_id")
+  status        AiProcedureRunStatus  @default(RUNNING)
+  state         Json
+  failureReason String?               @map("failure_reason") @db.Text
+  startedAt     DateTime              @default(now()) @map("started_at")
+  finishedAt    DateTime?             @map("finished_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  procedure AiProcedure          @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+  steps     AiProcedureRunStep[]
+
+  @@index([subjectType, subjectId, status])
+  @@index([procedureId, startedAt])
+  @@index([workspaceId, startedAt])
+  @@map("ai_procedure_runs")
+}
+
+model AiProcedureRunStep {
+  id        String                   @id @default(cuid())
+  runId     String                   @map("run_id")
+  position  Int
+  stepKey   String                   @map("step_key")
+  kind      String
+  title     String
+  status    AiProcedureRunStepStatus
+  input     Json?
+  output    Json?
+  error     String?                  @db.Text
+  createdAt DateTime                 @default(now()) @map("created_at")
+
+  run AiProcedureRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, createdAt])
+  @@map("ai_procedure_run_steps")
 }
