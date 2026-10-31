@@ -34,6 +34,8 @@ export function createFakeCrmOpportunity(
     updatedAt: now,
     deletedAt: null,
     wonAt: null,
+    stageChangedAt: null,
+    contactChangedAt: null,
     ...overrides,
   }
 }

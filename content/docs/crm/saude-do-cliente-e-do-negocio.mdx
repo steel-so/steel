@@ -1,0 +1,104 @@
+---
+title: Saúde do cliente e do negócio
+description: Uma nota de risco explicada para cada cliente e cada negócio em andamento, com a próxima ação sugerida e aviso quando o risco sobe.
+section: crm
+order: 18
+---
+
+O Steel acompanha dois riscos para você não descobrir tarde demais:
+
+- a **saúde do cliente**: qual empresa pode cancelar;
+- a **saúde do negócio**: qual oportunidade está esfriando.
+
+As duas são notas de **0 a 100 de risco** (quanto maior, pior), e nenhuma
+aparece sem o motivo. Não há inteligência artificial adivinhando: a nota soma
+pontos de sinais que você consegue conferir, como "última interação há 52
+dias".
+
+## Faixas de risco
+
+| Faixa | Nota | O que fazer |
+| --- | --- | --- |
+| Risco baixo | até 39 | Siga o ritmo normal |
+| Risco médio | 40 a 69 | Vale olhar esta semana |
+| Risco alto | 70 ou mais | Aja hoje |
+
+São as mesmas faixas do risco de SLA do ServiceDesk.
+
+## Saúde do cliente
+
+Abra **CRM › Empresas** e clique em uma empresa. O bloco **Saúde do cliente**
+mostra:
+
+- a **saúde** em porcentagem (100 menos o risco), a barra e a faixa;
+- **Por que esta nota**: cada sinal que pesou, com a frase que o explica e os
+  pontos que somou;
+- a **Próxima melhor ação**, escolhida pelo sinal que mais pesou;
+- os sinais que ficaram de fora por falta de dado (por exemplo, a empresa não
+  tem conversas de WhatsApp).
+
+Os sinais vêm de três lugares:
+
+- **CRM:** há quanto tempo ninguém fala com a empresa (e-mail, reunião, nota,
+  ligação), negócios abertos em risco, negócios perdidos e tarefas atrasadas.
+- **WhatsApp:** o sentimento das conversas dos últimos 90 dias com as pessoas
+  da empresa (pelo telefone cadastrado na pessoa).
+- **ServiceDesk:** chamados com SLA estourado, chamados abertos, chamados com
+  risco de estourar e a satisfação respondida. A empresa do CRM é ligada ao
+  cliente do ServiceDesk pelo **CNPJ** (ou, sem CNPJ, pelo nome exatamente
+  igual).
+
+Se um sinal não existe para aquela empresa, ele simplesmente não entra na
+conta: a ausência de WhatsApp não deixa o cliente mais saudável nem mais
+doente.
+
+## Saúde do negócio
+
+Em **CRM › Oportunidades**, mude para a visão **Kanban**. Cada card de negócio
+em risco médio ou alto ganha um selo com a faixa e a nota; passe o mouse para
+ver o motivo. Abaixo do selo aparece a **próxima ação** sugerida. Se você tem
+mais de um funil, escolha qual deles o kanban mostra no seletor do topo.
+
+Ao abrir o negócio, o bloco **Saúde do negócio** traz a nota completa. O que
+pesa:
+
+| Sinal | O que significa |
+| --- | --- |
+| Negócio parado | Dias sem nenhuma movimentação |
+| Sem contato com o cliente | Dias sem e-mail, reunião, WhatsApp ou ligação |
+| Contato principal | Negócio sem contato, ou com o contato trocado há pouco |
+| Data de fechamento | Vencida ou não informada |
+| Sem próximo passo | Nenhuma tarefa aberta nem reunião marcada |
+| Tarefas atrasadas | Tarefas do negócio com o prazo vencido |
+
+Negócios ganhos ou perdidos não têm nota.
+
+## Agir a partir da nota
+
+No painel, **Criar tarefa** cria uma tarefa para amanhã com a ação sugerida,
+já ligada à empresa ou ao negócio. **Recalcular** atualiza a nota na hora, sem
+esperar o ciclo automático.
+
+## Quando a nota é atualizada
+
+O Steel recalcula tudo **de hora em hora**. Uma conversa de WhatsApp nova ou
+um chamado novo pode levar até uma hora para aparecer na nota; use
+**Recalcular** se precisar na hora.
+
+## Avisos
+
+Você recebe uma notificação (sino) quando:
+
+- uma empresa da qual você é o **responsável pela conta** entra no risco alto,
+  ou quando o risco dela sobe 20 pontos ou mais;
+- um negócio do qual você é o **responsável** entra no risco alto.
+
+Cada mudança avisa uma vez. Para silenciar, ajuste os tipos **Saúde do cliente
+em queda** e **Negócio em risco** em suas preferências de notificação.
+Empresas sem responsável pela conta não geram aviso: defina o responsável
+para ser avisado.
+
+## Permissões
+
+Ver a nota exige poder ver empresas (ou oportunidades). **Criar tarefa** e
+**Recalcular** exigem poder editar.

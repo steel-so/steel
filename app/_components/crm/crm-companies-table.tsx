@@ -9,6 +9,7 @@ import {
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
+import { CustomerHealthPanel } from '@/app/_components/crm/health/health-panel'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import {
@@ -142,6 +143,11 @@ export function CrmCompaniesTable({
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-4'>
+              <CustomerHealthPanel
+                workspaceId={workspaceId}
+                companyId={record.id}
+                canEdit={canEdit}
+              />
               <CompanyEnrichmentPanel
                 workspaceId={workspaceId}
                 companyId={record.id}

@@ -309,6 +309,16 @@ export const CrmOpportunityService = {
     if (!stageRefs.ok) return stageRefs
     const wonAt = nextWonAt(stageRefs.value, existing.value.wonAt)
 
+    // Health score (nov-health-scores): remember when the deal moved or
+    // changed contact; a no-op write must not count as a change.
+    const stageChanged =
+      stageRefs.value !== null &&
+      stageRefs.value.stageId !== existing.value.stageId
+    const contactChanged =
+      dto.pointOfContactId !== undefined &&
+      existing.value.pointOfContactId !== null &&
+      dto.pointOfContactId !== existing.value.pointOfContactId
+
     const result = await CrmOpportunityRepository.update(opportunityId, {
       name: dto.name,
       amount: dto.amount,
@@ -322,6 +332,8 @@ export const CrmOpportunityService = {
       source: dto.source,
       updatedById: actorId,
       ...(wonAt !== undefined ? { wonAt } : {}),
+      ...(stageChanged ? { stageChangedAt: new Date() } : {}),
+      ...(contactChanged ? { contactChangedAt: new Date() } : {}),
     })
     if (!result.ok) return result
 

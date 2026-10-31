@@ -32,6 +32,7 @@ export const QueueName = {
   ServicedeskIntegrations: 'servicedesk-integrations',
   CrmTaskReminders: 'crm-task-reminders',
   CrmCadences: 'crm-cadences',
+  CrmHealth: 'crm-health',
   CrmDuplicates: 'crm-duplicates',
   CrmMeetings: 'crm-meetings',
   ServicedeskTaskReminders: 'servicedesk-task-reminders',
@@ -665,6 +666,21 @@ export type CrmTaskRemindersJob =
 
 export type CrmTaskRemindersJobPayload = {
   [CrmTaskRemindersJob.RunTick]: Record<string, never>
+}
+
+/**
+ * CRM health scores (nov-health-scores): hourly recompute of the customer
+ * churn risk (T4) and of the open-deal risk (C4), with the alert on the
+ * records that enter the high band.
+ */
+export const CrmHealthJob = {
+  Recompute: 'recompute-health',
+} as const
+
+export type CrmHealthJob = (typeof CrmHealthJob)[keyof typeof CrmHealthJob]
+
+export type CrmHealthJobPayload = {
+  [CrmHealthJob.Recompute]: { workspaceId?: string }
 }
 
 /**

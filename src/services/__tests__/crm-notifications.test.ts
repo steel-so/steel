@@ -7,10 +7,12 @@ vi.mock('../notification-emitter', () => ({
 import {
   notifyCrmCampaignFinished,
   notifyCrmCompetitorSyncFailed,
+  notifyCrmCustomerHealthDrop,
   notifyCrmDealClosed,
   notifyCrmFormSubmitted,
   notifyCrmLeadAssigned,
   notifyCrmOpportunityAssigned,
+  notifyCrmOpportunityAtRisk,
   notifyCrmProposalAccepted,
   notifyCrmProposalExpired,
   notifyCrmProposalViewed,
@@ -370,5 +372,49 @@ describe('notifyCrmApolloImportDone', () => {
       failed: 0,
     })
     expect(lastCall()?.title).toContain('3 leads criados')
+  })
+
+  it('health alerts go to the owner with the reason, the action and a per-run key', async () => {
+    const computedAt = new Date('2026-10-30T12:00:00.000Z')
+    const base = {
+      workspaceId: 'ws1',
+      recipientId: 'u1',
+      riskScore: 78,
+      levelLabel: 'Risco alto',
+      reason: 'Última interação há 52 dias',
+      nextAction: 'Retomar o contato com o cliente',
+      computedAt,
+    }
+    await notifyCrmCustomerHealthDrop({
+      ...base,
+      company: { id: 'c1', name: 'Acme' },
+    })
+    expect(lastCall()).toEqual(
+      expect.objectContaining({
+        kind: 'CRM_CUSTOMER_HEALTH_DROP',
+        recipients: ['u1'],
+        title: 'Saúde do cliente em queda: Acme',
+        path: '/crm/companies?record=c1',
+        dedupeKey: 'crm-customer-health:c1:2026-10-30T12:00:00.000Z',
+      }),
+    )
+    expect(lastCall()?.body).toBe(
+      'Risco alto: nota de risco 78/100. Motivo principal: Última interação há 52 dias. Próxima ação sugerida: Retomar o contato com o cliente.',
+    )
+
+    await notifyCrmOpportunityAtRisk({
+      ...base,
+      reason: null,
+      opportunity: { id: 'o1', name: 'Renovação' },
+    })
+    expect(lastCall()).toEqual(
+      expect.objectContaining({
+        kind: 'CRM_OPPORTUNITY_AT_RISK',
+        title: 'Negócio em risco: Renovação',
+        path: '/crm/opportunities?record=o1',
+        dedupeKey: 'crm-opportunity-health:o1:2026-10-30T12:00:00.000Z',
+      }),
+    )
+    expect(lastCall()?.body).not.toContain('Motivo principal')
   })
 })

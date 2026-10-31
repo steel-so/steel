@@ -37709,6 +37709,423 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/health/companies": {
+      "get": {
+        "tags": ["CRM · Pessoas e empresas"],
+        "summary": "Clientes por risco de churn",
+        "operationId": "getWorkspacesByIdCrmHealthCompanies",
+        "description": "Empresas com nota de saúde, as de maior risco primeiro. Junta sinais do CRM (interação, negócios, tarefas), do WhatsApp (sentimento das conversas) e do ServiceDesk (chamados, SLA estourado, satisfação).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `companies` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["LOW", "MEDIUM", "HIGH"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notas de saúde.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmCustomerHealth"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/health/companies/{companyId}": {
+      "get": {
+        "tags": ["CRM · Pessoas e empresas"],
+        "summary": "Saúde de uma empresa",
+        "operationId": "getWorkspacesByIdCrmHealthCompaniesByCompanyId",
+        "description": "Nota guardada, com a explicação por fator e a próxima ação sugerida. Calcula na hora quando a empresa ainda não tem nota.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `companies` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "description": "ID da empresa.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saúde da empresa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmCustomerHealth"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_COMPANY_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Pessoas e empresas"],
+        "summary": "Recalcular a saúde de uma empresa",
+        "operationId": "postWorkspacesByIdCrmHealthCompaniesByCompanyId",
+        "description": "Recalcula agora, sem esperar o ciclo de uma hora. Se a empresa entrou na faixa de risco alto, o responsável pela conta recebe a notificação.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `companies` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "description": "ID da empresa.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saúde recalculada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmCustomerHealth"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_COMPANY_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/health/opportunities": {
+      "get": {
+        "tags": ["CRM · Oportunidades"],
+        "summary": "Saúde das oportunidades em andamento",
+        "operationId": "getWorkspacesByIdCrmHealthOpportunities",
+        "description": "Notas das oportunidades abertas (as ganhas e perdidas não têm nota), as de maior risco primeiro. Alimenta o selo do card no kanban; filtre por funil ou faixa.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `opportunities` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "pipelineId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["LOW", "MEDIUM", "HIGH"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notas de saúde.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmOpportunityHealth"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/health/opportunities/{opportunityId}": {
+      "get": {
+        "tags": ["CRM · Oportunidades"],
+        "summary": "Saúde de uma oportunidade",
+        "operationId": "getWorkspacesByIdCrmHealthOpportunitiesByOpportunityId",
+        "description": "Nota guardada (dias parada, contato com o cliente, troca de contato, data de fechamento, tarefas) e a próxima ação sugerida. Calcula na hora quando ainda não existe.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `opportunities` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "opportunityId",
+            "in": "path",
+            "required": true,
+            "description": "ID da oportunidade.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saúde da oportunidade.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmOpportunityHealth"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_OPPORTUNITY_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_HEALTH_NOT_APPLICABLE"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Oportunidades"],
+        "summary": "Recalcular a saúde de uma oportunidade",
+        "operationId": "postWorkspacesByIdCrmHealthOpportunitiesByOpportunityId",
+        "description": "Recalcula agora. Se a oportunidade entrou na faixa de risco alto, o responsável pelo negócio recebe a notificação.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `opportunities` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "opportunityId",
+            "in": "path",
+            "required": true,
+            "description": "ID da oportunidade.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saúde recalculada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmOpportunityHealth"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_OPPORTUNITY_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CRM_HEALTH_NOT_APPLICABLE"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/hook-vault": {
       "get": {
         "tags": ["CRM · IA"],
@@ -80125,6 +80542,8 @@
                             "CRM_DEAL_CLOSED",
                             "CRM_TASK_ASSIGNED",
                             "CRM_TASK_DUE",
+                            "CRM_CUSTOMER_HEALTH_DROP",
+                            "CRM_OPPORTUNITY_AT_RISK",
                             "CRM_PROPOSAL_VIEWED",
                             "CRM_APOLLO_IMPORT_DONE",
                             "CRM_PROPOSAL_ACCEPTED",
@@ -163211,6 +163630,29 @@
           }
         }
       },
+      "404_CRM_COMPANY_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_COMPANY_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_COMPANY_NOT_FOUND": {
+                "summary": "CRM_COMPANY_NOT_FOUND — Empresa inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Empresa não encontrada",
+                  "error": {
+                    "code": "CRM_COMPANY_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_CRM_DUPLICATE_NOT_FOUND": {
         "description": "Não encontrado: `CRM_DUPLICATE_NOT_FOUND`",
         "content": {
@@ -163729,6 +164171,29 @@
                   "message": "Enquete não encontrada",
                   "error": {
                     "code": "CRM_NEWSLETTER_POLL_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_CRM_OPPORTUNITY_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_OPPORTUNITY_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_OPPORTUNITY_NOT_FOUND": {
+                "summary": "CRM_OPPORTUNITY_NOT_FOUND — Oportunidade inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Oportunidade não encontrada",
+                  "error": {
+                    "code": "CRM_OPPORTUNITY_NOT_FOUND"
                   }
                 }
               }
@@ -172250,6 +172715,29 @@
                   "message": "Este template não foi criado no editor visual",
                   "error": {
                     "code": "CRM_EMAIL_TEMPLATE_NOT_BUILDER"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CRM_HEALTH_NOT_APPLICABLE": {
+        "description": "Conflito com o estado atual: `CRM_HEALTH_NOT_APPLICABLE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_HEALTH_NOT_APPLICABLE": {
+                "summary": "CRM_HEALTH_NOT_APPLICABLE — O negócio já foi ganho ou perdido: só negócios em andamento têm nota",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "A saúde só é calculada para negócios em andamento",
+                  "error": {
+                    "code": "CRM_HEALTH_NOT_APPLICABLE"
                   }
                 }
               }
@@ -196026,6 +196514,83 @@
         },
         "required": ["id", "definitionId", "recordId", "value", "createdAt", "updatedAt"]
       },
+      "CrmCustomerHealth": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "riskScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "level": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH"],
+            "description": "Faixa do risco, com os mesmos cortes do risco preditivo do ServiceDesk: `MEDIUM` a partir de 40, `HIGH` a partir de 70."
+          },
+          "levelLabel": {
+            "type": "string"
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmHealthFactor"
+            },
+            "description": "Só os fatores que pontuaram, do maior para o menor."
+          },
+          "nextAction": {
+            "$ref": "#/components/schemas/CrmHealthNextAction"
+          },
+          "riskDelta": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Variação do risco desde o cálculo anterior (positivo = piorou). `null` no primeiro cálculo."
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "healthScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Saúde do cliente: `100 - riskScore`."
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Fatores que ficaram de fora por falta de dado (sem WhatsApp, sem chamados vinculados)."
+          }
+        },
+        "required": [
+          "companyId",
+          "companyName",
+          "riskScore",
+          "level",
+          "levelLabel",
+          "factors",
+          "nextAction",
+          "riskDelta",
+          "computedAt",
+          "healthScore",
+          "missing"
+        ]
+      },
       "CrmDashboard": {
         "type": "object",
         "properties": {
@@ -198603,6 +199168,47 @@
           }
         },
         "required": ["propertyId", "propertyName", "accountName", "totals"]
+      },
+      "CrmHealthFactor": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "description": "Nome do fator, em pt-BR."
+          },
+          "points": {
+            "type": "number",
+            "description": "Pontos que o fator somou ao risco."
+          },
+          "max": {
+            "type": "number",
+            "description": "O máximo que o fator poderia somar."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Frase que explica o fator neste registro (\"Última interação há 52 dias\")."
+          }
+        },
+        "required": ["key", "label", "points", "max", "detail"]
+      },
+      "CrmHealthNextAction": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "description": "A ação sugerida, em pt-BR."
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": ["key", "label", "detail"]
       },
       "CrmHookVaultItem": {
         "type": "object",
@@ -206454,6 +207060,68 @@
           "updatedAt"
         ]
       },
+      "CrmOpportunityHealth": {
+        "type": "object",
+        "properties": {
+          "opportunityId": {
+            "type": "string"
+          },
+          "opportunityName": {
+            "type": "string"
+          },
+          "riskScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "level": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH"],
+            "description": "Faixa do risco, com os mesmos cortes do risco preditivo do ServiceDesk: `MEDIUM` a partir de 40, `HIGH` a partir de 70."
+          },
+          "levelLabel": {
+            "type": "string"
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmHealthFactor"
+            },
+            "description": "Só os fatores que pontuaram, do maior para o menor."
+          },
+          "nextAction": {
+            "$ref": "#/components/schemas/CrmHealthNextAction"
+          },
+          "riskDelta": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Variação do risco desde o cálculo anterior (positivo = piorou). `null` no primeiro cálculo."
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "opportunityId",
+          "opportunityName",
+          "riskScore",
+          "level",
+          "levelLabel",
+          "factors",
+          "nextAction",
+          "riskDelta",
+          "computedAt"
+        ]
+      },
       "CrmOpportunityLineItem": {
         "type": "object",
         "properties": {
@@ -213354,9 +214022,10 @@
           "STEEL_AGENT_DELEGATE_INVALID",
           "STEEL_MCP_SERVER_NOT_FOUND",
           "STEEL_MCP_SERVER_INVALID",
-          "STEEL_MCP_SERVER_UNREACHABLE"
+          "STEEL_MCP_SERVER_UNREACHABLE",
+          "CRM_HEALTH_NOT_APPLICABLE"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TOKEN_NOT_FOUND` | 404 |\n| `SD_INVENTORY_TOKEN_INVALID` | 401 |\n| `SD_INVENTORY_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_INVENTORY_RELEASE_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `CRM_DUPLICATE_NOT_FOUND` | 404 |\n| `CRM_DUPLICATE_INVALID` | 422 |\n| `CRM_MERGE_NOT_FOUND` | 404 |\n| `CRM_MERGE_UNDO_EXPIRED` | 409 |\n| `CRM_MEETING_PAGE_NOT_FOUND` | 404 |\n| `CRM_MEETING_BOOKING_NOT_FOUND` | 404 |\n| `CRM_MEETING_SLOT_TAKEN` | 409 |\n| `CRM_MEETING_INVALID` | 422 |\n| `CRM_MEETING_SLUG_TAKEN` | 409 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TOKEN_NOT_FOUND` | 404 |\n| `SD_INVENTORY_TOKEN_INVALID` | 401 |\n| `SD_INVENTORY_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_INVENTORY_RELEASE_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `CRM_DUPLICATE_NOT_FOUND` | 404 |\n| `CRM_DUPLICATE_INVALID` | 422 |\n| `CRM_MERGE_NOT_FOUND` | 404 |\n| `CRM_MERGE_UNDO_EXPIRED` | 409 |\n| `CRM_MEETING_PAGE_NOT_FOUND` | 404 |\n| `CRM_MEETING_BOOKING_NOT_FOUND` | 404 |\n| `CRM_MEETING_SLOT_TAKEN` | 409 |\n| `CRM_MEETING_INVALID` | 422 |\n| `CRM_MEETING_SLUG_TAKEN` | 409 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |\n| `CRM_HEALTH_NOT_APPLICABLE` | 409 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -213920,6 +214589,8 @@
                     "CRM_DEAL_CLOSED",
                     "CRM_TASK_ASSIGNED",
                     "CRM_TASK_DUE",
+                    "CRM_CUSTOMER_HEALTH_DROP",
+                    "CRM_OPPORTUNITY_AT_RISK",
                     "CRM_PROPOSAL_VIEWED",
                     "CRM_PROPOSAL_ACCEPTED",
                     "CRM_APOLLO_IMPORT_DONE",

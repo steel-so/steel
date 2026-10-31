@@ -25,6 +25,8 @@ import {
   type CrmCompetitorSyncJobPayload,
   type CrmDuplicatesJob,
   type CrmDuplicatesJobPayload,
+  type CrmHealthJob,
+  type CrmHealthJobPayload,
   type CrmMeetingsJob,
   type CrmMeetingsJobPayload,
   type CrmNewsletterAutomationJob,
@@ -148,6 +150,7 @@ let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
 let crmCadencesQueue: Queue | null = null
+let crmHealthQueue: Queue | null = null
 let crmDuplicatesQueue: Queue | null = null
 let crmMeetingsQueue: Queue | null = null
 let crmSocialPostsTickQueue: Queue | null = null
@@ -930,6 +933,7 @@ export async function closeQueues(): Promise<void> {
     servicedeskIntegrationsQueue?.close(),
     crmTaskRemindersQueue?.close(),
     crmCadencesQueue?.close(),
+    crmHealthQueue?.close(),
     crmDuplicatesQueue?.close(),
     crmMeetingsQueue?.close(),
     servicedeskTaskRemindersQueue?.close(),
@@ -963,6 +967,7 @@ export async function closeQueues(): Promise<void> {
   crmProposalExpiryQueue = null
   crmTaskRemindersQueue = null
   crmCadencesQueue = null
+  crmHealthQueue = null
   crmDuplicatesQueue = null
   crmMeetingsQueue = null
   crmSocialPostsTickQueue = null
@@ -1030,6 +1035,25 @@ export function getCrmMeetingsQueue(): Queue<
     CrmMeetingsJobPayload[CrmMeetingsJob],
     unknown,
     CrmMeetingsJob
+  >
+}
+
+/** CRM health scores recompute (nov-health-scores). */
+export function getCrmHealthQueue(): Queue<
+  CrmHealthJobPayload[CrmHealthJob],
+  unknown,
+  CrmHealthJob
+> {
+  if (!crmHealthQueue) {
+    crmHealthQueue = new Queue(QueueName.CrmHealth, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmHealthQueue as Queue<
+    CrmHealthJobPayload[CrmHealthJob],
+    unknown,
+    CrmHealthJob
   >
 }
 
@@ -1320,6 +1344,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.ServicedeskIntegrations]: getServicedeskIntegrationsQueue,
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
   [QueueName.CrmCadences]: getCrmCadencesQueue,
+  [QueueName.CrmHealth]: getCrmHealthQueue,
   [QueueName.CrmDuplicates]: getCrmDuplicatesQueue,
   [QueueName.CrmMeetings]: getCrmMeetingsQueue,
   [QueueName.ServicedeskTaskReminders]: getServicedeskTaskRemindersQueue,

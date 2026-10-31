@@ -73,3 +73,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0054 | [Newsletter dentro do CRM, enviada do domínio do próprio cliente](./0054-newsletter-no-crm-com-dominio-proprio.md) | Aceita | 2026-10-28 |
 | 0055 | [Campanhas só enviam de domínio verificado ou do domínio da plataforma](./0055-remetente-verificado-nas-campanhas.md) | Aceita | 2026-10-28 |
 | 0056 | [Pix na conversa atrás de uma interface de PSP, só com provedor de teste](./0056-pix-na-conversa-atras-de-uma-interface-de-psp.md) | Aceita | 2026-10-29 |
+| 0057 | [Saúde do cliente e do negócio pela mesma heurística explicável do risco preditivo](./0057-saude-do-cliente-e-do-negocio-pela-mesma-heuristica-do-risco-preditivo.md) | Aceita | 2026-10-30 |
