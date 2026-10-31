@@ -181,7 +181,6 @@ function SettingsForm({
           >
             <Checkbox
               id={`prospecting-channel-${channel}`}
-              aria-label={CHANNEL_LABEL[channel]}
               checked={channels.includes(channel)}
               disabled={!canManage}
               onCheckedChange={(checked) => toggleChannel(channel, checked)}
