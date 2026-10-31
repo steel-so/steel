@@ -71,7 +71,6 @@ import type { SteelAgentDTO } from '@/types/steel-agent'
 import { assertModuleMember, assertModulePrivileged } from './authz'
 import { CrmApolloService } from './crm-apollo.service'
 import { CrmCnpjEnrichmentService } from './crm-cnpj-enrichment.service'
-import { SteelAgentService } from './steel-agent.service'
 
 /**
  * Prospecting agent (T5). The agent's tools (web search, page fetch, draft)
@@ -741,6 +740,9 @@ export const CrmProspectingService = {
     if (!parsed.success) {
       return err(validationError('Dados inválidos', parsed.error.issues))
     }
+    // Loaded on demand: the agent service imports the tool registry, which
+    // imports the tools that import this file (a static import is a cycle).
+    const { SteelAgentService } = await import('./steel-agent.service')
     const created = await SteelAgentService.create(
       actorId,
       workspaceId,

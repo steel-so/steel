@@ -320,7 +320,7 @@ function AgentSetup({
       <p className='text-muted-foreground text-sm'>
         Cria um Steel Agent pronto, com as instruções e as ferramentas de
         pesquisa. Quem escreve nos dados (preencher empresa e salvar rascunho)
-        começa em aprovação. Você pode editá-lo depois em Steel AI > Agentes.
+        começa em aprovação. Você pode editá-lo depois em Steel AI › Agentes.
       </p>
       {canManage ? (
         <div className='flex flex-wrap gap-2'>
