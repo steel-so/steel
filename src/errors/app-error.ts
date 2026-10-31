@@ -2469,6 +2469,19 @@ export const metaChannelPageNotFound = (): AppError =>
 export const metaChannelCommentNotFound = (): AppError =>
   appError('META_CHANNEL_COMMENT_NOT_FOUND', 'Comentário não encontrado')
 
+export const qaReviewNotFound = (): AppError =>
+  appError('QA_REVIEW_NOT_FOUND', 'Avaliação não encontrada')
+
+export const qaSubjectNotFound = (): AppError =>
+  appError('QA_SUBJECT_NOT_FOUND', 'Conversa ou chamado não encontrado')
+
+export const qaCriteriaInvalid = (
+  message = 'Os critérios de avaliação são inválidos',
+): AppError => appError('QA_CRITERIA_INVALID', message)
+
+export const qaDisabled = (): AppError =>
+  appError('QA_DISABLED', 'O QA automático está desligado neste workspace')
+
 // ─── zap-ecom · catalog, store triggers, scheduling ─────────────────────────
 
 export const whatsappCatalogDisabled = (): AppError =>

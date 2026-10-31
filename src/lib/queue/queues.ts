@@ -61,6 +61,8 @@ import {
   type NotificationsJobPayload,
   type PhoneCallAiJob,
   type PhoneCallAiJobPayload,
+  type QaReviewJob,
+  type QaReviewJobPayload,
   QueueName,
   type SatisfactionSurveyJob,
   type SatisfactionSurveyJobPayload,
@@ -141,6 +143,7 @@ let whatsappMediaQueue: Queue | null = null
 let whatsappAiReplyQueue: Queue | null = null
 let whatsappButtonActionsQueue: Queue | null = null
 let satisfactionSurveyQueue: Queue | null = null
+let qaReviewQueue: Queue | null = null
 let sitePostsQueue: Queue | null = null
 let whatsappSentimentQueue: Queue | null = null
 let whatsappBroadcastQueue: Queue | null = null
@@ -333,6 +336,24 @@ export function getSatisfactionSurveyQueue(): Queue<
     SatisfactionSurveyJobPayload[SatisfactionSurveyJob],
     unknown,
     SatisfactionSurveyJob
+  >
+}
+
+export function getQaReviewQueue(): Queue<
+  QaReviewJobPayload[QaReviewJob],
+  unknown,
+  QaReviewJob
+> {
+  if (!qaReviewQueue) {
+    qaReviewQueue = new Queue(QueueName.QaReview, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return qaReviewQueue as Queue<
+    QaReviewJobPayload[QaReviewJob],
+    unknown,
+    QaReviewJob
   >
 }
 
@@ -1408,6 +1429,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmWorkflowDelay]: getCrmWorkflowDelayQueue,
   [QueueName.WhatsappButtonActions]: getWhatsappButtonActionsQueue,
   [QueueName.SatisfactionSurvey]: getSatisfactionSurveyQueue,
+  [QueueName.QaReview]: getQaReviewQueue,
   [QueueName.SitePosts]: getSitePostsQueue,
   [QueueName.WebhooksDelivery]: getWebhooksDeliveryQueue,
   [QueueName.AiIndex]: getAiIndexQueue,

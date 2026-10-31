@@ -67,6 +67,7 @@ import {
 import { SdConditionsSchema } from '@/src/schemas/sd-rule.schema'
 import type { CreateSdTicketDTO } from '@/src/schemas/sd-ticket.schema'
 import type { SdChangeWarningDTO } from '@/types/sd-change'
+import { QaReviewService } from './qa-review.service'
 import { SatisfactionSurveyService } from './satisfaction-survey.service'
 import type { SdAccessContext } from './sd-access'
 import { sdTicketApprovalSatisfied } from './sd-approval-gate'
@@ -1432,6 +1433,15 @@ export const SdTicketEngine = {
           workspaceId: after.workspaceId,
           ticketId: after.id,
           reason: survey.error.code,
+        })
+      }
+      // Automatic QA by AI (t2-qa-review); never fails the transition.
+      const qa = await QaReviewService.onTicketResolved(after)
+      if (!qa.ok) {
+        logger.warn('servicedesk.ticket.qa_schedule_failed', {
+          workspaceId: after.workspaceId,
+          ticketId: after.id,
+          reason: qa.error.code,
         })
       }
     }

@@ -85,6 +85,8 @@ export const AI_TASK_CLASS_BY_FEATURE: Record<AiUsageFeature, AiTaskClass> = {
   // IVR voice attendant (ADR 0046): the realtime model is not in the chat
   // catalog; the class only decides the quota/guardrails of `prepare`.
   VOICE_AGENT: 'CONVERSATION',
+  // T2: the rubric review reads a whole attendance and judges it.
+  QA_REVIEW: 'ASSISTANT',
 }
 
 /** Workspace model of a task class, most specific first. */

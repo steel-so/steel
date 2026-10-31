@@ -204,6 +204,7 @@ describe('<SteelAiAreaNav />', () => {
       'Uso',
       'Análises',
       'Avaliações',
+      'Qualidade',
       'Memória',
     ])
     expect(

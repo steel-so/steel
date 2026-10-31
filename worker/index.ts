@@ -38,6 +38,7 @@ import { processDataRetention } from '../src/lib/queue/processors/data-retention
 import { processDatabaseBackup } from '../src/lib/queue/processors/database-backup'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
+import { processQaReview } from '../src/lib/queue/processors/qa-review'
 import { processSatisfactionSurvey } from '../src/lib/queue/processors/satisfaction-survey'
 import { processSearchReindex } from '../src/lib/queue/processors/search-reindex'
 import { processSendingDomains } from '../src/lib/queue/processors/sending-domains'
@@ -242,6 +243,7 @@ async function main(): Promise<void> {
   workers.push(
     registerWorker(QueueName.SatisfactionSurvey, processSatisfactionSurvey),
   )
+  workers.push(registerWorker(QueueName.QaReview, processQaReview))
   workers.push(
     registerWorker(QueueName.CrmWorkflowSchedule, processCrmWorkflowSchedule),
   )

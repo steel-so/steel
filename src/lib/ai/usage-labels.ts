@@ -21,6 +21,7 @@ export const AI_USAGE_FEATURE_KEYS = [
   'PHONE_CALL_AI',
   'PROACTIVE_DIGEST',
   'VOICE_AGENT',
+  'QA_REVIEW',
 ] as const
 export type AiUsageFeatureKey = (typeof AI_USAGE_FEATURE_KEYS)[number]
 
@@ -40,6 +41,7 @@ export const AI_USAGE_FEATURE_LABELS: Record<AiUsageFeatureKey, string> = {
   PHONE_CALL_AI: 'Ligações (transcrição e resumo)',
   PROACTIVE_DIGEST: 'Resumo diário da IA',
   VOICE_AGENT: 'Atendente de voz (URA)',
+  QA_REVIEW: 'QA automático dos atendimentos',
 }
 
 /** `PLATFORM` = no module (platform tools, or a call that used no tool). */
@@ -82,6 +84,7 @@ const FEATURE_MODULE: Record<
   PHONE_CALL_AI: 'COMMUNICATION',
   PROACTIVE_DIGEST: null,
   VOICE_AGENT: 'COMMUNICATION',
+  QA_REVIEW: null,
 }
 
 /** Scope of a ledger row: its module, else the feature's, else platform. */
