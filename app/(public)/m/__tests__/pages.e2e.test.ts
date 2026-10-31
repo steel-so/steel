@@ -75,11 +75,20 @@ describe('public meeting pages (/m/**)', () => {
     expect(await res.text()).toContain('Conversa com vendas')
   })
 
+  // The pages stream (they wait for live state), so the status line can be
+  // committed as 200 before `notFound()` runs: assert the not-found UI, not
+  // the status, and that none of the booking content leaks.
   it.each([
     '/m/pagina-que-nao-existe',
     '/m/pagina-que-nao-existe/embed',
     '/m/b/token-que-nao-existe',
-  ])('should answer 404 for %s', async (path) => {
-    expect((await get(path)).status).toBe(404)
+  ])('should show the not found page for %s', async (path) => {
+    const res = await get(path)
+
+    expect([200, 404]).toContain(res.status)
+    const html = await res.text()
+    expect(html).toMatch(/404|n[ãa]o encontrad|not found/i)
+    expect(html).not.toContain('Conversa com vendas')
+    expect(html).not.toContain('Cliente Teste')
   })
 })
