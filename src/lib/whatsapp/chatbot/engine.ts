@@ -81,6 +81,16 @@ export interface ChatbotListOutput {
 export type ChatbotOutput =
   | { kind: 'text'; text: string }
   | {
+      kind: 'form'
+      nodeId: string
+      /** The WhatsApp Flow (Z3) to send; the runtime does the I/O. */
+      flowId: string
+      bodyText?: string
+      ctaLabel?: string
+      /** Text sent instead when the form cannot be delivered. */
+      fallbackText?: string
+    }
+  | {
       kind: 'menu'
       nodeId: string
       text: string
@@ -312,6 +322,24 @@ async function visit(run: Run, node: ChatbotNode): Promise<Step> {
         const found = readPath(response.json, node.data.responsePath)
         variables[node.data.responseVariable] = found ?? ''
       }
+      return { kind: 'goto', nodeId: targetOf(flow, node.id, 'next') }
+    }
+    case 'send-form': {
+      const bodyText = node.data.bodyText
+        ? interpolate(node.data.bodyText, variables).trim()
+        : ''
+      const fallbackText = node.data.fallbackText
+        ? interpolate(node.data.fallbackText, variables).trim()
+        : ''
+      run.outputs.push({
+        kind: 'form',
+        nodeId: node.id,
+        flowId: node.data.flowId,
+        ...(bodyText ? { bodyText } : {}),
+        ...(node.data.ctaLabel ? { ctaLabel: node.data.ctaLabel } : {}),
+        ...(fallbackText ? { fallbackText } : {}),
+      })
+      // The form is answered whenever the contact wants to: the flow goes on.
       return { kind: 'goto', nodeId: targetOf(flow, node.id, 'next') }
     }
     case 'handoff-human':

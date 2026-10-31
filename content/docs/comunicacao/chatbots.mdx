@@ -50,6 +50,7 @@ num bloco para configurá-lo no painel da direita.
 | **Condição** | Compara uma variável (igual, contém, maior que, está vazia...) e segue pelo primeiro ramo que bater, ou pela saída **senão** |
 | **Definir variável** | Guarda um valor, que pode usar outras variáveis |
 | **Integração** | Chama uma URL HTTPS sua (GET ou POST com JSON) e guarda um campo da resposta numa variável. Tem uma saída de **erro** |
+| **Enviar formulário** | Envia um [formulário do WhatsApp](/docs/comunicacao/formularios-flows) já preenchido com o nome e o telefone do contato. O fluxo segue para o próximo bloco sem esperar a resposta, que cai no formulário, no contato e no CRM. Só em conexões da API oficial da Meta |
 | **Passar para atendente** | Envia uma mensagem opcional e coloca a conversa na fila de uma equipe, com um atendente ou na fila geral |
 | **Passar para a IA** | Liga a IA de atendimento, com uma instrução opcional para a primeira resposta |
 | **Encerrar** | Envia uma despedida e, se quiser, fecha a conversa |
@@ -70,6 +71,15 @@ e `{{last_message}}` (a última mensagem).
   a ligou; senão, a conversa vai para a fila de atendimento. Ninguém fica preso
   num laço.
 </Callout>
+
+### Enviar formulário
+
+Escolha um formulário **publicado** (o bot só publica com formulário existente
+e não descontinuado). Em **Mensagem** e **Texto do botão** você pode trocar o
+que o formulário já traz. Se o formulário não puder sair (linha Z-API ou
+formulário descontinuado depois da publicação), o bot envia o **texto de
+contingência** que você escrever, por exemplo com um link, e o fluxo continua.
+Sem contingência, o fluxo apenas segue.
 
 ### Integração com outro sistema
 

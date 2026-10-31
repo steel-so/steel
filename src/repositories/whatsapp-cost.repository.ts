@@ -88,7 +88,11 @@ export const WhatsAppCostRepository = {
           },
         },
         create: data,
-        update: { unitPrice: data.unitPrice, reference: false },
+        update: {
+          unitPrice: data.unitPrice,
+          liteUnitPrice: data.liteUnitPrice ?? null,
+          reference: false,
+        },
       })
       return ok(row)
     } catch (error) {

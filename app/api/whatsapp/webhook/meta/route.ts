@@ -13,6 +13,10 @@ import {
   metaConnectionError,
   WhatsAppConnectionHealthService,
 } from '@/src/services/whatsapp-connection-health.service'
+import {
+  type MetaFlowsWebhookValue,
+  WhatsAppFlowWebhookService,
+} from '@/src/services/whatsapp-flow-webhook.service'
 import { WhatsAppTemplateService } from '@/src/services/whatsapp-template.service'
 import { WhatsAppWebhookService } from '@/src/services/whatsapp-webhook.service'
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
@@ -263,6 +267,19 @@ export const POST = withAxiom(async (request: NextRequest) => {
       return new Response('Erro interno', { status: 500 })
     }
     return new Response('TEMPLATE_UPDATE_RECEIVED', { status: 200 })
+  }
+
+  // Flow status changes (published, deprecated, blocked...) come per WABA too.
+  if (change.field === 'flows') {
+    if (!entry?.id) return new Response('SEM_WABA_ID', { status: 200 })
+    const applied = await WhatsAppFlowWebhookService.applyStatusChange({
+      wabaId: entry.id,
+      value: value as MetaFlowsWebhookValue,
+    })
+    if (!applied.ok) {
+      return new Response('Erro interno', { status: 500 })
+    }
+    return new Response('FLOW_UPDATE_RECEIVED', { status: 200 })
   }
 
   const phoneNumberId = value.metadata?.phone_number_id

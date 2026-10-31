@@ -23,6 +23,7 @@ vi.mock('@/src/lib/whatsapp/send', () => ({
 vi.mock('@/src/lib/whatsapp/marketing-lite', () => ({
   metaCredentialsOf: vi.fn(),
   fetchMarketingLiteAnalytics: vi.fn(),
+  describeMarketingLiteError: vi.fn(() => 'Motivo da Meta'),
 }))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -36,6 +37,7 @@ vi.mock('@/src/lib/queue/queues', () => ({
 }))
 
 import {
+  describeMarketingLiteError,
   fetchMarketingLiteAnalytics,
   metaCredentialsOf,
 } from '@/src/lib/whatsapp/marketing-lite'
@@ -119,7 +121,12 @@ describe('sendToRecipient() with Marketing Messages Lite', () => {
     expect(send.template).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ marketingLite: { cloudApiFallback: false } }),
-      expect.anything(),
+      {
+        cost: expect.objectContaining({
+          source: 'BROADCAST',
+          viaMarketingLite: true,
+        }),
+      },
     )
     expect(broadcastRepo.updateRecipientStatus).toHaveBeenCalledWith(
       'r1',
@@ -138,6 +145,9 @@ describe('sendToRecipient() with Marketing Messages Lite', () => {
 
     const input = send.template.mock.calls[0][1]
     expect(input).not.toHaveProperty('marketingLite')
+    expect(send.template.mock.calls[0][2]?.cost).not.toHaveProperty(
+      'viaMarketingLite',
+    )
     expect(broadcastRepo.updateRecipientStatus).toHaveBeenCalledWith(
       'r1',
       expect.not.objectContaining({ viaMarketingLite: true }),
@@ -312,7 +322,8 @@ describe('marketingMetrics()', () => {
     )
     expect(value.viaMarketingLiteCount).toBe(4)
     expect(value.analytics).toBeNull()
-    expect(value.unavailableReason).toContain('Meta')
+    expect(value.unavailableReason).toBe('Motivo da Meta')
+    expect(describeMarketingLiteError).toHaveBeenCalledWith(new Error('down'))
 
     vi.mocked(fetchMarketingLiteAnalytics).mockRejectedValue('weird')
     expect(

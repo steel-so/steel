@@ -228,6 +228,44 @@ describe('validateChatbotFlow', () => {
     expect(hasFlowErrors(validateChatbotFlow(withMenu))).toBe(false)
   })
 
+  it('treats the send form block as a single-exit block', () => {
+    const flow = parse({
+      nodes: [
+        { id: 'start', type: 'start', position: pos, data: {} },
+        {
+          id: 'form',
+          type: 'send-form',
+          position: pos,
+          data: { flowId: 'f1' },
+        },
+        { id: 'end', type: 'end', position: pos, data: {} },
+      ],
+      edges: [edge('start', 'next', 'form'), edge('form', 'next', 'end')],
+    })
+    expect(nodeHandles(flow.nodes[1])).toEqual(['next'])
+    expect(hasFlowErrors(validateChatbotFlow(flow))).toBe(false)
+
+    const badHandle = parse({
+      nodes: flow.nodes,
+      edges: [edge('start', 'next', 'form'), edge('form', 'invalid', 'end')],
+    })
+    expect(messages(badHandle)).toContain(
+      'Enviar formulário: saída "invalid" não existe',
+    )
+
+    const unchosen = parse({
+      nodes: [
+        flow.nodes[0],
+        { ...flow.nodes[1], data: { flowId: '' } },
+        flow.nodes[2],
+      ],
+      edges: flow.edges,
+    })
+    expect(messages(unchosen)).toContain(
+      'Enviar formulário: escolha o formulário',
+    )
+  })
+
   it('exposes the handles of each node type', () => {
     const flow = parse({
       nodes: [

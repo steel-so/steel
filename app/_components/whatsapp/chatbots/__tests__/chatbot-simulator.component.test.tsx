@@ -43,6 +43,40 @@ describe('<ChatbotSimulator />', () => {
     expect(fetchBody(spy, URL)).toMatchObject({ input: 'Olá' })
   })
 
+  it('shows where a form goes out', async () => {
+    mockFetch([
+      {
+        method: 'POST',
+        match: URL,
+        data: {
+          state: { started: true, awaiting: null, variables: {} },
+          outputs: [
+            {
+              kind: 'form',
+              nodeId: 'f',
+              flowId: 'flow-1',
+              bodyText: 'Preencha',
+            },
+            { kind: 'form', nodeId: 'g', flowId: 'flow-2' },
+          ],
+          status: 'COMPLETED',
+          handoff: null,
+          closeConversation: false,
+        },
+      },
+    ])
+    renderWithQuery(<ChatbotSimulator workspaceId='ws_1' chatbotId='bot_1' />)
+
+    expect(
+      await screen.findByText('Formulário do WhatsApp: Preencha'),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Formulário do WhatsApp: o contato recebe o formulário para preencher.',
+      ),
+    ).toBeTruthy()
+  })
+
   it('sends the tapped button with the previous state and shows the end', async () => {
     const spy = mockFetch([
       {

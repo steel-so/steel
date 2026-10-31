@@ -83,6 +83,111 @@ describe('<ChatbotNodePanel />', () => {
     expect(onChange).toHaveBeenCalledWith({ text: 'Oi {{nome}}' })
   })
 
+  describe('send form block', () => {
+    const formNode = (data = {}): ChatbotNode => ({
+      id: 'f',
+      type: 'send-form',
+      position: { x: 0, y: 0 },
+      data: { flowId: 'flow-1', ...data },
+    })
+
+    it('shows the chosen form and edits the message, button and fallback', () => {
+      const onChange = vi.fn()
+      render(
+        <ChatbotNodePanel
+          {...base}
+          flows={[{ id: 'flow-1', name: 'Cadastro', sendable: true }]}
+          node={formNode({ bodyText: 'Oi ', fallbackText: 'Link ' })}
+          onChange={onChange}
+          onDelete={vi.fn()}
+        />,
+      )
+      expect(screen.getByText('Cadastro')).toBeTruthy()
+
+      fireEvent.change(screen.getByLabelText('Texto do botão (opcional)'), {
+        target: { value: 'Abrir' },
+      })
+      expect(onChange).toHaveBeenLastCalledWith({
+        flowId: 'flow-1',
+        bodyText: 'Oi ',
+        fallbackText: 'Link ',
+        ctaLabel: 'Abrir',
+      })
+
+      // Both texts offer the variable chips; the first one is the message.
+      fireEvent.click(screen.getAllByText('{{nome}}')[0])
+      expect(onChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ bodyText: 'Oi {{nome}}' }),
+      )
+      fireEvent.click(screen.getAllByText('{{nome}}')[1])
+      expect(onChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fallbackText: 'Link {{nome}}' }),
+      )
+    })
+
+    it('clears an optional field that was emptied', () => {
+      const onChange = vi.fn()
+      render(
+        <ChatbotNodePanel
+          {...base}
+          flows={[{ id: 'flow-1', name: 'Cadastro', sendable: true }]}
+          node={formNode({ ctaLabel: 'Abrir' })}
+          onChange={onChange}
+          onDelete={vi.fn()}
+        />,
+      )
+      fireEvent.change(screen.getByLabelText('Texto do botão (opcional)'), {
+        target: { value: '' },
+      })
+      expect(onChange).toHaveBeenCalledWith({
+        flowId: 'flow-1',
+        ctaLabel: undefined,
+      })
+    })
+
+    it('says so when there is no form to send, and flags a retired one', () => {
+      const { rerender } = render(
+        <ChatbotNodePanel
+          {...base}
+          node={formNode({ flowId: '' })}
+          onChange={vi.fn()}
+          onDelete={vi.fn()}
+        />,
+      )
+      expect(screen.getByText(/Nenhum formulário publicado/)).toBeTruthy()
+
+      rerender(
+        <ChatbotNodePanel
+          {...base}
+          flows={[{ id: 'flow-1', name: 'Antigo', sendable: false }]}
+          node={formNode()}
+          onChange={vi.fn()}
+          onDelete={vi.fn()}
+        />,
+      )
+      expect(
+        screen.getAllByText('Antigo (indisponível)').length,
+      ).toBeGreaterThan(0)
+    })
+
+    it('locks the fields when read only', () => {
+      render(
+        <ChatbotNodePanel
+          {...base}
+          readOnly
+          flows={[{ id: 'flow-1', name: 'Cadastro', sendable: true }]}
+          node={formNode()}
+          onChange={vi.fn()}
+          onDelete={vi.fn()}
+        />,
+      )
+      expect(
+        (screen.getByLabelText('Texto do botão (opcional)') as HTMLInputElement)
+          .disabled,
+      ).toBe(true)
+    })
+  })
+
   it('deletes a block, but never the start block, and hides it when read only', () => {
     const onDelete = vi.fn()
     const message: ChatbotNode = {

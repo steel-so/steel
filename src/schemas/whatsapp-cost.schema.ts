@@ -29,21 +29,42 @@ export const WhatsAppCostQuerySchema = z
 
 export type WhatsAppCostQueryDTO = z.infer<typeof WhatsAppCostQuerySchema>
 
-export const CreateWhatsAppPriceSchema = z.object({
-  category: z.enum(['MARKETING', 'UTILITY', 'AUTHENTICATION']),
-  country: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{2}$/, 'Use o código do país com 2 letras (ex.: BR)')
-    .default('BR'),
-  unitPrice: z
-    .number()
-    .min(0, 'O preço não pode ser negativo')
-    .max(WHATSAPP_PRICE_MAX, `Máximo de ${WHATSAPP_PRICE_MAX}`),
-  /** Valid from this instant; defaults to now. */
-  validFrom: z.iso.datetime().optional(),
-})
+export const CreateWhatsAppPriceSchema = z
+  .object({
+    category: z.enum(['MARKETING', 'UTILITY', 'AUTHENTICATION']),
+    country: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/, 'Use o código do país com 2 letras (ex.: BR)')
+      .default('BR'),
+    unitPrice: z
+      .number()
+      .min(0, 'O preço não pode ser negativo')
+      .max(WHATSAPP_PRICE_MAX, `Máximo de ${WHATSAPP_PRICE_MAX}`),
+    /**
+     * Price of a Marketing Messages Lite message (MARKETING only); omitted or
+     * null = the Lite messages cost the same as `unitPrice`.
+     */
+    liteUnitPrice: z
+      .number()
+      .min(0, 'O preço não pode ser negativo')
+      .max(WHATSAPP_PRICE_MAX, `Máximo de ${WHATSAPP_PRICE_MAX}`)
+      .nullable()
+      .optional(),
+    /** Valid from this instant; defaults to now. */
+    validFrom: z.iso.datetime().optional(),
+  })
+  .refine(
+    (value) =>
+      value.liteUnitPrice === undefined ||
+      value.liteUnitPrice === null ||
+      value.category === 'MARKETING',
+    {
+      message: 'O preço da Marketing Messages Lite vale só para Marketing',
+      path: ['liteUnitPrice'],
+    },
+  )
 
 export type CreateWhatsAppPriceDTO = z.infer<typeof CreateWhatsAppPriceSchema>
 

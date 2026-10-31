@@ -85,6 +85,14 @@ export interface WhatsAppChatbotSessionDTO {
 export type WhatsAppChatbotSimulationOutputDTO =
   | { kind: 'text'; text: string }
   | {
+      kind: 'form'
+      nodeId: string
+      flowId: string
+      bodyText?: string
+      ctaLabel?: string
+      fallbackText?: string
+    }
+  | {
       kind: 'menu'
       nodeId: string
       text: string

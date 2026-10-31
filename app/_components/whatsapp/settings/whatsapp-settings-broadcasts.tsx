@@ -53,6 +53,7 @@ import {
   mediaKindFromMime,
   validateBroadcastMedia,
 } from '@/src/lib/whatsapp/broadcast-media'
+import { findTemplateFlowButton } from '@/src/lib/whatsapp/flows/template-button'
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
 import { WhatsappNumberValidationProgress } from '../number-validation/whatsapp-number-validation-dialog'
 import { TemplateNameWithQuality } from '../template-quality-badge'
@@ -398,6 +399,10 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const approvedTemplates = (templates.data ?? []).filter(
     (t) => t.status === 'APPROVED',
   )
+  const selectedTemplate = approvedTemplates.find((t) => t.id === templateId)
+  const opensForm = Boolean(
+    selectedTemplate && findTemplateFlowButton(selectedTemplate.components),
+  )
   const importBroadcast = useImportWhatsAppBroadcast(workspaceId)
   const importHasZapi = (connections.data ?? []).some(
     (connection) => connection.provider === 'ZAPI',
@@ -568,6 +573,14 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               {approvedTemplates.length === 0 && (
                 <p className='text-muted-foreground text-xs'>
                   Nenhum template aprovado neste workspace ainda.
+                </p>
+              )}
+              {opensForm && (
+                <p className='text-muted-foreground text-xs'>
+                  Este template abre um formulário: cada destinatário o recebe
+                  já preenchido com o nome e o telefone dele, e as respostas
+                  aparecem no formulário. Vale só para conexões da API oficial
+                  da Meta.
                 </p>
               )}
             </div>

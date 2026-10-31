@@ -505,6 +505,61 @@ describe('chatbot engine', () => {
   })
 })
 
+describe('send form node', () => {
+  const formFlow = (data: object, next = true) =>
+    parse({
+      nodes: [
+        { id: 'start', type: 'start', position: pos, data: {} },
+        { id: 'form', type: 'send-form', position: pos, data },
+        { id: 'end', type: 'end', position: pos, data: { text: 'Fim' } },
+      ],
+      edges: [
+        edge('start', 'next', 'form'),
+        ...(next ? [edge('form', 'next', 'end')] : []),
+      ],
+    })
+
+  it('asks the runtime to send the form and goes on to the next block', async () => {
+    const run = await startFlow(formFlow({ flowId: 'flow-1' }), ctx())
+    expect(run.status).toBe('COMPLETED')
+    expect(run.outputs).toEqual([
+      { kind: 'form', nodeId: 'form', flowId: 'flow-1' },
+      { kind: 'text', text: 'Fim' },
+    ])
+  })
+
+  it('fills variables in the message and fallback, and carries the button label', async () => {
+    const run = await startFlow(
+      formFlow({
+        flowId: 'flow-1',
+        bodyText: 'Oi {{contact_name}}, preencha',
+        ctaLabel: 'Abrir',
+        fallbackText: 'Acesse o site, {{contact_name}}',
+      }),
+      ctx(),
+    )
+    expect(run.outputs[0]).toEqual({
+      kind: 'form',
+      nodeId: 'form',
+      flowId: 'flow-1',
+      bodyText: 'Oi Ana, preencha',
+      ctaLabel: 'Abrir',
+      fallbackText: 'Acesse o site, Ana',
+    })
+  })
+
+  it('ends the flow when the block has no exit', async () => {
+    const run = await startFlow(formFlow({ flowId: 'flow-1' }, false), ctx())
+    expect(run.status).toBe('COMPLETED')
+    expect(run.endReason).toBe('flow_ended')
+    expect(run.outputs).toHaveLength(1)
+  })
+
+  it('keeps an unchosen form as a draft the validation reports', () => {
+    expect(() => formFlow({ flowId: '' })).not.toThrow()
+  })
+})
+
 describe('matchMenuOption', () => {
   const menu = menuFlow.nodes.find((node) => node.type === 'menu')
   if (menu?.type !== 'menu') throw new Error('menu missing')

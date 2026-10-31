@@ -76,6 +76,36 @@ describe('WhatsAppFlowRepository', () => {
     ).toBeNull()
   })
 
+  it('finds flows by the id Meta knows them under', async () => {
+    const { workspace, connection, flow } = await seed()
+    await prisma.whatsAppFlow.update({
+      where: { id: flow.id },
+      data: { metaFlowId: 'meta-77' },
+    })
+    const other = await seedWorkspace()
+
+    const byConnection = expectOk(
+      await WhatsAppFlowRepository.listByMetaFlowId('meta-77', [connection.id]),
+    )
+    expect(byConnection.map((f) => f.id)).toEqual([flow.id])
+    expect(
+      expectOk(
+        await WhatsAppFlowRepository.listByMetaFlowId('meta-77', ['other']),
+      ),
+    ).toEqual([])
+
+    expect(
+      expectOk(
+        await WhatsAppFlowRepository.findByMetaFlowId(workspace.id, 'meta-77'),
+      )?.id,
+    ).toBe(flow.id)
+    expect(
+      expectOk(
+        await WhatsAppFlowRepository.findByMetaFlowId(other.id, 'meta-77'),
+      ),
+    ).toBeNull()
+  })
+
   it('turns database failures into errors', async () => {
     const boom = new Error('x')
     vi.spyOn(prisma.whatsAppFlow, 'findMany').mockRejectedValue(boom)
@@ -90,6 +120,14 @@ describe('WhatsAppFlowRepository', () => {
       'DATABASE_ERROR',
     )
     expectErr(await WhatsAppFlowRepository.count('w'), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppFlowRepository.listByMetaFlowId('m', ['c']),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await WhatsAppFlowRepository.findByMetaFlowId('w', 'm'),
+      'DATABASE_ERROR',
+    )
     expectErr(await WhatsAppFlowRepository.findById('i', 'w'), 'DATABASE_ERROR')
     expectErr(
       await WhatsAppFlowRepository.create({

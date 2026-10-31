@@ -359,6 +359,40 @@ describe('<WhatsappSettingsBroadcasts /> CSV import', () => {
     expect(within(listbox).queryByText('rascunho_pendente')).toBeNull()
   })
 
+  it('tells that a Flow template opens a prefilled form', async () => {
+    setup([
+      {
+        match: `${API}/templates`,
+        data: [
+          template('t1', 'lembrete_consulta', 'APPROVED'),
+          {
+            ...template('t3', 'form_cadastro', 'APPROVED'),
+            components: [
+              {
+                type: 'BUTTONS',
+                buttons: [{ type: 'FLOW', text: 'Abrir', flow_id: 'f1' }],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    const dialog = await openImport()
+    const [, templateTrigger] = within(dialog).getAllByRole('combobox')
+
+    fireEvent.click(templateTrigger)
+    await pickOption(/lembrete_consulta/)
+    expect(
+      within(dialog).queryByText(/Este template abre um formulário/),
+    ).toBeNull()
+
+    fireEvent.click(templateTrigger)
+    await pickOption(/form_cadastro/)
+    expect(
+      await within(dialog).findByText(/Este template abre um formulário/),
+    ).toBeTruthy()
+  })
+
   it('requires connection, template and file', async () => {
     setup()
     const dialog = await openImport()
