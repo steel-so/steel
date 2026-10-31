@@ -2333,3 +2333,37 @@ export const sdNlConfigInvalid = (message: string): AppError =>
 
 export const sdWfmSettingsInvalid = (message: string): AppError =>
   appError('SD_WFM_SETTINGS_INVALID', message)
+// ─── nov: ai-actions ────────────────────────────────────────────────────────
+
+export const aiActionConnectorNotFound = (): AppError =>
+  appError('AI_ACTION_CONNECTOR_NOT_FOUND', 'Conector não encontrado')
+
+export const aiActionConnectorLimitReached = (max: number): AppError =>
+  appError(
+    'AI_ACTION_CONNECTOR_LIMIT_REACHED',
+    `O workspace pode ter no máximo ${max} conectores`,
+  )
+
+export const aiActionConnectorKeyTaken = (): AppError =>
+  appError(
+    'AI_ACTION_CONNECTOR_KEY_TAKEN',
+    'Já existe um conector com este identificador',
+  )
+
+export const aiActionConnectorInvalid = (message: string): AppError =>
+  appError('AI_ACTION_CONNECTOR_INVALID', message)
+
+export const aiActionConnectorFailed = (message: string): AppError =>
+  appError('AI_ACTION_CONNECTOR_FAILED', message)
+
+export const aiActionsDisabled = (): AppError =>
+  appError(
+    'AI_ACTIONS_DISABLED',
+    'As ações da IA em sistemas externos estão desligadas neste workspace',
+  )
+
+export const aiActionInProgress = (): AppError =>
+  appError(
+    'AI_ACTION_IN_PROGRESS',
+    'Esta mesma ação já está em andamento. Aguarde alguns instantes.',
+  )

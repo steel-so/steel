@@ -6,6 +6,7 @@ import {
   HeaderBreadcrumbList,
 } from '@/app/_components/header/breadcrumb-page'
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
+import { AiActionsSection } from '@/app/_components/settings/ai-actions-section'
 import { AiGuardrailsSection } from '@/app/_components/settings/ai-guardrails-section'
 import { AiSettingsSection } from '@/app/_components/settings/ai-settings-section'
 import { SteelIcon } from '@/components/icon/icon'
@@ -69,6 +70,17 @@ export default async function SettingsSteelIntelligencePage({
             </Muted>
           </div>
           <AiGuardrailsSection workspaceId={membership.value.workspaceId} />
+        </div>
+        <div className='max-w-4xl space-y-6 pt-4'>
+          <div>
+            <H3>Ações da IA</H3>
+            <Muted>
+              Conectores com os sistemas do cliente (pedidos, senhas, acessos) e
+              as ferramentas que a resposta automática do WhatsApp pode usar,
+              cada uma automática ou com aprovação.
+            </Muted>
+          </div>
+          <AiActionsSection workspaceId={membership.value.workspaceId} />
         </div>
       </div>
     </div>

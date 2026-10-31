@@ -13,6 +13,16 @@ vi.mock('@/src/repositories/workspace-module-access.repository', () => ({
   },
 }))
 
+// AI actions (T3): the WhatsApp auto-reply asks for its tool allow-list on
+// every reply. Unit tests default to "feature off" (no row); the tests of the
+// feature re-mock this module in their own file.
+vi.mock('@/src/repositories/ai-action-settings.repository', () => ({
+  AiActionSettingsRepository: {
+    find: vi.fn(async () => ok(null)),
+    upsert: vi.fn(),
+  },
+}))
+
 // Trilha do painel admin (`recordAdminAction`): nos unitários, gravar a
 // linha é no-op; testes que verificam a trilha mockam `@/src/lib/admin-audit`.
 vi.mock('@/src/repositories/admin-audit-log.repository', () => ({

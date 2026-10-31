@@ -34,6 +34,12 @@ vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
 }))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
+vi.mock('@/src/lib/whatsapp/ai-reply-tools', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@/src/lib/whatsapp/ai-reply-tools')
+  >()),
+  loadZapAiTools: vi.fn(async () => null),
+}))
 vi.mock('@/src/services/whatsapp-notify', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../whatsapp-notify')>()),
   notifyWhatsAppUsers: vi.fn(async () => 1),
@@ -55,6 +61,10 @@ import {
   wrapUntrusted,
 } from '@/src/lib/ai/guardrails/injection'
 import type { AiChatResponse, AiProvider } from '@/src/lib/ai/types'
+import {
+  loadZapAiTools,
+  type ZapAiTools,
+} from '@/src/lib/whatsapp/ai-reply-tools'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppAiKnowledgeDocumentRepository } from '@/src/repositories/whatsapp-ai-knowledge-document.repository'
@@ -752,5 +762,59 @@ describe('WhatsAppAiReplyService.generateReply() — delivery edge cases', () =>
       messageId: 'out1',
       handoff: false,
     })
+  })
+})
+
+describe('WhatsAppAiReplyService.generateReply() — AI actions (T3)', () => {
+  function toolUse(name: string): AiChatResponse {
+    const toolCalls = [{ id: 'call0', name, arguments: { connector: 'x' } }]
+    return {
+      text: '',
+      toolCalls,
+      message: { role: 'assistant', content: '', toolCalls },
+      usage: { inputTokens: 7, outputTokens: 3 },
+      stopReason: 'tool_use',
+    }
+  }
+
+  function fakeTools(): ZapAiTools {
+    return {
+      specs: [{ name: 'act_lookup', description: 'd', parameters: {} }],
+      names: new Set(['act_lookup']),
+      run: vi.fn(async () => '{"status":"done"}'),
+    }
+  }
+
+  it('should offer the allow-listed tools and chain a lookup before the answer', async () => {
+    arrange()
+    const tools = fakeTools()
+    vi.mocked(loadZapAiTools).mockResolvedValueOnce(tools)
+    const chat = withChat(
+      vi
+        .fn<AiProvider['chat']>()
+        .mockResolvedValueOnce(toolUse('act_lookup'))
+        .mockResolvedValueOnce(toolUse('act_lookup'))
+        .mockResolvedValueOnce(toolUse('act_lookup'))
+        .mockResolvedValueOnce(response('Seu pedido saiu para entrega.')),
+    )
+
+    expect(expectOk(await generate())).toEqual(
+      expect.objectContaining({ status: 'sent' }),
+    )
+
+    expect(tools.run).toHaveBeenCalledTimes(3)
+    expect(tools.run).toHaveBeenCalledWith({
+      toolCall: { id: 'call0', name: 'act_lookup', arguments: { connector: 'x' } },
+      conversationId: CONV,
+      tainted: false,
+    })
+    expect(chat).toHaveBeenCalledTimes(4)
+    const calls = chat.mock.calls.map((c) => c[0])
+    expect(calls[0]?.tools?.map((t) => t.name)).toContain('act_lookup')
+    expect(calls[0]?.system).toContain('Ferramentas:')
+    // Tool rounds stay open until the last one, which is forced to text.
+    expect(calls[1]?.toolChoice).toBeUndefined()
+    expect(calls[2]?.toolChoice).toBeUndefined()
+    expect(calls[3]?.toolChoice).toBe('none')
   })
 })

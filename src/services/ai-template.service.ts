@@ -1,6 +1,7 @@
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
 import { STEEL_AGENT_TEMPLATES } from '@/src/lib/ai/templates/agent-templates'
+import { CRM_SALES_AGENT_TEMPLATES } from '@/src/lib/ai/templates/crm-sales-agent-templates'
 import { AI_SKILL_TEMPLATES } from '@/src/lib/ai/templates/skill-templates'
 import { findTool } from '@/src/lib/ai/tools/registry'
 import { ok, type Result } from '@/src/lib/result'
@@ -42,7 +43,10 @@ export const AiTemplateService = {
     }
 
     const enabled = modules.value.filter((m) => m.enabled).map((m) => m.module)
-    const agents = STEEL_AGENT_TEMPLATES.map((template) =>
+    const agents = [
+      ...STEEL_AGENT_TEMPLATES,
+      ...CRM_SALES_AGENT_TEMPLATES,
+    ].map((template) =>
       toSteelAgentTemplateDTO(template, enabled, findTool),
     )
     const skills = AI_SKILL_TEMPLATES.map((template) =>

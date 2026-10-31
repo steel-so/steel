@@ -24,6 +24,10 @@ export default async function SteelAgentsPage({
   if (!membership.ok || !membership.value) notFound()
 
   return (
-    <SteelAgentsList workspaceId={membership.value.workspaceId} slug={slug} />
+    <SteelAgentsList
+      workspaceId={membership.value.workspaceId}
+      slug={slug}
+      currentUserId={session.value.user.id}
+    />
   )
 }

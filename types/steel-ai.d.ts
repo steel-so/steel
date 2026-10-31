@@ -186,7 +186,7 @@ export interface AiActionLogDTO {
    * `MCP`: an external AI client through the MCP server (ADR 0032).
    * `VOICE`: the IVR voice attendant (ADR 0046).
    */
-  source: 'ASSISTANT' | 'AGENT' | 'MCP' | 'VOICE'
+  source: 'ASSISTANT' | 'AGENT' | 'MCP' | 'VOICE' | 'WHATSAPP'
   actorId: string | null
   agentId: string | null
   pendingActionId: string | null

@@ -22,6 +22,11 @@ import {
   parseAiCampaignActionCall,
   selectAiCampaignActionRequests,
 } from '@/src/lib/whatsapp/ai-campaign-actions'
+import {
+  loadZapAiTools,
+  ZAP_TOOL_ROUNDS,
+  ZAP_TOOLS_SYSTEM_SECTION,
+} from '@/src/lib/whatsapp/ai-reply-tools'
 import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
@@ -377,8 +382,10 @@ export const WhatsAppAiReplyService = {
       }),
     )
     const knowledgeBaseSection = await buildKnowledgeBaseSection(workspaceId)
+    const zapTools = await loadZapAiTools(workspaceId)
     const system =
       config.systemPrompt +
+      (zapTools ? ZAP_TOOLS_SYSTEM_SECTION : '') +
       HANDOFF_SYSTEM_INSTRUCTION +
       (call.guardrails
         ? autoReplyLimitsInstruction(call.guardrails.limits)
@@ -400,6 +407,7 @@ export const WhatsAppAiReplyService = {
     const tools = [
       CHECK_APPOINTMENT_TOOL,
       ...buildAiCampaignActionTools(campaignActions),
+      ...(zapTools?.specs ?? []),
     ]
     const actionRequests: AiCampaignActionRequest[] = []
     let replyText: string
@@ -414,7 +422,10 @@ export const WhatsAppAiReplyService = {
       usage.inputTokens += response.usage.inputTokens
       usage.outputTokens += response.usage.outputTokens
 
-      if (response.stopReason === 'tool_use') {
+      const maxRounds = zapTools ? ZAP_TOOL_ROUNDS : 1
+      let rounds = 0
+      while (response.stopReason === 'tool_use' && rounds < maxRounds) {
+        rounds++
         messages.push(response.message)
         for (const toolCall of response.toolCalls) {
           const actionRequest = parseAiCampaignActionCall(
@@ -422,32 +433,42 @@ export const WhatsAppAiReplyService = {
             toolCall,
           )
           if (actionRequest) actionRequests.push(actionRequest)
-          const toolResult =
-            toolCall.name === CHECK_APPOINTMENT_TOOL_NAME
-              ? await lookupUpcomingAppointment(conversation.contactId)
-              : actionRequest
-                ? {
-                    ok: true,
-                    mensagem:
-                      'Ação registrada: será executada assim que sua resposta for enviada. Responda ao cliente agora.',
-                  }
-                : { error: `Ferramenta desconhecida: ${toolCall.name}` }
+          let content: string
+          if (zapTools?.names.has(toolCall.name)) {
+            content = await zapTools.run({
+              toolCall,
+              conversationId,
+              tainted: call.guard?.tainted() ?? false,
+            })
+          } else {
+            const toolResult =
+              toolCall.name === CHECK_APPOINTMENT_TOOL_NAME
+                ? await lookupUpcomingAppointment(conversation.contactId)
+                : actionRequest
+                  ? {
+                      ok: true,
+                      mensagem:
+                        'Ação registrada: será executada assim que sua resposta for enviada. Responda ao cliente agora.',
+                    }
+                  : { error: `Ferramenta desconhecida: ${toolCall.name}` }
+            content = JSON.stringify(toolResult)
+          }
           messages.push({
             role: 'tool',
             toolCallId: toolCall.id,
             name: toolCall.name,
-            content: JSON.stringify(toolResult),
+            content,
           })
         }
 
-        // Segunda chamada com `toolChoice: 'none'`: força uma resposta final
-        // em texto em vez de permitir outra rodada de tool calls (evita loop).
+        // The last round is forced to plain text (`toolChoice: 'none'`) so a
+        // loop of tool calls can never keep the customer waiting.
         response = await call.provider.chat({
           model: call.model.model,
           system,
           messages,
           tools,
-          toolChoice: 'none',
+          ...(rounds >= maxRounds && { toolChoice: 'none' as const }),
         })
         usage.inputTokens += response.usage.inputTokens
         usage.outputTokens += response.usage.outputTokens
