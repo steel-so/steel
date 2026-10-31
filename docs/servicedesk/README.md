@@ -698,9 +698,29 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
     monitor-alerts/[alertId]` liga (com `remember`, guarda o apelido e liga os
     abertos com o mesmo host) ou desliga, e o chamado herda o item se não
     tinha. `GET monitor-alerts` filtra por `configItemId` e `unmatched`.
-  - *Fora do escopo*: o incidente maior (S2) usa estes alertas, mas a tela e
-    a lógica de incidente maior pertencem a S2; aqui não há elevação automática
-    de prioridade quando um alerta correlacionado é mais grave que o primeiro.
+  - *Prioridade na correlação* (sd-followups): `SdMonitorSource.
+    raisePriorityOnCorrelation` (padrão `true`, por origem). O alerta que
+    entra num chamado aberto tem a prioridade do mapa de severidade comparada
+    à do chamado pelo `level` (`SdPriority.level`, maior = mais prioritário);
+    se for maior (ou o chamado não tiver prioridade), `SdTicketEngine.update`
+    com ator de sistema sobe a prioridade (recalcula SLA), com nota interna,
+    evento `monitor.priority_raised` e auditoria `priority_raise`. Nunca
+    baixa. A subida só acontece na correlação, não em reenvio do mesmo alerta.
+  - *Incidente maior* (sd-followups): o chamado que nasce, reabre ou recebe
+    um alerta correlacionado é vinculado ao incidente maior ativo cujo
+    chamado principal está no mesmo item da CMDB
+    (`SdMajorIncidentLinker.findActiveFor({ configItemId })` +
+    `attach({ source: 'MONITORING', actorId: null })`). Só o item da CMDB
+    vincula (categoria/cliente seriam amplos demais para alertas); falhas
+    são logadas e não derrubam a ingestão.
+  - *Manutenção* (sd-followups): `SdStatusMaintenance.suppressMonitoring` +
+    `configItemIds`. Dentro da janela em andamento e para alerta com item da
+    CMDB, o alerta é gravado (`status = OPEN`, `ticketId = null`,
+    `suppressedAt`) e o resultado é `alert_suppressed`, sem chamado. Se o mesmo
+    alerta chegar de novo fora da janela, segue o fluxo normal e abre o chamado
+    (limpa `suppressedAt`). Falha na consulta da janela abre o chamado (perder
+    alerta é pior que um chamado a mais). Correlação com chamado aberto não é
+    suprimida.
 - **Plantão**: Configurações > Plantão cria a escala (time, fuso, rodízio,
   início e hora da virada; opcionalmente um calendário de expediente, e aí a
   escala só vale **fora** dele), as camadas (1 = primeira chamada) e os
@@ -886,7 +906,34 @@ serviço. Manual do usuário: `content/docs/servicedesk/incidente-maior.mdx`.
   (`proxy.ts`); `status-page` é slug reservado de workspace. Inscrição só por
   e-mail, com confirmação em duas etapas; confirmar e cancelar são POST (o
   clique), nunca GET.
-- **Fora do escopo**: componentes por serviço com estado próprio, agendamento
-  de manutenção, inscrição própria por WhatsApp, resolver os filhos em lote e
+- **Resolver os filhos em lote** (sd-followups): `POST …/resolve` aceita
+  `childTicketIds` (a lista confirmada no diálogo). Só filhos ligados ao
+  incidente e ainda abertos são tocados; cada um vai para a primeira fase
+  ativa `RESOLVED` do tipo via `SdTicketEngine.changePhase` com o ator do
+  agente e a solução "Resolvido junto com o incidente maior …". A resposta é o
+  incidente mais `childResults` (`RESOLVED`/`SKIPPED`/`FAILED` + motivo); um
+  chamado que falha (campos exigidos, aprovação) não bloqueia os outros nem o
+  incidente, que já foi resolvido antes. Auditoria `bulk_resolve`.
+- **Componentes por serviço** (sd-followups): `SdStatusComponent`
+  (`OPERATIONAL`/`DEGRADED`/`OUTAGE`, `serviceId` opcional sem FK). Rotas
+  `status-pages/[pageId]/components[/componentId]`: criar, renomear e remover
+  são do admin; trocar só o estado é de agente com edição. O estado geral da
+  página público vem de `sdStatusPageOverall(impactos, estadosDosComponentes)`:
+  degradado → `DEGRADED`, indisponível → `PARTIAL_OUTAGE` (`MAJOR_OUTAGE` se
+  todos). O estado é manual: não há histórico de mudanças nem ligação
+  automática com incidentes.
+- **Manutenção programada** (sd-followups): `SdStatusMaintenance` +
+  `SdStatusMaintenancePage`; rotas `status-maintenances[/maintenanceId]`
+  (agente com edição; `DELETE` cancela e mantém o registro). A página pública
+  traz `maintenances` (em andamento ou começando em até 14 dias, não
+  canceladas) e `components`. Avisos: job `notify-maintenance` na fila
+  `servicedesk-mail` (`scheduled`/`rescheduled`/`canceled`), reivindicado por
+  `announcedAt`/`canceledNoticeAt` antes de enviar (no máximo uma vez; o
+  cancelamento só avisa quem foi avisado da janela). E-mail pelo Resend
+  (`components/emails/servicedesk/sd-status-maintenance.tsx`), WhatsApp pela
+  conexão do ServiceDesk, datas no fuso da página. Entrada de datas da tela:
+  horário de Brasília (`America/Sao_Paulo`), convertido por
+  `sdWallTimeToIso`. Remarcar uma janela já avisada reenvia o aviso.
+- **Fora do escopo**: inscrição própria por WhatsApp (só agente adiciona) e
   domínio próprio para a página.
 

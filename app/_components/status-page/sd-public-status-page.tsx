@@ -13,6 +13,7 @@ import {
   SD_MAJOR_INCIDENT_STATUS_LABEL,
   SD_STATUS_PAGE_OVERALL_LABEL,
 } from '@/src/lib/servicedesk/major-incident'
+import { SD_MAINTENANCE_NOTICE_LABEL } from '@/src/lib/servicedesk/status-maintenance'
 import type {
   SdPublicStatusIncidentDTO,
   SdPublicStatusPageDTO,
@@ -20,6 +21,7 @@ import type {
 import {
   formatIncidentDateTime,
   SD_INCIDENT_IMPACT_TONE,
+  SdComponentStateBadge,
   SdIncidentImpactBadge,
   SdIncidentStatusBadge,
   SdOverallDot,
@@ -163,6 +165,56 @@ export function SdPublicStatusPage({
           {SD_STATUS_PAGE_OVERALL_LABEL[data.overall]}
         </span>
       </section>
+
+      {data.maintenances.length > 0 ? (
+        <section className='flex flex-col gap-3'>
+          <h2 className='font-medium text-sm'>Manutenção programada</h2>
+          {data.maintenances.map((maintenance) => (
+            <article
+              key={maintenance.id}
+              className={cn(
+                'flex flex-col gap-1 rounded-lg border px-4 py-3',
+                SD_TONE_SOFT.sky,
+              )}
+            >
+              <span className='font-medium text-sm'>
+                {maintenance.title}
+                <span className='ml-2 font-normal text-xs'>
+                  {maintenance.inProgress
+                    ? SD_MAINTENANCE_NOTICE_LABEL.inProgress
+                    : SD_MAINTENANCE_NOTICE_LABEL.scheduled}
+                </span>
+              </span>
+              <span className='text-xs'>
+                {formatIncidentDateTime(maintenance.startsAt, data.timeZone)}{' '}
+                até {formatIncidentDateTime(maintenance.endsAt, data.timeZone)}
+              </span>
+              {maintenance.description ? (
+                <p className='whitespace-pre-wrap text-sm'>
+                  {maintenance.description}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </section>
+      ) : null}
+
+      {data.components.length > 0 ? (
+        <section className='flex flex-col gap-2'>
+          <h2 className='font-medium text-sm'>Componentes</h2>
+          <ul className='flex flex-col divide-y divide-border rounded-lg border border-border bg-card'>
+            {data.components.map((component) => (
+              <li
+                key={component.name}
+                className='flex items-center justify-between gap-3 px-4 py-2.5 text-sm'
+              >
+                <span>{component.name}</span>
+                <SdComponentStateBadge state={component.state} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {data.services.length > 0 ? (
         <section className='flex flex-col gap-2'>

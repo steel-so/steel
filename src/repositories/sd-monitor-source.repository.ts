@@ -17,6 +17,7 @@ export interface SdMonitorSourceData {
   flappingWindowMinutes?: number
   correlationMode?: SdMonitorSource['correlationMode']
   correlationWindowMinutes?: number
+  raisePriorityOnCorrelation?: boolean
 }
 
 /**

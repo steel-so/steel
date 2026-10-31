@@ -25,6 +25,8 @@ vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/repositories/sd-monitor-source.repository')
 vi.mock('@/src/repositories/sd-monitor-alert.repository')
 vi.mock('@/src/repositories/sd-ticket.repository')
+vi.mock('@/src/repositories/sd-ticket-context.repository')
+vi.mock('@/src/repositories/sd-status-maintenance.repository')
 vi.mock('@/src/repositories/sd-automation.repository')
 vi.mock('@/src/lib/servicedesk/realtime', () => ({
   publishSdTicketEvent: vi.fn(),
@@ -39,7 +41,11 @@ vi.mock('../sd-ticket-engine', async (importOriginal) => ({
     loadConfig: vi.fn(),
     create: vi.fn(),
     changePhase: vi.fn(),
+    update: vi.fn(),
   },
+}))
+vi.mock('../sd-major-incident-link', () => ({
+  SdMajorIncidentLinker: { findActiveFor: vi.fn(), attach: vi.fn() },
 }))
 vi.mock('../sd-ticket-event-recorder', () => ({ recordSdTicketEvent: vi.fn() }))
 vi.mock('../sd-notification.service', () => ({ notifySdEvent: vi.fn() }))
@@ -52,9 +58,12 @@ import { publishSdTicketEvent } from '@/src/lib/servicedesk/realtime'
 import { SdAutomationRepository } from '@/src/repositories/sd-automation.repository'
 import { SdMonitorAlertRepository } from '@/src/repositories/sd-monitor-alert.repository'
 import { SdMonitorSourceRepository } from '@/src/repositories/sd-monitor-source.repository'
+import { SdStatusMaintenanceRepository } from '@/src/repositories/sd-status-maintenance.repository'
 import { SdTicketRepository } from '@/src/repositories/sd-ticket.repository'
+import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import { assertModuleEnabled } from '../authz'
 import { fireSdAutomations } from '../sd-automation-engine'
+import { SdMajorIncidentLinker } from '../sd-major-incident-link'
 import { SdMonitorIngestService } from '../sd-monitor-ingest.service'
 import { hashSdMonitorToken } from '../sd-monitor-source.service'
 import { notifySdEvent } from '../sd-notification.service'
@@ -67,6 +76,9 @@ const alerts = vi.mocked(SdMonitorAlertRepository)
 const tickets = vi.mocked(SdTicketRepository)
 const automation = vi.mocked(SdAutomationRepository)
 const engine = vi.mocked(SdTicketEngine)
+const maintenance = vi.mocked(SdStatusMaintenanceRepository)
+const context = vi.mocked(SdTicketContextRepository)
+const linker = vi.mocked(SdMajorIncidentLinker)
 
 const { token } = sdMonitorToken()
 const WS = 'ws1'
@@ -131,6 +143,9 @@ beforeEach(() => {
       ok(createFakeSdMonitorAlert({ id, ...data })),
   )
   automation.insertSystemMessage.mockResolvedValue(ok({ id: 'msg-1' }))
+  maintenance.findSuppressing.mockResolvedValue(ok(null))
+  linker.findActiveFor.mockResolvedValue(ok(null))
+  linker.attach.mockResolvedValue(ok({ linked: true }))
 })
 
 describe('token and module gate', () => {
@@ -1119,5 +1134,332 @@ describe('batches (Grafana / Alertmanager)', () => {
       await SdMonitorIngestService.ingest(token, { ...down, status: 'Up' }),
     )
     expect(up.outcome).toBe('ticket_resolved')
+  })
+})
+
+describe('priority raise on correlation', () => {
+  const MAP = [
+    { from: 'Disaster', priorityId: 'p-high' },
+    { from: 'Warning', priorityId: 'p-low' },
+  ]
+  const priority = (id: string, name: string, level: number) => ({
+    id,
+    name,
+    level,
+    color: null,
+  })
+
+  beforeEach(() => {
+    sources.findByTokenHash.mockResolvedValue(
+      ok(createFakeSdMonitorSource({ severityMap: MAP })),
+    )
+    alerts.findCorrelationTarget.mockResolvedValue(
+      ok(
+        createFakeSdMonitorAlert({
+          id: 'root',
+          ticketId: 't1',
+          correlationKey: 'ci:ci-1',
+        }),
+      ),
+    )
+    tickets.findById.mockResolvedValue(
+      ok(
+        ticket({
+          priorityId: 'p-mid',
+          priority: priority('p-mid', 'Média', 2),
+        }),
+      ),
+    )
+    context.findPriorityLevel.mockResolvedValue(ok(4))
+    engine.update.mockResolvedValue(
+      ok(
+        ticket({
+          priorityId: 'p-high',
+          priority: priority('p-high', 'Crítica', 4),
+        }),
+      ),
+    )
+  })
+
+  it('raises the priority when the correlated alert is more severe', async () => {
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('alert_correlated')
+    expect(engine.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 't1' }),
+      { priorityId: 'p-high' },
+      { kind: 'system', source: 'monitor' },
+      CONFIG,
+    )
+    const notes = automation.insertSystemMessage.mock.calls.map((c) => c[0])
+    expect(notes.at(-1)?.body).toContain('Média')
+    expect(notes.at(-1)?.body).toContain('Crítica')
+    expect(recordSdTicketEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'monitor.priority_raised',
+        meta: expect.objectContaining({
+          fromPriorityId: 'p-mid',
+          toPriorityId: 'p-high',
+        }),
+      }),
+    )
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'priority_raise' }),
+    )
+  })
+
+  it('raises a ticket that has no priority yet', async () => {
+    tickets.findById.mockResolvedValue(ok(ticket({ priorityId: null })))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(engine.update).toHaveBeenCalled()
+  })
+
+  it('never lowers or repeats the same priority', async () => {
+    context.findPriorityLevel.mockResolvedValue(ok(2))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    context.findPriorityLevel.mockResolvedValue(ok(1))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(engine.update).not.toHaveBeenCalled()
+    tickets.findById.mockResolvedValue(
+      ok(
+        ticket({ priorityId: 'p-high', priority: priority('p-high', 'X', 4) }),
+      ),
+    )
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(engine.update).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when the setting is off', async () => {
+    sources.findByTokenHash.mockResolvedValue(
+      ok(
+        createFakeSdMonitorSource({
+          severityMap: MAP,
+          raisePriorityOnCorrelation: false,
+        }),
+      ),
+    )
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(engine.update).not.toHaveBeenCalled()
+    expect(context.findPriorityLevel).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when the severity is not mapped or the priority is gone', async () => {
+    expectOk(
+      await SdMonitorIngestService.ingest(token, {
+        ...problem,
+        eventSeverity: 'Unknown',
+      }),
+    )
+    expect(context.findPriorityLevel).not.toHaveBeenCalled()
+    context.findPriorityLevel.mockResolvedValue(ok(null))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(engine.update).not.toHaveBeenCalled()
+  })
+
+  it('keeps the ingestion when the level lookup or the update fails', async () => {
+    context.findPriorityLevel.mockResolvedValue(err(databaseError()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('alert_correlated')
+    context.findPriorityLevel.mockResolvedValue(ok(4))
+    engine.update.mockResolvedValue(err(databaseError()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('alert_correlated')
+    expect(recordSdTicketEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'monitor.priority_raised' }),
+    )
+  })
+
+  it('does not raise on a plain new alert (no correlation)', async () => {
+    alerts.findCorrelationTarget.mockResolvedValue(ok(null))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(engine.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('major incident link', () => {
+  it('attaches the new ticket to the active incident of the same CI', async () => {
+    linker.findActiveFor.mockResolvedValue(
+      ok({ id: 'mi-1', title: 'Rede', ticketId: 'master' }),
+    )
+    engine.create.mockResolvedValue(ok(ticket({ configItemId: 'ci-1' })))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(linker.findActiveFor).toHaveBeenCalledWith(WS, {
+      configItemId: 'ci-1',
+    })
+    expect(linker.attach).toHaveBeenCalledWith({
+      workspaceId: WS,
+      incidentId: 'mi-1',
+      ticketId: 't1',
+      source: 'MONITORING',
+      actorId: null,
+    })
+  })
+
+  it('falls back to the CI matched on the alert', async () => {
+    linker.findActiveFor.mockResolvedValue(
+      ok({ id: 'mi-1', title: 'Rede', ticketId: 'master' }),
+    )
+    engine.create.mockResolvedValue(ok(ticket({ configItemId: null })))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(linker.findActiveFor).toHaveBeenCalledWith(WS, {
+      configItemId: 'ci-1',
+    })
+  })
+
+  it('skips when there is no CI, no active incident or the ticket is the master', async () => {
+    alerts.findConfigItemByHosts.mockResolvedValue(ok(null))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(linker.findActiveFor).not.toHaveBeenCalled()
+
+    alerts.findConfigItemByHosts.mockResolvedValue(
+      ok({ id: 'ci-1', name: 'SRV-01' }),
+    )
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(linker.attach).not.toHaveBeenCalled()
+
+    linker.findActiveFor.mockResolvedValue(
+      ok({ id: 'mi-1', title: 'Rede', ticketId: 't1' }),
+    )
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(linker.attach).not.toHaveBeenCalled()
+  })
+
+  it('survives a failed lookup or attach', async () => {
+    linker.findActiveFor.mockResolvedValue(err(databaseError()))
+    expectOk(await SdMonitorIngestService.ingest(token, problem))
+    linker.findActiveFor.mockResolvedValue(
+      ok({ id: 'mi-1', title: 'Rede', ticketId: 'master' }),
+    )
+    linker.attach.mockResolvedValue(err(databaseError()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('ticket_created')
+  })
+
+  it('also attaches a correlated alert and a reopened ticket', async () => {
+    linker.findActiveFor.mockResolvedValue(
+      ok({ id: 'mi-1', title: 'Rede', ticketId: 'master' }),
+    )
+    alerts.findCorrelationTarget.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'root', ticketId: 't1' })),
+    )
+    tickets.findById.mockResolvedValue(ok(ticket()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('alert_correlated')
+    expect(linker.attach).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not attach on a resolution', async () => {
+    linker.findActiveFor.mockResolvedValue(
+      ok({ id: 'mi-1', title: 'Rede', ticketId: 'master' }),
+    )
+    alerts.findByExternalId.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'a1', ticketId: 't1' })),
+    )
+    tickets.findById.mockResolvedValue(ok(ticket()))
+    expectOk(await SdMonitorIngestService.ingest(token, recovery))
+    expect(linker.attach).not.toHaveBeenCalled()
+  })
+})
+
+describe('maintenance window', () => {
+  beforeEach(() => {
+    maintenance.findSuppressing.mockResolvedValue(
+      ok({ id: 'mw-1', title: 'Troca do switch' }),
+    )
+  })
+
+  it('records the alert without opening a ticket', async () => {
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('alert_suppressed')
+    expect(result.ticketCode).toBeNull()
+    expect(engine.create).not.toHaveBeenCalled()
+    expect(maintenance.findSuppressing).toHaveBeenCalledWith(
+      WS,
+      'ci-1',
+      expect.any(Date),
+    )
+    expect(alerts.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'OPEN',
+        ticketId: null,
+        suppressedAt: expect.any(Date),
+      }),
+    )
+    expect(fireSdAutomations).not.toHaveBeenCalled()
+    expect(onCallMock()).not.toHaveBeenCalled()
+  })
+
+  it('counts the repetitions of a suppressed alert', async () => {
+    alerts.findByExternalId.mockResolvedValue(
+      ok(
+        createFakeSdMonitorAlert({
+          id: 'a1',
+          ticketId: null,
+          suppressedAt: new Date('2026-10-01T12:00:00Z'),
+        }),
+      ),
+    )
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('alert_suppressed')
+    expect(alerts.update).toHaveBeenCalledWith(
+      'a1',
+      expect.objectContaining({ occurrences: { increment: 1 } }),
+    )
+  })
+
+  it('opens the ticket when a suppressed alert comes back after the window', async () => {
+    maintenance.findSuppressing.mockResolvedValue(ok(null))
+    alerts.findByExternalId.mockResolvedValue(
+      ok(
+        createFakeSdMonitorAlert({
+          id: 'a1',
+          ticketId: null,
+          suppressedAt: new Date('2026-10-01T12:00:00Z'),
+        }),
+      ),
+    )
+    const result = expectOk(await SdMonitorIngestService.ingest(token, problem))
+    expect(result.outcome).toBe('ticket_created')
+    expect(alerts.update).toHaveBeenCalledWith(
+      'a1',
+      expect.objectContaining({ ticketId: 't1', suppressedAt: null }),
+    )
+  })
+
+  it('does not suppress an alert without a CMDB item and opens the ticket on a lookup failure', async () => {
+    alerts.findConfigItemByHosts.mockResolvedValue(ok(null))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('ticket_created')
+    expect(maintenance.findSuppressing).not.toHaveBeenCalled()
+
+    alerts.findConfigItemByHosts.mockResolvedValue(
+      ok({ id: 'ci-1', name: 'SRV-01' }),
+    )
+    maintenance.findSuppressing.mockResolvedValue(err(databaseError()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('ticket_created')
+  })
+
+  it('propagates a failure of the alert write', async () => {
+    alerts.create.mockResolvedValue(err(databaseError()))
+    expectErr(
+      await SdMonitorIngestService.ingest(token, problem),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('still lets the alert join an open ticket of the machine', async () => {
+    alerts.findCorrelationTarget.mockResolvedValue(
+      ok(createFakeSdMonitorAlert({ id: 'root', ticketId: 't1' })),
+    )
+    tickets.findById.mockResolvedValue(ok(ticket()))
+    expect(
+      expectOk(await SdMonitorIngestService.ingest(token, problem)).outcome,
+    ).toBe('alert_correlated')
   })
 })

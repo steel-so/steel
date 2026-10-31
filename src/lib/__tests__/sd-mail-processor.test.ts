@@ -1,14 +1,19 @@
 import type { Job } from 'bullmq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { runTickMock, syncMailboxMock, deliverMock, loggerMock } = vi.hoisted(
-  () => ({
-    runTickMock: vi.fn(),
-    syncMailboxMock: vi.fn(),
-    deliverMock: vi.fn(),
-    loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  }),
-)
+const {
+  runTickMock,
+  syncMailboxMock,
+  deliverMock,
+  deliverMaintenanceMock,
+  loggerMock,
+} = vi.hoisted(() => ({
+  runTickMock: vi.fn(),
+  syncMailboxMock: vi.fn(),
+  deliverMock: vi.fn(),
+  deliverMaintenanceMock: vi.fn(),
+  loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
 
 vi.mock('@/src/services/sd-mail-inbound.service', () => ({
   SdMailInboundService: {
@@ -18,6 +23,9 @@ vi.mock('@/src/services/sd-mail-inbound.service', () => ({
 }))
 vi.mock('@/src/services/sd-status-notify.service', () => ({
   SdStatusNotifyService: { deliver: deliverMock },
+}))
+vi.mock('@/src/services/sd-status-maintenance-notify.service', () => ({
+  SdStatusMaintenanceNotifyService: { deliver: deliverMaintenanceMock },
 }))
 vi.mock('@/lib/axiom/logger', () => ({ logger: loggerMock }))
 
@@ -129,5 +137,46 @@ describe('processServicedeskMail', () => {
         fakeJob('notify-status-update', { updateId: 'u2' }),
       ),
     ).rejects.toThrow('Failed to notify status update u2: DATABASE_ERROR')
+  })
+
+  it('delivers a maintenance notice', async () => {
+    const value = { skipped: null, total: 3, sent: 3, failed: 0 }
+    deliverMaintenanceMock.mockResolvedValue({ ok: true, value })
+    await expect(
+      processServicedeskMail(
+        fakeJob('notify-maintenance', {
+          maintenanceId: 'm1',
+          kind: 'scheduled',
+        }),
+      ),
+    ).resolves.toBe(value)
+    expect(deliverMaintenanceMock).toHaveBeenCalledWith('m1', 'scheduled')
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      'queue.servicedesk_mail.maintenance_notified',
+      expect.objectContaining({ maintenanceId: 'm1', kind: 'scheduled' }),
+    )
+  })
+
+  it('throws when the maintenance notice is incomplete or the delivery fails', async () => {
+    await expect(
+      processServicedeskMail(fakeJob('notify-maintenance', {}, 'j3')),
+    ).rejects.toThrow('without maintenanceId/kind (id=j3)')
+    await expect(
+      processServicedeskMail(
+        fakeJob('notify-maintenance', { maintenanceId: 'm1' }),
+      ),
+    ).rejects.toThrow('(id=unknown)')
+    deliverMaintenanceMock.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'x' },
+    })
+    await expect(
+      processServicedeskMail(
+        fakeJob('notify-maintenance', {
+          maintenanceId: 'm2',
+          kind: 'canceled',
+        }),
+      ),
+    ).rejects.toThrow('Failed to notify maintenance m2: DATABASE_ERROR')
   })
 })

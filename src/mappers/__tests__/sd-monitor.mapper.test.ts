@@ -42,6 +42,26 @@ describe('toSdMonitorSourceDTO', () => {
     })
   })
 
+  it('exposes the priority-raise setting and the suppressed flag', () => {
+    expect(
+      toSdMonitorSourceDTO(createFakeSdMonitorSource())
+        .raisePriorityOnCorrelation,
+    ).toBe(true)
+    expect(
+      toSdMonitorSourceDTO(
+        createFakeSdMonitorSource({ raisePriorityOnCorrelation: false }),
+      ).raisePriorityOnCorrelation,
+    ).toBe(false)
+    expect(toSdMonitorAlertDTO(createFakeSdMonitorAlert()).suppressed).toBe(
+      false,
+    )
+    expect(
+      toSdMonitorAlertDTO(
+        createFakeSdMonitorAlert({ suppressedAt: new Date() }),
+      ).suppressed,
+    ).toBe(true)
+  })
+
   it('keeps a source that never received an alert as null', () => {
     expect(toSdMonitorSourceDTO(createFakeSdMonitorSource()).lastEventAt).toBe(
       null,

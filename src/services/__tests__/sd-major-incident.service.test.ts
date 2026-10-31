@@ -7,7 +7,10 @@ import {
   createFakeSdStatusPage,
 } from '@/src/__tests__/factories/nov-s2-major-incident.factory'
 import { createFakeSdTicket } from '@/src/__tests__/factories/sd-ticket.factory'
-import { createFakeSdSettings } from '@/src/__tests__/factories/sd-ticket-context.factory'
+import {
+  createFakeSdPhase,
+  createFakeSdSettings,
+} from '@/src/__tests__/factories/sd-ticket-context.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, sdTicketNotFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
@@ -37,7 +40,11 @@ vi.mock('../sd-major-incident-link', () => ({
 }))
 vi.mock('../sd-ticket-engine', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../sd-ticket-engine')>()),
-  SdTicketEngine: { loadConfig: vi.fn(), resolveRef: vi.fn() },
+  SdTicketEngine: {
+    loadConfig: vi.fn(),
+    resolveRef: vi.fn(),
+    changePhase: vi.fn(),
+  },
 }))
 
 import { auditMutation } from '@/lib/axiom/audit'
@@ -93,6 +100,7 @@ function as(who: 'agent' | 'requester', role: Role = 'MEMBER') {
 
 const refs: Record<string, ReturnType<typeof createFakeSdTicket>> = {
   t1: master,
+  t2: child,
   'INC-000007': master,
   '8': child,
   'INC-000008': child,
@@ -694,6 +702,148 @@ describe('SdMajorIncidentService.resolve', () => {
     expectErr(
       await SdMajorIncidentService.resolve('req', WS, 'i1', input),
       'SD_NOT_AGENT',
+    )
+  })
+})
+
+describe('SdMajorIncidentService.resolve with children', () => {
+  const input = {
+    message: 'Tudo normal',
+    publish: false,
+    resolution: 'Link trocado',
+    childTicketIds: ['t2'],
+  }
+  const resolvedPhase = createFakeSdPhase({
+    id: 'ph-res',
+    category: 'RESOLVED',
+  })
+
+  beforeEach(() => {
+    ctxRepo.findFirstPhaseByCategory.mockResolvedValue(ok(resolvedPhase))
+    engine.changePhase.mockResolvedValue(ok(child))
+  })
+
+  it('resolves the confirmed children through the engine and reports each one', async () => {
+    const out = expectOk(
+      await SdMajorIncidentService.resolve('agent', WS, 'i1', input),
+    )
+    expect(out.childResults).toEqual([
+      {
+        ticketId: 't2',
+        code: expect.stringContaining('8'),
+        title: child.title,
+        outcome: 'RESOLVED',
+        reason: null,
+      },
+    ])
+    expect(ctxRepo.findFirstPhaseByCategory).toHaveBeenCalledWith(
+      WS,
+      child.type,
+      'RESOLVED',
+    )
+    const [ticket, phaseId, actor, , options] = engine.changePhase.mock.calls[0]
+    expect(ticket).toBe(child)
+    expect(phaseId).toBe('ph-res')
+    expect(actor).toMatchObject({ kind: 'user', userId: 'agent' })
+    expect(options).toMatchObject({
+      reason: 'major_incident.bulk_resolve',
+      solution: expect.stringContaining('Link trocado'),
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'bulk_resolve',
+        meta: expect.objectContaining({ requested: 1, resolved: 1, failed: 0 }),
+      }),
+    )
+  })
+
+  it('uses the public message when there is no internal resolution', async () => {
+    expectOk(
+      await SdMajorIncidentService.resolve('agent', WS, 'i1', {
+        ...input,
+        resolution: undefined,
+      }),
+    )
+    expect(engine.changePhase.mock.calls[0][4]?.solution).toContain(
+      'Tudo normal',
+    )
+  })
+
+  it('touches no child unless asked', async () => {
+    const out = expectOk(
+      await SdMajorIncidentService.resolve('agent', WS, 'i1', {
+        ...input,
+        childTicketIds: undefined,
+      }),
+    )
+    expect(out.childResults).toEqual([])
+    expect(engine.changePhase).not.toHaveBeenCalled()
+  })
+
+  it('skips what is not a linked child, is unknown or already closed', async () => {
+    refs.stranger = createFakeSdTicket({ id: 't9', number: 9 })
+    const closed = createFakeSdTicket({
+      id: 't2',
+      number: 8,
+      phase: { ...child.phase, category: 'CLOSED' },
+    })
+    engine.resolveRef.mockImplementation(async (_ws, ref) => {
+      if (ref === 'closed') return ok(closed)
+      return refs[ref] ? ok(refs[ref]) : err(sdTicketNotFound())
+    })
+    const out = expectOk(
+      await SdMajorIncidentService.resolve('agent', WS, 'i1', {
+        ...input,
+        childTicketIds: ['stranger', 'nope', 'closed', 'nope'],
+      }),
+    )
+    expect(out.childResults.map((r) => [r.ticketId, r.outcome])).toEqual([
+      ['stranger', 'SKIPPED'],
+      ['nope', 'SKIPPED'],
+      ['t2', 'SKIPPED'],
+    ])
+    expect(out.childResults[0].reason).toBe('Não é filho deste incidente')
+    expect(out.childResults[1].reason).toBe('Chamado não encontrado')
+    expect(out.childResults[2].reason).toBe('O chamado já estava encerrado')
+    expect(engine.changePhase).not.toHaveBeenCalled()
+    delete refs.stranger
+  })
+
+  it('reports a failed child without stopping the others', async () => {
+    ctxRepo.findFirstPhaseByCategory.mockResolvedValueOnce(ok(null))
+    ctxRepo.findFirstPhaseByCategory.mockResolvedValueOnce(err(databaseError()))
+    const out = expectOk(
+      await SdMajorIncidentService.resolve('agent', WS, 'i1', {
+        ...input,
+        childTicketIds: ['t2', 'INC-000008', 'INC-000007'],
+      }),
+    )
+    // 'INC-000007' is the master, which is not a child.
+    expect(out.childResults.map((r) => r.outcome)).toEqual([
+      'FAILED',
+      'FAILED',
+      'SKIPPED',
+    ])
+    expect(out.childResults[0].reason).toContain('fase de resolução')
+    expect(out.childResults[1].reason).toContain('consultar as fases')
+  })
+
+  it('shows the reason when the engine refuses the phase', async () => {
+    engine.changePhase.mockResolvedValue(
+      err({ code: 'SD_PHASE_REQUIREMENTS_UNMET', message: 'Falta a solução' }),
+    )
+    const out = expectOk(
+      await SdMajorIncidentService.resolve('agent', WS, 'i1', input),
+    )
+    expect(out.childResults[0]).toMatchObject({
+      outcome: 'FAILED',
+      reason: 'Falta a solução',
+    })
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'bulk_resolve',
+        meta: expect.objectContaining({ resolved: 0, failed: 1 }),
+      }),
     )
   })
 })

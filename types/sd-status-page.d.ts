@@ -4,6 +4,10 @@ import type {
   SdStatusChannelDTO,
   SdStatusPageOverallDTO,
 } from './sd-major-incident'
+import type {
+  SdPublicMaintenanceDTO,
+  SdPublicStatusComponentDTO,
+} from './sd-status-maintenance'
 
 export interface SdStatusPageDTO {
   id: string
@@ -65,6 +69,10 @@ export interface SdPublicStatusPageDTO {
   timeZone: string
   overall: SdStatusPageOverallDTO
   services: string[]
+  /** Services with their own state, set by the agents. */
+  components: SdPublicStatusComponentDTO[]
+  /** Scheduled and running maintenance windows (soonest first). */
+  maintenances: SdPublicMaintenanceDTO[]
   allowSubscriptions: boolean
   active: SdPublicStatusIncidentDTO[]
   /** Resolved in the last 30 days, newest first. */

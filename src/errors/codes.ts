@@ -1457,6 +1457,16 @@ export const ERROR_CODES = {
     code: 'STEEL_AGENT_SIM_GATE_INVALID',
     status: 422,
   },
+
+  // nov: sd-followups
+  SD_STATUS_COMPONENT_NOT_FOUND: {
+    code: 'SD_STATUS_COMPONENT_NOT_FOUND',
+    status: 404,
+  },
+  SD_MAINTENANCE_NOT_FOUND: { code: 'SD_MAINTENANCE_NOT_FOUND', status: 404 },
+  // Finished or canceled windows do not accept changes.
+  SD_MAINTENANCE_CLOSED: { code: 'SD_MAINTENANCE_CLOSED', status: 409 },
+  SD_MAINTENANCE_INVALID: { code: 'SD_MAINTENANCE_INVALID', status: 422 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

@@ -3,6 +3,10 @@ import {
   type SdStatusConfirmEmailProps,
 } from '@/components/emails/servicedesk/sd-status-confirm'
 import {
+  SdStatusMaintenance,
+  type SdStatusMaintenanceEmailProps,
+} from '@/components/emails/servicedesk/sd-status-maintenance'
+import {
   SdStatusUpdate,
   type SdStatusUpdateEmailProps,
 } from '@/components/emails/servicedesk/sd-status-update'
@@ -27,5 +31,16 @@ export async function sendSdStatusConfirmEmail(
     to: [props.email],
     subject: `Confirme sua inscrição — ${props.pageName}`,
     react: SdStatusConfirm(props),
+  })
+}
+
+/** Aviso de manutenção programada (nova, reagendada ou cancelada). */
+export async function sendSdStatusMaintenanceEmail(
+  props: SdStatusMaintenanceEmailProps,
+) {
+  return sendEmail({
+    to: [props.email],
+    subject: `${props.headline}: ${props.title}`,
+    react: SdStatusMaintenance(props),
   })
 }

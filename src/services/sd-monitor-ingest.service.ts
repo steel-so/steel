@@ -20,13 +20,16 @@ import {
   type SdMonitorAlertWithRelations,
 } from '@/src/repositories/sd-monitor-alert.repository'
 import { SdMonitorSourceRepository } from '@/src/repositories/sd-monitor-source.repository'
+import { SdStatusMaintenanceRepository } from '@/src/repositories/sd-status-maintenance.repository'
 import {
   SdTicketRepository,
   type SdTicketWithRelations,
 } from '@/src/repositories/sd-ticket.repository'
+import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import type { SdMonitorAlertDTO, SdMonitorIngestDTO } from '@/types/sd-monitor'
 import { assertModuleEnabled } from './authz'
 import { fireSdAutomations } from './sd-automation-engine'
+import { SdMajorIncidentLinker } from './sd-major-incident-link'
 import { hashSdMonitorToken } from './sd-monitor-source.service'
 import { notifySdEvent } from './sd-notification.service'
 import { sdOnCallEscalationTarget } from './sd-oncall-resolver'
@@ -61,6 +64,15 @@ import { recordSdTicketEvent } from './sd-ticket-event-recorder'
  *   dela está aberto, dentro de `correlationWindowMinutes`, entra no chamado
  *   desse alerta em vez de abrir outro. O chamado só encerra sozinho quando o
  *   último alerta ligado a ele normaliza.
+ * - **Prioridade na correlação**: se o alerta correlacionado é mais grave que a
+ *   prioridade atual do chamado (pelo mapa de severidade da origem), a
+ *   prioridade sobe (`raisePriorityOnCorrelation`); nunca baixa.
+ * - **Incidente maior**: o chamado que nasce, reabre ou recebe um alerta
+ *   correlacionado entra no incidente maior ativo do mesmo item da CMDB.
+ * - **Manutenção**: dentro de uma janela de manutenção que suprime o
+ *   monitoramento e cobre o item da CMDB do alerta, o alerta é registrado mas
+ *   nenhum chamado é aberto (`alert_suppressed`). Alertas sem item não são
+ *   suprimidos.
  * - **Lotes**: o Grafana/Alertmanager manda vários alertas num envio; cada um
  *   passa pelas regras acima, em ordem.
  *
@@ -370,6 +382,136 @@ async function notifyOnCall(
   if (!sent.ok) warn(sent.error.code)
 }
 
+/**
+ * Alerta correlacionado mais grave que o chamado: sobe a prioridade para a
+ * do mapa de severidade. Nunca baixa e nunca derruba a ingestão.
+ */
+async function raisePriorityIfMoreSevere(
+  source: SdMonitorSource,
+  event: SdMonitorEvent,
+  ticket: SdTicketWithRelations,
+  alert: { id: string; externalId: string },
+  config: SdEngineConfig,
+): Promise<void> {
+  if (!source.raisePriorityOnCorrelation) return
+  const priorityId = sdMonitorPriorityId(
+    sdMonitorSeverityMap(source.severityMap),
+    event.severity,
+  )
+  if (!priorityId || priorityId === ticket.priorityId) return
+  const warn = (reason: string) =>
+    logger.warn('servicedesk.monitor.priority_raise_failed', {
+      workspaceId: source.workspaceId,
+      ticketId: ticket.id,
+      reason,
+    })
+  const level = await SdTicketContextRepository.findPriorityLevel(
+    source.workspaceId,
+    priorityId,
+  )
+  if (!level.ok) return warn(level.error.code)
+  if (level.value === null) return
+  const current = ticket.priority?.level ?? null
+  if (current !== null && level.value <= current) return
+
+  const moved = await SdTicketEngine.update(
+    ticket,
+    { priorityId },
+    sdSystemActor(SOURCE),
+    config,
+  )
+  if (!moved.ok) return warn(moved.error.code)
+
+  const from = ticket.priority?.name ?? 'sem prioridade'
+  const to = moved.value.priority?.name ?? 'nova prioridade'
+  await postSystemMessage(
+    moved.value,
+    `<p>A prioridade subiu de ${escapeHtml(from)} para ${escapeHtml(to)}: o alerta "${escapeHtml(event.subject)}" é mais grave (severidade ${escapeHtml(event.severity ?? '')}).</p>`,
+    'INTERNAL',
+  )
+  await trace(
+    ticket.id,
+    source.workspaceId,
+    'monitor.priority_raised',
+    { id: alert.id, externalId: alert.externalId, severity: event.severity },
+    { fromPriorityId: ticket.priorityId ?? '', toPriorityId: priorityId },
+  )
+  auditMutation({
+    entity: 'sd_monitor_alert',
+    action: 'priority_raise',
+    actorId: null,
+    targetId: alert.id,
+    meta: {
+      workspaceId: source.workspaceId,
+      sourceId: source.id,
+      ticketId: ticket.id,
+      fromPriorityId: ticket.priorityId,
+      toPriorityId: priorityId,
+    },
+  })
+}
+
+/**
+ * Chamado de alerta: entra no incidente maior ativo do mesmo item da CMDB.
+ * Idempotente (já ligado = nada) e nunca derruba a ingestão.
+ */
+async function attachToMajorIncident(
+  workspaceId: string,
+  ticket: SdTicketWithRelations,
+  configItemId: string | null,
+): Promise<void> {
+  const ci = ticket.configItemId ?? configItemId
+  if (!ci) return
+  const active = await SdMajorIncidentLinker.findActiveFor(workspaceId, {
+    configItemId: ci,
+  })
+  if (!active.ok) {
+    logger.warn('servicedesk.monitor.major_incident_lookup_failed', {
+      workspaceId,
+      reason: active.error.code,
+    })
+    return
+  }
+  if (!active.value || active.value.ticketId === ticket.id) return
+  const attached = await SdMajorIncidentLinker.attach({
+    workspaceId,
+    incidentId: active.value.id,
+    ticketId: ticket.id,
+    source: 'MONITORING',
+    actorId: null,
+  })
+  if (!attached.ok) {
+    logger.warn('servicedesk.monitor.major_incident_attach_failed', {
+      workspaceId,
+      ticketId: ticket.id,
+      reason: attached.error.code,
+    })
+  }
+}
+
+/** Janela de manutenção em curso que suprime o chamado deste item. */
+async function findSuppressingMaintenance(
+  workspaceId: string,
+  configItemId: string | null,
+  now: Date,
+): Promise<{ id: string; title: string } | null> {
+  if (!configItemId) return null
+  const found = await SdStatusMaintenanceRepository.findSuppressing(
+    workspaceId,
+    configItemId,
+    now,
+  )
+  if (!found.ok) {
+    // Na dúvida, abre o chamado: perder um alerta é pior que um chamado a mais.
+    logger.warn('servicedesk.monitor.maintenance_lookup_failed', {
+      workspaceId,
+      reason: found.error.code,
+    })
+    return null
+  }
+  return found.value
+}
+
 interface Handled {
   alert: SdMonitorAlertWithRelations
   outcome: SdMonitorIngestDTO['outcome']
@@ -433,7 +575,8 @@ async function handleProblem(
   }
 
   // Alerta já aberto: só atualiza (deduplicação).
-  if (existing && existing.status === 'OPEN') {
+  const awaitingTicket = !!existing?.suppressedAt && !existing.ticketId
+  if (existing && existing.status === 'OPEN' && !awaitingTicket) {
     const updated = await SdMonitorAlertRepository.update(existing.id, {
       ...common,
       occurrences: { increment: 1 },
@@ -502,6 +645,7 @@ async function handleProblem(
       ticketId: target.ticket.id,
       startedAt: event.startedAt ?? now,
       correlated: true,
+      suppressedAt: null,
       occurrences: 1,
     }
     const alert = existing
@@ -534,10 +678,55 @@ async function handleProblem(
       },
       { rootAlertId: target.rootAlertId },
     )
+    await raisePriorityIfMoreSevere(
+      source,
+      event,
+      target.ticket,
+      alert.value,
+      config,
+    )
     return ok({
       alert: alert.value,
       outcome: 'alert_correlated',
       ticket: target.ticket,
+    })
+  }
+
+  const maintenance = await findSuppressingMaintenance(
+    workspaceId,
+    configItemId,
+    now,
+  )
+  if (maintenance) {
+    const data = {
+      ...common,
+      status: 'OPEN' as const,
+      resolvedAt: null,
+      ticketId: null,
+      startedAt: event.startedAt ?? now,
+      correlated: false,
+      suppressedAt: now,
+      occurrences: existing ? { increment: 1 } : 1,
+    }
+    const alert = existing
+      ? await SdMonitorAlertRepository.update(existing.id, data)
+      : await SdMonitorAlertRepository.create({
+          ...data,
+          workspaceId,
+          sourceId: source.id,
+          externalId: event.externalId,
+        })
+    if (!alert.ok) return alert
+    logger.info('servicedesk.monitor.alert_suppressed', {
+      workspaceId,
+      sourceId: source.id,
+      alertId: alert.value.id,
+      maintenanceId: maintenance.id,
+    })
+    return ok({
+      alert: alert.value,
+      outcome: 'alert_suppressed',
+      ticket: null,
     })
   }
 
@@ -561,6 +750,7 @@ async function handleProblem(
     ticketId: ticket.value.id,
     startedAt: event.startedAt ?? now,
     correlated: false,
+    suppressedAt: null,
     occurrences: 1,
   }
   const alert = existing
@@ -719,6 +909,14 @@ async function processEvent(
 
   const { alert, outcome, ticket } = handled.value
   if (ticket) await publish(ticket, 'ticket.updated')
+  if (
+    ticket &&
+    (outcome === 'ticket_created' ||
+      outcome === 'ticket_reopened' ||
+      outcome === 'alert_correlated')
+  ) {
+    await attachToMajorIncident(source.workspaceId, ticket, alert.configItemId)
+  }
   if (
     ticket &&
     (outcome === 'ticket_created' || outcome === 'ticket_reopened')

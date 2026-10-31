@@ -22,6 +22,7 @@ describe('CreateSdMonitorSourceSchema', () => {
       flappingWindowMinutes: 30,
       correlationMode: 'HOST',
       correlationWindowMinutes: 60,
+      raisePriorityOnCorrelation: true,
     })
   })
 

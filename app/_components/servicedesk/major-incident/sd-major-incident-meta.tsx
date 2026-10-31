@@ -5,6 +5,10 @@ import {
   SD_MAJOR_INCIDENT_STATUS_LABEL,
   SD_STATUS_PAGE_OVERALL_LABEL,
 } from '@/src/lib/servicedesk/major-incident'
+import {
+  SD_STATUS_COMPONENT_STATE_LABEL,
+  type SdStatusComponentStateValue,
+} from '@/src/lib/servicedesk/status-maintenance'
 import type {
   SdMajorIncidentImpactDTO,
   SdMajorIncidentStatusDTO,
@@ -19,6 +23,40 @@ export const SD_INCIDENT_IMPACT_TONE: Record<SdStatusPageOverallDTO, SdTone> = {
   DEGRADED: 'amber',
   PARTIAL_OUTAGE: 'orange',
   MAJOR_OUTAGE: 'red',
+}
+
+export const SD_COMPONENT_STATE_TONE: Record<
+  SdStatusComponentStateValue,
+  SdTone
+> = {
+  OPERATIONAL: 'emerald',
+  DEGRADED: 'amber',
+  OUTAGE: 'red',
+}
+
+export const SD_COMPONENT_STATE_OPTIONS = (
+  Object.keys(SD_STATUS_COMPONENT_STATE_LABEL) as SdStatusComponentStateValue[]
+).map((value) => ({ value, label: SD_STATUS_COMPONENT_STATE_LABEL[value] }))
+
+export function SdComponentStateBadge({
+  state,
+  className,
+}: {
+  state: SdStatusComponentStateValue
+  className?: string
+}) {
+  return (
+    <Badge
+      variant='outline'
+      className={cn(
+        'border-transparent',
+        SD_TONE[SD_COMPONENT_STATE_TONE[state]],
+        className,
+      )}
+    >
+      {SD_STATUS_COMPONENT_STATE_LABEL[state]}
+    </Badge>
+  )
 }
 
 export const SD_INCIDENT_STATUS_TONE: Record<SdMajorIncidentStatusDTO, SdTone> =

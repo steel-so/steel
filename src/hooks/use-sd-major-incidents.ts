@@ -14,6 +14,7 @@ import type {
   SdMajorIncidentDTO,
   SdMajorIncidentLinkResultDTO,
   SdMajorIncidentListDTO,
+  SdMajorIncidentResolveDTO,
   SdMajorIncidentSuggestionListDTO,
   SdTicketMajorIncidentDTO,
 } from '@/types/sd-major-incident'
@@ -156,7 +157,7 @@ export function useResolveSdMajorIncident(workspaceId: string, id: string) {
   const invalidate = useInvalidate(workspaceId)
   return useMutation({
     mutationFn: (input: z.input<typeof ResolveSdMajorIncidentSchema>) =>
-      apiFetch<SdMajorIncidentDTO>(
+      apiFetch<SdMajorIncidentResolveDTO>(
         sdBase(workspaceId, `major-incidents/${id}/resolve`),
         sdJson('POST', input),
         'Erro ao resolver o incidente maior',

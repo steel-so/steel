@@ -1,8 +1,14 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { seedSdMajorIncident } from '@/src/__tests__/factories/nov-s2-major-incident.factory'
+import { seedSdStatusMaintenance } from '@/src/__tests__/factories/nov-sd-followups.factory'
 import { seedSdConfigItem } from '@/src/__tests__/factories/sd-config-item.factory'
 import { sdMonitorToken } from '@/src/__tests__/factories/sd-monitor.factory'
-import { seedSdPhaseFlow } from '@/src/__tests__/factories/sd-ticket-context.factory'
+import { seedSdTicket } from '@/src/__tests__/factories/sd-ticket.factory'
+import {
+  seedSdPhaseFlow,
+  seedSdPriority,
+} from '@/src/__tests__/factories/sd-ticket-context.factory'
 import { authenticatedOwner, defaultHeaders } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 import { prisma } from '@/src/lib/prisma'
@@ -429,5 +435,119 @@ describe('public monitoring webhook', () => {
       where: { id: opened.ticket.id },
     })
     expect(ticket.configItemId).toBe(ci.id)
+  })
+})
+
+describe('sd-followups: priority, major incident and maintenance', () => {
+  it('raises the ticket priority when a correlated alert is more severe', async () => {
+    const { workspace, token, source } = await setup()
+    const low = await seedSdPriority(workspace.id, { name: 'Baixa', level: 1 })
+    const high = await seedSdPriority(workspace.id, {
+      name: 'Crítica',
+      level: 4,
+    })
+    await prisma.sdMonitorSource.update({
+      where: { id: source.id },
+      data: {
+        severityMap: [
+          { from: 'Warning', priorityId: low.id },
+          { from: 'Disaster', priorityId: high.id },
+        ],
+      },
+    })
+
+    const first = (
+      await (
+        await send(token, {
+          ...problem,
+          eventId: 'cpu-1',
+          eventName: 'CPU alta',
+          eventSeverity: 'Warning',
+        })
+      ).json()
+    ).data
+    expect(first.outcome).toBe('ticket_created')
+
+    const second = (
+      await (
+        await send(token, {
+          ...problem,
+          eventId: 'disk-1',
+          eventName: 'Disco cheio',
+          eventSeverity: 'Disaster',
+        })
+      ).json()
+    ).data
+    expect(second.outcome).toBe('alert_correlated')
+    expect(second.ticket.id).toBe(first.ticket.id)
+
+    const ticket = await prisma.sdTicket.findUniqueOrThrow({
+      where: { id: first.ticket.id },
+    })
+    expect(ticket.priorityId).toBe(high.id)
+
+    // A milder alert never lowers it.
+    await send(token, {
+      ...problem,
+      eventId: 'mem-1',
+      eventName: 'Memória alta',
+      eventSeverity: 'Warning',
+    })
+    const after = await prisma.sdTicket.findUniqueOrThrow({
+      where: { id: first.ticket.id },
+    })
+    expect(after.priorityId).toBe(high.id)
+  })
+
+  it('attaches the new ticket to the active major incident of the same CI', async () => {
+    const { token, workspace, flow, ci } = await setup()
+    const master = await seedSdTicket(workspace.id, flow.initial.id, {
+      title: 'Datacenter fora',
+      configItemId: ci.id,
+    })
+    const incident = await seedSdMajorIncident(workspace.id, master.id)
+
+    const opened = (await (await send(token, problem)).json()).data
+    expect(opened.outcome).toBe('ticket_created')
+    const link = await prisma.sdMajorIncidentTicket.findFirst({
+      where: { incidentId: incident.id, ticketId: opened.ticket.id },
+    })
+    expect(link?.source).toBe('MONITORING')
+  })
+
+  it('records the alert without a ticket inside a suppressing maintenance window', async () => {
+    const { token, workspace, ci } = await setup()
+    await seedSdStatusMaintenance(workspace.id, [], {
+      startsAt: new Date(Date.now() - 3_600_000),
+      endsAt: new Date(Date.now() + 3_600_000),
+      suppressMonitoring: true,
+      configItemIds: [ci.id],
+      notifySubscribers: false,
+    })
+
+    const res = await send(token, problem)
+    expect(res.status).toBe(200)
+    const body = (await res.json()).data
+    expect(body.outcome).toBe('alert_suppressed')
+    expect(body.ticket).toBeNull()
+    expect(await prisma.sdTicket.count()).toBe(0)
+    const alert = await prisma.sdMonitorAlert.findFirstOrThrow({
+      where: { workspaceId: workspace.id },
+    })
+    expect(alert.status).toBe('OPEN')
+    expect(alert.suppressedAt).not.toBeNull()
+    expect(alert.ticketId).toBeNull()
+
+    // Once the window is over, the same alert coming back opens its ticket.
+    await prisma.sdStatusMaintenance.updateMany({
+      data: { endsAt: new Date(Date.now() - 1000) },
+    })
+    const later = (await (await send(token, problem)).json()).data
+    expect(later.outcome).toBe('ticket_created')
+    const reopened = await prisma.sdMonitorAlert.findUniqueOrThrow({
+      where: { id: alert.id },
+    })
+    expect(reopened.suppressedAt).toBeNull()
+    expect(reopened.ticketId).not.toBeNull()
   })
 })

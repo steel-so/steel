@@ -92,6 +92,29 @@ export const SdMajorIncidentDTO = dto(
   }),
 )
 
+export const SdMajorIncidentResolveDTO = dto(
+  'SdMajorIncidentResolve',
+  SdMajorIncidentDTO.extend({
+    childResults: z
+      .array(
+        z.object({
+          ticketId: z.string(),
+          code: z.string(),
+          title: z.string(),
+          outcome: z.enum(['RESOLVED', 'SKIPPED', 'FAILED']),
+          reason: z
+            .string()
+            .nullable()
+            .meta({ description: 'Por que foi ignorado ou não resolvido.' }),
+        }),
+      )
+      .meta({
+        description:
+          'Resultado de cada chamado filho pedido em `childTicketIds` (vazio quando nenhum foi pedido).',
+      }),
+  }),
+)
+
 export const SdMajorIncidentDeclareDTO = dto(
   'SdMajorIncidentDeclare',
   z.object({
@@ -207,6 +230,32 @@ export const SdPublicStatusPageDTO = dto(
       'MAJOR_OUTAGE',
     ]),
     services: z.array(z.string()),
+    components: z
+      .array(
+        z.object({
+          name: z.string(),
+          state: z.enum(['OPERATIONAL', 'DEGRADED', 'OUTAGE']),
+        }),
+      )
+      .meta({
+        description:
+          'Serviços com estado próprio. Um componente degradado deixa o estado geral em `DEGRADED`; um indisponível, em `PARTIAL_OUTAGE` (`MAJOR_OUTAGE` se todos estiverem indisponíveis).',
+      }),
+    maintenances: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          description: z.string().nullable(),
+          startsAt: z.iso.datetime(),
+          endsAt: z.iso.datetime(),
+          inProgress: z.boolean(),
+        }),
+      )
+      .meta({
+        description:
+          'Manutenções programadas em andamento ou que começam nos próximos 14 dias, da mais próxima à mais distante.',
+      }),
     allowSubscriptions: z.boolean(),
     active: z.array(PublicIncident),
     recent: z.array(PublicIncident).meta({
@@ -226,4 +275,68 @@ export const SdStatusSubscriptionDTO = dto(
     confirmed: z.boolean(),
     unsubscribed: z.boolean(),
   }),
+)
+
+// ----- Components and maintenance windows (sd-followups) ------------------------
+
+const ComponentState = z.enum(['OPERATIONAL', 'DEGRADED', 'OUTAGE'])
+
+const SdStatusComponentShape = z.object({
+  id: z.string(),
+  pageId: z.string(),
+  name: z.string(),
+  serviceId: z
+    .string()
+    .nullable()
+    .meta({ description: 'Serviço do catálogo que o componente espelha.' }),
+  state: ComponentState,
+  position: z.number().int(),
+  stateChangedAt: z.iso.datetime(),
+})
+
+export const SdStatusComponentDTO = dto(
+  'SdStatusComponent',
+  SdStatusComponentShape,
+)
+
+export const SdStatusComponentListDTO = dto(
+  'SdStatusComponentList',
+  z.object({ items: z.array(SdStatusComponentShape) }),
+)
+
+const SdStatusMaintenanceShape = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  startsAt: z.iso.datetime(),
+  endsAt: z.iso.datetime(),
+  phase: z.enum(['SCHEDULED', 'IN_PROGRESS', 'FINISHED', 'CANCELED']),
+  suppressMonitoring: z.boolean().meta({
+    description:
+      'Alertas do monitoramento sobre os itens da CMDB cobertos não abrem chamado enquanto a janela estiver em andamento.',
+  }),
+  configItems: z.array(z.object({ id: z.string(), name: z.string() })),
+  pages: z.array(
+    z.object({ id: z.string(), name: z.string(), slug: z.string() }),
+  ),
+  notifySubscribers: z.boolean(),
+  announcedAt: z.iso.datetime().nullable(),
+  canceledAt: z.iso.datetime().nullable(),
+  notify: z.object({
+    done: z.boolean(),
+    total: z.number().int(),
+    sent: z.number().int(),
+    failed: z.number().int(),
+  }),
+  createdAt: z.iso.datetime(),
+})
+
+export const SdStatusMaintenanceDTO = dto(
+  'SdStatusMaintenance',
+  SdStatusMaintenanceShape,
+)
+
+export const SdStatusMaintenanceListDTO = dto(
+  'SdStatusMaintenanceList',
+  z.object({ items: z.array(SdStatusMaintenanceShape) }),
 )

@@ -50,6 +50,10 @@ const sourceShape = {
       'Janela, em minutos, desde a última atividade do alerta aberto da mesma máquina.',
     example: 60,
   }),
+  raisePriorityOnCorrelation: z.boolean().meta({
+    description:
+      'Alerta correlacionado mais grave que a prioridade do chamado sobe a prioridade (nunca baixa).',
+  }),
   lastEventAt: nullableDateTime(),
   createdAt: dateTime(),
   updatedAt: dateTime(),
@@ -109,6 +113,10 @@ export const SdMonitorAlertDTO = dto(
     occurrences: z.number().int().meta({
       description: 'Quantas vezes o mesmo alerta chegou (deduplicação).',
     }),
+    suppressed: z.boolean().meta({
+      description:
+        'Chegou numa janela de manutenção que suprime chamados: nenhum chamado foi aberto.',
+    }),
     lastSeenAt: dateTime(),
     startedAt: dateTime(),
     resolvedAt: nullableDateTime(),
@@ -125,6 +133,7 @@ const ingestShape = {
       'ticket_reopened',
       'alert_updated',
       'alert_correlated',
+      'alert_suppressed',
       'ticket_resolved',
       'alert_resolved',
     ])

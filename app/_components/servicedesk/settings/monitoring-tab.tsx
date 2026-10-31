@@ -276,6 +276,7 @@ interface SourceValues {
   flappingWindowMinutes: number
   correlationMode: SdMonitorCorrelationModeDTO
   correlationWindowMinutes: number
+  raisePriorityOnCorrelation: boolean
 }
 
 function SourceDialog({
@@ -302,6 +303,7 @@ function SourceDialog({
     flappingWindowMinutes: source?.flappingWindowMinutes ?? 30,
     correlationMode: source?.correlationMode ?? 'HOST',
     correlationWindowMinutes: source?.correlationWindowMinutes ?? 60,
+    raisePriorityOnCorrelation: source?.raisePriorityOnCorrelation ?? true,
   })
 
   function set<K extends keyof SourceValues>(key: K, value: SourceValues[K]) {
@@ -541,6 +543,14 @@ function SourceDialog({
               />
             </FieldBlock>
           </div>
+          <ToggleRow
+            label='Subir a prioridade quando o alerta correlacionado for mais grave'
+            description='Se um alerta que entra num chamado aberto tem severidade mais alta que a prioridade atual (pelo mapa acima), a prioridade do chamado sobe e fica registrado no histórico. Nunca baixa.'
+            checked={values.raisePriorityOnCorrelation}
+            onCheckedChange={(checked) =>
+              set('raisePriorityOnCorrelation', checked)
+            }
+          />
         </div>
         <DialogFooter>
           <Button variant='outline' size='sm' onClick={onClose}>

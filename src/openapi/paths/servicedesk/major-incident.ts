@@ -8,6 +8,12 @@ import {
   UpdateSdMajorIncidentSchema,
 } from '@/src/schemas/sd-major-incident.schema'
 import {
+  CreateSdMaintenanceSchema,
+  CreateSdStatusComponentSchema,
+  UpdateSdMaintenanceSchema,
+  UpdateSdStatusComponentSchema,
+} from '@/src/schemas/sd-status-maintenance.schema'
+import {
   AddSdStatusSubscriberSchema,
   CreateSdStatusPageSchema,
   SdStatusSubscriptionActionSchema,
@@ -20,8 +26,13 @@ import {
   SdMajorIncidentDTO,
   SdMajorIncidentLinkResultDTO,
   SdMajorIncidentListDTO,
+  SdMajorIncidentResolveDTO,
   SdMajorIncidentSuggestionListDTO,
   SdPublicStatusPageDTO,
+  SdStatusComponentDTO,
+  SdStatusComponentListDTO,
+  SdStatusMaintenanceDTO,
+  SdStatusMaintenanceListDTO,
   SdStatusPageDTO,
   SdStatusPageListDTO,
   SdStatusSubscriberDTO,
@@ -73,6 +84,25 @@ const PAGE_NOT_FOUND: ErrorEntry = {
   code: 'SD_STATUS_PAGE_NOT_FOUND',
   when: 'Página inexistente ou de outro workspace',
 }
+const COMPONENT_NOT_FOUND: ErrorEntry = {
+  code: 'SD_STATUS_COMPONENT_NOT_FOUND',
+  when: 'Componente inexistente nesta página',
+}
+const MAINTENANCE_NOT_FOUND: ErrorEntry = {
+  code: 'SD_MAINTENANCE_NOT_FOUND',
+  when: 'Manutenção inexistente ou de outro workspace',
+}
+const MAINTENANCE_CLOSED: ErrorEntry = {
+  code: 'SD_MAINTENANCE_CLOSED',
+  when: 'A manutenção já terminou ou foi cancelada',
+}
+const MAINTENANCE_INVALID: ErrorEntry = {
+  code: 'SD_MAINTENANCE_INVALID',
+  when: 'Término antes do início, janela maior que 30 dias, no passado, ou supressão sem itens da CMDB',
+}
+const MAINTENANCES = '/workspaces/{id}/servicedesk/status-maintenances'
+const MAINTENANCE_PARAMS = { ...WS, maintenanceId: 'Id da manutenção.' }
+const COMPONENT_PARAMS = { ...PAGE_PARAMS, componentId: 'Id do componente.' }
 const DELETED = z.literal(true)
 
 const SLUG = { slug: 'Endereço da página de status.' }
@@ -176,12 +206,15 @@ export const sdMajorIncidentRoutes: RouteConfig[] = [
     path: `${INCIDENT_ITEM}/resolve`,
     tags: [INCIDENT],
     summary: 'Resolver incidente maior',
-    description: `Encerra o incidente com a mensagem pública de fechamento e, opcionalmente, a nota interna do que resolveu. Os chamados filhos não são resolvidos junto. Avisa o comandante e o responsável (\`major_incident.resolved\`). Auditado. ${ACCESS}`,
+    description: `Encerra o incidente com a mensagem pública de fechamento e, opcionalmente, a nota interna do que resolveu. Os chamados filhos só são resolvidos junto quando \`childTicketIds\` os lista (confirmação do agente): cada um vai para a fase de resolução do tipo e volta com o próprio resultado em \`childResults\` (\`RESOLVED\`, \`SKIPPED\` ou \`FAILED\` com o motivo); um chamado que falha não impede os outros. Avisa o comandante e o responsável (\`major_incident.resolved\`). Auditado. ${ACCESS}`,
     consent: true,
     params: INCIDENT_PARAMS,
     body: ResolveSdMajorIncidentSchema,
     responses: {
-      200: { description: 'Incidente.', schema: SdMajorIncidentDTO },
+      200: {
+        description: 'Incidente e resultado dos chamados filhos.',
+        schema: SdMajorIncidentResolveDTO,
+      },
     },
     errors: [...AGENT_ERRORS, NOT_FOUND, RESOLVED],
   },
@@ -431,5 +464,130 @@ export const sdMajorIncidentRoutes: RouteConfig[] = [
     errors: [
       { code: 'SD_STATUS_SUBSCRIBER_NOT_FOUND', when: 'Token desconhecido' },
     ],
+  },
+  {
+    method: 'get',
+    path: `${PAGE_ITEM}/components`,
+    tags: [PAGES],
+    summary: 'Listar componentes da página',
+    description: `Serviços com estado próprio, na ordem em que aparecem na página pública. ${ACCESS}`,
+    params: PAGE_PARAMS,
+    responses: {
+      200: { description: 'Componentes.', schema: SdStatusComponentListDTO },
+    },
+    errors: [...AGENT_ERRORS, PAGE_NOT_FOUND],
+  },
+  {
+    method: 'post',
+    path: `${PAGE_ITEM}/components`,
+    tags: [PAGES],
+    summary: 'Criar componente',
+    description: `\`serviceId\` (opcional) liga o componente a um serviço do catálogo. Auditado. ${ADMIN}`,
+    consent: true,
+    params: PAGE_PARAMS,
+    body: CreateSdStatusComponentSchema,
+    responses: {
+      201: { description: 'Componente.', schema: SdStatusComponentDTO },
+    },
+    errors: [
+      ...AGENT_ERRORS,
+      PAGE_NOT_FOUND,
+      { code: 'VALIDATION_ERROR', when: 'Serviço inexistente neste workspace' },
+    ],
+  },
+  {
+    method: 'patch',
+    path: `${PAGE_ITEM}/components/{componentId}`,
+    tags: [PAGES],
+    summary: 'Alterar componente',
+    description:
+      'Trocar só o `state` é ação de agente com `sd-tickets` de edição (quem atende o incidente); renomear, religar ao catálogo e reordenar são do administrador. O estado vale na hora na página pública e no estado geral. Auditado.',
+    consent: true,
+    params: COMPONENT_PARAMS,
+    body: UpdateSdStatusComponentSchema,
+    responses: {
+      200: { description: 'Componente.', schema: SdStatusComponentDTO },
+    },
+    errors: [...AGENT_ERRORS, COMPONENT_NOT_FOUND],
+  },
+  {
+    method: 'delete',
+    path: `${PAGE_ITEM}/components/{componentId}`,
+    tags: [PAGES],
+    summary: 'Remover componente',
+    description: `Auditado. ${ADMIN}`,
+    consent: true,
+    params: COMPONENT_PARAMS,
+    responses: { 200: { description: 'Removido.', schema: DELETED } },
+    errors: [...AGENT_ERRORS, COMPONENT_NOT_FOUND],
+  },
+  {
+    method: 'get',
+    path: MAINTENANCES,
+    tags: [PAGES],
+    summary: 'Listar manutenções programadas',
+    description: `Janelas que terminam a partir de 7 dias atrás (agendadas, em andamento, concluídas e canceladas), da mais próxima à mais distante. ${ACCESS}`,
+    params: WS,
+    responses: {
+      200: {
+        description: 'Manutenções.',
+        schema: SdStatusMaintenanceListDTO,
+      },
+    },
+    errors: AGENT_ERRORS,
+  },
+  {
+    method: 'post',
+    path: MAINTENANCES,
+    tags: [PAGES],
+    summary: 'Agendar manutenção',
+    description: `Aparece como aviso nas páginas escolhidas (a partir de 14 dias antes) e, com \`notifySubscribers\`, vira o job \`notify-maintenance\` na fila \`servicedesk-mail\` (e-mail e WhatsApp, no máximo uma vez). Com \`suppressMonitoring\`, alertas do monitoramento sobre os itens da CMDB listados não abrem chamado enquanto a janela estiver em andamento (ficam registrados como alertas suprimidos). As datas levam o fuso (\`2026-11-10T19:00:00-03:00\`). Auditado. ${ACCESS}`,
+    consent: true,
+    params: WS,
+    body: CreateSdMaintenanceSchema,
+    responses: {
+      201: { description: 'Manutenção.', schema: SdStatusMaintenanceDTO },
+    },
+    errors: [
+      ...AGENT_ERRORS,
+      MAINTENANCE_INVALID,
+      {
+        code: 'VALIDATION_ERROR',
+        when: 'Página de status ou item da CMDB inexistente neste workspace',
+      },
+    ],
+  },
+  {
+    method: 'patch',
+    path: `${MAINTENANCES}/{maintenanceId}`,
+    tags: [PAGES],
+    summary: 'Alterar manutenção',
+    description: `Só enquanto a janela não terminou e não foi cancelada. Mudar o horário de uma janela já avisada reenvia o aviso como reagendamento. Auditado. ${ACCESS}`,
+    consent: true,
+    params: MAINTENANCE_PARAMS,
+    body: UpdateSdMaintenanceSchema,
+    responses: {
+      200: { description: 'Manutenção.', schema: SdStatusMaintenanceDTO },
+    },
+    errors: [
+      ...AGENT_ERRORS,
+      MAINTENANCE_NOT_FOUND,
+      MAINTENANCE_CLOSED,
+      MAINTENANCE_INVALID,
+      { code: 'VALIDATION_ERROR', when: 'Página ou item da CMDB inexistente' },
+    ],
+  },
+  {
+    method: 'delete',
+    path: `${MAINTENANCES}/{maintenanceId}`,
+    tags: [PAGES],
+    summary: 'Cancelar manutenção',
+    description: `A janela fica na lista como cancelada e some das páginas públicas; quem recebeu o aviso recebe um aviso de cancelamento. Auditado. ${ACCESS}`,
+    consent: true,
+    params: MAINTENANCE_PARAMS,
+    responses: {
+      200: { description: 'Manutenção.', schema: SdStatusMaintenanceDTO },
+    },
+    errors: [...AGENT_ERRORS, MAINTENANCE_NOT_FOUND, MAINTENANCE_CLOSED],
   },
 ]

@@ -2,6 +2,10 @@ import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { SdMailInboundService } from '@/src/services/sd-mail-inbound.service'
 import {
+  type SdMaintenanceNotifyResult,
+  SdStatusMaintenanceNotifyService,
+} from '@/src/services/sd-status-maintenance-notify.service'
+import {
   type SdStatusNotifyResult,
   SdStatusNotifyService,
 } from '@/src/services/sd-status-notify.service'
@@ -20,6 +24,7 @@ export async function processServicedeskMail(
   | (SdMailboxSyncDTO & { mailboxes?: number })
   | SdMailboxSyncDTO
   | SdStatusNotifyResult
+  | SdMaintenanceNotifyResult
 > {
   switch (job.name) {
     case ServicedeskMailJob.PollMailboxes: {
@@ -69,6 +74,34 @@ export async function processServicedeskMail(
         component: 'Worker',
         jobId: job.id,
         updateId,
+        ...result.value,
+      })
+      return result.value
+    }
+    case ServicedeskMailJob.NotifyMaintenance: {
+      const { maintenanceId, kind } = job.data as {
+        maintenanceId?: string
+        kind?: 'scheduled' | 'rescheduled' | 'canceled'
+      }
+      if (!maintenanceId || !kind) {
+        throw new Error(
+          `servicedesk-mail notify-maintenance without maintenanceId/kind (id=${job.id ?? 'unknown'})`,
+        )
+      }
+      const result = await SdStatusMaintenanceNotifyService.deliver(
+        maintenanceId,
+        kind,
+      )
+      if (!result.ok) {
+        throw new Error(
+          `Failed to notify maintenance ${maintenanceId}: ${result.error.code}`,
+        )
+      }
+      logger.info('queue.servicedesk_mail.maintenance_notified', {
+        component: 'Worker',
+        jobId: job.id,
+        maintenanceId,
+        kind,
         ...result.value,
       })
       return result.value

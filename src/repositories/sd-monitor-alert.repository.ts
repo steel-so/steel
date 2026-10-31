@@ -37,6 +37,7 @@ export interface SdMonitorAlertCreateData {
   startedAt?: Date
   correlationKey?: string | null
   correlated?: boolean
+  suppressedAt?: Date | null
 }
 
 export interface SdMonitorAlertUpdateData {
@@ -52,6 +53,7 @@ export interface SdMonitorAlertUpdateData {
   resolvedAt?: Date | null
   correlationKey?: string | null
   correlated?: boolean
+  suppressedAt?: Date | null
   /** Número absoluto ou `{ increment }` (reenvio do mesmo alerta). */
   occurrences?: number | { increment: number }
   lastSeenAt?: Date

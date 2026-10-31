@@ -99,6 +99,9 @@ function toData(
   if (dto.correlationWindowMinutes !== undefined) {
     data.correlationWindowMinutes = dto.correlationWindowMinutes
   }
+  if (dto.raisePriorityOnCorrelation !== undefined) {
+    data.raisePriorityOnCorrelation = dto.raisePriorityOnCorrelation
+  }
   return data
 }
 

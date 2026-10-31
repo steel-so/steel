@@ -17,7 +17,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { useSdAgents } from '@/src/hooks/use-sd-config'
 import { useSdStatusPages } from '@/src/hooks/use-sd-status-pages'
 import { SD_SWARM_MAX_MEMBERS } from '@/src/lib/servicedesk/swarm'
-import type { SdMajorIncidentImpactDTO } from '@/types/sd-major-incident'
+import type {
+  SdMajorIncidentChildDTO,
+  SdMajorIncidentChildResolutionDTO,
+  SdMajorIncidentImpactDTO,
+} from '@/types/sd-major-incident'
 import {
   FieldBlock,
   SimpleSelect,
@@ -275,33 +279,52 @@ export function SdDeclareIncidentDialog({
   )
 }
 
+const FINISHED_CATEGORIES = ['RESOLVED', 'CLOSED', 'CANCELED']
+
+/** Children that are still open: the ones the bulk resolution may touch. */
+export function openIncidentChildren(
+  children: SdMajorIncidentChildDTO[],
+): SdMajorIncidentChildDTO[] {
+  return children.filter((c) => !FINISHED_CATEGORIES.includes(c.phaseCategory))
+}
+
 export function SdResolveIncidentDialog({
   open,
   hasPages,
+  openChildren = [],
   pending,
   onOpenChange,
   onSubmit,
 }: {
   open: boolean
   hasPages: boolean
+  /** Open child tickets, offered for resolution together with the incident. */
+  openChildren?: SdMajorIncidentChildDTO[]
   pending?: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (data: {
     message: string
     resolution?: string
     publish: boolean
+    childTicketIds?: string[]
   }) => void
 }) {
   const [message, setMessage] = useState('')
   const [resolution, setResolution] = useState('')
   const [publish, setPublish] = useState(true)
+  const [withChildren, setWithChildren] = useState(false)
+  const [picked, setPicked] = useState<string[]>([])
 
   useEffect(() => {
     if (!open) return
     setMessage('O problema foi resolvido e os serviços voltaram ao normal.')
     setResolution('')
     setPublish(true)
+    setWithChildren(false)
+    setPicked(openChildren.map((c) => c.ticketId))
   }, [open])
+
+  const childIds = withChildren ? picked : []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -309,8 +332,8 @@ export function SdResolveIncidentDialog({
         <DialogHeader>
           <DialogTitle>Resolver incidente maior</DialogTitle>
           <DialogDescription>
-            Encerra o incidente. Os chamados filhos continuam abertos: resolva
-            cada um pelo fluxo normal.
+            Encerra o incidente. Os chamados filhos continuam abertos, a menos
+            que você escolha resolvê-los junto.
           </DialogDescription>
         </DialogHeader>
         <div className='flex flex-col gap-4'>
@@ -337,6 +360,48 @@ export function SdResolveIncidentDialog({
               onCheckedChange={setPublish}
             />
           ) : null}
+          {openChildren.length > 0 ? (
+            <div className='flex flex-col gap-2'>
+              <ToggleRow
+                label={`Resolver também os chamados filhos abertos (${openChildren.length})`}
+                description='Cada chamado vai para a fase de resolução do tipo com a solução “Resolvido junto com o incidente maior”. Se a fase exigir campos que faltam, o chamado fica como está e o motivo aparece no resultado.'
+                checked={withChildren}
+                onCheckedChange={setWithChildren}
+              />
+              {withChildren ? (
+                <ul className='flex max-h-44 flex-col overflow-y-auto rounded-md border border-border'>
+                  {openChildren.map((child) => (
+                    <li key={child.ticketId}>
+                      <label
+                        htmlFor={`resolve-child-${child.ticketId}`}
+                        className='flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50'
+                      >
+                        <Checkbox
+                          id={`resolve-child-${child.ticketId}`}
+                          checked={picked.includes(child.ticketId)}
+                          onCheckedChange={(value) =>
+                            setPicked(
+                              value
+                                ? [...picked, child.ticketId]
+                                : picked.filter((id) => id !== child.ticketId),
+                            )
+                          }
+                        />
+                        <span className='flex min-w-0 flex-col'>
+                          <span className='truncate'>
+                            {child.code} · {child.title}
+                          </span>
+                          <span className='truncate text-muted-foreground text-xs'>
+                            {child.phase}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant='outline' onClick={() => onOpenChange(false)}>
@@ -349,11 +414,82 @@ export function SdResolveIncidentDialog({
                 message: message.trim(),
                 resolution: resolution.trim() || undefined,
                 publish,
+                ...(childIds.length > 0 ? { childTicketIds: childIds } : {}),
               })
             }
           >
-            Resolver
+            {childIds.length > 0
+              ? `Resolver incidente e ${childIds.length} ${childIds.length === 1 ? 'chamado' : 'chamados'}`
+              : 'Resolver'}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const CHILD_OUTCOME_LABEL: Record<
+  SdMajorIncidentChildResolutionDTO['outcome'],
+  string
+> = {
+  RESOLVED: 'Resolvido',
+  SKIPPED: 'Ignorado',
+  FAILED: 'Não resolvido',
+}
+
+/** What happened to each child ticket after the bulk resolution. */
+export function SdResolveResultDialog({
+  results,
+  onClose,
+}: {
+  results: SdMajorIncidentChildResolutionDTO[] | null
+  onClose: () => void
+}) {
+  const resolved = results?.filter((r) => r.outcome === 'RESOLVED').length ?? 0
+  return (
+    <Dialog open={results !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className='sm:max-w-lg'>
+        <DialogHeader>
+          <DialogTitle>Resultado dos chamados filhos</DialogTitle>
+          <DialogDescription>
+            {resolved} de {results?.length ?? 0}{' '}
+            {results?.length === 1
+              ? 'chamado resolvido'
+              : 'chamados resolvidos'}
+            . Os demais continuam como estavam.
+          </DialogDescription>
+        </DialogHeader>
+        <ul className='flex max-h-72 flex-col divide-y divide-border overflow-y-auto rounded-md border border-border'>
+          {(results ?? []).map((result) => (
+            <li
+              key={result.ticketId}
+              className='flex flex-col gap-0.5 px-3 py-2 text-sm'
+            >
+              <span className='flex items-center justify-between gap-2'>
+                <span className='min-w-0 truncate'>
+                  {result.code}
+                  {result.title ? ` · ${result.title}` : ''}
+                </span>
+                <span
+                  className={
+                    result.outcome === 'RESOLVED'
+                      ? 'shrink-0 text-xs'
+                      : 'shrink-0 text-destructive text-xs'
+                  }
+                >
+                  {CHILD_OUTCOME_LABEL[result.outcome]}
+                </span>
+              </span>
+              {result.reason ? (
+                <span className='text-muted-foreground text-xs'>
+                  {result.reason}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <DialogFooter>
+          <Button onClick={onClose}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
