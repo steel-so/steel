@@ -251,6 +251,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'alarm',
     color: 'amber',
   },
+  QA_LOW_SCORE: {
+    module: 'OTHER',
+    label: 'Nota baixa no QA',
+    icon: 'alarm',
+    color: 'rose',
+  },
   CRM_CUSTOMER_HEALTH_DROP: {
     module: 'CRM',
     label: 'Saúde do cliente em queda',

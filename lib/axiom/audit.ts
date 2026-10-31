@@ -296,6 +296,9 @@ export type AuditEntity =
   // t1-nps-whatsapp: satisfaction surveys (NPS/CSAT/CES)
   | 'satisfaction_survey'
   | 'satisfaction_survey_config'
+  // t2-qa-review: automatic QA by AI
+  | 'qa_review'
+  | 'qa_config'
   // Z1 Pix in the conversation: charges and the workspace switch
   | 'whatsapp_pix_charge'
   | 'whatsapp_pix_settings'

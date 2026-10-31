@@ -1375,6 +1375,10 @@ export const ERROR_CODES = {
   SURVEY_ALREADY_ANSWERED: { code: 'SURVEY_ALREADY_ANSWERED', status: 409 },
   SURVEY_INVALID_SCORE: { code: 'SURVEY_INVALID_SCORE', status: 422 },
   SURVEY_NO_RECIPIENT: { code: 'SURVEY_NO_RECIPIENT', status: 422 },
+  QA_REVIEW_NOT_FOUND: { code: 'QA_REVIEW_NOT_FOUND', status: 404 },
+  QA_SUBJECT_NOT_FOUND: { code: 'QA_SUBJECT_NOT_FOUND', status: 404 },
+  QA_CRITERIA_INVALID: { code: 'QA_CRITERIA_INVALID', status: 422 },
+  QA_DISABLED: { code: 'QA_DISABLED', status: 409 },
 
   // Z7 copilot: the AI provider failed or returned nothing usable.
   WHATSAPP_COPILOT_FAILED: { code: 'WHATSAPP_COPILOT_FAILED', status: 502 },
