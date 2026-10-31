@@ -31,6 +31,11 @@ vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-message.repository')
 vi.mock('@/src/repositories/whatsapp-conversation-event.repository')
 vi.mock('@/src/services/ai-usage.service')
+vi.mock('@/src/services/ai-procedure-runtime.service', () => ({
+  AiProcedureRuntime: {
+    beginTurn: vi.fn().mockResolvedValue({ ok: true, value: null }),
+  },
+}))
 vi.mock('@/src/lib/whatsapp/send', () => ({
   WhatsAppSend: { text: vi.fn() },
 }))

@@ -1,0 +1,71 @@
+---
+title: Procedimentos com passos obrigatórios
+description: Roteiros em linguagem natural que a resposta automática do WhatsApp e os agentes seguem na ordem, sem pular passos.
+section: steel-ai
+order: 10
+---
+
+Um **procedimento** é um roteiro com condições e passos obrigatórios, como
+“segunda via de boleto: validar o CPF, consultar e enviar”. Quem decide a
+ordem é o sistema, não a IA: ela não consegue pular nem reordenar passos.
+
+<Callout type='admin'>
+  Criar, editar e excluir procedimentos é feito pelo dono e pelos
+  administradores, em **Steel AI › Procedimentos**. Membros e visualizadores
+  consultam o que está configurado e as execuções.
+</Callout>
+
+## Montar um procedimento
+
+- **Nome** e **Quando usar**: a IA lê este texto para decidir se o pedido do
+  cliente corresponde ao procedimento.
+- **Passos**, na ordem em que devem acontecer. Cada passo é de um tipo:
+  - **Pedir um dado ao cliente**: a IA pergunta e o sistema valida o valor
+    (texto, número, e-mail, telefone, CPF, CNPJ ou data). Se o cliente errar
+    mais vezes do que o limite de tentativas, um atendente assume.
+  - **Consultar um endereço (HTTPS)**: o sistema chama uma API sua (GET ou
+    POST, só endereços públicos em HTTPS) e guarda partes da resposta em
+    variáveis.
+  - **Usar uma ferramenta de leitura**: consulta dados do Steel (chamados,
+    leads, conversas) com as permissões do responsável pelo procedimento.
+  - **Enviar uma mensagem**: um texto fixo, enviado como está, ou uma
+    instrução para a IA escrever a mensagem.
+  - **Transferir para um atendente**, com uma mensagem opcional.
+- **Obrigatório**: um passo obrigatório nunca é pulado, e se falhar a conversa
+  passa para um atendente. Um passo opcional que falha é dispensado.
+- **Só quando…**: condição sobre uma variável (por exemplo, `plano é igual a
+  premium`). Quando a condição é falsa o passo é dispensado.
+- Use `{{variavel}}` nos textos, endereços e parâmetros para aproveitar o que
+  foi coletado antes. `contact_name` e `contact_phone` já vêm da conversa.
+
+## Onde o procedimento roda
+
+- **Resposta automática do WhatsApp**: com o procedimento **Ativo** e a opção
+  “Disponível na resposta automática do WhatsApp” ligada, a IA o oferece
+  quando o pedido combina. A conversa guarda em que passo está, mesmo que o
+  cliente demore dias para responder (depois de 24 horas parado, o
+  procedimento recomeça).
+- **Steel Agents**: marque os agentes que podem iniciar o procedimento. A
+  execução do agente mostra cada passo na linha do tempo, ao lado do
+  raciocínio e dos guardrails.
+
+## Pré-visualizar, versões e execuções
+
+- **Pré-visualizar** mostra, sem usar IA e sem efeitos, quais passos rodariam
+  para as variáveis que você informar.
+- Cada alteração de passos, de “Quando usar”, de tentativas ou da mensagem de
+  transferência cria uma **versão**. **Restaurar** traz uma versão antiga de
+  volta como uma nova. Conversas em andamento terminam na versão em que
+  começaram.
+- **Execuções** lista cada uso (conversa do WhatsApp, agente ou teste) com a
+  linha do tempo: o que foi executado, dispensado ou bloqueado por estar fora
+  de ordem.
+- Para testar a conversa inteira, vincule o procedimento a um agente e rode
+  uma [simulação com personas](/docs/steel-ai/agentes): nos testes as
+  consultas (GET) rodam de verdade e os envios (POST) são simulados.
+
+<Callout type='nota'>
+  O custo da IA durante um procedimento entra na cota mensal de IA do workspace,
+  como qualquer resposta automática ou execução de agente. A lista mostra
+  quantas execuções cada procedimento teve no mês.
+</Callout>

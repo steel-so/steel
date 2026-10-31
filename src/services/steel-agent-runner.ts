@@ -71,6 +71,7 @@ import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-vers
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type { AiToolPreviewDTO } from '@/types/steel-ai'
+import { AiProcedureRuntime } from './ai-procedure-runtime.service'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
 import {
   notifyAgentApprovalRequested,
@@ -689,6 +690,38 @@ export async function executeSteelAgentRun(
     })
   }
 
+  // A5: procedures linked to this agent (null = none, behavior unchanged).
+  const procedureStart = await AiProcedureRuntime.beginTurn({
+    workspaceId: run.workspaceId,
+    subjectType: run.isTest ? 'TEST' : 'STEEL_AGENT_RUN',
+    subjectId: run.id,
+    channel: 'AGENT',
+    agentId: agent.id,
+    simulate: run.isTest,
+    onEvent: async (event) => {
+      await step({
+        runId: run.id,
+        kind: 'PROCEDURE',
+        status:
+          event.status === 'FAILED' || event.status === 'REJECTED'
+            ? 'FAILED'
+            : 'OK',
+        toolName: event.stepKey,
+        ...(event.input !== undefined && {
+          input: event.input as Prisma.InputJsonValue,
+        }),
+        output: {
+          title: event.title,
+          stepKind: event.kind,
+          stepStatus: event.status,
+          ...((event.output as Record<string, unknown> | undefined) ?? {}),
+        } as Prisma.InputJsonValue,
+        ...(event.error && { error: event.error }),
+      })
+    },
+  })
+  const procedureTurn = procedureStart.ok ? procedureStart.value : null
+
   /** Runs one tool call; returns the content for the model. */
   const handleCall = async (
     toolCall: AiToolCall,
@@ -718,6 +751,9 @@ export async function executeSteelAgentRun(
     }
     if (toolCall.name === DELEGATE_TOOL_NAME && delegates.length > 0) {
       return handleDelegation(toolCall)
+    }
+    if (procedureTurn?.owns(toolCall.name)) {
+      return procedureTurn.handle(toolCall)
     }
     const tool = tools.find((t) => t.name === toolCall.name)
     if (!tool) {
@@ -934,12 +970,13 @@ export async function executeSteelAgentRun(
         }
       }
       const forceText = state.round === agent.maxToolRounds - 1
+      const roundSpecs = [...specs, ...(procedureTurn?.tools() ?? [])]
       const response = await call.provider.chat({
         model: call.model.model,
-        system,
+        system: system + (procedureTurn?.section() ?? ''),
         messages: state.messages,
-        ...(specs.length > 0 && {
-          tools: specs,
+        ...(roundSpecs.length > 0 && {
+          tools: roundSpecs,
           toolChoice: forceText ? ('none' as const) : ('auto' as const),
         }),
       })
@@ -1043,6 +1080,7 @@ export async function executeSteelAgentRun(
     return ok('failed')
   }
 
+  await procedureTurn?.close('A execução terminou antes do fim do procedimento')
   const saved = await SteelAgentRunRepository.update(run.id, {
     status: 'SUCCEEDED',
     summary: lastText || EMPTY_SUMMARY,

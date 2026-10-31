@@ -1653,6 +1653,22 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_SCHED_STATE_CONFLICT',
     status: 409,
   },
+  // a5-procedures
+  AI_PROCEDURE_NOT_FOUND: { code: 'AI_PROCEDURE_NOT_FOUND', status: 404 },
+  AI_PROCEDURE_RUN_NOT_FOUND: {
+    code: 'AI_PROCEDURE_RUN_NOT_FOUND',
+    status: 404,
+  },
+  AI_PROCEDURE_VERSION_NOT_FOUND: {
+    code: 'AI_PROCEDURE_VERSION_NOT_FOUND',
+    status: 404,
+  },
+  // The steps do not form a runnable procedure (order, variables, tools).
+  AI_PROCEDURE_INVALID: { code: 'AI_PROCEDURE_INVALID', status: 422 },
+  AI_PROCEDURE_LIMIT_REACHED: {
+    code: 'AI_PROCEDURE_LIMIT_REACHED',
+    status: 409,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

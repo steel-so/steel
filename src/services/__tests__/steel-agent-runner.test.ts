@@ -57,6 +57,11 @@ vi.mock('@/src/repositories/ai-pending-action.repository')
 vi.mock('@/src/repositories/user.repository')
 vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/src/services/ai-usage.service')
+vi.mock('@/src/services/ai-procedure-runtime.service', () => ({
+  AiProcedureRuntime: {
+    beginTurn: vi.fn().mockResolvedValue({ ok: true, value: null }),
+  },
+}))
 vi.mock('@/src/services/steel-agent-notifications')
 
 vi.mock('@/src/repositories/steel-agent-governance.repository')

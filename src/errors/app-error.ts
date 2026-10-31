@@ -2527,3 +2527,21 @@ export const whatsappSchedInvalid = (message: string): AppError =>
 
 export const whatsappSchedStateConflict = (message: string): AppError =>
   appError('WHATSAPP_SCHED_STATE_CONFLICT', message)
+
+export const aiProcedureNotFound = (): AppError =>
+  appError('AI_PROCEDURE_NOT_FOUND', 'Procedimento não encontrado')
+
+export const aiProcedureRunNotFound = (): AppError =>
+  appError('AI_PROCEDURE_RUN_NOT_FOUND', 'Execução do procedimento não encontrada')
+
+export const aiProcedureVersionNotFound = (): AppError =>
+  appError('AI_PROCEDURE_VERSION_NOT_FOUND', 'Versão do procedimento não encontrada')
+
+export const aiProcedureInvalid = (message: string): AppError =>
+  appError('AI_PROCEDURE_INVALID', message)
+
+export const aiProcedureLimitReached = (limit: number): AppError =>
+  appError(
+    'AI_PROCEDURE_LIMIT_REACHED',
+    `O workspace atingiu o limite de ${limit} procedimentos`,
+  )
