@@ -47,9 +47,7 @@ describe('createBraveSearchProvider()', () => {
     const [url, init] = fetchImpl.mock.calls[0]
     expect(url).toContain('q=acme')
     expect(url).toContain('count=5')
-    expect(
-      (init?.headers as Record<string, string>)['X-Subscription-Token'],
-    ).toBe('key-1')
+    expect(new Headers(init?.headers).get('X-Subscription-Token')).toBe('key-1')
     expect(provider.source).toBe('brave')
   })
 

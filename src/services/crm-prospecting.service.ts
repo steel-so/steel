@@ -48,13 +48,13 @@ import {
   type DraftInsert,
 } from '@/src/repositories/crm-prospecting.repository'
 import { ApolloSearchSchema } from '@/src/schemas/crm-apollo.schema'
-import {
-  type CreateCrmProspectDraftDTO,
-  type CreateCrmProspectingAgentDTO,
-  type DecideCrmProspectDraftDTO,
-  type ListCrmProspectDraftsQuery,
-  type UpdateCrmProspectDraftDTO,
-  type UpdateCrmProspectingSettingsDTO,
+import type {
+  CreateCrmProspectDraftDTO,
+  CreateCrmProspectingAgentDTO,
+  DecideCrmProspectDraftDTO,
+  ListCrmProspectDraftsQuery,
+  UpdateCrmProspectDraftDTO,
+  UpdateCrmProspectingSettingsDTO,
 } from '@/src/schemas/crm-prospecting.schema'
 import { CreateSteelAgentSchema } from '@/src/schemas/steel-agent.schema'
 import type { CrmApolloSearchResultDTO } from '@/types/crm-apollo'
