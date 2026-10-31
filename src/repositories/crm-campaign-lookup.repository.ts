@@ -364,6 +364,7 @@ export const CrmCampaignLookupRepository = {
             workspaceId,
             module: 'COMMUNICATION',
             status: 'CONNECTED',
+            provider: { not: 'WIDGET' },
           },
           include: {
             templates: {

@@ -245,9 +245,32 @@ const nextConfig: NextConfig = {
     },
     {
       // Every route but the embeddable meeting widget (`/m/<slug>/embed`),
-      // which must be framable: the proxy sets its own CSP for it.
-      source: '/((?!m/[a-z0-9-]+/embed).*)',
+      // which must be framable: the proxy sets its own CSP for it, and the
+      // site chat widget (script + API), which other sites load.
+      source: '/((?!m/[a-z0-9-]+/embed|steel-widget\\.js|api/widget/).*)',
       headers: securityHeaders,
+    },
+    {
+      // Site chat widget (E1): loaded by customer sites, so it cannot be
+      // `same-origin`. The API answers per-origin CORS on its own.
+      source: '/steel-widget.js',
+      headers: [
+        ...securityHeaders.filter(
+          (header) => header.key !== 'Cross-Origin-Resource-Policy',
+        ),
+        { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+        { key: 'Cache-Control', value: 'public, max-age=300' },
+      ],
+    },
+    {
+      source: '/api/widget/:path*',
+      headers: [
+        ...securityHeaders.filter(
+          (header) => header.key !== 'Cross-Origin-Resource-Policy',
+        ),
+        { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+        { key: 'Cache-Control', value: 'no-store' },
+      ],
     },
     {
       source: '/m/:slug/embed',

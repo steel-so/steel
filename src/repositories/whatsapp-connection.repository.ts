@@ -22,7 +22,9 @@ export const WhatsAppConnectionRepository = {
   ): Promise<Result<WhatsAppConnection[]>> {
     try {
       const connections = await prisma.whatsAppConnection.findMany({
-        where: { workspaceId, module },
+        // The virtual site-chat connection (WIDGET) is managed by its own
+        // settings, never listed with the phone lines.
+        where: { workspaceId, module, provider: { not: 'WIDGET' } },
         orderBy: { createdAt: 'asc' },
       })
       return ok(connections)

@@ -2447,3 +2447,15 @@ export const crmContractNotFound = (): AppError =>
 
 export const crmContractInvalid = (message: string): AppError =>
   appError('CRM_CONTRACT_INVALID', message)
+
+export const widgetNotAvailable = (): AppError =>
+  appError('WIDGET_NOT_AVAILABLE', 'Chat indisponível')
+
+export const widgetOriginNotAllowed = (): AppError =>
+  appError(
+    'WIDGET_ORIGIN_NOT_ALLOWED',
+    'Este site não está autorizado a usar o chat',
+  )
+
+export const widgetVisitorInvalid = (): AppError =>
+  appError('WIDGET_VISITOR_INVALID', 'Sessão do chat inválida')

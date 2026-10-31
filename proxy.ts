@@ -106,6 +106,9 @@ const PUBLIC_ROUTES = [
   // page-view beacon. Sites on <slug>.<SITES_ROOT_DOMAIN> are rewritten to
   // /s/<slug> before this check.
   '/s', '/api/sites',
+  // Site chat widget (E1): the pasted script and its public endpoints, no
+  // session. A public key plus the allowed-origins list is the credential.
+  '/steel-widget.js', '/api/widget',
   // CRM dashboard on a TV (sales room): read-only link, no session (the
   // random token in the URL is the credential; revoking it cuts the screen).
   '/tv', '/api/crm/tv',

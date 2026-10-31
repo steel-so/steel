@@ -301,6 +301,45 @@ export const newsletterSubscribeEmailLimiter = new RateLimiterRedis({
   duration: NEWSLETTER_SUBSCRIBE_EMAIL_DURATION_SECONDS,
 })
 
+// Site chat widget (E1): public endpoints, no session. Reads (config and
+// message polling) are cheap and frequent; new visitors and sends are
+// limited much harder, per IP and per visitor.
+const WIDGET_READ_IP_POINTS = 240
+const WIDGET_READ_IP_DURATION_SECONDS = 60
+
+const WIDGET_SESSION_IP_POINTS = 10
+const WIDGET_SESSION_IP_DURATION_SECONDS = 10 * 60
+
+const WIDGET_SEND_POINTS = 20
+const WIDGET_SEND_DURATION_SECONDS = 60
+
+export const widgetReadLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:widget:read',
+  points: WIDGET_READ_IP_POINTS,
+  duration: WIDGET_READ_IP_DURATION_SECONDS,
+})
+
+export const widgetSessionLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:widget:session',
+  points: WIDGET_SESSION_IP_POINTS,
+  duration: WIDGET_SESSION_IP_DURATION_SECONDS,
+})
+
+export const widgetSendLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:widget:send',
+  points: WIDGET_SEND_POINTS,
+  duration: WIDGET_SEND_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -326,6 +365,9 @@ const limiterNames = new WeakMap<Limiter, string>([
   [deviceVerifyLimiter, 'device_verify'],
   [newsletterSubscribeIpLimiter, 'newsletter_subscribe_ip'],
   [newsletterSubscribeEmailLimiter, 'newsletter_subscribe_email'],
+  [widgetReadLimiter, 'widget_read'],
+  [widgetSessionLimiter, 'widget_session'],
+  [widgetSendLimiter, 'widget_send'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

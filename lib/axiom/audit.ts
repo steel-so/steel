@@ -43,6 +43,7 @@ export type AuditEntity =
   | 'whatsapp_flow'
   | 'whatsapp_flow_response'
   | 'whatsapp_settings'
+  | 'whatsapp_widget_settings'
   | 'whatsapp_usage_limits'
   | 'whatsapp_cost_price'
   | 'whatsapp_cost_settings'

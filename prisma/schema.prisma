@@ -482,6 +482,8 @@ model Workspace {
   whatsappSettings             WhatsAppSettings?
   whatsappPixSettings          WhatsAppPixSettings?
   whatsappPixCharges           WhatsAppPixCharge[]
+  whatsappWidgetSettings       WhatsAppWidgetSettings?
+  whatsappWidgetVisitors       WhatsAppWidgetVisitor[]
   whatsappNumberValidations    WhatsAppNumberValidation[]
   whatsappCloseStatuses        WhatsAppCloseStatus[]
   whatsappSlaPolicies          WhatsAppSlaPolicy[]
@@ -1195,6 +1197,8 @@ model AdminOperation {
 enum WhatsAppProvider {
   ZAPI
   META
+  /// Site chat widget (nov: site-widget): a virtual connection, no phone line.
+  WIDGET
 }
 
 enum WhatsAppConnectionStatus {
@@ -1279,6 +1283,7 @@ model WhatsAppContact {
   broadcastRecipients  WhatsAppBroadcastRecipient[]
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
   flowResponses        WhatsAppFlowResponse[]
+  widgetVisitors       WhatsAppWidgetVisitor[]
 
   @@unique([workspaceId, waId])
   @@unique([workspaceId, bsuid])
@@ -5731,7 +5736,7 @@ model NotificationDeliverySetting {
   @@map("notification_delivery_settings")
 }
 
-// ============================================================================
+// =====================================================================
 // ServiceDesk (ITIL 4) — ver docs/servicedesk/README.md e ADR 0008.
 // Tudo prefixado `Sd` / tabelas `sd_*`. Práticas cobertas: Incident, Service
 // Request, Change Enablement, Problem, Knowledge, Service Configuration (CMDB),
@@ -13034,4 +13039,66 @@ model CrmProspectUsage {
 
   @@unique([workspaceId, period])
   @@map("crm_prospect_usage")
+=======
+// nov: site-widget
+/// Site chat widget (E1): per-workspace switch (off by default), the public
+/// key the pasted `<script>` carries, the origins allowed to use it and the
+/// look and behaviour of the chat. Conversations land in the zap inbox
+/// through a virtual connection (`provider = WIDGET`).
+model WhatsAppWidgetSettings {
+  id                String   @id @default(cuid())
+  workspaceId       String   @unique @map("workspace_id")
+  enabled           Boolean  @default(false)
+  /// Public identifier in the snippet (`stw_...`); rotating it cuts old snippets.
+  publicKey         String   @unique @map("public_key")
+  /// Origins (`https://site.com.br`, `https://*.site.com.br`) allowed to open the chat.
+  allowedOrigins    String[] @default([]) @map("allowed_origins")
+  title             String   @default("Fale com a gente") @db.VarChar(60)
+  welcomeMessage    String   @default("Olá! Como podemos ajudar?") @map("welcome_message") @db.VarChar(280)
+  accentColor       String   @default("#2563eb") @map("accent_color") @db.VarChar(7)
+  /// `RIGHT` or `LEFT` corner of the page.
+  position          String   @default("RIGHT") @db.VarChar(5)
+  preChatEnabled    Boolean  @default(false) @map("pre_chat_enabled")
+  preChatAskEmail   Boolean  @default(true) @map("pre_chat_ask_email")
+  preChatAskPhone   Boolean  @default(false) @map("pre_chat_ask_phone")
+  /// Outside the Comunicação business hours the visitor gets `offlineMessage`.
+  offlineEnabled    Boolean  @default(true) @map("offline_enabled")
+  offlineMessage    String   @default("No momento estamos fora do horário de atendimento. Deixe sua mensagem que respondemos assim que possível.") @map("offline_message") @db.VarChar(280)
+  /// Team that receives the new chats (null = the general queue).
+  teamId            String?  @map("team_id")
+  /// Virtual WIDGET connection, created on first enable.
+  connectionId      String?  @map("connection_id")
+  /// Shows the link to the ServiceDesk requester portal in the chat.
+  showPortal        Boolean  @default(false) @map("show_portal")
+  /// Asks the visitor the open NPS/CSAT/CES survey after the chat is closed.
+  showSurvey        Boolean  @default(false) @map("show_survey")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_widget_settings")
+}
+
+/// A browser that opened the site chat. The raw token lives in the visitor's
+/// first-party cookie; only its SHA-256 is stored.
+model WhatsAppWidgetVisitor {
+  id          String    @id @default(cuid())
+  workspaceId String    @map("workspace_id")
+  contactId   String    @map("contact_id")
+  tokenHash   String    @unique @map("token_hash")
+  name        String?   @db.VarChar(120)
+  email       String?   @db.VarChar(200)
+  phone       String?   @db.VarChar(40)
+  /// Origin of the site where the chat was first opened.
+  origin      String?   @db.VarChar(200)
+  lastSeenAt  DateTime  @default(now()) @map("last_seen_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([contactId])
+  @@map("whatsapp_widget_visitors")
 }

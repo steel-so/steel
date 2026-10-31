@@ -1,4 +1,4 @@
-export type WhatsAppProviderDTO = 'ZAPI' | 'META'
+export type WhatsAppProviderDTO = 'ZAPI' | 'META' | 'WIDGET'
 
 export type WhatsAppConnectionStatusDTO =
   | 'CONNECTING'
