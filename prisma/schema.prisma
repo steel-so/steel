@@ -5736,7 +5736,7 @@ model NotificationDeliverySetting {
   @@map("notification_delivery_settings")
 }
 
-// =====================================================================
+// ============================================================================
 // ServiceDesk (ITIL 4) — ver docs/servicedesk/README.md e ADR 0008.
 // Tudo prefixado `Sd` / tabelas `sd_*`. Práticas cobertas: Incident, Service
 // Request, Change Enablement, Problem, Knowledge, Service Configuration (CMDB),
@@ -13039,7 +13039,8 @@ model CrmProspectUsage {
 
   @@unique([workspaceId, period])
   @@map("crm_prospect_usage")
-=======
+}
+
 // nov: site-widget
 /// Site chat widget (E1): per-workspace switch (off by default), the public
 /// key the pasted `<script>` carries, the origins allowed to use it and the
