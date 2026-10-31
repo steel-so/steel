@@ -1402,6 +1402,9 @@ export const ERROR_CODES = {
   PIX_PROVIDER_ERROR: { code: 'PIX_PROVIDER_ERROR', status: 502 },
   // Payment notification with a bad or missing signature.
   PIX_WEBHOOK_INVALID: { code: 'PIX_WEBHOOK_INVALID', status: 401 },
+  // Boleto PSP failed or refused the call / bad webhook authentication.
+  BOLETO_PROVIDER_ERROR: { code: 'BOLETO_PROVIDER_ERROR', status: 502 },
+  BOLETO_WEBHOOK_INVALID: { code: 'BOLETO_WEBHOOK_INVALID', status: 401 },
 
   // s2-major-incident: major incident + customer status pages.
   SD_MAJOR_INCIDENT_NOT_FOUND: {

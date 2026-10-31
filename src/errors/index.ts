@@ -14,6 +14,8 @@ export {
   backupNotRestorable,
   badRequest,
   billingDisabled,
+  boletoProviderError,
+  boletoWebhookInvalid,
   changelogLocked,
   changelogNotFound,
   conflict,

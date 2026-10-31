@@ -42,6 +42,8 @@ const serverEnv = {
   PABX_CALLBACK_URL: process.env.PABX_CALLBACK_URL,
   PIX_PROVIDER: process.env.PIX_PROVIDER,
   PIX_WEBHOOK_SECRET: process.env.PIX_WEBHOOK_SECRET,
+  BOLETO_PROVIDER: process.env.BOLETO_PROVIDER,
+  BOLETO_WEBHOOK_SECRET: process.env.BOLETO_WEBHOOK_SECRET,
   VOICE_AGENT_AUDIOSOCKET_PORT: process.env.VOICE_AGENT_AUDIOSOCKET_PORT,
   VOICE_AGENT_AUDIOSOCKET_HOST: process.env.VOICE_AGENT_AUDIOSOCKET_HOST,
   VOICE_AGENT_REALTIME_MODEL: process.env.VOICE_AGENT_REALTIME_MODEL,
@@ -270,11 +272,20 @@ export const serverEnvSchema = z.object({
     z.url().optional(),
   ),
   // Pix in the conversation (Z1): which PSP issues the charges. Only the
-  // `mock` provider exists until the PSP is chosen (see src/lib/pix).
-  PIX_PROVIDER: z.enum(['mock']).default('mock'),
+  // `mock` provider is the default; `abacatepay` issues real charges with the
+  // ABACATE_PAY API key (see src/lib/pix).
+  PIX_PROVIDER: z.enum(['mock', 'abacatepay']).default('mock'),
   // HMAC-SHA256 secret that signs the Pix payment webhooks. Unset = the
   // webhook refuses every call.
   PIX_WEBHOOK_SECRET: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(16).optional(),
+  ),
+  // Boleto charges (C6 proposals, Z1 conversation): `mock` by default;
+  // `abacatepay` issues real boletos with ABACATE_PAY.
+  BOLETO_PROVIDER: z.enum(['mock', 'abacatepay']).default('mock'),
+  // `webhookSecret` query param of the boleto webhook URL (min 16 chars).
+  BOLETO_WEBHOOK_SECRET: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z.string().min(16).optional(),
   ),
@@ -536,6 +547,8 @@ export const {
   PABX_CALLBACK_URL,
   PIX_PROVIDER,
   PIX_WEBHOOK_SECRET,
+  BOLETO_PROVIDER,
+  BOLETO_WEBHOOK_SECRET,
   VOICE_AGENT_AUDIOSOCKET_PORT,
   VOICE_AGENT_AUDIOSOCKET_HOST,
   VOICE_AGENT_REALTIME_MODEL,

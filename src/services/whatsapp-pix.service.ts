@@ -698,10 +698,15 @@ export const WhatsAppPixService = {
     providerId: string,
     headers: Headers,
     rawBody: string,
+    query: URLSearchParams = new URLSearchParams(),
   ): Promise<Result<{ processed: number }>> {
     const provider = getPixProviderById(providerId)
     if (!provider.ok) return err(notFound('PixProvider'))
-    const notifications = provider.value.parseWebhook(headers, rawBody)
+    const notifications = provider.value.parseWebhook(
+      headers,
+      rawBody,
+      query,
+    )
     if (!notifications.ok) return notifications
 
     let processed = 0
