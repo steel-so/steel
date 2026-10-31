@@ -389,11 +389,6 @@ export const TAG_GROUPS = [
           'Inventário e descoberta de ativos: o agente (Windows e Linux) envia hardware, software e uso de disco e memória com um token por workspace; a varredura SNMP do worker descobre equipamentos de rede por faixa de IP; ambos alimentam a CMDB, abrem alertas de disco e memória e formam o catálogo de software.',
       },
       {
-        name: 'ServiceDesk · Acesso remoto',
-        description:
-          'Botão "Conectar" no chamado e no ativo da CMDB: o workspace escolhe o provedor (RustDesk ou AnyDesk), cada ativo guarda o ID público da máquina (digitado ou vindo do inventário) e cada conexão fica registrada no histórico do chamado e na auditoria. Nenhuma senha é guardada.',
-      },
-      {
         name: 'ServiceDesk · Incidente maior',
         description:
           'Incidente maior declarado a partir de um chamado de incidente: agrupa os chamados filhos (com sugestões por categoria, item de configuração e cliente), abre a sala de guerra (swarming) e publica atualizações nas páginas de status. Só agentes.',

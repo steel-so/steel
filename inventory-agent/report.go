@@ -12,8 +12,6 @@ type Report struct {
 	MACAddresses []string   `json:"macAddresses"`
 	Disks        []Disk     `json:"disks"`
 	Software     []Software `json:"software"`
-	// Remote holds the RustDesk/AnyDesk IDs found on the machine (optional).
-	Remote *RemoteIDs `json:"remote,omitempty"`
 }
 
 type OSInfo struct {
@@ -55,9 +53,6 @@ const (
 
 // clamp trims the lists to what the server accepts and drops empty entries.
 func (r *Report) clamp() {
-	if r.Remote == nil {
-		r.Remote = detectRemoteIDs()
-	}
 	r.IPAddresses = cleanList(r.IPAddresses, maxAddrs)
 	r.MACAddresses = cleanList(r.MACAddresses, maxAddrs)
 	if len(r.Disks) > maxDisks {

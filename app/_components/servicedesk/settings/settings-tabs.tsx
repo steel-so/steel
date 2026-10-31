@@ -8,7 +8,6 @@ import {
   Building03Icon,
   CheckListIcon,
   Clock01Icon,
-  ComputerIcon,
   DollarCircleIcon,
   File02Icon,
   Flowchart01Icon,
@@ -50,7 +49,6 @@ import { SdOnCallTab } from './oncall-tab'
 import { SdPartsTab } from './parts-tab'
 import { SdPrioritiesTab } from './priorities-tab'
 import { SdRecurringTab } from './recurring-tab'
-import { SdRemoteTab } from './remote-tab'
 import { SdReportsTab } from './reports-tab'
 import { SdSlaTab } from './sla-tab'
 import { SdTemplatesTab } from './templates-tab'
@@ -232,16 +230,8 @@ export const SD_SETTINGS_TABS: SdSettingsTabDefinition[] = [
     label: 'Inventário',
     icon: HardDriveIcon,
     description:
-      'Agente de inventário para Windows e Linux (tokens por workspace), varredura SNMP de faixas de rede, limiares de alerta de disco e memória e a sincronização com a CMDB.',
+      'Agente de inventário para Linux (tokens por workspace), varredura SNMP de faixas de rede, limiares de alerta de disco e memória e a sincronização com a CMDB.',
     component: SdInventoryTab,
-  },
-  {
-    id: 'remote',
-    label: 'Acesso remoto',
-    icon: ComputerIcon,
-    description:
-      'Botão "Conectar" no chamado e no ativo da CMDB para abrir o RustDesk ou o AnyDesk, com a sessão registrada no histórico e na auditoria. Só o ID público da máquina é guardado.',
-    component: SdRemoteTab,
   },
   {
     id: 'mail',

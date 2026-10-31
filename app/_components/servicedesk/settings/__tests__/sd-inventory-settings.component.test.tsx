@@ -140,9 +140,6 @@ describe('formatting helpers', () => {
     expect(snippets.linux).toBe(
       'sudo ./steel-inventory-agent install --url https://steel.example.com --token tok',
     )
-    expect(snippets.windows).toContain(
-      'steel-inventory-agent.exe install --url',
-    )
   })
 })
 

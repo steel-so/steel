@@ -432,14 +432,11 @@ itens de configuração. Decisões da fatia (sem ADR próprio para não colidir 
 numeração; viram ADR se a equipe quiser):
 
 - **Agente em Go** (`inventory-agent/`, só biblioteca padrão, um binário por
-  sistema). Linux lê `/proc`, `/sys/class/dmi`, `statfs` e `dpkg`/`rpm`;
-  Windows roda **um** PowerShell (`-EncodedCommand`) com CIM e o registro de
-  desinstalação. Identidade estável = SHA-256 do `machine-id` (Linux) ou
-  `MachineGuid` (Windows), então reinstalar não duplica a máquina. Instala
-  como serviço systemd (Linux) ou tarefa agendada (Windows); o CI
+  sistema). Linux lê `/proc`, `/sys/class/dmi`, `statfs` e `dpkg`/`rpm`.
+  Não há agente para Windows (decisão do negócio). Identidade estável =
+  SHA-256 do `machine-id`, então reinstalar não duplica a máquina. Instala
+  como serviço systemd; o CI
   (`.github/workflows/inventory-agent.yml`) formata, testa e cruza a build.
-  **Assinatura de código do Windows** é decisão pendente do negócio (ver
-  roadmap): os binários saem sem assinar e o SmartScreen avisa.
 - **Token por workspace** (`SdInventoryToken`): 32 bytes em base64url, só o
   SHA-256 no banco, valor mostrado **uma única vez**, revogável na hora. Vai em
   `Authorization: Bearer`. Entrada pública `POST /api/servicedesk/inventory/report`
@@ -473,8 +470,7 @@ numeração; viram ADR se a equipe quiser):
   lista quando o equipamento expõe `hrSWInstalled`.
 - **Sem sinal**: derivado de `lastSeenAt` × `staleAfterDays` (padrão 7 dias);
   não há job de varredura nem mudança automática do status do item.
-- **Fora do escopo**: assinatura de código do Windows (precisa de certificado)
-  e distribuição da **primeira** instalação do agente pelo app (o binário
+- **Fora do escopo**: agente para Windows e distribuição da **primeira** instalação do agente pelo app (o binário
   inicial continua sendo o artefato do workflow; só as atualizações passam pelo
   app, ver abaixo).
 
@@ -532,8 +528,7 @@ numeração; viram ADR se a equipe quiser):
   é aceito. Builds `dev` nunca se atualizam. Os binários ficam num bucket
   privado (`inventory-agent`) e a versão é publicada pelo operador do servidor:
   `pnpm inventory-agent:publish <versão> <pasta-do-artefato-do-CI>` (calcula o
-  SHA-256 e grava `SdInventoryAgentRelease`). **Assinatura de código do Windows
-  segue fora** (precisa de certificado): o aviso do SmartScreen continua.
+  SHA-256 e grava `SdInventoryAgentRelease`).
 
 Contrato: `src/services/sd-inventory-{sync,ingest,token,settings,target,
 discovery,device-actions,auto-merge,agent-update}.service.ts`

@@ -273,7 +273,7 @@ func writeMarker(exePath string, marker *updateMarker) error {
 
 // applyUpdate swaps newPath in as the executable, keeping the previous binary
 // as <exe>.old, and writes the update marker. Renaming a running executable is
-// allowed on Linux and Windows. Every failure leaves the original in place.
+// allowed on Linux. Every failure leaves the original in place.
 func applyUpdate(exePath, newPath string, m *Manifest, fromVersion string) error {
 	oldPath := exePath + ".old"
 	if runtime.GOOS != "windows" {

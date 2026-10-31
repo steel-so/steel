@@ -4,7 +4,6 @@ import {
   isPrivateInventoryRange,
 } from '@/src/lib/servicedesk/inventory'
 import { booleanQuery, sdId, sdName } from './sd-config.schema'
-import { SdInventoryRemoteIdsSchema } from './sd-remote.schema'
 
 /**
  * Inventário e descoberta de ativos (S1): relatório do agente, tokens por
@@ -76,8 +75,6 @@ export const SdInventoryReportSchema = z.object({
   macAddresses: z.array(text(40).min(1)).max(32).default([]),
   disks: z.array(SdInventoryDiskSchema).max(64).default([]),
   software: z.array(SdInventorySoftwareItemSchema).max(5000).default([]),
-  /** IDs de acesso remoto instalados na máquina (S4); o agente envia quando achar. */
-  remote: SdInventoryRemoteIdsSchema.optional(),
 })
 export type SdInventoryReportDTO = z.infer<typeof SdInventoryReportSchema>
 
