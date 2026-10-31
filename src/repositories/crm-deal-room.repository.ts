@@ -218,7 +218,7 @@ export const CrmDealRoomRepository = {
       return ok(
         await prisma.crmDealRoomEvent.findMany({
           where: { roomId },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take: limit,
           include: { visitor: { select: { name: true, email: true } } },
         }),
@@ -235,7 +235,7 @@ export const CrmDealRoomRepository = {
     try {
       const rows = await prisma.crmDealRoomMessage.findMany({
         where: { roomId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: limit,
       })
       return ok(rows.reverse())

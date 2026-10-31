@@ -70,6 +70,12 @@ async function createRenewalDeal(
     const fallback = await CrmPipelineRepository.findDefault(workspaceId)
     if (!fallback.ok) return fallback
     pipelineId = fallback.value?.id ?? null
+    if (!pipelineId) {
+      // No default pipeline marked: the first one of the workspace will do.
+      const all = await CrmPipelineRepository.listByWorkspace(workspaceId)
+      if (!all.ok) return all
+      pipelineId = all.value[0]?.id ?? null
+    }
   }
   if (!pipelineId) {
     return err(crmContractInvalid('Crie um pipeline antes de renovar contratos'))
