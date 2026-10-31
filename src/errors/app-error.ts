@@ -2482,34 +2482,7 @@ export const qaCriteriaInvalid = (
 export const qaDisabled = (): AppError =>
   appError('QA_DISABLED', 'O QA automático está desligado neste workspace')
 
-// ─── zap-ecom · catalog, store triggers, scheduling ─────────────────────────
-
-export const whatsappCatalogDisabled = (): AppError =>
-  appError(
-    'WHATSAPP_CATALOG_DISABLED',
-    'O catálogo do WhatsApp está desativado neste workspace',
-  )
-
-export const whatsappCatalogProductNotFound = (): AppError =>
-  appError(
-    'WHATSAPP_CATALOG_PRODUCT_NOT_FOUND',
-    'Produto do catálogo não encontrado',
-  )
-
-export const whatsappCatalogInvalid = (message: string): AppError =>
-  appError('WHATSAPP_CATALOG_INVALID', message)
-
-export const whatsappCatalogSyncFailed = (message: string): AppError =>
-  appError('WHATSAPP_CATALOG_SYNC_FAILED', message)
-
-export const whatsappStoreNotFound = (): AppError =>
-  appError('WHATSAPP_STORE_NOT_FOUND', 'Loja não encontrada')
-
-export const whatsappStoreInvalid = (message: string): AppError =>
-  appError('WHATSAPP_STORE_INVALID', message)
-
-export const whatsappEcomTriggerInvalid = (message: string): AppError =>
-  appError('WHATSAPP_ECOM_TRIGGER_INVALID', message)
+// ─── zap-ecom · scheduling ─────────────────────────
 
 export const whatsappSchedDisabled = (): AppError =>
   appError(
