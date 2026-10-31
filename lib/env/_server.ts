@@ -48,6 +48,7 @@ const serverEnv = {
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  WEB_SEARCH_API_KEY: process.env.WEB_SEARCH_API_KEY,
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
   SOCIAL_TOKEN_ENCRYPTION_KEY: process.env.SOCIAL_TOKEN_ENCRYPTION_KEY,
   FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID,
@@ -291,6 +292,11 @@ export const serverEnvSchema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  // Web search of the prospecting agent (Brave Search API); inert without it.
+  WEB_SEARCH_API_KEY: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(1).optional(),
+  ),
   ANTHROPIC_MODEL: z.string().min(1).optional(),
   // Cifra tokens OAuth de redes sociais em repouso (AES-256-GCM). Sem ela,
   // isTokenCryptoConfigured() é false e o handshake OAuth fica indisponível.
@@ -527,6 +533,7 @@ export const {
   OPENAI_API_KEY,
   OPENAI_MODEL,
   ANTHROPIC_API_KEY,
+  WEB_SEARCH_API_KEY,
   ANTHROPIC_MODEL,
   SOCIAL_TOKEN_ENCRYPTION_KEY,
   FACEBOOK_APP_ID,

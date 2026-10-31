@@ -1548,6 +1548,35 @@ export const ERROR_CODES = {
   AI_ACTIONS_DISABLED: { code: 'AI_ACTIONS_DISABLED', status: 403 },
   // The same write (idempotency key) is still running.
   AI_ACTION_IN_PROGRESS: { code: 'AI_ACTION_IN_PROGRESS', status: 409 },
+
+
+  // nov-prospecting-agent: prospecting agent (T5).
+  CRM_PROSPECTING_DISABLED: { code: 'CRM_PROSPECTING_DISABLED', status: 403 },
+  CRM_PROSPECT_LIMIT_REACHED: {
+    code: 'CRM_PROSPECT_LIMIT_REACHED',
+    status: 429,
+  },
+  CRM_PROSPECT_DRAFT_NOT_FOUND: {
+    code: 'CRM_PROSPECT_DRAFT_NOT_FOUND',
+    status: 404,
+  },
+  CRM_PROSPECT_DRAFT_INVALID: {
+    code: 'CRM_PROSPECT_DRAFT_INVALID',
+    status: 422,
+  },
+  CRM_PROSPECT_DRAFT_DUPLICATE: {
+    code: 'CRM_PROSPECT_DRAFT_DUPLICATE',
+    status: 409,
+  },
+  CRM_PROSPECT_DRAFT_NOT_PENDING: {
+    code: 'CRM_PROSPECT_DRAFT_NOT_PENDING',
+    status: 409,
+  },
+  CRM_PROSPECT_WEB_FAILED: { code: 'CRM_PROSPECT_WEB_FAILED', status: 502 },
+  CRM_PROSPECT_SEARCH_NOT_CONFIGURED: {
+    code: 'CRM_PROSPECT_SEARCH_NOT_CONFIGURED',
+    status: 503,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES
