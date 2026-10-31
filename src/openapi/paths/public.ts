@@ -326,6 +326,10 @@ const routes: RouteConfig[] = [
         code: 'CRM_PROPOSAL_NOT_ACCEPTABLE',
         when: 'Rascunho, recusada ou expirada',
       },
+      {
+        code: 'CRM_PROPOSAL_SIGNATURE_REQUIRED',
+        when: 'O workspace exige a assinatura digital (use `/sign`)',
+      },
       CRM_DISABLED,
     ],
   },

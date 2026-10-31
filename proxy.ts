@@ -59,6 +59,9 @@ const PUBLIC_ROUTES = [
   '/f', '/p', '/l', '/api/social/blob',
   // Meeting booking pages (crm-ops C5): public link, embed and guest cancel link
   '/m', '/api/crm/meetings', '/api/crm/meeting-bookings',
+  // Deal room (nov: crm-deals C8): public page and API, the token is the access;
+  // payment webhook of the proposal charges, authenticated by the PSP signature.
+  '/sala', '/api/crm/deal-rooms', '/api/crm/payments',
   // Pesquisa de satisfação (NPS/CSAT/CES) por e-mail: link sem sessão (token)
   '/pesquisa', '/api/surveys/public',
   // Descadastro LGPD de campanhas de e-mail: link sem sessão (token HMAC)
