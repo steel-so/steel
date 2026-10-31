@@ -1673,3 +1673,93 @@ export const WhatsAppPixSettingsDTO = dto(
     }),
   }),
 )
+
+/* ----------------------------- chat do site (E1) ---------------------------- */
+
+export const WhatsAppWidgetSettingsDTO = dto(
+  'WhatsAppWidgetSettings',
+  z.object({
+    workspaceId: z.string(),
+    enabled: z.boolean().meta({
+      description: 'Chat do site ligado neste workspace (padrão: desligado).',
+    }),
+    publicKey: z.string().meta({
+      description:
+        'Chave pública do trecho de código (`stw_...`). Vazia até a primeira gravação.',
+    }),
+    allowedOrigins: z.array(z.string()).meta({
+      description:
+        'Sites autorizados (`https://site.com.br`, `https://*.site.com.br`).',
+    }),
+    title: z.string(),
+    welcomeMessage: z.string(),
+    accentColor: z.string().meta({ example: '#2563eb' }),
+    position: z.enum(['RIGHT', 'LEFT']),
+    preChatEnabled: z.boolean(),
+    preChatAskEmail: z.boolean(),
+    preChatAskPhone: z.boolean(),
+    offlineEnabled: z.boolean(),
+    offlineMessage: z.string(),
+    teamId: z.string().nullable().meta({
+      description: 'Equipe que recebe as conversas novas; nulo = fila geral.',
+    }),
+    showPortal: z.boolean(),
+    showSurvey: z.boolean(),
+    snippet: z.string().meta({
+      description: '`<script>` para colar no site (vazio até a primeira gravação).',
+    }),
+    portalUrl: z.string(),
+  }),
+)
+
+export const WidgetPublicConfigDTO = dto(
+  'WidgetPublicConfig',
+  z.object({
+    title: z.string(),
+    welcomeMessage: z.string(),
+    accentColor: z.string(),
+    position: z.enum(['RIGHT', 'LEFT']),
+    preChatEnabled: z.boolean(),
+    preChatAskEmail: z.boolean(),
+    preChatAskPhone: z.boolean(),
+    online: z.boolean().meta({
+      description: 'Dentro do horário de atendimento da Comunicação.',
+    }),
+    offlineMessage: z.string().nullable(),
+    portalUrl: z.string().nullable(),
+  }),
+)
+
+export const WidgetMessagesDTO = dto(
+  'WidgetMessages',
+  z.object({
+    messages: z.array(
+      z.object({
+        id: z.string(),
+        from: z.enum(['visitor', 'agent', 'ai']),
+        text: z.string(),
+        createdAt: dateTime(),
+      }),
+    ),
+    conversation: z.enum(['NONE', 'OPEN', 'CLOSED']),
+    survey: z
+      .object({
+        kind: z.enum(['NPS', 'CSAT', 'CES']),
+        question: z.string(),
+        scaleMin: z.number().int(),
+        scaleMax: z.number().int(),
+      })
+      .nullable(),
+  }),
+)
+
+export const WidgetSendResultDTO = dto(
+  'WidgetSendResult',
+  z.object({
+    token: z.string().nullable().meta({
+      description:
+        'Token do visitante, só na primeira mensagem: o script guarda num cookie do próprio site.',
+    }),
+  }),
+)
+
