@@ -15983,6 +15983,16 @@
                       "required": ["toolName"]
                     }
                   },
+                  "delegateAgentIds": {
+                    "default": [],
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
                   "evalSetId": {
                     "anyOf": [
                       {
@@ -16107,6 +16117,805 @@
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/governance": {
+      "get": {
+        "tags": ["Steel Agents"],
+        "summary": "Painel de governança dos agentes",
+        "operationId": "getWorkspacesByIdAgentsGovernance",
+        "description": "Inventário de todos os agentes do workspace com o responsável humano (e o perfil dele), as ferramentas e o modo de cada uma, as taxas de aprovação e rejeição das ações propostas, o custo e o custo por escrita aplicada no período (`days`, 1 a 365, padrão 30), o interruptor de emergência e a política de criação/modo automático. Execuções de teste não entram nas contas. Exige a permissão de gerenciar agentes.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Painel.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelGovernance"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/governance/export": {
+      "get": {
+        "tags": ["Steel Agents"],
+        "summary": "Exportar o inventário (CSV, LGPD)",
+        "operationId": "getWorkspacesByIdAgentsGovernanceExport",
+        "description": "O mesmo inventário em CSV (UTF-8 com BOM), com os campos que o registro das atividades de tratamento pede: responsável, módulos acessados, se trata dados pessoais, se contata terceiros ou sistemas externos, ferramentas e escritas automáticas. Células que começam com `=`, `+`, `-` ou `@` saem neutralizadas. A exportação fica na auditoria.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo CSV (`Content-Disposition: attachment`).",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/governance/kill": {
+      "post": {
+        "tags": ["Steel Agents"],
+        "summary": "Desligamento de emergência",
+        "operationId": "postWorkspacesByIdAgentsGovernanceKill",
+        "description": "Pausa **todos** os agentes do workspace: nenhuma execução nova roda (as da fila e as aguardando aprovação viram `SKIPPED`, as ações pendentes são canceladas), as que estão rodando param entre uma rodada e outra e nenhuma aprovação executa. Os agentes continuam como estão configurados; só `resume` os libera. Idempotente (o primeiro motivo é mantido). Auditado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "reason": "Agente de cobrança enviando mensagens erradas"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agentes pausados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelKillResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/governance/policy": {
+      "put": {
+        "tags": ["Steel Agents"],
+        "summary": "Definir quem cria agentes e o modo automático por perfil",
+        "operationId": "putWorkspacesByIdAgentsGovernancePolicy",
+        "description": "Com `restrictCreators`, só OWNER/ADMIN e os perfis de `creatorRoles` criam agentes (quem cria edita e exclui só os próprios); desligado, vale a matriz de permissões. Com `restrictAuto`, cada perfil (`ADMIN`, `MEMBER`, `VIEWER`) tem uma regra para o modo `AUTO`: `ALL`, `NONE` ou `LIST` (as ferramentas em `tools`). A regra vale ao salvar o agente (uma ferramenta que passa a ser automática precisa ser liberada para o perfil de quem salva) e na execução (se o perfil do responsável não libera, a escrita vai para aprovação e o passo aparece na linha do tempo). O OWNER nunca é limitado e exclusões sempre pedem aprovação. Auditado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restrictCreators": {
+                    "type": "boolean"
+                  },
+                  "creatorRoles": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["OWNER", "ADMIN", "MEMBER", "VIEWER"]
+                    }
+                  },
+                  "restrictAuto": {
+                    "type": "boolean"
+                  },
+                  "autoRules": {
+                    "type": "object",
+                    "properties": {
+                      "ADMIN": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": ["ALL", "NONE", "LIST"]
+                          },
+                          "tools": {
+                            "default": [],
+                            "maxItems": 300,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                            }
+                          }
+                        },
+                        "required": ["mode"]
+                      },
+                      "MEMBER": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": ["ALL", "NONE", "LIST"]
+                          },
+                          "tools": {
+                            "default": [],
+                            "maxItems": 300,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                            }
+                          }
+                        },
+                        "required": ["mode"]
+                      },
+                      "VIEWER": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": ["ALL", "NONE", "LIST"]
+                          },
+                          "tools": {
+                            "default": [],
+                            "maxItems": 300,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                            }
+                          }
+                        },
+                        "required": ["mode"]
+                      }
+                    },
+                    "required": ["ADMIN", "MEMBER", "VIEWER"]
+                  }
+                },
+                "required": ["restrictCreators", "creatorRoles", "restrictAuto", "autoRules"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Política salva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelAgentPolicy"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/governance/resume": {
+      "post": {
+        "tags": ["Steel Agents"],
+        "summary": "Retomar os agentes",
+        "operationId": "postWorkspacesByIdAgentsGovernanceResume",
+        "description": "Desliga o interruptor de emergência. Os agentes voltam a rodar nos próximos gatilhos; o que foi cancelado pelo desligamento não volta. Auditado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Interruptor desligado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelKillSwitch"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/mcp-servers": {
+      "get": {
+        "tags": ["Steel Agents"],
+        "summary": "Listar servidores MCP",
+        "operationId": "getWorkspacesByIdAgentsMcpServers",
+        "description": "Servidores MCP externos cadastrados, com as ferramentas descobertas e quais estão liberadas. O valor da credencial nunca é devolvido. Só OWNER/ADMIN.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servidores.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SteelMcpServer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Steel Agents"],
+        "summary": "Adicionar servidor MCP",
+        "operationId": "postWorkspacesByIdAgentsMcpServers",
+        "description": "Cadastra um servidor MCP (transporte HTTP) para os agentes chamarem. A URL passa pela mesma proteção contra SSRF dos webhooks: só HTTPS, sem usuário/senha na URL e com endereço público (conferido ao salvar e a cada requisição; redirecionamentos não são seguidos). `authValue` (por exemplo `Bearer …`) é cifrado com `CONNECTION_SECRETS` e enviado no cabeçalho `authHeaderName`. As ferramentas são descobertas na hora; **nenhuma fica liberada** até entrar em `allowedTools`. Ferramentas que não são só de leitura seguem a regra de aprovação dos agentes. Auditado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "authHeaderName": {
+                    "default": "Authorization",
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9-]{0,63}$"
+                  },
+                  "authValue": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "allowedTools": {
+                    "default": [],
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                },
+                "required": ["name", "url"]
+              },
+              "example": {
+                "name": "GitHub",
+                "url": "https://mcp.example.com/mcp",
+                "authValue": "Bearer ghp_exemplo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Servidor criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelMcpServer"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_STEEL_MCP_SERVER_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/mcp-servers/{serverId}": {
+      "patch": {
+        "tags": ["Steel Agents"],
+        "summary": "Atualizar servidor MCP",
+        "operationId": "patchWorkspacesByIdAgentsMcpServersByServerId",
+        "description": "Atualização parcial. `allowedTools` substitui a lista de ferramentas liberadas (só nomes que o servidor tem); `authValue: null` apaga a credencial. Trocar a URL zera a lista e o cache de ferramentas. Auditado (o valor da credencial não vai para a auditoria).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "serverId",
+            "in": "path",
+            "required": true,
+            "description": "ID do servidor MCP.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "authHeaderName": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9-]{0,63}$"
+                  },
+                  "authValue": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "allowedTools": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Servidor atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelMcpServer"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_STEEL_MCP_SERVER_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_STEEL_MCP_SERVER_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Steel Agents"],
+        "summary": "Remover servidor MCP",
+        "operationId": "deleteWorkspacesByIdAgentsMcpServersByServerId",
+        "description": "Remove o servidor. Agentes que usavam as ferramentas dele passam a não vê-las. Auditado.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "serverId",
+            "in": "path",
+            "required": true,
+            "description": "ID do servidor MCP.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servidor removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelMcpServer"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_STEEL_MCP_SERVER_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/agents/mcp-servers/{serverId}/refresh": {
+      "post": {
+        "tags": ["Steel Agents"],
+        "summary": "Atualizar as ferramentas do servidor MCP",
+        "operationId": "postWorkspacesByIdAgentsMcpServersByServerIdRefresh",
+        "description": "Roda `tools/list` de novo e atualiza o cache; ferramentas que sumiram saem da lista liberada. Se o servidor não responder, a resposta traz `lastError` (o servidor continua cadastrado).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "serverId",
+            "in": "path",
+            "required": true,
+            "description": "ID do servidor MCP.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servidor atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SteelMcpServer"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_STEEL_MCP_SERVER_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_STEEL_MCP_SERVER_INVALID"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -16485,6 +17294,15 @@
                         }
                       },
                       "required": ["toolName"]
+                    }
+                  },
+                  "delegateAgentIds": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
                     }
                   },
                   "evalSetId": {
@@ -167546,6 +168364,29 @@
           }
         }
       },
+      "404_STEEL_MCP_SERVER_NOT_FOUND": {
+        "description": "Não encontrado: `STEEL_MCP_SERVER_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "STEEL_MCP_SERVER_NOT_FOUND": {
+                "summary": "STEEL_MCP_SERVER_NOT_FOUND — Servidor inexistente ou de outro workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Servidor MCP não encontrado",
+                  "error": {
+                    "code": "STEEL_MCP_SERVER_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_SURVEY_NOT_FOUND": {
         "description": "Não encontrado: `SURVEY_NOT_FOUND`",
         "content": {
@@ -174103,6 +174944,28 @@
           }
         }
       },
+      "422_STEEL_MCP_SERVER_INVALID": {
+        "description": "Dados inválidos: `STEEL_MCP_SERVER_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "STEEL_MCP_SERVER_INVALID": {
+                "summary": "STEEL_MCP_SERVER_INVALID — URL recusada (HTTP, endereço privado/local, credenciais na URL), limite de 10 servidores ou ferramenta que o servidor não tem",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "STEEL_MCP_SERVER_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_VALIDATION_ERROR": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
@@ -179365,6 +180228,46 @@
                   "statusCode": 422,
                   "error": {
                     "code": "STEEL_AGENT_SIM_GATE_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_STEEL_MCP_SERVER_INVALID": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `STEEL_MCP_SERVER_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "STEEL_MCP_SERVER_INVALID": {
+                "summary": "STEEL_MCP_SERVER_INVALID — URL recusada (HTTP, endereço privado/local, credenciais na URL), limite de 10 servidores ou ferramenta que o servidor não tem",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "STEEL_MCP_SERVER_INVALID"
                   }
                 }
               }
@@ -209977,9 +210880,16 @@
           "SD_STATUS_COMPONENT_NOT_FOUND",
           "SD_MAINTENANCE_NOT_FOUND",
           "SD_MAINTENANCE_CLOSED",
-          "SD_MAINTENANCE_INVALID"
+          "SD_MAINTENANCE_INVALID",
+          "STEEL_AGENTS_PAUSED",
+          "STEEL_AGENT_CREATE_FORBIDDEN",
+          "STEEL_AGENT_AUTO_NOT_ALLOWED",
+          "STEEL_AGENT_DELEGATE_INVALID",
+          "STEEL_MCP_SERVER_NOT_FOUND",
+          "STEEL_MCP_SERVER_INVALID",
+          "STEEL_MCP_SERVER_UNREACHABLE"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TOKEN_NOT_FOUND` | 404 |\n| `SD_INVENTORY_TOKEN_INVALID` | 401 |\n| `SD_INVENTORY_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_INVENTORY_RELEASE_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TOKEN_NOT_FOUND` | 404 |\n| `SD_INVENTORY_TOKEN_INVALID` | 401 |\n| `SD_INVENTORY_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_INVENTORY_RELEASE_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -236306,6 +237216,13 @@
               "required": ["toolName", "mode"]
             }
           },
+          "delegateAgentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A7: agentes a quem este pode delegar tarefas, como uma ferramenta (`delegate_to_agent`). Até 10; sem ciclos."
+          },
           "lastRun": {
             "anyOf": [
               {
@@ -236418,6 +237335,7 @@
           "lastRunAt",
           "nextRunAt",
           "tools",
+          "delegateAgentIds",
           "lastRun",
           "evalSetId",
           "evalMinPassRate",
@@ -236509,6 +237427,10 @@
                 "kind": {
                   "type": "string",
                   "enum": ["READ", "CREATE", "UPDATE", "DELETE", "ACTION"]
+                },
+                "external": {
+                  "description": "A8: ferramenta de um servidor MCP externo (`mcp_<servidor>__<ferramenta>`).",
+                  "type": "boolean"
                 }
               },
               "required": ["name", "label", "description", "module", "kind"]
@@ -236541,9 +237463,131 @@
           },
           "canManage": {
             "type": "boolean"
+          },
+          "canCreate": {
+            "type": "boolean",
+            "description": "A8: o usuário pode criar agentes (política de criação ou matriz de permissões)."
+          },
+          "autoRestricted": {
+            "type": "boolean",
+            "description": "A8: o modo automático é limitado por perfil neste workspace."
+          },
+          "autoAllowedTools": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A8: ferramentas que o perfil do usuário pode deixar em `AUTO` (`null` = sem limite)."
           }
         },
-        "required": ["tools", "events", "agentModeEnabled", "canManage"]
+        "required": [
+          "tools",
+          "events",
+          "agentModeEnabled",
+          "canManage",
+          "canCreate",
+          "autoRestricted",
+          "autoAllowedTools"
+        ]
+      },
+      "SteelAgentPolicy": {
+        "type": "object",
+        "properties": {
+          "restrictCreators": {
+            "type": "boolean",
+            "description": "Ligado: só OWNER/ADMIN e os perfis de `creatorRoles` criam agentes. Desligado: vale a matriz de permissões."
+          },
+          "creatorRoles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["OWNER", "ADMIN", "MEMBER", "VIEWER"]
+            }
+          },
+          "restrictAuto": {
+            "type": "boolean",
+            "description": "Ligado: o modo automático depende do perfil (de quem configura e do responsável do agente ao rodar). O OWNER nunca é limitado."
+          },
+          "autoRules": {
+            "type": "object",
+            "properties": {
+              "OWNER": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["ALL", "NONE", "LIST"]
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["mode", "tools"]
+              },
+              "ADMIN": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["ALL", "NONE", "LIST"]
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["mode", "tools"]
+              },
+              "MEMBER": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["ALL", "NONE", "LIST"]
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["mode", "tools"]
+              },
+              "VIEWER": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["ALL", "NONE", "LIST"]
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["mode", "tools"]
+              }
+            },
+            "required": ["OWNER", "ADMIN", "MEMBER", "VIEWER"]
+          }
+        },
+        "required": ["restrictCreators", "creatorRoles", "restrictAuto", "autoRules"],
+        "description": "Política de criação e de modo automático (A8)."
       },
       "SteelAgentRun": {
         "type": "object",
@@ -236669,6 +237713,27 @@
             ],
             "description": "Versão do agente que atendeu a execução (`null` em testes e execuções anteriores às versões)."
           },
+          "parentRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A7: execução que delegou esta (`null` = não é uma execução delegada)."
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "A7: profundidade da delegação (0 = execução principal)."
+          },
+          "delegatedCostUsd": {
+            "type": "number",
+            "description": "A7: custo das execuções delegadas, já incluído em `costUsd`."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -236693,6 +237758,9 @@
           "isTest",
           "rerunOfId",
           "versionId",
+          "parentRunId",
+          "depth",
+          "delegatedCostUsd",
           "createdAt"
         ]
       },
@@ -236819,6 +237887,27 @@
               }
             ],
             "description": "Versão do agente que atendeu a execução (`null` em testes e execuções anteriores às versões)."
+          },
+          "parentRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A7: execução que delegou esta (`null` = não é uma execução delegada)."
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "A7: profundidade da delegação (0 = execução principal)."
+          },
+          "delegatedCostUsd": {
+            "type": "number",
+            "description": "A7: custo das execuções delegadas, já incluído em `costUsd`."
           },
           "createdAt": {
             "type": "string",
@@ -236953,6 +238042,9 @@
           "isTest",
           "rerunOfId",
           "versionId",
+          "parentRunId",
+          "depth",
+          "delegatedCostUsd",
           "createdAt",
           "agent",
           "steps",
@@ -237808,6 +238900,13 @@
               "required": ["toolName", "mode"]
             }
           },
+          "delegateAgentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A7: agentes a quem este pode delegar tarefas, como uma ferramenta (`delegate_to_agent`). Até 10; sem ciclos."
+          },
           "lastRun": {
             "anyOf": [
               {
@@ -237931,6 +239030,7 @@
           "lastRunAt",
           "nextRunAt",
           "tools",
+          "delegateAgentIds",
           "lastRun",
           "evalSetId",
           "evalMinPassRate",
@@ -238339,6 +239439,499 @@
           }
         },
         "required": ["id", "number", "status"]
+      },
+      "SteelGovernance": {
+        "type": "object",
+        "properties": {
+          "periodDays": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "killSwitch": {
+            "$ref": "#/components/schemas/SteelKillSwitch"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/SteelAgentPolicy"
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "agents": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "active": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "withoutOwner": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "runs": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "costUsd": {
+                "type": "number"
+              },
+              "applied": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "approvalRate": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["agents", "active", "withoutOwner", "runs", "costUsd", "applied", "approvalRate"]
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "triggerType": {
+                  "type": "string",
+                  "enum": ["SCHEDULE", "EVENT", "MANUAL"]
+                },
+                "owner": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": ["OWNER", "ADMIN", "MEMBER", "VIEWER"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "`null` = já não é membro do workspace."
+                        }
+                      },
+                      "required": ["id", "name", "email", "role"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "createdByName": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tools": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "toolName": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": ["READ", "CREATE", "UPDATE", "DELETE", "ACTION", "UNKNOWN"]
+                      },
+                      "module": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": ["SERVICE_DESK", "CRM", "COMMUNICATION"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": ["AUTO", "APPROVAL"]
+                      },
+                      "external": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["toolName", "label", "kind", "module", "mode", "external"]
+                  }
+                },
+                "delegates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name"]
+                  }
+                },
+                "modules": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["SERVICE_DESK", "CRM", "COMMUNICATION"]
+                  }
+                },
+                "risks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["NO_OWNER", "AUTO_WRITES", "CONTACTS_THIRD_PARTIES", "DELEGATES"]
+                  }
+                },
+                "metrics": {
+                  "type": "object",
+                  "properties": {
+                    "runs": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "succeeded": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "failed": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "skipped": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "costUsd": {
+                      "type": "number",
+                      "description": "Custo próprio, sem as execuções delegadas."
+                    },
+                    "delegatedCostUsd": {
+                      "type": "number"
+                    },
+                    "applied": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Escritas que passaram (automáticas ou aprovadas)."
+                    },
+                    "approvals": {
+                      "type": "object",
+                      "properties": {
+                        "approved": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rejected": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "expired": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "pending": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": ["approved", "rejected", "expired", "pending"]
+                    },
+                    "approvalRate": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectionRate": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "costPerApplied": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastRunAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "runs",
+                    "succeeded",
+                    "failed",
+                    "skipped",
+                    "costUsd",
+                    "delegatedCostUsd",
+                    "applied",
+                    "approvals",
+                    "approvalRate",
+                    "rejectionRate",
+                    "costPerApplied",
+                    "lastRunAt"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "description",
+                "enabled",
+                "triggerType",
+                "owner",
+                "createdByName",
+                "tools",
+                "delegates",
+                "modules",
+                "risks",
+                "metrics"
+              ]
+            }
+          }
+        },
+        "required": ["periodDays", "since", "killSwitch", "policy", "totals", "agents"],
+        "description": "Painel de governança: inventário de agentes com responsável, permissões, taxas de aprovação e rejeição e custo frente ao impacto."
+      },
+      "SteelKillResult": {
+        "type": "object",
+        "properties": {
+          "killSwitch": {
+            "$ref": "#/components/schemas/SteelKillSwitch"
+          },
+          "canceledRuns": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "canceledActions": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["killSwitch", "canceledRuns", "canceledActions"]
+      },
+      "SteelKillSwitch": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "byName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["active", "at", "byName", "reason"]
+      },
+      "SteelMcpServer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "example": "github"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://mcp.example.com/mcp"
+          },
+          "authHeaderName": {
+            "type": "string",
+            "example": "Authorization"
+          },
+          "hasAuth": {
+            "type": "boolean",
+            "description": "Há credencial guardada; o valor nunca é devolvido."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "agentToolName": {
+                  "type": "string",
+                  "example": "mcp_github__list_issues"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "readOnly": {
+                  "type": "boolean"
+                },
+                "allowed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["name", "agentToolName", "description", "readOnly", "allowed"]
+            }
+          },
+          "discoveredAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "url",
+          "authHeaderName",
+          "hasAuth",
+          "enabled",
+          "tools",
+          "discoveredAt",
+          "lastError",
+          "createdAt"
+        ],
+        "description": "Servidor MCP externo que os agentes podem chamar."
       },
       "StickyNote": {
         "type": "object",
