@@ -7,6 +7,7 @@ import { seedMembership } from '@/src/__tests__/factories/membership.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import type { DuplicatePair } from '@/src/lib/crm-duplicates/detect'
 import { prisma } from '@/src/lib/prisma'
 import { CrmDuplicateRepository } from '../crm-duplicate.repository'
 
@@ -18,6 +19,14 @@ async function setup() {
   const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
   await seedMembership({ userId: user.id, workspaceId: workspace.id })
   return { workspace, user }
+}
+
+/** `loadPair` infers a union of two result shapes, which `expectOk` rejects. */
+function unwrap<T>(
+  result: { ok: true; value: T } | { ok: false; error: unknown },
+): T {
+  if (!result.ok) throw new Error('Expected ok result')
+  return result.value
 }
 
 const inOneDay = () => new Date(Date.now() + 24 * 3600 * 1000)
@@ -221,11 +230,15 @@ describe('CrmDuplicateRepository', () => {
   })
 
   describe('saveScan()', () => {
-    const pair = (leftId: string, rightId: string, score = 90) => ({
+    const pair = (
+      leftId: string,
+      rightId: string,
+      score = 90,
+    ): DuplicatePair => ({
       leftId,
       rightId,
       score,
-      reasons: ['email'],
+      reasons: ['email'] as DuplicatePair['reasons'],
     })
 
     it('should create new pairs, refresh pending ones and prune unseen pending ones', async () => {
@@ -313,15 +326,32 @@ describe('CrmDuplicateRepository', () => {
         workspace.id,
         'PERSON',
         [
-          { leftId: 'a', rightId: 'b', score: 60, reasons: ['name'] },
-          { leftId: 'c', rightId: 'd', score: 95, reasons: ['email'] },
+          {
+            leftId: 'a',
+            rightId: 'b',
+            score: 60,
+            reasons: ['name'] as DuplicatePair['reasons'],
+          },
+          {
+            leftId: 'c',
+            rightId: 'd',
+            score: 95,
+            reasons: ['email'] as DuplicatePair['reasons'],
+          },
         ],
         { prune: false },
       )
       await CrmDuplicateRepository.saveScan(
         workspace.id,
         'COMPANY',
-        [{ leftId: 'x', rightId: 'y', score: 80, reasons: ['cnpj'] }],
+        [
+          {
+            leftId: 'x',
+            rightId: 'y',
+            score: 80,
+            reasons: ['cnpj'] as DuplicatePair['reasons'],
+          },
+        ],
         { prune: false },
       )
 
@@ -356,7 +386,14 @@ describe('CrmDuplicateRepository', () => {
       await CrmDuplicateRepository.saveScan(
         workspace.id,
         'PERSON',
-        [{ leftId: 'a', rightId: 'b', score: 60, reasons: ['name'] }],
+        [
+          {
+            leftId: 'a',
+            rightId: 'b',
+            score: 60,
+            reasons: ['name'] as DuplicatePair['reasons'],
+          },
+        ],
         { prune: false },
       )
       const row = await prisma.crmDuplicateCandidate.findFirstOrThrow({
@@ -460,7 +497,7 @@ describe('CrmDuplicateRepository', () => {
       const b = await seedCrmPerson(workspace.id, user.id)
       const c = await seedCrmCompany(workspace.id, user.id)
 
-      const people = expectOk(
+      const people = unwrap(
         await CrmDuplicateRepository.loadPair(
           workspace.id,
           'PERSON',
@@ -468,7 +505,7 @@ describe('CrmDuplicateRepository', () => {
           b.id,
         ),
       )
-      const companies = expectOk(
+      const companies = unwrap(
         await CrmDuplicateRepository.loadPair(
           workspace.id,
           'COMPANY',
