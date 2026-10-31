@@ -1,0 +1,61 @@
+---
+title: Extensão de navegador (WhatsApp Web, Gmail e LinkedIn)
+description: Barra lateral do Steel no Chrome e no Edge para ver o contato do CRM, criar lead e abrir chamado sem sair da conversa.
+section: workspace
+order: 11
+---
+
+A **extensão do Steel** para Chrome e Edge abre uma barra lateral ao lado do
+**WhatsApp Web**, do **Gmail** e do **LinkedIn**. Sem trocar de aba, você vê se
+quem está falando com você já é um lead, cria o lead com um clique, abre um
+chamado e consulta o histórico de chamados daquele contato.
+
+## Instalar e conectar
+
+1. Instale a extensão **Steel: CRM e ServiceDesk** pela loja do seu navegador
+   (ou pelo arquivo que o administrador indicar).
+2. Crie um token de API em **Configurações › Segurança › Tokens de API** (veja
+   [Tokens de API](/docs/seguranca/tokens-de-api)). Use o escopo **Ler e
+   alterar** se for criar leads e chamados, e inclua os módulos **CRM** e
+   **ServiceDesk**.
+3. Clique no ícone do Steel na barra do navegador. No painel, informe o
+   **endereço do Steel** e cole o **token**, e clique em **Conectar**.
+4. O navegador pede permissão para a extensão acessar **só o endereço do Steel**
+   que você digitou. Aceite.
+
+<Callout type='admin'>
+  Se o token for revogado em **Ajustes › Apps conectados** ou expirar, a
+  extensão passa a avisar que o token é inválido. Crie outro e conecte de novo
+  em **Conta**.
+</Callout>
+
+## Usar
+
+Abra uma conversa no WhatsApp Web, um e-mail no Gmail ou um perfil do LinkedIn e
+clique no ícone do Steel. O painel mostra:
+
+- **O contato** lido da tela (nome, telefone ou e-mail, cargo e empresa).
+- **CRM**: os leads que já são essa pessoa (mesmo telefone, e-mail ou perfil do
+  LinkedIn) com a etapa de cada um. Se não houver nenhum, o botão **Criar lead**
+  abre um formulário já preenchido; confira e confirme. Se já houver um lead
+  aberto com o mesmo contato, o Steel avisa e não duplica.
+- **Chamados**: o histórico de chamados que citam o contato, abertos e
+  encerrados, com um atalho para cada um. **Abrir chamado** pede tipo, título e
+  descrição e já inclui o contato no texto, para o chamado aparecer no histórico
+  da próxima vez.
+
+O botão **Atualizar** relê os leads (a lista é guardada por 5 minutos).
+
+## O que a extensão lê
+
+Só o **nome, o telefone, o e-mail, o cargo e a empresa** do contato aberto. Ela
+**não lê o texto das mensagens**, o corpo dos e-mails nem o resto do perfil, e
+**não envia nada ao Steel sozinha**: leads e chamados só são criados quando você
+clica.
+
+## Limites
+
+- Em **conversa de grupo** do WhatsApp o painel fica vazio.
+- **Oportunidades** ainda são criadas no CRM; a extensão cria o lead.
+- Se o WhatsApp Web, o Gmail ou o LinkedIn mudarem a página, o contato pode
+  deixar de aparecer até a extensão ser atualizada.

@@ -1,0 +1,9 @@
+# Own workspace root: the extension is built and packaged by its own workflow
+# (.github/workflows/browser-extension.yml) and is not part of the app workspace.
+packages: []
+
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+
+onlyBuiltDependencies:
+  - esbuild
