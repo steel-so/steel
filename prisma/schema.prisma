@@ -12576,6 +12576,8 @@ model SdWfmSettings {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("sd_wfm_settings")
+}
+
 // nov: ai-actions
 enum AiActionConnectorKind {
   /// Read-only lookup (an order, a customer): GET, no side effects.

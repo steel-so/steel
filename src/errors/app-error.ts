@@ -2333,6 +2333,7 @@ export const sdNlConfigInvalid = (message: string): AppError =>
 
 export const sdWfmSettingsInvalid = (message: string): AppError =>
   appError('SD_WFM_SETTINGS_INVALID', message)
+
 // ─── nov: ai-actions ────────────────────────────────────────────────────────
 
 export const aiActionConnectorNotFound = (): AppError =>
