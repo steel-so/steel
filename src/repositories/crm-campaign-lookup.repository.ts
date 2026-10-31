@@ -233,7 +233,12 @@ export const CrmCampaignLookupRepository = {
   ): Promise<Result<WhatsAppConnection | null>> {
     try {
       const connection = await prisma.whatsAppConnection.findFirst({
-        where: { id, workspaceId, module: 'COMMUNICATION' },
+        where: {
+          id,
+          workspaceId,
+          module: 'COMMUNICATION',
+          provider: { not: 'WIDGET' },
+        },
       })
       return ok(connection)
     } catch (error) {
@@ -364,6 +369,7 @@ export const CrmCampaignLookupRepository = {
             workspaceId,
             module: 'COMMUNICATION',
             status: 'CONNECTED',
+            provider: { not: 'WIDGET' },
           },
           include: {
             templates: {

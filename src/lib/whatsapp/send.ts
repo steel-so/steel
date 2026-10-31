@@ -20,6 +20,7 @@ import type {
   WhatsAppProviderClient,
   WhatsAppSendResult,
 } from './types'
+import { createWidgetClient } from './widget-client'
 import { createZapiClient } from './zapi-client'
 
 async function resolveClient(
@@ -39,6 +40,8 @@ async function resolveClient(
       clientToken,
     })
   }
+
+  if (connection.provider === 'WIDGET') return createWidgetClient()
 
   if (
     !connection.metaPhoneNumberId ||

@@ -293,6 +293,11 @@ export const TAG_GROUPS = [
         description:
           'Cobrança Pix dentro da conversa: envio do "copia e cola" pelo atendente ou pela IA, baixa do pagamento e ligação com a oportunidade do CRM.',
       },
+      {
+        name: 'Comunicação · Chat do site',
+        description:
+          'Widget de chat para o site (E1): configuração e chave pública (OWNER/ADMIN) e os endpoints públicos que o script colado no site chama, protegidos por chave e lista de sites autorizados.',
+      },
     ],
   },
   {

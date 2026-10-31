@@ -1,0 +1,60 @@
+---
+title: Chat no seu site
+description: Cole um código no site e deixe o visitante conversar com a sua equipe. As conversas caem no mesmo inbox do WhatsApp, com equipes, SLA, chatbot e IA.
+section: comunicacao
+order: 14
+---
+
+O **chat do site** é um botão no canto da página do seu site. O visitante
+clica, escreve, e a conversa aparece no inbox da Comunicação, ao lado das
+conversas de WhatsApp: mesma fila, mesmas equipes, mesmo SLA, mesmo chatbot e
+a mesma IA de atendimento.
+
+## Ligar
+
+Um administrador abre **WhatsApp › Configurações › Chat do site**. O recurso
+vem **desligado** em todo workspace.
+
+1. Em **Sites autorizados**, liste os endereços onde o chat pode abrir, um por
+   linha, com `https://` (por exemplo `https://www.empresa.com.br`). Use
+   `https://*.empresa.com.br` para liberar todos os subdomínios. Sem ao menos
+   um site não dá para ligar.
+2. Ligue **Chat no site** e clique em **Salvar chat do site**.
+3. Copie o **Código para colar no site** e cole no HTML do seu site, antes do
+   fechamento da tag `</body>`.
+
+O chat só abre nos sites da lista e enquanto estiver ligado. Se o código for
+parar em outro site, nada aparece nele. **Gerar nova chave** troca o código:
+os sites que usam o antigo param de abrir o chat até receberem o novo.
+
+## Como o chat se comporta
+
+- **Aparência**: título, cor, mensagem de boas-vindas e o canto da tela.
+- **Dados antes de começar**: peça nome, e-mail e/ou telefone antes da
+  primeira mensagem. Os dados aparecem no cartão do contato.
+- **Equipe que recebe**: as conversas novas vão para a equipe escolhida; sem
+  escolha, para a fila geral.
+- **Fora do horário**: fora do **horário de atendimento** (configurado em
+  Atendimento), o visitante recebe o aviso que você escrever, no máximo uma
+  vez a cada 12 horas, e a mensagem espera na fila.
+- **Portal do solicitante**: mostra no chat um link para o portal de chamados
+  do ServiceDesk.
+- **Avaliação do atendimento**: quando a conversa é fechada, o chat mostra a
+  pesquisa de satisfação (NPS, CSAT ou CES) que estiver ligada em **Pesquisas**.
+
+## Como o visitante é reconhecido
+
+O navegador guarda um código aleatório num cookie do próprio site, válido por
+180 dias. Ele permite ao visitante voltar e ver a conversa. A plataforma
+guarda só uma impressão desse código, nunca o código em si. O visitante vira
+um contato do zap ("Visitante do site" até informar o nome).
+
+## Limites e cuidados
+
+- O chat é só de texto: o visitante não envia arquivos, e anexos enviados pelo
+  atendente aparecem como um aviso ("Enviou uma imagem").
+- O envio de mensagens do visitante é limitado por IP e por visitante para
+  evitar abuso.
+- As mensagens do chat contam na franquia mensal de mensagens da Comunicação.
+- O contato do chat não tem número de telefone: ligar e enviar modelos do
+  WhatsApp não se aplicam a essas conversas.

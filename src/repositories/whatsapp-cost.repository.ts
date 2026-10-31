@@ -2,7 +2,6 @@ import type {
   Prisma,
   WhatsAppCostEntry,
   WhatsAppPrice,
-  WhatsAppProvider,
 } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -268,20 +267,26 @@ export const WhatsAppCostRepository = {
       {
         id: string
         label: string
-        provider: WhatsAppProvider
+        provider: 'META' | 'ZAPI'
         monthlyFee: number | null
       }[]
     >
   > {
     try {
       const rows = await prisma.whatsAppConnection.findMany({
-        where: { workspaceId, module: 'COMMUNICATION' },
+        // The site chat (WIDGET) has no line and no cost.
+        where: {
+          workspaceId,
+          module: 'COMMUNICATION',
+          provider: { not: 'WIDGET' },
+        },
         select: { id: true, label: true, provider: true, monthlyFee: true },
         orderBy: { createdAt: 'asc' },
       })
       return ok(
         rows.map((row) => ({
           ...row,
+          provider: row.provider === 'META' ? ('META' as const) : ('ZAPI' as const),
           monthlyFee: row.monthlyFee === null ? null : Number(row.monthlyFee),
         })),
       )

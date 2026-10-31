@@ -503,3 +503,8 @@ export {
   crmProposalSignatureNotFound,
   crmProposalSignatureRequired,
 } from './app-error'
+export {
+  widgetNotAvailable,
+  widgetOriginNotAllowed,
+  widgetVisitorInvalid,
+} from './app-error'

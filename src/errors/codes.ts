@@ -1603,6 +1603,10 @@ export const ERROR_CODES = {
   CRM_DEAL_ROOM_INVALID: { code: 'CRM_DEAL_ROOM_INVALID', status: 422 },
   CRM_CONTRACT_NOT_FOUND: { code: 'CRM_CONTRACT_NOT_FOUND', status: 404 },
   CRM_CONTRACT_INVALID: { code: 'CRM_CONTRACT_INVALID', status: 422 },
+  // E1 site chat widget.
+  WIDGET_NOT_AVAILABLE: { code: 'WIDGET_NOT_AVAILABLE', status: 404 },
+  WIDGET_ORIGIN_NOT_ALLOWED: { code: 'WIDGET_ORIGIN_NOT_ALLOWED', status: 403 },
+  WIDGET_VISITOR_INVALID: { code: 'WIDGET_VISITOR_INVALID', status: 401 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

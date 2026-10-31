@@ -20,6 +20,7 @@ import { WhatsappSettingsPix } from '@/app/_components/whatsapp/settings/whatsap
 import { WhatsappSettingsService } from '@/app/_components/whatsapp/settings/whatsapp-settings-service'
 import { WhatsappSettingsSla } from '@/app/_components/whatsapp/settings/whatsapp-settings-sla'
 import { WhatsappSettingsVoiceAgent } from '@/app/_components/whatsapp/settings/whatsapp-settings-voice-agent'
+import { WhatsappSettingsWidget } from '@/app/_components/whatsapp/settings/whatsapp-settings-widget'
 import { SteelIcon } from '@/components/icon/icon'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getAuthSession } from '@/src/lib/auth-session'
@@ -68,6 +69,7 @@ export default async function ZapSettingsPage({
             <TabsTrigger value='ai'>IA</TabsTrigger>
             <TabsTrigger value='service'>Atendimento</TabsTrigger>
             <TabsTrigger value='voice'>Atendente de voz</TabsTrigger>
+            <TabsTrigger value='widget'>Chat do site</TabsTrigger>
           </TabsList>
           <TabsContent value='connections' className='pt-4'>
             <WhatsappSettingsConnections workspaceId={workspaceId} />
@@ -90,6 +92,9 @@ export default async function ZapSettingsPage({
           </TabsContent>
           <TabsContent value='voice' className='pt-4'>
             <WhatsappSettingsVoiceAgent workspaceId={workspaceId} />
+          </TabsContent>
+          <TabsContent value='widget' className='pt-4'>
+            <WhatsappSettingsWidget workspaceId={workspaceId} />
           </TabsContent>
         </Tabs>
       </div>

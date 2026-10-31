@@ -82,6 +82,11 @@ export interface InboundWhatsAppMessage {
   referral?: InboundAdReferral
   /** WhatsApp Flow answer (`interactive.nfm_reply.response_json`). */
   flowResponseJson?: string
+  /**
+   * Team that gets the conversation when this message opens one (new or
+   * reopened without a team). Used by the site chat widget routing.
+   */
+  routeTeamId?: string
 }
 
 /**
@@ -340,6 +345,9 @@ export const WhatsAppWebhookService = {
             lastMessageAt: new Date(),
             aiActive: reopenAi,
             aiHandoff: false,
+            ...(input.routeTeamId && !closed.value.teamId
+              ? { teamId: input.routeTeamId }
+              : {}),
           },
         })
         if (!reopened.ok) return reopened
@@ -363,6 +371,7 @@ export const WhatsAppWebhookService = {
           aiHandoff: false,
           unreadCount: 1,
           lastMessageAt: new Date(),
+          ...(input.routeTeamId ? { teamId: input.routeTeamId } : {}),
           ...queueEntry(),
         })
         if (!created.ok) return created
