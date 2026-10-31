@@ -419,6 +419,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'hourglass',
     color: 'orange',
   },
+  SD_LICENSE_EXPIRING: {
+    module: 'SERVICE_DESK',
+    label: 'Licença de software',
+    icon: 'hourglass',
+    color: 'orange',
+  },
   SD_ONCALL_SHIFT: {
     module: 'SERVICE_DESK',
     label: 'Plantão',

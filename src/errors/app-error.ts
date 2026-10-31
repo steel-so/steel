@@ -2293,7 +2293,6 @@ export const steelMcpServerInvalid = (message: string): AppError =>
 export const steelMcpServerUnreachable = (message: string): AppError =>
   appError('STEEL_MCP_SERVER_UNREACHABLE', message)
 
-
 // ─── nov-health-scores ──────────────────────────────────────────────────────
 
 export const crmHealthNotApplicable = (): AppError =>
@@ -2301,3 +2300,36 @@ export const crmHealthNotApplicable = (): AppError =>
     'CRM_HEALTH_NOT_APPLICABLE',
     'A saúde só é calculada para negócios em andamento',
   )
+
+export const sdRemoteDisabled = (): AppError =>
+  appError(
+    'SD_REMOTE_DISABLED',
+    'O acesso remoto não está habilitado neste workspace',
+  )
+
+export const sdRemoteEndpointNotFound = (): AppError =>
+  appError(
+    'SD_REMOTE_ENDPOINT_NOT_FOUND',
+    'Este ativo não tem um ID de acesso remoto cadastrado',
+  )
+
+export const sdRemoteEndpointInvalid = (message: string): AppError =>
+  appError('SD_REMOTE_ENDPOINT_INVALID', message)
+
+export const sdLicenseNotFound = (): AppError =>
+  appError('SD_LICENSE_NOT_FOUND', 'Licença não encontrada')
+
+export const sdLicenseInvalid = (message: string): AppError =>
+  appError('SD_LICENSE_INVALID', message)
+
+export const sdNlConfigFailed = (): AppError =>
+  appError(
+    'SD_NL_CONFIG_FAILED',
+    'Não foi possível montar a configuração agora. Tente de novo ou reescreva o pedido.',
+  )
+
+export const sdNlConfigInvalid = (message: string): AppError =>
+  appError('SD_NL_CONFIG_INVALID', message)
+
+export const sdWfmSettingsInvalid = (message: string): AppError =>
+  appError('SD_WFM_SETTINGS_INVALID', message)

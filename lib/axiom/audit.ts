@@ -163,6 +163,12 @@ export type AuditEntity =
   | 'sd_inventory_device'
   | 'sd_inventory_agent_release'
   | 'sd_inventory_settings'
+  | 'sd_remote_settings'
+  | 'sd_remote_endpoint'
+  | 'sd_remote_session'
+  | 'sd_software_license'
+  | 'sd_nl_config'
+  | 'sd_wfm_settings'
   | 'sd_monitor_alert'
   // ServiceDesk — canal de e-mail
   | 'sd_mailbox'
