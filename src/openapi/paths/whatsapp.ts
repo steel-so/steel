@@ -11,6 +11,7 @@ import { conversationRoutes } from './whatsapp/conversations'
 import { dashboardRoutes } from './whatsapp/dashboards'
 import { flowRoutes } from './whatsapp/flows'
 import { groupRoutes } from './whatsapp/groups'
+import { metaChannelRoutes } from './whatsapp/meta-channels'
 import { phoneCallRoutes } from './whatsapp/phone-calls'
 import { pixRoutes } from './whatsapp/pix'
 import { realtimeRoutes } from './whatsapp/realtime'
@@ -52,6 +53,7 @@ const routes: RouteConfig[] = [
   ...surveyRoutes,
   ...pixRoutes,
   ...widgetRoutes,
+  ...metaChannelRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

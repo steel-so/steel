@@ -74,3 +74,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0055 | [Campanhas só enviam de domínio verificado ou do domínio da plataforma](./0055-remetente-verificado-nas-campanhas.md) | Aceita | 2026-10-28 |
 | 0056 | [Pix na conversa atrás de uma interface de PSP, só com provedor de teste](./0056-pix-na-conversa-atras-de-uma-interface-de-psp.md) | Aceita | 2026-10-29 |
 | 0057 | [Saúde do cliente e do negócio pela mesma heurística explicável do risco preditivo](./0057-saude-do-cliente-e-do-negocio-pela-mesma-heuristica-do-risco-preditivo.md) | Aceita | 2026-10-30 |
+| 0058 | [Instagram, Messenger e Coexistência na caixa do zap, desligados por padrão](./0058-canais-da-meta-na-caixa-do-zap.md) | Aceita | 2026-10-30 |

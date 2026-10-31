@@ -15,6 +15,7 @@ import { WhatsappSettingsCloseStatuses } from '@/app/_components/whatsapp/settin
 import { WhatsappSettingsConnections } from '@/app/_components/whatsapp/settings/whatsapp-settings-connections'
 import { WhatsappSettingsCopilot } from '@/app/_components/whatsapp/settings/whatsapp-settings-copilot'
 import { WhatsappSettingsDistribution } from '@/app/_components/whatsapp/settings/whatsapp-settings-distribution'
+import { WhatsappSettingsMetaChannels } from '@/app/_components/whatsapp/settings/whatsapp-settings-meta-channels'
 import { WhatsappSettingsNumberCheck } from '@/app/_components/whatsapp/settings/whatsapp-settings-number-check'
 import { WhatsappSettingsPix } from '@/app/_components/whatsapp/settings/whatsapp-settings-pix'
 import { WhatsappSettingsService } from '@/app/_components/whatsapp/settings/whatsapp-settings-service'
@@ -71,8 +72,9 @@ export default async function ZapSettingsPage({
             <TabsTrigger value='voice'>Atendente de voz</TabsTrigger>
             <TabsTrigger value='widget'>Chat do site</TabsTrigger>
           </TabsList>
-          <TabsContent value='connections' className='pt-4'>
+          <TabsContent value='connections' className='space-y-6 pt-4'>
             <WhatsappSettingsConnections workspaceId={workspaceId} />
+            <WhatsappSettingsMetaChannels workspaceId={workspaceId} />
           </TabsContent>
           <TabsContent value='ai' className='space-y-6 pt-4'>
             <WhatsappSettingsAi workspaceId={workspaceId} />

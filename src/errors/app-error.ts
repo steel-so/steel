@@ -2459,3 +2459,12 @@ export const widgetOriginNotAllowed = (): AppError =>
 
 export const widgetVisitorInvalid = (): AppError =>
   appError('WIDGET_VISITOR_INVALID', 'Sessão do chat inválida')
+
+export const metaChannelPageNotFound = (): AppError =>
+  appError(
+    'META_CHANNEL_PAGE_NOT_FOUND',
+    'A Página escolhida não foi encontrada na sua conta da Meta',
+  )
+
+export const metaChannelCommentNotFound = (): AppError =>
+  appError('META_CHANNEL_COMMENT_NOT_FOUND', 'Comentário não encontrado')
