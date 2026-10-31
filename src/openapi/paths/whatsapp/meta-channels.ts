@@ -301,7 +301,8 @@ export const metaChannelRoutes: RouteConfig[] = [
     path: '/whatsapp/webhook/meta-social',
     tags: [TAG],
     summary: 'Webhook de eventos (Instagram e Messenger)',
-    description: `Recebe \`object: instagram\` e \`object: page\`: mensagens diretas, ecos de respostas enviadas pelos aplicativos e comentários (\`feed\` / \`comments\`). A assinatura \`X-Hub-Signature-256\` (HMAC-SHA256 do corpo bruto com o App Secret) é obrigatória. A conexão vem do id da Página (Messenger) ou da conta (Instagram); eventos de canal desligado ou de conta desconhecida são ignorados com \`200\` para a Meta não reenviar. Entram no mesmo pipeline do WhatsApp (contato com identidade \`ig:\`/\`fb:\`, conversa, equipes, SLA, IA).`,
+    description:
+      'Recebe `object: instagram` e `object: page`: mensagens diretas, ecos de respostas enviadas pelos aplicativos e comentários (`feed` / `comments`). A assinatura `X-Hub-Signature-256` (HMAC-SHA256 do corpo bruto com o App Secret) é obrigatória. A conexão vem do id da Página (Messenger) ou da conta (Instagram); eventos de canal desligado ou de conta desconhecida são ignorados com `200` para a Meta não reenviar. Entram no mesmo pipeline do WhatsApp (contato com identidade `ig:`/`fb:`, conversa, equipes, SLA, IA).',
     auth: 'metaWebhook',
     body: {
       schema: {
