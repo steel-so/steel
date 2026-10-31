@@ -68,9 +68,7 @@ export function parseEmbeddedSignupMessage(event: {
 interface FacebookSdk {
   init: (options: Record<string, unknown>) => void
   login: (
-    callback: (response: {
-      authResponse?: { code?: string; accessToken?: string } | null
-    }) => void,
+    callback: (response: { authResponse?: { code?: string } | null }) => void,
     options: Record<string, unknown>,
   ) => void
 }
