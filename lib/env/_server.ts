@@ -267,8 +267,9 @@ export const serverEnvSchema = z.object({
     z.url().optional(),
   ),
   // Pix in the conversation (Z1): which PSP issues the charges. Only the
-  // `mock` provider exists until the PSP is chosen (see src/lib/pix).
-  PIX_PROVIDER: z.enum(['mock']).default('mock'),
+  // `mock` provider is the default; `abacatepay` issues real charges with the
+  // ABACATE_PAY API key (see src/lib/pix).
+  PIX_PROVIDER: z.enum(['mock', 'abacatepay']).default('mock'),
   // HMAC-SHA256 secret that signs the Pix payment webhooks. Unset = the
   // webhook refuses every call.
   PIX_WEBHOOK_SECRET: z.preprocess(

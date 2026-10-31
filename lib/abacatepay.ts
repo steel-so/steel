@@ -77,7 +77,54 @@ async function request<T>(
   return data as AbacatePayResponse<T>
 }
 
+/** Pix QR code charge (`POST /transparents/create`, method `PIX`). */
+export interface AbacatePayPixCharge {
+  id: string
+  /** Amount in cents. */
+  amount: number
+  status: string
+  devMode: boolean
+  brCode: string
+  expiresAt: string
+}
+
+export interface CreateAbacatePayPixChargeInput {
+  /** Amount in cents (the API minimum is 100). */
+  amount: number
+  description?: string
+  /** Seconds until the charge expires. */
+  expiresIn?: number
+  /** Our id, used by AbacatePay for idempotency. */
+  externalId?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface AbacatePayPixStatus {
+  id: string
+  status: string
+  expiresAt: string
+}
+
 export const AbacatePayClient = {
+  /** Creates a Pix QR code charge (docs: transparents/create). */
+  async createPixCharge(
+    input: CreateAbacatePayPixChargeInput,
+  ): Promise<AbacatePayResponse<AbacatePayPixCharge>> {
+    return request<AbacatePayPixCharge>('/transparents/create', {
+      method: 'POST',
+      body: JSON.stringify({ method: 'PIX', data: input }),
+    })
+  },
+
+  /** Status of a Pix charge (docs: transparents/check). */
+  async checkPixCharge(
+    id: string,
+  ): Promise<AbacatePayResponse<AbacatePayPixStatus>> {
+    return request<AbacatePayPixStatus>(
+      `/transparents/check?id=${encodeURIComponent(id)}`,
+    )
+  },
+
   async createSubscription(
     params: CreateSubscriptionRequest,
   ): Promise<AbacatePayResponse<AbacatePaySubscription>> {

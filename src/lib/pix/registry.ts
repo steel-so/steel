@@ -1,6 +1,10 @@
 import { PIX_PROVIDER, PIX_WEBHOOK_SECRET } from '@/lib/env/server'
 import { pixProviderError } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
+import {
+  ABACATEPAY_PIX_PROVIDER_ID,
+  createAbacatePayPixProvider,
+} from './abacatepay-provider'
 import { createMockPixProvider, MOCK_PIX_PROVIDER_ID } from './mock-provider'
 import type { PixProvider } from './provider'
 
@@ -8,6 +12,9 @@ import type { PixProvider } from './provider'
 export function getPixProviderById(id: string): Result<PixProvider> {
   if (id === MOCK_PIX_PROVIDER_ID) {
     return ok(createMockPixProvider(PIX_WEBHOOK_SECRET))
+  }
+  if (id === ABACATEPAY_PIX_PROVIDER_ID) {
+    return ok(createAbacatePayPixProvider(PIX_WEBHOOK_SECRET))
   }
   return err(pixProviderError('Provedor de Pix desconhecido'))
 }

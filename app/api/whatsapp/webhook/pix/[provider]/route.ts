@@ -24,6 +24,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     provider,
     request.headers,
     rawBody,
+    request.nextUrl.searchParams,
   )
   if (!result.ok) return handleError(result.error)
 

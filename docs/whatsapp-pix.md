@@ -7,7 +7,9 @@ Manual do usuário: `content/docs/comunicacao/pix.mdx`.
 
 ## Estado atual
 
-O **PSP não foi escolhido**. Tudo passa pela interface `PixProvider`
+O PSP escolhido é o **AbacatePay** (decisão do dono do produto), mas o provedor
+padrão continua `mock` e o recurso segue desligado por workspace até alguém
+configurar. Tudo passa pela interface `PixProvider`
 (`src/lib/pix/provider.ts`) e só existe o provedor `mock`
 (`src/lib/pix/mock-provider.ts`): gera um BR Code válido (CRC16 conferido),
 não chama rede e só reconhece pagamento pelo webhook assinado ou pela ação
@@ -49,12 +51,39 @@ não chama rede e só reconhece pagamento pelo webhook assinado ou pela ação
    (`WhatsAppPixCharge.provider`), então trocar `PIX_PROVIDER` não afeta o
    cancelamento nem o webhook das que já existem.
 
+## AbacatePay (`PIX_PROVIDER=abacatepay`)
+
+Implementado em `src/lib/pix/abacatepay-provider.ts`, sobre o cliente de
+`lib/abacatepay.ts` (mesma chave `ABACATE_PAY`; chave `abc_dev_` emite cobranças
+de sandbox).
+
+- **Cobrar**: `POST /v2/transparents/create` (`method: PIX`), valor em
+  centavos (mínimo R$ 1,00), `expiresIn` em segundos, `externalId` = nosso txid.
+  O `id` (`pix_char_...`) vira `providerChargeId`.
+- **Consultar**: `GET /v2/transparents/check?id=` (`getChargeStatus`, opcional
+  na interface; o fluxo normal usa o webhook).
+- **Cancelar**: a doc não tem rota de cancelamento; `cancelCharge` não faz
+  nada e a cobrança vence no `expiresIn`.
+- **Webhook**: cadastre no painel do AbacatePay a URL
+  `https://<host>/api/whatsapp/webhook/pix/abacatepay?webhookSecret=<segredo>`
+  com o evento `transparent.completed`. O segredo é o `PIX_WEBHOOK_SECRET` (a
+  origem) e o header `X-Webhook-Signature` (HMAC-SHA256 base64 do corpo cru com
+  a chave pública da doc) garante a integridade. Outros eventos são
+  autenticados e ignorados.
+- **Boleto**: não construído (fora do escopo da Z1). A doc do AbacatePay lista
+  `POST /transparents/create` com boleto; fica para uma entrega própria.
+- **A confirmar na homologação**: o formato exato de `data` em
+  `transparent.completed` não está na doc pública; o parser aceita
+  `data.transparent`, `data.checkout` ou `data` plano (`id`, `paidAmount` ou
+  `amount` em centavos, `updatedAt`, `payerInformation.PIX.name`).
+
 ## Variáveis de ambiente
 
 | Variável | Para quê |
 | --- | --- |
-| `PIX_PROVIDER` | Provedor das novas cobranças (`mock`). |
-| `PIX_WEBHOOK_SECRET` | Segredo (mínimo 16 caracteres) do HMAC-SHA256 do webhook do `mock`, enviado em `x-pix-signature`. Sem ele o webhook recusa toda chamada. |
+| `PIX_PROVIDER` | Provedor das novas cobranças (`mock` ou `abacatepay`). |
+| `ABACATE_PAY` | Chave de API do AbacatePay (compartilhada com a cobrança de assinaturas). |
+| `PIX_WEBHOOK_SECRET` | No `abacatepay`, o `webhookSecret` da URL. No `mock`: segredo (mínimo 16 caracteres) do HMAC-SHA256 do webhook do `mock`, enviado em `x-pix-signature`. Sem ele o webhook recusa toda chamada. |
 
 ## Pontos de atenção
 

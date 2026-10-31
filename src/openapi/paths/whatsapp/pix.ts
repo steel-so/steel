@@ -166,9 +166,9 @@ export const pixRoutes: RouteConfig[] = [
     path: '/whatsapp/webhook/pix/{provider}',
     tags: [TAG],
     summary: 'Aviso de pagamento (PSP)',
-    description: `Chamado pelo PSP quando um Pix é pago. Público: o próprio provedor autentica a chamada. No \`mock\`, o corpo JSON vem assinado com HMAC-SHA256 (hex) em \`x-pix-signature\`, com o segredo \`PIX_WEBHOOK_SECRET\`; sem segredo configurado toda chamada é recusada. Idempotente: um aviso repetido não muda nada. Avisos de cobranças desconhecidas são ignorados. Marca a cobrança como paga, registra "Pix recebido" na conversa e anota a oportunidade ligada. ${REALTIME}`,
+    description: `Chamado pelo PSP quando um Pix é pago. Público: o próprio provedor autentica a chamada. No \`abacatepay\`, a chamada traz \`?webhookSecret=<PIX_WEBHOOK_SECRET>\` na URL e o header \`X-Webhook-Signature\` (HMAC-SHA256 em base64 do corpo cru); só o evento \`transparent.completed\` baixa cobrança, os demais são autenticados e ignorados. No \`mock\`, o corpo JSON vem assinado com HMAC-SHA256 (hex) em \`x-pix-signature\`, com o segredo \`PIX_WEBHOOK_SECRET\`; sem segredo configurado toda chamada é recusada. Idempotente: um aviso repetido não muda nada. Avisos de cobranças desconhecidas são ignorados. Marca a cobrança como paga, registra "Pix recebido" na conversa e anota a oportunidade ligada. ${REALTIME}`,
     auth: 'public',
-    params: { provider: 'Id do provedor de Pix (`mock`).' },
+    params: { provider: 'Id do provedor de Pix (`mock` ou `abacatepay`).' },
     body: {
       schema: {
         type: 'object',
