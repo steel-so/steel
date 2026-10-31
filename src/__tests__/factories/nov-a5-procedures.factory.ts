@@ -99,7 +99,9 @@ export function createFakeAiProcedureRun(
     failureReason: null,
     startedAt: NOW,
     finishedAt: null,
-    updatedAt: NOW,
+    // Fresh on purpose: the runtime cancels a run idle for more than a day, so a
+    // fixed date would turn every default run stale as the calendar moves on.
+    updatedAt: new Date(),
     ...overrides,
   }
 }

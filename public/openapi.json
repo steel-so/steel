@@ -9507,6 +9507,191 @@
         ]
       }
     },
+    "/push/subscriptions": {
+      "get": {
+        "tags": ["Usuário"],
+        "summary": "Estado do push do usuário",
+        "operationId": "getPushSubscriptions",
+        "description": "Informa se o servidor tem as chaves VAPID (sem elas o push fica desligado e inerte), a chave pública para assinar e quantos dispositivos do usuário estão registrados.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Estado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PushStatus"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Usuário"],
+        "summary": "Registrar este dispositivo para push",
+        "operationId": "postPushSubscriptions",
+        "description": "Recebe o `PushSubscription.toJSON()` do navegador. Guarda no máximo 10 dispositivos por usuário (os mais antigos saem). Com o push desligado no servidor nada é gravado.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "format": "uri"
+                  },
+                  "keys": {
+                    "type": "object",
+                    "properties": {
+                      "p256dh": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 256,
+                        "pattern": "^[A-Za-z0-9_-]+$"
+                      },
+                      "auth": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 256,
+                        "pattern": "^[A-Za-z0-9_-]+$"
+                      }
+                    },
+                    "required": ["p256dh", "auth"]
+                  }
+                },
+                "required": ["endpoint", "keys"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PushStatus"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Usuário"],
+        "summary": "Remover este dispositivo do push",
+        "operationId": "deletePushSubscriptions",
+        "description": "Idempotente; só remove dispositivos do próprio usuário.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "format": "uri"
+                  }
+                },
+                "required": ["endpoint"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PushStatus"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/servicedesk/approvals/{token}": {
       "get": {
         "tags": ["ServiceDesk · Aprovações e assinaturas"],
@@ -232488,6 +232673,33 @@
           }
         },
         "required": ["requiresConfirmation", "status"]
+      },
+      "PushStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "O servidor tem as chaves VAPID; falso = push desligado."
+          },
+          "publicKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Chave pública VAPID para `pushManager.subscribe`."
+          },
+          "devices": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Dispositivos do usuário com push ativo."
+          }
+        },
+        "required": ["enabled", "publicKey", "devices"]
       },
       "SatisfactionSurvey": {
         "type": "object",
