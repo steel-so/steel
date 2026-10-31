@@ -80,6 +80,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   // Steel Agents: allowed tools and run timeline hang off agent/run.
   steelAgentTool: (ws) => ({ agent: { workspaceId: ws } }),
   steelAgentRunStep: (ws) => ({ run: { workspaceId: ws } }),
+  steelAgentDelegate: (ws) => ({ agent: { workspaceId: ws } }),
   steelAgentSimulationCase: (ws) => ({ simulation: { workspaceId: ws } }),
   // Wiki: comments and page labels reach the workspace through the page.
   wikiComment: (ws) => ({ wikiPage: { workspaceId: ws } }),

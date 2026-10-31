@@ -76,6 +76,7 @@ export function createFakeSteelAgentWithRelations(
         }
       : null,
     runs: [],
+    delegates: [],
     ...overrides,
   }
 }

@@ -169,12 +169,6 @@ export interface SteelAgentVersionListDTO {
   simGateMinPassRate: number
   /** Whether the caller can publish, restore and stop experiments. */
   canManage: boolean
-  /** A8: whether the caller may create agents (creators policy or RBAC). */
-  canCreate: boolean
-  /** A8: AUTO is restricted by role in this workspace. */
-  autoRestricted: boolean
-  /** A8: tool names the caller's role may set to AUTO (null = no limit). */
-  autoAllowedTools: string[] | null
 }
 
 /** A registry tool the editor can offer (enabled modules only). */
@@ -202,6 +196,12 @@ export interface SteelAgentCatalogDTO {
   agentModeEnabled: boolean
   /** Whether the caller can create/edit agents (`steel-agents` EDIT). */
   canManage: boolean
+  /** A8: whether the caller may create agents (creators policy or RBAC). */
+  canCreate: boolean
+  /** A8: AUTO is restricted by role in this workspace. */
+  autoRestricted: boolean
+  /** A8: tool names the caller's role may set to AUTO (null = no limit). */
+  autoAllowedTools: string[] | null
 }
 
 export interface SteelAgentRunDTO {

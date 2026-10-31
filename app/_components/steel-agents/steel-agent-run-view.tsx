@@ -284,6 +284,7 @@ export function SteelAgentRunView({
               ) : null}
             </div>
             <SteelAgentTrace
+              slug={slug}
               steps={data.steps}
               timezone={timezone}
               emptyText={

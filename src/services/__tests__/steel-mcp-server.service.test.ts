@@ -68,14 +68,14 @@ beforeEach(() => {
   repo.findById.mockResolvedValue(ok(createFakeSteelMcpServer()))
   repo.create.mockImplementation(async (data) => {
     stored = createFakeSteelMcpServer({
-      ...(data as never),
+      ...(data as unknown as object),
       toolsCache: null,
       discoveredAt: null,
     })
     return ok(stored)
   })
   repo.update.mockImplementation(async (id, data) => {
-    stored = { ...stored, id, ...(data as never) }
+    stored = { ...stored, id, ...(data as unknown as object) }
     return ok(stored)
   })
   repo.delete.mockResolvedValue(ok(true))
@@ -149,7 +149,11 @@ describe('SteelMcpServerService.create', () => {
     )
     repo.update.mockImplementation(async (id, data) =>
       ok(
-        createFakeSteelMcpServer({ id, toolsCache: null, ...(data as never) }),
+        createFakeSteelMcpServer({
+          id,
+          toolsCache: null,
+          ...(data as unknown as object),
+        }),
       ),
     )
     const dto = expectOk(
@@ -394,7 +398,7 @@ describe('SteelMcpServerService.refresh', () => {
       err(appError('STEEL_MCP_SERVER_UNREACHABLE', 'fora')),
     )
     repo.update.mockImplementation(async (id, data) =>
-      ok(createFakeSteelMcpServer({ id, ...(data as never) })),
+      ok(createFakeSteelMcpServer({ id, ...(data as unknown as object) })),
     )
     expectOk(await SteelMcpServerService.refresh('u1', 'ws1', 's1'))
     expect(auditMutation).toHaveBeenCalledWith(
