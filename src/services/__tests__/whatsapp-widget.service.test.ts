@@ -135,7 +135,7 @@ describe('WhatsAppWidgetService.update', () => {
     expect(repo.ensureConnection).not.toHaveBeenCalled()
     const [, key, data] = repo.upsert.mock.calls[0]
     expect(key).toBe('stw_keep')
-    expect(data).toEqual({ title: 'Novo título' })
+    expect(data).toEqual({ title: 'Novo título', connectionId: 'conn-keep' })
   })
 
   it('should save a disabled widget without creating the connection', async () => {

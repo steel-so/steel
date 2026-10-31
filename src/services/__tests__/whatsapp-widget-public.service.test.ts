@@ -528,6 +528,9 @@ describe('sendMessage', () => {
     })
 
     it('should describe the visitor by the site when there is no page url', async () => {
+      visitorRepo.create.mockImplementation(async (data) =>
+        ok({ ...visitor, ...data }),
+      )
       expectOk(
         await WhatsAppWidgetPublicService.sendMessage(
           context(),
