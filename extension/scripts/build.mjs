@@ -16,7 +16,25 @@ if (!/^\d+\.\d+\.\d+$/.test(version)) {
 rmSync(dist, { recursive: true, force: true })
 mkdirSync(`${dist}/icons`, { recursive: true })
 
+// @steel-so/sdk imports Node's crypto for verifySignature (webhooks), which the
+// extension never calls. Give esbuild an empty stand-in instead of a polyfill.
+const cryptoStub = {
+  name: 'crypto-stub',
+  setup(b) {
+    b.onResolve({ filter: /^(node:)?crypto$/ }, () => ({ path: 'crypto', namespace: 'crypto-stub' }))
+    b.onLoad({ filter: /.*/, namespace: 'crypto-stub' }, () => ({
+      contents: [
+        "const unavailable = () => { throw new Error('crypto is not available in the extension') }",
+        'export const createHmac = unavailable',
+        'export const timingSafeEqual = unavailable',
+      ].join('\n'),
+      loader: 'js',
+    }))
+  },
+}
+
 const common = {
+  plugins: [cryptoStub],
   bundle: true,
   platform: 'browser',
   target: 'chrome116',
