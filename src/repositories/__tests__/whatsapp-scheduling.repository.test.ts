@@ -268,6 +268,10 @@ describe('WhatsAppSchedAppointmentRepository', () => {
 
   it('wraps database errors', async () => {
     const boom = new Error('boom')
+    const reject = (target: object, method: string) => {
+      const spy = vi.spyOn(target as Record<string, never>, method as never)
+      ;(spy as unknown as { mockRejectedValue: (e: unknown) => void }).mockRejectedValue(boom)
+    }
     for (const [model, methods] of [
       [
         prisma.whatsAppSchedAppointment,
@@ -281,11 +285,11 @@ describe('WhatsAppSchedAppointmentRepository', () => {
       [prisma.whatsAppSchedulingSettings, ['findUnique', 'upsert']],
     ] as const) {
       for (const method of methods) {
-        vi.spyOn(model as never, method as never).mockRejectedValue(boom as never)
+        reject(model, method)
       }
     }
-    vi.spyOn(prisma.whatsAppSchedAppointment as never, 'count' as never).mockRejectedValue(boom as never)
-    vi.spyOn(prisma, '$transaction').mockRejectedValue(boom)
+    reject(prisma.whatsAppSchedAppointment, 'count')
+    reject(prisma, '$transaction')
     const now = new Date()
     const r = [
       await WhatsAppSchedulingSettingsRepository.findByWorkspace('w'),
