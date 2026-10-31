@@ -86,7 +86,6 @@ model User {
   notifications                       Notification[]
   notificationPreferences             NotificationPreference[]
   notificationDeliverySettings        NotificationDeliverySetting[]
-  pushSubscriptions                   PushSubscription[]
 
   crmCompaniesCreated                CrmCompany[]                  @relation("CrmCompanyCreatedBy")
   crmCompaniesOwned                  CrmCompany[]                  @relation("CrmCompanyAccountOwner")
@@ -13673,28 +13672,6 @@ model QaReview {
   @@index([workspaceId, agentUserId, reviewedAt])
   @@index([workspaceId, lowScore, reviewedAt])
   @@map("qa_reviews")
-}
-
-// nov: pwa-push
-
-/// A browser/device registered for Web Push. The row is the opt-in: no row, no
-/// push. `endpoint` is the push service URL and is unique per device.
-model PushSubscription {
-  id         String    @id @default(cuid())
-  userId     String    @map("user_id")
-  endpoint   String    @unique
-  /// Client public key (base64url, uncompressed P-256 point).
-  p256dh     String
-  /// Client auth secret (base64url, 16 bytes).
-  auth       String
-  userAgent  String?   @map("user_agent")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  lastUsedAt DateTime? @map("last_used_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("push_subscriptions")
 }
 
 // nov: a5-procedures ──────────────────────────────────────────────────────
