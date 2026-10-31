@@ -1523,7 +1523,10 @@ export const WhatsAppChatbotPublishDTO = dto(
 export const WhatsAppChatbotNodeStatsDTO = dto(
   'WhatsAppChatbotNodeStats',
   z.object({
-    days: z.number().int().meta({ description: 'Janela das métricas, em dias.' }),
+    days: z
+      .number()
+      .int()
+      .meta({ description: 'Janela das métricas, em dias.' }),
     nodes: z.array(
       z.object({
         nodeId: z.string(),
