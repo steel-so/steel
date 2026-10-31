@@ -315,6 +315,13 @@ export type AuditEntity =
   | 'crm_prospect_draft'
   | 'crm_prospect_web'
 
+  // nov: crm-deals
+  | 'crm_proposal_charge'
+  | 'crm_proposal_signature'
+  | 'crm_deals_settings'
+  | 'crm_deal_room'
+  | 'crm_contract'
+
 export type AuditAction =
   | 'create'
   | 'update'

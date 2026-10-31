@@ -658,6 +658,9 @@ model Workspace {
   crmMeetingBookings        CrmMeetingBooking[]
   crmCustomerHealth         CrmCustomerHealth[]
   crmOpportunityHealth      CrmOpportunityHealth[]
+  crmDealsSettings          CrmDealsSettings?
+  crmContracts              CrmContract[]
+  crmDealRooms              CrmDealRoom[]
   satisfactionSurveyConfigs SatisfactionSurveyConfig[]
   satisfactionSurveys       SatisfactionSurvey[]
   crmNewsletterSettings     CrmNewsletterSettings?
@@ -2485,6 +2488,7 @@ model CrmCompany {
   proposals     CrmProposal[]
   enrichment    CrmCompanyEnrichment?
   health        CrmCustomerHealth?
+  contracts     CrmContract[]
 
   @@unique([workspaceId, domain])
   @@unique([workspaceId, cnpj])
@@ -2675,6 +2679,10 @@ model CrmOpportunity {
   phoneCalls     WhatsAppPhoneCall[]
   pixCharges     WhatsAppPixCharge[]
   health         CrmOpportunityHealth?
+  proposalCharges   CrmProposalCharge[]
+  dealRoom          CrmDealRoom?
+  originContracts   CrmContract[] @relation("CrmContractOrigin")
+  renewalContracts  CrmContract[] @relation("CrmContractRenewal")
 
   @@index([workspaceId])
   @@index([pipelineId])
@@ -3457,6 +3465,9 @@ model CrmProposal {
   sections          CrmProposalSection[]
   views             CrmProposalView[]
   leadPresentations CrmLeadProposalPresentation[]
+  signatures        CrmProposalSignature[]
+  charges           CrmProposalCharge[]
+  dealRooms         CrmDealRoom[]
 
   @@index([workspaceId])
   @@index([templateId])
@@ -5536,6 +5547,12 @@ enum NotificationKind {
   CRM_TASK_DUE
   CRM_CUSTOMER_HEALTH_DROP
   CRM_OPPORTUNITY_AT_RISK
+  /// CRM: a contract is about to expire (renewal window).
+  CRM_CONTRACT_EXPIRING
+  /// CRM: a proposal charge was paid and the deal was won.
+  CRM_PROPOSAL_PAID
+  /// CRM: the customer wrote in or completed a step of the deal room.
+  CRM_DEAL_ROOM_ACTIVITY
   /// CRM: proposal opened by the client for the first time.
   CRM_PROPOSAL_VIEWED
   /// CRM: proposal accepted by the client.
@@ -12579,6 +12596,272 @@ model SdWfmSettings {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("sd_wfm_settings")
+}
+
+// nov: crm-deals
+
+enum CrmPaymentMethod {
+  PIX
+  BOLETO
+}
+
+enum CrmProposalChargeStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELED
+}
+
+enum CrmContractStatus {
+  ACTIVE
+  RENEWED
+  EXPIRED
+  CANCELED
+}
+
+enum CrmDealRoomActionOwner {
+  SELLER
+  CUSTOMER
+}
+
+enum CrmDealRoomAuthorKind {
+  SELLER
+  CUSTOMER
+}
+
+enum CrmDealRoomEventKind {
+  ROOM_OPENED
+  PROPOSAL_VIEWED
+  MATERIAL_OPENED
+  ACTION_COMPLETED
+  MESSAGE_SENT
+}
+
+/// Per-workspace switches of the deal tools (C6, C8, C9). The proposal
+/// payment is OFF by default: only a mock PSP exists (PixProvider).
+model CrmDealsSettings {
+  id                       String   @id @default(cuid())
+  workspaceId              String   @unique @map("workspace_id")
+  /// Pix/boleto charges on a proposal (mock PSP only).
+  proposalPaymentEnabled   Boolean  @default(false) @map("proposal_payment_enabled")
+  /// The public proposal is accepted with a drawn signature instead of a name.
+  proposalSignatureEnabled Boolean  @default(false) @map("proposal_signature_enabled")
+  /// Days before a contract ends that the owner is warned and the renewal deal is created.
+  renewalLeadDays          Int      @default(60) @map("renewal_lead_days")
+  renewalAutoCreate        Boolean  @default(true) @map("renewal_auto_create")
+  updatedById              String?  @map("updated_by_id")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("crm_deals_settings")
+}
+
+/// Drawn signature of the customer on a public proposal (C6). The PNG sits in
+/// MinIO; both hashes prove what was signed (reuses the ServiceDesk scheme).
+model CrmProposalSignature {
+  id             String   @id @default(cuid())
+  workspaceId    String   @map("workspace_id")
+  proposalId     String   @map("proposal_id")
+  signerName     String   @map("signer_name")
+  signerDocument String?  @map("signer_document")
+  signerEmail    String?  @map("signer_email")
+  storageKey     String   @map("storage_key")
+  imageSha256    String   @map("image_sha256")
+  /// SHA-256 of the canonical snapshot of the proposal at signing time.
+  proposalSha256 String   @map("proposal_sha256")
+  ipHash         String   @map("ip_hash")
+  signedAt       DateTime @map("signed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  proposal CrmProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+  @@index([workspaceId])
+  @@map("crm_proposal_signatures")
+}
+
+/// Pix or boleto charge of a proposal (C6). Settled by the PSP webhook (or the
+/// "simulate payment" action with a test provider); a paid charge wins the deal.
+model CrmProposalCharge {
+  id               String                  @id @default(cuid())
+  workspaceId      String                  @map("workspace_id")
+  proposalId       String                  @map("proposal_id")
+  opportunityId    String?                 @map("opportunity_id")
+  createdById      String?                 @map("created_by_id")
+  method           CrmPaymentMethod
+  provider         String
+  providerChargeId String                  @map("provider_charge_id")
+  amount           Decimal                 @db.Decimal(14, 2)
+  description      String                  @db.VarChar(140)
+  /// Pix "copia e cola" or the boleto digitable line.
+  paymentCode      String                  @map("payment_code")
+  status           CrmProposalChargeStatus @default(PENDING)
+  expiresAt        DateTime                @map("expires_at")
+  paidAt           DateTime?               @map("paid_at")
+  paidAmount       Decimal?                @map("paid_amount") @db.Decimal(14, 2)
+  endToEndId       String?                 @map("end_to_end_id")
+  payerName        String?                 @map("payer_name")
+  canceledAt       DateTime?               @map("canceled_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+
+  proposal    CrmProposal    @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  opportunity CrmOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerChargeId])
+  @@index([proposalId, createdAt])
+  @@index([workspaceId, status])
+  @@map("crm_proposal_charges")
+}
+
+/// Customer contract tracked for renewal (C9).
+model CrmContract {
+  id                   String            @id @default(cuid())
+  workspaceId          String            @map("workspace_id")
+  companyId            String            @map("company_id")
+  /// Deal that sold the contract (optional).
+  opportunityId        String?           @map("opportunity_id")
+  /// Deal created for the renewal.
+  renewalOpportunityId String?           @map("renewal_opportunity_id")
+  ownerId              String?           @map("owner_id")
+  createdById          String            @map("created_by_id")
+  name                 String
+  value                Decimal?          @db.Decimal(14, 2)
+  startDate            DateTime          @map("start_date")
+  endDate              DateTime          @map("end_date")
+  autoRenews           Boolean           @default(false) @map("auto_renews")
+  status               CrmContractStatus @default(ACTIVE)
+  notes                String?
+  /// When the owner was warned about the expiry.
+  alertedAt            DateTime?         @map("alerted_at")
+  renewalCreatedAt     DateTime?         @map("renewal_created_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  deletedAt            DateTime?         @map("deleted_at")
+
+  workspace          Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company            CrmCompany      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  opportunity        CrmOpportunity? @relation("CrmContractOrigin", fields: [opportunityId], references: [id], onDelete: SetNull)
+  renewalOpportunity CrmOpportunity? @relation("CrmContractRenewal", fields: [renewalOpportunityId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status, endDate])
+  @@index([companyId])
+  @@map("crm_contracts")
+}
+
+/// Shared negotiation room of a deal (C8): one public page per opportunity,
+/// reached by an opaque token.
+model CrmDealRoom {
+  id             String   @id @default(cuid())
+  workspaceId    String   @map("workspace_id")
+  opportunityId  String   @unique @map("opportunity_id")
+  token          String   @unique
+  enabled        Boolean  @default(true)
+  title          String?
+  welcomeMessage String?  @map("welcome_message")
+  /// Proposal shown in the room.
+  proposalId     String?  @map("proposal_id")
+  createdById    String   @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  opportunity CrmOpportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  proposal    CrmProposal?           @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  materials   CrmDealRoomMaterial[]
+  actions     CrmDealRoomAction[]
+  visitors    CrmDealRoomVisitor[]
+  events      CrmDealRoomEvent[]
+  messages    CrmDealRoomMessage[]
+
+  @@index([workspaceId])
+  @@map("crm_deal_rooms")
+}
+
+model CrmDealRoomMaterial {
+  id        String   @id @default(cuid())
+  roomId    String   @map("room_id")
+  title     String
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  room CrmDealRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, position])
+  @@map("crm_deal_room_materials")
+}
+
+/// Joint action plan item: owned by the seller or by the customer.
+model CrmDealRoomAction {
+  id          String                 @id @default(cuid())
+  roomId      String                 @map("room_id")
+  title       String
+  owner       CrmDealRoomActionOwner
+  dueDate     DateTime?              @map("due_date")
+  doneAt      DateTime?              @map("done_at")
+  doneByLabel String?                @map("done_by_label")
+  position    Int                    @default(0)
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  room CrmDealRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, position])
+  @@map("crm_deal_room_actions")
+}
+
+/// A person who identified themselves on the public room page.
+model CrmDealRoomVisitor {
+  id          String   @id @default(cuid())
+  roomId      String   @map("room_id")
+  name        String
+  email       String
+  ipHash      String?  @map("ip_hash")
+  firstSeenAt DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+
+  room     CrmDealRoom          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  events   CrmDealRoomEvent[]
+  messages CrmDealRoomMessage[]
+
+  @@unique([roomId, email])
+  @@map("crm_deal_room_visitors")
+}
+
+/// Who opened what in the room.
+model CrmDealRoomEvent {
+  id          String               @id @default(cuid())
+  roomId      String               @map("room_id")
+  visitorId   String?              @map("visitor_id")
+  kind        CrmDealRoomEventKind
+  targetId    String?              @map("target_id")
+  targetLabel String?              @map("target_label")
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  room    CrmDealRoom         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  visitor CrmDealRoomVisitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, createdAt])
+  @@map("crm_deal_room_events")
+}
+
+model CrmDealRoomMessage {
+  id           String                @id @default(cuid())
+  roomId       String                @map("room_id")
+  authorKind   CrmDealRoomAuthorKind @map("author_kind")
+  authorUserId String?               @map("author_user_id")
+  authorName   String                @map("author_name")
+  visitorId    String?               @map("visitor_id")
+  body         String                @db.Text
+  createdAt    DateTime              @default(now()) @map("created_at")
+
+  room    CrmDealRoom         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  visitor CrmDealRoomVisitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, createdAt])
+  @@map("crm_deal_room_messages")
 }
 
 // nov: ai-actions

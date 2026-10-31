@@ -1577,6 +1577,32 @@ export const ERROR_CODES = {
     code: 'CRM_PROSPECT_SEARCH_NOT_CONFIGURED',
     status: 503,
   },
+
+  // nov: crm-deals (C6 proposal signature/payment, C8 deal room, C9 contracts)
+  CRM_DEALS_PAYMENT_DISABLED: {
+    code: 'CRM_DEALS_PAYMENT_DISABLED',
+    status: 422,
+  },
+  CRM_PROPOSAL_CHARGE_NOT_FOUND: {
+    code: 'CRM_PROPOSAL_CHARGE_NOT_FOUND',
+    status: 404,
+  },
+  CRM_PROPOSAL_CHARGE_INVALID: {
+    code: 'CRM_PROPOSAL_CHARGE_INVALID',
+    status: 422,
+  },
+  CRM_PROPOSAL_SIGNATURE_REQUIRED: {
+    code: 'CRM_PROPOSAL_SIGNATURE_REQUIRED',
+    status: 422,
+  },
+  CRM_PROPOSAL_SIGNATURE_NOT_FOUND: {
+    code: 'CRM_PROPOSAL_SIGNATURE_NOT_FOUND',
+    status: 404,
+  },
+  CRM_DEAL_ROOM_NOT_FOUND: { code: 'CRM_DEAL_ROOM_NOT_FOUND', status: 404 },
+  CRM_DEAL_ROOM_INVALID: { code: 'CRM_DEAL_ROOM_INVALID', status: 422 },
+  CRM_CONTRACT_NOT_FOUND: { code: 'CRM_CONTRACT_NOT_FOUND', status: 404 },
+  CRM_CONTRACT_INVALID: { code: 'CRM_CONTRACT_INVALID', status: 422 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

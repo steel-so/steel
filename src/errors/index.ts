@@ -490,3 +490,16 @@ export {
   crmProspectWebFailed,
 } from './app-error'
 
+
+// nov: crm-deals
+export {
+  crmContractInvalid,
+  crmContractNotFound,
+  crmDealRoomInvalid,
+  crmDealRoomNotFound,
+  crmDealsPaymentDisabled,
+  crmProposalChargeInvalid,
+  crmProposalChargeNotFound,
+  crmProposalSignatureNotFound,
+  crmProposalSignatureRequired,
+} from './app-error'

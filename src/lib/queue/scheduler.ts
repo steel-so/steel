@@ -7,6 +7,7 @@ import {
   CrmCadencesJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
+  CrmDealsJob,
   CrmDuplicatesJob,
   CrmHealthJob,
   CrmMeetingsJob,
@@ -50,6 +51,7 @@ import {
   getCrmCadencesQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
+  getCrmDealsQueue,
   getCrmDuplicatesQueue,
   getCrmHealthQueue,
   getCrmMeetingsQueue,
@@ -95,6 +97,7 @@ import {
   CrmCadencesCron,
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
+  CrmDealsCron,
   CrmDuplicatesCron,
   CrmHealthCron,
   CrmMeetingsCron,
@@ -606,6 +609,21 @@ export async function scheduleCrmHealthJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_health_registered', {
     component: 'Worker',
     pattern: CrmHealthCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleCrmDealsJobs(): Promise<void> {
+  const queue = getCrmDealsQueue()
+  await queue.upsertJobScheduler(
+    CrmDealsJob.RenewalScan,
+    { pattern: CrmDealsCron, tz: RetentionTimezone },
+    { name: CrmDealsJob.RenewalScan, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_deals_registered', {
+    component: 'Worker',
+    pattern: CrmDealsCron,
     timezone: RetentionTimezone,
   })
 }
