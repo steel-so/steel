@@ -47,6 +47,13 @@ const SYNC_STATUS_LABEL: Record<WhatsAppCoexistenceStatusDTO, string> = {
   FAILED: 'A importação falhou',
 }
 
+/**
+ * Instagram Direct and Messenger are hidden until 2027 (owner decision of
+ * 2026-10-31). The code, the API and the stored data stay; flip this to `true`
+ * to bring the toggles, the Page picker and the connected Pages back.
+ */
+const SOCIAL_CHANNELS_VISIBLE = false
+
 const CHANNEL_LABEL = {
   WHATSAPP: 'WhatsApp',
   INSTAGRAM: 'Instagram',
@@ -247,7 +254,9 @@ export function WhatsappSettingsMetaChannels({
   const appId = NEXT_PUBLIC_META_APP_ID
   const configId = NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID
   const metaReady = Boolean(appId && configId)
-  const socialEnabled = current.instagramEnabled || current.messengerEnabled
+  const socialEnabled =
+    SOCIAL_CHANNELS_VISIBLE &&
+    (current.instagramEnabled || current.messengerEnabled)
 
   function save(patch: UpdateMetaChannelSettingsInput) {
     update.mutate(patch, {
@@ -324,31 +333,37 @@ export function WhatsappSettingsMetaChannels({
     <div className='space-y-4 rounded-lg border p-4'>
       <div>
         <h3 className='font-medium text-sm'>
-          Instagram, Messenger e Coexistência
+          {SOCIAL_CHANNELS_VISIBLE
+            ? 'Instagram, Messenger e Coexistência'
+            : 'Coexistência'}
         </h3>
         <p className='text-muted-foreground text-xs'>
-          Atenda Direct, Messenger e comentários na mesma caixa do WhatsApp, com
-          equipes, SLA e IA. Os canais da Meta dependem da aprovação do app na
-          Meta e ficam desligados até você ligá-los.
+          {SOCIAL_CHANNELS_VISIBLE
+            ? 'Atenda Direct, Messenger e comentários na mesma caixa do WhatsApp, com equipes, SLA e IA. Os canais da Meta dependem da aprovação do app na Meta e ficam desligados até você ligá-los.'
+            : 'Atenda o número que já usa no aplicativo WhatsApp Business na mesma caixa, com equipes, SLA e IA. Fica desligado até você ligá-lo.'}
         </p>
       </div>
 
-      <SwitchRow
-        id='messengerEnabled'
-        title='Messenger'
-        description='Recebe e responde as mensagens da Página do Facebook.'
-        checked={current.messengerEnabled}
-        disabled={update.isPending}
-        onChange={(checked) => save({ messengerEnabled: checked })}
-      />
-      <SwitchRow
-        id='instagramEnabled'
-        title='Instagram Direct'
-        description='Recebe e responde as mensagens da conta profissional do Instagram.'
-        checked={current.instagramEnabled}
-        disabled={update.isPending}
-        onChange={(checked) => save({ instagramEnabled: checked })}
-      />
+      {SOCIAL_CHANNELS_VISIBLE ? (
+        <>
+          <SwitchRow
+            id='messengerEnabled'
+            title='Messenger'
+            description='Recebe e responde as mensagens da Página do Facebook.'
+            checked={current.messengerEnabled}
+            disabled={update.isPending}
+            onChange={(checked) => save({ messengerEnabled: checked })}
+          />
+          <SwitchRow
+            id='instagramEnabled'
+            title='Instagram Direct'
+            description='Recebe e responde as mensagens da conta profissional do Instagram.'
+            checked={current.instagramEnabled}
+            disabled={update.isPending}
+            onChange={(checked) => save({ instagramEnabled: checked })}
+          />
+        </>
+      ) : null}
       {socialEnabled ? (
         <SwitchRow
           id='commentsEnabled'
@@ -393,7 +408,7 @@ export function WhatsappSettingsMetaChannels({
         </div>
       ) : null}
 
-      {social.length > 0 ? (
+      {SOCIAL_CHANNELS_VISIBLE && social.length > 0 ? (
         <div className='space-y-2 border-t pt-3'>
           {social.map((row) => (
             <div
