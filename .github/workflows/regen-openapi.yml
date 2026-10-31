@@ -1,0 +1,68 @@
+name: Regenerate OpenAPI
+
+# Regenerates the committed OpenAPI documents on a feature branch, so nobody has
+# to run the generator on a dev machine and the file never has to be merged by
+# hand. Run it when CI reports the spec as stale or after a rebase:
+#
+#   gh workflow run regen-openapi.yml --ref <branch>
+#
+# It commits public/openapi*.json to the branch and then dispatches CI for the
+# new commit (a push made with GITHUB_TOKEN does not trigger workflows).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: regen-openapi-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    name: Regenerate the OpenAPI documents
+    if: github.ref_name != 'main'
+    runs-on: avrea-ubuntu-latest-4-vcpu
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Configure HugeIcons registry
+        run: |
+          echo "@hugeicons-pro:registry=https://npm.hugeicons.com" > .npmrc
+          echo "//npm.hugeicons.com/:_authToken=${{ secrets.HUGEICONS_TOKEN }}" >> .npmrc
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm prisma:generate
+
+      - run: pnpm openapi:generate
+
+      - name: Commit and re-run CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if git diff --quiet -- public; then
+            echo "The OpenAPI documents are already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public
+          git commit -m "chore(openapi): regenerate the spec"
+          git push origin "HEAD:${BRANCH}"
+          gh workflow run ci.yml --ref "${BRANCH}"
