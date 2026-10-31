@@ -64,9 +64,6 @@ const serverEnv = {
   GOOGLE_ADS_DEVELOPER_TOKEN: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
   DISABLE_AUTH_RATE_LIMIT: process.env.DISABLE_AUTH_RATE_LIMIT,
   MAIL_DRY_RUN: process.env.MAIL_DRY_RUN,
-  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
-  VAPID_SUBJECT: process.env.VAPID_SUBJECT,
   WORKBENCH_USER: process.env.WORKBENCH_USER,
   WORKBENCH_PASS: process.env.WORKBENCH_PASS,
   STATUS_APP_PROBE_URL: process.env.STATUS_APP_PROBE_URL,
@@ -326,12 +323,6 @@ export const serverEnvSchema = z.object({
   DISABLE_AUTH_RATE_LIMIT: flag,
   // Kill-switch de envio de e-mail: nada sai pelo Resend quando `'true'`.
   MAIL_DRY_RUN: flag,
-  // Web Push (PWA): VAPID key pair (base64url; public = 65-byte uncompressed
-  // P-256 point, private = 32-byte scalar) and the contact (`mailto:` or
-  // https URL). Without the pair push stays OFF and inert.
-  VAPID_PUBLIC_KEY: blankOptional,
-  VAPID_PRIVATE_KEY: blankOptional,
-  VAPID_SUBJECT: blankOptional,
   // Basic auth do dashboard de filas (`/jobs`, Workbench).
   WORKBENCH_USER: blankOptional,
   WORKBENCH_PASS: blankOptional,
@@ -563,9 +554,6 @@ export const {
   GOOGLE_ADS_DEVELOPER_TOKEN,
   DISABLE_AUTH_RATE_LIMIT,
   MAIL_DRY_RUN,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY,
-  VAPID_SUBJECT,
   WORKBENCH_USER,
   WORKBENCH_PASS,
   STATUS_APP_PROBE_URL,
