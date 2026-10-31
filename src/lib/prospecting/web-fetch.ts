@@ -50,7 +50,7 @@ const ENTITIES: Record<string, string> = {
 function decodeEntities(text: string): string {
   return text
     .replace(/&(?:amp|lt|gt|quot|#39|apos|nbsp);/g, (m) => ENTITIES[m] ?? m)
-    .replace(/&#(\d{1,6});/g, (_, code: string) => {
+    .replace(/&#(\d{1,8});/g, (_, code: string) => {
       const n = Number(code)
       return n > 0 && n < 0x110000 ? String.fromCodePoint(n) : ' '
     })

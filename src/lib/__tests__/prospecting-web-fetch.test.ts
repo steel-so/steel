@@ -24,9 +24,7 @@ function response(
   init: { status?: number; type?: string; location?: string } = {},
 ) {
   const headers = new Headers()
-  if (init.type !== null) {
-    headers.set('content-type', init.type ?? 'text/html; charset=utf-8')
-  }
+  headers.set('content-type', init.type ?? 'text/html; charset=utf-8')
   if (init.location) headers.set('location', init.location)
   return new Response(body, { status: init.status ?? 200, headers })
 }
@@ -173,11 +171,15 @@ describe('fetchPage()', () => {
   })
 
   it('should treat a missing content type as HTML', async () => {
-    const fetchImpl = vi.fn(async () =>
-      response('<p>Sem tipo</p>', { type: null as unknown as string }),
-    )
+    const fake = {
+      status: 200,
+      ok: true,
+      headers: new Headers(),
+      body: null,
+      text: async () => '<p>Sem tipo</p>',
+    } as unknown as Response
     const page = expectOk(
-      await fetchPage('https://acme.com.br/', { fetchImpl }),
+      await fetchPage('https://acme.com.br/', { fetchImpl: async () => fake }),
     )
     expect(page.text).toBe('Sem tipo')
   })
