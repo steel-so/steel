@@ -1022,7 +1022,7 @@ describe('createAgent()', () => {
     })
     const mode = (name: string) =>
       dto.tools.find((tool) => tool.toolName === name)?.mode
-    expect(mode('web_fetch')).toBe('AUTO')
+    expect(mode('crm_web_fetch')).toBe('AUTO')
     expect(mode('crm_prospect_save_draft')).toBe('APPROVAL')
     expect(mode('crm_prospect_enrich_company')).toBe('APPROVAL')
     expect(audit).toHaveBeenCalledWith(

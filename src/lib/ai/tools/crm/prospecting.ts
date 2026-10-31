@@ -30,13 +30,13 @@ const WebSearchArgs = z.object({
 })
 
 export const webSearchTool: SteelAiTool<z.output<typeof WebSearchArgs>> = {
-  name: 'web_search',
+  name: 'crm_web_search',
   label: 'Pesquisando na web',
   module: 'CRM',
   kind: 'READ',
   annotations: { openWorldHint: true },
   description:
-    'Pesquisa na web e devolve título, endereço e trecho dos melhores resultados (https). Use para achar o site, as notícias e as vagas de uma empresa; depois leia as páginas com web_fetch. Só funciona quando a prospecção com IA está ligada no workspace e conta no limite mensal de pesquisas.',
+    'Pesquisa na web e devolve título, endereço e trecho dos melhores resultados (https). Use para achar o site, as notícias e as vagas de uma empresa; depois leia as páginas com crm_web_fetch. Só funciona quando a prospecção com IA está ligada no workspace e conta no limite mensal de pesquisas.',
   parameters: {
     type: 'object',
     properties: {
@@ -72,7 +72,7 @@ export const webSearchTool: SteelAiTool<z.output<typeof WebSearchArgs>> = {
 const WebFetchArgs = z.object({ url: z.url().max(500) })
 
 export const webFetchTool: SteelAiTool<z.output<typeof WebFetchArgs>> = {
-  name: 'web_fetch',
+  name: 'crm_web_fetch',
   label: 'Lendo página da web',
   module: 'CRM',
   kind: 'READ',

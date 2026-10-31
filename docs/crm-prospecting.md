@@ -14,7 +14,7 @@ envia por fora (`mailto:` / `wa.me`) e marca como enviado.
 ## Peças
 
 - Ferramentas (`src/lib/ai/tools/crm/prospecting.ts`, módulo CRM):
-  `web_search`, `web_fetch`, `crm_prospect_lookup_cnpj`,
+  `crm_web_search`, `crm_web_fetch`, `crm_prospect_lookup_cnpj`,
   `crm_prospect_find_contacts` (leitura); `crm_prospect_enrich_company`
   (UPDATE, só preenche vazio) e `crm_prospect_save_draft` (CREATE, não é
   `customerFacing`: nada sai do workspace). Aparecem também no MCP público,

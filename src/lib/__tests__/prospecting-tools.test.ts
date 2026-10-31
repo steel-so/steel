@@ -87,7 +87,7 @@ describe('agent preset', () => {
   })
 })
 
-describe('web_search', () => {
+describe('crm_web_search', () => {
   it('should validate and default the arguments', () => {
     expect(expectOk(webSearchTool.parse({ query: 'acme logística' }))).toEqual({
       query: 'acme logística',
@@ -117,7 +117,7 @@ describe('web_search', () => {
   })
 })
 
-describe('web_fetch', () => {
+describe('crm_web_fetch', () => {
   const output = {
     url: 'https://a.com',
     finalUrl: 'https://a.com',
