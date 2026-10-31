@@ -195,6 +195,8 @@ const OUT = [
   '(public)/tv/',
   // Meeting booking pages and their embed (crm-ops C5): focused public cards.
   '(public)/m/',
+  // Deal room shared with a customer (nov: crm-deals C8): focused public page.
+  '(public)/sala/',
   // Public newsletter archive (ADR 0054): the customer's brand, no Steel shell.
   '(newsletter-archive)/',
   // Published customer sites: their own header/footer globals, no Steel shell.

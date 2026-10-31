@@ -716,7 +716,7 @@ export function ProposalBuilder({
           onOpenChange={setMetricsOpen}
         />
       ) : null}
-      {realId ? (
+      {realId && checkoutOpen ? (
         <ProposalCheckoutDrawer
           workspaceId={workspaceId}
           proposalId={realId}
