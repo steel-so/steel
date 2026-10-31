@@ -65,6 +65,7 @@ export function toSteelAgentDTO(
       toolName: tool.toolName,
       mode: effectiveToolMode(kindOf(tool.toolName), tool.mode),
     })),
+    delegateAgentIds: (agent.delegates ?? []).map((d) => d.targetAgentId),
     lastRun: lastRun
       ? {
           id: lastRun.id,
@@ -152,6 +153,9 @@ export function toSteelAgentRunDTO(run: SteelAgentRun): SteelAgentRunDTO {
     isTest: run.isTest,
     rerunOfId: run.rerunOfId,
     versionId: run.versionId,
+    parentRunId: run.parentRunId ?? null,
+    depth: run.depth ?? 0,
+    delegatedCostUsd: Number(run.delegatedCostUsd ?? 0),
     createdAt: run.createdAt.toISOString(),
   }
 }

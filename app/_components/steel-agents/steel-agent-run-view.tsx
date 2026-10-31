@@ -165,6 +165,18 @@ export function SteelAgentRunView({
                 US$ {data.costUsd.toFixed(4)}
               </span>
             </div>
+            {data.parentRunId ? (
+              <p className='text-muted-foreground text-xs'>
+                Execução delegada por outro agente (nível {data.depth}). O custo
+                também entra na execução principal.
+              </p>
+            ) : null}
+            {data.delegatedCostUsd > 0 ? (
+              <p className='text-muted-foreground text-xs'>
+                O custo inclui US$ {data.delegatedCostUsd.toFixed(4)} de agentes
+                delegados.
+              </p>
+            ) : null}
             {data.rerunOfId ? (
               <p className='text-muted-foreground text-xs'>
                 Reexecução em teste da{' '}
@@ -272,6 +284,7 @@ export function SteelAgentRunView({
               ) : null}
             </div>
             <SteelAgentTrace
+              slug={slug}
               steps={data.steps}
               timezone={timezone}
               emptyText={

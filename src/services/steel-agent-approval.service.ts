@@ -11,12 +11,9 @@ import {
   aiPendingActionNotPending,
   aiToolNotAllowed,
   steelAgentRunNotFound,
+  steelAgentsPaused,
 } from '@/src/errors/app-error'
-import {
-  findTool,
-  isToolAllowed,
-  resolveToolAccess,
-} from '@/src/lib/ai/tools/registry'
+import { isToolAllowed, resolveToolAccess } from '@/src/lib/ai/tools/registry'
 import { err, ok, type Result } from '@/src/lib/result'
 import { enqueueSteelAgentRun } from '@/src/lib/steel-agents/enqueue'
 import { runInSteelAgentContext } from '@/src/lib/steel-agents/run-context'
@@ -27,6 +24,7 @@ import {
   SteelAgentRunStepRepository,
   type SteelAgentRunWithAgent,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
 import type { ApproveSteelAgentActionDTO } from '@/src/schemas/steel-agent.schema'
 import type { AiPendingActionDTO } from '@/types/steel-ai'
 import {
@@ -35,6 +33,7 @@ import {
 } from './ai-pending-action.service'
 import { assertMember } from './authz'
 import { canManageSteelAgents } from './steel-agent.service'
+import { resolveAgentTool } from './steel-mcp-tools'
 
 /**
  * Inbox approvals of Steel Agent writes. The user route
@@ -139,6 +138,11 @@ export const SteelAgentApprovalService = {
       return err(aiDoubleConfirmationRequired())
     }
 
+    // A6: nothing an agent proposed executes while the emergency switch is on.
+    const policy = await SteelAgentPolicyRepository.find(workspaceId)
+    if (!policy.ok) return policy
+    if (policy.value?.killedAt) return err(steelAgentsPaused())
+
     const ownerId = run.agent.ownerId
     if (!ownerId) {
       return err(aiToolNotAllowed('O agente está sem responsável'))
@@ -152,7 +156,9 @@ export const SteelAgentApprovalService = {
       )
     }
     if (!access.value.agentModeEnabled) return err(aiAgentModeDisabled())
-    const tool = findTool(action.toolName)
+    const resolved = await resolveAgentTool(workspaceId, action.toolName)
+    if (!resolved.ok) return resolved
+    const tool = resolved.value
     const stillAllowed = run.agent.tools.some(
       (t) => t.toolName === action.toolName,
     )

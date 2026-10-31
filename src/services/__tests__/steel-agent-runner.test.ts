@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import {
@@ -58,15 +59,30 @@ vi.mock('@/src/repositories/workspace.repository')
 vi.mock('@/src/services/ai-usage.service')
 vi.mock('@/src/services/steel-agent-notifications')
 
+vi.mock('@/src/repositories/steel-agent-governance.repository')
+vi.mock('@/src/repositories/steel-mcp-server.repository')
+vi.mock('@/src/repositories/membership.repository')
+vi.mock('@/src/lib/steel-agents/mcp-client')
+
+import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
+import {
+  createFakeSteelAgentPolicy,
+  createFakeSteelMcpServer,
+} from '@/src/__tests__/factories/nov-ai-governance.factory'
 import { resolveToolAccess } from '@/src/lib/ai/tools/registry'
+import { callMcpTool } from '@/src/lib/steel-agents/mcp-client'
 import { currentSteelAgentContext } from '@/src/lib/steel-agents/run-context'
 import { AiActionLogRepository } from '@/src/repositories/ai-action-log.repository'
 import { AiPendingActionRepository } from '@/src/repositories/ai-pending-action.repository'
+import { MembershipRepository } from '@/src/repositories/membership.repository'
 import {
+  SteelAgentDelegateRepository,
   SteelAgentRunRepository,
   SteelAgentRunStepRepository,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
 import { SteelAgentVersionRepository } from '@/src/repositories/steel-agent-version.repository'
+import { SteelMcpServerRepository } from '@/src/repositories/steel-mcp-server.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import {
@@ -256,6 +272,12 @@ function lastUpdate() {
 }
 
 beforeEach(() => {
+  vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(ok(null))
+  vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(ok([]))
+  vi.mocked(SteelAgentDelegateRepository).listTargets.mockResolvedValue(ok([]))
+  vi.mocked(SteelAgentDelegateRepository).runChain.mockResolvedValue(
+    ok(['agent1']),
+  )
   registry.tools = [readTool, createTool, deleteTool]
   readExecute.mockResolvedValue(
     ok({ data: [{ id: 't1' }], summary: '1 chamado' }),
@@ -1317,5 +1339,547 @@ describe('executeSteelAgentRun — versions (A/B)', () => {
     expect(runs.update).not.toHaveBeenCalledWith('run1', {
       versionId: expect.anything(),
     })
+  })
+})
+
+describe('executeSteelAgentRun — emergency switch (A6)', () => {
+  const killed = () =>
+    ok(
+      createFakeSteelAgentPolicy({
+        killedAt: new Date('2026-10-30T10:00:00Z'),
+      }),
+    )
+
+  it('should skip a run that starts while the switch is on', async () => {
+    setup()
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(killed())
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('skipped')
+    expect(runs.claim).toHaveBeenCalledWith(
+      'run1',
+      ['QUEUED'],
+      expect.objectContaining({
+        status: 'SKIPPED',
+        summary: expect.stringContaining('pausados por emergência'),
+      }),
+    )
+  })
+
+  it('should still let a test run go through', async () => {
+    setup({ run: { isTest: true }, rounds: [{ text: 'Simulado.' }] })
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(killed())
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+  })
+
+  it('should fail the run when the policy cannot be read', async () => {
+    setup()
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('failed')
+  })
+
+  it('should stop a running agent between rounds when the switch turns on', async () => {
+    setup({
+      rounds: [
+        { toolCalls: [call('sd_list_tickets')] },
+        { text: 'não deveria chegar aqui' },
+      ],
+    })
+    vi.mocked(SteelAgentPolicyRepository)
+      .find.mockResolvedValueOnce(ok(null))
+      .mockResolvedValueOnce(killed())
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('skipped')
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'GUARDRAIL',
+        output: expect.objectContaining({ rule: 'KILL_SWITCH' }),
+      }),
+    )
+    expect(lastUpdate()).toEqual(
+      expect.objectContaining({ status: 'SKIPPED', rounds: { increment: 1 } }),
+    )
+  })
+})
+
+describe('executeSteelAgentRun — AUTO by role (A8)', () => {
+  const restricted = (mode: 'NONE' | 'LIST', tools: string[] = []) =>
+    ok(
+      createFakeSteelAgentPolicy({
+        restrictAuto: true,
+        autoRules: {
+          ADMIN: { mode, tools },
+          MEMBER: { mode, tools },
+          VIEWER: { mode, tools },
+        },
+      }),
+    )
+
+  it('should send an AUTO write to approval when the owner role is not allowed', async () => {
+    setup({
+      tools: [{ toolName: 'crm_create_task', mode: 'AUTO' }],
+      rounds: [{ toolCalls: [call('crm_create_task')] }],
+    })
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      restricted('NONE'),
+    )
+    vi.mocked(MembershipRepository.findByUserAndWorkspace).mockResolvedValue(
+      ok(createFakeMembership({ role: 'MEMBER' }) as never),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('waiting')
+    expect(createExecute).not.toHaveBeenCalled()
+    expect(pending.create).toHaveBeenCalled()
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'GUARDRAIL',
+        output: expect.objectContaining({ rule: 'AUTO_ROLE_RESTRICTED' }),
+      }),
+    )
+  })
+
+  it('should keep AUTO when the role has the tool listed', async () => {
+    setup({
+      tools: [{ toolName: 'crm_create_task', mode: 'AUTO' }],
+      rounds: [{ toolCalls: [call('crm_create_task')] }, { text: 'Feito.' }],
+    })
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      restricted('LIST', ['crm_create_task']),
+    )
+    vi.mocked(MembershipRepository.findByUserAndWorkspace).mockResolvedValue(
+      ok(createFakeMembership({ role: 'ADMIN' }) as never),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(createExecute).toHaveBeenCalled()
+  })
+
+  it('should treat an owner without membership as the most restricted role', async () => {
+    setup({
+      tools: [{ toolName: 'crm_create_task', mode: 'AUTO' }],
+      rounds: [{ toolCalls: [call('crm_create_task')] }],
+    })
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      restricted('NONE'),
+    )
+    vi.mocked(MembershipRepository.findByUserAndWorkspace).mockResolvedValue(
+      ok(null),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('waiting')
+  })
+
+  it('should fail when the owner membership cannot be loaded', async () => {
+    setup()
+    vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(
+      restricted('NONE'),
+    )
+    vi.mocked(MembershipRepository.findByUserAndWorkspace).mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('failed')
+  })
+})
+
+describe('executeSteelAgentRun — external MCP tools (A8)', () => {
+  const server = createFakeSteelMcpServer({
+    workspaceId: 'ws1',
+    allowedTools: ['list_issues', 'create_issue'],
+  })
+
+  it('should offer an allow-listed MCP tool and run a read through the server', async () => {
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      ok([server]),
+    )
+    vi.mocked(SteelMcpServerRepository).findById.mockResolvedValue(ok(server))
+    vi.mocked(callMcpTool).mockResolvedValue(
+      ok({ text: '3 issues abertas', isError: false }),
+    )
+    const { fake } = setup({
+      tools: [{ toolName: 'mcp_github__list_issues', mode: 'APPROVAL' }],
+      rounds: [
+        { toolCalls: [call('mcp_github__list_issues', { repo: 'a/b' })] },
+        { text: 'Há 3 issues.' },
+      ],
+    })
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(fake.requests[0].tools?.map((t) => t.name)).toEqual([
+      'mcp_github__list_issues',
+    ])
+    expect(callMcpTool).toHaveBeenCalledWith(
+      expect.objectContaining({ url: server.url }),
+      'list_issues',
+      { repo: 'a/b' },
+    )
+  })
+
+  it('should send an MCP write to approval instead of running it', async () => {
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      ok([server]),
+    )
+    setup({
+      tools: [{ toolName: 'mcp_github__create_issue', mode: 'APPROVAL' }],
+      rounds: [
+        { toolCalls: [call('mcp_github__create_issue', { title: 'Bug' })] },
+      ],
+    })
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('waiting')
+    expect(callMcpTool).not.toHaveBeenCalled()
+    expect(pending.create).toHaveBeenCalledWith(
+      expect.objectContaining({ toolName: 'mcp_github__create_issue' }),
+    )
+  })
+
+  it('should fail the run when the MCP tools cannot be loaded', async () => {
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      err(databaseError('x')),
+    )
+    setup()
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('failed')
+  })
+})
+
+describe('executeSteelAgentRun — delegation (A7)', () => {
+  const target = {
+    id: 'agent2',
+    name: 'Especialista CRM',
+    description: 'Cuida do funil',
+    enabled: true,
+  }
+
+  /** Parent run1 (agent1) delegating to child1 (agent2). */
+  function delegating(
+    rounds: (Partial<AiChatResponse> | Error)[],
+    options: {
+      childFinal?: Partial<ReturnType<typeof childRun>>
+      childOutcome?: Run
+      runDepth?: number
+    } = {},
+  ) {
+    const { run, fake } = setup({
+      rounds,
+      run: { depth: options.runDepth ?? 0 },
+    })
+    const queued = childRun({ status: 'QUEUED' })
+    const final = childRun({
+      status: 'SUCCEEDED',
+      summary: 'Lead qualificado.',
+      costUsd: new Prisma.Decimal(0.5),
+      ...options.childFinal,
+    })
+    let reads = 0
+    runs.findForExecution.mockImplementation(async (id) => {
+      if (id === 'run1') return ok(run)
+      reads++
+      return ok(reads === 1 ? queued : final)
+    })
+    runs.create.mockResolvedValue(ok(queued))
+    vi.mocked(SteelAgentDelegateRepository).listTargets.mockImplementation(
+      async (id) => ok(id === 'agent1' ? [target] : []),
+    )
+    return { run, fake }
+  }
+
+  function childRun(overrides: Record<string, unknown>) {
+    return createFakeSteelAgentRunWithAgent(
+      {
+        id: 'child1',
+        workspaceId: 'ws1',
+        parentRunId: 'run1',
+        depth: 1,
+        triggerPayload: {
+          task: 'Qualifique o lead 42',
+          delegatedBy: {
+            agentId: 'agent1',
+            agentName: 'Agente',
+            runId: 'run1',
+          },
+        } as never,
+        ...overrides,
+      },
+      {
+        id: 'agent2',
+        workspaceId: 'ws1',
+        ownerId: 'owner2',
+        name: 'Especialista CRM',
+        tools: [],
+      },
+    )
+  }
+
+  it('should run the delegated agent inline, sum its cost and report back', async () => {
+    const { fake } = delegating([
+      {
+        toolCalls: [
+          call('delegate_to_agent', {
+            agentId: 'agent2',
+            task: 'Qualifique o lead 42',
+          }),
+        ],
+      },
+      { text: 'Delegado e concluído.' },
+      { text: 'Tudo certo.' },
+    ])
+
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+
+    expect(fake.requests[0].tools?.map((t) => t.name)).toContain(
+      'delegate_to_agent',
+    )
+    expect(runs.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentId: 'agent2',
+        parentRunId: 'run1',
+        depth: 1,
+        isTest: false,
+        triggerPayload: expect.objectContaining({
+          task: 'Qualifique o lead 42',
+        }),
+      }),
+    )
+    // The child's first message is the delegation, not a trigger.
+    expect(fake.requests[1].messages[0]).toEqual(
+      expect.objectContaining({
+        content: expect.stringContaining('Tarefa delegada'),
+      }),
+    )
+    const parentUpdate = runs.update.mock.calls
+      .map((c) => c[1] as Record<string, unknown>)
+      .filter((u) => u.status === 'SUCCEEDED')
+      .at(-1)
+    // 0.25 own price + 0.5 delegated, with the delegated part reported apart.
+    expect(parentUpdate?.costUsd).toEqual({ increment: 0.75 })
+    expect(parentUpdate?.delegatedCostUsd).toEqual({ increment: 0.5 })
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'TOOL',
+        toolName: 'delegate_to_agent',
+        status: 'OK',
+        output: expect.objectContaining({
+          childRunId: 'child1',
+          childAgentId: 'agent2',
+          childStatus: 'SUCCEEDED',
+        }),
+      }),
+    )
+  })
+
+  it('should inherit test mode so a delegated write is only simulated', async () => {
+    const { run } = setup({
+      run: { isTest: true },
+      rounds: [
+        {
+          toolCalls: [
+            call('delegate_to_agent', { agentId: 'agent2', task: 't' }),
+          ],
+        },
+        { text: 'ok' },
+        { text: 'fim' },
+      ],
+    })
+    let reads = 0
+    runs.findForExecution.mockImplementation(async (id) => {
+      if (id === 'run1') return ok(run)
+      reads++
+      return ok(
+        childRun({
+          status: reads === 1 ? 'QUEUED' : 'SUCCEEDED',
+          isTest: true,
+        }),
+      )
+    })
+    vi.mocked(SteelAgentDelegateRepository).listTargets.mockImplementation(
+      async (id) => ok(id === 'agent1' ? [target] : []),
+    )
+    runs.create.mockResolvedValue(ok(childRun({ status: 'QUEUED' })))
+    await executeSteelAgentRun('run1')
+    expect(runs.create).toHaveBeenCalledWith(
+      expect.objectContaining({ isTest: true }),
+    )
+  })
+
+  it('should surface a child that is waiting for approval as done with a note', async () => {
+    delegating(
+      [
+        {
+          toolCalls: [
+            call('delegate_to_agent', { agentId: 'agent2', task: 't' }),
+          ],
+        },
+        { text: 'Proponho a ação.' },
+        { text: 'Aguardando.' },
+      ],
+      {
+        childFinal: {
+          status: 'WAITING_APPROVAL',
+          summary: 'Proposta pendente',
+        },
+      },
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toolName: 'delegate_to_agent',
+        status: 'OK',
+        output: expect.objectContaining({ childStatus: 'WAITING_APPROVAL' }),
+      }),
+    )
+  })
+
+  it('should report a failed or skipped child as a tool error', async () => {
+    delegating(
+      [
+        {
+          toolCalls: [
+            call('delegate_to_agent', { agentId: 'agent2', task: 't' }),
+          ],
+        },
+        { text: 'x' },
+        { text: 'Não deu.' },
+      ],
+      {
+        childFinal: {
+          status: 'SKIPPED',
+          summary: null,
+          error: null,
+          costUsd: new Prisma.Decimal(0),
+        },
+      },
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toolName: 'delegate_to_agent',
+        status: 'FAILED',
+        error: 'A delegação não foi concluída.',
+      }),
+    )
+  })
+
+  it('should refuse invalid args and targets outside the delegate list', async () => {
+    delegating([
+      { toolCalls: [call('delegate_to_agent', { agentId: 'agent2' })] },
+      {
+        toolCalls: [
+          call('delegate_to_agent', { agentId: 'stranger', task: 't' }),
+        ],
+      },
+      { text: 'Desisti.' },
+    ])
+    await executeSteelAgentRun('run1')
+    expect(runs.create).not.toHaveBeenCalled()
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'GUARDRAIL',
+        output: expect.objectContaining({ rule: 'DELEGATION_REFUSED' }),
+      }),
+    )
+  })
+
+  it('should refuse a cycle, a too deep chain and too many delegations', async () => {
+    delegating([
+      {
+        toolCalls: [
+          call('delegate_to_agent', { agentId: 'agent2', task: 't' }),
+        ],
+      },
+      { text: 'fim' },
+    ])
+    vi.mocked(SteelAgentDelegateRepository).runChain.mockResolvedValue(
+      ok(['agent2', 'agent1']),
+    )
+    await executeSteelAgentRun('run1')
+    expect(runs.create).not.toHaveBeenCalled()
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'FAILED',
+        error: expect.stringContaining('ciclo'),
+      }),
+    )
+  })
+
+  it('should not even offer the tool at the maximum depth', async () => {
+    const { fake } = delegating([{ text: 'Fim.' }], { runDepth: 3 })
+    await executeSteelAgentRun('run1')
+    expect(fake.requests[0].tools?.map((t) => t.name)).not.toContain(
+      'delegate_to_agent',
+    )
+    expect(
+      vi.mocked(SteelAgentDelegateRepository).listTargets,
+    ).not.toHaveBeenCalled()
+  })
+
+  it('should cap the delegations of one run', async () => {
+    const calls = Array.from({ length: 6 }, (_, i) => ({
+      id: `d${i}`,
+      name: 'delegate_to_agent',
+      arguments: { agentId: 'agent2', task: `t${i}` },
+    }))
+    const { run } = delegating([{ toolCalls: calls }, { text: 'Fim.' }])
+    runs.findForExecution.mockImplementation(async (id) =>
+      ok(id === 'run1' ? run : childRun({ status: 'SUCCEEDED' })),
+    )
+    vi.mocked(SteelAgentDelegateRepository).runChain.mockResolvedValue(
+      ok(['agent1']),
+    )
+    await executeSteelAgentRun('run1')
+    expect(runs.create).toHaveBeenCalledTimes(5)
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'FAILED',
+        error: expect.stringContaining('Limite de 5 delegações'),
+      }),
+    )
+  })
+
+  it('should fail the call when the child run cannot be created', async () => {
+    delegating([
+      {
+        toolCalls: [
+          call('delegate_to_agent', { agentId: 'agent2', task: 't' }),
+        ],
+      },
+      { text: 'ok' },
+    ])
+    runs.create.mockResolvedValue(err(databaseError('x')))
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(steps.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toolName: 'delegate_to_agent',
+        status: 'FAILED',
+      }),
+    )
+  })
+
+  it('should fail the run when the delegation targets cannot be loaded', async () => {
+    setup()
+    vi.mocked(SteelAgentDelegateRepository).listTargets.mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('failed')
+  })
+
+  it('should skip paused targets', async () => {
+    const { fake } = setup({ rounds: [{ text: 'ok' }] })
+    vi.mocked(SteelAgentDelegateRepository).listTargets.mockResolvedValue(
+      ok([{ ...target, enabled: false }]),
+    )
+    await executeSteelAgentRun('run1')
+    expect(fake.requests[0].tools?.map((t) => t.name)).not.toContain(
+      'delegate_to_agent',
+    )
+  })
+
+  it('should read the chain failure as a single-agent chain', async () => {
+    delegating([
+      {
+        toolCalls: [
+          call('delegate_to_agent', { agentId: 'agent2', task: 't' }),
+        ],
+      },
+      { text: 'ok' },
+      { text: 'fim' },
+    ])
+    vi.mocked(SteelAgentDelegateRepository).runChain.mockResolvedValue(
+      err(databaseError('x')),
+    )
+    expect(expectOk(await executeSteelAgentRun('run1'))).toBe('succeeded')
+    expect(runs.create).toHaveBeenCalled()
   })
 })

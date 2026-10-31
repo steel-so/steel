@@ -518,6 +518,8 @@ model Workspace {
   crmAiConversations        CrmAiConversation[]
   crmAiUsage                CrmAiUsage[]
   aiSettings                WorkspaceAiSettings?
+  steelAgentPolicy          SteelAgentPolicy?
+  steelMcpServers           SteelMcpServer[]
   aiGuardrails              WorkspaceAiGuardrails?
   aiUserPreferences         UserAiPreference[]
   aiUsage                   AiUsage[]
@@ -8269,6 +8271,9 @@ model SteelAgent {
   runs      SteelAgentRun[]
   assignments SteelAgentAssignment[]
   versions  SteelAgentVersion[]
+  /// A7: agents this one may delegate to, and the agents allowed to delegate to it.
+  delegates   SteelAgentDelegate[] @relation("SteelAgentDelegator")
+  delegatedBy SteelAgentDelegate[] @relation("SteelAgentDelegateTarget")
 
   simulations SteelAgentSimulation[]
 
@@ -8320,6 +8325,12 @@ model SteelAgentRun {
   rerunOfId      String?               @map("rerun_of_id")
   /// A2: version that served this run (null = test runs and pre-A2 runs).
   versionId      String?               @map("version_id")
+  /// A7: run that delegated to this one (plain id, no FK: the trace outlives it).
+  parentRunId    String?               @map("parent_run_id")
+  /// A7: delegation depth (0 = the run was not delegated).
+  depth          Int                   @default(0)
+  /// A7: cost of delegated runs, already included in `costUsd`.
+  delegatedCostUsd Decimal             @default(0) @map("delegated_cost_usd") @db.Decimal(14, 6)
   createdAt      DateTime              @default(now()) @map("created_at")
   updatedAt      DateTime              @updatedAt @map("updated_at")
 
@@ -8332,6 +8343,7 @@ model SteelAgentRun {
   @@index([agentId, createdAt])
   @@index([workspaceId, status])
   @@index([agentId, versionId])
+  @@index([parentRunId])
   @@map("steel_agent_runs")
 }
 
@@ -12089,4 +12101,74 @@ model SdStatusMaintenancePage {
   @@index([pageId])
   @@index([workspaceId])
   @@map("sd_status_maintenance_pages")
+}
+
+// nov: ai-governance
+
+/// A6 + A8: governance of the Steel Agents of a workspace. One row per
+/// workspace, created on demand. `killedAt` is the emergency switch (no agent
+/// runs while it is set); the restrict flags turn on who may create agents and
+/// which tools each role may run in AUTO mode (off = RBAC only, as before).
+model SteelAgentPolicy {
+  id               String    @id @default(cuid())
+  workspaceId      String    @unique @map("workspace_id")
+  killedAt         DateTime? @map("killed_at")
+  killedById       String?   @map("killed_by_id")
+  killReason       String?   @map("kill_reason") @db.Text
+  restrictCreators Boolean   @default(false) @map("restrict_creators")
+  creatorRoles     Role[]    @map("creator_roles")
+  restrictAuto     Boolean   @default(false) @map("restrict_auto")
+  /// `{ [role]: { mode: 'ALL' | 'NONE' | 'LIST', tools: string[] } }`
+  autoRules        Json?     @map("auto_rules")
+  updatedById      String?   @map("updated_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("steel_agent_policies")
+}
+
+/// A7: an agent may call `targetAgentId` as a tool.
+model SteelAgentDelegate {
+  id            String   @id @default(cuid())
+  agentId       String   @map("agent_id")
+  targetAgentId String   @map("target_agent_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  agent  SteelAgent @relation("SteelAgentDelegator", fields: [agentId], references: [id], onDelete: Cascade)
+  target SteelAgent @relation("SteelAgentDelegateTarget", fields: [targetAgentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, targetAgentId])
+  @@index([targetAgentId])
+  @@map("steel_agent_delegates")
+}
+
+/// A8: external MCP server (Streamable HTTP) the workspace's agents may call.
+/// The auth header value is encrypted with CONNECTION_SECRETS and never
+/// returned. `toolsCache` is what the last discovery found; `allowedTools`
+/// is the allow-list (an empty list exposes nothing).
+model SteelMcpServer {
+  id                 String    @id @default(cuid())
+  workspaceId        String    @map("workspace_id")
+  name               String
+  /// Prefix of the tool names (`mcp_<slug>__<tool>`), unique per workspace.
+  slug               String
+  url                String
+  authHeaderName     String    @default("Authorization") @map("auth_header_name")
+  encryptedAuthValue String?   @map("encrypted_auth_value") @db.Text
+  enabled            Boolean   @default(true)
+  allowedTools       String[]  @map("allowed_tools")
+  toolsCache         Json?     @map("tools_cache")
+  discoveredAt       DateTime? @map("discovered_at")
+  lastError          String?   @map("last_error") @db.Text
+  createdById        String?   @map("created_by_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@map("steel_mcp_servers")
 }

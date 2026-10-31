@@ -16,6 +16,7 @@ import { registerServiceDeskKnowledgePaths } from './paths/servicedesk-knowledge
 import { registerSdTicketPaths } from './paths/servicedesk-tickets'
 import { registerSettingsExportsWorklogsPaths } from './paths/settings-exports-worklogs'
 import { registerSteelAgentsPaths } from './paths/steel-agents'
+import { registerSteelAgentsGovernancePaths } from './paths/steel-agents-governance'
 import { registerSteelAiPaths } from './paths/steel-ai'
 import { registerSteelAiInsightsPaths } from './paths/steel-ai-insights'
 import { registerSteelAiKnowledgePaths } from './paths/steel-ai-knowledge'
@@ -51,6 +52,7 @@ export function createRegistry(): OpenApiRegistry {
   registerSteelAiSkillsPaths(registry)
   registerSteelAiTemplatesPaths(registry)
   registerSteelAgentsPaths(registry)
+  registerSteelAgentsGovernancePaths(registry)
   registerSearchPaths(registry)
   registerWikiPaths(registry)
   registerWhiteboardPaths(registry)

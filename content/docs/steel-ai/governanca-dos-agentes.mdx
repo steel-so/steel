@@ -1,0 +1,72 @@
+---
+title: Governança dos agentes
+description: Inventário dos agentes com responsável, taxa de aprovação e custo, desligamento de emergência, delegação entre agentes, servidores MCP externos e quem pode criar agentes ou usar o modo automático.
+section: steel-ai
+order: 12
+---
+
+A tela **Steel AI › Agentes › Governança** reúne tudo o que o administrador
+precisa para responder "o que cada agente pode fazer, quem responde por ele e
+quanto ele entrega".
+
+<Callout type='admin'>
+  O painel abre para quem gerencia agentes. Pausar tudo, definir permissões e
+  cadastrar servidores MCP é só do dono e dos administradores. Tudo fica na
+  auditoria.
+</Callout>
+
+## Inventário
+
+Cada agente aparece com:
+
+- o **responsável** humano e o perfil dele (agentes cujo responsável saiu do
+  workspace ficam marcados, porque não rodam);
+- as ferramentas liberadas e quais rodam sozinhas;
+- as **taxas de aprovação e de rejeição** das ações que ele propôs (ações que
+  expiraram sem decisão não entram na conta);
+- o **custo** no período e o custo por escrita aplicada, para comparar com o
+  que ele realmente fez;
+- avisos: escreve sozinho, usa servidor externo, delega a outros agentes.
+
+Use **Exportar CSV** para o registro das atividades de tratamento da LGPD: o
+arquivo diz quais módulos cada agente acessa, se trata dados pessoais e se
+contata terceiros ou sistemas externos. A exportação fica na auditoria.
+
+## Desligamento de emergência
+
+**Pausar todos os agentes** interrompe tudo de uma vez: execuções na fila e
+aprovações pendentes são canceladas, as que estão rodando param na próxima
+rodada e nenhuma aprovação executa. O que já foi alterado continua valendo e a
+configuração dos agentes não muda. **Retomar agentes** libera de novo. As
+execuções de teste continuam permitidas.
+
+## Delegação entre agentes
+
+No editor do agente, a seção **Delegação a outros agentes** deixa um agente
+entregar uma tarefa a outro como se fosse uma ferramenta. O outro agente age
+com o próprio responsável e as próprias ferramentas e devolve um resumo. Limites:
+até 3 níveis, nenhum agente repete na mesma cadeia, até 5 delegações por
+execução e 10 destinos por agente. O custo do agente delegado é somado à
+execução principal, e um teste delega em modo de teste. Uma escrita feita por
+agente nunca dispara agentes de novo.
+
+## Servidores MCP externos
+
+Na aba **Servidores MCP** você conecta servidores externos (Slack, GitHub,
+Google…) por HTTPS. A credencial é guardada cifrada e nunca volta para a tela.
+Depois de cadastrar, escolha **uma a uma** as ferramentas que os agentes podem
+usar; nenhuma vem liberada. Ferramentas que não são só de leitura pedem
+aprovação como qualquer escrita. Endereços privados, locais ou sem HTTPS são
+recusados.
+
+## Quem cria agentes e o modo automático
+
+Na aba **Permissões**:
+
+- **Quem pode criar agentes**: administradores sempre podem; libere Membro ou
+  Leitor se quiser. Quem cria edita e exclui só os próprios agentes.
+- **Modo automático por perfil**: para Administrador, Membro e Leitor, escolha
+  todas as ferramentas, só algumas ou nenhuma. Vale ao salvar o agente e quando
+  ele roda (pelo perfil do responsável): se o perfil não libera, a escrita vai
+  para aprovação. O proprietário nunca é limitado e exclusões sempre pedem
+  aprovação.

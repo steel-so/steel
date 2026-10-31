@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeSteelAgentVersion } from '@/src/__tests__/factories/nov-a2-agent-versions.factory'
 import {
+  createFakeSteelAgentPolicy,
+  createFakeSteelMcpServer,
+} from '@/src/__tests__/factories/nov-ai-governance.factory'
+import {
   createFakeSteelAgentRun,
   createFakeSteelAgentRunDetail,
   createFakeSteelAgentRunStep,
@@ -52,13 +56,19 @@ vi.mock('@/src/repositories/ai-settings.repository')
 vi.mock('@/src/services/steel-agent-version.service')
 vi.mock('@/src/lib/steel-agents/enqueue')
 
+vi.mock('@/src/repositories/steel-agent-governance.repository')
+vi.mock('@/src/repositories/steel-mcp-server.repository')
+
 import { enqueueSteelAgentRun } from '@/src/lib/steel-agents/enqueue'
 import { WorkspaceAiSettingsRepository } from '@/src/repositories/ai-settings.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import {
+  SteelAgentDelegateRepository,
   SteelAgentRepository,
   SteelAgentRunRepository,
 } from '@/src/repositories/steel-agent.repository'
+import { SteelAgentPolicyRepository } from '@/src/repositories/steel-agent-governance.repository'
+import { SteelMcpServerRepository } from '@/src/repositories/steel-mcp-server.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { assertMember } from '@/src/services/authz'
 import { SteelAgentVersionService } from '@/src/services/steel-agent-version.service'
@@ -66,6 +76,8 @@ import { SteelAgentService } from '../steel-agent.service'
 
 const member = vi.mocked(assertMember)
 const agents = vi.mocked(SteelAgentRepository)
+const delegates = vi.mocked(SteelAgentDelegateRepository)
+const policies = vi.mocked(SteelAgentPolicyRepository)
 const runs = vi.mocked(SteelAgentRunRepository)
 const memberships = vi.mocked(MembershipRepository)
 const settings = vi.mocked(WorkspaceAiSettingsRepository)
@@ -126,6 +138,10 @@ const baseCreate = () =>
   })
 
 beforeEach(() => {
+  vi.mocked(SteelAgentPolicyRepository).find.mockResolvedValue(ok(null))
+  vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(ok([]))
+  delegates.existingInWorkspace.mockResolvedValue(ok([]))
+  delegates.edges.mockResolvedValue(ok([]))
   registry.tools = [
     tool('sd_list_tickets', 'READ', 'SERVICE_DESK'),
     tool('crm_delete_task', 'DELETE', 'CRM'),
@@ -265,10 +281,7 @@ describe('SteelAgentService.create', () => {
     const dto = expectOk(
       await SteelAgentService.create('admin1', 'ws1', baseCreate()),
     )
-    expect(member).toHaveBeenCalledWith('admin1', 'ws1', {
-      resource: 'steel-agents',
-      action: 'CREATE',
-    })
+    expect(member).toHaveBeenCalledWith('admin1', 'ws1')
     const data = agents.create.mock.calls[0][0]
     expect(data).toEqual(
       expect.objectContaining({
@@ -409,6 +422,8 @@ describe('SteelAgentService.update', () => {
         cron: null,
         nextRunAt: null,
       }),
+      undefined,
+      undefined,
     )
     expect(result.version).toEqual(
       expect.objectContaining({ number: 2, status: 'PUBLISHED' }),
@@ -551,10 +566,7 @@ describe('SteelAgentService.delete', () => {
       await SteelAgentService.delete('admin1', 'ws1', 'agent1'),
     )
     expect(dto.id).toBe('agent1')
-    expect(member).toHaveBeenCalledWith('admin1', 'ws1', {
-      resource: 'steel-agents',
-      action: 'DELETE',
-    })
+    expect(member).toHaveBeenCalledWith('admin1', 'ws1')
   })
 
   it('should propagate errors', async () => {
@@ -811,5 +823,324 @@ describe('SteelAgentService runs', () => {
       await SteelAgentService.getRun('u1', 'ws1', 'agent1', 'run1'),
       'DATABASE_ERROR',
     )
+  })
+})
+
+describe('SteelAgentService — governance policy (A6/A8) and delegation (A7)', () => {
+  it('should refuse real runs while the emergency switch is on, but allow tests', async () => {
+    policies.find.mockResolvedValue(
+      ok(createFakeSteelAgentPolicy({ killedAt: new Date() })),
+    )
+    expectErr(
+      await SteelAgentService.runNow('admin1', 'ws1', 'agent1'),
+      'STEEL_AGENTS_PAUSED',
+    )
+    expectOk(await SteelAgentService.testRun('admin1', 'ws1', 'agent1'))
+    policies.find.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentService.runNow('admin1', 'ws1', 'agent1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should let the creators policy open creation to a role and refuse the others', async () => {
+    member.mockResolvedValue(ok(MEMBER))
+    expectErr(
+      await SteelAgentService.create('m1', 'ws1', baseCreate()),
+      'FORBIDDEN',
+    )
+    policies.find.mockResolvedValue(
+      ok(
+        createFakeSteelAgentPolicy({
+          restrictCreators: true,
+          creatorRoles: ['MEMBER'],
+        }),
+      ),
+    )
+    expectOk(await SteelAgentService.create('m1', 'ws1', baseCreate()))
+
+    policies.find.mockResolvedValue(
+      ok(createFakeSteelAgentPolicy({ restrictCreators: true })),
+    )
+    expectErr(
+      await SteelAgentService.create('m1', 'ws1', baseCreate()),
+      'STEEL_AGENT_CREATE_FORBIDDEN',
+    )
+    policies.find.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentService.create('m1', 'ws1', baseCreate()),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should let a creator change only the agents they created', async () => {
+    member.mockResolvedValue(ok(MEMBER))
+    policies.find.mockResolvedValue(
+      ok(
+        createFakeSteelAgentPolicy({
+          restrictCreators: true,
+          creatorRoles: ['MEMBER'],
+        }),
+      ),
+    )
+    agents.findById.mockResolvedValue(ok({ ...AGENT, createdById: 'm1' }))
+    expectOk(
+      await SteelAgentService.update('m1', 'ws1', 'agent1', { name: 'Novo' }),
+    )
+    expectOk(await SteelAgentService.delete('m1', 'ws1', 'agent1'))
+
+    agents.findById.mockResolvedValue(ok({ ...AGENT, createdById: 'other' }))
+    expectErr(
+      await SteelAgentService.update('m1', 'ws1', 'agent1', { name: 'Novo' }),
+      'FORBIDDEN',
+    )
+    expectErr(
+      await SteelAgentService.delete('m1', 'ws1', 'agent1'),
+      'FORBIDDEN',
+    )
+
+    policies.find.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentService.update('m1', 'ws1', 'agent1', { name: 'Novo' }),
+      'DATABASE_ERROR',
+    )
+    expectErr(
+      await SteelAgentService.delete('m1', 'ws1', 'agent1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should block a newly automatic write the role cannot run in AUTO', async () => {
+    registry.tools = [
+      ...registry.tools,
+      tool('crm_update_task', 'UPDATE', 'CRM'),
+    ]
+    modules.listByWorkspace.mockResolvedValue(
+      ok([{ module: 'CRM', enabled: true }] as never),
+    )
+    policies.find.mockResolvedValue(
+      ok(
+        createFakeSteelAgentPolicy({
+          restrictAuto: true,
+          autoRules: {
+            ADMIN: { mode: 'LIST', tools: [] },
+            MEMBER: { mode: 'NONE', tools: [] },
+            VIEWER: { mode: 'NONE', tools: [] },
+          },
+        }),
+      ),
+    )
+    const body = {
+      ...baseCreate(),
+      tools: [{ toolName: 'crm_update_task', mode: 'AUTO' as const }],
+    }
+    expectErr(
+      await SteelAgentService.create('admin1', 'ws1', body),
+      'STEEL_AGENT_AUTO_NOT_ALLOWED',
+    )
+    // READ tools and approval-mode writes are fine.
+    expectOk(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...body,
+        tools: [
+          { toolName: 'ws_overview', mode: 'AUTO' },
+          { toolName: 'crm_update_task', mode: 'APPROVAL' },
+        ],
+      }),
+    )
+    // Editing: a tool that was already automatic is left alone.
+    agents.findById.mockResolvedValue(
+      ok({
+        ...AGENT,
+        tools: [
+          createFakeSteelAgentTool({
+            toolName: 'crm_update_task',
+            mode: 'AUTO',
+          }),
+        ],
+      }),
+    )
+    expectOk(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        tools: [{ toolName: 'crm_update_task', mode: 'AUTO' }],
+      }),
+    )
+    agents.findById.mockResolvedValue(ok(AGENT))
+    expectErr(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        tools: [{ toolName: 'crm_update_task', mode: 'AUTO' }],
+      }),
+      'STEEL_AGENT_AUTO_NOT_ALLOWED',
+    )
+  })
+
+  it('should validate delegates: workspace, self, limit and cycles', async () => {
+    delegates.existingInWorkspace.mockResolvedValue(ok(['a2']))
+    const created = expectOk(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...baseCreate(),
+        delegateAgentIds: ['a2', 'a2'],
+      }),
+    )
+    expect(created.id).toBeTruthy()
+    expect(agents.create.mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({ delegateIds: ['a2'] }),
+    )
+
+    delegates.existingInWorkspace.mockResolvedValue(ok([]))
+    expectErr(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...baseCreate(),
+        delegateAgentIds: ['ghost'],
+      }),
+      'STEEL_AGENT_DELEGATE_INVALID',
+    )
+    expectErr(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        delegateAgentIds: ['agent1'],
+      }),
+      'STEEL_AGENT_DELEGATE_INVALID',
+    )
+    expectErr(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        delegateAgentIds: Array.from({ length: 11 }, (_, i) => `x${i}`),
+      }),
+      'STEEL_AGENT_DELEGATE_INVALID',
+    )
+  })
+
+  it('should reject a delegation that closes a cycle and accept an acyclic one', async () => {
+    delegates.existingInWorkspace.mockResolvedValue(ok(['a2']))
+    delegates.edges.mockResolvedValue(
+      ok([
+        { agentId: 'a2', targetAgentId: 'a3' },
+        { agentId: 'a3', targetAgentId: 'agent1' },
+        { agentId: 'agent1', targetAgentId: 'old' },
+      ]),
+    )
+    expectErr(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        delegateAgentIds: ['a2'],
+      }),
+      'STEEL_AGENT_DELEGATE_INVALID',
+    )
+    delegates.edges.mockResolvedValue(
+      ok([
+        { agentId: 'a2', targetAgentId: 'a3' },
+        { agentId: 'a3', targetAgentId: 'a2' },
+      ]),
+    )
+    expectOk(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        delegateAgentIds: ['a2'],
+      }),
+    )
+    expect(agents.update.mock.calls.at(-1)?.[3]).toEqual(['a2'])
+
+    delegates.existingInWorkspace.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        delegateAgentIds: ['a2'],
+      }),
+      'DATABASE_ERROR',
+    )
+    delegates.existingInWorkspace.mockResolvedValue(ok(['a2']))
+    delegates.edges.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentService.update('admin1', 'ws1', 'agent1', {
+        delegateAgentIds: ['a2'],
+      }),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should expose the caller capabilities and the MCP tools in the catalog', async () => {
+    const server = createFakeSteelMcpServer({
+      workspaceId: 'ws1',
+      allowedTools: ['list_issues', 'create_issue'],
+    })
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      ok([server]),
+    )
+    policies.find.mockResolvedValue(
+      ok(
+        createFakeSteelAgentPolicy({
+          restrictAuto: true,
+          autoRules: {
+            ADMIN: { mode: 'LIST', tools: ['mcp_github__list_issues'] },
+            MEMBER: { mode: 'NONE', tools: [] },
+            VIEWER: { mode: 'NONE', tools: [] },
+          },
+        }),
+      ),
+    )
+    const catalog = expectOk(await SteelAgentService.catalog('admin1', 'ws1'))
+    const external = catalog.tools.filter((t) => t.external)
+    expect(external.map((t) => t.name)).toEqual([
+      'mcp_github__list_issues',
+      'mcp_github__create_issue',
+    ])
+    expect(external.map((t) => t.kind)).toEqual(['READ', 'ACTION'])
+    expect(catalog.canCreate).toBe(true)
+    expect(catalog.autoRestricted).toBe(true)
+    expect(catalog.autoAllowedTools).toEqual(['mcp_github__list_issues'])
+
+    policies.find.mockResolvedValue(ok(null))
+    expect(
+      expectOk(await SteelAgentService.catalog('admin1', 'ws1'))
+        .autoAllowedTools,
+    ).toBeNull()
+    policies.find.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await SteelAgentService.catalog('admin1', 'ws1'),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('should accept an MCP tool in an agent and use its kind in the DTO', async () => {
+    const server = createFakeSteelMcpServer({
+      workspaceId: 'ws1',
+      allowedTools: ['create_issue'],
+    })
+    vi.mocked(SteelMcpServerRepository).listByWorkspace.mockResolvedValue(
+      ok([server]),
+    )
+    expectOk(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...baseCreate(),
+        tools: [{ toolName: 'mcp_github__create_issue', mode: 'AUTO' }],
+      }),
+    )
+    expect(agents.create.mock.calls.at(-1)?.[0].tools).toEqual([
+      { toolName: 'mcp_github__create_issue', mode: 'AUTO' },
+    ])
+    // A tool that is not on the allow-list is unknown.
+    expectErr(
+      await SteelAgentService.create('admin1', 'ws1', {
+        ...baseCreate(),
+        tools: [{ toolName: 'mcp_github__list_issues', mode: 'AUTO' }],
+      }),
+      'STEEL_AGENT_INVALID_TOOL',
+    )
+  })
+
+  it('should label the delegation tool in a run trace', async () => {
+    runs.findDetail.mockResolvedValue(
+      ok(
+        createFakeSteelAgentRunDetail({
+          agentId: 'agent1',
+          steps: [
+            createFakeSteelAgentRunStep({
+              kind: 'TOOL',
+              toolName: 'delegate_to_agent',
+            }),
+          ],
+        }),
+      ),
+    )
+    const run = expectOk(
+      await SteelAgentService.getRun('admin1', 'ws1', 'agent1', 'run1'),
+    )
+    expect(run.steps[0].toolLabel).toBe('Delegar a outro agente')
   })
 })
