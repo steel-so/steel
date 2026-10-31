@@ -10,9 +10,14 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/crm-meeting.repository')
 vi.mock('@/lib/axiom/logger')
+const { cacheGet, cacheSet, connect } = vi.hoisted(() => ({
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
+  connect: vi.fn(),
+}))
 vi.mock('@/src/lib/redis', () => ({
-  ensureRedisConnected: vi.fn(async () => undefined),
-  redis: { get: vi.fn(), set: vi.fn() },
+  ensureRedisConnected: connect,
+  redis: { get: cacheGet, set: cacheSet },
 }))
 vi.mock('@/src/lib/crypto', () => ({
   decryptConnectionSecret: vi.fn(async (v: string) => v.replace('enc:', '')),
@@ -26,7 +31,6 @@ vi.mock('@/src/lib/crm-meetings/ics-fetch', async (importOriginal) => ({
 
 import { fetchIcs } from '@/src/lib/crm-meetings/ics-fetch'
 import { decryptConnectionSecret } from '@/src/lib/crypto'
-import { ensureRedisConnected, redis } from '@/src/lib/redis'
 import { CrmMeetingRepository } from '@/src/repositories/crm-meeting.repository'
 import {
   freeHostsAt,
@@ -36,7 +40,6 @@ import {
 
 const repo = vi.mocked(CrmMeetingRepository)
 const fetchFeed = vi.mocked(fetchIcs)
-const cache = vi.mocked(redis)
 
 // Monday 2026-11-09 12:00 UTC = 09:00 in São Paulo (UTC-3).
 const NOW = new Date('2026-11-08T12:00:00Z')
@@ -58,12 +61,12 @@ const ICS = (start: string, end: string) =>
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(ensureRedisConnected).mockResolvedValue(undefined)
+  connect.mockResolvedValue(undefined)
   vi.mocked(decryptConnectionSecret).mockImplementation(async (v: string) =>
     v.replace('enc:', ''),
   )
-  cache.get.mockResolvedValue(null)
-  cache.set.mockResolvedValue('OK' as never)
+  cacheGet.mockResolvedValue(null)
+  cacheSet.mockResolvedValue('OK')
   repo.busyOf.mockResolvedValue(ok(new Map()))
   repo.recordIcsCheck.mockResolvedValue(undefined)
 })
@@ -171,7 +174,7 @@ describe('planPageSlots()', () => {
       expect(plan.slots.has(new Date('2026-11-09T13:00:00Z').getTime())).toBe(
         true,
       )
-      expect(cache.set).toHaveBeenCalledWith(
+      expect(cacheSet).toHaveBeenCalledWith(
         expect.stringContaining('crm-meetings:ics:'),
         expect.any(String),
         { EX: 300 },
@@ -184,7 +187,7 @@ describe('planPageSlots()', () => {
 
     it('should read the feed from the cache when present', async () => {
       withFeed()
-      cache.get.mockResolvedValue(ICS('20261109T120000Z', '20261109T130000Z'))
+      cacheGet.mockResolvedValue(ICS('20261109T120000Z', '20261109T130000Z'))
 
       const plan = expectOk(await planPageSlots(page, FROM, TO, NOW))
 
@@ -196,8 +199,8 @@ describe('planPageSlots()', () => {
 
     it('should still work when Redis is down', async () => {
       withFeed()
-      vi.mocked(ensureRedisConnected).mockRejectedValue(new Error('down'))
-      cache.set.mockRejectedValue(new Error('down'))
+      connect.mockRejectedValue(new Error('down'))
+      cacheSet.mockRejectedValue(new Error('down'))
       fetchFeed.mockResolvedValue({
         ok: true,
         text: ICS('20261109T120000Z', '20261109T130000Z'),
