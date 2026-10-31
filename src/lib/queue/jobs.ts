@@ -35,6 +35,7 @@ export const QueueName = {
   CrmHealth: 'crm-health',
   CrmDuplicates: 'crm-duplicates',
   CrmMeetings: 'crm-meetings',
+  CrmDeals: 'crm-deals',
   ServicedeskTaskReminders: 'servicedesk-task-reminders',
   SteelAgents: 'steel-agents',
   Notifications: 'notifications',
@@ -681,6 +682,21 @@ export type CrmHealthJob = (typeof CrmHealthJob)[keyof typeof CrmHealthJob]
 
 export type CrmHealthJobPayload = {
   [CrmHealthJob.Recompute]: { workspaceId?: string }
+}
+
+/**
+ * CRM deals (nov: crm-deals, C9): daily scan of the customer contracts. It
+ * warns the owner when one enters the renewal window, opens the renewal deal
+ * on its own, rolls auto-renewing contracts forward and expires the ended.
+ */
+export const CrmDealsJob = {
+  RenewalScan: 'renewal-scan',
+} as const
+
+export type CrmDealsJob = (typeof CrmDealsJob)[keyof typeof CrmDealsJob]
+
+export type CrmDealsJobPayload = {
+  [CrmDealsJob.RenewalScan]: { workspaceId?: string }
 }
 
 /**

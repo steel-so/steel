@@ -2368,3 +2368,38 @@ export const aiActionInProgress = (): AppError =>
     'AI_ACTION_IN_PROGRESS',
     'Esta mesma ação já está em andamento. Aguarde alguns instantes.',
   )
+
+// ─── nov: crm-deals ─────────────────────────────────────────────────────────
+
+export const crmDealsPaymentDisabled = (): AppError =>
+  appError(
+    'CRM_DEALS_PAYMENT_DISABLED',
+    'A cobrança na proposta está desligada. Um administrador pode ativá-la em CRM › Configurações.',
+  )
+
+export const crmProposalChargeNotFound = (): AppError =>
+  appError('CRM_PROPOSAL_CHARGE_NOT_FOUND', 'Cobrança da proposta não encontrada')
+
+export const crmProposalChargeInvalid = (message: string): AppError =>
+  appError('CRM_PROPOSAL_CHARGE_INVALID', message)
+
+export const crmProposalSignatureRequired = (): AppError =>
+  appError(
+    'CRM_PROPOSAL_SIGNATURE_REQUIRED',
+    'Esta proposta precisa ser aceita com assinatura digital',
+  )
+
+export const crmProposalSignatureNotFound = (): AppError =>
+  appError('CRM_PROPOSAL_SIGNATURE_NOT_FOUND', 'Assinatura não encontrada')
+
+export const crmDealRoomNotFound = (): AppError =>
+  appError('CRM_DEAL_ROOM_NOT_FOUND', 'Sala de negociação não encontrada')
+
+export const crmDealRoomInvalid = (message: string): AppError =>
+  appError('CRM_DEAL_ROOM_INVALID', message)
+
+export const crmContractNotFound = (): AppError =>
+  appError('CRM_CONTRACT_NOT_FOUND', 'Contrato não encontrado')
+
+export const crmContractInvalid = (message: string): AppError =>
+  appError('CRM_CONTRACT_INVALID', message)

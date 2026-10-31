@@ -310,6 +310,12 @@ export type AuditEntity =
   // nov-health-scores
   | 'crm_customer_health'
   | 'crm_opportunity_health'
+  // nov: crm-deals
+  | 'crm_proposal_charge'
+  | 'crm_proposal_signature'
+  | 'crm_deals_settings'
+  | 'crm_deal_room'
+  | 'crm_contract'
 
 export type AuditAction =
   | 'create'

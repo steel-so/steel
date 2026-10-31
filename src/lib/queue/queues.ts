@@ -25,6 +25,8 @@ import {
   type CrmCompetitorSyncJobPayload,
   type CrmDuplicatesJob,
   type CrmDuplicatesJobPayload,
+  type CrmDealsJob,
+  type CrmDealsJobPayload,
   type CrmHealthJob,
   type CrmHealthJobPayload,
   type CrmMeetingsJob,
@@ -151,6 +153,7 @@ let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
 let crmCadencesQueue: Queue | null = null
 let crmHealthQueue: Queue | null = null
+let crmDealsQueue: Queue | null = null
 let crmDuplicatesQueue: Queue | null = null
 let crmMeetingsQueue: Queue | null = null
 let crmSocialPostsTickQueue: Queue | null = null
@@ -934,6 +937,7 @@ export async function closeQueues(): Promise<void> {
     crmTaskRemindersQueue?.close(),
     crmCadencesQueue?.close(),
     crmHealthQueue?.close(),
+    crmDealsQueue?.close(),
     crmDuplicatesQueue?.close(),
     crmMeetingsQueue?.close(),
     servicedeskTaskRemindersQueue?.close(),
@@ -968,6 +972,7 @@ export async function closeQueues(): Promise<void> {
   crmTaskRemindersQueue = null
   crmCadencesQueue = null
   crmHealthQueue = null
+  crmDealsQueue = null
   crmDuplicatesQueue = null
   crmMeetingsQueue = null
   crmSocialPostsTickQueue = null
@@ -1054,6 +1059,25 @@ export function getCrmHealthQueue(): Queue<
     CrmHealthJobPayload[CrmHealthJob],
     unknown,
     CrmHealthJob
+  >
+}
+
+/** CRM contract renewals scan (nov: crm-deals). */
+export function getCrmDealsQueue(): Queue<
+  CrmDealsJobPayload[CrmDealsJob],
+  unknown,
+  CrmDealsJob
+> {
+  if (!crmDealsQueue) {
+    crmDealsQueue = new Queue(QueueName.CrmDeals, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmDealsQueue as Queue<
+    CrmDealsJobPayload[CrmDealsJob],
+    unknown,
+    CrmDealsJob
   >
 }
 
@@ -1345,6 +1369,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
   [QueueName.CrmCadences]: getCrmCadencesQueue,
   [QueueName.CrmHealth]: getCrmHealthQueue,
+  [QueueName.CrmDeals]: getCrmDealsQueue,
   [QueueName.CrmDuplicates]: getCrmDuplicatesQueue,
   [QueueName.CrmMeetings]: getCrmMeetingsQueue,
   [QueueName.ServicedeskTaskReminders]: getServicedeskTaskRemindersQueue,

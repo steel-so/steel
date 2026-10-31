@@ -143,6 +143,9 @@ export const CrmMeetingsCron = '*/5 * * * *' as const
 /** CRM health scores: hourly, at minute 20 (off the :00 and :15 peaks). */
 export const CrmHealthCron = '20 * * * *' as const
 
+/** CRM contract renewals: daily at 06:30 (before the sales day starts). */
+export const CrmDealsCron = '30 6 * * *' as const
+
 /** Sales cadences: due steps run every minute. */
 export const CrmCadencesCron = '* * * * *' as const
 

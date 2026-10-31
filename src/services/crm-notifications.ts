@@ -465,3 +465,65 @@ export function notifyCrmOpportunityAtRisk(
     dedupeKey: `crm-opportunity-health:${input.opportunity.id}:${input.computedAt.toISOString()}`,
   })
 }
+
+// ─── nov: crm-deals ─────────────────────────────────────────────────────────
+
+/** C6: a proposal charge was paid and the deal was won. */
+export function notifyCrmProposalPaid(input: {
+  workspaceId: string
+  proposal: ProposalRef
+  amountLabel: string
+  dealWon: boolean
+}): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.proposal.responsibleId],
+    actorId: null,
+    kind: 'CRM_PROPOSAL_PAID',
+    title: `Pagamento recebido: ${input.proposal.name}`,
+    body: input.dealWon
+      ? `${input.amountLabel} recebido. O negócio foi marcado como ganho.`
+      : `${input.amountLabel} recebido.`,
+    path: proposalPath(input.proposal.id),
+    dedupeKey: `crm-proposal-paid:${input.proposal.id}:${input.amountLabel}`,
+  })
+}
+
+/** C9: a contract is inside the renewal window (once per contract). */
+export function notifyCrmContractExpiring(input: {
+  workspaceId: string
+  contractId: string
+  recipientId: string | null | undefined
+  companyId: string
+  body: string
+}): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.recipientId],
+    actorId: null,
+    kind: 'CRM_CONTRACT_EXPIRING',
+    title: 'Contrato perto de vencer',
+    body: input.body,
+    path: '/crm/renewals',
+    dedupeKey: `crm-contract-expiring:${input.contractId}`,
+  })
+}
+
+/** C8: the customer wrote in the deal room. */
+export function notifyCrmDealRoomMessage(input: {
+  workspaceId: string
+  opportunity: { id: string; name: string; ownerId: string | null }
+  authorName: string
+  dedupeKey: string
+}): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.opportunity.ownerId],
+    actorId: null,
+    kind: 'CRM_DEAL_ROOM_ACTIVITY',
+    title: `Mensagem na sala: ${input.opportunity.name}`,
+    body: `${input.authorName} escreveu na sala de negociação.`,
+    path: opportunityPath(input.opportunity.id),
+    dedupeKey: input.dedupeKey,
+  })
+}

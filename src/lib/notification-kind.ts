@@ -263,6 +263,24 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'alarm',
     color: 'orange',
   },
+  CRM_CONTRACT_EXPIRING: {
+    module: 'CRM',
+    label: 'Contrato perto de vencer',
+    icon: 'alarm',
+    color: 'amber',
+  },
+  CRM_PROPOSAL_PAID: {
+    module: 'CRM',
+    label: 'Proposta paga',
+    icon: 'deal',
+    color: 'emerald',
+  },
+  CRM_DEAL_ROOM_ACTIVITY: {
+    module: 'CRM',
+    label: 'Atividade na sala de negociação',
+    icon: 'proposal',
+    color: 'sky',
+  },
   CRM_PROPOSAL_VIEWED: {
     module: 'CRM',
     label: 'Proposta visualizada',

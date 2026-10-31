@@ -12593,6 +12593,7 @@ model SdWfmSettings {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("sd_wfm_settings")
+}
 
 // nov: crm-deals
 
