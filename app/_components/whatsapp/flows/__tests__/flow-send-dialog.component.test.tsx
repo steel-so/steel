@@ -15,6 +15,15 @@ configure({ asyncUtilTimeout: 10_000 })
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
 
+
+// Base UI only commits a mouse selection that started on the item itself, so a
+// pointerdown must precede the click (without it the test passes only by luck).
+async function chooseOption(name: string | RegExp) {
+  const item = await screen.findByRole('option', { name })
+  fireEvent.pointerDown(item, { pointerType: 'mouse' })
+  fireEvent.click(item)
+}
+
 const BASE = '/api/workspaces/ws_1/whatsapp/flows'
 
 const flow = (overrides = {}) => ({
@@ -59,7 +68,7 @@ describe('<FlowSendDialog />', () => {
     fireEvent.click(await screen.findByRole('combobox', { name: 'Formulário' }))
     // The one that is not sendable is not offered.
     expect(screen.queryByRole('option', { name: /Rascunho/ })).toBeNull()
-    fireEvent.click(await screen.findByRole('option', { name: 'Cadastro' }))
+    await chooseOption('Cadastro')
     expect(await screen.findByText(/Preencha o cadastro/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar formulário' }))
@@ -128,7 +137,7 @@ describe('<FlowSendDialog />', () => {
       />,
     )
     fireEvent.click(await screen.findByRole('combobox', { name: 'Formulário' }))
-    fireEvent.click(await screen.findByRole('option', { name: 'Cadastro' }))
+    await chooseOption('Cadastro')
     fireEvent.click(screen.getByRole('button', { name: 'Enviar formulário' }))
     await waitFor(() => expect(notify.error).toHaveBeenCalled())
     expect(onOpenChange).not.toHaveBeenCalled()
