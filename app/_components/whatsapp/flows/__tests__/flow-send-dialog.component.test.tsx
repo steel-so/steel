@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   fetchBody,
@@ -8,6 +8,9 @@ import {
 import { FlowSendDialog } from '../flow-send-dialog'
 
 vi.setConfig({ testTimeout: 20_000 })
+// findBy*/waitFor default to 1 s, too short for the select to mount on a loaded
+// CI runner; this file failed intermittently in unrelated pull requests.
+configure({ asyncUtilTimeout: 10_000 })
 
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
