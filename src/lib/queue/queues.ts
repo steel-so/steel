@@ -17,6 +17,8 @@ import {
   type CrmApolloImportJobPayload,
   type CrmCadencesJob,
   type CrmCadencesJobPayload,
+  type WhatsappAutomationsJob,
+  type WhatsappAutomationsJobPayload,
   type CrmCampaignsJob,
   type CrmCampaignsJobPayload,
   type CrmCnpjEnrichmentJob,
@@ -155,6 +157,7 @@ let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
 let crmTaskRemindersQueue: Queue | null = null
 let crmCadencesQueue: Queue | null = null
+let whatsappAutomationsQueue: Queue | null = null
 let crmHealthQueue: Queue | null = null
 let crmDealsQueue: Queue | null = null
 let crmDuplicatesQueue: Queue | null = null
@@ -957,6 +960,7 @@ export async function closeQueues(): Promise<void> {
     servicedeskIntegrationsQueue?.close(),
     crmTaskRemindersQueue?.close(),
     crmCadencesQueue?.close(),
+    whatsappAutomationsQueue?.close(),
     crmHealthQueue?.close(),
     crmDealsQueue?.close(),
     crmDuplicatesQueue?.close(),
@@ -992,6 +996,7 @@ export async function closeQueues(): Promise<void> {
   crmProposalExpiryQueue = null
   crmTaskRemindersQueue = null
   crmCadencesQueue = null
+  whatsappAutomationsQueue = null
   crmHealthQueue = null
   crmDealsQueue = null
   crmDuplicatesQueue = null
@@ -1099,6 +1104,25 @@ export function getCrmDealsQueue(): Queue<
     CrmDealsJobPayload[CrmDealsJob],
     unknown,
     CrmDealsJob
+  >
+}
+
+/** Store events and appointment messages (zap-ecom). */
+export function getWhatsappAutomationsQueue(): Queue<
+  WhatsappAutomationsJobPayload[WhatsappAutomationsJob],
+  unknown,
+  WhatsappAutomationsJob
+> {
+  if (!whatsappAutomationsQueue) {
+    whatsappAutomationsQueue = new Queue(QueueName.WhatsappAutomations, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return whatsappAutomationsQueue as Queue<
+    WhatsappAutomationsJobPayload[WhatsappAutomationsJob],
+    unknown,
+    WhatsappAutomationsJob
   >
 }
 
@@ -1389,6 +1413,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.ServicedeskIntegrations]: getServicedeskIntegrationsQueue,
   [QueueName.CrmTaskReminders]: getCrmTaskRemindersQueue,
   [QueueName.CrmCadences]: getCrmCadencesQueue,
+  [QueueName.WhatsappAutomations]: getWhatsappAutomationsQueue,
   [QueueName.CrmHealth]: getCrmHealthQueue,
   [QueueName.CrmDeals]: getCrmDealsQueue,
   [QueueName.CrmDuplicates]: getCrmDuplicatesQueue,

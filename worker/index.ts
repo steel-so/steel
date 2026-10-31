@@ -16,6 +16,7 @@ import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmApolloImport } from '../src/lib/queue/processors/crm-apollo-import'
 import { processCrmCadences } from '../src/lib/queue/processors/crm-cadences'
+import { processWhatsappAutomations } from '../src/lib/queue/processors/whatsapp-automations'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
 import { processCrmCnpjEnrichment } from '../src/lib/queue/processors/crm-cnpj-enrichment'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
@@ -73,6 +74,7 @@ import {
   scheduleAiProactiveJobs,
   scheduleAiUsageWeeklyEmailJobs,
   scheduleCrmCadencesJobs,
+  scheduleWhatsappAutomationsJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
   scheduleCrmDuplicatesJobs,
@@ -288,6 +290,9 @@ async function main(): Promise<void> {
     registerWorker(QueueName.CrmTaskReminders, processCrmTaskReminders),
   )
   workers.push(registerWorker(QueueName.CrmCadences, processCrmCadences))
+  workers.push(
+    registerWorker(QueueName.WhatsappAutomations, processWhatsappAutomations),
+  )
   workers.push(registerWorker(QueueName.CrmHealth, processCrmHealth))
   workers.push(registerWorker(QueueName.CrmDeals, processCrmDeals))
   workers.push(registerWorker(QueueName.CrmDuplicates, processCrmDuplicates))
@@ -359,6 +364,7 @@ async function main(): Promise<void> {
   await scheduleServicedeskIntegrationsJobs()
   await scheduleCrmTaskRemindersJobs()
   await scheduleCrmCadencesJobs()
+  await scheduleWhatsappAutomationsJobs()
   await scheduleCrmHealthJobs()
   await scheduleCrmDealsJobs()
   await scheduleCrmDuplicatesJobs()

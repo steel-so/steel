@@ -4,6 +4,7 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 const env = vi.hoisted(() => ({
   PIX_PROVIDER: 'mock' as string | undefined,
   PIX_WEBHOOK_SECRET: 'secret-secret-secret' as string | undefined,
+  ABACATE_PAY_CANCEL_PATH: undefined as string | undefined,
 }))
 vi.mock('@/lib/env/server', () => env)
 

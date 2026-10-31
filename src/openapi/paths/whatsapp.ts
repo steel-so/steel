@@ -5,6 +5,7 @@ import { archiveRoutes } from './whatsapp/archives'
 import { broadcastRoutes } from './whatsapp/broadcasts'
 import { buttonRoutes } from './whatsapp/buttons'
 import { chatbotRoutes } from './whatsapp/chatbots'
+import { commerceRoutes } from './whatsapp/commerce'
 import { connectionRoutes } from './whatsapp/connections'
 import { contactRoutes } from './whatsapp/contacts'
 import { conversationRoutes } from './whatsapp/conversations'
@@ -54,6 +55,7 @@ const routes: RouteConfig[] = [
   ...pixRoutes,
   ...widgetRoutes,
   ...metaChannelRoutes,
+  ...commerceRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

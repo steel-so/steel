@@ -1,6 +1,7 @@
 import {
   AiMagicIcon,
   BotIcon,
+  Calendar03Icon,
   ChartHistogramIcon,
   Chatting01Icon,
   DashboardSquare01Icon,
@@ -8,6 +9,8 @@ import {
   Megaphone01Icon,
   Settings02Icon,
   Shapes01Icon,
+  ShoppingBag01Icon,
+  ShoppingCart01Icon,
   StarIcon,
   Task01Icon,
   UserGroup03Icon,
@@ -75,6 +78,15 @@ export default async function ZapLayout({
           </NavItem>
           <NavItem href={`${base}/flows`} icon={Task01Icon}>
             Formulários
+          </NavItem>
+          <NavItem href={`${base}/catalogo`} icon={ShoppingBag01Icon}>
+            Catálogo
+          </NavItem>
+          <NavItem href={`${base}/lojas`} icon={ShoppingCart01Icon}>
+            Lojas
+          </NavItem>
+          <NavItem href={`${base}/agenda`} icon={Calendar03Icon}>
+            Agenda
           </NavItem>
         </NavGroup>
         <NavGroup>
