@@ -2485,3 +2485,12 @@ export const aiProcedureLimitReached = (limit: number): AppError =>
     'AI_PROCEDURE_LIMIT_REACHED',
     `O workspace atingiu o limite de ${limit} procedimentos`,
   )
+
+export const boletoProviderError = (message?: string): AppError =>
+  appError(
+    'BOLETO_PROVIDER_ERROR',
+    message ?? 'O provedor de boleto não respondeu. Tente de novo em instantes.',
+  )
+
+export const boletoWebhookInvalid = (): AppError =>
+  appError('BOLETO_WEBHOOK_INVALID', 'Autenticação do webhook de boleto inválida')

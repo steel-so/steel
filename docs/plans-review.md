@@ -43,6 +43,7 @@ em `src/lib/billing.ts`). Com a flag desligada:
 - Plano e trial definidos pelo admin global continuam funcionando. Na
   exclusão de workspace, uma assinatura `PAID`/`PENDING` antiga vira tentativa
   `FAILED` (o provedor não é chamado) e barra a exclusão — o admin pode forçar.
+- Webhook na API v2 do AbacatePay: cadastre `https://<host>/api/payment/webhook?webhookSecret=<ABACATE_PAY_WEBHOOK_SECRET>`; o Steel confere o segredo da URL e o header `X-Webhook-Signature` (HMAC-SHA256 base64). O antigo header `x-webhook-secret` não é mais aceito.
 - `ABACATE_PAY` e `ABACATE_PAY_WEBHOOK_SECRET` ficam opcionais e passam a ser
   obrigatórias no boot assim que `BILLING_ENABLED=true`.
 

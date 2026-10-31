@@ -121,10 +121,10 @@ const SECURITY_SCHEMES: Record<string, JsonSchema> = {
   },
   abacatePayWebhookSecret: {
     type: 'apiKey',
-    in: 'header',
-    name: 'x-webhook-secret',
+    in: 'query',
+    name: 'webhookSecret',
     description:
-      'Segredo compartilhado com a AbacatePay, comparado em tempo constante.',
+      'API v2 da AbacatePay: segredo na URL cadastrada do webhook (`?webhookSecret=`), comparado em tempo constante, mais o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru).',
   },
   statusCollectorSecret: {
     type: 'apiKey',

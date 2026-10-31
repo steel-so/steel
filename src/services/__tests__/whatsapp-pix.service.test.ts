@@ -873,7 +873,11 @@ describe('WhatsAppPixService.handleWebhook()', () => {
       await WhatsAppPixService.handleWebhook('mock', headers, '{}'),
     )
     expect(result.processed).toBe(2)
-    expect(provider.parseWebhook).toHaveBeenCalledWith(headers, '{}')
+    expect(provider.parseWebhook).toHaveBeenCalledWith(
+      headers,
+      '{}',
+      expect.any(URLSearchParams),
+    )
   })
 
   it('answers 404 for an unknown provider and passes the auth error on', async () => {

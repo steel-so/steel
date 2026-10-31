@@ -103,7 +103,7 @@ export function OperationRow({ operation }: { operation: AdminOperationDTO }) {
       )}
       {operation.subscriptionsToCancel.length > 0 && (
         <p className='text-amber-700 text-xs dark:text-amber-400'>
-          Cancele no AbacatePay (sem API de cancelamento):{' '}
+          Cancele no AbacatePay (o cancelamento automático não foi feito):{' '}
           <span className='font-mono'>
             {operation.subscriptionsToCancel.map((s) => s.billId).join(', ')}
           </span>
