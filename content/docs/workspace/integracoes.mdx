@@ -191,22 +191,3 @@ Como administrador, o que você precisa saber:
 
 Instalação, comandos e exemplos estão no site de desenvolvedores, em [Steel
 CLI](/dev/cli).
-
-## n8n
-
-O **nó oficial do n8n** liga o Steel às suas automações sem código: o **Steel
-Trigger** inicia um fluxo quando um chamado, um lead, um negócio ou uma mensagem
-de WhatsApp muda, e o nó **Steel** cria chamados, leads e mensagens a partir do
-n8n. O gatilho cadastra e remove sozinho o endpoint em **Ajustes › Webhooks**
-(com a descrição `n8n: <nome do fluxo>`), então ele conta no limite de 20
-endpoints.
-
-Para o administrador:
-
-- O gatilho exige um token de API **Ler e alterar** de um **dono ou
-  administrador** do workspace. Crie em **Configurações › Segurança** (veja
-  [Tokens de API](/docs/seguranca/tokens-de-api)) e revogue em **Ajustes › Apps
-  conectados** se o n8n sair de uso.
-- O n8n precisa estar em **HTTPS** público para receber os eventos.
-
-Instalação e exemplos: [Nó do n8n](/dev/n8n).

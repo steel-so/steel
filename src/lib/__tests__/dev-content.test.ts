@@ -133,7 +133,6 @@ describe('developer guides (content/dev)', () => {
       '/dev/cli/scripts-e-ci',
       '/dev/cli/webhooks',
       '/dev/sdk',
-      '/dev/n8n',
       '/dev/mcp',
       '/dev/mcp/escrita',
       '/dev/mcp/oauth',
