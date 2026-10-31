@@ -253,6 +253,7 @@ export const WhatsAppCatalogOrderService = {
     if (!stored.ok) return stored
     // A webhook retry: the first delivery did everything.
     if (!stored.value) return ok({ handled: true })
+    const orderId = stored.value.id
 
     let crm: CrmOutcome = { leadId: null, opportunityId: null }
     if (settings.value.orderCreatesOpportunity && settings.value.ownerUserId) {
@@ -261,7 +262,7 @@ export const WhatsAppCatalogOrderService = {
         ownerUserId: settings.value.ownerUserId,
         pipelineId: settings.value.orderPipelineId,
         contact: input.contact,
-        orderId: stored.value.id,
+        orderId,
         lines: lines.value,
         total,
       })
@@ -274,7 +275,7 @@ export const WhatsAppCatalogOrderService = {
         workspaceId: input.workspaceId,
         conversationId: input.conversationId,
         amount: total,
-        description: `Pedido pelo WhatsApp (${lines.value.length} item${lines.value.length > 1 ? 'ns' : ''})`,
+        description: `Pedido pelo WhatsApp (${lines.value.length} ${lines.value.length > 1 ? 'itens' : 'item'})`,
         opportunityId: crm.opportunityId ?? undefined,
       })
       if (!charge.ok) {
@@ -284,12 +285,12 @@ export const WhatsAppCatalogOrderService = {
         })
         return
       }
-      await WhatsAppCatalogOrderRepository.update(stored.value.id, {
+      await WhatsAppCatalogOrderRepository.update(orderId, {
         pixChargeId: charge.value.id,
       })
     }
 
-    await WhatsAppCatalogOrderRepository.update(stored.value.id, {
+    await WhatsAppCatalogOrderRepository.update(orderId, {
       leadId: crm.leadId,
       opportunityId: crm.opportunityId,
     })

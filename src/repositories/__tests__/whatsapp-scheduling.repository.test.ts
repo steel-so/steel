@@ -284,7 +284,7 @@ describe('WhatsAppSchedAppointmentRepository', () => {
         vi.spyOn(model as never, method as never).mockRejectedValue(boom as never)
       }
     }
-    vi.spyOn(prisma.whatsAppSchedAppointment, 'count').mockRejectedValue(boom)
+    vi.spyOn(prisma.whatsAppSchedAppointment as never, 'count' as never).mockRejectedValue(boom as never)
     vi.spyOn(prisma, '$transaction').mockRejectedValue(boom)
     const now = new Date()
     const r = [

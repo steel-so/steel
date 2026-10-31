@@ -127,9 +127,9 @@ export const WhatsAppEcomTriggerRepository = {
         await prisma.whatsAppEcomTrigger.upsert({
           where: { workspaceId_kind: { workspaceId, kind } },
           create: {
+            ...(data as Prisma.WhatsAppEcomTriggerUncheckedCreateInput),
             workspaceId,
             kind,
-            ...(data as Prisma.WhatsAppEcomTriggerUncheckedCreateInput),
           },
           update: data,
         }),

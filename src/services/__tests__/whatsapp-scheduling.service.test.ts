@@ -1200,8 +1200,8 @@ describe('parseFlowDate', () => {
   it('reads ISO text and epoch values', () => {
     expect(parseFlowDate('2026-11-04')).toBe('2026-11-04')
     expect(parseFlowDate('2026-11-04T10:00:00Z')).toBe('2026-11-04')
-    expect(parseFlowDate(1793750400000)).toBe('2026-11-05')
-    expect(parseFlowDate('1793750400')).toBe('2026-11-05')
+    expect(parseFlowDate(1793750400000)).toBe('2026-11-04')
+    expect(parseFlowDate('1793750400')).toBe('2026-11-04')
     expect(parseFlowDate('quarta')).toBeNull()
     expect(parseFlowDate(null)).toBeNull()
   })

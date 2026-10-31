@@ -48,7 +48,10 @@ describe('commerce mappers', () => {
     })
     expect(
       toWhatsAppCommerceSettingsDTO('ws1', {
-        ...({} as never),
+        id: 'x',
+        workspaceId: 'ws1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
         catalogEnabled: false,
         metaCatalogId: null,
         catalogSource: 'CRM',

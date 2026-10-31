@@ -137,7 +137,7 @@ async function assertServicesExist(
 function hoursOf(professional: SchedProfessionalWithServices): WeeklyHours {
   const value = professional.workingHours
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as WeeklyHours)
+    ? (value as unknown as WeeklyHours)
     : {}
 }
 

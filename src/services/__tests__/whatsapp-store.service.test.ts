@@ -606,8 +606,8 @@ describe('tick', () => {
   const event = (over = {}) =>
     createFakeEcomEventWithStore({
       integration,
+      scheduledAt: new Date(now.getTime() - 60_000),
       ...over,
-      ...{},
     } as never)
   const claimed = (...events: ReturnType<typeof event>[]) =>
     eventRepo.claimDue.mockResolvedValue(ok(events))

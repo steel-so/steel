@@ -75,7 +75,7 @@ export function toWhatsAppSchedProfessionalDTO(
     typeof row.workingHours === 'object' &&
     row.workingHours !== null &&
     !Array.isArray(row.workingHours)
-      ? (row.workingHours as WhatsAppSchedWeeklyHoursDTO)
+      ? (row.workingHours as unknown as WhatsAppSchedWeeklyHoursDTO)
       : {}
   return {
     id: row.id,
