@@ -2,107 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   CreateSdInventoryDiscoveryRangeSchema,
   CreateSdInventorySnmpTargetSchema,
-  CreateSdInventoryTokenSchema,
   ListSdInventoryAlertsSchema,
   ListSdInventoryDevicesSchema,
   ListSdInventorySoftwareSchema,
   MergeSdInventoryDeviceSchema,
-  PublishSdInventoryAgentReleaseSchema,
-  SdInventoryAgentDownloadQuerySchema,
-  SdInventoryAgentIdSchema,
-  SdInventoryAgentVersionQuerySchema,
-  SdInventoryReportSchema,
-  SdInventoryTokenValueSchema,
   UpdateSdInventoryDiscoveryRangeSchema,
   UpdateSdInventorySettingsSchema,
   UpdateSdInventorySnmpTargetSchema,
 } from '../sd-inventory.schema'
-
-const minimal = { agentId: 'abcdefgh1234', hostname: 'PC-01' }
-
-describe('SdInventoryReportSchema', () => {
-  it('fills defaults for a minimal report', () => {
-    const parsed = SdInventoryReportSchema.parse(minimal)
-    expect(parsed).toMatchObject({
-      agentVersion: null,
-      os: { name: null, version: null, arch: null },
-      hardware: { manufacturer: null, serialNumber: null },
-      ipAddresses: [],
-      macAddresses: [],
-      disks: [],
-      software: [],
-    })
-  })
-
-  it('trims text and turns empty strings into null', () => {
-    const parsed = SdInventoryReportSchema.parse({
-      ...minimal,
-      hostname: '  PC-01  ',
-      os: { name: '', version: ' 11 ', arch: 'amd64' },
-      software: [{ name: ' Firefox ', publisher: '' }],
-    })
-    expect(parsed.hostname).toBe('PC-01')
-    expect(parsed.os).toEqual({ name: null, version: '11', arch: 'amd64' })
-    expect(parsed.software).toEqual([
-      { name: 'Firefox', version: '', publisher: null },
-    ])
-  })
-
-  it.each([
-    ['short agent id', { agentId: 'abc' }],
-    ['agent id with spaces', { agentId: 'abcdefgh 1234' }],
-    ['empty hostname', { hostname: '  ' }],
-    ['negative RAM', { hardware: { ramTotalMb: -1 } }],
-    ['fractional RAM', { hardware: { ramTotalMb: 1.5 } }],
-    ['disk without mount', { disks: [{ mount: '', totalMb: 1, usedMb: 0 }] }],
-    ['software without name', { software: [{ name: '' }] }],
-  ])('rejects %s', (_label, patch) => {
-    expect(
-      SdInventoryReportSchema.safeParse({ ...minimal, ...patch }).success,
-    ).toBe(false)
-  })
-
-  it('caps the list sizes', () => {
-    const disks = Array.from({ length: 65 }, (_, i) => ({
-      mount: `/m${i}`,
-      totalMb: 1,
-      usedMb: 0,
-    }))
-    expect(
-      SdInventoryReportSchema.safeParse({ ...minimal, disks }).success,
-    ).toBe(false)
-    const software = Array.from({ length: 5001 }, (_, i) => ({ name: `p${i}` }))
-    expect(
-      SdInventoryReportSchema.safeParse({ ...minimal, software }).success,
-    ).toBe(false)
-  })
-})
-
-describe('token schemas', () => {
-  it('accepts base64url tokens and rejects the rest', () => {
-    expect(SdInventoryTokenValueSchema.safeParse('A'.repeat(43)).success).toBe(
-      true,
-    )
-    expect(SdInventoryTokenValueSchema.safeParse('short').success).toBe(false)
-    expect(
-      SdInventoryTokenValueSchema.safeParse(`${'A'.repeat(30)}!`).success,
-    ).toBe(false)
-    expect(SdInventoryAgentIdSchema.safeParse('a'.repeat(81)).success).toBe(
-      false,
-    )
-  })
-
-  it('requires a name to create a token', () => {
-    expect(
-      CreateSdInventoryTokenSchema.safeParse({ name: ' Matriz ' }).data,
-    ).toEqual({
-      name: 'Matriz',
-    })
-    expect(CreateSdInventoryTokenSchema.safeParse({ name: '' }).success).toBe(
-      false,
-    )
-  })
-})
 
 describe('UpdateSdInventorySettingsSchema', () => {
   it('accepts partial updates inside the allowed ranges', () => {
@@ -324,7 +231,7 @@ describe('discovery ranges', () => {
   })
 })
 
-describe('merge, device filters and agent update', () => {
+describe('merge and device filters', () => {
   it('needs the target device id', () => {
     expect(MergeSdInventoryDeviceSchema.safeParse({}).success).toBe(false)
     expect(MergeSdInventoryDeviceSchema.parse({ intoId: 'dev-1' })).toEqual({
@@ -340,53 +247,5 @@ describe('merge, device filters and agent update', () => {
         source: 'DISCOVERY',
       }),
     ).toMatchObject({ discovered: true, source: 'DISCOVERY' })
-  })
-
-  it('validates the version and download queries', () => {
-    expect(
-      SdInventoryAgentVersionQuerySchema.parse({ os: 'linux', arch: 'amd64' }),
-    ).toEqual({ os: 'linux', arch: 'amd64', current: 'dev' })
-    expect(
-      SdInventoryAgentVersionQuerySchema.safeParse({
-        os: 'plan9',
-        arch: 'amd64',
-      }).success,
-    ).toBe(false)
-    expect(
-      SdInventoryAgentDownloadQuerySchema.safeParse({
-        os: 'windows',
-        arch: 'arm64',
-        version: '2026.11.01',
-      }).success,
-    ).toBe(true)
-    expect(
-      SdInventoryAgentDownloadQuerySchema.safeParse({
-        os: 'linux',
-        arch: 'amd64',
-      }).success,
-    ).toBe(false)
-  })
-
-  it('validates a release to publish', () => {
-    expect(
-      PublishSdInventoryAgentReleaseSchema.safeParse({
-        version: '2026.11.01',
-        os: 'linux',
-        arch: 'amd64',
-      }).success,
-    ).toBe(true)
-    expect(
-      PublishSdInventoryAgentReleaseSchema.safeParse({
-        version: '../etc',
-        os: 'linux',
-        arch: 'amd64',
-      }).success,
-    ).toBe(false)
-  })
-
-  it('accepts agentAutoUpdate in the settings', () => {
-    expect(
-      UpdateSdInventorySettingsSchema.parse({ agentAutoUpdate: true }),
-    ).toEqual({ agentAutoUpdate: true })
   })
 })

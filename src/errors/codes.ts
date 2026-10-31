@@ -816,18 +816,6 @@ export const ERROR_CODES = {
     status: 422,
   },
   // ServiceDesk — inventário e descoberta de ativos (S1)
-  SD_INVENTORY_TOKEN_NOT_FOUND: {
-    code: 'SD_INVENTORY_TOKEN_NOT_FOUND',
-    status: 404,
-  },
-  SD_INVENTORY_TOKEN_INVALID: {
-    code: 'SD_INVENTORY_TOKEN_INVALID',
-    status: 401,
-  },
-  SD_INVENTORY_PAYLOAD_INVALID: {
-    code: 'SD_INVENTORY_PAYLOAD_INVALID',
-    status: 422,
-  },
   SD_INVENTORY_TARGET_NOT_FOUND: {
     code: 'SD_INVENTORY_TARGET_NOT_FOUND',
     status: 404,
@@ -850,10 +838,6 @@ export const ERROR_CODES = {
   },
   SD_INVENTORY_SNMP_CREDENTIALS_INVALID: {
     code: 'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
-    status: 422,
-  },
-  SD_INVENTORY_RELEASE_INVALID: {
-    code: 'SD_INVENTORY_RELEASE_INVALID',
     status: 422,
   },
   SD_PORTAL_LINK_INVALID: { code: 'SD_PORTAL_LINK_INVALID', status: 401 },

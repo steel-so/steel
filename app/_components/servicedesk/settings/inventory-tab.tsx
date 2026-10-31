@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  Copy01Icon,
   PencilEdit02Icon,
   PlusSignIcon,
   RefreshIcon,
@@ -24,19 +23,15 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { NEXT_PUBLIC_URL } from '@/lib/env/env'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
-  useSdInventoryAgentReleases,
   useSdInventoryDiscoveryMutations,
   useSdInventoryDiscoveryRanges,
   useSdInventorySettings,
   useSdInventorySettingsMutation,
   useSdInventoryTargetMutations,
   useSdInventoryTargets,
-  useSdInventoryTokenMutations,
-  useSdInventoryTokens,
 } from '@/src/hooks/use-sd-inventory'
 import type {
   SdInventoryDiscoveryRangeDTO,
@@ -56,113 +51,6 @@ import {
   ToggleRow,
   useSdSettingsContext,
 } from './sd-settings-kit'
-
-function publicOrigin(): string {
-  return (
-    NEXT_PUBLIC_URL ||
-    (typeof window === 'undefined' ? '' : window.location.origin)
-  )
-}
-
-async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-    notify.success('Copiado')
-  } catch {
-    notify.error('Não foi possível copiar')
-  }
-}
-
-/** Comandos de instalação do agente, já com a URL e o token. */
-export function sdInventoryInstallSnippets(origin: string, token: string) {
-  return {
-    linux: `sudo ./steel-inventory-agent install --url ${origin} --token ${token}`,
-  }
-}
-
-function CodeRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className='flex flex-col gap-1 rounded-lg bg-muted px-3 py-2'>
-      <span className='font-medium text-muted-foreground text-xs'>{label}</span>
-      <div className='flex items-center gap-2'>
-        <code className='min-w-0 flex-1 break-all text-xs'>{value}</code>
-        <Button
-          size='icon-xs'
-          variant='ghost'
-          aria-label={`Copiar: ${label}`}
-          onClick={() => void copyText(value)}
-        >
-          <SteelIcon icon={Copy01Icon} strokeWidth={2} />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/** O valor do token só existe neste diálogo. */
-function TokenDialog({
-  name,
-  token,
-  onClose,
-}: {
-  name: string
-  token: string
-  onClose: () => void
-}) {
-  const snippets = sdInventoryInstallSnippets(publicOrigin(), token)
-  return (
-    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent className='sm:max-w-2xl'>
-        <DialogHeader>
-          <DialogTitle>Token de {name}</DialogTitle>
-          <DialogDescription>
-            Copie agora: o token aparece uma única vez. Se perder, revogue e
-            crie outro.
-          </DialogDescription>
-        </DialogHeader>
-        <div className='flex flex-col gap-3'>
-          <CodeRow label='Token' value={token} />
-          <CodeRow
-            label='Instalar no Linux (como root)'
-            value={snippets.linux}
-          />
-          <p className='text-[11px] text-muted-foreground'>
-            O token vale para todas as máquinas desta workspace que o usarem.
-            Quem tem o token consegue enviar inventário: trate como senha.
-          </p>
-        </div>
-        <DialogFooter>
-          <Button size='sm' onClick={onClose}>
-            Já copiei
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function AgentReleasesNote({
-  workspaceId,
-  enabled,
-}: {
-  workspaceId: string
-  enabled: boolean
-}) {
-  const { data } = useSdInventoryAgentReleases(workspaceId, enabled)
-  if (!enabled) return null
-  const releases = data ?? []
-  return (
-    <p className='text-muted-foreground text-xs'>
-      {releases.length === 0
-        ? 'Nenhuma versão do agente foi publicada ainda: os agentes seguem na versão instalada.'
-        : `Versão publicada: ${releases
-            .map(
-              (release) => `${release.version} (${release.os}/${release.arch})`,
-            )
-            .join(', ')}.`}
-    </p>
-  )
-}
 
 function SettingsBlock({
   workspaceId,
@@ -236,139 +124,8 @@ function SettingsBlock({
             disabled={!canEdit || !data}
             onCheckedChange={(checked) => save({ syncConfigItems: checked })}
           />
-          <ToggleRow
-            label='Atualizar o agente automaticamente'
-            description='Os agentes consultam a versão publicada, baixam o novo binário, conferem o SHA-256 e voltam à versão anterior se o novo não iniciar. Desligado por padrão.'
-            checked={data?.agentAutoUpdate ?? false}
-            disabled={!canEdit || !data}
-            onCheckedChange={(checked) => save({ agentAutoUpdate: checked })}
-          />
-          <AgentReleasesNote workspaceId={workspaceId} enabled={canEdit} />
         </div>
       )}
-    </SettingsSection>
-  )
-}
-
-function TokensBlock({ workspaceId }: { workspaceId: string }) {
-  const { data, isLoading, error } = useSdInventoryTokens(workspaceId)
-  const mutations = useSdInventoryTokenMutations(workspaceId)
-  const [creating, setCreating] = useState(false)
-  const [name, setName] = useState('')
-  const [shown, setShown] = useState<{ name: string; token: string } | null>(
-    null,
-  )
-  const tokens = data ?? []
-
-  async function create() {
-    try {
-      const created = await mutations.create.mutateAsync({ name: name.trim() })
-      setShown({ name: created.name, token: created.token })
-      setCreating(false)
-      setName('')
-    } catch (err) {
-      notify.error(err)
-    }
-  }
-
-  return (
-    <SettingsSection
-      title='Agente de inventário'
-      description='O agente roda nos computadores Linux e envia hardware, software e uso de disco e memória. Cada token identifica a workspace; use um por site ou por lote de máquinas para poder revogar separado.'
-      actions={
-        <Button size='sm' onClick={() => setCreating(true)}>
-          <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-          Novo token
-        </Button>
-      }
-    >
-      {error ? (
-        <EmptyState>{error.message}</EmptyState>
-      ) : !isLoading && tokens.length === 0 ? (
-        <EmptyState>
-          Nenhum token criado. Crie um para instalar o agente nas máquinas.
-        </EmptyState>
-      ) : (
-        <ul className='flex flex-col gap-2'>
-          {tokens.map((token) => (
-            <li
-              key={token.id}
-              className={cn(
-                'flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3',
-                token.revokedAt && 'opacity-60',
-              )}
-            >
-              <div className='flex min-w-0 flex-col gap-1'>
-                <div className='flex items-center gap-2'>
-                  <span className='font-medium text-sm'>{token.name}</span>
-                  {token.revokedAt ? (
-                    <Badge variant='secondary'>Revogado</Badge>
-                  ) : null}
-                </div>
-                <span className='text-muted-foreground text-xs'>
-                  Criado em {formatInventoryDateTime(token.createdAt)} · último
-                  envio {formatInventoryDateTime(token.lastUsedAt)}
-                </span>
-              </div>
-              {token.revokedAt ? null : (
-                <ConfirmDeleteButton
-                  title='Revogar token'
-                  description={`Os agentes que usam "${token.name}" param de enviar na hora. Os equipamentos já inventariados continuam na lista.`}
-                  pending={mutations.revoke.isPending}
-                  onConfirm={() =>
-                    mutations.revoke.mutate(token.id, {
-                      onError: (err) => notify.error(err),
-                    })
-                  }
-                />
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
-            <DialogTitle>Novo token do agente</DialogTitle>
-            <DialogDescription>
-              Dê um nome que diga onde ele será usado.
-            </DialogDescription>
-          </DialogHeader>
-          <FieldBlock label='Nome'>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={120}
-              placeholder='Matriz — estações'
-              autoFocus
-            />
-          </FieldBlock>
-          <DialogFooter>
-            <Button
-              size='sm'
-              variant='outline'
-              onClick={() => setCreating(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              size='sm'
-              disabled={name.trim() === '' || mutations.create.isPending}
-              onClick={() => void create()}
-            >
-              Criar token
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {shown ? (
-        <TokenDialog
-          name={shown.name}
-          token={shown.token}
-          onClose={() => setShown(null)}
-        />
-      ) : null}
     </SettingsSection>
   )
 }
@@ -929,7 +686,7 @@ function DiscoveryBlock({ workspaceId }: { workspaceId: string }) {
   return (
     <SettingsSection
       title='Descoberta por ping e ARP'
-      description='Acha computadores e equipamentos que não têm agente nem SNMP. Cada faixa só é varrida com a opção ligada, e os achados esperam a sua adoção.'
+      description='Acha computadores e equipamentos que não têm SNMP. Cada faixa só é varrida com a opção ligada, e os achados esperam a sua adoção.'
       actions={
         <Button size='sm' onClick={() => setDialog({ mode: 'create' })}>
           <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
@@ -1039,9 +796,8 @@ function DiscoveryBlock({ workspaceId }: { workspaceId: string }) {
 
 /**
  * Aba "Inventário" das configurações do ServiceDesk: limiares de alerta, os
- * tokens do agente (mostrados uma única vez), os alvos da varredura SNMP e as
- * faixas da descoberta por ping/ARP.
- * Tokens e alvos são só de admin; os demais veem os limiares em leitura.
+ * alvos da varredura SNMP e as faixas da descoberta por ping/ARP.
+ * Alvos e faixas são só de admin; os demais veem os limiares em leitura.
  */
 export function SdInventoryTab() {
   const { workspaceId, canEdit } = useSdSettingsContext()
@@ -1051,7 +807,6 @@ export function SdInventoryTab() {
       <SettingsBlock workspaceId={workspaceId} canEdit={canEdit} />
       {canEdit ? (
         <>
-          <TokensBlock workspaceId={workspaceId} />
           <TargetsBlock workspaceId={workspaceId} />
           <DiscoveryBlock workspaceId={workspaceId} />
         </>

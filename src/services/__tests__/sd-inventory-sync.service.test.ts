@@ -64,9 +64,7 @@ function input(
     ipAddresses: ['10.0.0.20', '10.0.0.21'],
     macAddresses: [],
     disks: [{ mount: 'C:', label: null, fs: null, totalMb: 1000, usedMb: 500 }],
-    agentVersion: '1.0.0',
     software: [{ name: 'Firefox', version: '130', publisher: null }],
-    tokenId: 'tok-1',
     snmpTargetId: null,
     customerId: null,
     ...overrides,
@@ -141,7 +139,6 @@ describe('syncInventoryDevice: new device', () => {
       expect.objectContaining({
         source: 'AGENT',
         lastSeenAt: NOW,
-        tokenId: 'tok-1',
         disks: [
           { mount: 'C:', label: null, fs: null, totalMb: 1000, usedMb: 500 },
         ],

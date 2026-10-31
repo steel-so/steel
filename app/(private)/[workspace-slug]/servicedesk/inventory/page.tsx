@@ -8,7 +8,7 @@ import { SdInventoryView } from '@/app/_components/servicedesk/inventory/sd-inve
 export const metadata: Metadata = {
   title: 'Inventário | ServiceDesk | Steel',
   description:
-    'Equipamentos descobertos pelo agente, pela varredura SNMP e por ping/ARP, com hardware, software e alertas',
+    'Equipamentos descobertos pela varredura SNMP e por ping/ARP, com hardware, software e alertas',
 }
 
 export default async function SdInventoryPage({

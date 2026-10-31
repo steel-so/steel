@@ -6,89 +6,13 @@ import {
 import { booleanQuery, sdId, sdName } from './sd-config.schema'
 
 /**
- * Inventário e descoberta de ativos (S1): relatório do agente, tokens por
- * workspace, alvos de varredura SNMP, limiares e listagens.
+ * Inventário e descoberta de ativos (S1): alvos de varredura SNMP, faixas de
+ * descoberta, limiares e listagens.
  */
 
 export const SdInventorySourceEnum = z.enum(['AGENT', 'SNMP', 'DISCOVERY'])
 export const SdInventoryAlertKindEnum = z.enum(['DISK', 'RAM'])
 export const SdInventoryAlertStatusEnum = z.enum(['OPEN', 'RESOLVED'])
-
-const text = (max: number) => z.string().trim().max(max)
-const optionalText = (max: number) =>
-  text(max)
-    .optional()
-    .nullable()
-    .transform((v) => (v ? v : null))
-const megabytes = z.number().int().min(0).max(1_000_000_000)
-
-export const SdInventoryDiskSchema = z.object({
-  mount: text(120).min(1),
-  label: optionalText(120),
-  fs: optionalText(40),
-  totalMb: megabytes,
-  usedMb: megabytes,
-})
-
-export const SdInventorySoftwareItemSchema = z.object({
-  name: text(255).min(1),
-  version: text(120).optional().default(''),
-  publisher: optionalText(255),
-})
-
-/** Identidade estável do agente: gerada na primeira execução e guardada. */
-export const SdInventoryAgentIdSchema = z
-  .string()
-  .min(8)
-  .max(80)
-  .regex(/^[A-Za-z0-9._:-]+$/)
-
-/** Corpo de `POST /api/servicedesk/inventory/report`. */
-export const SdInventoryReportSchema = z.object({
-  agentId: SdInventoryAgentIdSchema,
-  agentVersion: optionalText(40),
-  hostname: text(255).min(1),
-  os: z
-    .object({
-      name: optionalText(120),
-      version: optionalText(120),
-      arch: optionalText(40),
-    })
-    .default({ name: null, version: null, arch: null }),
-  hardware: z
-    .object({
-      manufacturer: optionalText(120),
-      model: optionalText(120),
-      serialNumber: optionalText(120),
-      cpuModel: optionalText(200),
-      cpuCores: z.number().int().min(0).max(4096).optional().nullable(),
-      ramTotalMb: megabytes.optional().nullable(),
-      ramUsedMb: megabytes.optional().nullable(),
-    })
-    .default({
-      manufacturer: null,
-      model: null,
-      serialNumber: null,
-      cpuModel: null,
-    }),
-  ipAddresses: z.array(text(64).min(1)).max(32).default([]),
-  macAddresses: z.array(text(40).min(1)).max(32).default([]),
-  disks: z.array(SdInventoryDiskSchema).max(64).default([]),
-  software: z.array(SdInventorySoftwareItemSchema).max(5000).default([]),
-})
-export type SdInventoryReportDTO = z.infer<typeof SdInventoryReportSchema>
-
-/** Token do agente no cabeçalho `Authorization: Bearer`. */
-export const SdInventoryTokenValueSchema = z
-  .string()
-  .min(20)
-  .max(200)
-  .regex(/^[A-Za-z0-9_-]+$/)
-
-export const CreateSdInventoryTokenSchema = z.object({ name: sdName })
-export type CreateSdInventoryTokenDTO = z.infer<
-  typeof CreateSdInventoryTokenSchema
->
 
 const percent = z
   .number()
@@ -103,7 +27,6 @@ export const UpdateSdInventorySettingsSchema = z
     staleAfterDays: z.number().int().min(1).max(365).optional(),
     syncConfigItems: z.boolean().optional(),
     defaultTypeId: sdId.nullable().optional(),
-    agentAutoUpdate: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Informe ao menos um campo',
@@ -277,40 +200,6 @@ export type UpdateSdInventoryDiscoveryRangeDTO = z.infer<
 export const MergeSdInventoryDeviceSchema = z.object({ intoId: sdId })
 export type MergeSdInventoryDeviceDTO = z.infer<
   typeof MergeSdInventoryDeviceSchema
->
-
-/** Consulta de versão do agente (`GET .../agent/version`). */
-export const SdInventoryAgentVersionQuerySchema = z.object({
-  os: z.enum(['linux', 'windows', 'darwin']),
-  arch: z.enum(['amd64', 'arm64', '386', 'arm']),
-  current: z.string().trim().min(1).max(40).default('dev'),
-})
-export type SdInventoryAgentVersionQueryDTO = z.infer<
-  typeof SdInventoryAgentVersionQuerySchema
->
-
-/** Download do binário (`GET .../agent/download`). */
-export const SdInventoryAgentDownloadQuerySchema =
-  SdInventoryAgentVersionQuerySchema.omit({ current: true }).extend({
-    version: z.string().trim().min(1).max(40),
-  })
-export type SdInventoryAgentDownloadQueryDTO = z.infer<
-  typeof SdInventoryAgentDownloadQuerySchema
->
-
-/** Publicação de uma versão do agente (script do operador). */
-export const PublishSdInventoryAgentReleaseSchema = z.object({
-  version: z
-    .string()
-    .trim()
-    .min(1)
-    .max(40)
-    .regex(/^[A-Za-z0-9._-]+$/, 'Versão com caracteres inválidos'),
-  os: z.enum(['linux', 'windows', 'darwin']),
-  arch: z.enum(['amd64', 'arm64', '386', 'arm']),
-})
-export type PublishSdInventoryAgentReleaseDTO = z.infer<
-  typeof PublishSdInventoryAgentReleaseSchema
 >
 
 export const ListSdInventoryDevicesSchema = z.object({

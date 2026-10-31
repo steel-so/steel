@@ -426,23 +426,12 @@ convidados; o portal não a mostra).
 
 ## Inventário e descoberta de ativos (S1)
 
-A CMDB deixa de depender de cadastro manual: um **agente** nas máquinas e uma
-**varredura SNMP** do worker alimentam o inventário, e o inventário mantém os
-itens de configuração. Decisões da fatia (sem ADR próprio para não colidir na
+A CMDB deixa de depender de cadastro manual: a **varredura SNMP** e a
+**descoberta por ping/ARP** do worker alimentam o inventário, e o inventário
+mantém os itens de configuração. O agente de inventário (Go) foi removido; as
+fichas que ele criou continuam com a origem `AGENT` e ficam como estão. Decisões da fatia (sem ADR próprio para não colidir na
 numeração; viram ADR se a equipe quiser):
 
-- **Agente em Go** (`inventory-agent/`, só biblioteca padrão, um binário por
-  sistema). Linux lê `/proc`, `/sys/class/dmi`, `statfs` e `dpkg`/`rpm`.
-  Não há agente para Windows (decisão do negócio). Identidade estável =
-  SHA-256 do `machine-id`, então reinstalar não duplica a máquina. Instala
-  como serviço systemd; o CI
-  (`.github/workflows/inventory-agent.yml`) formata, testa e cruza a build.
-- **Token por workspace** (`SdInventoryToken`): 32 bytes em base64url, só o
-  SHA-256 no banco, valor mostrado **uma única vez**, revogável na hora. Vai em
-  `Authorization: Bearer`. Entrada pública `POST /api/servicedesk/inventory/report`
-  (em `PUBLIC_ROUTES`), com rate limit por IP e corpo de até 2 MB. Um token vale
-  para N máquinas; o equipamento é a chave `(workspace, externalKey)` com
-  `externalKey = agent:<agentId>`.
 - **Varredura SNMP v2c** (`servicedesk-inventory`): `scan-due` a cada 5 min
   reserva (`nextRunAt` +30 min) e enfileira os alvos vencidos; `scan-target`
   varre as faixas (CIDR/IP, até 1.024 endereços por alvo), lê sysDescr/sysName,
@@ -464,15 +453,11 @@ numeração; viram ADR se a equipe quiser):
   percentual, **fecha sozinho** ao normalizar, reabre se repetir e fecha o de
   um volume que sumiu. Hoje aparecem na tela e no contador; **abrir chamado a
   partir do alerta é a fatia S3** (Monitoramento → chamado automático).
-- **Software**: a lista do agente é substituída por inteira a cada relatório
-  (`SdInventorySoftware`); o catálogo agrupa por nome × versão com a contagem de
+- **Software**: o catálogo (`SdInventorySoftware`) vem das fichas já existentes e do SNMP; o catálogo agrupa por nome × versão com a contagem de
   equipamentos — é a base da gestão de licenças (S7). O SNMP só substitui a
   lista quando o equipamento expõe `hrSWInstalled`.
 - **Sem sinal**: derivado de `lastSeenAt` × `staleAfterDays` (padrão 7 dias);
   não há job de varredura nem mudança automática do status do item.
-- **Fora do escopo**: agente para Windows e distribuição da **primeira** instalação do agente pelo app (o binário
-  inicial continua sendo o artefato do workflow; só as atualizações passam pelo
-  app, ver abaixo).
 
 ### Complementos do S1 (nov2: SNMP v3, descoberta, mescla, atualização)
 
@@ -514,24 +499,8 @@ numeração; viram ADR se a equipe quiser):
   fabricante, modelo, união de IPs e MACs). Manual: `POST .../devices/{id}/merge`
   (`{ intoId }`) e `.../unmerge`; desfazer trava (`mergeLocked`) a mescla
   automática daquela ficha. Admin apenas, auditado.
-- **Atualização automática do agente** (desligada por padrão:
-  `SdInventorySettings.agentAutoUpdate`). O agente pergunta
-  `GET /api/servicedesk/inventory/agent/version?os=&arch=&current=` (token no
-  `Authorization`, rota pública) e, havendo versão nova, baixa
-  `.../agent/download` e confere o **SHA-256** (do banco, repetido em
-  `X-Content-SHA256`) antes de se trocar; o servidor também recusa servir um
-  arquivo que não bate com o hash publicado. No agente (`inventory-agent/
-  update.go`): download ao lado do executável, teste do novo binário
-  (`selftest`) antes de trocar, troca por renomeação (guarda `.old`), marcador
-  `<exe>.update.json` e **volta à versão anterior** se o novo morrer ao iniciar
-  (3ª tentativa sem confirmar) — o marcador só sai quando o primeiro relatório
-  é aceito. Builds `dev` nunca se atualizam. Os binários ficam num bucket
-  privado (`inventory-agent`) e a versão é publicada pelo operador do servidor:
-  `pnpm inventory-agent:publish <versão> <pasta-do-artefato-do-CI>` (calcula o
-  SHA-256 e grava `SdInventoryAgentRelease`).
-
-Contrato: `src/services/sd-inventory-{sync,ingest,token,settings,target,
-discovery,device-actions,auto-merge,agent-update}.service.ts`
+Contrato: `src/services/sd-inventory-{sync,settings,target,
+discovery,device-actions,auto-merge}.service.ts`
 e `sd-inventory.service.ts` (consultas); `syncInventoryDevice(workspaceId,
 actorId, input, now?)` é o ponto único de gravação; API em
 `servicedesk/inventory/**`; hook `src/hooks/use-sd-inventory.ts`.
@@ -581,7 +550,7 @@ Contrato compartilhado já pronto (fundação): `src/services/sd-access.ts`,
 | inbox | `notification` (schema/mapper/repository/service da caixa), `app/_components/notifications/*` (lista, painel de leitura, ícone por tipo), `src/lib/notification-kind.ts` (tabela pura de tipo → rótulo/ícone/cor), rota `/inbox` |
 | relatórios agendados | `sd-report` (schema/mapper/repository/service — `SdScheduledReport` + `SdReportRun`) + `sd-report-runner.ts` (geração sem autorização, compartilhada com a fila), `src/lib/servicedesk/{report-sla,report-schedule,report-csv,report-files}.ts` e `report-pdf.tsx`, `src/lib/mail/servicedesk/send-sd-sla-report.ts` + `components/emails/servicedesk/sd-sla-report.tsx`, fila `servicedesk-reports`, API `servicedesk/reports/**`, aba Configurações > Relatórios e o histórico de execuções |
 | kcs | `sd-kb-review` (schema/mapper/repository/service), `sd-kb-draft.service.ts` (artigo a partir do chamado, com rascunho da IA), `src/lib/servicedesk/kcs.ts` (esqueleto KCS, prompt e aritmética da validade), `markResolved`/`suggestForDraft` em `sd-kb-ticket-link.service.ts`, rotas `servicedesk/knowledge/{reviews,review-settings,stats,draft,suggest/draft}` e `knowledge/[articleId]/{reviews,review-interval,resolved}`, painel `SdKbReviewPanel`, `SdKbCuration`, `SdKbDraftSuggestions`, checagem diária no tique do `servicedesk-digest` |
-| inventory | `sd-inventory-*` (token, settings, sync, ingest, target, consultas) + repositórios/mapper/schema, `src/lib/servicedesk/{inventory,snmp}.ts`, fila `servicedesk-inventory`, entrada pública `servicedesk/inventory/report`, tela `/inventory`, aba Inventário das configurações, agente em `inventory-agent/` |
+| inventory | `sd-inventory-*` (settings, sync, target, discovery, consultas) + repositórios/mapper/schema, `src/lib/servicedesk/{inventory,snmp}.ts`, fila `servicedesk-inventory`, tela `/inventory`, aba Inventário das configurações |
 | risco preditivo | `src/lib/servicedesk/risk.ts` (tabela de fatores e faixas — ADR 0016), `risk-compute.ts` e `incident-cluster.ts` (libs puras), `sd-risk.{schema,mapper,repository,service}`, fila `servicedesk-risk`, API `servicedesk/risk/**`, selo `SdRiskBadge`/`SdRiskWidget` no quadro, na lista, na tabela e na tela do chamado, filtro rápido "Risco alto", tela `/risk` |
 | integrações | conexões do workspace em `workspace-integration` (repository/schema/mapper/service, ADR 0024) e `src/lib/integrations/*`; no módulo: `sd-integration` (schema/mapper/repository dos vínculos), `sd-integration.service.ts` (configurações do módulo), `sd-integration-link.service.ts` (vínculos do chamado, GitHub e GitLab), `sd-integration-dispatcher.ts` (saída para o Slack), `sd-slack-inbound.service.ts`, `sd-github-webhook.service.ts` (+ `SdGithubSyncService`), `sd-gitlab-webhook.service.ts`, `sd-integration-credentials.ts`, `src/lib/servicedesk/{integrations,integrations-queue,slack-client,slack-oauth-state,github-client}.ts`, `src/cache/sd-integration-event.cache.ts`, fila `servicedesk-integrations`, aba Configurações > Integrações, bloco Integrações na tela do chamado |
 

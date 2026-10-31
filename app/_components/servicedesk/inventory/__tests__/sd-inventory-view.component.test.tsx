@@ -42,7 +42,6 @@ const device: SdInventoryDeviceDTO = {
   ipAddresses: ['10.0.0.20'],
   macAddresses: [],
   disks: [],
-  agentVersion: '1.0.0',
   configItemId: null,
   snmpTargetId: null,
   managed: true,

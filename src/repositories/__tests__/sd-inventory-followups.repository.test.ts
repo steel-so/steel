@@ -8,8 +8,6 @@ import { prisma } from '@/src/lib/prisma'
 import { SdInventoryAlertRepository } from '../sd-inventory-alert.repository'
 import { SdInventoryDeviceRepository } from '../sd-inventory-device.repository'
 import { SdInventoryDiscoveryRangeRepository } from '../sd-inventory-discovery-range.repository'
-import { SdInventoryReleaseRepository } from '../sd-inventory-release.repository'
-import { SdInventorySettingsRepository } from '../sd-inventory-settings.repository'
 
 async function setup() {
   const [workspace, other, user] = await Promise.all([
@@ -148,9 +146,7 @@ describe('device listing, discovery and summary', () => {
       ipAddresses: ['10.0.1.5'],
       macAddresses: [],
       disks: [],
-      agentVersion: null,
       snmpTargetId: null,
-      tokenId: null,
       lastSeenAt: new Date(),
     }
     const created = expectOk(
@@ -595,99 +591,5 @@ describe('SdInventoryDiscoveryRangeRepository', () => {
       lastFound: 7,
       lastError: '1 falha',
     })
-  })
-})
-
-describe('SdInventoryReleaseRepository', () => {
-  const release = (version: string, os = 'linux', arch = 'amd64') => ({
-    version,
-    os,
-    arch,
-    sha256: 'a'.repeat(64),
-    sizeBytes: 10,
-    storageKey: `${version}/agent-${os}-${arch}`,
-  })
-
-  it('serves the most recent active release per platform', async () => {
-    const first = expectOk(
-      await SdInventoryReleaseRepository.upsert(release('1.0.0')),
-    )
-    await new Promise((resolve) => setTimeout(resolve, 5))
-    expectOk(await SdInventoryReleaseRepository.upsert(release('1.1.0')))
-    expectOk(
-      await SdInventoryReleaseRepository.upsert(release('1.1.0', 'windows')),
-    )
-
-    expect(
-      expectOk(await SdInventoryReleaseRepository.findLatest('linux', 'amd64'))
-        ?.version,
-    ).toBe('1.1.0')
-    expect(
-      expectOk(await SdInventoryReleaseRepository.findLatest('linux', 'arm64')),
-    ).toBeNull()
-    expect(
-      expectOk(
-        await SdInventoryReleaseRepository.findExact('1.0.0', 'linux', 'amd64'),
-      )?.id,
-    ).toBe(first.id)
-    expect(
-      expectOk(
-        await SdInventoryReleaseRepository.findExact('9.9.9', 'linux', 'amd64'),
-      ),
-    ).toBeNull()
-
-    const latest = expectOk(
-      await SdInventoryReleaseRepository.listLatestPerTarget(),
-    )
-    expect(latest.map((r) => `${r.os}:${r.version}`).sort()).toEqual([
-      'linux:1.1.0',
-      'windows:1.1.0',
-    ])
-  })
-
-  it('republishing the same version replaces it and reactivates it', async () => {
-    const original = expectOk(
-      await SdInventoryReleaseRepository.upsert(release('2.0.0')),
-    )
-    await prisma.sdInventoryAgentRelease.update({
-      where: { id: original.id },
-      data: { active: false },
-    })
-    expect(
-      expectOk(
-        await SdInventoryReleaseRepository.findExact('2.0.0', 'linux', 'amd64'),
-      ),
-    ).toBeNull()
-    const again = expectOk(
-      await SdInventoryReleaseRepository.upsert({
-        ...release('2.0.0'),
-        sizeBytes: 99,
-      }),
-    )
-    expect(again).toMatchObject({
-      id: original.id,
-      active: true,
-      sizeBytes: 99,
-    })
-  })
-})
-
-describe('SdInventorySettingsRepository', () => {
-  it('stores the agent auto update opt-in, off by default', async () => {
-    const { workspace } = await setup()
-    expect(
-      expectOk(
-        await SdInventorySettingsRepository.upsert(workspace.id, {
-          staleAfterDays: 5,
-        }),
-      ).agentAutoUpdate,
-    ).toBe(false)
-    expect(
-      expectOk(
-        await SdInventorySettingsRepository.upsert(workspace.id, {
-          agentAutoUpdate: true,
-        }),
-      ).agentAutoUpdate,
-    ).toBe(true)
   })
 })

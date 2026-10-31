@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   fetchBody,
   mockFetch,
@@ -10,24 +10,21 @@ import type {
   SdInventoryDiscoveryRangeDTO,
   SdInventorySettingsDTO,
   SdInventorySnmpTargetDTO,
-  SdInventoryTokenDTO,
 } from '@/types/sd-inventory'
 import {
   formatInventoryDateTime,
   formatMegabytes,
   usageTone,
 } from '../../inventory/sd-inventory-format'
-import { SdInventoryTab, sdInventoryInstallSnippets } from '../inventory-tab'
+import { SdInventoryTab } from '../inventory-tab'
 import { SdSettingsProvider } from '../sd-settings-kit'
 import { SD_SETTINGS_TABS } from '../settings-tabs'
 
 const WS = 'ws-1'
 const BASE = `/api/workspaces/${WS}/servicedesk/inventory`
 const SETTINGS = `${BASE}/settings`
-const TOKENS = `${BASE}/tokens`
 const TARGETS = `${BASE}/snmp-targets`
 const RANGES = `${BASE}/discovery-ranges`
-const RELEASES = `${BASE}/agent-releases`
 
 const settings: SdInventorySettingsDTO = {
   diskThresholdPercent: 90,
@@ -35,15 +32,6 @@ const settings: SdInventorySettingsDTO = {
   staleAfterDays: 7,
   syncConfigItems: true,
   defaultTypeId: null,
-  agentAutoUpdate: false,
-}
-
-const token: SdInventoryTokenDTO = {
-  id: 'tok-1',
-  name: 'Matriz',
-  lastUsedAt: '2026-10-01T12:00:00.000Z',
-  createdAt: '2026-10-01T10:00:00.000Z',
-  revokedAt: null,
 }
 
 const target: SdInventorySnmpTargetDTO = {
@@ -99,12 +87,6 @@ function renderTab(canEdit = true) {
   )
 }
 
-beforeEach(() => {
-  Object.assign(navigator, {
-    clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
-  })
-})
-
 describe('formatting helpers', () => {
   it('formats megabytes in base 1024 with pt-BR decimals', () => {
     expect(formatMegabytes(null)).toBe('—')
@@ -131,16 +113,6 @@ describe('formatting helpers', () => {
     expect(usageTone(75)).toBe(warn)
     expect(usageTone(74)).toBe(ok)
   })
-
-  it('builds the install commands with the url and token', () => {
-    const snippets = sdInventoryInstallSnippets(
-      'https://steel.example.com',
-      'tok',
-    )
-    expect(snippets.linux).toBe(
-      'sudo ./steel-inventory-agent install --url https://steel.example.com --token tok',
-    )
-  })
 })
 
 describe('SD_SETTINGS_TABS', () => {
@@ -157,13 +129,10 @@ describe('<SdInventoryTab />', () => {
   it('shows empty states and the thresholds for an admin', async () => {
     mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [] },
     ])
     renderTab()
-    expect(await screen.findByText(/Nenhum token criado/)).toBeTruthy()
     expect(await screen.findByText(/Nenhum alvo cadastrado/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Novo token/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Novo alvo/ })).toBeTruthy()
     await waitFor(() =>
       expect(
@@ -172,80 +141,20 @@ describe('<SdInventoryTab />', () => {
     )
   })
 
-  it('hides tokens and targets for non-admins and warns they are read only', async () => {
+  it('hides targets for non-admins and warns they are read only', async () => {
     const spy = mockFetch([{ match: SETTINGS, data: settings }])
     renderTab(false)
     expect(await screen.findByText(/modo leitura/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /Novo token/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Novo alvo/ })).toBeNull()
     expect(spy).not.toHaveBeenCalledWith(
-      expect.stringContaining('/tokens'),
+      expect.stringContaining('/snmp-targets'),
       expect.anything(),
     )
-  })
-
-  it('creates a token and shows its value once with the install commands', async () => {
-    const spy = mockFetch([
-      { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
-      { match: TARGETS, data: [] },
-      {
-        method: 'POST',
-        match: TOKENS,
-        status: 201,
-        data: { ...token, token: 'plain-token-value' },
-      },
-    ])
-    renderTab()
-    fireEvent.click(await screen.findByRole('button', { name: /Novo token/ }))
-    fireEvent.change(screen.getByPlaceholderText('Matriz — estações'), {
-      target: { value: 'Filial SP' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Criar token' }))
-
-    expect(await screen.findByText('Token de Matriz')).toBeTruthy()
-    expect(fetchBody(spy, TOKENS)).toEqual({ name: 'Filial SP' })
-    expect(screen.getAllByText(/plain-token-value/).length).toBeGreaterThan(0)
-
-    fireEvent.click(screen.getByRole('button', { name: 'Copiar: Token' }))
-    await waitFor(() =>
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        'plain-token-value',
-      ),
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Já copiei' }))
-    await waitFor(() =>
-      expect(screen.queryByText('Token de Matriz')).toBeNull(),
-    )
-  })
-
-  it('lists tokens without a value and marks revoked ones', async () => {
-    mockFetch([
-      { match: SETTINGS, data: settings },
-      {
-        match: TOKENS,
-        data: [
-          token,
-          {
-            ...token,
-            id: 'tok-2',
-            name: 'Antigo',
-            revokedAt: '2026-10-02T00:00:00.000Z',
-          },
-        ],
-      },
-      { match: TARGETS, data: [] },
-    ])
-    renderTab()
-    expect(await screen.findByText('Matriz')).toBeTruthy()
-    expect(screen.getByText('Antigo')).toBeTruthy()
-    expect(screen.getByText('Revogado')).toBeTruthy()
   })
 
   it('creates an SNMP target with the lines as ranges', async () => {
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [] },
       { method: 'POST', match: TARGETS, status: 201, data: target },
     ])
@@ -284,7 +193,6 @@ describe('<SdInventoryTab />', () => {
   it('shows the last scan and asks for a scan now', async () => {
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [target] },
       { method: 'POST', match: `${TARGETS}/tgt-1/scan`, data: null },
     ])
@@ -304,7 +212,6 @@ describe('<SdInventoryTab />', () => {
   it('keeps the community when editing a target without typing a new one', async () => {
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [target] },
       { method: 'PATCH', match: `${TARGETS}/tgt-1`, data: target },
     ])
@@ -331,7 +238,6 @@ describe('<SdInventoryTab />', () => {
         match: SETTINGS,
         data: { ...settings, diskThresholdPercent: 80 },
       },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [] },
     ])
     renderTab()
@@ -353,18 +259,15 @@ describe('<SdInventoryTab />', () => {
   it('surfaces a failing query', async () => {
     mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, status: 500, error: 'Falha nos tokens' },
       { match: TARGETS, status: 500, error: 'Falha nos alvos' },
     ])
     renderTab()
-    expect(await screen.findByText('Falha nos tokens')).toBeTruthy()
     expect(await screen.findByText('Falha nos alvos')).toBeTruthy()
   })
 
   it('creates an SNMPv3 target without sending a community', async () => {
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [] },
       { match: RANGES, data: [] },
       { match: RELEASES, data: [] },
@@ -440,7 +343,6 @@ describe('<SdInventoryTab />', () => {
     }
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [v3Target] },
       { match: RANGES, data: [] },
       { match: RELEASES, data: [] },
@@ -467,7 +369,6 @@ describe('<SdInventoryTab />', () => {
   it('creates a discovery range switched off by default (opt-in)', async () => {
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [] },
       { match: RANGES, data: [] },
       { match: RELEASES, data: [] },
@@ -496,7 +397,6 @@ describe('<SdInventoryTab />', () => {
   it('lists ranges, asks for a scan and disables it while switched off', async () => {
     const spy = mockFetch([
       { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
       { match: TARGETS, data: [] },
       {
         match: RANGES,
@@ -534,59 +434,5 @@ describe('<SdInventoryTab />', () => {
         enabled: true,
       }),
     )
-  })
-
-  it('turns agent auto update on and lists the published versions', async () => {
-    const spy = mockFetch([
-      { match: SETTINGS, data: settings },
-      {
-        method: 'PATCH',
-        match: SETTINGS,
-        data: { ...settings, agentAutoUpdate: true },
-      },
-      { match: TOKENS, data: [] },
-      { match: TARGETS, data: [] },
-      { match: RANGES, data: [] },
-      {
-        match: RELEASES,
-        data: [
-          {
-            id: 'rel-1',
-            version: '2026.11.01',
-            os: 'linux',
-            arch: 'amd64',
-            sha256: 'a'.repeat(64),
-            sizeBytes: 10,
-            active: true,
-            publishedAt: '2026-10-30T00:00:00.000Z',
-          },
-        ],
-      },
-    ])
-    renderTab()
-    expect(
-      await screen.findByText(/2026\.11\.01 \(linux\/amd64\)/),
-    ).toBeTruthy()
-    const toggle = screen.getAllByRole('switch')[1] as HTMLElement
-    fireEvent.click(toggle)
-    await waitFor(() =>
-      expect(fetchBody(spy, SETTINGS, 'PATCH')).toEqual({
-        agentAutoUpdate: true,
-      }),
-    )
-  })
-
-  it('says no version was published yet', async () => {
-    mockFetch([
-      { match: SETTINGS, data: settings },
-      { match: TOKENS, data: [] },
-      { match: TARGETS, data: [] },
-      { match: RANGES, data: [] },
-      { match: RELEASES, data: [] },
-    ])
-    renderTab()
-    expect(
-      await screen.findByText(/Nenhuma versão do agente foi publicada/),
-    ).toBeTruthy()
   })
 })

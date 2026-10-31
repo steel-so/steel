@@ -1,62 +1,22 @@
 ---
 title: Inventário e descoberta de ativos
-description: Agente para Linux, varredura SNMP (v2c e v3) e descoberta por ping que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
+description: Varredura SNMP (v2c e v3) e descoberta por ping que mantêm a CMDB atualizada, com hardware, software e alertas de disco e memória.
 section: servicedesk
 order: 13
 ---
 
 O **Inventário** descobre os equipamentos sozinho e mantém os **Itens de
-configuração** em dia, sem cadastro manual. Há três caminhos que se somam:
+configuração** em dia, sem cadastro manual. Há dois caminhos que se somam:
 
-- o **agente**, instalado em computadores Linux: envia hardware,
-  sistema, rede, discos, memória e os programas instalados;
 - a **varredura SNMP**, que percorre faixas de rede e descobre switches,
   impressoras, firewalls e servidores sem instalar nada neles;
-- a **descoberta por ping e ARP**, que acha o que não tem agente nem SNMP e
-  espera a sua adoção.
+- a **descoberta por ping e ARP**, que acha o que não tem SNMP e espera a
+  sua adoção.
 
 <Callout type='admin'>
   A configuração fica em **ServiceDesk › Configurações › Inventário** e é
   exclusiva de administradores do módulo. Agentes de atendimento consultam o
   inventário em **ServiceDesk › Inventário**.
-</Callout>
-
-## Instalar o agente
-
-1. Em **Configurações › Inventário**, clique em **Novo token** e dê um nome que
-   diga onde ele será usado (por exemplo, "Matriz — estações").
-2. Copie o token e os comandos de instalação. **O token aparece uma única vez**;
-   se perder, revogue e crie outro.
-3. Baixe o binário do seu sistema operacional com a equipe de TI e execute o
-   comando mostrado:
-
-| Sistema | Comando |
-| --- | --- |
-| Linux (como root) | `sudo ./steel-inventory-agent install --url https://seu-steel --token <token>` |
-
-No Linux o agente vira um serviço (`steel-inventory-agent`) e o primeiro
-relatório sai na hora. Para ver o que seria enviado, sem enviar, rode `steel-inventory-agent
-collect`.
-
-<Callout type='aviso'>
-  Um token vale para todas as máquinas que o usarem, e quem o tem consegue
-  enviar inventário para o workspace. Trate como uma senha e crie tokens
-  separados por site ou lote de máquinas: revogar um não afeta os outros.
-</Callout>
-
-Para tirar o agente de uma máquina, rode `steel-inventory-agent uninstall`.
-
-### Atualização automática do agente
-
-Em **Configurações › Inventário**, ligue **Atualizar o agente automaticamente**
-(desligado por padrão). Com ela ligada, cada agente pergunta ao Steel se há
-versão nova, baixa o binário e **confere o SHA-256** antes de trocar o
-executável. Se o novo não iniciar, o agente **volta sozinho à versão anterior**.
-A tela mostra a última versão publicada por sistema.
-
-<Callout type='nota'>
-  A atualização vale para agentes que já estão instalados; a primeira instalação
-  continua sendo manual.
 </Callout>
 
 ## Varredura SNMP
@@ -80,7 +40,7 @@ equipamento não são erro.
 
 ## Descoberta por ping e ARP
 
-Para achar o que não tem agente nem SNMP, cadastre uma **faixa de descoberta**
+Para achar o que não tem SNMP, cadastre uma **faixa de descoberta**
 em **Configurações › Inventário › Descoberta por ping e ARP**:
 
 - informe uma rede **privada** (por exemplo `10.0.1.0/24`, até 1.024
@@ -98,11 +58,11 @@ adotar** e, na ficha do equipamento:
 - **Adotar**: passa a ser um equipamento gerido e ganha o item de configuração;
 - **Descartar**: some da lista e a descoberta não o traz de volta.
 
-Equipamentos que o agente ou o SNMP já conhecem não são recriados.
+Equipamentos que o SNMP já conhece não são recriados.
 
 ## A mesma máquina vista por mais de uma origem
 
-Quando o agente e o SNMP (ou a descoberta) enxergam a mesma máquina, o
+Quando o SNMP e a descoberta enxergam a mesma máquina, o
 inventário **junta as fichas** sozinho, comparando o **número de série**, os
 **endereços MAC** e o **nome**. Fica uma só linha na lista e **um só item na
 CMDB**; as outras origens aparecem na ficha, em **Mesma máquina em outras
@@ -116,7 +76,7 @@ ser um equipamento próprio e não é juntada de novo automaticamente.
 
 A tela **ServiceDesk › Inventário** tem três abas:
 
-- **Equipamentos**: nome, origem (agente, SNMP ou descoberto), sistema, IP, memória, pior
+- **Equipamentos**: nome, origem (SNMP ou descoberto), sistema, IP, memória, pior
   disco, alertas e último contato. Clique para ver o hardware completo, os
   discos, o software instalado e o item da CMDB. Filtre por origem, só com
   alerta aberto, só **sem sinal** ou só os **descobertos para adotar**.
@@ -139,15 +99,13 @@ vira um item de configuração:
 
 - se já existe um item cadastrado à mão com o mesmo **número de série**, ele é
   aproveitado em vez de duplicado;
-- senão, é criado um item no tipo **Computador** (agente) ou **Equipamento de
-  rede** (SNMP) — ou no tipo que você escolher;
+- senão, é criado um item no tipo **Equipamento de rede** (SNMP) — ou no tipo que você escolher;
 - depois disso, o inventário mantém **série, fabricante, modelo e IP**. Nome,
   status, responsável e criticidade continuam sendo seus.
 
 <Callout type='nota'>
-  Se você excluir o item na CMDB, o próximo relatório do equipamento cria outro.
-  Para deixar de acompanhar um equipamento, desligue a sincronização ou revogue
-  o token do agente.
+  Se você excluir o item na CMDB, o próximo varredura do equipamento cria outro.
+  Para deixar de acompanhar um equipamento, desligue a sincronização.
 </Callout>
 
 Veja também [Catálogo e cadastros](/docs/servicedesk/catalogo-e-cadastros) e

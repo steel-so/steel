@@ -9,7 +9,6 @@ import {
 import type {
   CreateSdInventoryDiscoveryRangeDTO,
   CreateSdInventorySnmpTargetDTO,
-  CreateSdInventoryTokenDTO,
   MergeSdInventoryDeviceDTO,
   UpdateSdInventoryDiscoveryRangeDTO,
   UpdateSdInventorySettingsDTO,
@@ -18,7 +17,6 @@ import type {
 import type { SdPage } from '@/types/sd-directory'
 import type {
   SdInventoryAdoptResultDTO,
-  SdInventoryAgentReleaseDTO,
   SdInventoryAlertDTO,
   SdInventoryAlertStatusDTO,
   SdInventoryDeviceDetailDTO,
@@ -29,8 +27,6 @@ import type {
   SdInventorySoftwareCatalogRowDTO,
   SdInventorySourceDTO,
   SdInventorySummaryDTO,
-  SdInventoryTokenDTO,
-  SdInventoryTokenWithValueDTO,
 } from '@/types/sd-inventory'
 import { apiFetch, apiSend } from './_fetch'
 import { sdBase, sdJson, sdQueryString } from './_sd-directory'
@@ -38,9 +34,6 @@ import { sdBase, sdJson, sdQueryString } from './_sd-directory'
 /**
  * Inventário e descoberta de ativos do ServiceDesk (S1). Tudo sob a chave
  * `['sd-inventory', workspaceId]`, então qualquer mutação atualiza a tela.
- *
- * O valor do token do agente **só** volta na criação — guarde o resultado da
- * mutação para mostrá-lo uma vez.
  */
 
 export interface SdInventoryDevicesQuery {
@@ -189,39 +182,6 @@ export function useSdInventorySettingsMutation(workspaceId: string) {
       ),
     onSuccess: invalidate,
   })
-}
-
-export function useSdInventoryTokens(workspaceId: string, enabled = true) {
-  return useQuery({
-    queryKey: [...sdInventoryKeys.all(workspaceId), 'tokens'],
-    queryFn: () =>
-      apiFetch<SdInventoryTokenDTO[]>(
-        sdBase(workspaceId, path('tokens')),
-        undefined,
-        'Erro ao carregar os tokens do agente',
-      ),
-    enabled: !!workspaceId && enabled,
-  })
-}
-
-export function useSdInventoryTokenMutations(workspaceId: string) {
-  const invalidate = useInvalidate(workspaceId)
-  const url = sdBase(workspaceId, path('tokens'))
-  const create = useMutation({
-    mutationFn: (data: CreateSdInventoryTokenDTO) =>
-      apiFetch<SdInventoryTokenWithValueDTO>(
-        url,
-        sdJson('POST', data),
-        'Erro ao criar o token',
-      ),
-    onSuccess: invalidate,
-  })
-  const revoke = useMutation({
-    mutationFn: (id: string) =>
-      apiSend(`${url}/${id}`, { method: 'DELETE' }, 'Erro ao revogar o token'),
-    onSuccess: invalidate,
-  })
-  return { create, revoke }
 }
 
 export function useSdInventoryTargets(workspaceId: string, enabled = true) {
@@ -389,20 +349,4 @@ export function useSdInventoryDeviceActions(workspaceId: string) {
     onSuccess: invalidate,
   })
   return { merge, unmerge, adopt, dismiss }
-}
-
-export function useSdInventoryAgentReleases(
-  workspaceId: string,
-  enabled = true,
-) {
-  return useQuery({
-    queryKey: [...sdInventoryKeys.all(workspaceId), 'agent-releases'],
-    queryFn: () =>
-      apiFetch<SdInventoryAgentReleaseDTO[]>(
-        sdBase(workspaceId, path('agent-releases')),
-        undefined,
-        'Erro ao carregar as versões do agente',
-      ),
-    enabled: !!workspaceId && enabled,
-  })
 }

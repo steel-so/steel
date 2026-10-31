@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createFakeSdInventoryAgentRelease,
   createFakeSdInventoryDiscoveryRange,
 } from '@/src/__tests__/factories/nov-inventory-followups.factory'
 import {
@@ -9,12 +8,10 @@ import {
   createFakeSdInventoryDeviceDetail,
   createFakeSdInventorySettings,
   createFakeSdInventoryTarget,
-  createFakeSdInventoryToken,
 } from '@/src/__tests__/factories/nov-s1-asset-inventory.factory'
 import {
   parseSdInventoryDisks,
   SD_INVENTORY_DEFAULT_SETTINGS,
-  toSdInventoryAgentReleaseDTO,
   toSdInventoryAlertDTO,
   toSdInventoryDeviceDetailDTO,
   toSdInventoryDeviceDTO,
@@ -22,8 +19,6 @@ import {
   toSdInventorySettingsDTO,
   toSdInventorySnmpTargetDTO,
   toSdInventorySoftwareCatalogRowDTO,
-  toSdInventoryTokenDTO,
-  toSdInventoryTokenWithValueDTO,
 } from '../sd-inventory.mapper'
 
 const NOW = new Date('2026-10-20T12:00:00.000Z')
@@ -49,7 +44,6 @@ describe('toSdInventorySettingsDTO', () => {
       staleAfterDays: 7,
       syncConfigItems: true,
       defaultTypeId: 't1',
-      agentAutoUpdate: false,
     })
   })
 })
@@ -189,26 +183,7 @@ describe('toSdInventoryAlertDTO', () => {
   })
 })
 
-describe('token and target DTOs', () => {
-  it('never exposes the token hash, only the one-time value', () => {
-    const token = createFakeSdInventoryToken()
-    const dto = toSdInventoryTokenDTO(token)
-    expect(dto).not.toHaveProperty('tokenHash')
-    expect(dto).toMatchObject({ lastUsedAt: null, revokedAt: null })
-    expect(toSdInventoryTokenWithValueDTO(token, 'plain').token).toBe('plain')
-    expect(
-      toSdInventoryTokenDTO(
-        createFakeSdInventoryToken({
-          lastUsedAt: new Date('2026-10-02T00:00:00.000Z'),
-          revokedAt: new Date('2026-10-03T00:00:00.000Z'),
-        }),
-      ),
-    ).toMatchObject({
-      lastUsedAt: '2026-10-02T00:00:00.000Z',
-      revokedAt: '2026-10-03T00:00:00.000Z',
-    })
-  })
-
+describe('target DTOs', () => {
   it('never exposes the community, only whether one is stored', () => {
     const dto = toSdInventorySnmpTargetDTO(createFakeSdInventoryTarget())
     expect(dto).not.toHaveProperty('communityEnc')
@@ -296,18 +271,6 @@ describe('merge and discovery mapping', () => {
       nextRunAt: '2026-10-03T00:00:00.000Z',
       lastProbed: 254,
       lastFound: 12,
-    })
-  })
-
-  it('maps an agent release without exposing the storage key', () => {
-    const dto = toSdInventoryAgentReleaseDTO(
-      createFakeSdInventoryAgentRelease(),
-    )
-    expect(dto).not.toHaveProperty('storageKey')
-    expect(dto).toMatchObject({
-      version: '2026.11.01',
-      os: 'linux',
-      publishedAt: '2026-10-01T12:00:00.000Z',
     })
   })
 

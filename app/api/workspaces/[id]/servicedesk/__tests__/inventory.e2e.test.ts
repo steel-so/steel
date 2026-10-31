@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createSdInventoryReport,
-  seedSdInventoryToken,
-} from '@/src/__tests__/factories/nov-s1-asset-inventory.factory'
+import { seedSdInventoryDevice } from '@/src/__tests__/factories/nov-s1-asset-inventory.factory'
 import {
   seedSdDepartment,
   seedSdDepartmentMember,
@@ -15,12 +12,11 @@ import {
   patchJson,
   postJson,
 } from '@/src/__tests__/helpers/e2e'
-import { BASE_URL } from '@/src/__tests__/setup.e2e'
 import { prisma } from '@/src/lib/prisma'
 
 /**
  * Inventário de ativos: contrato HTTP das rotas do workspace. Admin gerencia
- * tokens, alvos SNMP e ajustes; agente só consulta; solicitante e quem é de
+ * alvos SNMP e ajustes; agente só consulta; solicitante e quem é de
  * fora não veem nada.
  */
 
@@ -34,102 +30,6 @@ async function setup() {
   const requester = await addMember(workspace.id, 'MEMBER')
   return { owner, agent, requester, workspace }
 }
-
-describe('inventory tokens', () => {
-  it('lets an admin create (value shown once), list and revoke', async () => {
-    const { owner, workspace } = await setup()
-
-    const created = await postJson(
-      `${api(workspace.id)}/tokens`,
-      { name: 'Matriz' },
-      owner.cookie,
-    )
-    expect(created.status).toBe(201)
-    const token = (await created.json()).data
-    expect(token.token).toMatch(/^[A-Za-z0-9_-]{43}$/)
-
-    const listed = (
-      await (await getJson(`${api(workspace.id)}/tokens`, owner.cookie)).json()
-    ).data
-    expect(listed).toHaveLength(1)
-    expect(listed[0]).not.toHaveProperty('token')
-    expect(listed[0]).not.toHaveProperty('tokenHash')
-
-    // O token criado de verdade autentica o agente.
-    const report = await fetch(`${BASE_URL}/api/servicedesk/inventory/report`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token.token}`,
-      },
-      body: JSON.stringify(createSdInventoryReport()),
-    })
-    expect(report.status).toBe(200)
-
-    expect(
-      (
-        await deleteJson(
-          `${api(workspace.id)}/tokens/${token.id}`,
-          owner.cookie,
-        )
-      ).status,
-    ).toBe(200)
-    const after = await fetch(`${BASE_URL}/api/servicedesk/inventory/report`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token.token}`,
-      },
-      body: JSON.stringify(createSdInventoryReport()),
-    })
-    expect(after.status).toBe(401)
-  })
-
-  it('denies agents, requesters, strangers and anonymous callers', async () => {
-    const { agent, requester, workspace } = await setup()
-    const viewer = await addMember(workspace.id, 'VIEWER')
-    for (const who of [agent, requester, viewer]) {
-      expect(
-        (await getJson(`${api(workspace.id)}/tokens`, who.cookie)).status,
-      ).toBe(403)
-      expect(
-        (
-          await postJson(
-            `${api(workspace.id)}/tokens`,
-            { name: 'x' },
-            who.cookie,
-          )
-        ).status,
-      ).toBe(403)
-    }
-    expect((await getJson(`${api(workspace.id)}/tokens`)).status).toBe(401)
-  })
-
-  it('validates the name and cannot revoke a token of another workspace', async () => {
-    const { owner, workspace } = await setup()
-    expect(
-      (
-        await postJson(
-          `${api(workspace.id)}/tokens`,
-          { name: '' },
-          owner.cookie,
-        )
-      ).status,
-    ).toBe(422)
-
-    const other = await authenticatedOwner()
-    const foreign = await seedSdInventoryToken({
-      workspaceId: other.workspace.id,
-      createdById: other.user.id,
-    })
-    const res = await deleteJson(
-      `${api(workspace.id)}/tokens/${foreign.id}`,
-      owner.cookie,
-    )
-    expect(res.status).toBe(404)
-    expect((await res.json()).error.code).toBe('SD_INVENTORY_TOKEN_NOT_FOUND')
-  })
-})
 
 describe('inventory settings', () => {
   it('returns the defaults, saves for admins and reads back', async () => {
@@ -272,31 +172,27 @@ describe('SNMP targets', () => {
 describe('inventory queries', () => {
   async function withDevice() {
     const ctx = await setup()
-    const token = await seedSdInventoryToken({
+    const device = await seedSdInventoryDevice({
       workspaceId: ctx.workspace.id,
-      createdById: ctx.owner.id,
-      token: 'a'.repeat(43),
+      hostname: 'PC-RECEPCAO',
+      disks: [
+        { mount: 'C:', label: null, fs: null, totalMb: 1000, usedMb: 990 },
+      ],
     })
-    const report = await fetch(`${BASE_URL}/api/servicedesk/inventory/report`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${'a'.repeat(43)}`,
+    await prisma.sdInventoryAlert.create({
+      data: {
+        workspaceId: ctx.workspace.id,
+        deviceId: device.id,
+        kind: 'DISK',
+        mount: 'C:',
+        usedPercent: 99,
+        threshold: 90,
       },
-      body: JSON.stringify(
-        createSdInventoryReport({
-          disks: [
-            { mount: 'C:', label: null, fs: null, totalMb: 1000, usedMb: 990 },
-          ],
-        }),
-      ),
     })
-    expect(report.status).toBe(200)
-    return {
-      ...ctx,
-      token,
-      deviceId: (await report.json()).data.deviceId as string,
-    }
+    await prisma.sdInventorySoftware.create({
+      data: { deviceId: device.id, name: 'Firefox', version: '130.0' },
+    })
+    return { ...ctx, deviceId: device.id }
   }
 
   it('lets agents list, filter, open the detail and read summary, alerts and software', async () => {
@@ -323,7 +219,6 @@ describe('inventory queries', () => {
     ).data
     expect(detail.software).toHaveLength(1)
     expect(detail.alerts).toHaveLength(1)
-    expect(detail.configItemId).not.toBeNull()
 
     const summary = (
       await (await getJson(`${api(workspace.id)}/summary`, agent.cookie)).json()
@@ -579,12 +474,5 @@ describe('inventory discovery, adoption and merge', () => {
         )
       ).status,
     ).toBe(422)
-  })
-
-  it('exposes the latest published agent version to admins', async () => {
-    const { owner, agent, workspace } = await setup()
-    const url = `${api(workspace.id)}/agent-releases`
-    expect((await getJson(url, owner.cookie)).status).toBe(200)
-    expect((await getJson(url, agent.cookie)).status).toBe(403)
   })
 })

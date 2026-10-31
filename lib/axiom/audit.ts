@@ -166,11 +166,9 @@ export type AuditEntity =
   | 'sd_ai_conversation'
   // ServiceDesk — canais de entrada
   | 'sd_monitor_source'
-  | 'sd_inventory_token'
   | 'sd_inventory_target'
   | 'sd_inventory_discovery_range'
   | 'sd_inventory_device'
-  | 'sd_inventory_agent_release'
   | 'sd_inventory_settings'
   | 'sd_software_license'
   | 'sd_nl_config'

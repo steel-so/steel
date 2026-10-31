@@ -1,9 +1,7 @@
 import type {
-  SdInventoryAgentRelease,
   SdInventoryDiscoveryRange,
   SdInventorySettings,
   SdInventorySnmpTarget,
-  SdInventoryToken,
 } from '@prisma/client'
 import { isInventoryStale, usagePercent } from '@/src/lib/servicedesk/inventory'
 import type { SdInventoryAlertRow } from '@/src/repositories/sd-inventory-alert.repository'
@@ -13,7 +11,6 @@ import type {
   SdInventorySoftwareGroup,
 } from '@/src/repositories/sd-inventory-device.repository'
 import type {
-  SdInventoryAgentReleaseDTO,
   SdInventoryAlertDTO,
   SdInventoryDeviceDetailDTO,
   SdInventoryDeviceDTO,
@@ -22,8 +19,6 @@ import type {
   SdInventorySettingsDTO,
   SdInventorySnmpTargetDTO,
   SdInventorySoftwareCatalogRowDTO,
-  SdInventoryTokenDTO,
-  SdInventoryTokenWithValueDTO,
 } from '@/types/sd-inventory'
 
 /** Padrões usados enquanto o workspace não salvou nenhum ajuste. */
@@ -33,7 +28,6 @@ export const SD_INVENTORY_DEFAULT_SETTINGS: SdInventorySettingsDTO = {
   staleAfterDays: 7,
   syncConfigItems: true,
   defaultTypeId: null,
-  agentAutoUpdate: false,
 }
 
 export function toSdInventorySettingsDTO(
@@ -46,7 +40,6 @@ export function toSdInventorySettingsDTO(
     staleAfterDays: settings.staleAfterDays,
     syncConfigItems: settings.syncConfigItems,
     defaultTypeId: settings.defaultTypeId,
-    agentAutoUpdate: settings.agentAutoUpdate,
   }
 }
 
@@ -97,7 +90,6 @@ export function toSdInventoryDeviceDTO(
     ipAddresses: row.ipAddresses,
     macAddresses: row.macAddresses,
     disks: parseSdInventoryDisks(row.disks),
-    agentVersion: row.agentVersion,
     configItemId: row.configItemId,
     snmpTargetId: row.snmpTargetId,
     managed: row.managed,
@@ -171,25 +163,6 @@ export function toSdInventorySoftwareCatalogRowDTO(
   return { ...group }
 }
 
-export function toSdInventoryTokenDTO(
-  token: SdInventoryToken,
-): SdInventoryTokenDTO {
-  return {
-    id: token.id,
-    name: token.name,
-    lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
-    createdAt: token.createdAt.toISOString(),
-    revokedAt: token.revokedAt?.toISOString() ?? null,
-  }
-}
-
-export function toSdInventoryTokenWithValueDTO(
-  token: SdInventoryToken,
-  value: string,
-): SdInventoryTokenWithValueDTO {
-  return { ...toSdInventoryTokenDTO(token), token: value }
-}
-
 /** A community nunca sai: só informa que existe uma guardada. */
 export function toSdInventorySnmpTargetDTO(
   target: SdInventorySnmpTarget,
@@ -235,20 +208,5 @@ export function toSdInventoryDiscoveryRangeDTO(
     lastFound: range.lastFound,
     lastError: range.lastError,
     createdAt: range.createdAt.toISOString(),
-  }
-}
-
-export function toSdInventoryAgentReleaseDTO(
-  release: SdInventoryAgentRelease,
-): SdInventoryAgentReleaseDTO {
-  return {
-    id: release.id,
-    version: release.version,
-    os: release.os,
-    arch: release.arch,
-    sha256: release.sha256,
-    sizeBytes: release.sizeBytes,
-    active: release.active,
-    publishedAt: release.publishedAt.toISOString(),
   }
 }

@@ -1363,17 +1363,6 @@ export const sdMonitorPayloadInvalid = (
   message = 'Alerta em formato inválido',
 ): AppError => appError('SD_MONITOR_PAYLOAD_INVALID', message)
 
-export const sdInventoryTokenNotFound = (): AppError =>
-  appError('SD_INVENTORY_TOKEN_NOT_FOUND', 'Token de inventário não encontrado')
-
-export const sdInventoryTokenInvalid = (
-  message = 'Token de inventário inválido ou revogado',
-): AppError => appError('SD_INVENTORY_TOKEN_INVALID', message)
-
-export const sdInventoryPayloadInvalid = (
-  message = 'Relatório de inventário em formato inválido',
-): AppError => appError('SD_INVENTORY_PAYLOAD_INVALID', message)
-
 export const sdInventoryTargetNotFound = (): AppError =>
   appError(
     'SD_INVENTORY_TARGET_NOT_FOUND',
@@ -1400,10 +1389,6 @@ export const sdInventoryDeviceStateInvalid = (
 export const sdInventorySnmpCredentialsInvalid = (
   message = 'Credenciais SNMP inválidas',
 ): AppError => appError('SD_INVENTORY_SNMP_CREDENTIALS_INVALID', message)
-
-export const sdInventoryReleaseInvalid = (
-  message = 'Versão do agente inválida',
-): AppError => appError('SD_INVENTORY_RELEASE_INVALID', message)
 
 export const sdPortalLinkInvalid = (
   message = 'Link de acesso inválido ou já utilizado',
