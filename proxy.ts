@@ -59,8 +59,6 @@ const PUBLIC_ROUTES = [
   '/api/whatsapp/webhook', '/api/boleto/webhook', '/api/pabx/calls/webhook', '/api/pabx/voice-agent', '/api/crm/proposals', '/api/crm/forms',
   '/api/crm/integrations', '/api/crm/apollo/webhook', '/api/crm/workflows', '/api/crm/landing-pages',
   '/f', '/p', '/l', '/api/social/blob',
-  // Meeting booking pages (crm-ops C5): public link, embed and guest cancel link
-  '/m', '/api/crm/meetings', '/api/crm/meeting-bookings',
   // Deal room (nov: crm-deals C8): public page and API, the token is the access;
   // payment webhook of the proposal charges, authenticated by the PSP signature.
   '/sala', '/api/crm/deal-rooms', '/api/crm/payments',
@@ -268,23 +266,6 @@ function cspFor(nonce: string, site: boolean): string {
     : buildCspHeader(nonce)
 }
 
-/**
- * The meeting booking widget (`/m/<slug>/embed`) is made to sit inside other
- * sites (landing pages, forms), so it is the one route allowed in a frame.
- * Everything else keeps `frame-ancestors 'none'`.
- */
-const MEETING_EMBED_PATH = /^\/m\/[a-z0-9-]+\/embed\/?$/
-
-function allowFraming(response: NextResponse): NextResponse {
-  const csp = response.headers.get('Content-Security-Policy') ?? ''
-  response.headers.set(
-    'Content-Security-Policy',
-    csp.replace("frame-ancestors 'none'", 'frame-ancestors *'),
-  )
-  response.headers.delete('X-Frame-Options')
-  return response
-}
-
 function withSecurityHeaders(
   response: NextResponse,
   nonce: string,
@@ -467,12 +448,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   )
 
   if (isPublic) {
-    const response = withSecurityHeaders(
+    return withSecurityHeaders(
       NextResponse.next({ request: { headers: requestHeaders } }),
       nonce,
       pathSlug !== null,
     )
-    return MEETING_EMBED_PATH.test(pathname) ? allowFraming(response) : response
   }
 
   const sessionToken =

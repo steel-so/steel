@@ -253,10 +253,9 @@ const nextConfig: NextConfig = {
       ],
     },
     {
-      // Every route but the embeddable meeting widget (`/m/<slug>/embed`),
-      // which must be framable: the proxy sets its own CSP for it, and the
-      // site chat widget (script + API), which other sites load.
-      source: '/((?!m/[a-z0-9-]+/embed|steel-widget\\.js|api/widget/).*)',
+      // Every route but the site chat widget (script + API), which other
+      // sites load.
+      source: '/((?!steel-widget\\.js|api/widget/).*)',
       headers: securityHeaders,
     },
     {

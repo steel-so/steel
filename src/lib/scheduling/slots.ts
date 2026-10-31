@@ -1,7 +1,7 @@
 /**
- * Shared slot/availability engine (ADR 0059). Used by the CRM meeting pages
- * (C5) and by the WhatsApp native scheduling (Z10): weekly windows in an IANA
- * zone, step, minimum notice, horizon and buffer-aware conflict checks.
+ * Slot/availability engine (ADR 0059). Used by the WhatsApp native scheduling
+ * (Z10): weekly windows in an IANA zone, step, minimum notice, horizon and
+ * buffer-aware conflict checks.
  */
 import { type LocalParts, localParts, parseClock, zonedTimeToUtc } from './tz'
 
@@ -64,9 +64,9 @@ export function windowsOf(
 /**
  * Buffer-aware conflict between a candidate and one neighbour. The candidate
  * needs `afterCandidateMinutes` of room before the neighbour starts and the
- * neighbour needs `afterOtherMinutes` before the candidate may start. C5 uses
- * the page buffer for both, Z10 uses the candidate's service buffer on the
- * first and the neighbour's own service buffer on the second.
+ * neighbour needs `afterOtherMinutes` before the candidate may start. Z10 uses
+ * the candidate's service buffer on the first and the neighbour's own service
+ * buffer on the second.
  */
 export function bufferedOverlap(
   candidate: Interval,
