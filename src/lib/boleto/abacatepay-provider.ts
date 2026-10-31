@@ -1,4 +1,4 @@
-import { AbacatePayTransparent } from '@/lib/abacatepay-transparent'
+import { AbacatePayTransparent } from '@/lib/abacatepay'
 import { ABACATE_PAY } from '@/lib/env/server'
 import { boletoProviderError, boletoWebhookInvalid } from '@/src/errors'
 import { readAbacatePayWebhook } from '@/src/lib/abacatepay-webhook'

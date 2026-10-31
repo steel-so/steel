@@ -194,3 +194,49 @@ describe('AbacatePayClient.getCoupon()', () => {
     )
   })
 })
+
+describe('AbacatePayTransparent', () => {
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+  it('POSTs a PIX charge with the shared auth headers', async () => {
+    fetchSpy.mockResolvedValue(json({ success: true, data: { id: 'pix_1' }, error: null }))
+    const { AbacatePayTransparent } = await import('@/lib/abacatepay')
+
+    const res = await AbacatePayTransparent.create({
+      method: 'PIX',
+      data: { amount: 100 },
+    })
+
+    expect(res.success).toBe(true)
+    const [url, init] = fetchSpy.mock.calls[0] ?? []
+    expect(url).toBe('https://api.abacatepay.com/v2/transparents/create')
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-key')
+  })
+
+  it('GETs the status with an encoded id', async () => {
+    fetchSpy.mockResolvedValue(json({ success: true, data: { id: 'a b' }, error: null }))
+    const { AbacatePayTransparent } = await import('@/lib/abacatepay')
+    await AbacatePayTransparent.check('a b')
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe(
+      'https://api.abacatepay.com/v2/transparents/check?id=a%20b',
+    )
+  })
+
+  it('never throws: HTTP failures come back as success false', async () => {
+    const { AbacatePayTransparent } = await import('@/lib/abacatepay')
+    fetchSpy.mockResolvedValueOnce(json({ error: 'bad taxId' }, 400))
+    expect(await AbacatePayTransparent.check('x')).toEqual({
+      success: false,
+      data: null,
+      error: 'bad taxId',
+    })
+    fetchSpy.mockResolvedValueOnce(new Response('oops', { status: 502 }))
+    const res = await AbacatePayTransparent.check('x')
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/502/)
+  })
+})

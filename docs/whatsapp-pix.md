@@ -70,8 +70,8 @@ de sandbox).
   origem) e o header `X-Webhook-Signature` (HMAC-SHA256 base64 do corpo cru com
   a chave pública da doc) garante a integridade. Outros eventos são
   autenticados e ignorados.
-- **Cliente HTTP**: `lib/abacatepay-transparent.ts` (API v2, módulo próprio;
-  `lib/abacatepay.ts` segue só com a cobrança de assinaturas e já usa `/v2`).
+- **Cliente HTTP**: `lib/abacatepay.ts` (API v2), o único módulo da AbacatePay: URL base,
+  autenticação e erros valem para assinatura, cupom, Pix e boleto.
 - **A confirmar na homologação**: o formato exato de `data` em
   `transparent.completed` não está na doc pública; o parser aceita
   `data.transparent`, `data.checkout` ou `data` plano (`id`, `paidAmount` ou
