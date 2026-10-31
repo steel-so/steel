@@ -38,7 +38,8 @@ describe('CRM sales agent templates (C3)', () => {
       for (const spec of template.tools) {
         const tool = toolByName.get(spec.toolName)
         expect(tool, spec.toolName).toBeDefined()
-        expect(tool?.module).toBe('CRM')
+        // Platform tools (ws_members) have no module.
+        if (tool?.module) expect(tool.module).toBe('CRM')
         expect(spec.mode).toBe(tool?.kind === 'READ' ? 'AUTO' : 'APPROVAL')
       }
     },
