@@ -798,6 +798,10 @@ jobs:
       - lint
       - component-tests
       - e2e-tests
+      # `coverage-merge` is skipped (not failed) when a coverage shard fails, and
+      # the gate below only rejects 'failure' and 'cancelled', so the shards must
+      # be listed here or a red unit/integration test would not block a merge.
+      - coverage-tests
       - coverage-merge
       - build
       - docker-build
