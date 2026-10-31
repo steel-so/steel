@@ -170,6 +170,30 @@ describe('WhatsAppWebhookService', () => {
       vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockClear()
     })
 
+    it('should open a new conversation on the routed team (site chat widget)', async () => {
+      arrangeNewConversation()
+
+      expectOk(
+        await WhatsAppWebhookService.ingestInboundMessage(
+          baseInbound({ routeTeamId: 'team1' }),
+        ),
+      )
+
+      expect(mockedConversationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ teamId: 'team1' }),
+      )
+    })
+
+    it('should leave the team empty when the message is not routed', async () => {
+      arrangeNewConversation()
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(mockedConversationRepo.create.mock.lastCall?.[0]).not.toHaveProperty(
+        'teamId',
+      )
+    })
+
     it('should keep the AI quiet when a chatbot owns the message', async () => {
       arrangeNewConversation()
       vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockResolvedValue(
@@ -299,6 +323,47 @@ describe('WhatsAppWebhookService', () => {
         ok(createFakeWhatsAppConversationWithPreview({ id: 'closed1' })),
       )
     }
+
+    it('should hand a reopened conversation without a team to the routed team', async () => {
+      arrangeClosed({ aiConfigActive: true })
+
+      expectOk(
+        await WhatsAppWebhookService.ingestInboundMessage(
+          baseInbound({ routeTeamId: 'team1' }),
+        ),
+      )
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'closed1',
+        expect.objectContaining({ teamId: 'team1' }),
+      )
+    })
+
+    it('should keep the team of a reopened conversation that already has one', async () => {
+      arrangeClosed({ aiConfigActive: true })
+      mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
+        ok(
+          createFakeWhatsAppConversation({
+            id: 'closed1',
+            workspaceId: 'ws1',
+            contactId: 'contact1',
+            status: 'CLOSED',
+            teamId: 'team-old',
+            closedAt: new Date(),
+          }),
+        ),
+      )
+
+      expectOk(
+        await WhatsAppWebhookService.ingestInboundMessage(
+          baseInbound({ routeTeamId: 'team1' }),
+        ),
+      )
+
+      expect(mockedConversationRepo.update.mock.lastCall?.[1]).not.toHaveProperty(
+        'teamId',
+      )
+    })
 
     it('should reopen the closed conversation instead of creating a new one', async () => {
       arrangeClosed({ aiConfigActive: true })

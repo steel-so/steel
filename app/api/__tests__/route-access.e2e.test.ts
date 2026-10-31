@@ -77,6 +77,8 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/tv': 'TV link token',
   '/api/mcp': 'OAuth bearer token',
   '/api/v1': 'personal access token',
+  '/api/widget':
+    'site chat widget: public key + Origin on the allowed list (rate limited)',
   '/api/newsletters':
     'newsletter subscribe (rate limited, honeypot) and signed confirm/unsubscribe/preferences tokens',
 }
