@@ -10,6 +10,7 @@ import {
   putJson,
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
+import { prisma } from '@/src/lib/prisma'
 
 /** Public routes rate limit per IP: every call gets its own bucket. */
 const anonIp = () => ({
@@ -200,6 +201,35 @@ describe('meeting availability API', () => {
     expect(body.weeklyHours).toEqual({
       '2': [{ start: '08:00', end: '12:00' }],
     })
+  })
+
+  it('should keep the connected calendar when only the hours are saved', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const url = `${base(workspace.id)}/meeting-availability`
+    await prisma.crmMeetingAvailability.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        timezone: 'America/Sao_Paulo',
+        weeklyHours: {},
+        icsUrlEnc: 'stored-secret-address',
+      },
+    })
+
+    const saved = await putJson(
+      url,
+      { timezone: 'America/Sao_Paulo', weeklyHours: { '1': [] } },
+      user.cookie,
+    )
+    expect(saved.status).toBe(200)
+    expect((await saved.json()).data.hasCalendarFeed).toBe(true)
+
+    const removed = await putJson(
+      url,
+      { timezone: 'America/Sao_Paulo', weeklyHours: {}, icsUrl: null },
+      user.cookie,
+    )
+    expect((await removed.json()).data.hasCalendarFeed).toBe(false)
   })
 
   it('should reject inverted hours and a private calendar address', async () => {

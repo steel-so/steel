@@ -90,13 +90,16 @@ export type UpdateCrmMeetingPageDTO = z.infer<typeof UpdateCrmMeetingPageSchema>
 export const UpdateCrmMeetingAvailabilitySchema = z.object({
   timezone: TimezoneSchema,
   weeklyHours: WeeklyHoursSchema,
-  /** `null` or empty removes the calendar feed. */
+  /**
+   * `null` or empty removes the calendar feed; omitting the field keeps the
+   * stored one (saving only the working hours must not disconnect it).
+   */
   icsUrl: z
     .string()
     .trim()
     .max(2000)
     .nullish()
-    .transform((v) => (v ? v : null)),
+    .transform((v) => (v === undefined ? undefined : v ? v : null)),
 })
 export type UpdateCrmMeetingAvailabilityDTO = z.infer<
   typeof UpdateCrmMeetingAvailabilitySchema

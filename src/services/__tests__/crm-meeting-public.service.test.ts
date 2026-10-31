@@ -66,6 +66,7 @@ const bookingWithPage = (over = {}) => ({
 })
 
 const guest = {
+  consent: true as const,
   name: 'Cliente Teste',
   email: 'cliente@example.com',
   startsAt: '2026-11-09T13:00:00.000Z',

@@ -27,6 +27,7 @@ import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { CrmMeetingRepository } from '@/src/repositories/crm-meeting.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import type { UpdateCrmMeetingAvailabilityDTO } from '@/src/schemas/crm-meeting.schema'
 import { CrmMeetingAvailabilityService } from '../crm-meeting-availability.service'
 
 const members = vi.mocked(MembershipRepository)
@@ -39,9 +40,10 @@ const asRole = (role: Role) =>
     ok(createFakeMembership({ role })),
   )
 
-const dto = {
+const dto: UpdateCrmMeetingAvailabilityDTO = {
   timezone: 'America/Sao_Paulo',
   weeklyHours: { '1': [{ start: '09:00', end: '12:00' }] },
+  icsUrl: undefined,
 }
 
 beforeEach(() => {

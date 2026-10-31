@@ -145,3 +145,29 @@ describe('WeeklyHoursSchema windows', () => {
     ).toBe(false)
   })
 })
+
+describe('UpdateCrmMeetingAvailabilitySchema icsUrl', () => {
+  const base = { timezone: 'America/Sao_Paulo', weeklyHours: {} }
+
+  it('keeps an omitted address undefined so the stored feed survives', () => {
+    expect(
+      UpdateCrmMeetingAvailabilitySchema.parse(base).icsUrl,
+    ).toBeUndefined()
+  })
+
+  it.each([null, '', '   '])('turns %j into a removal', (value) => {
+    expect(
+      UpdateCrmMeetingAvailabilitySchema.parse({ ...base, icsUrl: value })
+        .icsUrl,
+    ).toBeNull()
+  })
+
+  it('trims a real address', () => {
+    expect(
+      UpdateCrmMeetingAvailabilitySchema.parse({
+        ...base,
+        icsUrl: ' https://cal.example.com/a.ics ',
+      }).icsUrl,
+    ).toBe('https://cal.example.com/a.ics')
+  })
+})

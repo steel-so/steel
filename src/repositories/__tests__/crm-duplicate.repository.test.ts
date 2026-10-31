@@ -21,10 +21,19 @@ async function setup() {
   return { workspace, user }
 }
 
-/** `loadPair` infers a union of two result shapes, which `expectOk` rejects. */
-function unwrap<T>(
-  result: { ok: true; value: T } | { ok: false; error: unknown },
-): T {
+/** `loadPair` returns a union of two result shapes; narrow it by hand. */
+async function pairOf(
+  workspaceId: string,
+  entity: 'PERSON' | 'COMPANY',
+  survivorId: string,
+  mergedId: string,
+) {
+  const result = await CrmDuplicateRepository.loadPair(
+    workspaceId,
+    entity,
+    survivorId,
+    mergedId,
+  )
   if (!result.ok) throw new Error('Expected ok result')
   return result.value
 }
@@ -497,22 +506,8 @@ describe('CrmDuplicateRepository', () => {
       const b = await seedCrmPerson(workspace.id, user.id)
       const c = await seedCrmCompany(workspace.id, user.id)
 
-      const people = unwrap(
-        await CrmDuplicateRepository.loadPair(
-          workspace.id,
-          'PERSON',
-          a.id,
-          b.id,
-        ),
-      )
-      const companies = unwrap(
-        await CrmDuplicateRepository.loadPair(
-          workspace.id,
-          'COMPANY',
-          c.id,
-          'missing',
-        ),
-      )
+      const people = await pairOf(workspace.id, 'PERSON', a.id, b.id)
+      const companies = await pairOf(workspace.id, 'COMPANY', c.id, 'missing')
 
       expect(people.survivor?.id).toBe(a.id)
       expect(people.merged?.id).toBe(b.id)
