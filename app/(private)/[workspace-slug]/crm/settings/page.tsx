@@ -10,6 +10,7 @@ import {
 } from '@/app/_components/header/breadcrumb-page'
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { CrmAuditLogSection } from '@/app/_components/settings/crm-audit-log-section'
+import { CrmDealsSettingsSection } from '@/app/_components/settings/crm-deals-settings-section'
 import { CrmLeadRulesSection } from '@/app/_components/settings/crm-lead-rules-section'
 import { CrmMembersSection } from '@/app/_components/settings/crm-members-section'
 import { CrmPipelineSettingsSection } from '@/app/_components/settings/crm-pipeline-settings-section'
@@ -88,6 +89,8 @@ export default async function CrmSettingsPage({
         <CrmLeadRulesSection workspaceId={workspaceId} />
 
         <CrmPipelineSettingsSection workspaceId={workspaceId} />
+
+        <CrmDealsSettingsSection workspaceId={workspaceId} />
 
         <CrmProfilesSection workspaceId={workspaceId} />
 

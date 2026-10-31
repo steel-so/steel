@@ -24,6 +24,7 @@ import {
   NewTwitterIcon,
   PackageIcon,
   QuoteUpIcon,
+  RepeatIcon,
   Route01Icon,
   Settings02Icon,
   Share08Icon,
@@ -83,6 +84,9 @@ export default async function CrmLayout({
           </NavItem>
           <NavItem href={`${base}/companies`} icon={Building03Icon}>
             Empresas
+          </NavItem>
+          <NavItem href={`${base}/renewals`} icon={RepeatIcon}>
+            Renovações
           </NavItem>
           <NavItem href={`${base}/people`} icon={UserMultipleIcon}>
             Pessoas

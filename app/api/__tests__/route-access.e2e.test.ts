@@ -60,6 +60,8 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/meetings':
     'public booking page: slug of an active page, rate limited, consent required to book',
   '/api/crm/meeting-bookings': 'guest manage token',
+  '/api/crm/deal-rooms': 'deal room link token (rate limited)',
+  '/api/crm/payments': 'payment provider signature over the raw body',
   '/api/servicedesk/approvals': 'approval link token',
   '/api/surveys/public': 'survey link token',
   '/api/servicedesk/monitoring': 'monitoring source token',

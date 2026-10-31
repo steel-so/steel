@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { withAxiom } from '@/lib/axiom/server'
 import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import { AcceptCrmProposalSchema } from '@/src/schemas/crm-proposal.schema'
-import { CrmProposalService } from '@/src/services/crm-proposal.service'
+import { CrmProposalPaymentService } from '@/src/services/crm-proposal-payment.service'
 import { readJsonBody } from '@/utils/http-request'
 import {
   handleError,
@@ -33,7 +33,11 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     )
   }
 
-  const result = await CrmProposalService.accept(shareToken, ip, parsed.data)
+  const result = await CrmProposalPaymentService.accept(
+    shareToken,
+    ip,
+    parsed.data,
+  )
   if (!result.ok) return handleError(result.error)
 
   return successResponse(result.value)

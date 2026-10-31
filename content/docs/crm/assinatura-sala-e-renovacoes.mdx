@@ -1,0 +1,79 @@
+---
+title: Assinatura, sala de negociação e renovações
+description: Aceite a proposta com assinatura digital e cobrança, compartilhe uma sala de negociação com o cliente e acompanhe os contratos até a renovação.
+section: crm
+order: 19
+---
+
+Três ferramentas para o que acontece depois que a proposta sai: o cliente
+assina e paga, negocia com você em uma página só dele e, mais tarde, o
+contrato volta como renovação.
+
+## Assinatura digital e cobrança na proposta
+
+Em **CRM › Configurações › Assinatura, cobrança e renovações**, um
+administrador liga:
+
+- **Aceitar a proposta com assinatura digital:** na página pública, o cliente
+  informa o nome, desenha a assinatura e aceita. Guardamos a imagem e o
+  SHA-256 dela e do conteúdo da proposta no momento da assinatura, como
+  prova do que foi aceito. Com a chave ligada, o aceite só pelo nome deixa de
+  valer.
+- **Cobrar por Pix ou boleto na proposta:** vem **desligada**. Ainda não há um
+  provedor de pagamento escolhido, então as cobranças saem por um **provedor
+  de teste**: o código é bem formado, mas nenhum banco consegue pagá-lo e
+  nenhum dinheiro passa por aqui.
+
+Com a cobrança ligada, abra a proposta (já enviada) e clique em **Cobrança e
+assinatura**:
+
+1. Escolha **Pix** ou **boleto**, o valor (por padrão, o da oportunidade) e
+   por quantos dias a cobrança vale.
+2. O cliente vê o código na própria página da proposta, com o botão de
+   copiar, e a tela troca para "paga" sozinha quando o pagamento chega.
+3. Quando o pagamento é confirmado, a oportunidade vai para a primeira etapa
+   de **ganho** do funil, entra uma nota no negócio e o responsável pela
+   proposta recebe uma notificação.
+
+Para experimentar o fluxo, um administrador pode usar **Simular pagamento**
+em uma cobrança de teste.
+
+## Sala de negociação
+
+Abra uma oportunidade em **CRM › Oportunidades**: o bloco **Sala de
+negociação** cria uma página só daquele negócio, com um link que você envia ao
+cliente.
+
+- **Proposta:** a proposta enviada daquele negócio.
+- **Materiais:** links (apresentações, contratos, vídeos).
+- **Plano de ação em conjunto:** os passos do negócio, cada um com um
+  responsável, **Vendedor** ou **Cliente**. O cliente marca só os dele.
+- **Conversa:** o cliente escreve na sala e o responsável pela oportunidade
+  recebe a notificação; você responde pelo mesmo bloco.
+- **Quem abriu o quê:** na primeira visita a pessoa informa nome e e-mail, e a
+  sala registra a abertura da sala, da proposta e de cada material.
+
+O link é o acesso. **Desligue o link** para cortar o acesso, ou use **Trocar
+link** para gerar outro e invalidar o antigo.
+
+## Renovações e expansão
+
+Em **CRM › Renovações**, cadastre os contratos dos clientes (nome, valor,
+início, fim e se renova sozinho).
+
+- **Aviso de vencimento:** quando o contrato entra na janela configurada (60
+  dias por padrão), o responsável recebe uma notificação, uma única vez.
+- **Oportunidade de renovação:** é criada sozinha no mesmo funil da venda
+  original, na primeira etapa em aberto, com o valor do contrato e o fim dele
+  como data de fechamento. Também dá para abrir na hora, em **Abrir
+  renovação**.
+- **Contratos que renovam sozinhos** avançam um prazo quando vencem; os demais
+  passam a **Vencido**.
+- **Ver expansão:** mostra o que clientes parecidos compraram e este ainda
+  não, e se é um bom momento para oferecer. O momento usa a última pesquisa de
+  satisfação respondida (NPS, CSAT ou CES) e a [saúde do
+  cliente](/docs/crm/saude-do-cliente-e-do-negocio): com risco alto ou nota
+  baixa, o Steel diz para esperar e resolver isso antes.
+
+A varredura roda todo dia cedo; administradores podem rodá-la na hora em
+**Varrer agora**.
