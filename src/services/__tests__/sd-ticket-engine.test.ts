@@ -27,6 +27,12 @@ vi.mock('@/src/services/steel-agent-dispatcher', () => ({
 vi.mock('@/src/services/sd-notification.service', () => ({
   notifySdEvent: vi.fn(async () => ({ ok: true, value: {} })),
 }))
+vi.mock('@/src/services/qa-review.service', () => ({
+  QaReviewService: {
+    onConversationClosed: vi.fn(async () => ({ ok: true, value: null })),
+    onTicketResolved: vi.fn(async () => ({ ok: true, value: null })),
+  },
+}))
 vi.mock('@/src/services/satisfaction-survey.service', () => ({
   SatisfactionSurveyService: {
     onTicketResolved: vi.fn(async () => ({ ok: true, value: null })),
@@ -49,6 +55,7 @@ import { SdChangeScheduleRepository } from '@/src/repositories/sd-change-schedul
 import { SdChangeWindowRepository } from '@/src/repositories/sd-change-window.repository'
 import { SdTicketRepository } from '@/src/repositories/sd-ticket.repository'
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
+import { QaReviewService } from '../qa-review.service'
 import { SatisfactionSurveyService } from '../satisfaction-survey.service'
 import { notifySdEvent } from '../sd-notification.service'
 import {
@@ -1918,6 +1925,22 @@ describe('changePhase', () => {
           },
         ),
       )
+    })
+
+    it('schedules the QA review when the ticket is resolved, never failing the move', async () => {
+      const move = () =>
+        SdTicketEngine.changePhase(ticket(), 'ph-target', agent, config(), {
+          solution: 'Reiniciado',
+          solutionClassificationId: 'sc',
+        })
+      vi.mocked(QaReviewService.onTicketResolved).mockResolvedValue(ok(null))
+      expectOk(await move())
+      expect(QaReviewService.onTicketResolved).toHaveBeenCalledTimes(1)
+
+      vi.mocked(QaReviewService.onTicketResolved).mockResolvedValue(
+        err(databaseError()),
+      )
+      expectOk(await move())
     })
 
     it('rejects an invalid solution classification', async () => {

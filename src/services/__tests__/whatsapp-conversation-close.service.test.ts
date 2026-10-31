@@ -27,6 +27,12 @@ vi.mock('@/src/repositories/whatsapp-close-status.repository', () => ({
     listActive: vi.fn(async () => ({ ok: true, value: [] })),
   },
 }))
+vi.mock('@/src/services/qa-review.service', () => ({
+  QaReviewService: {
+    onConversationClosed: vi.fn(async () => ({ ok: true, value: null })),
+    onTicketResolved: vi.fn(async () => ({ ok: true, value: null })),
+  },
+}))
 vi.mock('@/src/services/satisfaction-survey.service', () => ({
   SatisfactionSurveyService: {
     onConversationClosed: vi.fn(async () => ({ ok: true, value: null })),
@@ -54,6 +60,7 @@ import { WhatsAppCloseStatusRepository } from '@/src/repositories/whatsapp-close
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppSettingsRepository } from '@/src/repositories/whatsapp-settings.repository'
+import { QaReviewService } from '../qa-review.service'
 import { SatisfactionSurveyService } from '../satisfaction-survey.service'
 import { WhatsAppConversationService } from '../whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
@@ -165,6 +172,22 @@ describe('WhatsAppConversationService.close()', () => {
 
     arrangeConversation({ status: 'IN_PROGRESS' })
     vi.mocked(SatisfactionSurveyService.onConversationClosed).mockResolvedValue(
+      err(databaseError()),
+    )
+    expectOk(await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {}))
+  })
+
+  it('should schedule the QA review on close and survive a scheduling failure', async () => {
+    asRole('MEMBER')
+    arrangeConversation({ status: 'IN_PROGRESS' })
+    vi.mocked(QaReviewService.onConversationClosed).mockResolvedValue(ok(null))
+    expectOk(await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {}))
+    expect(QaReviewService.onConversationClosed).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'conv1' }),
+    )
+
+    arrangeConversation({ status: 'IN_PROGRESS' })
+    vi.mocked(QaReviewService.onConversationClosed).mockResolvedValue(
       err(databaseError()),
     )
     expectOk(await WhatsAppConversationService.close('u1', 'ws1', 'conv1', {}))
