@@ -27,6 +27,9 @@ vi.mock('../whatsapp-pix.service', () => ({
   deliverText: vi.fn(),
   formatPixAmount: (n: number) => `R$ ${n}`,
 }))
+vi.mock('@/src/lib/whatsapp/realtime', () => ({
+  publishWhatsAppEvent: vi.fn(),
+}))
 vi.mock('@/src/lib/boleto/registry', () => ({
   getActiveBoletoProvider: vi.fn(),
 }))

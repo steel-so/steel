@@ -15,6 +15,7 @@ import type {
 } from '@/src/lib/boleto/provider'
 import { getActiveBoletoProvider } from '@/src/lib/boleto/registry'
 import { err, ok, type Result } from '@/src/lib/result'
+import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import {
   toWhatsAppBoletoChargeDTO,
   toWhatsAppBoletoSettingsDTO,
@@ -88,6 +89,14 @@ async function requireEnabled(
   if (!settings.ok) return settings
   if (!settings.value?.enabled) return err(boletoDisabled())
   return getActiveBoletoProvider()
+}
+
+async function publishCharge(charge: WhatsAppBoletoCharge): Promise<void> {
+  await publishWhatsAppEvent(charge.workspaceId, {
+    type: 'boleto-charge.updated',
+    conversationId: charge.conversationId,
+    charge: toWhatsAppBoletoChargeDTO(charge),
+  })
 }
 
 async function noteOnOpportunity(charge: WhatsAppBoletoCharge): Promise<void> {
@@ -270,6 +279,7 @@ export const WhatsAppBoletoService = {
         opportunityId: dto.opportunityId ?? null,
       },
     })
+    await publishCharge(stored.value)
     return ok(toWhatsAppBoletoChargeDTO(stored.value))
   },
 
@@ -337,6 +347,7 @@ export const WhatsAppBoletoService = {
       targetId: chargeId,
       meta: { workspaceId, conversationId },
     })
+    await publishCharge(canceled.value)
     return ok(toWhatsAppBoletoChargeDTO(canceled.value))
   },
 
@@ -376,6 +387,7 @@ export const WhatsAppBoletoService = {
         },
       })
       await noteOnOpportunity(paid.value)
+      await publishCharge(paid.value)
       return ok(toWhatsAppBoletoChargeDTO(paid.value))
     }
 
@@ -384,6 +396,7 @@ export const WhatsAppBoletoService = {
         ? await WhatsAppBoletoChargeRepository.markRefunded(found.value.id)
         : await WhatsAppBoletoChargeRepository.markExpired(found.value.id)
     if (!changed.ok) return changed
+    if (changed.value) await publishCharge(changed.value)
     return ok(toWhatsAppBoletoChargeDTO(changed.value ?? found.value))
   },
 }
