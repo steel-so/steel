@@ -52,8 +52,6 @@ const PUBLIC_ROUTES = [
   '/robots.txt', '/sitemap.xml', '/llms.txt', '/llms-full.txt',
   '/manifest.webmanifest', '/opengraph-image', '/twitter-image', '/icon',
   '/apple-icon',
-  // PWA (nov: pwa-push): service worker and installable-app icons, no session
-  '/sw.js', '/pwa-icon',
   // Old address of the API reference: redirects to /dev/api
   '/reference',
   '/api/whatsapp/webhook', '/api/boleto/webhook', '/api/pabx/calls/webhook', '/api/pabx/voice-agent', '/api/crm/proposals', '/api/crm/forms',

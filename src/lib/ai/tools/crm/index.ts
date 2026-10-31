@@ -5,7 +5,6 @@ import { CRM_CONTACT_TOOLS } from './contacts'
 import { CRM_INSIGHT_TOOLS } from './insights'
 import { CRM_LEAD_TOOLS } from './leads'
 import { CRM_OPPORTUNITY_TOOLS } from './opportunities'
-import { CRM_PROSPECTING_TOOLS } from './prospecting'
 import { CRM_SOCIAL_TOOLS } from './social'
 import { CRM_WORK_TOOLS } from './work'
 
@@ -19,5 +18,4 @@ export const CRM_AI_TOOLS: AnySteelAiTool[] = [
   crmAssignOwnerTool,
   ...CRM_SOCIAL_TOOLS,
   ...CRM_BUILDER_TOOLS,
-  ...CRM_PROSPECTING_TOOLS,
 ]
