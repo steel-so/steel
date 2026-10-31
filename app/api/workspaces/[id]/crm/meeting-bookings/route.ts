@@ -1,7 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { withAxiom } from '@/lib/axiom/server'
 import { getAuthSession } from '@/src/lib/auth-session'
-import { requireConsent } from '@/src/lib/consent'
 import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import { ListCrmMeetingBookingsSchema } from '@/src/schemas/crm-meeting.schema'
 import { CrmMeetingPageService } from '@/src/services/crm-meeting-page.service'

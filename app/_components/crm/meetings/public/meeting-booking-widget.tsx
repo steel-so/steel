@@ -11,7 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/src/hooks/_fetch'
-import { bookPublicMeeting, publicMeetingApi } from '@/src/hooks/use-crm-meetings'
+import {
+  bookPublicMeeting,
+  publicMeetingApi,
+} from '@/src/hooks/use-crm-meetings'
 import type {
   PublicMeetingBookingDTO,
   PublicMeetingPageDTO,
@@ -148,7 +151,10 @@ export function MeetingBookingWidget({
 
   if (booked) {
     return (
-      <div className='flex flex-col gap-3 rounded-xl border bg-card p-6' role='status'>
+      <div
+        className='flex flex-col gap-3 rounded-xl border bg-card p-6'
+        role='status'
+      >
         <h2 className='font-semibold text-xl'>Reunião confirmada</h2>
         <p className='text-sm'>
           {booked.pageTitle} com {booked.hostName}
@@ -156,7 +162,9 @@ export function MeetingBookingWidget({
         <p className='font-medium'>{fullLabel(booked.startsAt, guestZone)}</p>
         <p className='text-muted-foreground text-xs'>Horário de {guestZone}</p>
         {booked.location ? (
-          <p className='break-words text-sm'>Local ou link: {booked.location}</p>
+          <p className='break-words text-sm'>
+            Local ou link: {booked.location}
+          </p>
         ) : null}
         <p className='text-muted-foreground text-sm'>
           Enviamos a confirmação para {email}, com o convite para a sua agenda.
@@ -274,7 +282,9 @@ export function MeetingBookingWidget({
             void submit()
           }}
         >
-          <p className='font-medium text-sm'>{fullLabel(selected, guestZone)}</p>
+          <p className='font-medium text-sm'>
+            {fullLabel(selected, guestZone)}
+          </p>
           <div className='flex flex-col gap-1.5'>
             <Label htmlFor='meeting-guest-name'>Nome</Label>
             <Input
@@ -309,7 +319,9 @@ export function MeetingBookingWidget({
             />
           </div>
           <div className='flex flex-col gap-1.5'>
-            <Label htmlFor='meeting-guest-notes'>Sobre o que quer conversar? (opcional)</Label>
+            <Label htmlFor='meeting-guest-notes'>
+              Sobre o que quer conversar? (opcional)
+            </Label>
             <Textarea
               id='meeting-guest-notes'
               rows={3}
@@ -318,8 +330,12 @@ export function MeetingBookingWidget({
               onChange={(event) => setNotes(event.target.value)}
             />
           </div>
-          <label className='flex items-start gap-2 text-sm'>
+          <Label
+            htmlFor='meeting-consent'
+            className='flex items-start gap-2 font-normal text-sm'
+          >
             <Checkbox
+              id='meeting-consent'
               checked={consent}
               onCheckedChange={(checked) => setConsent(checked === true)}
             />
@@ -327,7 +343,7 @@ export function MeetingBookingWidget({
               Concordo que {page.workspaceName} use meus dados para agendar esta
               reunião e entrar em contato sobre ela.
             </span>
-          </label>
+          </Label>
           {error ? (
             <p className='text-destructive text-sm' role='alert'>
               {error}

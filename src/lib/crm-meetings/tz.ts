@@ -56,7 +56,8 @@ const WEEKDAYS: Record<string, number> = {
 /** The wall-clock fields of an instant in a zone. */
 export function localParts(date: Date, timezone: string): LocalParts {
   const parts = formatter(timezone).formatToParts(date)
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '0'
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? '0'
   return {
     year: Number(get('year')),
     month: Number(get('month')),
@@ -76,10 +77,23 @@ function offsetAt(instant: number, timezone: string): number {
 
 /** The instant a wall-clock time happens in a zone (DST gaps move forward). */
 export function zonedTimeToUtc(
-  fields: { year: number; month: number; day: number; hour: number; minute: number },
+  fields: {
+    year: number
+    month: number
+    day: number
+    hour: number
+    minute: number
+  },
   timezone: string,
 ): Date {
-  const wall = Date.UTC(fields.year, fields.month - 1, fields.day, fields.hour, fields.minute, 0)
+  const wall = Date.UTC(
+    fields.year,
+    fields.month - 1,
+    fields.day,
+    fields.hour,
+    fields.minute,
+    0,
+  )
   let guess = wall - offsetAt(wall, timezone)
   guess = wall - offsetAt(guess, timezone)
   return new Date(guess)

@@ -2,7 +2,6 @@
 
 import {
   CodeIcon,
-  Copy01Icon,
   Delete02Icon,
   Link01Icon,
   PencilEdit02Icon,
@@ -23,7 +22,12 @@ import {
 } from '@/src/hooks/use-crm-meetings'
 import type { CrmMeetingPageDTO } from '@/types/crm-meeting'
 import { MeetingAvailabilityForm } from './meeting-availability-form'
-import { embedCode, FORMAT_LABEL, formatWhen, publicUrl } from './meeting-labels'
+import {
+  embedCode,
+  FORMAT_LABEL,
+  formatWhen,
+  publicUrl,
+} from './meeting-labels'
 import { MeetingPageEditorSheet } from './meeting-page-editor-sheet'
 
 async function copy(text: string, done: string) {
@@ -94,7 +98,10 @@ function PagesTab({ workspaceId }: { workspaceId: string }) {
       ) : (
         <ul className='grid gap-3 md:grid-cols-2'>
           {pages.data?.map((page) => (
-            <li key={page.id} className='flex flex-col gap-3 rounded-xl border p-4'>
+            <li
+              key={page.id}
+              className='flex flex-col gap-3 rounded-xl border p-4'
+            >
               <div className='flex items-start justify-between gap-2'>
                 <div className='min-w-0'>
                   <p className='truncate font-medium'>{page.title}</p>
@@ -178,7 +185,11 @@ function BookingsTab({ workspaceId }: { workspaceId: string }) {
   const cancel = useCancelCrmMeetingBooking(workspaceId)
 
   function cancelBooking(id: string, guest: string) {
-    if (!window.confirm(`Cancelar a reunião com ${guest}? Ele recebe um aviso por e-mail.`)) {
+    if (
+      !window.confirm(
+        `Cancelar a reunião com ${guest}? Ele recebe um aviso por e-mail.`,
+      )
+    ) {
       return
     }
     cancel.mutate(id, {
@@ -214,7 +225,10 @@ function BookingsTab({ workspaceId }: { workspaceId: string }) {
       ) : (
         <ul className='flex flex-col divide-y rounded-lg border'>
           {bookings.data?.map((item) => (
-            <li key={item.id} className='flex flex-wrap items-center gap-3 px-3 py-2 text-sm'>
+            <li
+              key={item.id}
+              className='flex flex-wrap items-center gap-3 px-3 py-2 text-sm'
+            >
               <span className='w-36 shrink-0 font-medium'>
                 {formatWhen(item.startsAt, 'America/Sao_Paulo')}
               </span>

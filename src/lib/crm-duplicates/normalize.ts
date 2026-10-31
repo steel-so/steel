@@ -83,7 +83,7 @@ export function domainKey(value: string | null | undefined): string | null {
     .replace(/^[a-z]+:\/\//, '')
     .replace(/^www\./, '')
     .split(/[/?#:]/)[0]
-  return host && host.includes('.') ? host : null
+  return host?.includes('.') ? host : null
 }
 
 export function emailKey(value: string | null | undefined): string | null {

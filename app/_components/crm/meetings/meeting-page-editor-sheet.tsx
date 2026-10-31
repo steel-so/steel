@@ -87,7 +87,10 @@ function fromPage(page: CrmMeetingPageDTO): FormState {
 const FORMAT_ITEMS = (Object.keys(FORMAT_LABEL) as CrmMeetingFormat[]).map(
   (value) => ({ value, label: FORMAT_LABEL[value] }),
 )
-const TIMEZONE_ITEMS = COMMON_TIMEZONES.map((value) => ({ value, label: value }))
+const TIMEZONE_ITEMS = COMMON_TIMEZONES.map((value) => ({
+  value,
+  label: value,
+}))
 
 function NumberField({
   id,
@@ -195,7 +198,9 @@ export function MeetingPageEditorSheet({
       <SheetContent className='flex w-full flex-col gap-0 overflow-y-auto sm:max-w-xl'>
         <SheetHeader>
           <SheetTitle>
-            {page ? 'Editar página de agendamento' : 'Nova página de agendamento'}
+            {page
+              ? 'Editar página de agendamento'
+              : 'Nova página de agendamento'}
           </SheetTitle>
           <SheetDescription>
             O cliente escolhe um horário livre e o Steel cria o lead, a reunião
@@ -334,7 +339,9 @@ export function MeetingPageEditorSheet({
             </div>
           </div>
           <div className='flex flex-col gap-1.5'>
-            <Label htmlFor='meeting-location'>Link da chamada ou endereço</Label>
+            <Label htmlFor='meeting-location'>
+              Link da chamada ou endereço
+            </Label>
             <Input
               id='meeting-location'
               value={form.location}
@@ -354,11 +361,13 @@ export function MeetingPageEditorSheet({
               tempo recebe a próxima reunião.
             </p>
             {(members.data ?? []).map((member) => (
-              <label
+              <Label
                 key={member.id}
-                className='flex items-center gap-2 text-sm'
+                htmlFor={`host-${member.id}`}
+                className='flex items-center gap-2 font-normal text-sm'
               >
                 <Checkbox
+                  id={`host-${member.id}`}
                   checked={form.hostUserIds.includes(member.id)}
                   onCheckedChange={(checked) =>
                     toggleHost(member.id, checked === true)
@@ -368,17 +377,21 @@ export function MeetingPageEditorSheet({
                 <span className='text-muted-foreground text-xs'>
                   {member.email}
                 </span>
-              </label>
+              </Label>
             ))}
           </fieldset>
 
-          <label className='flex items-center justify-between gap-2 text-sm'>
+          <Label
+            htmlFor='meeting-active'
+            className='flex items-center justify-between gap-2 font-normal text-sm'
+          >
             Página ativa
             <Switch
+              id='meeting-active'
               checked={form.active}
               onCheckedChange={(active) => patch({ active })}
             />
-          </label>
+          </Label>
         </div>
 
         <SheetFooter className='flex-row justify-end gap-2'>
@@ -388,7 +401,9 @@ export function MeetingPageEditorSheet({
           <Button
             onClick={save}
             disabled={
-              saving || form.title.trim().length < 2 || form.hostUserIds.length === 0
+              saving ||
+              form.title.trim().length < 2 ||
+              form.hostUserIds.length === 0
             }
           >
             {saving ? 'Salvando…' : 'Salvar'}

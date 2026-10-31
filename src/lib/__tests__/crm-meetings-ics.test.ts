@@ -128,7 +128,7 @@ describe('buildInvite', () => {
     expect(ics).toContain('METHOD:REQUEST')
     expect(ics).toContain('DTSTART:20261103T130000Z')
     expect(ics).toContain('SUMMARY:Conversa\\, rápida')
-    expect(ics).toContain('DESCRIPTION:a;b\\nc')
+    expect(ics).toContain('DESCRIPTION:a\\;b\\nc')
     expect(ics).toContain('LOCATION:https://meet.example/x')
     expect(ics).toContain('STATUS:CONFIRMED')
     expect(ics.endsWith('\r\n')).toBe(true)

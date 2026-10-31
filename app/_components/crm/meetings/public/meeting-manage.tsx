@@ -16,7 +16,8 @@ export function MeetingManage({
   const [booking, setBooking] = useState(initial)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo'
+  const zone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo'
   const when = new Intl.DateTimeFormat('pt-BR', {
     timeZone: zone,
     weekday: 'long',
@@ -40,7 +41,9 @@ export function MeetingManage({
         ),
       )
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível cancelar')
+      setError(
+        cause instanceof Error ? cause.message : 'Não foi possível cancelar',
+      )
     } finally {
       setBusy(false)
     }
@@ -55,7 +58,9 @@ export function MeetingManage({
       <p className='text-sm'>
         {booking.pageTitle} com {booking.hostName}
       </p>
-      <p className={canceled ? 'font-medium line-through' : 'font-medium'}>{when}</p>
+      <p className={canceled ? 'font-medium line-through' : 'font-medium'}>
+        {when}
+      </p>
       <p className='text-muted-foreground text-xs'>Horário de {zone}</p>
       {!canceled && booking.location ? (
         <p className='break-words text-sm'>Local ou link: {booking.location}</p>

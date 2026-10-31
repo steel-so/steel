@@ -23,7 +23,10 @@ interface Property {
 }
 
 function unfold(text: string): string[] {
-  return text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/)
+  return text
+    .replace(/\r\n[ \t]/g, '')
+    .replace(/\n[ \t]/g, '')
+    .split(/\r?\n/)
 }
 
 function parseLine(line: string): Property | null {
@@ -33,9 +36,16 @@ function parseLine(line: string): Property | null {
   const params: Record<string, string> = {}
   for (const raw of head.slice(1)) {
     const eq = raw.indexOf('=')
-    if (eq > 0) params[raw.slice(0, eq).toUpperCase()] = raw.slice(eq + 1).replace(/"/g, '')
+    if (eq > 0)
+      params[raw.slice(0, eq).toUpperCase()] = raw
+        .slice(eq + 1)
+        .replace(/"/g, '')
   }
-  return { name: (head[0] ?? '').toUpperCase(), params, value: line.slice(colon + 1).trim() }
+  return {
+    name: (head[0] ?? '').toUpperCase(),
+    params,
+    value: line.slice(colon + 1).trim(),
+  }
 }
 
 interface Moment {
@@ -44,7 +54,9 @@ interface Moment {
 }
 
 function parseMoment(prop: Property, fallbackTimezone: string): Moment | null {
-  const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(prop.value)
+  const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(
+    prop.value,
+  )
   if (!m) return null
   const [, y, mo, d, h, mi, , z] = m
   const fields = {
@@ -57,7 +69,15 @@ function parseMoment(prop: Property, fallbackTimezone: string): Moment | null {
   const allDay = prop.params.VALUE === 'DATE' || h === undefined
   if (z) {
     return {
-      date: new Date(Date.UTC(fields.year, fields.month - 1, fields.day, fields.hour, fields.minute)),
+      date: new Date(
+        Date.UTC(
+          fields.year,
+          fields.month - 1,
+          fields.day,
+          fields.hour,
+          fields.minute,
+        ),
+      ),
       allDay,
     }
   }
@@ -70,7 +90,10 @@ function parseMoment(prop: Property, fallbackTimezone: string): Moment | null {
 }
 
 function parseDuration(value: string): number | null {
-  const m = /^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(value)
+  const m =
+    /^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(
+      value,
+    )
   if (!m) return null
   const [, w, d, h, mi, s] = m
   return (
@@ -81,7 +104,15 @@ function parseDuration(value: string): number | null {
   )
 }
 
-const BYDAY: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }
+const BYDAY: Record<string, number> = {
+  SU: 0,
+  MO: 1,
+  TU: 2,
+  WE: 3,
+  TH: 4,
+  FR: 5,
+  SA: 6,
+}
 
 interface Rule {
   freq: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
@@ -98,10 +129,19 @@ function parseRule(value: string, fallbackTimezone: string): Rule | null {
     if (eq > 0) map.set(part.slice(0, eq).toUpperCase(), part.slice(eq + 1))
   }
   const freq = map.get('FREQ')
-  if (freq !== 'DAILY' && freq !== 'WEEKLY' && freq !== 'MONTHLY' && freq !== 'YEARLY') return null
+  if (
+    freq !== 'DAILY' &&
+    freq !== 'WEEKLY' &&
+    freq !== 'MONTHLY' &&
+    freq !== 'YEARLY'
+  )
+    return null
   const untilRaw = map.get('UNTIL')
   const until = untilRaw
-    ? (parseMoment({ name: 'UNTIL', params: {}, value: untilRaw }, fallbackTimezone)?.date ?? null)
+    ? (parseMoment(
+        { name: 'UNTIL', params: {}, value: untilRaw },
+        fallbackTimezone,
+      )?.date ?? null)
     : null
   const byDay = (map.get('BYDAY') ?? '')
     .split(',')
@@ -134,7 +174,8 @@ function expand(
   const limit = rule.until?.getTime() ?? Number.POSITIVE_INFINITY
 
   const push = (instant: Date): boolean => {
-    if (instant.getTime() > limit || instant.getTime() >= to.getTime()) return false
+    if (instant.getTime() > limit || instant.getTime() >= to.getTime())
+      return false
     if (rule.count !== null && produced >= rule.count) return false
     if (instant.getTime() >= first.getTime()) {
       produced += 1
@@ -145,30 +186,59 @@ function expand(
 
   if (rule.freq === 'DAILY') {
     for (let i = 0; ; i++) {
-      const base = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + i * rule.interval))
-      if (!push(at(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()))) break
+      const base = new Date(
+        Date.UTC(parts.year, parts.month - 1, parts.day + i * rule.interval),
+      )
+      if (
+        !push(
+          at(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()),
+        )
+      )
+        break
     }
   } else if (rule.freq === 'WEEKLY') {
-    const days = rule.byDay.length > 0 ? [...rule.byDay].sort() : [parts.weekday]
+    const days =
+      rule.byDay.length > 0 ? [...rule.byDay].sort() : [parts.weekday]
     for (let week = 0; ; week++) {
       let stop = false
       for (const weekday of days) {
         const base = new Date(
-          Date.UTC(parts.year, parts.month - 1, parts.day + week * 7 * rule.interval + (weekday - parts.weekday)),
+          Date.UTC(
+            parts.year,
+            parts.month - 1,
+            parts.day + week * 7 * rule.interval + (weekday - parts.weekday),
+          ),
         )
-        if (!push(at(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()))) stop = true
+        if (
+          !push(
+            at(
+              base.getUTCFullYear(),
+              base.getUTCMonth() + 1,
+              base.getUTCDate(),
+            ),
+          )
+        )
+          stop = true
       }
       if (stop) break
     }
   } else if (rule.freq === 'MONTHLY') {
     for (let i = 0; ; i++) {
-      const base = new Date(Date.UTC(parts.year, parts.month - 1 + i * rule.interval, parts.day))
+      const base = new Date(
+        Date.UTC(parts.year, parts.month - 1 + i * rule.interval, parts.day),
+      )
       if (base.getUTCDate() !== parts.day) continue
-      if (!push(at(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()))) break
+      if (
+        !push(
+          at(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate()),
+        )
+      )
+        break
     }
   } else {
     for (let i = 0; ; i++) {
-      if (!push(at(parts.year + i * rule.interval, parts.month, parts.day))) break
+      if (!push(at(parts.year + i * rule.interval, parts.month, parts.day)))
+        break
     }
   }
   return out
@@ -237,14 +307,24 @@ function eventToIntervals(
   const ruleProp = find('RRULE')
   const rule = ruleProp ? parseRule(ruleProp.value, options.timezone) : null
   const starts = rule
-    ? expand(start.date, rule, options.timezone, options.from, options.to, durationMs)
+    ? expand(
+        start.date,
+        rule,
+        options.timezone,
+        options.from,
+        options.to,
+        durationMs,
+      )
     : [start.date]
 
   const intervals: Interval[] = []
   for (const begin of starts) {
     if (exdates.has(begin.getTime())) continue
     const finish = new Date(begin.getTime() + durationMs)
-    if (finish.getTime() > options.from.getTime() && begin.getTime() < options.to.getTime()) {
+    if (
+      finish.getTime() > options.from.getTime() &&
+      begin.getTime() < options.to.getTime()
+    ) {
       intervals.push({ start: begin, end: finish })
     }
   }
@@ -254,11 +334,18 @@ function eventToIntervals(
 // ─── Writing ────────────────────────────────────────────────────────────────
 
 function stamp(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  return date
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '')
 }
 
 function escapeText(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n')
 }
 
 function fold(line: string): string {
@@ -302,7 +389,8 @@ export function buildInvite(input: InviteInput): string {
     `ORGANIZER;CN=${escapeText(input.organizerName)}:mailto:${input.organizerEmail}`,
     `ATTENDEE;CN=${escapeText(input.attendeeName)};RSVP=FALSE:mailto:${input.attendeeEmail}`,
   ]
-  if (input.description) lines.push(`DESCRIPTION:${escapeText(input.description)}`)
+  if (input.description)
+    lines.push(`DESCRIPTION:${escapeText(input.description)}`)
   if (input.location) lines.push(`LOCATION:${escapeText(input.location)}`)
   lines.push('END:VEVENT', 'END:VCALENDAR')
   return `${lines.map(fold).join('\r\n')}\r\n`

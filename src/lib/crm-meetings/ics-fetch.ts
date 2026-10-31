@@ -34,11 +34,14 @@ export type IcsFetchResult =
 /** pt-BR reason shown next to the calendar field. */
 export const ICS_FAILURE_MESSAGES: Record<IcsFailure, string> = {
   invalid_url: 'O endereço da agenda é inválido.',
-  not_https: 'O endereço da agenda precisa começar com https:// (ou webcal://).',
+  not_https:
+    'O endereço da agenda precisa começar com https:// (ou webcal://).',
   credentials_in_url: 'Não coloque usuário e senha no endereço da agenda.',
-  private_host: 'O endereço aponta para uma rede privada. Use o endereço público da agenda.',
+  private_host:
+    'O endereço aponta para uma rede privada. Use o endereço público da agenda.',
   dns_failed: 'Não foi possível encontrar o domínio da agenda.',
-  http_error: 'O servidor da agenda respondeu com erro. Confira se o endereço secreto ainda vale.',
+  http_error:
+    'O servidor da agenda respondeu com erro. Confira se o endereço secreto ainda vale.',
   too_large: 'A agenda passa de 2 MB.',
   timeout: 'O servidor da agenda demorou demais para responder.',
   network: 'Não foi possível conectar ao servidor da agenda.',
@@ -64,7 +67,10 @@ export async function fetchIcs(
     } catch (cause) {
       return {
         ok: false,
-        reason: cause instanceof OutboundUrlError ? (cause.message as IcsFailure) : 'invalid_url',
+        reason:
+          cause instanceof OutboundUrlError
+            ? (cause.message as IcsFailure)
+            : 'invalid_url',
       }
     }
 
@@ -80,7 +86,10 @@ export async function fetchIcs(
       const name = cause instanceof Error ? cause.name : ''
       return {
         ok: false,
-        reason: name === 'TimeoutError' || name === 'AbortError' ? 'timeout' : 'network',
+        reason:
+          name === 'TimeoutError' || name === 'AbortError'
+            ? 'timeout'
+            : 'network',
       }
     }
 
@@ -99,11 +108,15 @@ export async function fetchIcs(
       const name = cause instanceof Error ? cause.name : ''
       return {
         ok: false,
-        reason: name === 'TimeoutError' || name === 'AbortError' ? 'timeout' : 'network',
+        reason:
+          name === 'TimeoutError' || name === 'AbortError'
+            ? 'timeout'
+            : 'network',
       }
     }
     if (text === null) return { ok: false, reason: 'too_large' }
-    if (!/BEGIN:VCALENDAR/i.test(text)) return { ok: false, reason: 'not_a_calendar' }
+    if (!/BEGIN:VCALENDAR/i.test(text))
+      return { ok: false, reason: 'not_a_calendar' }
     return { ok: true, text }
   }
   return { ok: false, reason: 'http_error' }

@@ -20,7 +20,10 @@ import {
 import type { WeeklyHoursDTO } from '@/types/crm-meeting'
 import { COMMON_TIMEZONES, WEEKDAYS } from './meeting-labels'
 
-const TIMEZONE_ITEMS = COMMON_TIMEZONES.map((value) => ({ value, label: value }))
+const TIMEZONE_ITEMS = COMMON_TIMEZONES.map((value) => ({
+  value,
+  label: value,
+}))
 
 /** Each seller's working hours, time zone and (optional) calendar feed. */
 export function MeetingAvailabilityForm({
@@ -63,7 +66,9 @@ export function MeetingAvailabilityForm({
       },
       {
         onSuccess: () => {
-          notify.success(removeFeed ? 'Agenda desconectada' : 'Disponibilidade salva')
+          notify.success(
+            removeFeed ? 'Agenda desconectada' : 'Disponibilidade salva',
+          )
           setIcsUrl('')
         },
         onError: (error) => notify.error(error),
@@ -112,7 +117,10 @@ export function MeetingAvailabilityForm({
         {WEEKDAYS.map((day) => {
           const window = windowOf(day.key)
           return (
-            <li key={day.key} className='flex flex-wrap items-center gap-3 px-3 py-2'>
+            <li
+              key={day.key}
+              className='flex flex-wrap items-center gap-3 px-3 py-2'
+            >
               <label className='flex w-28 items-center gap-2 text-sm'>
                 <input
                   type='checkbox'
@@ -121,7 +129,9 @@ export function MeetingAvailabilityForm({
                   onChange={(event) =>
                     setWindow(
                       day.key,
-                      event.target.checked ? { start: '09:00', end: '18:00' } : null,
+                      event.target.checked
+                        ? { start: '09:00', end: '18:00' }
+                        : null,
                     )
                   }
                 />
@@ -135,7 +145,10 @@ export function MeetingAvailabilityForm({
                     className='w-28'
                     value={window.start}
                     onChange={(event) =>
-                      setWindow(day.key, { ...window, start: event.target.value })
+                      setWindow(day.key, {
+                        ...window,
+                        start: event.target.value,
+                      })
                     }
                   />
                   <span className='text-muted-foreground'>até</span>
@@ -150,7 +163,9 @@ export function MeetingAvailabilityForm({
                   />
                 </div>
               ) : (
-                <span className='text-muted-foreground text-sm'>Indisponível</span>
+                <span className='text-muted-foreground text-sm'>
+                  Indisponível
+                </span>
               )}
             </li>
           )
@@ -202,7 +217,11 @@ export function MeetingAvailabilityForm({
         </p>
       </section>
 
-      <Button className='self-start' onClick={() => submit()} disabled={save.isPending}>
+      <Button
+        className='self-start'
+        onClick={() => submit()}
+        disabled={save.isPending}
+      >
         {save.isPending ? 'Salvando…' : 'Salvar disponibilidade'}
       </Button>
     </div>

@@ -68,7 +68,8 @@ export function collides(
   const e = end.getTime()
   return busy.some(
     (interval) =>
-      interval.start.getTime() - buffer < e && interval.end.getTime() + buffer > s,
+      interval.start.getTime() - buffer < e &&
+      interval.end.getTime() + buffer > s,
   )
 }
 
@@ -116,7 +117,8 @@ export function computeFreeSlots(rules: SlotRules): Date[] {
         },
         rules.timezone,
       ).getTime()
-      const windowEnd = windowStart + (window.endMin - window.startMin) * MINUTE_MS
+      const windowEnd =
+        windowStart + (window.endMin - window.startMin) * MINUTE_MS
       for (let t = windowStart; t + duration <= windowEnd; t += step) {
         if (t < earliest || t >= latest || seen.has(t)) continue
         const start = new Date(t)
