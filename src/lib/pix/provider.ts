@@ -34,6 +34,8 @@ export interface PixPaymentNotification {
   payerName: string | null
 }
 
+export type PixChargeStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED'
+
 export interface PixProvider {
   /** Stable id stored on each charge (`mock`, later the PSP's name). */
   readonly id: string
@@ -51,5 +53,9 @@ export interface PixProvider {
   parseWebhook(
     headers: Headers,
     rawBody: string,
+    /** Query string of the webhook URL (some PSPs authenticate through it). */
+    query?: URLSearchParams,
   ): Result<PixPaymentNotification[]>
+  /** Current status at the PSP, for providers that support polling. */
+  getChargeStatus?(providerChargeId: string): Promise<Result<PixChargeStatus>>
 }

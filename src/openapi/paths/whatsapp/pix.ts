@@ -27,7 +27,7 @@ const REALTIME =
   'A cobrança atualizada é publicada no SSE `GET /whatsapp/events` (`pix-charge.updated`).'
 
 const PROVIDER_NOTE =
-  'O provedor de Pix (PSP) ainda não foi escolhido: as cobranças saem por uma interface (`PixProvider`) e só existe o provedor de teste `mock`, que gera um BR Code válido que nenhum banco liquida.'
+  'As cobranças saem por uma interface (`PixProvider`). O provedor padrão é o de teste `mock` (BR Code válido que nenhum banco liquida); com `PIX_PROVIDER=abacatepay` as cobranças são reais, pelo AbacatePay API v2.'
 
 const SEND_ERRORS = [
   ...permErrors('conversations', 'CREATE'),
@@ -166,9 +166,9 @@ export const pixRoutes: RouteConfig[] = [
     path: '/whatsapp/webhook/pix/{provider}',
     tags: [TAG],
     summary: 'Aviso de pagamento (PSP)',
-    description: `Chamado pelo PSP quando um Pix é pago. Público: o próprio provedor autentica a chamada. No \`mock\`, o corpo JSON vem assinado com HMAC-SHA256 (hex) em \`x-pix-signature\`, com o segredo \`PIX_WEBHOOK_SECRET\`; sem segredo configurado toda chamada é recusada. Idempotente: um aviso repetido não muda nada. Avisos de cobranças desconhecidas são ignorados. Marca a cobrança como paga, registra "Pix recebido" na conversa e anota a oportunidade ligada. ${REALTIME}`,
+    description: `Chamado pelo PSP quando um Pix é pago. Público: o próprio provedor autentica a chamada. No \`abacatepay\`, a chamada traz \`?webhookSecret=<PIX_WEBHOOK_SECRET>\` na URL e o header \`X-Webhook-Signature\` (HMAC-SHA256 em base64 do corpo cru); só o evento \`transparent.completed\` baixa cobrança, os demais são autenticados e ignorados. No \`mock\`, o corpo JSON vem assinado com HMAC-SHA256 (hex) em \`x-pix-signature\`, com o segredo \`PIX_WEBHOOK_SECRET\`; sem segredo configurado toda chamada é recusada. Idempotente: um aviso repetido não muda nada. Avisos de cobranças desconhecidas são ignorados. Marca a cobrança como paga, registra "Pix recebido" na conversa e anota a oportunidade ligada. ${REALTIME}`,
     auth: 'public',
-    params: { provider: 'Id do provedor de Pix (`mock`).' },
+    params: { provider: 'Id do provedor de Pix (`mock` ou `abacatepay`).' },
     body: {
       schema: {
         type: 'object',
@@ -197,6 +197,43 @@ export const pixRoutes: RouteConfig[] = [
     },
     errors: [
       { code: 'PIX_WEBHOOK_INVALID', when: 'Assinatura ausente ou inválida' },
+      { code: 'RESOURCE_NOT_FOUND', when: 'Provedor desconhecido' },
+      'RATE_LIMITED',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/boleto/webhook/{provider}',
+    tags: [TAG],
+    summary: 'Aviso de boleto (PSP)',
+    description:
+      'Chamado pelo PSP quando um boleto é pago, estornado ou vence. Público: o próprio provedor autentica a chamada. No `abacatepay`, a URL traz `?webhookSecret=<BOLETO_WEBHOOK_SECRET>` e o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru); `transparent.completed` = pago, `transparent.refunded` = estornado, `transparent.expired` = vencido (se enviado). Outros eventos são autenticados e ignorados. No `mock`, o corpo JSON (`kind`, `providerChargeId`) vem assinado em hex no header `x-boleto-signature`. Por ora o aviso é registrado e confirmado; a baixa em propostas e conversas entra com as telas de boleto.',
+    auth: 'public',
+    params: { provider: 'Id do provedor de boleto (`mock` ou `abacatepay`).' },
+    body: {
+      schema: {
+        type: 'object',
+        properties: {
+          event: { type: 'string', example: 'transparent.completed' },
+          data: { type: 'object' },
+        },
+      },
+      example: {
+        event: 'transparent.completed',
+        data: { transparent: { id: 'pix_char_1', amount: 25000 } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Avisos recebidos.',
+        schema: z.object({ received: z.number().int() }),
+      },
+    },
+    errors: [
+      {
+        code: 'BOLETO_WEBHOOK_INVALID',
+        when: 'Segredo ou assinatura ausente ou inválida',
+      },
       { code: 'RESOURCE_NOT_FOUND', when: 'Provedor desconhecido' },
       'RATE_LIMITED',
     ],

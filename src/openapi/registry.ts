@@ -70,7 +70,7 @@ export type SchemaSource = z.ZodType | ComponentRef | JsonSchema
  * - `session`: cookie de sessão do Better Auth (padrão).
  * - `public`: sem autenticação (ou o token vai no path).
  * - `integrationKey`: `Authorization: Bearer crm_live_...` (API de leads).
- * - `abacatePayWebhook` / `statusCollector`: segredo compartilhado em header.
+ * - `abacatePayWebhook`: segredo na query + assinatura do corpo (API v2); `statusCollector`: segredo compartilhado em header.
  * - `metaWebhook` / `zapiWebhook`: assinatura/segredo dos webhooks do WhatsApp.
  * - `apiToken`: token pessoal `Authorization: Bearer stl_pat_...` (API v1, ADR 0035).
  */
