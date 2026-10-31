@@ -132,6 +132,12 @@ export const UsageRollupCron = '*/15 * * * *'
 /** CRM task reminders (due within 1 h / overdue): every 15 minutes. */
 export const CrmTaskRemindersCron = '*/15 * * * *' as const
 
+/** Duplicate scan of every CRM workspace: once a day, off-peak. */
+export const CrmDuplicatesCron = '40 2 * * *' as const
+
+/** Meeting reminders: every 5 minutes. */
+export const CrmMeetingsCron = '*/5 * * * *' as const
+
 /** Sales cadences: due steps run every minute. */
 export const CrmCadencesCron = '* * * * *' as const
 

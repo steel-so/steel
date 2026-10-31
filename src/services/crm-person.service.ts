@@ -16,6 +16,7 @@ import {
   withCustomFields,
   withCustomFieldsList,
 } from './crm-custom-field-sync'
+import { CrmDuplicateService } from './crm-duplicate.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
 
 export const CrmPersonService = {
@@ -127,6 +128,11 @@ export const CrmPersonService = {
     })
 
     void indexSearchDocument('crm-person', workspaceId, merged.value.id)
+    void CrmDuplicateService.flagOnArrival(
+      workspaceId,
+      'PERSON',
+      merged.value.id,
+    )
     return ok(merged.value)
   },
 

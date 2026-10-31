@@ -193,6 +193,8 @@ const OUT = [
   '(public)/newsletter/',
   // Sales TV link: full-screen dashboard for the sales-room TV.
   '(public)/tv/',
+  // Meeting booking pages and their embed (crm-ops C5): focused public cards.
+  '(public)/m/',
   // Public newsletter archive (ADR 0054): the customer's brand, no Steel shell.
   '(newsletter-archive)/',
   // Published customer sites: their own header/footer globals, no Steel shell.

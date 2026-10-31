@@ -15,6 +15,7 @@ import {
   CrmFormSubmissionRepository,
 } from '@/src/repositories/crm-form.repository'
 
+import { CrmMeetingRepository } from '@/src/repositories/crm-meeting.repository'
 import { CrmNewsletterRepository } from '@/src/repositories/crm-newsletter.repository'
 import { CrmPersonRepository } from '@/src/repositories/crm-person.repository'
 import type {
@@ -31,8 +32,10 @@ import type {
   CrmFormPublicDTO,
   CrmFormSubmissionDTO,
 } from '@/types/crm-form'
+import type { PublicMeetingPageDTO } from '@/types/crm-meeting'
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
+import { CrmDuplicateService } from './crm-duplicate.service'
 import { CrmLeadService } from './crm-lead.service'
 import { CrmNewsletterPublicService } from './crm-newsletter-public.service'
 import { notifyCrmFormSubmitted } from './crm-notifications'
@@ -90,6 +93,26 @@ function groupByTarget(
     target[field.mapping.attribute] = raw
   }
   return byTarget
+}
+
+/** The booking widget offered after a submission, when the page is still live. */
+async function resolvePublicBooking(
+  bookingPageId: string | null,
+): Promise<PublicMeetingPageDTO | null> {
+  if (!bookingPageId) return null
+  const page = await CrmMeetingRepository.findPageWithWorkspace(bookingPageId)
+  if (!page.ok || !page.value || page.value.deletedAt || !page.value.active) {
+    return null
+  }
+  return {
+    slug: page.value.slug,
+    title: page.value.title,
+    description: page.value.description,
+    durationMinutes: page.value.durationMinutes,
+    timezone: page.value.timezone,
+    format: page.value.format,
+    workspaceName: page.value.workspace.name,
+  }
 }
 
 export const CrmFormService = {
@@ -214,6 +237,19 @@ export const CrmFormService = {
       if (!newsletter.ok) return newsletter
     }
 
+    if (dto.bookingPageId) {
+      const page = await CrmMeetingRepository.findPage(
+        workspaceId,
+        dto.bookingPageId,
+      )
+      if (!page.ok) return page
+      if (!page.value) {
+        return err(
+          validationError('A página de agendamento não foi encontrada'),
+        )
+      }
+    }
+
     const result = await CrmFormRepository.update(formId, {
       name: dto.name,
       description: dto.description,
@@ -230,6 +266,7 @@ export const CrmFormService = {
       successMessage: dto.successMessage,
       redirectUrl: dto.redirectUrl,
       newsletterId: dto.newsletterId,
+      bookingPageId: dto.bookingPageId,
       updatedById: actorId,
     })
     if (!result.ok) return result
@@ -349,7 +386,11 @@ export const CrmFormService = {
     )
     if (!moduleEnabled.ok) return moduleEnabled
 
-    if (!result.value.newsletterId) return ok(toCrmFormPublicDTO(result.value))
+    const booking = await resolvePublicBooking(result.value.bookingPageId)
+
+    if (!result.value.newsletterId) {
+      return ok(toCrmFormPublicDTO(result.value, undefined, booking))
+    }
     const newsletter = await CrmNewsletterRepository.findById(
       result.value.newsletterId,
       result.value.workspaceId,
@@ -364,6 +405,7 @@ export const CrmFormService = {
               consentText: crmFormNewsletterConsentText(newsletter.value.name),
             }
           : null,
+        booking,
       ),
     )
   },
@@ -414,6 +456,11 @@ export const CrmFormService = {
       })
       if (!created.ok) return created
       createdCompanyId = created.value.id
+      void CrmDuplicateService.flagOnArrival(
+        form.value.workspaceId,
+        'COMPANY',
+        created.value.id,
+      )
     } else if (form.value.action === 'PERSON') {
       const attrs = byTarget.person ?? {}
       const created = await CrmPersonRepository.create({
@@ -429,6 +476,11 @@ export const CrmFormService = {
       })
       if (!created.ok) return created
       createdPersonId = created.value.id
+      void CrmDuplicateService.flagOnArrival(
+        form.value.workspaceId,
+        'PERSON',
+        created.value.id,
+      )
     } else {
       const attrs = byTarget.lead ?? {}
       // Mesma porta de entrada da criação manual: validação (e-mail ou

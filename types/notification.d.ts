@@ -80,6 +80,8 @@ export type NotificationKindDTO =
   | 'AGENT_VERSION_GATE_FINISHED'
   | 'AGENT_SIMULATION_FINISHED'
   | 'CRM_CNPJ_ENRICHMENT_FINISHED'
+  | 'CRM_DUPLICATES_FOUND'
+  | 'CRM_MEETING_BOOKED'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'

@@ -7,6 +7,8 @@ import {
   CrmCadencesJob,
   CrmCampaignsJob,
   CrmCompetitorSyncJob,
+  CrmDuplicatesJob,
+  CrmMeetingsJob,
   CrmNewsletterAutomationJob,
   CrmNewsletterJob,
   CrmProposalExpiryJob,
@@ -47,6 +49,8 @@ import {
   getCrmCadencesQueue,
   getCrmCampaignsQueue,
   getCrmCompetitorSyncQueue,
+  getCrmDuplicatesQueue,
+  getCrmMeetingsQueue,
   getCrmNewsletterAutomationQueue,
   getCrmNewsletterQueue,
   getCrmProposalExpiryQueue,
@@ -89,6 +93,8 @@ import {
   CrmCadencesCron,
   CrmCampaignsTickCron,
   CrmCompetitorSyncCron,
+  CrmDuplicatesCron,
+  CrmMeetingsCron,
   CrmNewsletterAbTickCron,
   CrmNewsletterAutomationCron,
   CrmNewsletterDigestTickCron,
@@ -546,6 +552,36 @@ export async function scheduleServicedeskIntegrationsJobs(): Promise<void> {
   logger.info('queue.scheduler.servicedesk_integrations_registered', {
     component: 'Worker',
     pattern: ServicedeskIntegrationsCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleCrmDuplicatesJobs(): Promise<void> {
+  const queue = getCrmDuplicatesQueue()
+  await queue.upsertJobScheduler(
+    CrmDuplicatesJob.RunScan,
+    { pattern: CrmDuplicatesCron, tz: RetentionTimezone },
+    { name: CrmDuplicatesJob.RunScan, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_duplicates_registered', {
+    component: 'Worker',
+    pattern: CrmDuplicatesCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleCrmMeetingsJobs(): Promise<void> {
+  const queue = getCrmMeetingsQueue()
+  await queue.upsertJobScheduler(
+    CrmMeetingsJob.RunReminders,
+    { pattern: CrmMeetingsCron, tz: RetentionTimezone },
+    { name: CrmMeetingsJob.RunReminders, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_meetings_registered', {
+    component: 'Worker',
+    pattern: CrmMeetingsCron,
     timezone: RetentionTimezone,
   })
 }

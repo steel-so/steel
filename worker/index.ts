@@ -19,6 +19,8 @@ import { processCrmCadences } from '../src/lib/queue/processors/crm-cadences'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
 import { processCrmCnpjEnrichment } from '../src/lib/queue/processors/crm-cnpj-enrichment'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
+import { processCrmDuplicates } from '../src/lib/queue/processors/crm-duplicates'
+import { processCrmMeetings } from '../src/lib/queue/processors/crm-meetings'
 import { processCrmNewsletter } from '../src/lib/queue/processors/crm-newsletter'
 import { processCrmNewsletterAutomation } from '../src/lib/queue/processors/crm-newsletter-automation'
 import { processCrmProposalExpiry } from '../src/lib/queue/processors/crm-proposal-expiry'
@@ -70,6 +72,8 @@ import {
   scheduleCrmCadencesJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
+  scheduleCrmDuplicatesJobs,
+  scheduleCrmMeetingsJobs,
   scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
   scheduleCrmProposalExpiryJobs,
@@ -278,6 +282,8 @@ async function main(): Promise<void> {
     registerWorker(QueueName.CrmTaskReminders, processCrmTaskReminders),
   )
   workers.push(registerWorker(QueueName.CrmCadences, processCrmCadences))
+  workers.push(registerWorker(QueueName.CrmDuplicates, processCrmDuplicates))
+  workers.push(registerWorker(QueueName.CrmMeetings, processCrmMeetings))
   workers.push(registerWorker(QueueName.SteelAgents, processSteelAgents))
   workers.push(registerWorker(QueueName.Notifications, processNotifications))
   workers.push(registerWorker(QueueName.SearchReindex, processSearchReindex))
@@ -345,6 +351,8 @@ async function main(): Promise<void> {
   await scheduleServicedeskIntegrationsJobs()
   await scheduleCrmTaskRemindersJobs()
   await scheduleCrmCadencesJobs()
+  await scheduleCrmDuplicatesJobs()
+  await scheduleCrmMeetingsJobs()
   await scheduleServicedeskTaskRemindersJobs()
   await scheduleSteelAgentsJobs()
   await scheduleNotificationsJobs()

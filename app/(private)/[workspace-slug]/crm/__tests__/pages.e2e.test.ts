@@ -9,6 +9,8 @@ import { BASE_URL } from '@/src/__tests__/setup.e2e'
 const SEGMENTS = [
   'leads',
   'cadences',
+  'duplicates',
+  'meetings',
   'opportunities',
   'companies',
   'people',

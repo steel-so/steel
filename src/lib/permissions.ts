@@ -207,6 +207,10 @@ export const CRM_ROUTE_RESOURCE: Record<string, PermissionResource> = {
   'hook-vault': 'social',
   leads: 'leads',
   cadences: 'leads',
+  duplicates: 'people',
+  'meeting-pages': 'leads',
+  'meeting-bookings': 'leads',
+  'meeting-availability': 'leads',
 }
 
 /** O perfil concede a ação no recurso? */

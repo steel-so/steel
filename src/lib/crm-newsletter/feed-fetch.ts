@@ -48,7 +48,7 @@ export const FEED_FAILURE_MESSAGES: Record<FeedFetchFailure, string> = {
   not_a_feed: 'O endereço não devolveu um feed RSS ou Atom.',
 }
 
-async function readCapped(
+export async function readCapped(
   response: Response,
   max: number,
 ): Promise<string | null> {

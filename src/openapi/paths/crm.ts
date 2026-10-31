@@ -4,6 +4,7 @@ import { crmApolloRoutes } from './crm/apollo'
 import { crmCadenceRoutes } from './crm/cadences'
 import { crmCampaignRoutes } from './crm/campaigns'
 import { crmCnpjRoutes } from './crm/cnpj'
+import { crmDuplicateRoutes } from './crm/duplicates'
 import { crmEmailRoutes } from './crm/email'
 import { crmEmailEditorRoutes } from './crm/email-editor'
 import { crmForecastRoutes } from './crm/forecast'
@@ -11,6 +12,7 @@ import { crmFormsRoutes } from './crm/forms'
 import { crmHookVaultRoutes } from './crm/hook-vault'
 import { crmIntegrationsRoutes } from './crm/integrations'
 import { crmLeadsRoutes } from './crm/leads'
+import { crmMeetingRoutes } from './crm/meetings'
 import { crmNewsletterAutomationRoutes } from './crm/newsletter-automation'
 import { crmNewsletterBridgeRoutes } from './crm/newsletter-bridge'
 import { crmNewsletterEngageRoutes } from './crm/newsletter-engage'
@@ -47,6 +49,8 @@ const routes: RouteConfig[] = [
   ...crmCampaignRoutes,
   ...crmCnpjRoutes,
   ...crmCadenceRoutes,
+  ...crmDuplicateRoutes,
+  ...crmMeetingRoutes,
   ...crmEmailRoutes,
   ...crmEmailEditorRoutes,
   ...crmForecastRoutes,

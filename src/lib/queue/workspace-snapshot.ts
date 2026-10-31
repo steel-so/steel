@@ -58,6 +58,7 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   crmCompetitorPost: (ws) => ({ competitor: { workspaceId: ws } }),
   crmCompetitorIdeaSet: (ws) => ({ competitor: { workspaceId: ws } }),
   crmSocialConnectionPost: (ws) => ({ connection: { workspaceId: ws } }),
+  crmMeetingHost: (ws) => ({ page: { workspaceId: ws } }),
   crmScheduledPostTarget: (ws) => ({ post: { workspaceId: ws } }),
   crmScheduledPostMedia: (ws) => ({ post: { workspaceId: ws } }),
   sdDepartmentMember: (ws) => ({ department: { workspaceId: ws } }),

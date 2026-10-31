@@ -2211,6 +2211,40 @@ export const crmCnpjRunNotCancelable = (): AppError =>
 export const steelAgentSimGateInvalid = (message: string): AppError =>
   appError('STEEL_AGENT_SIM_GATE_INVALID', message)
 
+// nov: crm-ops
+
+export const crmDuplicateNotFound = (): AppError =>
+  appError('CRM_DUPLICATE_NOT_FOUND', 'Par de duplicados não encontrado')
+
+export const crmDuplicateInvalid = (message: string): AppError =>
+  appError('CRM_DUPLICATE_INVALID', message)
+
+export const crmMergeNotFound = (): AppError =>
+  appError('CRM_MERGE_NOT_FOUND', 'Mesclagem não encontrada')
+
+export const crmMergeUndoExpired = (): AppError =>
+  appError(
+    'CRM_MERGE_UNDO_EXPIRED',
+    'O prazo para desfazer esta mesclagem já passou ou ela já foi desfeita',
+  )
+
+export const crmMeetingPageNotFound = (): AppError =>
+  appError('CRM_MEETING_PAGE_NOT_FOUND', 'Página de agendamento não encontrada')
+
+export const crmMeetingBookingNotFound = (): AppError =>
+  appError('CRM_MEETING_BOOKING_NOT_FOUND', 'Agendamento não encontrado')
+
+export const crmMeetingSlotTaken = (): AppError =>
+  appError(
+    'CRM_MEETING_SLOT_TAKEN',
+    'Esse horário acabou de ser ocupado. Escolha outro.',
+  )
+
+export const crmMeetingInvalid = (message: string): AppError =>
+  appError('CRM_MEETING_INVALID', message)
+
+export const crmMeetingSlugTaken = (): AppError =>
+  appError('CRM_MEETING_SLUG_TAKEN', 'Esse endereço já está em uso')
 export const sdStatusComponentNotFound = (): AppError =>
   appError(
     'SD_STATUS_COMPONENT_NOT_FOUND',

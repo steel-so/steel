@@ -89,6 +89,7 @@ export type CrmLeadIntakeActor =
         | 'apollo'
         | 'whatsapp_ad'
         | 'whatsapp_flow'
+        | 'meeting'
       refId: string
     }
 
