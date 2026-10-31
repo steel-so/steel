@@ -9527,11 +9527,29 @@
                     "type": "object",
                     "properties": {
                       "id": {
-                        "type": "string",
-                        "description": "ID da cobrança (`billId`)."
+                        "description": "ID da cobrança (`billId`), quando plano.",
+                        "type": "string"
+                      },
+                      "subscription": {
+                        "description": "Formato v2: `data.subscription.id` (`billId`).",
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id"]
+                      },
+                      "checkout": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id"]
                       }
-                    },
-                    "required": ["id"]
+                    }
                   }
                 },
                 "required": ["event", "data"]
@@ -160388,9 +160406,9 @@
       },
       "abacatePayWebhookSecret": {
         "type": "apiKey",
-        "in": "header",
-        "name": "x-webhook-secret",
-        "description": "Segredo compartilhado com a AbacatePay, comparado em tempo constante."
+        "in": "query",
+        "name": "webhookSecret",
+        "description": "API v2 da AbacatePay: segredo na URL cadastrada do webhook (`?webhookSecret=`), comparado em tempo constante, mais o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru)."
       },
       "statusCollectorSecret": {
         "type": "apiKey",
@@ -161526,7 +161544,7 @@
             },
             "examples": {
               "UNAUTHORIZED": {
-                "summary": "UNAUTHORIZED — Segredo ausente ou inválido",
+                "summary": "UNAUTHORIZED — Segredo na URL ou assinatura do corpo ausente ou inválido",
                 "value": {
                   "success": false,
                   "statusCode": 401,
