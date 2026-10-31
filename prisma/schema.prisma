@@ -4234,9 +4234,7 @@ enum CrmSocialPlatform {
   TIKTOK
   YOUTUBE
   GOOGLE_ANALYTICS
-  TWITTER
   GOOGLE_ADS
-  LINKEDIN
 }
 
 enum CrmSocialConnectionStatus {

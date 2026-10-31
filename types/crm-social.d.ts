@@ -4,9 +4,7 @@ export type CrmSocialPlatformDTO =
   | 'TIKTOK'
   | 'YOUTUBE'
   | 'GOOGLE_ANALYTICS'
-  | 'TWITTER'
   | 'GOOGLE_ADS'
-  | 'LINKEDIN'
 
 export type CrmSocialConnectionStatusDTO = 'CONNECTED' | 'EXPIRED' | 'REVOKED'
 

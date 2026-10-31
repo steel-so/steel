@@ -147,7 +147,7 @@ export const MARKETPLACE_GROUPS: MarketplaceGroup[] = [
       {
         title: 'Redes sociais',
         description:
-          'Facebook, Instagram, TikTok, X, LinkedIn e YouTube no CRM, com publicações e acompanhamento de concorrentes.',
+          'Facebook, Instagram, TikTok e YouTube no CRM, com publicações e acompanhamento de concorrentes.',
         module: 'CRM',
         cta: 'Conhecer o CRM',
         href: '/product/crm',

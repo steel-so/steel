@@ -42,8 +42,6 @@ const PLATFORMS: CrmSocialPlatformDTO[] = [
   'INSTAGRAM',
   'TIKTOK',
   'YOUTUBE',
-  'TWITTER',
-  'LINKEDIN',
 ]
 
 /**

@@ -2,9 +2,7 @@ import {
   Facebook01Icon,
   GoogleIcon,
   InstagramIcon,
-  Linkedin01Icon,
   Megaphone01Icon,
-  NewTwitterIcon,
   TiktokIcon,
   YoutubeIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -30,9 +28,7 @@ const ICONS: Record<(typeof CRM_SOCIAL_PLATFORMS)[number], IconType> = {
   TIKTOK: TiktokIcon,
   YOUTUBE: YoutubeIcon,
   GOOGLE_ANALYTICS: GoogleIcon,
-  TWITTER: NewTwitterIcon,
   GOOGLE_ADS: Megaphone01Icon,
-  LINKEDIN: Linkedin01Icon,
 }
 
 const COLORS: Record<(typeof CRM_SOCIAL_PLATFORMS)[number], string> = {
@@ -41,9 +37,7 @@ const COLORS: Record<(typeof CRM_SOCIAL_PLATFORMS)[number], string> = {
   TIKTOK: 'bg-neutral-900',
   YOUTUBE: 'bg-red-600',
   GOOGLE_ANALYTICS: 'bg-orange-500',
-  TWITTER: 'bg-neutral-900',
   GOOGLE_ADS: 'bg-blue-500',
-  LINKEDIN: 'bg-blue-700',
 }
 
 /** Metadados das plataformas suportadas — fonte única para os studios/nav. */

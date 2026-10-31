@@ -33,7 +33,7 @@ BullMQ · MinIO (S3) · Better Auth · Axiom (logs) · pnpm.
                └───────────┘
  Externos: Resend (e-mail) · AbacatePay (pagamento, desligado*) · Meta Cloud
  API / Z-API (WhatsApp) · OpenAI/Anthropic (IA) · Google/GitHub OAuth · redes
- sociais (Meta, TikTok, X, LinkedIn, YouTube, Google Ads) · Axiom (logs)
+ sociais (Meta, TikTok, YouTube, Google Ads) · Axiom (logs)
 ```
 
 \* A cobrança está desligada por decisão de produto (06/10/2026): a flag

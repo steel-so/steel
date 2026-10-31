@@ -8,12 +8,9 @@ import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import { parseCrmPlatformSlug } from '@/src/schemas/crm-social.schema'
 import { CrmPublishFacebookPostSchema } from '@/src/schemas/crm-social-facebook.schema'
 import { CrmPublishInstagramPostSchema } from '@/src/schemas/crm-social-instagram.schema'
-import { CrmLinkedinPublishSchema } from '@/src/schemas/crm-social-linkedin.schema'
 import { CrmPublishTiktokVideoSchema } from '@/src/schemas/crm-social-tiktok.schema'
-import { CrmPublishTweetSchema } from '@/src/schemas/crm-social-twitter.schema'
 import { CrmSocialYoutubePublishVideoSchema } from '@/src/schemas/crm-social-youtube.schema'
 import * as CrmSocialFacebookService from '@/src/services/crm-social-facebook.service'
-import * as CrmSocialLinkedinService from '@/src/services/crm-social-linkedin.service'
 import {
   enqueuePublish,
   type QueuedPublishMedia,
@@ -22,7 +19,6 @@ import {
   publishVideo as publishTiktokVideo,
   TIKTOK_SINGLE_CHUNK_MAX_BYTES,
 } from '@/src/services/crm-social-tiktok.service'
-import { publishTweetPost } from '@/src/services/crm-social-twitter.service'
 import {
   handleError,
   standardError,
@@ -62,8 +58,6 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     platform !== 'FACEBOOK' &&
     platform !== 'INSTAGRAM' &&
     platform !== 'YOUTUBE' &&
-    platform !== 'LINKEDIN' &&
-    platform !== 'TWITTER' &&
     platform !== 'TIKTOK'
   ) {
     return handleError(crmSocialNotConfigured())
@@ -160,69 +154,6 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
       bytes: await file.arrayBuffer(),
       contentType: file.type || 'video/mp4',
     })
-    if (!result.ok) return handleError(result.error)
-    return successResponse(result.value, 201)
-  }
-
-  if (platform === 'LINKEDIN') {
-    const parsed = CrmLinkedinPublishSchema.safeParse({
-      text: form.get('text') ?? undefined,
-    })
-    if (!parsed.success) {
-      return standardError(
-        'VALIDATION_ERROR',
-        'Dados da publicação inválidos',
-        z.flattenError(parsed.error),
-      )
-    }
-
-    const imageField = form.get('image')
-    let image: { bytes: ArrayBuffer; contentType: string } | null = null
-    if (imageField instanceof File && imageField.size > 0) {
-      if (imageField.size > MAX_IMAGE_BYTES) {
-        return handleError(badRequest('Imagem excede o tamanho máximo (10 MB)'))
-      }
-      image = {
-        bytes: await imageField.arrayBuffer(),
-        contentType: imageField.type || 'image/jpeg',
-      }
-    }
-
-    const result = await CrmSocialLinkedinService.publishPost(
-      actorId,
-      id,
-      parsed.data,
-      image,
-    )
-    if (!result.ok) return handleError(result.error)
-    return successResponse(result.value, 201)
-  }
-
-  if (platform === 'TWITTER') {
-    const parsed = CrmPublishTweetSchema.safeParse({
-      text: form.get('text') ?? undefined,
-    })
-    if (!parsed.success) {
-      return standardError(
-        'VALIDATION_ERROR',
-        'Dados do tweet inválidos',
-        z.flattenError(parsed.error),
-      )
-    }
-
-    const imageField = form.get('image')
-    let image: { bytes: ArrayBuffer; contentType: string } | null = null
-    if (imageField instanceof File && imageField.size > 0) {
-      if (imageField.size > MAX_IMAGE_BYTES) {
-        return handleError(badRequest('Imagem excede o tamanho máximo (10 MB)'))
-      }
-      image = {
-        bytes: await imageField.arrayBuffer(),
-        contentType: imageField.type || 'image/jpeg',
-      }
-    }
-
-    const result = await publishTweetPost(actorId, id, parsed.data, image)
     if (!result.ok) return handleError(result.error)
     return successResponse(result.value, 201)
   }

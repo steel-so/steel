@@ -8,18 +8,7 @@ import {
   CrmPublishFacebookPostResultSchema,
   CrmPublishFacebookPostSchema,
 } from '../crm-social-facebook.schema'
-import {
-  CrmLinkedinOverviewSchema,
-  CrmLinkedinPublishResultSchema,
-  CrmLinkedinPublishSchema,
-} from '../crm-social-linkedin.schema'
 import { TrendingItemSchema } from '../crm-social-trending.schema'
-import {
-  CrmPublishTweetResultSchema,
-  CrmPublishTweetSchema,
-  CrmTweetsSchema,
-  CrmTwitterProfileOverviewSchema,
-} from '../crm-social-twitter.schema'
 
 describe('Facebook contracts', () => {
   it('should default the insights range to 28 days', () => {
@@ -93,77 +82,6 @@ describe('Facebook contracts', () => {
     ).toBe(true)
     expect(
       CrmPublishFacebookPostResultSchema.safeParse({ postId: '1', url: 'u' })
-        .success,
-    ).toBe(true)
-  })
-})
-
-describe('X (Twitter) contracts', () => {
-  it('should trim tweets and enforce 1..280 characters', () => {
-    expect(CrmPublishTweetSchema.parse({ text: '  oi  ' }).text).toBe('oi')
-    expect(CrmPublishTweetSchema.safeParse({ text: '   ' }).success).toBe(false)
-    expect(
-      CrmPublishTweetSchema.safeParse({ text: 'x'.repeat(281) }).success,
-    ).toBe(false)
-  })
-
-  it('should validate profile, publish result and timeline payloads', () => {
-    expect(
-      CrmTwitterProfileOverviewSchema.safeParse({
-        id: '1',
-        username: 'stratus',
-        name: null,
-        profileImageUrl: null,
-      }).success,
-    ).toBe(true)
-    expect(
-      CrmPublishTweetResultSchema.safeParse({ tweetId: '1', permalink: null })
-        .success,
-    ).toBe(true)
-    expect(
-      CrmTweetsSchema.safeParse({
-        tweets: [
-          {
-            id: '1',
-            text: 'oi',
-            createdAt: null,
-            url: 'https://x.com/s/1',
-            metrics: {
-              likeCount: 1,
-              retweetCount: 0,
-              replyCount: 0,
-              impressionCount: -5,
-            },
-          },
-        ],
-      }).success,
-    ).toBe(false)
-  })
-})
-
-describe('LinkedIn contracts', () => {
-  it('should enforce 1..3000 characters when publishing', () => {
-    expect(CrmLinkedinPublishSchema.safeParse({ text: '' }).success).toBe(false)
-    expect(
-      CrmLinkedinPublishSchema.safeParse({ text: 'x'.repeat(3001) }).success,
-    ).toBe(false)
-    expect(CrmLinkedinPublishSchema.safeParse({ text: 'Olá' }).success).toBe(
-      true,
-    )
-  })
-
-  it('should validate overview and publish result payloads', () => {
-    expect(
-      CrmLinkedinOverviewSchema.safeParse({
-        personId: 'p',
-        name: null,
-        headline: null,
-        email: null,
-        picture: null,
-      }).success,
-    ).toBe(true)
-    expect(
-      CrmLinkedinPublishResultSchema.safeParse({ postUrn: 'urn:li:share:1' })
         .success,
     ).toBe(true)
   })

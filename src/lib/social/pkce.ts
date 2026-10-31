@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 
 /**
- * PKCE (RFC 7636) para provedores OAuth 2.0 que o exigem (ex.: Twitter/X). O
+ * PKCE (RFC 7636) para provedores OAuth 2.0 que o exigem (RFC 7636). O
  * `verifier` é um segredo gerado no início do fluxo; o `challenge` (hash S256
  * dele) viaja na URL de autorização. Na troca do code, o provedor confere que
  * o `verifier` bate com o `challenge` — por isso o `verifier` precisa

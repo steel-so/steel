@@ -211,7 +211,7 @@ const PUBLISH_BODY = {
         type: 'string',
         format: 'binary',
         description:
-          'Facebook, Instagram, X, LinkedIn: imagem (até 10 MB, opcional exceto no feed do Instagram).',
+          'Facebook, Instagram: imagem (até 10 MB, opcional exceto no feed do Instagram).',
       },
       video: {
         type: 'string',
@@ -232,8 +232,6 @@ const PUBLISHABLE: Platform[] = [
   'FACEBOOK',
   'INSTAGRAM',
   'YOUTUBE',
-  'LINKEDIN',
-  'TWITTER',
   'TIKTOK',
 ]
 
@@ -243,7 +241,7 @@ const SCHEDULED_POST_RULES = [
   'Requisitos por plataforma (conferidos antes de gravar, `400 CRM_SCHEDULED_POST_INVALID`):',
   '- Instagram: `FEED` exige imagem, `REELS` exige vídeo, `STORIES` imagem ou vídeo; legenda até 2200.',
   '- TikTok e YouTube exigem vídeo; YouTube exige título (ou texto para usar como título).',
-  '- X (280) e LinkedIn (3000) exigem texto; Facebook exige texto, imagem ou vídeo (até 5000).',
+  '- Facebook exige texto, imagem ou vídeo (até 5000).',
 ].join('\n')
 
 export const crmSocialRoutes: RouteConfig[] = [
@@ -451,7 +449,7 @@ export const crmSocialRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Conteúdo recente da conta',
     description: describe(
-      'Posts/mídias/vídeos recentes, lidos direto da API da plataforma (Facebook → posts da página, Instagram → mídias, YouTube → uploads, TikTok → vídeos, X → tweets). `connectionId` só é considerado para Facebook e Instagram.',
+      'Posts/mídias/vídeos recentes, lidos direto da API da plataforma (Facebook → posts da página, Instagram → mídias, YouTube → uploads, TikTok → vídeos). `connectionId` só é considerado para Facebook e Instagram.',
       crmAccess('social', 'VIEW'),
     ),
     params: {
@@ -460,7 +458,6 @@ export const crmSocialRoutes: RouteConfig[] = [
         'INSTAGRAM',
         'YOUTUBE',
         'TIKTOK',
-        'TWITTER',
       ]),
     },
     query: { type: 'object', properties: { connectionId: CONNECTION_QUERY } },
@@ -502,7 +499,6 @@ export const crmSocialRoutes: RouteConfig[] = [
         '- **Instagram**: `caption`, `postType` e a mídia em `image` ou `video` (+ `cover` em Reels) → sempre `202` (fila).',
         '- **YouTube**: `file` (vídeo), `title`, `description`, `privacyStatus`, `tags` → `202` (fila).',
         '- **TikTok**: `file` (vídeo), `title`, `privacyLevel`, `disable*` → `201`.',
-        '- **X**: `text`, `image` opcional → `201`. **LinkedIn**: `text`, `image` opcional → `201`.',
         '',
         'Publicações assíncronas (`202`) devolvem `jobId`: acompanhe em `GET .../publish/{jobId}` — os erros de plataforma (escopo, conexão, vídeo inválido) aparecem lá, em `state: failed` + `code`.',
       ].join('\n'),
@@ -512,7 +508,7 @@ export const crmSocialRoutes: RouteConfig[] = [
     body: PUBLISH_BODY,
     responses: {
       201: {
-        description: 'Publicado (Facebook sem vídeo, TikTok, X, LinkedIn).',
+        description: 'Publicado (Facebook sem vídeo, TikTok).',
         schema: CrmSocialPublishResultDTO,
       },
       202: {
@@ -606,11 +602,9 @@ export const crmSocialRoutes: RouteConfig[] = [
         'FACEBOOK',
         'INSTAGRAM',
         'YOUTUBE',
-        'TWITTER',
-        'LINKEDIN',
       ]),
       postId:
-        'ID devolvido no publish (post, mídia, vídeo ou tweet; no LinkedIn, o URN completo, URL-encoded).',
+        'ID devolvido no publish (post, mídia ou vídeo).',
     },
     query: { type: 'object', properties: { connectionId: CONNECTION_QUERY } },
     responses: {
