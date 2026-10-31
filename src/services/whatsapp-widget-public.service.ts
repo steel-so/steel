@@ -101,11 +101,7 @@ export const WhatsAppWidgetPublicService = {
   ): Promise<Result<WidgetContext>> {
     const settings = await WhatsAppWidgetSettingsRepository.findByPublicKey(key)
     if (!settings.ok) return settings
-    if (
-      !settings.value ||
-      !settings.value.enabled ||
-      !settings.value.connectionId
-    ) {
+    if (!settings.value?.enabled || !settings.value.connectionId) {
       return err(widgetNotAvailable())
     }
     if (!isOriginAllowed(origin, settings.value.allowedOrigins)) {
