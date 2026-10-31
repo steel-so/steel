@@ -101,6 +101,8 @@ export const UpsertCrmDealRoomSchema = z.object({
   rotateToken: z.boolean().optional(),
 })
 export type UpsertCrmDealRoomDTO = z.infer<typeof UpsertCrmDealRoomSchema>
+/** What a client sends (dates as ISO strings). */
+export type UpsertCrmDealRoomInput = z.input<typeof UpsertCrmDealRoomSchema>
 
 export const CreateDealRoomMessageSchema = z.object({
   body: z.string().trim().min(1, 'Escreva a mensagem').max(2000),

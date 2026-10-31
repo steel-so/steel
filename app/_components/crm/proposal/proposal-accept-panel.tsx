@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { SdSignaturePad } from '@/app/_components/servicedesk/ticket/signature/sd-signature-pad'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,17 +19,27 @@ type AcceptState = Pick<
 /**
  * Rodapé da página pública da proposta: validade, aviso de expiração e o
  * aceite do cliente. Após a validade o aceite some e a mensagem explica o
- * caminho (a API também recusa, caso a página esteja aberta há dias).
+ * caminho (a API também recusa, caso a página esteja aberta há dias). Com a
+ * assinatura digital ligada no workspace (`signatureMode`), o aceite é feito
+ * desenhando a assinatura, que também guarda o documento e o e-mail.
  */
 export function ProposalAcceptPanel({
   token,
   initial,
+  signatureMode = false,
+  onAccepted,
 }: {
   token: string
   initial: AcceptState
+  signatureMode?: boolean
+  /** Chamado depois do aceite, para a página buscar a cobrança. */
+  onAccepted?: () => void
 }) {
   const [state, setState] = useState<AcceptState>(initial)
   const [name, setName] = useState('')
+  const [signerDocument, setSignerDocument] = useState('')
+  const [email, setEmail] = useState('')
+  const [signature, setSignature] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
 
@@ -37,14 +48,30 @@ export function ProposalAcceptPanel({
       setError('Informe seu nome para aceitar a proposta.')
       return
     }
+    if (signatureMode && !signature) {
+      setError('Desenhe a sua assinatura no quadro para aceitar.')
+      return
+    }
     setSending(true)
     setError(null)
     try {
-      const res = await fetch(`/api/crm/proposals/${token}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
-      })
+      const res = await fetch(
+        `/api/crm/proposals/${token}/${signatureMode ? 'sign' : 'accept'}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(
+            signatureMode
+              ? {
+                  signerName: name.trim(),
+                  signerDocument: signerDocument.trim() || null,
+                  signerEmail: email.trim() || null,
+                  image: signature,
+                }
+              : { name: name.trim() },
+          ),
+        },
+      )
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.success) {
         if (json?.error?.code === 'CRM_PROPOSAL_EXPIRED') {
@@ -56,6 +83,7 @@ export function ProposalAcceptPanel({
         return
       }
       setState(json.data as AcceptState)
+      onAccepted?.()
     } catch {
       setError('Erro de rede. Tente novamente.')
     } finally {
@@ -102,7 +130,53 @@ export function ProposalAcceptPanel({
               Proposta válida até <strong>{validity}</strong>.
             </p>
           ) : null}
-          {state.canAccept ? (
+          {state.canAccept && signatureMode ? (
+            <div className='flex flex-col gap-3'>
+              <div className='grid gap-3 sm:grid-cols-3'>
+                <div className='flex flex-col gap-1.5'>
+                  <Label htmlFor='proposal-sign-name'>Seu nome</Label>
+                  <Input
+                    id='proposal-sign-name'
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder='Nome de quem assina'
+                  />
+                </div>
+                <div className='flex flex-col gap-1.5'>
+                  <Label htmlFor='proposal-sign-document'>
+                    CPF ou CNPJ (opcional)
+                  </Label>
+                  <Input
+                    id='proposal-sign-document'
+                    value={signerDocument}
+                    onChange={(e) => setSignerDocument(e.target.value)}
+                  />
+                </div>
+                <div className='flex flex-col gap-1.5'>
+                  <Label htmlFor='proposal-sign-email'>
+                    E-mail (opcional)
+                  </Label>
+                  <Input
+                    id='proposal-sign-email'
+                    type='email'
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className='flex flex-col gap-1.5'>
+                <Label>Assinatura</Label>
+                <SdSignaturePad onChange={setSignature} disabled={sending} />
+              </div>
+              <Button
+                className='self-end'
+                onClick={handleAccept}
+                disabled={sending}
+              >
+                {sending ? 'Registrando…' : 'Assinar e aceitar a proposta'}
+              </Button>
+            </div>
+          ) : state.canAccept ? (
             <div className='flex flex-col gap-2 sm:flex-row sm:items-end'>
               <div className='flex flex-1 flex-col gap-1.5'>
                 <Label htmlFor='proposal-accept-name'>Seu nome</Label>

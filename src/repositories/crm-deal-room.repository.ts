@@ -152,20 +152,34 @@ export const CrmDealRoomRepository = {
               owner: action.owner,
               dueDate: action.dueDate ?? null,
               position,
-              ...(action.done === true && {
-                doneAt: now,
-                doneByLabel: actorName,
-              }),
-              ...(action.done === false && { doneAt: null, doneByLabel: null }),
             }
             if (action.id) {
               await tx.crmDealRoomAction.updateMany({
                 where: { id: action.id, roomId: room.id },
                 data: values,
               })
+              // Keep who finished it and when: only the first check counts.
+              if (action.done === true) {
+                await tx.crmDealRoomAction.updateMany({
+                  where: { id: action.id, roomId: room.id, doneAt: null },
+                  data: { doneAt: now, doneByLabel: actorName },
+                })
+              } else if (action.done === false) {
+                await tx.crmDealRoomAction.updateMany({
+                  where: { id: action.id, roomId: room.id },
+                  data: { doneAt: null, doneByLabel: null },
+                })
+              }
             } else {
               await tx.crmDealRoomAction.create({
-                data: { roomId: room.id, ...values },
+                data: {
+                  roomId: room.id,
+                  ...values,
+                  ...(action.done === true && {
+                    doneAt: now,
+                    doneByLabel: actorName,
+                  }),
+                },
               })
             }
           }

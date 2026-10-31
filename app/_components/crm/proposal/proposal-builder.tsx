@@ -6,6 +6,7 @@ import {
   ArrowUp01Icon,
   BookmarkAdd02Icon,
   Cancel01Icon,
+  Money03Icon,
   SentIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useRouter } from 'next/navigation'
@@ -52,6 +53,7 @@ import type {
   CrmProposalStatusDTO,
 } from '@/types/crm-proposal'
 import type { CrmProposalTemplateDTO } from '@/types/crm-proposal-template'
+import { ProposalCheckoutDrawer } from '../deals/proposal-checkout-drawer'
 import { ProposalExpiredHint } from './proposal-expired-hint'
 import { ProposalMetricsDrawer } from './proposal-metrics-drawer'
 import { ProposalPreviewPanel } from './proposal-preview-panel'
@@ -185,6 +187,7 @@ export function ProposalBuilder({
   const [sending, setSending] = useState(false)
   const [datePopoverOpen, setDatePopoverOpen] = useState(false)
   const [metricsOpen, setMetricsOpen] = useState(false)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   const hydrated = useRef(false)
   // Snapshot do último estado carregado/salvo: o autosave só dispara quando o
@@ -429,6 +432,17 @@ export function ProposalBuilder({
               >
                 <SteelIcon icon={Analytics01Icon} strokeWidth={2} />
                 Métricas
+              </Button>
+            ) : null}
+            {realId && status !== 'DRAFT' ? (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => setCheckoutOpen(true)}
+              >
+                <SteelIcon icon={Money03Icon} strokeWidth={2} />
+                Cobrança e assinatura
               </Button>
             ) : null}
             <Button
@@ -700,6 +714,14 @@ export function ProposalBuilder({
           proposalId={realId}
           open={metricsOpen}
           onOpenChange={setMetricsOpen}
+        />
+      ) : null}
+      {realId ? (
+        <ProposalCheckoutDrawer
+          workspaceId={workspaceId}
+          proposalId={realId}
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
         />
       ) : null}
     </div>
