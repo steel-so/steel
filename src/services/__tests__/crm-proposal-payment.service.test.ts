@@ -37,6 +37,9 @@ vi.mock('@/src/lib/storage/s3', () => ({
   getObject: vi.fn(),
   putObject: vi.fn(),
 }))
+vi.mock('@/src/lib/boleto/registry', () => ({
+  getActiveBoletoProvider: vi.fn(),
+}))
 vi.mock('@/src/lib/pix/registry', () => ({
   getActivePixProvider: vi.fn(),
   getPixProviderById: vi.fn(),
@@ -44,6 +47,7 @@ vi.mock('@/src/lib/pix/registry', () => ({
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
+import { getActiveBoletoProvider } from '@/src/lib/boleto/registry'
 import {
   getActivePixProvider,
   getPixProviderById,
@@ -82,6 +86,15 @@ const settings = vi.mocked(CrmDealsSettingsService)
 const proposalService = vi.mocked(CrmProposalService)
 const activeProvider = vi.mocked(getActivePixProvider)
 const providerById = vi.mocked(getPixProviderById)
+
+const activeBoleto = vi.mocked(getActiveBoletoProvider)
+const boletoProvider = {
+  id: 'mock',
+  isTest: true,
+  createCharge: vi.fn(),
+  getChargeStatus: vi.fn(),
+  parseWebhook: vi.fn(),
+}
 
 const provider = {
   id: 'mock',
@@ -148,6 +161,17 @@ beforeEach(() => {
   withSettings()
   activeProvider.mockReturnValue(ok(provider))
   providerById.mockReturnValue(ok(provider))
+  activeBoleto.mockReturnValue(ok(boletoProvider as never))
+  boletoProvider.isTest = true
+  boletoProvider.createCharge.mockResolvedValue(
+    ok({
+      providerChargeId: 'bol1',
+      barCode: 'REAL-LINE',
+      url: null,
+      brCode: null,
+      dueAt: null,
+    }),
+  )
   provider.createCharge.mockResolvedValue(
     ok({ providerChargeId: 'txid1', brCode: 'BR-CODE' }),
   )
@@ -243,22 +267,61 @@ describe('createCharge', () => {
     expect(deals.findById).not.toHaveBeenCalled()
   })
 
-  it('builds a test boleto line for BOLETO', async () => {
+  it('builds a test boleto line for BOLETO through the boleto provider', async () => {
     expectOk(
       await Service.createCharge('u', 'ws', 'p1', { ...dto, method: 'BOLETO' }),
     )
     const stored = charges.create.mock.calls[0]?.[0]
     expect(stored?.method).toBe('BOLETO')
+    expect(stored?.providerChargeId).toBe('bol1')
     expect(stored?.paymentCode.startsWith('999')).toBe(true)
+    expect(provider.createCharge).not.toHaveBeenCalled()
   })
 
-  it('refuses boleto when the provider moves real money', async () => {
-    provider.isTest = false
+  it('needs the payer to issue a real boleto, then stores the PSP line', async () => {
+    boletoProvider.isTest = false
     expectErr(
       await Service.createCharge('u', 'ws', 'p1', { ...dto, method: 'BOLETO' }),
       'CRM_PROPOSAL_CHARGE_INVALID',
     )
-    expect(provider.createCharge).not.toHaveBeenCalled()
+    expect(boletoProvider.createCharge).not.toHaveBeenCalled()
+
+    expectOk(
+      await Service.createCharge('u', 'ws', 'p1', {
+        ...dto,
+        method: 'BOLETO',
+        payerName: 'Maria',
+        payerTaxId: '11144477735',
+      }),
+    )
+    expect(charges.create.mock.calls[0]?.[0].paymentCode).toBe('REAL-LINE')
+    expect(boletoProvider.createCharge).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payer: { name: 'Maria', taxId: '11144477735' },
+      }),
+    )
+  })
+
+  it('passes on boleto provider failures and survives a storage failure', async () => {
+    activeBoleto.mockReturnValueOnce(err(pixProviderError()))
+    expectErr(
+      await Service.createCharge('u', 'ws', 'p1', { ...dto, method: 'BOLETO' }),
+      'PIX_PROVIDER_ERROR',
+    )
+    boletoProvider.createCharge.mockResolvedValueOnce(err(pixProviderError()))
+    expectErr(
+      await Service.createCharge('u', 'ws', 'p1', { ...dto, method: 'BOLETO' }),
+      'PIX_PROVIDER_ERROR',
+    )
+    charges.create.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(
+      await Service.createCharge('u', 'ws', 'p1', { ...dto, method: 'BOLETO' }),
+      'DATABASE_ERROR',
+    )
+    expect(logger.warn).toHaveBeenCalledWith(
+      'crm.proposal_payment.boleto_orphaned',
+      expect.anything(),
+    )
   })
 
   it('is off by default', async () => {
@@ -844,3 +907,63 @@ describe('signatureImage', () => {
   })
 })
 
+
+describe('handleBoletoNotification', () => {
+  const boleto = createFakeCrmProposalCharge({
+    method: 'BOLETO',
+    amount: new Prisma.Decimal(300),
+  })
+  const at = new Date()
+
+  it('settles a paid boleto through the common payment path', async () => {
+    charges.findByProviderCharge.mockResolvedValue(ok(boleto))
+    charges.markPaid.mockResolvedValue(ok({ ...boleto, status: 'PAID' as const }))
+    proposals.findById.mockResolvedValue(ok(sentProposal()))
+    expectOk(
+      await Service.handleBoletoNotification('mock', {
+        kind: 'PAID',
+        providerChargeId: boleto.providerChargeId,
+        amount: null,
+        at,
+      }),
+    )
+    expect(charges.markPaid).toHaveBeenCalledWith(
+      boleto.id,
+      expect.objectContaining({ paidAmount: 300, paidAt: at }),
+    )
+  })
+
+  it('only logs refunds and expiries', async () => {
+    charges.findByProviderCharge.mockResolvedValue(ok(boleto))
+    expectOk(
+      await Service.handleBoletoNotification('mock', {
+        kind: 'REFUNDED',
+        providerChargeId: boleto.providerChargeId,
+        amount: 300,
+        at,
+      }),
+    )
+    expect(charges.markPaid).not.toHaveBeenCalled()
+  })
+
+  it('treats a Pix charge or an unknown id as not found, and passes read errors', async () => {
+    const notice = { kind: 'PAID' as const, providerChargeId: 'x', amount: 1, at }
+    charges.findByProviderCharge.mockResolvedValue(ok(null))
+    expectErr(
+      await Service.handleBoletoNotification('mock', notice),
+      'CRM_PROPOSAL_CHARGE_NOT_FOUND',
+    )
+    charges.findByProviderCharge.mockResolvedValue(
+      ok(createFakeCrmProposalCharge({ method: 'PIX' })),
+    )
+    expectErr(
+      await Service.handleBoletoNotification('mock', notice),
+      'CRM_PROPOSAL_CHARGE_NOT_FOUND',
+    )
+    charges.findByProviderCharge.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await Service.handleBoletoNotification('mock', notice),
+      'DATABASE_ERROR',
+    )
+  })
+})

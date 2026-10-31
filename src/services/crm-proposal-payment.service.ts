@@ -25,6 +25,10 @@ import {
   sha256,
 } from '@/src/lib/crm-deals'
 import type {
+  BoletoNotification,
+} from '@/src/lib/boleto/provider'
+import { getActiveBoletoProvider } from '@/src/lib/boleto/registry'
+import type {
   PixPaymentNotification,
   PixProvider,
 } from '@/src/lib/pix/provider'
@@ -176,6 +180,62 @@ async function requirePaymentEnabled(workspaceId: string): Promise<Result<void>>
   return ok(undefined)
 }
 
+async function issueBoleto(input: {
+  proposal: CrmProposalWithSections
+  actorId: string
+  dto: CreateCrmProposalChargeDTO
+  amount: number
+  description: string
+}): Promise<Result<CrmProposalCharge>> {
+  const { proposal, dto, amount } = input
+  const provider = getActiveBoletoProvider()
+  if (!provider.ok) return provider
+  if (!provider.value.isTest && (!dto.payerName || !dto.payerTaxId)) {
+    return err(
+      crmProposalChargeInvalid(
+        'Informe o nome e o CPF/CNPJ do pagador para emitir o boleto',
+      ),
+    )
+  }
+  const reference = newChargeTxid()
+  const dueAtGuess = new Date(Date.now() + dto.expiresInDays * MS_PER_DAY)
+  const issued = await provider.value.createCharge({
+    reference,
+    amount,
+    description: input.description,
+    payer: {
+      name: dto.payerName ?? 'Cliente (teste)',
+      taxId: dto.payerTaxId ?? '00000000000',
+    },
+    dueDate: dueAtGuess.toISOString().slice(0, 10),
+  })
+  if (!issued.ok) return issued
+
+  const stored = await CrmProposalChargeRepository.create({
+    workspaceId: proposal.workspaceId,
+    proposalId: proposal.id,
+    opportunityId: proposal.opportunityId,
+    createdById: input.actorId,
+    method: 'BOLETO',
+    provider: provider.value.id,
+    providerChargeId: issued.value.providerChargeId,
+    amount,
+    description: input.description,
+    paymentCode: provider.value.isTest
+      ? buildMockBoletoLine(reference, amount)
+      : issued.value.barCode,
+    expiresAt: issued.value.dueAt ?? dueAtGuess,
+  })
+  if (!stored.ok) {
+    // The PSP has no cancel route: the boleto stays valid there.
+    logger.warn('crm.proposal_payment.boleto_orphaned', {
+      providerChargeId: issued.value.providerChargeId,
+      code: stored.error.code,
+    })
+  }
+  return stored
+}
+
 async function issue(
   provider: PixProvider,
   input: {
@@ -187,11 +247,7 @@ async function issue(
   },
 ): Promise<Result<CrmProposalCharge>> {
   const { proposal, dto, amount } = input
-  if (dto.method === 'BOLETO' && !provider.isTest) {
-    return err(
-      crmProposalChargeInvalid('O provedor de pagamento atual não emite boleto'),
-    )
-  }
+  if (dto.method === 'BOLETO') return issueBoleto(input)
   const txid = newChargeTxid()
   const expiresAt = new Date(Date.now() + dto.expiresInDays * MS_PER_DAY)
   const issued = await provider.createCharge({
@@ -212,10 +268,7 @@ async function issue(
     providerChargeId: issued.value.providerChargeId,
     amount,
     description: input.description,
-    paymentCode:
-      dto.method === 'PIX'
-        ? issued.value.brCode
-        : buildMockBoletoLine(txid, amount),
+    paymentCode: issued.value.brCode,
     expiresAt,
   })
   if (!stored.ok) {
@@ -486,6 +539,38 @@ export const CrmProposalPaymentService = {
       },
     })
     return ok(chargeDTO(charge))
+  },
+
+  /**
+   * Boleto notice from the PSP (already authenticated by the provider). Only
+   * a payment changes a proposal charge; refunds and expiries are logged.
+   */
+  async handleBoletoNotification(
+    providerId: string,
+    notification: BoletoNotification,
+  ): Promise<Result<CrmProposalChargeDTO>> {
+    const found = await CrmProposalChargeRepository.findByProviderCharge(
+      providerId,
+      notification.providerChargeId,
+    )
+    if (!found.ok) return found
+    if (!found.value || found.value.method !== 'BOLETO') {
+      return err(crmProposalChargeNotFound())
+    }
+    if (notification.kind !== 'PAID') {
+      logger.info('crm.proposal_payment.boleto_notice', {
+        chargeId: found.value.id,
+        kind: notification.kind,
+      })
+      return ok(chargeDTO(found.value))
+    }
+    return CrmProposalPaymentService.handlePayment(providerId, {
+      providerChargeId: notification.providerChargeId,
+      paidAmount: notification.amount ?? Number(found.value.amount),
+      paidAt: notification.at,
+      endToEndId: null,
+      payerName: null,
+    })
   },
 
   /** Payment webhook: authenticate with the provider, then settle each notice. */

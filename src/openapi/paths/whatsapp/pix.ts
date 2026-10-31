@@ -207,7 +207,7 @@ export const pixRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Aviso de boleto (PSP)',
     description:
-      'Chamado pelo PSP quando um boleto é pago, estornado ou vence. Público: o próprio provedor autentica a chamada. No `abacatepay`, a URL traz `?webhookSecret=<BOLETO_WEBHOOK_SECRET>` e o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru); `transparent.completed` = pago, `transparent.refunded` = estornado, `transparent.expired` = vencido (se enviado). Outros eventos são autenticados e ignorados. No `mock`, o corpo JSON (`kind`, `providerChargeId`) vem assinado em hex no header `x-boleto-signature`. Por ora o aviso é registrado e confirmado; a baixa em propostas e conversas entra com as telas de boleto.',
+      'Chamado pelo PSP quando um boleto é pago, estornado ou vence. Público: o próprio provedor autentica a chamada. No `abacatepay`, a URL traz `?webhookSecret=<BOLETO_WEBHOOK_SECRET>` e o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru); `transparent.completed` = pago, `transparent.refunded` = estornado, `transparent.expired` = vencido (se enviado). Outros eventos são autenticados e ignorados. No `mock`, o corpo JSON (`kind`, `providerChargeId`) vem assinado em hex no header `x-boleto-signature`. O aviso dá baixa no boleto da proposta (CRM) ou da conversa (WhatsApp); avisos de boletos desconhecidos são ignorados.',
     auth: 'public',
     params: { provider: 'Id do provedor de boleto (`mock` ou `abacatepay`).' },
     body: {
@@ -226,7 +226,10 @@ export const pixRoutes: RouteConfig[] = [
     responses: {
       200: {
         description: 'Avisos recebidos.',
-        schema: z.object({ received: z.number().int() }),
+        schema: z.object({
+          received: z.number().int(),
+          processed: z.number().int(),
+        }),
       },
     },
     errors: [
