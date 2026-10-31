@@ -1,0 +1,56 @@
+---
+title: Acesso remoto
+description: Botão Conectar no chamado e no ativo da CMDB para abrir o RustDesk ou o AnyDesk, com a sessão registrada no histórico do chamado e na auditoria.
+section: servicedesk
+order: 20
+---
+
+O **Acesso remoto** coloca um botão **Conectar** no chamado e no detalhe do
+ativo (CMDB). Ao clicar, o navegador abre o **RustDesk** ou o **AnyDesk**
+instalado no seu computador, já apontando para a máquina do cliente, e o Steel
+registra quem se conectou e quando.
+
+<Callout type='admin'>
+  O recurso vem **desligado**. Um administrador do módulo liga em
+  **ServiceDesk › Configurações › Acesso remoto** e escolhe a ferramenta do
+  workspace (RustDesk ou AnyDesk).
+</Callout>
+
+## Antes de usar
+
+1. **Instale** o RustDesk ou o AnyDesk no computador do técnico e na máquina
+   que será acessada.
+2. Em **Configurações › Acesso remoto**, ligue o recurso e escolha a
+   ferramenta. Se a sua empresa usa um servidor próprio, informe o **modelo do
+   link** com `{id}` no lugar do ID (por exemplo `rustdesk://connection/new/{id}`).
+3. Cadastre o **ID** de cada máquina: abra o ativo em **ServiceDesk › Itens de
+   configuração**, aba **Dados**, bloco **Acesso remoto**. O ID também chega
+   sozinho quando o agente de inventário informa o ID da ferramenta instalada;
+   um ID digitado à mão nunca é substituído pelo do inventário.
+
+## Conectar
+
+- **No chamado:** na barra lateral, em **Cliente e CMDB**, o botão
+  **Conectar** aparece abaixo do **Item de configuração**.
+- **No ativo:** o botão fica no bloco **Acesso remoto** da aba **Dados**.
+
+Se o ativo ainda não tem ID para a ferramenta escolhida, o botão fica
+desabilitado e explica o que falta.
+
+## O que fica registrado
+
+- No **histórico do chamado** aparece "iniciou um acesso remoto", com o ativo
+  e a ferramenta usada.
+- No bloco **Acesso remoto** do ativo ficam as últimas sessões (quem e quando).
+- A **auditoria** guarda cada conexão com o usuário, o ativo, o chamado e a
+  ferramenta.
+
+## Segurança
+
+Só o **ID público** da máquina é guardado. **Nenhuma senha** é armazenada nem
+vai no link: o técnico se autentica dentro do próprio RustDesk ou AnyDesk, que
+mantém o seu catálogo de acessos. O Steel apenas abre o aplicativo e registra a
+sessão; ele não vê a tela nem controla a máquina.
+
+Apenas **agentes** do ServiceDesk (membros de um departamento) e
+administradores usam o botão. Solicitantes não veem nem acessam o recurso.
