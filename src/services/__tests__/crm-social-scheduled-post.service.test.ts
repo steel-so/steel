@@ -187,22 +187,10 @@ describe('CrmScheduledPostService.create()', () => {
         'TIKTOK exige um vídeo.',
       ],
       [
-        'a tweet over 280 chars',
-        dto({ platforms: ['TWITTER'], content: 'a'.repeat(281) }),
+        'a Facebook post over 5000 chars',
+        dto({ platforms: ['FACEBOOK'], content: 'a'.repeat(5001) }),
         [],
-        'O texto excede o limite de 280 caracteres do TWITTER.',
-      ],
-      [
-        'an empty tweet',
-        dto({ platforms: ['TWITTER'], content: '' }),
-        [IMAGE],
-        'TWITTER exige um texto.',
-      ],
-      [
-        'a blank LinkedIn post',
-        dto({ platforms: ['LINKEDIN'], content: '   ' }),
-        [],
-        'LINKEDIN exige um texto.',
+        'O texto excede o limite de 5000 caracteres do FACEBOOK.',
       ],
       [
         'an empty Facebook post without media',
@@ -248,8 +236,6 @@ describe('CrmScheduledPostService.create()', () => {
           platforms: [
             'INSTAGRAM',
             'FACEBOOK',
-            'TWITTER',
-            'LINKEDIN',
             'TIKTOK',
             'YOUTUBE',
           ],

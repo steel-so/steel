@@ -11992,16 +11992,7 @@
             "description": "Rede social.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "twitter",
-                "linkedin",
-                "youtube",
-                "google_ads",
-                "google_analytics"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_ads", "google_analytics"]
             }
           },
           {
@@ -36214,16 +36205,7 @@
                             "type": "array",
                             "items": {
                               "type": "string",
-                              "enum": [
-                                "FACEBOOK",
-                                "INSTAGRAM",
-                                "TIKTOK",
-                                "YOUTUBE",
-                                "GOOGLE_ANALYTICS",
-                                "TWITTER",
-                                "GOOGLE_ADS",
-                                "LINKEDIN"
-                              ]
+                              "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
                             }
                           },
                           "compareRange": {
@@ -42701,16 +42683,7 @@
                     "anyOf": [
                       {
                         "type": "string",
-                        "enum": [
-                          "FACEBOOK",
-                          "INSTAGRAM",
-                          "TIKTOK",
-                          "YOUTUBE",
-                          "GOOGLE_ANALYTICS",
-                          "TWITTER",
-                          "GOOGLE_ADS",
-                          "LINKEDIN"
-                        ]
+                        "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
                       },
                       {
                         "type": "null"
@@ -42897,16 +42870,7 @@
                     "anyOf": [
                       {
                         "type": "string",
-                        "enum": [
-                          "FACEBOOK",
-                          "INSTAGRAM",
-                          "TIKTOK",
-                          "YOUTUBE",
-                          "GOOGLE_ANALYTICS",
-                          "TWITTER",
-                          "GOOGLE_ADS",
-                          "LINKEDIN"
-                        ]
+                        "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
                       },
                       {
                         "type": "null"
@@ -67317,7 +67281,7 @@
         "tags": ["CRM · Redes sociais"],
         "summary": "Criar post agendado",
         "operationId": "postWorkspacesByIdCrmScheduledPosts",
-        "description": "Cria um post para uma ou mais plataformas. `mode: \"schedule\"` exige `scheduledFor` no futuro (o worker publica no horário); `mode: \"now\"` publica na hora e devolve o post com o resultado de cada alvo.\n\nAceita `application/json` (sem mídia) ou `multipart/form-data` com os mesmos campos (`platforms` repetido, `options` como JSON em string) e os arquivos em `media` (repetível, até 64 MB cada; `video/*` vira vídeo, o resto imagem).\n\nRequisitos por plataforma (conferidos antes de gravar, `400 CRM_SCHEDULED_POST_INVALID`):\n- Instagram: `FEED` exige imagem, `REELS` exige vídeo, `STORIES` imagem ou vídeo; legenda até 2200.\n- TikTok e YouTube exigem vídeo; YouTube exige título (ou texto para usar como título).\n- X (280) e LinkedIn (3000) exigem texto; Facebook exige texto, imagem ou vídeo (até 5000).\n\nExige a feature `crm.socialPublishing`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Cria um post para uma ou mais plataformas. `mode: \"schedule\"` exige `scheduledFor` no futuro (o worker publica no horário); `mode: \"now\"` publica na hora e devolve o post com o resultado de cada alvo.\n\nAceita `application/json` (sem mídia) ou `multipart/form-data` com os mesmos campos (`platforms` repetido, `options` como JSON em string) e os arquivos em `media` (repetível, até 64 MB cada; `video/*` vira vídeo, o resto imagem).\n\nRequisitos por plataforma (conferidos antes de gravar, `400 CRM_SCHEDULED_POST_INVALID`):\n- Instagram: `FEED` exige imagem, `REELS` exige vídeo, `STORIES` imagem ou vídeo; legenda até 2200.\n- TikTok e YouTube exigem vídeo; YouTube exige título (ou texto para usar como título).\n- Facebook exige texto, imagem ou vídeo (até 5000).\n\nExige a feature `crm.socialPublishing`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -67335,7 +67299,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": ["INSTAGRAM", "FACEBOOK", "TWITTER", "LINKEDIN", "TIKTOK", "YOUTUBE"]
+                      "enum": ["INSTAGRAM", "FACEBOOK", "TIKTOK", "YOUTUBE"]
                     }
                   },
                   "content": {
@@ -78306,16 +78270,7 @@
                 "properties": {
                   "platform": {
                     "type": "string",
-                    "enum": [
-                      "FACEBOOK",
-                      "INSTAGRAM",
-                      "TIKTOK",
-                      "YOUTUBE",
-                      "GOOGLE_ANALYTICS",
-                      "TWITTER",
-                      "GOOGLE_ADS",
-                      "LINKEDIN"
-                    ]
+                    "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
                   },
                   "externalAccountId": {
                     "type": "string",
@@ -78577,19 +78532,10 @@
             "name": "platform",
             "in": "path",
             "required": true,
-            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `tiktok`, `youtube`, `google_analytics`, `twitter`, `google_ads`, `linkedin`.",
+            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `tiktok`, `youtube`, `google_analytics`, `google_ads`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "facebook"
           }
@@ -78655,16 +78601,7 @@
             "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `instagram`, `tiktok`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "instagram"
           },
@@ -78750,16 +78687,7 @@
             "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`, `google_analytics`, `google_ads`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "facebook"
           },
@@ -78852,19 +78780,10 @@
             "name": "platform",
             "in": "path",
             "required": true,
-            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `tiktok`, `youtube`, `google_analytics`, `twitter`, `google_ads`, `linkedin`.",
+            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `tiktok`, `youtube`, `google_analytics`, `google_ads`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "facebook"
           },
@@ -78947,19 +78866,10 @@
             "name": "platform",
             "in": "path",
             "required": true,
-            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`, `twitter`, `linkedin`.",
+            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "facebook"
           },
@@ -78967,7 +78877,7 @@
             "name": "postId",
             "in": "path",
             "required": true,
-            "description": "ID devolvido no publish (post, mídia, vídeo ou tweet; no LinkedIn, o URN completo, URL-encoded).",
+            "description": "ID devolvido no publish (post, mídia ou vídeo).",
             "schema": {
               "type": "string"
             }
@@ -79042,7 +78952,7 @@
         "tags": ["CRM · Redes sociais"],
         "summary": "Publicar agora na plataforma",
         "operationId": "postWorkspacesByIdCrmSocialByPlatformPublish",
-        "description": "Publica imediatamente na conta conectada. Corpo `multipart/form-data`, com campos por plataforma:\n- **Facebook**: `message` e/ou `link`, `image` opcional → `201`; com `video` → `202` (fila).\n- **Instagram**: `caption`, `postType` e a mídia em `image` ou `video` (+ `cover` em Reels) → sempre `202` (fila).\n- **YouTube**: `file` (vídeo), `title`, `description`, `privacyStatus`, `tags` → `202` (fila).\n- **TikTok**: `file` (vídeo), `title`, `privacyLevel`, `disable*` → `201`.\n- **X**: `text`, `image` opcional → `201`. **LinkedIn**: `text`, `image` opcional → `201`.\n\nPublicações assíncronas (`202`) devolvem `jobId`: acompanhe em `GET .../publish/{jobId}` — os erros de plataforma (escopo, conexão, vídeo inválido) aparecem lá, em `state: failed` + `code`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam). Nas publicações assíncronas a permissão e o consentimento LGPD são conferidos antes de enfileirar (e a permissão de novo pelo worker).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Publica imediatamente na conta conectada. Corpo `multipart/form-data`, com campos por plataforma:\n- **Facebook**: `message` e/ou `link`, `image` opcional → `201`; com `video` → `202` (fila).\n- **Instagram**: `caption`, `postType` e a mídia em `image` ou `video` (+ `cover` em Reels) → sempre `202` (fila).\n- **YouTube**: `file` (vídeo), `title`, `description`, `privacyStatus`, `tags` → `202` (fila).\n- **TikTok**: `file` (vídeo), `title`, `privacyLevel`, `disable*` → `201`.\n\nPublicações assíncronas (`202`) devolvem `jobId`: acompanhe em `GET .../publish/{jobId}` — os erros de plataforma (escopo, conexão, vídeo inválido) aparecem lá, em `state: failed` + `code`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam). Nas publicações assíncronas a permissão e o consentimento LGPD são conferidos antes de enfileirar (e a permissão de novo pelo worker).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -79051,19 +78961,10 @@
             "name": "platform",
             "in": "path",
             "required": true,
-            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`, `linkedin`, `twitter`, `tiktok`.",
+            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`, `tiktok`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "facebook"
           }
@@ -79150,7 +79051,7 @@
                   "image": {
                     "type": "string",
                     "format": "binary",
-                    "description": "Facebook, Instagram, X, LinkedIn: imagem (até 10 MB, opcional exceto no feed do Instagram)."
+                    "description": "Facebook, Instagram: imagem (até 10 MB, opcional exceto no feed do Instagram)."
                   },
                   "video": {
                     "type": "string",
@@ -79169,7 +79070,7 @@
         },
         "responses": {
           "201": {
-            "description": "Publicado (Facebook sem vídeo, TikTok, X, LinkedIn).",
+            "description": "Publicado (Facebook sem vídeo, TikTok).",
             "content": {
               "application/json": {
                 "schema": {
@@ -79267,16 +79168,7 @@
             "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `youtube`, `instagram`, `facebook`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "youtube"
           },
@@ -79353,16 +79245,7 @@
             "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `instagram`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "instagram"
           },
@@ -79436,7 +79319,7 @@
         "tags": ["CRM · Redes sociais"],
         "summary": "Conteúdo recente da conta",
         "operationId": "getWorkspacesByIdCrmSocialByPlatformVideos",
-        "description": "Posts/mídias/vídeos recentes, lidos direto da API da plataforma (Facebook → posts da página, Instagram → mídias, YouTube → uploads, TikTok → vídeos, X → tweets). `connectionId` só é considerado para Facebook e Instagram.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `social` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Posts/mídias/vídeos recentes, lidos direto da API da plataforma (Facebook → posts da página, Instagram → mídias, YouTube → uploads, TikTok → vídeos). `connectionId` só é considerado para Facebook e Instagram.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `social` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -79445,19 +79328,10 @@
             "name": "platform",
             "in": "path",
             "required": true,
-            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`, `tiktok`, `twitter`.",
+            "description": "Plataforma (slug minúsculo do enum `CrmSocialPlatform`). Suportadas neste endpoint: `facebook`, `instagram`, `youtube`, `tiktok`.",
             "schema": {
               "type": "string",
-              "enum": [
-                "facebook",
-                "instagram",
-                "tiktok",
-                "youtube",
-                "google_analytics",
-                "twitter",
-                "google_ads",
-                "linkedin"
-              ]
+              "enum": ["facebook", "instagram", "tiktok", "youtube", "google_analytics", "google_ads"]
             },
             "example": "facebook"
           },
@@ -101325,16 +101199,7 @@
                             "type": "array",
                             "items": {
                               "type": "string",
-                              "enum": [
-                                "FACEBOOK",
-                                "INSTAGRAM",
-                                "TIKTOK",
-                                "YOUTUBE",
-                                "GOOGLE_ANALYTICS",
-                                "TWITTER",
-                                "GOOGLE_ADS",
-                                "LINKEDIN"
-                              ]
+                              "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
                             }
                           },
                           "compareRange": {
@@ -147189,16 +147054,7 @@
                             "type": "array",
                             "items": {
                               "type": "string",
-                              "enum": [
-                                "FACEBOOK",
-                                "INSTAGRAM",
-                                "TIKTOK",
-                                "YOUTUBE",
-                                "GOOGLE_ANALYTICS",
-                                "TWITTER",
-                                "GOOGLE_ADS",
-                                "LINKEDIN"
-                              ]
+                              "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
                             }
                           },
                           "compareRange": {
@@ -215399,16 +215255,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "FACEBOOK",
-                  "INSTAGRAM",
-                  "TIKTOK",
-                  "YOUTUBE",
-                  "GOOGLE_ANALYTICS",
-                  "TWITTER",
-                  "GOOGLE_ADS",
-                  "LINKEDIN"
-                ]
+                "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
               },
               {
                 "type": "null"
@@ -219190,64 +219037,6 @@
           "createdAt",
           "updatedAt"
         ]
-      },
-      "CrmLinkedinOverview": {
-        "type": "object",
-        "properties": {
-          "personId": {
-            "type": "string"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "headline": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "picture": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": ["personId", "name", "headline", "email", "picture"]
-      },
-      "CrmLinkedinPublishResult": {
-        "type": "object",
-        "properties": {
-          "postUrn": {
-            "type": "string"
-          }
-        },
-        "required": ["postUrn"]
       },
       "CrmMailingList": {
         "type": "object",
@@ -227475,16 +227264,7 @@
           },
           "platform": {
             "type": "string",
-            "enum": [
-              "FACEBOOK",
-              "INSTAGRAM",
-              "TIKTOK",
-              "YOUTUBE",
-              "GOOGLE_ANALYTICS",
-              "TWITTER",
-              "GOOGLE_ADS",
-              "LINKEDIN"
-            ]
+            "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
           },
           "status": {
             "type": "string",
@@ -227615,16 +227395,7 @@
           },
           "platform": {
             "type": "string",
-            "enum": [
-              "FACEBOOK",
-              "INSTAGRAM",
-              "TIKTOK",
-              "YOUTUBE",
-              "GOOGLE_ANALYTICS",
-              "TWITTER",
-              "GOOGLE_ADS",
-              "LINKEDIN"
-            ]
+            "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
           },
           "externalAccountId": {
             "type": "string",
@@ -227717,7 +227488,7 @@
         "properties": {
           "deletedId": {
             "type": "string",
-            "description": "ID (ou URN, no LinkedIn) da publicação excluída."
+            "description": "ID da publicação excluída."
           }
         },
         "required": ["deletedId"]
@@ -227760,16 +227531,10 @@
             "$ref": "#/components/schemas/CrmGoogleAdsOverview"
           },
           {
-            "$ref": "#/components/schemas/CrmTwitterProfileOverview"
-          },
-          {
-            "$ref": "#/components/schemas/CrmLinkedinOverview"
-          },
-          {
             "$ref": "#/components/schemas/CrmTiktokCreatorOverview"
           }
         ],
-        "description": "Formato específico da plataforma do path (Facebook → página, Instagram → perfil, YouTube → canal, Google Analytics → propriedade, Google Ads → conta, X → perfil, LinkedIn → perfil/organização, TikTok → criador)."
+        "description": "Formato específico da plataforma do path (Facebook → página, Instagram → perfil, YouTube → canal, Google Analytics → propriedade, Google Ads → conta, TikTok → criador)."
       },
       "CrmSocialPublishJob": {
         "type": "object",
@@ -227840,16 +227605,10 @@
             "$ref": "#/components/schemas/CrmFacebookPublishResult"
           },
           {
-            "$ref": "#/components/schemas/CrmTwitterPublishResult"
-          },
-          {
-            "$ref": "#/components/schemas/CrmLinkedinPublishResult"
-          },
-          {
             "$ref": "#/components/schemas/CrmTiktokPublishResult"
           }
         ],
-        "description": "Resultado da publicação síncrona: Facebook (texto/imagem), X, LinkedIn ou TikTok."
+        "description": "Resultado da publicação síncrona: Facebook (texto/imagem) ou TikTok."
       },
       "CrmSocialRecentContent": {
         "anyOf": [
@@ -227864,12 +227623,9 @@
           },
           {
             "$ref": "#/components/schemas/CrmTiktokVideos"
-          },
-          {
-            "$ref": "#/components/schemas/CrmTweets"
           }
         ],
-        "description": "Conteúdo recente da conta: Facebook → `posts`, Instagram → mídias, YouTube → uploads, TikTok → vídeos, X → tweets."
+        "description": "Conteúdo recente da conta: Facebook → `posts`, Instagram → mídias, YouTube → uploads, TikTok → vídeos."
       },
       "CrmSocialTrendingItem": {
         "type": "object",
@@ -227879,16 +227635,7 @@
           },
           "platform": {
             "type": "string",
-            "enum": [
-              "FACEBOOK",
-              "INSTAGRAM",
-              "TIKTOK",
-              "YOUTUBE",
-              "GOOGLE_ANALYTICS",
-              "TWITTER",
-              "GOOGLE_ADS",
-              "LINKEDIN"
-            ]
+            "enum": ["FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE", "GOOGLE_ANALYTICS", "GOOGLE_ADS"]
           },
           "thumbnailUrl": {
             "anyOf": [
@@ -228450,124 +228197,6 @@
           }
         },
         "required": ["views7d", "top5"]
-      },
-      "CrmTweets": {
-        "type": "object",
-        "properties": {
-          "tweets": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "text": {
-                  "type": "string"
-                },
-                "createdAt": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "url": {
-                  "type": "string"
-                },
-                "metrics": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "likeCount": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "retweetCount": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "replyCount": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "impressionCount": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 9007199254740991
-                        }
-                      },
-                      "required": ["likeCount", "retweetCount", "replyCount", "impressionCount"]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": ["id", "text", "createdAt", "url", "metrics"]
-            }
-          }
-        },
-        "required": ["tweets"]
-      },
-      "CrmTwitterProfileOverview": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "profileImageUrl": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": ["id", "username", "name", "profileImageUrl"]
-      },
-      "CrmTwitterPublishResult": {
-        "type": "object",
-        "properties": {
-          "tweetId": {
-            "type": "string"
-          },
-          "permalink": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": ["tweetId", "permalink"]
       },
       "CrmUpsell": {
         "type": "object",

@@ -1679,8 +1679,6 @@ const platform: RouteConfig[] = [
             'facebook',
             'instagram',
             'tiktok',
-            'twitter',
-            'linkedin',
             'youtube',
             'google_ads',
             'google_analytics',
