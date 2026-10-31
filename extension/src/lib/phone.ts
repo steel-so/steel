@@ -10,9 +10,8 @@ export function digitsOf(raw: string): string {
  * Returns null when the value cannot be a phone number.
  */
 export function canonicalPhone(raw: string): string | null {
-  let digits = digitsOf(raw)
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`
+  let digits = fullPhone(raw)
+  if (!digits) return null
   if (digits.startsWith('55') && digits.length === 13 && digits[4] === '9') {
     digits = digits.slice(0, 4) + digits.slice(5)
   }
@@ -33,11 +32,16 @@ export function looksLikePhone(text: string): boolean {
   return count >= 8 && count <= 15
 }
 
-/** Digits with the country code (Brazil assumed for 10 and 11 digits); null if not a phone. */
+/**
+ * Digits with the country code; null if not a phone. A number of 10 or 11 digits
+ * typed without a leading "+" is taken as Brazilian. (A foreign number of that
+ * length read without its "+", such as a US JID, is therefore not recognized.)
+ */
 export function fullPhone(raw: string): string | null {
   const digits = digitsOf(raw)
   if (digits.length < 8 || digits.length > 15) return null
-  return digits.length === 10 || digits.length === 11 ? `55${digits}` : digits
+  const local = (digits.length === 10 || digits.length === 11) && !raw.trim().startsWith('+')
+  return local ? `55${digits}` : digits
 }
 
 /** `+5511912345678`, the form the CRM stores. */
