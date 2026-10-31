@@ -1,0 +1,102 @@
+name: Browser extension
+
+# Verifies, builds and packages the Chrome/Edge extension (extension/). The
+# package has its own workspace and is not part of the app, so the main CI does
+# not install it.
+#
+# Output: the Chrome Web Store zip, as the `steel-browser-extension` workflow
+# artifact of every run. Publishing to the stores is the owner's (see
+# docs/browser-extension.md). A tag `extension-v<x.y.z>` stamps that version
+# into the manifest and attaches the zip to a GitHub release.
+
+on:
+  push:
+    branches: [main]
+    tags: ['extension-v*']
+    paths:
+      - extension/**
+      - .github/workflows/browser-extension.yml
+  pull_request:
+    paths:
+      - extension/**
+      - .github/workflows/browser-extension.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-extension-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: extension
+
+jobs:
+  package:
+    name: Verify and package the extension
+    runs-on: avrea-ubuntu-latest-4-vcpu
+    timeout-minutes: 10
+    permissions:
+      contents: write # attaches the zip to the release of a tag
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3
+        with:
+          package_json_file: extension/package.json
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      # The extension has no committed lockfile yet (it could not be generated
+      # where it was written). Direct dependencies are pinned in package.json;
+      # the lockfile this resolves is uploaded with the package so it can be
+      # committed, after which this becomes `--frozen-lockfile`.
+      - run: pnpm install --no-frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm test:coverage
+
+      - name: Stamp the version from the tag
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#extension-v}"
+          case "$version" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::$TAG is not extension-v<x.y.z>"; exit 1 ;;
+          esac
+          echo "EXTENSION_VERSION=$version" >> "$GITHUB_ENV"
+
+      - run: pnpm build
+
+      - run: pnpm check:package
+
+      - name: Zip for the Chrome Web Store
+        run: |
+          version=$(node -p "require('./dist/manifest.json').version")
+          (cd dist && zip -r -X "../steel-browser-extension-$version.zip" .)
+          ls -l steel-browser-extension-*.zip
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: steel-browser-extension
+          path: |
+            extension/steel-browser-extension-*.zip
+            extension/pnpm-lock.yaml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach to the GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          gh release upload "$TAG" steel-browser-extension-*.zip --clobber

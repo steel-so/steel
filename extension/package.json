@@ -1,0 +1,29 @@
+{
+  "name": "@steel-so/browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Steel side panel for WhatsApp Web, Gmail and LinkedIn (Chrome and Edge, Manifest V3)",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check:package": "node scripts/check-package.mjs"
+  },
+  "dependencies": {
+    "@steel-so/sdk": "0.1.2"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.0",
+    "@types/node": "24.19.1",
+    "@vitest/coverage-v8": "5.0.3",
+    "esbuild": "^0.27.7",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}
