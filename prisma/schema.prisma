@@ -12926,71 +12926,6 @@ model AiActionConnector {
   createdAt        DateTime              @default(now()) @map("created_at")
   updatedAt        DateTime              @updatedAt @map("updated_at")
 
-// nov: t2-qa-review ──────────────────────────────────────────────────────────
-
-enum QaSubjectType {
-  CONVERSATION
-  TICKET
-}
-
-enum QaReviewStatus {
-  PENDING
-  COMPLETED
-  SKIPPED
-  FAILED
-}
-
-/// Who answered the customer: a person, the bot/AI, or both.
-enum QaHandlerKind {
-  HUMAN
-  BOT
-  MIXED
-}
-
-enum QaCriterionScope {
-  BOTH
-  CONVERSATION
-  TICKET
-}
-
-/// Per-workspace switch and limits of the automatic QA. Off by default.
-model QaReviewConfig {
-  id                 String   @id @default(cuid())
-  workspaceId        String   @unique @map("workspace_id")
-  enabled            Boolean  @default(false)
-  reviewConversations Boolean @default(true) @map("review_conversations")
-  reviewTickets      Boolean  @default(true) @map("review_tickets")
-  /// Also scores attendances answered only by the bot / AI.
-  includeBots        Boolean  @default(true) @map("include_bots")
-  /// Attendances with fewer messages are not worth a review.
-  minMessages        Int      @default(4) @map("min_messages")
-  /// Scores below this value (0-100) are "low" and notify the managers.
-  lowScoreThreshold  Int      @default(60) @map("low_score_threshold")
-  alertLowScore      Boolean  @default(true) @map("alert_low_score")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("qa_review_configs")
-}
-
-/// One configurable scoring criterion (tone, resolution, compliance, empathy
-/// are seeded). The weight is relative: the final score is the weighted mean.
-model QaCriterion {
-  id          String           @id @default(cuid())
-  workspaceId String           @map("workspace_id")
-  key         String
-  name        String
-  /// What the reviewer must look for; goes into the AI prompt.
-  description String
-  weight      Int              @default(1)
-  appliesTo   QaCriterionScope @default(BOTH) @map("applies_to")
-  active      Boolean          @default(true)
-  position    Int              @default(0)
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, key])
@@ -13270,7 +13205,76 @@ model WhatsAppCoexistenceSync {
 
   @@index([workspaceId])
   @@map("whatsapp_coexistence_syncs")
+}
 
+// nov: t2-qa-review ──────────────────────────────────────────────────────────
+
+enum QaSubjectType {
+  CONVERSATION
+  TICKET
+}
+
+enum QaReviewStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+/// Who answered the customer: a person, the bot/AI, or both.
+enum QaHandlerKind {
+  HUMAN
+  BOT
+  MIXED
+}
+
+enum QaCriterionScope {
+  BOTH
+  CONVERSATION
+  TICKET
+}
+
+/// Per-workspace switch and limits of the automatic QA. Off by default.
+model QaReviewConfig {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @unique @map("workspace_id")
+  enabled            Boolean  @default(false)
+  reviewConversations Boolean @default(true) @map("review_conversations")
+  reviewTickets      Boolean  @default(true) @map("review_tickets")
+  /// Also scores attendances answered only by the bot / AI.
+  includeBots        Boolean  @default(true) @map("include_bots")
+  /// Attendances with fewer messages are not worth a review.
+  minMessages        Int      @default(4) @map("min_messages")
+  /// Scores below this value (0-100) are "low" and notify the managers.
+  lowScoreThreshold  Int      @default(60) @map("low_score_threshold")
+  alertLowScore      Boolean  @default(true) @map("alert_low_score")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("qa_review_configs")
+}
+
+/// One configurable scoring criterion (tone, resolution, compliance, empathy
+/// are seeded). The weight is relative: the final score is the weighted mean.
+model QaCriterion {
+  id          String           @id @default(cuid())
+  workspaceId String           @map("workspace_id")
+  key         String
+  name        String
+  /// What the reviewer must look for; goes into the AI prompt.
+  description String
+  weight      Int              @default(1)
+  appliesTo   QaCriterionScope @default(BOTH) @map("applies_to")
+  active      Boolean          @default(true)
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
   @@index([workspaceId, active, position])
   @@map("qa_criteria")
 }
