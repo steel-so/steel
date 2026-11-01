@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { seedEcomFixtures } from '@/src/__tests__/factories/nov-zap-ecom.factory'
+import { seedSchedulingFixtures } from '@/src/__tests__/factories/whatsapp-scheduling.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
@@ -20,7 +20,7 @@ const at = (hhmm: string) => new Date(`2026-11-04T${hhmm}:00Z`)
 
 async function seed() {
   const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
-  const { contact } = await seedEcomFixtures(workspace.id, user.id)
+  const { contact } = await seedSchedulingFixtures(workspace.id, user.id)
   const service = expectOk(
     await WhatsAppSchedServiceRepository.create({
       workspaceId: workspace.id,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createFakeSchedAppointmentFull,
   createFakeSchedulingSettings,
-} from '@/src/__tests__/factories/nov-zap-ecom.factory'
+} from '@/src/__tests__/factories/whatsapp-scheduling.factory'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { createFakeWhatsAppContactWithoutCount } from '@/src/__tests__/factories/whatsapp-contact.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'

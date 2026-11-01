@@ -102,18 +102,6 @@ export interface WhatsAppOutboundFlow {
   data?: Record<string, string>
 }
 
-/** Product (1 id) or multi-product (2+ ids) message of the Meta catalog. */
-export interface WhatsAppOutboundProducts {
-  to: string
-  catalogId: string
-  bodyText: string
-  headerText?: string
-  footerText?: string
-  sectionTitle?: string
-  /** Ids the products carry in the catalog (`retailerId`). */
-  retailerIds: string[]
-}
-
 export interface WhatsAppQrCode {
   status: 'connected' | 'awaiting_scan'
   qrCodeBase64?: string
@@ -130,8 +118,6 @@ export interface WhatsAppProviderClient {
   sendList?(input: WhatsAppOutboundList): Promise<WhatsAppSendResult>
   /** Only the Meta client implements it. */
   sendFlow?(input: WhatsAppOutboundFlow): Promise<WhatsAppSendResult>
-  /** Only the Meta client implements it. */
-  sendProducts?(input: WhatsAppOutboundProducts): Promise<WhatsAppSendResult>
   getConnectionStatus(): Promise<{
     connected: boolean
     failed?: boolean
