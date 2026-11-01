@@ -6,6 +6,7 @@ import {
   CheckmarkCircle02Icon,
   ComputerVideoCallIcon,
   Download01Icon,
+  Invoice01Icon,
   MoneyReceive01Icon,
   RefreshIcon,
   StarIcon,
@@ -80,6 +81,10 @@ import {
   useWhatsAppPixSettings,
 } from '@/src/hooks/use-whatsapp-pix'
 import {
+  useWhatsAppBoletoCharges,
+  useWhatsAppBoletoSettings,
+} from '@/src/hooks/use-whatsapp-boleto'
+import {
   useSetWhatsAppConversationTeam,
   useWhatsAppConversationScope,
   useWhatsAppTeams,
@@ -90,7 +95,10 @@ import type {
 } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
+import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
+import { WhatsappBoletoChargeCard } from './boleto/whatsapp-boleto-charge-card'
+import { WhatsappBoletoChargeDialog } from './boleto/whatsapp-boleto-charge-dialog'
 import { WhatsappPixChargeCard } from './pix/whatsapp-pix-charge-card'
 import { WhatsappPixChargeDialog } from './pix/whatsapp-pix-charge-dialog'
 import { SendSurveyDialog } from './surveys/send-survey-dialog'
@@ -125,6 +133,7 @@ type TimelineItem =
   | { kind: 'event'; at: string; event: WhatsAppConversationEventDTO }
   | { kind: 'call'; at: string; call: PhoneCallRecordDTO }
   | { kind: 'pix'; at: string; charge: WhatsAppPixChargeDTO }
+  | { kind: 'boleto'; at: string; charge: WhatsAppBoletoChargeDTO }
 
 /** Live call states stay in the header banner, not in the timeline. */
 const LIVE_CALL_STATUSES = new Set(['QUEUED', 'DIALING', 'IN_PROGRESS'])
@@ -137,6 +146,7 @@ function buildTimeline(
   events: WhatsAppConversationEventDTO[],
   calls: PhoneCallRecordDTO[] = [],
   pixCharges: WhatsAppPixChargeDTO[] = [],
+  boletoCharges: WhatsAppBoletoChargeDTO[] = [],
 ): TimelineItem[] {
   const oldest = messages[0]?.createdAt
   const items: TimelineItem[] = [
@@ -159,6 +169,13 @@ function buildTimeline(
       .filter((charge) => !oldest || charge.createdAt >= oldest)
       .map((charge) => ({
         kind: 'pix' as const,
+        at: charge.createdAt,
+        charge,
+      })),
+    ...boletoCharges
+      .filter((charge) => !oldest || charge.createdAt >= oldest)
+      .map((charge) => ({
+        kind: 'boleto' as const,
         at: charge.createdAt,
         charge,
       })),
@@ -193,6 +210,7 @@ export function WhatsappConversationView({
   const [callOpen, setCallOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
+  const [boletoOpen, setBoletoOpen] = useState(false)
   const [surveyOpen, setSurveyOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [replyTarget, setReplyTarget] = useState<WhatsAppMessageDTO | null>(
@@ -214,6 +232,13 @@ export function WhatsappConversationView({
     workspaceId,
     conversation.id,
     pixEnabled,
+  )
+  const boletoSettings = useWhatsAppBoletoSettings(workspaceId)
+  const boletoEnabled = boletoSettings.data?.enabled === true
+  const boletoCharges = useWhatsAppBoletoCharges(
+    workspaceId,
+    conversation.id,
+    boletoEnabled,
   )
   const startPhoneCall = useStartWhatsAppPhoneCall(workspaceId)
   const phoneCall = useWhatsAppPhoneCall(workspaceId, conversation.id)
@@ -328,8 +353,9 @@ export function WhatsappConversationView({
         events.data ?? [],
         Array.isArray(calls.data) ? calls.data : [],
         pixCharges.data ?? [],
+        boletoCharges.data ?? [],
       ),
-    [messages.data, events.data, calls.data, pixCharges.data],
+    [messages.data, events.data, calls.data, pixCharges.data, boletoCharges.data],
   )
 
   function handleClose(reason: string | undefined, statusIds: string[]) {
@@ -579,6 +605,24 @@ export function WhatsappConversationView({
               <SteelIcon icon={MoneyReceive01Icon} size={18} />
             </Button>
           )}
+          {boletoEnabled && canCreate && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Enviar boleto'
+              title={
+                conversation.aiActive
+                  ? 'Remova a conversa do atendimento da IA para cobrar'
+                  : isClosed
+                    ? 'Reabra a conversa para cobrar'
+                    : 'Enviar boleto'
+              }
+              disabled={conversation.aiActive || isClosed || outsideHours}
+              onClick={() => setBoletoOpen(true)}
+            >
+              <SteelIcon icon={Invoice01Icon} size={18} />
+            </Button>
+          )}
           {canEdit && (
             <Button
               variant='ghost'
@@ -806,6 +850,14 @@ export function WhatsappConversationView({
               canSimulate={isAdmin && Boolean(pixSettings.data?.isTestProvider)}
               className='mx-auto max-w-xl'
             />
+          ) : item.kind === 'boleto' ? (
+            <WhatsappBoletoChargeCard
+              key={`boleto-${item.charge.id}`}
+              workspaceId={workspaceId}
+              charge={item.charge}
+              canManage={canEdit}
+              className='mx-auto max-w-xl'
+            />
           ) : item.kind === 'call' ? (
             <PhoneCallCard
               key={`call-${item.call.id}`}
@@ -854,6 +906,15 @@ export function WhatsappConversationView({
           settings={pixSettings.data}
           open={pixOpen}
           onOpenChange={setPixOpen}
+        />
+      ) : null}
+      {boletoEnabled ? (
+        <WhatsappBoletoChargeDialog
+          workspaceId={workspaceId}
+          conversationId={conversation.id}
+          defaultPayerName={conversation.contactName ?? undefined}
+          open={boletoOpen}
+          onOpenChange={setBoletoOpen}
         />
       ) : null}
       <WhatsappVideoCallDialog

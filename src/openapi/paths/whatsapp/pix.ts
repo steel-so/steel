@@ -1,10 +1,16 @@
 import { z } from 'zod'
 import {
+  CreateWhatsAppBoletoChargeSchema,
+  UpdateWhatsAppBoletoSettingsSchema,
+} from '@/src/schemas/whatsapp-boleto.schema'
+import {
   CreateWhatsAppPixChargeSchema,
   UpdateWhatsAppPixSettingsSchema,
 } from '@/src/schemas/whatsapp-pix.schema'
 import type { RouteConfig } from '../../registry'
 import {
+  WhatsAppBoletoChargeDTO,
+  WhatsAppBoletoSettingsDTO,
   WhatsAppPixChargeDTO,
   WhatsAppPixSettingsDTO,
 } from '../../schemas/whatsapp'
@@ -28,6 +34,14 @@ const REALTIME =
 
 const PROVIDER_NOTE =
   'As cobranças saem por uma interface (`PixProvider`). O provedor padrão é o de teste `mock` (BR Code válido que nenhum banco liquida); com `PIX_PROVIDER=abacatepay` as cobranças são reais, pelo AbacatePay API v2.'
+
+const BOLETO_BASE = '/workspaces/{id}/whatsapp/conversations/{conversationId}/boleto'
+
+const BOLETO_REALTIME =
+  'O boleto atualizado é publicado no SSE `GET /whatsapp/events` (`boleto-charge.updated`).'
+
+const BOLETO_PROVIDER_NOTE =
+  'Os boletos saem por uma interface (`BoletoProvider`). O provedor padrão é o de teste `mock`; com `BOLETO_PROVIDER=abacatepay` os boletos são reais, pelo AbacatePay API v2 (com a chave de teste, no modo dev).'
 
 const SEND_ERRORS = [
   ...permErrors('conversations', 'CREATE'),
@@ -202,12 +216,101 @@ export const pixRoutes: RouteConfig[] = [
     ],
   },
   {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/boleto/settings',
+    tags: [TAG],
+    summary: 'Configuração do boleto na conversa',
+    description: `Liga/desliga o envio de boleto. Workspace que nunca salvou recebe o padrão (desligado). ${MEMBER}`,
+    responses: {
+      200: { description: 'Configuração.', schema: WhatsAppBoletoSettingsDTO },
+    },
+    errors: MEMBER_ERRORS,
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/whatsapp/boleto/settings',
+    tags: [TAG],
+    summary: 'Atualizar a configuração do boleto',
+    description: `Upsert parcial (omitido = mantém). ${BOLETO_PROVIDER_NOTE} Auditado. ${PRIVILEGED}`,
+    body: UpdateWhatsAppBoletoSettingsSchema,
+    responses: {
+      200: {
+        description: 'Configuração salva.',
+        schema: WhatsAppBoletoSettingsDTO,
+      },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'get',
+    path: BOLETO_BASE,
+    tags: [TAG],
+    summary: 'Listar boletos da conversa',
+    description: `Os 50 boletos mais recentes, o mais novo primeiro. ${perm('conversations', 'VIEW')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Boletos.',
+        schema: z.array(WhatsAppBoletoChargeDTO),
+      },
+    },
+    errors: [
+      ...permErrors('conversations', 'VIEW'),
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
+    ],
+  },
+  {
+    method: 'post',
+    path: BOLETO_BASE,
+    tags: [TAG],
+    summary: 'Enviar boleto',
+    description: `Emite o boleto no PSP e envia ao contato uma mensagem com o resumo, o vencimento, a linha digitável e o link. \`dueInDays\` (1 a 90, padrão 3) define o vencimento; \`opportunityId\` liga o boleto a uma oportunidade do CRM, que recebe uma anotação quando o pagamento chega. Se a mensagem não chegar ao contato, o boleto é fechado no Steel (o PSP não permite anulá-lo). ${BOLETO_PROVIDER_NOTE} ${BOLETO_REALTIME} Auditado. ${perm('conversations', 'CREATE')} Respeita o horário de atendimento e a conversa não pode estar com a IA.`,
+    params: PARAMS,
+    body: CreateWhatsAppBoletoChargeSchema,
+    responses: {
+      201: { description: 'Boleto enviado.', schema: WhatsAppBoletoChargeDTO },
+    },
+    errors: [
+      ...permErrors('conversations', 'CREATE'),
+      'BOLETO_DISABLED',
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
+      'WHATSAPP_CONVERSATION_AI_HANDLING',
+      'WHATSAPP_CONNECTION_NOT_FOUND',
+      'WHATSAPP_PROVIDER_ERROR',
+      'BOLETO_PROVIDER_ERROR',
+      {
+        code: 'BAD_REQUEST',
+        when: '`opportunityId` não existe neste workspace',
+      },
+    ],
+  },
+  {
+    method: 'delete',
+    path: `${BOLETO_BASE}/{chargeId}`,
+    tags: [TAG],
+    summary: 'Cancelar boleto',
+    description: `Fecha no Steel um boleto que ainda aguarda pagamento. O PSP não tem rota de cancelamento: se o contato pagar mesmo assim, o aviso de pagamento ainda baixa o boleto. ${BOLETO_REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
+    params: { ...PARAMS, chargeId: 'Id do boleto.' },
+    responses: {
+      200: { description: 'Boleto cancelado.', schema: WhatsAppBoletoChargeDTO },
+    },
+    errors: [
+      ...permErrors('conversations', 'EDIT'),
+      'WHATSAPP_CONVERSATION_NOT_FOUND',
+      'BOLETO_CHARGE_NOT_FOUND',
+      {
+        code: 'BOLETO_CHARGE_NOT_PENDING',
+        when: 'O boleto já foi pago, cancelado ou venceu',
+      },
+    ],
+  },
+  {
     method: 'post',
     path: '/boleto/webhook/{provider}',
     tags: [TAG],
     summary: 'Aviso de boleto (PSP)',
     description:
-      'Chamado pelo PSP quando um boleto é pago, estornado ou vence. Público: o próprio provedor autentica a chamada. No `abacatepay`, a URL traz `?webhookSecret=<BOLETO_WEBHOOK_SECRET>` e o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru); `transparent.completed` = pago, `transparent.refunded` = estornado, `transparent.expired` = vencido (se enviado). Outros eventos são autenticados e ignorados. No `mock`, o corpo JSON (`kind`, `providerChargeId`) vem assinado em hex no header `x-boleto-signature`. Por ora o aviso é registrado e confirmado; a baixa em propostas e conversas entra com as telas de boleto.',
+      'Chamado pelo PSP quando um boleto é pago, estornado ou vence. Público: o próprio provedor autentica a chamada. No `abacatepay`, a URL traz `?webhookSecret=<BOLETO_WEBHOOK_SECRET>` e o header `X-Webhook-Signature` (HMAC-SHA256 em base64 do corpo cru); `transparent.completed` = pago, `transparent.refunded` = estornado, `transparent.expired` = vencido (se enviado). Outros eventos são autenticados e ignorados. No `mock`, o corpo JSON (`kind`, `providerChargeId`) vem assinado em hex no header `x-boleto-signature`. O aviso dá baixa no boleto da proposta (CRM) ou da conversa (WhatsApp); avisos de boletos desconhecidos são ignorados.',
     auth: 'public',
     params: { provider: 'Id do provedor de boleto (`mock` ou `abacatepay`).' },
     body: {
@@ -226,7 +329,10 @@ export const pixRoutes: RouteConfig[] = [
     responses: {
       200: {
         description: 'Avisos recebidos.',
-        schema: z.object({ received: z.number().int() }),
+        schema: z.object({
+          received: z.number().int(),
+          processed: z.number().int(),
+        }),
       },
     },
     errors: [
