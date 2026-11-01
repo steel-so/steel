@@ -67,7 +67,6 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/surveys/public': 'survey link token',
   '/api/servicedesk/monitoring': 'monitoring source token',
   '/api/status-page': 'public customer status page; subscription tokens',
-  '/api/servicedesk/inventory': 'inventory agent token (Bearer)',
   '/api/servicedesk/integrations/slack': 'Slack signature',
   '/api/servicedesk/integrations/github': 'GitHub signature',
   '/api/integrations/github/webhook': 'GitHub signature',

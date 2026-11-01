@@ -1,9 +1,6 @@
-import type {
-  SdInventoryAgentRelease,
-  SdInventoryDiscoveryRange,
-} from '@prisma/client'
+import type { SdInventoryDiscoveryRange } from '@prisma/client'
 
-/** Fábricas dos complementos do inventário (v3, descoberta, mescla, atualização). */
+/** Fábricas dos complementos do inventário (v3, descoberta, mescla). */
 
 const fixed = () => new Date('2026-10-01T12:00:00.000Z')
 
@@ -28,23 +25,6 @@ export function createFakeSdInventoryDiscoveryRange(
     createdAt: fixed(),
     updatedAt: fixed(),
     deletedAt: null,
-    ...overrides,
-  }
-}
-
-export function createFakeSdInventoryAgentRelease(
-  overrides?: Partial<SdInventoryAgentRelease>,
-): SdInventoryAgentRelease {
-  return {
-    id: 'rel-1',
-    version: '2026.11.01',
-    os: 'linux',
-    arch: 'amd64',
-    sha256: 'a'.repeat(64),
-    sizeBytes: 1024,
-    storageKey: '2026.11.01/steel-inventory-agent-linux-amd64',
-    active: true,
-    publishedAt: fixed(),
     ...overrides,
   }
 }

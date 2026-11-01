@@ -3,8 +3,8 @@ import { dto } from '../../common'
 
 /**
  * DTOs do inventário de ativos do ServiceDesk (`types/sd-inventory.d.ts`):
- * equipamentos descobertos pelo agente e pelo SNMP, software, alertas de
- * disco/RAM, tokens do agente e alvos de varredura.
+ * equipamentos descobertos pelo SNMP e por ping/ARP, software, alertas de
+ * disco/RAM e alvos de varredura.
  */
 
 const dateTime = () => z.iso.datetime()
@@ -43,7 +43,6 @@ const deviceShape = {
   ipAddresses: z.array(z.string()),
   macAddresses: z.array(z.string()),
   disks: z.array(Disk),
-  agentVersion: z.string().nullable(),
   configItemId: z.string().nullable().meta({
     description: 'Item de configuração (CMDB) mantido por este equipamento.',
   }),
@@ -153,32 +152,6 @@ export const SdInventorySettingsDTO = dto(
         'Cria e atualiza o item de configuração de cada equipamento descoberto.',
     }),
     defaultTypeId: z.string().nullable(),
-    agentAutoUpdate: z.boolean().meta({
-      description:
-        'O agente consulta a versão publicada e se atualiza sozinho. Desligado por padrão.',
-    }),
-  }),
-)
-
-const tokenShape = {
-  id: z.string(),
-  name: z.string().meta({ example: 'Matriz — estações' }),
-  lastUsedAt: nullableDateTime(),
-  createdAt: dateTime(),
-  revokedAt: nullableDateTime(),
-}
-
-export const SdInventoryTokenDTO = dto('SdInventoryToken', z.object(tokenShape))
-
-export const SdInventoryTokenWithValueDTO = dto(
-  'SdInventoryTokenWithValue',
-  z.object({
-    ...tokenShape,
-    token: z.string().meta({
-      description:
-        'Valor do token, em claro. **Só aparece aqui** — o banco guarda apenas o SHA-256.',
-      example: 'q8Zr4m2XoV0n1bQ5d7T3k9Wc6yLpA2sHjE4uR8tN0fG',
-    }),
   }),
 )
 
@@ -214,19 +187,6 @@ export const SdInventorySnmpTargetDTO = dto(
   }),
 )
 
-export const SdInventoryIngestResultDTO = dto(
-  'SdInventoryIngestResult',
-  z.object({
-    deviceId: z.string(),
-    configItemId: z.string().nullable(),
-    created: z
-      .boolean()
-      .meta({ description: 'Primeiro relatório do equipamento.' }),
-    openedAlerts: z.number().int(),
-    resolvedAlerts: z.number().int(),
-  }),
-)
-
 export const SdInventoryDiscoveryRangeDTO = dto(
   'SdInventoryDiscoveryRange',
   z.object({
@@ -253,34 +213,5 @@ export const SdInventoryAdoptResultDTO = dto(
   z.object({
     deviceId: z.string(),
     configItemId: z.string().nullable(),
-  }),
-)
-
-export const SdInventoryAgentReleaseDTO = dto(
-  'SdInventoryAgentRelease',
-  z.object({
-    id: z.string(),
-    version: z.string(),
-    os: z.string().meta({ example: 'linux' }),
-    arch: z.string().meta({ example: 'amd64' }),
-    sha256: z.string(),
-    sizeBytes: z.number().int(),
-    active: z.boolean(),
-    publishedAt: dateTime(),
-  }),
-)
-
-export const SdInventoryAgentVersionDTO = dto(
-  'SdInventoryAgentVersion',
-  z.object({
-    updateAvailable: z.boolean(),
-    version: z.string().nullable(),
-    sha256: z.string().nullable().meta({
-      description: 'SHA-256 (hex minúsculo) que o agente confere ao baixar.',
-    }),
-    size: z.number().int().nullable(),
-    downloadPath: z.string().nullable().meta({
-      description: 'Caminho do download, com o mesmo `Authorization: Bearer`.',
-    }),
   }),
 )

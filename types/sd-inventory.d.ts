@@ -1,7 +1,6 @@
 /**
- * DTOs do inventário de ativos do ServiceDesk (S1). O token do agente e a
- * community SNMP **nunca** entram num DTO de leitura: o token aparece uma vez
- * na criação e a community nunca volta (só `hasCommunity`).
+ * DTOs do inventário de ativos do ServiceDesk (S1). A community SNMP **nunca**
+ * entra num DTO de leitura (só `hasCommunity`).
  */
 
 export type SdInventorySourceDTO = 'AGENT' | 'SNMP' | 'DISCOVERY'
@@ -45,7 +44,6 @@ export interface SdInventoryDeviceDTO {
   ipAddresses: string[]
   macAddresses: string[]
   disks: SdInventoryDiskDTO[]
-  agentVersion: string | null
   configItemId: string | null
   snmpTargetId: string | null
   /** `false` = descoberto por ping/ARP, ainda sem gestão (não está na CMDB). */
@@ -119,21 +117,6 @@ export interface SdInventorySettingsDTO {
   staleAfterDays: number
   syncConfigItems: boolean
   defaultTypeId: string | null
-  /** O agente consulta a versão e se atualiza sozinho. */
-  agentAutoUpdate: boolean
-}
-
-export interface SdInventoryTokenDTO {
-  id: string
-  name: string
-  lastUsedAt: string | null
-  createdAt: string
-  revokedAt: string | null
-}
-
-/** Resposta da criação: o valor em claro aparece só aqui. */
-export interface SdInventoryTokenWithValueDTO extends SdInventoryTokenDTO {
-  token: string
 }
 
 export interface SdInventorySnmpTargetDTO {
@@ -159,15 +142,6 @@ export interface SdInventorySnmpTargetDTO {
   createdAt: string
 }
 
-/** O que o agente recebe de volta depois do relatório. */
-export interface SdInventoryIngestResultDTO {
-  deviceId: string
-  configItemId: string | null
-  created: boolean
-  openedAlerts: number
-  resolvedAlerts: number
-}
-
 export interface SdInventoryDiscoveryRangeDTO {
   id: string
   name: string
@@ -182,26 +156,6 @@ export interface SdInventoryDiscoveryRangeDTO {
   lastFound: number
   lastError: string | null
   createdAt: string
-}
-
-export interface SdInventoryAgentReleaseDTO {
-  id: string
-  version: string
-  os: string
-  arch: string
-  sha256: string
-  sizeBytes: number
-  active: boolean
-  publishedAt: string
-}
-
-/** Resposta de `GET /api/servicedesk/inventory/agent/version`. */
-export interface SdInventoryAgentVersionDTO {
-  updateAvailable: boolean
-  version: string | null
-  sha256: string | null
-  size: number | null
-  downloadPath: string | null
 }
 
 export interface SdInventoryAdoptResultDTO {

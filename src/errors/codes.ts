@@ -816,18 +816,6 @@ export const ERROR_CODES = {
     status: 422,
   },
   // ServiceDesk — inventário e descoberta de ativos (S1)
-  SD_INVENTORY_TOKEN_NOT_FOUND: {
-    code: 'SD_INVENTORY_TOKEN_NOT_FOUND',
-    status: 404,
-  },
-  SD_INVENTORY_TOKEN_INVALID: {
-    code: 'SD_INVENTORY_TOKEN_INVALID',
-    status: 401,
-  },
-  SD_INVENTORY_PAYLOAD_INVALID: {
-    code: 'SD_INVENTORY_PAYLOAD_INVALID',
-    status: 422,
-  },
   SD_INVENTORY_TARGET_NOT_FOUND: {
     code: 'SD_INVENTORY_TARGET_NOT_FOUND',
     status: 404,
@@ -850,10 +838,6 @@ export const ERROR_CODES = {
   },
   SD_INVENTORY_SNMP_CREDENTIALS_INVALID: {
     code: 'SD_INVENTORY_SNMP_CREDENTIALS_INVALID',
-    status: 422,
-  },
-  SD_INVENTORY_RELEASE_INVALID: {
-    code: 'SD_INVENTORY_RELEASE_INVALID',
     status: 422,
   },
   SD_PORTAL_LINK_INVALID: { code: 'SD_PORTAL_LINK_INVALID', status: 401 },
@@ -1520,16 +1504,7 @@ export const ERROR_CODES = {
   // nov-health-scores: recompute on a deal that is already won or lost.
   CRM_HEALTH_NOT_APPLICABLE: { code: 'CRM_HEALTH_NOT_APPLICABLE', status: 409 },
 
-  // ServiceDesk — nov3 sd-ops (acesso remoto, licenças, config em linguagem natural, WFM)
-  SD_REMOTE_DISABLED: { code: 'SD_REMOTE_DISABLED', status: 409 },
-  SD_REMOTE_ENDPOINT_NOT_FOUND: {
-    code: 'SD_REMOTE_ENDPOINT_NOT_FOUND',
-    status: 404,
-  },
-  SD_REMOTE_ENDPOINT_INVALID: {
-    code: 'SD_REMOTE_ENDPOINT_INVALID',
-    status: 422,
-  },
+  // ServiceDesk — nov3 sd-ops (licenças, config em linguagem natural, WFM)
   SD_LICENSE_NOT_FOUND: { code: 'SD_LICENSE_NOT_FOUND', status: 404 },
   SD_LICENSE_INVALID: { code: 'SD_LICENSE_INVALID', status: 422 },
   SD_NL_CONFIG_FAILED: { code: 'SD_NL_CONFIG_FAILED', status: 502 },

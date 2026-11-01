@@ -198,7 +198,6 @@ model User {
   sdAiConversations         SdAiConversation[]         @relation("SdAiConversationUser")
   sdMailboxesCreated        SdMailbox[]                @relation("SdMailboxCreatedBy")
   sdMonitorSourcesCreated   SdMonitorSource[]          @relation("SdMonitorSourceCreatedBy")
-  sdInventoryTokensCreated  SdInventoryToken[]         @relation("SdInventoryTokenCreatedBy")
   sdInventoryTargetsCreated SdInventorySnmpTarget[]    @relation("SdInventorySnmpTargetCreatedBy")
   sdPortalAccessesSent      SdPortalAccess[]           @relation("SdPortalAccessRequestedBy")
   sdNotificationPreferences SdNotificationPreference[] @relation("SdNotificationPreferenceUser")
@@ -246,7 +245,6 @@ model User {
 
   @@index([deletionScheduledAt])
   @@map("users")
-  sdRemoteSessions SdRemoteSession[] @relation("SdRemoteSessionUser")
   sdSoftwareLicensesCreated SdSoftwareLicense[] @relation("SdSoftwareLicenseCreatedBy")
 }
 
@@ -610,7 +608,6 @@ model Workspace {
   sdMailMessages            SdMailMessage[]
   sdMonitorSources          SdMonitorSource[]
   sdInventorySettings       SdInventorySettings?
-  sdInventoryTokens         SdInventoryToken[]
   sdInventoryDevices        SdInventoryDevice[]
   sdInventorySnmpTargets    SdInventorySnmpTarget[]
   sdInventoryDiscoveryRanges SdInventoryDiscoveryRange[]
@@ -678,9 +675,6 @@ model Workspace {
 
   @@index([status])
   @@map("workspaces")
-  sdRemoteSettings SdRemoteSettings?
-  sdRemoteEndpoints SdRemoteEndpoint[]
-  sdRemoteSessions SdRemoteSession[]
   sdSoftwareLicenses SdSoftwareLicense[]
   sdWfmSettings SdWfmSettings?
 }
@@ -6231,8 +6225,6 @@ model SdConfigItem {
   @@index([typeId])
   @@index([deletedAt])
   @@map("sd_config_items")
-  remoteEndpoints SdRemoteEndpoint[]
-  remoteSessions SdRemoteSession[]
   licenseAssets SdSoftwareLicenseAsset[]
 }
 
@@ -6795,7 +6787,6 @@ model SdTicket {
   @@index([whatsappConversationId])
   @@index([deletedAt])
   @@map("sd_tickets")
-  remoteSessions SdRemoteSession[]
 }
 
 model SdTicketParticipant {
@@ -11079,32 +11070,11 @@ model SdInventorySettings {
   syncConfigItems      Boolean  @default(true) @map("sync_config_items")
   /// Tipo da CMDB usado nos itens criados (nulo = "Computador"/"Rede").
   defaultTypeId        String?  @map("default_type_id")
-  /// nov: inventory-followups — o agente pode se atualizar sozinho (desligado por padrão).
-  agentAutoUpdate      Boolean  @default(false) @map("agent_auto_update")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("sd_inventory_settings")
-}
-
-/// Token por workspace usado pelo agente para enviar o relatório. Só o
-/// SHA-256 é guardado; o valor em claro aparece uma vez, na criação.
-model SdInventoryToken {
-  id          String    @id @default(cuid())
-  workspaceId String    @map("workspace_id")
-  name        String
-  tokenHash   String    @unique @map("token_hash")
-  lastUsedAt  DateTime? @map("last_used_at")
-  createdById String    @map("created_by_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  revokedAt   DateTime? @map("revoked_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy User      @relation("SdInventoryTokenCreatedBy", fields: [createdById], references: [id])
-
-  @@index([workspaceId])
-  @@map("sd_inventory_tokens")
 }
 
 /// Máquina ou equipamento descoberto (agente ou SNMP). `externalKey` é a
@@ -11130,9 +11100,7 @@ model SdInventoryDevice {
   macAddresses String[]          @default([]) @map("mac_addresses")
   /// [{mount,label?,fs?,totalMb,usedMb}]
   disks        Json              @default("[]")
-  agentVersion String?           @map("agent_version")
   snmpTargetId String?           @map("snmp_target_id")
-  tokenId      String?           @map("token_id")
   /// nov: inventory-followups — `false` = descoberto por ping/ARP e ainda não adotado.
   managed      Boolean           @default(true)
   /// Descartado pelo admin: a descoberta não o mostra de novo.
@@ -12087,25 +12055,6 @@ model SdInventoryDiscoveryRange {
   @@map("sd_inventory_discovery_ranges")
 }
 
-/// Binário do agente publicado para a atualização automática. Global (o
-/// mesmo arquivo serve todas as workspaces); o arquivo fica no MinIO e só o
-/// SHA-256 conhecido aqui vale para o agente.
-model SdInventoryAgentRelease {
-  id          String   @id @default(cuid())
-  version     String
-  os          String
-  arch        String
-  sha256      String
-  sizeBytes   Int      @map("size_bytes")
-  storageKey  String   @map("storage_key")
-  active      Boolean  @default(true)
-  publishedAt DateTime @default(now()) @map("published_at")
-
-  @@unique([version, os, arch])
-  @@index([os, arch, active, publishedAt])
-  @@map("sd_inventory_agent_releases")
-}
-
 // nov: health-scores ───────────────────────────────────────────────────────
 
 /// Risk band of a health score. Same cuts as the ServiceDesk predictive risk
@@ -12493,68 +12442,6 @@ model SteelMcpServer {
 }
 
 // nov: sd-ops
-
-enum SdRemoteProvider {
-  RUSTDESK
-  ANYDESK
-}
-
-/// S4 — acesso remoto integrado. Uma linha por workspace; desligado por padrão.
-/// Nenhuma senha é guardada: só o ID público do equipamento.
-model SdRemoteSettings {
-  workspaceId  String           @id @map("workspace_id")
-  enabled      Boolean          @default(false)
-  provider     SdRemoteProvider @default(RUSTDESK)
-  /// Modelo do link (`rustdesk://{id}`); nulo = o padrão do provedor.
-  linkTemplate String?          @map("link_template")
-  updatedAt    DateTime         @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("sd_remote_settings")
-}
-
-/// ID de acesso remoto de um ativo da CMDB (preenchido à mão ou pelo inventário).
-model SdRemoteEndpoint {
-  id           String           @id @default(cuid())
-  workspaceId  String           @map("workspace_id")
-  configItemId String           @map("config_item_id")
-  provider     SdRemoteProvider
-  remoteId     String           @map("remote_id")
-  /// MANUAL ou INVENTORY (veio do relatório do agente).
-  source       String           @default("MANUAL")
-  createdAt    DateTime         @default(now()) @map("created_at")
-  updatedAt    DateTime         @updatedAt @map("updated_at")
-
-  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  configItem SdConfigItem @relation(fields: [configItemId], references: [id], onDelete: Cascade)
-
-  @@unique([configItemId, provider])
-  @@index([workspaceId])
-  @@map("sd_remote_endpoints")
-}
-
-/// Cada vez que alguém clicou em "Conectar" (rastro além da auditoria).
-model SdRemoteSession {
-  id           String           @id @default(cuid())
-  workspaceId  String           @map("workspace_id")
-  configItemId String           @map("config_item_id")
-  ticketId     String?          @map("ticket_id")
-  userId       String           @map("user_id")
-  provider     SdRemoteProvider
-  remoteId     String           @map("remote_id")
-  startedAt    DateTime         @default(now()) @map("started_at")
-
-  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  configItem SdConfigItem @relation(fields: [configItemId], references: [id], onDelete: Cascade)
-  ticket     SdTicket?    @relation(fields: [ticketId], references: [id], onDelete: SetNull)
-  user       User         @relation("SdRemoteSessionUser", fields: [userId], references: [id])
-
-  @@index([workspaceId, startedAt])
-  @@index([configItemId, startedAt])
-  @@index([ticketId])
-  @@map("sd_remote_sessions")
-}
 
 /// S7 — licença de software. `matchPattern` casa com o nome do software no
 /// catálogo do inventário (S1), sem diferenciar maiúsculas.

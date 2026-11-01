@@ -388,9 +388,6 @@ function DeviceSheet({
               <SdInfoRow label='Endereços MAC'>
                 {data.macAddresses.join(', ')}
               </SdInfoRow>
-              <SdInfoRow label='Versão do agente'>
-                {data.agentVersion}
-              </SdInfoRow>
               <SdInfoRow label='Primeiro contato'>
                 {formatInventoryDateTime(data.firstSeenAt)}
               </SdInfoRow>
@@ -423,7 +420,7 @@ function DeviceSheet({
               </div>
               {data.mergedSources.length === 0 ? (
                 <p className='text-muted-foreground text-xs'>
-                  Nenhuma. Quando o agente e o SNMP enxergam a mesma máquina
+                  Nenhuma. Quando duas origens enxergam a mesma máquina
                   (mesma série, MAC ou nome), as fichas são juntadas sozinhas.
                 </p>
               ) : (
@@ -613,7 +610,7 @@ function DevicesTab({
           </>
         }
         emptyTitle='Nenhum equipamento no inventário'
-        emptyDescription='Instale o agente nas máquinas ou cadastre uma faixa de rede para a varredura SNMP ou a descoberta por ping em Ajustes > Inventário.'
+        emptyDescription='Cadastre um alvo SNMP ou uma faixa de rede para a descoberta por ping em Ajustes > Inventário.'
       />
       <DeviceSheet
         workspaceId={workspaceId}
@@ -757,7 +754,7 @@ function SoftwareTab({ workspaceId }: { workspaceId: string }) {
       isLoading={isLoading}
       error={error ? error.message : null}
       emptyTitle='Nenhum software inventariado'
-      emptyDescription='A lista vem do agente instalado nas máquinas (e do SNMP, quando o equipamento expõe).'
+      emptyDescription='A lista vem do inventário que já existia e do SNMP, quando o equipamento expõe.'
     />
   )
 }
