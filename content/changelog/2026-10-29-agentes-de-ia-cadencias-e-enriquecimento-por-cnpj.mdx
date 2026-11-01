@@ -1,0 +1,79 @@
+---
+title: Agentes de IA que explicam, versionam e simulam, cadências de vendas e dados da Receita
+slug: agentes-de-ia-cadencias-e-enriquecimento-por-cnpj
+date: 2026-10-29
+summary: Os Steel Agents mostram o porquê de cada execução, ganham gatilhos novos, versões com teste automático e simulações com personas. O CRM ganha cadências de vendas, busca de oportunidades em linguagem natural e enriquecimento por CNPJ.
+tags: [IA, CRM]
+cover: /changelog/2026-10-29/capa-ia-e-crm.jpg
+---
+
+## Por que o agente fez isso
+
+Na tela de cada execução de um Steel Agent, a linha do tempo agora mostra o
+**raciocínio do modelo**, o **contexto que ele consultou** (um trecho do que
+cada leitura devolveu) e as **regras de proteção** que dispararam. O botão
+**Reexecutar como teste** repete a execução com o mesmo gatilho e os mesmos
+dados, sem efeito real, e deixa o link para a original. O contexto consultado só
+aparece para quem pode aprovar as ações do agente, para não expor registros que
+a pessoa não abriria no módulo.
+
+## Mais gatilhos e agente por menção
+
+Os agentes passam a reagir também a: mudança de etapa de oportunidade, proposta
+visualizada, SLA em risco, chamado reaberto e mensagem recebida no WhatsApp.
+
+Você pode **atribuir um agente a um chamado ou a um lead** (na lateral do chamado
+e no painel do lead) e **marcar um agente com @** nas mensagens do chamado e nas
+notas do CRM. Em ambos os casos o agente recebe o registro como contexto e roda
+na hora. Agentes pausados não são acionados.
+
+## Versões com portão de qualidade e teste A/B
+
+Cada edição das instruções, ferramentas ou rodadas de um agente cria uma
+**versão numerada** na aba **Versões**. Você pode ligar um **portão**: um
+conjunto de avaliação e uma nota mínima (80% por padrão). Enquanto a nova versão
+não passa, ela fica aguardando e o agente continua rodando a anterior. Também dá
+para soltar a edição para só uma parte das execuções (**teste A/B**) e comparar
+taxa de sucesso, custo, rodadas e aprovação das ações entre as versões, para
+promover, descartar ou restaurar.
+
+## Simulações com personas
+
+Na aba **Simulações** do agente você monta cenários, e uma IA faz o papel do
+cliente, de ponta a ponta, contra o agente de verdade. Há oito personas prontas e
+o botão **Gerar com IA** sugere cenários. Um juiz dá nota de 0 a 100 e confere
+cada critério, mostrando a evidência. O cenário só passa com nota acima do mínimo
+e todos os critérios cumpridos. Dá para repetir uma simulação depois de ajustar
+o agente.
+
+## Cadências de vendas
+
+Em **CRM › Cadências** você monta sequências por lead de **e-mail, WhatsApp e
+tarefas** com intervalos entre os passos. Diferente de uma campanha em massa,
+cada lead tem o próprio relógio e a cadência **para sozinha quando o lead
+responde**, por WhatsApp ou e-mail. Os envios respeitam a janela comercial
+(9h às 18h em dias úteis), as listas de descadastro e o remetente verificado. No
+WhatsApp da Meta cada passo usa um template aprovado. O painel do lead mostra em
+que passo ele está, e dá para pausar, retomar ou marcar como respondido.
+
+## Buscar oportunidades escrevendo a pergunta
+
+Acima da lista de **Oportunidades** há uma barra de busca em linguagem natural,
+como "propostas acima de 50 mil paradas há 30 dias". Os filtros que o Steel
+entendeu aparecem como etiquetas, para você conferir como a pergunta foi lida.
+Usa a cota de IA do CRM.
+
+## Conectar a sua IA ao Steel
+
+Em **Ajustes › Apps conectados** há um guia para ligar o Steel ao Claude,
+ao ChatGPT e ao Gemini pelo MCP: o endereço do servidor com botão de copiar, o
+passo a passo de cada um e a indicação de quais já estão conectados.
+
+## Dados da Receita por CNPJ
+
+No painel de uma empresa do CRM, o bloco **Dados da Receita** traz razão social,
+situação, atividade, endereço e sócios a partir do CNPJ. Administradores também
+podem usar **Enriquecer base** na lista de empresas para percorrer a base inteira
+em segundo plano, com acompanhamento do andamento. Nome e endereço só são
+preenchidos quando estão vazios, a menos que você escolha sobrescrever, e dos
+sócios o Steel guarda apenas nome, qualificação e data de entrada, nunca o CPF.
