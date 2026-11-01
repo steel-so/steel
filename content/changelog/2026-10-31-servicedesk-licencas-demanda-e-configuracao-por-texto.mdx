@@ -1,0 +1,56 @@
+---
+title: Licenças de software, demanda e escala, e configuração por texto
+slug: servicedesk-licencas-demanda-e-configuracao-por-texto
+date: 2026-10-31
+summary: O ServiceDesk compara as licenças compradas com o software instalado, prevê quantos chamados esperar e quantos atendentes cada turno precisa, e deixa o administrador descrever SLA, automações e escalonamentos em português para a IA montar.
+tags: [SERVICEDESK, IA]
+cover: /changelog/2026-10-31/capa-servicedesk-licencas-demanda-e-configuracao-por-texto.jpg
+---
+
+## Licenças de software
+
+Em **ServiceDesk › Licenças de software**, cadastre cada produto que a empresa
+licencia: fornecedor, quantidade de licenças, vencimento e custo. O Steel
+cruza o nome do programa com o **software instalado** que o
+[Inventário](/docs/servicedesk/inventario-de-ativos) já conhece e mostra a
+situação de cada licença: em conformidade, **faltam licenças** (risco em uma
+auditoria), **licenças sobrando** (dá para reduzir na renovação), perto de
+vencer ou vencida. Os cartões no topo resumem tudo.
+
+Dentro de uma licença, o administrador marca quais itens da CMDB estão
+cobertos, e quem tem o programa e não foi marcado aparece como sem atribuição.
+Todo dia, às 7h, donos e administradores recebem no sino um aviso das licenças
+que entraram no prazo de vencimento. A chave de ativação **não é guardada**.
+
+## Demanda e escala
+
+**ServiceDesk › Demanda e escala** olha o histórico de chamados e mostra o que
+esperar:
+
+- um **mapa de calor** com o volume médio de cada hora da semana;
+- a **previsão dos próximos 14 dias**, com a faixa entre o cenário baixo e o
+  alto;
+- a **escala sugerida por turno**: quantos chamados esperar e quantos
+  atendentes cada turno precisa, comparado com o plantão e o tamanho do time.
+
+Não é IA: é uma média das últimas semanas, com mais peso às recentes, e a conta
+é explicada na própria documentação. Com pouco histórico, a tela avisa que os
+números são só indicativos, como no exemplo abaixo, de um workspace com uma
+semana de uso.
+
+![Tela de demanda e escala com a previsão para os próximos 7 dias, o mapa de calor por hora da semana e a previsão de 14 dias com o aviso de pouco histórico](/changelog/2026-10-31/demanda-e-escala.webp)
+
+## Configuração em linguagem natural
+
+Nas abas **SLA**, **Automações** e **Escalonamento** das configurações, o
+administrador tem o botão **Descrever com IA**. Basta escrever, por exemplo,
+"para chamados de prioridade Alta, primeira resposta em 15 minutos e resolução
+em 4 horas, no horário comercial". O Steel mostra uma **prévia** em português,
+com avisos e, ao ajustar uma regra existente, o que muda campo a campo. Nada é
+salvo sozinho: só vale quando você clica em **Aplicar**. A IA vê apenas o seu
+texto e os nomes de prioridades, calendários e departamentos, nunca dados de
+chamados ou de clientes.
+
+Veja também [Licenças de software](/docs/servicedesk/licencas-de-software),
+[Demanda e escala](/docs/servicedesk/demanda-e-escala) e
+[Configuração em linguagem natural](/docs/servicedesk/configuracao-em-linguagem-natural).

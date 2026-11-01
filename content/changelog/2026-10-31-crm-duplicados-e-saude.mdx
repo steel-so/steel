@@ -1,0 +1,53 @@
+---
+title: Duplicados no CRM e nota de saúde do cliente e do negócio
+slug: crm-duplicados-e-saude
+date: 2026-10-31
+summary: O CRM encontra pessoas e empresas repetidas e deixa você mesclar (com desfazer em 24 horas), e passa a mostrar uma nota de risco explicada para cada cliente e cada negócio, com a próxima ação sugerida.
+tags: [CRM]
+cover: /changelog/2026-10-31/capa-crm-duplicados-e-saude.jpg
+---
+
+## Duplicados e mesclagem
+
+Cadastro repetido faz a mesma pessoa receber duas campanhas e divide o
+histórico em dois. Agora o Steel procura esses pares sozinho, todo dia de
+madrugada, e também confere na hora cada pessoa ou empresa que chega por
+formulário, por um fluxo do WhatsApp ou por cadastro manual.
+
+Os pares aparecem em **CRM › Duplicados**, com uma pontuação de chance e o
+motivo: mesmo e-mail, mesmo telefone, nome parecido, e, nas empresas, mesmo
+CNPJ ou mesmo domínio. Cada par mostra os dois cadastros lado a lado. Você
+escolhe **Manter este** para mesclar ou **Não são duplicados** para o Steel
+nunca mais propor aquele par.
+
+![Fila de duplicados do CRM com dois pares de pessoas, as chances de 100% e 90% e os motivos mesmo e-mail, nome parecido e mesmo telefone](/changelog/2026-10-31/duplicados-fila.webp)
+
+Na mesclagem, o cadastro que fica mantém os próprios dados e recebe o que
+estava em branco. Notas, tarefas, oportunidades, e-mails, propostas e listas
+do outro cadastro passam para ele. Se você mudar de ideia, a mesclagem pode
+ser **desfeita em até 24 horas**. O dono e os administradores recebem no
+máximo uma notificação por dia com a contagem de pares novos.
+
+## Saúde do cliente
+
+Em **CRM › Empresas**, abra uma empresa e veja o bloco **Saúde do cliente**:
+uma nota de 0 a 100 e a faixa (baixo, médio ou alto risco). A nota não é um
+palpite da IA. Ela soma sinais que você confere, como "última interação há 52
+dias", negócios abertos em risco, tarefas atrasadas, o sentimento das
+conversas de WhatsApp dos últimos 90 dias e os chamados do ServiceDesk com SLA
+estourado. Cada sinal vem com a frase que o explica, e o Steel sugere a
+**próxima melhor ação**.
+
+## Saúde do negócio
+
+Em **CRM › Oportunidades**, o bloco **Saúde do negócio** segue o mesmo
+raciocínio: negócio parado, sem contato com o cliente, data de fechamento
+vencida, sem próximo passo, tarefas atrasadas. Na visão **Kanban**, cada
+cartão em risco médio ou alto mostra um selo com a faixa e a **próxima ação**
+sugerida, para você puxar primeiro o que está esfriando.
+
+Quando um cliente ou um negócio entra em risco alto, o responsável pela conta
+recebe um aviso. Negócios ganhos ou perdidos não têm nota.
+
+Veja o passo a passo em [Duplicados e mesclagem](/docs/crm/duplicados-e-mesclagem)
+e em [Saúde do cliente e do negócio](/docs/crm/saude-do-cliente-e-do-negocio).

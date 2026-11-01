@@ -1,0 +1,47 @@
+---
+title: Boleto na conversa e cobrança por Pix e boleto na proposta
+slug: boleto-na-conversa-e-na-proposta
+date: 2026-11-01
+summary: Envie um boleto pelo WhatsApp sem sair da conversa, acompanhe o pagamento e veja a baixa na conversa e na oportunidade do CRM. Pix e boleto na proposta também estão prontos, aguardando a chave de produção do AbacatePay.
+tags: [COMUNICACAO, CRM]
+cover: /changelog/2026-11-01/capa-boleto-na-conversa-e-na-proposta.jpg
+---
+
+<Callout>
+  Pronto, aguardando a chave de produção do AbacatePay. O recurso vem
+  **desligado** em todo workspace e, até a chave entrar, as cobranças usam um
+  provedor de teste: a linha digitável parece de verdade, mas nenhum banco a
+  liquida.
+</Callout>
+
+## Boleto dentro da conversa
+
+Com o boleto ligado por um administrador (em **WhatsApp › Configurações ›
+Atendimento**), a conversa ganha o ícone **Enviar boleto** ao lado do Pix.
+Informe o valor, o que está sendo cobrado, o nome e o CPF ou CNPJ de quem vai
+pagar e em quantos dias vence, e escolha, se quiser, a oportunidade do CRM a
+que ele pertence. O contato recebe no WhatsApp o valor, o vencimento, a **linha
+digitável** e o link do boleto.
+
+## Acompanhar o pagamento
+
+O boleto fica na conversa como um cartão com o estado: **aguardando
+pagamento**, **pago**, **vencido**, **cancelado** ou **estornado**. Dá para
+copiar a linha digitável, abrir o boleto e cancelar. Quando o pagamento chega,
+em segundos o cartão vira **Pago** e a oportunidade ligada recebe a anotação
+"Boleto pago". Um pagamento que chega depois do vencimento também dá baixa, e
+avisos repetidos do mesmo pagamento não duplicam nada. Cada envio, cancelamento
+e pagamento vai para a auditoria.
+
+## Na proposta do CRM
+
+A proposta enviada também gera uma cobrança por **Pix ou boleto**, e o
+pagamento confirmado atualiza a proposta e leva a oportunidade para a etapa de
+ganho. O Pix e o boleto usam o AbacatePay, na versão atual da API dele, e o
+recebimento do pagamento é conferido por assinatura para ninguém conseguir
+forjar uma baixa.
+
+Veja [Boleto na conversa](/docs/comunicacao/boleto), [Pix](/docs/comunicacao/pix)
+e [Assinatura, sala e renovações](/docs/crm/assinatura-sala-e-renovacoes). A
+assinatura da proposta, a sala de negociação e as renovações estão em
+[Proposta com assinatura, sala de negociação e renovações](/changelog/crm-proposta-assinatura-sala-e-renovacoes).
