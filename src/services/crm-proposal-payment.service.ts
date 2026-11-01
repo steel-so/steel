@@ -554,7 +554,7 @@ export const CrmProposalPaymentService = {
       notification.providerChargeId,
     )
     if (!found.ok) return found
-    if (!found.value || found.value.method !== 'BOLETO') {
+    if (found.value?.method !== 'BOLETO') {
       return err(crmProposalChargeNotFound())
     }
     if (notification.kind !== 'PAID') {

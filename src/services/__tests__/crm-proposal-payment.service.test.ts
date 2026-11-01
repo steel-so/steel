@@ -911,6 +911,7 @@ describe('signatureImage', () => {
 describe('handleBoletoNotification', () => {
   const boleto = createFakeCrmProposalCharge({
     method: 'BOLETO',
+    opportunityId: null,
     amount: new Prisma.Decimal(300),
   })
   const at = new Date()
