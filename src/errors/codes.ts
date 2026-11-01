@@ -1393,6 +1393,9 @@ export const ERROR_CODES = {
   // Boleto PSP failed or refused the call / bad webhook authentication.
   BOLETO_PROVIDER_ERROR: { code: 'BOLETO_PROVIDER_ERROR', status: 502 },
   BOLETO_WEBHOOK_INVALID: { code: 'BOLETO_WEBHOOK_INVALID', status: 401 },
+  BOLETO_DISABLED: { code: 'BOLETO_DISABLED', status: 422 },
+  BOLETO_CHARGE_NOT_FOUND: { code: 'BOLETO_CHARGE_NOT_FOUND', status: 404 },
+  BOLETO_CHARGE_NOT_PENDING: { code: 'BOLETO_CHARGE_NOT_PENDING', status: 409 },
 
   // s2-major-incident: major incident + customer status pages.
   SD_MAJOR_INCIDENT_NOT_FOUND: {

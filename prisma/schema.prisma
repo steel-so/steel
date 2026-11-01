@@ -485,6 +485,8 @@ model Workspace {
   whatsappPixSettings          WhatsAppPixSettings?
   whatsappMetaChannelSettings  WhatsAppMetaChannelSettings?
   whatsappPixCharges           WhatsAppPixCharge[]
+  whatsappBoletoSettings       WhatsAppBoletoSettings?
+  whatsappBoletoCharges        WhatsAppBoletoCharge[]
   whatsappWidgetSettings       WhatsAppWidgetSettings?
   whatsappWidgetVisitors       WhatsAppWidgetVisitor[]
   whatsappNumberValidations    WhatsAppNumberValidation[]
@@ -1371,6 +1373,7 @@ model WhatsAppConversation {
   slaCycles    WhatsAppSlaCycle[]
   chatbotSessions WhatsAppChatbotSession[]
   pixCharges   WhatsAppPixCharge[]
+  boletoCharges WhatsAppBoletoCharge[]
 
   @@index([workspaceId, status, lastMessageAt])
   @@index([workspaceId, deletedAt, archivedAt, pinnedAt])
@@ -2687,6 +2690,7 @@ model CrmOpportunity {
   proposals      CrmProposal[]
   phoneCalls     WhatsAppPhoneCall[]
   pixCharges     WhatsAppPixCharge[]
+  boletoCharges  WhatsAppBoletoCharge[]
   health         CrmOpportunityHealth?
   proposalCharges   CrmProposalCharge[]
   dealRoom          CrmDealRoom?
@@ -13339,4 +13343,64 @@ model AiProcedureRunStep {
 
   @@index([runId, createdAt])
   @@map("ai_procedure_run_steps")
+}
+
+// nov: pix-abacatepay (boleto in the WhatsApp conversation)
+
+enum WhatsAppBoletoChargeStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELED
+  REFUNDED
+}
+
+/// Boleto in the conversation (Z1): per-workspace switch, off by default.
+model WhatsAppBoletoSettings {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique @map("workspace_id")
+  enabled     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_boleto_settings")
+}
+
+/// A boleto charge sent in a WhatsApp conversation. `provider` +
+/// `providerChargeId` identify it at the PSP; the PSP webhook settles it.
+model WhatsAppBoletoCharge {
+  id               String                     @id @default(cuid())
+  workspaceId      String                     @map("workspace_id")
+  conversationId   String                     @map("conversation_id")
+  opportunityId    String?                    @map("opportunity_id")
+  createdById      String?                    @map("created_by_id")
+  provider         String
+  providerChargeId String                     @map("provider_charge_id")
+  amount           Decimal                    @db.Decimal(14, 2)
+  description      String                     @db.VarChar(140)
+  payerName        String                     @map("payer_name")
+  /// CPF or CNPJ, digits only.
+  payerTaxId       String                     @map("payer_tax_id")
+  /// Digitable line (linha digitavel).
+  barCode          String                     @map("bar_code")
+  /// View/print link at the PSP.
+  url              String?
+  dueAt            DateTime                   @map("due_at")
+  status           WhatsAppBoletoChargeStatus @default(PENDING)
+  paidAt           DateTime?                  @map("paid_at")
+  paidAmount       Decimal?                   @map("paid_amount") @db.Decimal(14, 2)
+  canceledAt       DateTime?                  @map("canceled_at")
+  createdAt        DateTime                   @default(now()) @map("created_at")
+  updatedAt        DateTime                   @updatedAt @map("updated_at")
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  opportunity  CrmOpportunity?      @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerChargeId])
+  @@index([workspaceId, conversationId, createdAt])
+  @@index([opportunityId])
+  @@map("whatsapp_boleto_charges")
 }

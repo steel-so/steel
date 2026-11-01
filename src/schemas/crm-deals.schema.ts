@@ -55,6 +55,13 @@ export const CreateCrmProposalChargeSchema = z.object({
   description: z.string().trim().min(1).max(140).optional(),
   /** Days the charge stays payable. */
   expiresInDays: z.number().int().min(1).max(30).default(7),
+  /** Boleto only (required by a real PSP): who pays. CPF/CNPJ, digits or formatted. */
+  payerName: z.string().trim().min(2).max(120).optional(),
+  payerTaxId: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ''))
+    .refine((digits) => digits.length === 11 || digits.length === 14, 'CPF ou CNPJ inválido')
+    .optional(),
 })
 export type CreateCrmProposalChargeDTO = z.infer<
   typeof CreateCrmProposalChargeSchema

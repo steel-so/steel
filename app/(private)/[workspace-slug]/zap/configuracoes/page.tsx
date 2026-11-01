@@ -17,6 +17,7 @@ import { WhatsappSettingsCopilot } from '@/app/_components/whatsapp/settings/wha
 import { WhatsappSettingsDistribution } from '@/app/_components/whatsapp/settings/whatsapp-settings-distribution'
 import { WhatsappSettingsMetaChannels } from '@/app/_components/whatsapp/settings/whatsapp-settings-meta-channels'
 import { WhatsappSettingsNumberCheck } from '@/app/_components/whatsapp/settings/whatsapp-settings-number-check'
+import { WhatsappSettingsBoleto } from '@/app/_components/whatsapp/settings/whatsapp-settings-boleto'
 import { WhatsappSettingsPix } from '@/app/_components/whatsapp/settings/whatsapp-settings-pix'
 import { WhatsappSettingsService } from '@/app/_components/whatsapp/settings/whatsapp-settings-service'
 import { WhatsappSettingsSla } from '@/app/_components/whatsapp/settings/whatsapp-settings-sla'
@@ -89,6 +90,7 @@ export default async function ZapSettingsPage({
             <WhatsappSettingsSla workspaceId={workspaceId} />
             <WhatsappSettingsCallRecording workspaceId={workspaceId} />
             <WhatsappSettingsPix workspaceId={workspaceId} />
+            <WhatsappSettingsBoleto workspaceId={workspaceId} />
             <WhatsappSettingsNumberCheck workspaceId={workspaceId} />
             <WhatsappSettingsArchive workspaceId={workspaceId} />
           </TabsContent>

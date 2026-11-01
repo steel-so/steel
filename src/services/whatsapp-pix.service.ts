@@ -131,7 +131,7 @@ async function publishCharge(charge: WhatsAppPixCharge): Promise<void> {
   })
 }
 
-interface Delivery {
+export interface Delivery {
   workspaceId: string
   conversation: WhatsAppConversationWithPreview
   connection: WhatsAppConnection
@@ -140,7 +140,7 @@ interface Delivery {
 }
 
 /** Sends a text through the provider and records it in the conversation. */
-async function deliverText(
+export async function deliverText(
   delivery: Delivery,
   text: string,
 ): Promise<Result<WhatsAppMessageDTO>> {
@@ -284,7 +284,7 @@ async function issueCharge(
 }
 
 /** Module member allowed to act on conversations, plus their visibility. */
-async function authorizeConversation(
+export async function authorizeConversation(
   actorId: string,
   workspaceId: string,
   action: 'VIEW' | 'CREATE' | 'EDIT',
@@ -299,7 +299,7 @@ async function authorizeConversation(
   return resolveConversationScope(actorId, workspaceId, membership.value.role)
 }
 
-async function checkOpportunity(
+export async function checkOpportunity(
   workspaceId: string,
   opportunityId: string | undefined,
 ): Promise<Result<void>> {
