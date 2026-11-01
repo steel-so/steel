@@ -1674,6 +1674,56 @@ export const WhatsAppPixSettingsDTO = dto(
   }),
 )
 
+export const WhatsAppBoletoChargeDTO = dto(
+  'WhatsAppBoletoCharge',
+  z.object({
+    id: id('ckv9x2p0h0000ms7d3k1e5abc'),
+    conversationId: z.string(),
+    opportunityId: z.string().nullable().meta({
+      description: 'Oportunidade do CRM que recebe a anotação do pagamento.',
+    }),
+    createdById: z.string().nullable().meta({
+      description: 'Atendente que enviou.',
+    }),
+    provider: z.string().meta({
+      description: 'PSP que emitiu o boleto (`mock` enquanto não há um).',
+      example: 'mock',
+    }),
+    amount: z.number().meta({ description: 'Valor em reais.', example: 150 }),
+    description: z.string(),
+    payerName: z.string(),
+    barCode: z.string().meta({ description: 'Linha digitável do boleto.' }),
+    url: z.string().nullable().meta({
+      description: 'Link do PSP para ver ou imprimir o boleto.',
+    }),
+    dueAt: dateTime(),
+    status: z.enum(['PENDING', 'PAID', 'EXPIRED', 'CANCELED', 'REFUNDED']).meta({
+      description:
+        '`EXPIRED` é derivado: boleto `PENDING` depois do `dueAt`. Um pagamento que chega depois do vencimento ou do cancelamento ainda o marca como `PAID`.',
+    }),
+    paidAt: nullableDateTime(),
+    paidAmount: z.number().nullable(),
+    canceledAt: nullableDateTime(),
+    createdAt: dateTime(),
+  }),
+)
+
+export const WhatsAppBoletoSettingsDTO = dto(
+  'WhatsAppBoletoSettings',
+  z.object({
+    workspaceId: z.string(),
+    enabled: z.boolean().meta({
+      description:
+        'Boleto na conversa ligado neste workspace (padrão: desligado).',
+    }),
+    provider: z.string(),
+    isTestProvider: z.boolean().meta({
+      description:
+        '`true` enquanto o provedor é o `mock`: os boletos não movimentam dinheiro de verdade.',
+    }),
+  }),
+)
+
 /* ----------------------------- chat do site (E1) ---------------------------- */
 
 export const WhatsAppWidgetSettingsDTO = dto(

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
+import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 import { phoneCallsKey } from './use-phone-calls'
 
@@ -26,6 +27,11 @@ type WhatsAppRealtimeEvent =
       type: 'pix-charge.updated'
       conversationId: string
       charge: WhatsAppPixChargeDTO
+    }
+  | {
+      type: 'boleto-charge.updated'
+      conversationId: string
+      charge: WhatsAppBoletoChargeDTO
     }
 
 export function useWhatsAppRealtimeEvents(workspaceId: string) {
@@ -100,6 +106,12 @@ export function useWhatsAppRealtimeEvents(workspaceId: string) {
         })
         queryClient.invalidateQueries({
           queryKey: ['crm-opportunity-pix', workspaceId],
+        })
+      }
+
+      if (parsed.type === 'boleto-charge.updated') {
+        queryClient.invalidateQueries({
+          queryKey: ['whatsapp-boleto-charges', workspaceId],
         })
       }
 

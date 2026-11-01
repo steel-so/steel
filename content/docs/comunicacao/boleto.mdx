@@ -1,0 +1,68 @@
+---
+title: Boleto na conversa
+description: Envie o boleto para o contato direto na conversa, acompanhe o pagamento e veja a baixa na conversa e na oportunidade do CRM.
+section: comunicacao
+order: 13
+---
+
+Com o boleto ligado, você cobra o contato sem sair da conversa: ele recebe o
+valor, o vencimento, a **linha digitável** e o link do boleto no WhatsApp, e
+quando o pagamento chega o card da conversa muda para **Pago**.
+
+## Ligar o boleto
+
+Um administrador liga em **WhatsApp › Configurações › Atendimento › Enviar
+boleto na conversa**. O recurso vem **desligado** em todo workspace.
+
+> Enquanto o Steel não estiver configurado para o AbacatePay, os boletos usam
+> um **provedor de teste**: a linha digitável parece de verdade, mas nenhum
+> banco a liquida. A tela de configurações avisa enquanto isso vale.
+
+## Enviar
+
+1. Abra a conversa e clique no ícone de boleto, no topo (**Enviar boleto**).
+2. Informe o **valor** (de R$ 1,00 a R$ 999.999,99), **o que está sendo
+   cobrado** (até 140 caracteres), o **nome** e o **CPF ou CNPJ** de quem vai
+   pagar e **em quantos dias** o boleto vence (de 1 a 90).
+3. Se quiser, escolha a **oportunidade do CRM** a que o boleto pertence.
+4. Clique em **Enviar boleto**.
+
+O botão fica desabilitado quando a conversa está fechada, quando a IA está
+atendendo ou fora do horário de atendimento. Você precisa da permissão de
+**criar** em conversas.
+
+## Acompanhar
+
+| Estado | Quando |
+| --- | --- |
+| Aguardando pagamento | Foi enviado e ainda não venceu |
+| Pago | O pagamento chegou |
+| Vencido | Passou do vencimento sem pagamento |
+| Cancelado | Alguém cancelou no Steel |
+| Estornado | O pagamento foi devolvido |
+
+No card de um boleto que aguarda pagamento você pode **copiar a linha
+digitável**, abrir o boleto em **Ver boleto** e **cancelar**. O banco não
+permite anular um boleto: cancelar o tira da lista de pendentes do Steel, mas
+se o contato pagar mesmo assim o pagamento ainda é registrado.
+
+## A baixa do pagamento
+
+Quando o pagamento chega, em segundos o card vira **Pago** e, se o boleto está
+ligado a uma oportunidade do CRM, a oportunidade recebe a anotação **Boleto
+pago**. Um pagamento que chega depois do vencimento também dá baixa, e avisos
+repetidos do mesmo pagamento não duplicam nada.
+
+## Na proposta do CRM
+
+Na proposta também dá para cobrar por Pix ou boleto; veja
+[Assinatura, sala e renovações](/docs/crm/assinatura-sala-e-renovacoes). O
+pagamento confirmado atualiza a proposta e a oportunidade.
+
+## Quem faz o quê
+
+- **Ligar e desligar o boleto**: proprietários e administradores.
+- **Enviar**: quem pode criar em conversas e enxerga a conversa.
+- **Cancelar**: quem pode editar conversas.
+
+Cada envio, cancelamento e pagamento fica registrado na auditoria.

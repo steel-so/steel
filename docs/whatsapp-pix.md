@@ -113,7 +113,14 @@ multa opcionais). `BOLETO_PROVIDER` escolhe o provedor e
   `transparent.expired` = vencido (a doc não lista esse evento; o vencimento
   também se lê por `getChargeStatus`, que vira `EXPIRED` após a data).
 - Não há rota de cancelamento na doc.
-- **Estado**: camada de provedor, rota de webhook (autentica, registra e
-  confirma) e testes. Ainda **não há** tabela de cobranças de boleto, tela de
-  cobrança na conversa (Z1) nem baixa em proposta (C6); entram numa entrega
-  própria, desligadas por workspace até um admin ligar.
+- **Estado**: completo e desligado por padrão. Tabelas
+  `whatsapp_boleto_settings` e `whatsapp_boleto_charges`
+  (`WhatsAppBoletoService`, rotas `/whatsapp/boleto/settings` e
+  `/whatsapp/conversations/{id}/boleto`), botão e card na conversa, configuração
+  em WhatsApp › Configurações › Atendimento, baixa em proposta do CRM (C6) e
+  evento em tempo real `boleto-charge.updated`. O webhook é idempotente: a
+  baixa só vale uma vez (`updateMany ... where status != PAID`), e aviso de
+  boleto desconhecido é registrado e confirmado.
+- **Cancelar**: sem rota de cancelamento no PSP, "Cancelar boleto" fecha o
+  boleto só no Steel; se o contato pagar mesmo assim, o aviso ainda dá baixa.
+- **Ativar de verdade**: ver [AbacatePay: ativação](./abacatepay-ativacao.md).

@@ -2488,3 +2488,18 @@ export const boletoProviderError = (message?: string): AppError =>
 
 export const boletoWebhookInvalid = (): AppError =>
   appError('BOLETO_WEBHOOK_INVALID', 'Autenticação do webhook de boleto inválida')
+
+export const boletoDisabled = (): AppError =>
+  appError(
+    'BOLETO_DISABLED',
+    'O boleto na conversa está desligado. Um administrador pode ativá-lo em Comunicação › Configurações.',
+  )
+
+export const boletoChargeNotFound = (): AppError =>
+  appError('BOLETO_CHARGE_NOT_FOUND', 'Cobrança de boleto não encontrada')
+
+export const boletoChargeNotPending = (): AppError =>
+  appError(
+    'BOLETO_CHARGE_NOT_PENDING',
+    'Só um boleto aguardando pagamento pode ser cancelado',
+  )
