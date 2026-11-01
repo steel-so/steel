@@ -103,7 +103,7 @@ async function resolveQuotedProviderMessageId(
   return quoted.ok ? (quoted.value?.providerMessageId ?? undefined) : undefined
 }
 
-export async function finalizeOutboundMessage(input: {
+async function finalizeOutboundMessage(input: {
   workspaceId: string
   conversationId: string
   actorId: string

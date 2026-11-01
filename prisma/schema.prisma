@@ -1236,13 +1236,6 @@ model WhatsAppConnection {
   /// Flat monthly fee of the line (BRL) — the Z-API instance subscription or
   /// a BSP fee. Used only by the cost analysis (ADR 0050). Null = none.
   monthlyFee               Decimal?                 @map("monthly_fee") @db.Decimal(12, 2)
-  /// Meta channel of the connection (nov: meta-channels). WHATSAPP = the
-  /// phone number as always; INSTAGRAM / MESSENGER = a page-scoped inbox.
-  channel                  WhatsAppChannel          @default(WHATSAPP)
-  /// Facebook Page behind a MESSENGER / INSTAGRAM connection.
-  metaPageId               String?                  @map("meta_page_id")
-  /// Instagram professional account behind an INSTAGRAM connection.
-  metaInstagramAccountId   String?                  @map("meta_instagram_account_id")
   /// WhatsApp number connected through Coexistence (number stays in the app).
   coexistence              Boolean                  @default(false)
   createdById              String                   @map("created_by_id")
@@ -1258,15 +1251,12 @@ model WhatsAppConnection {
   aiCampaigns    WhatsAppAiCampaign[]
   costEntries    WhatsAppCostEntry[]
   chatbots       WhatsAppChatbot[]
-  socialComments WhatsAppSocialComment[]
   coexistenceSync WhatsAppCoexistenceSync?
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
   @@index([zapiInstanceId])
   @@index([metaPhoneNumberId])
-  @@index([metaPageId])
-  @@index([metaInstagramAccountId])
   @@map("whatsapp_connections")
 }
 
@@ -4228,9 +4218,7 @@ enum CrmSocialPlatform {
   TIKTOK
   YOUTUBE
   GOOGLE_ANALYTICS
-  TWITTER
   GOOGLE_ADS
-  LINKEDIN
 }
 
 enum CrmSocialConnectionStatus {
@@ -12931,13 +12919,7 @@ model WhatsAppWidgetVisitor {
   @@map("whatsapp_widget_visitors")
 }
 
-// nov: meta-channels (Z5 Instagram Direct and Messenger, Z6 Coexistence)
-
-enum WhatsAppChannel {
-  WHATSAPP
-  INSTAGRAM
-  MESSENGER
-}
+// nov: meta-channels (Z6 Coexistence)
 
 enum WhatsAppCoexistenceStatus {
   /// Connected; waiting for the customer to share the history.
@@ -12950,15 +12932,11 @@ enum WhatsAppCoexistenceStatus {
   FAILED
 }
 
-/// Per-workspace switches of the Meta channels. Everything is OFF by default:
+/// Per-workspace switches of the Meta channels (Coexistence). OFF by default:
 /// the Meta app review (permissions, Coexistence) belongs to the platform owner.
 model WhatsAppMetaChannelSettings {
   id                  String   @id @default(cuid())
   workspaceId         String   @unique @map("workspace_id")
-  instagramEnabled    Boolean  @default(false) @map("instagram_enabled")
-  messengerEnabled    Boolean  @default(false) @map("messenger_enabled")
-  /// Public comments of Instagram posts / Page posts arrive in the inbox.
-  commentsEnabled     Boolean  @default(false) @map("comments_enabled")
   coexistenceEnabled  Boolean  @default(false) @map("coexistence_enabled")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -12966,29 +12944,6 @@ model WhatsAppMetaChannelSettings {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("whatsapp_meta_channel_settings")
-}
-
-/// Marks a message of a social conversation as a public comment on a post
-/// (the message row carries the text; this row carries the post reference
-/// needed to answer in public or by private reply).
-model WhatsAppSocialComment {
-  id              String   @id @default(cuid())
-  workspaceId     String   @map("workspace_id")
-  connectionId    String   @map("connection_id")
-  messageId       String   @unique @map("message_id")
-  commentId       String   @map("comment_id")
-  postId          String?  @map("post_id")
-  parentCommentId String?  @map("parent_comment_id")
-  permalink       String?
-  /// When an agent answered in public / by DM (null = not answered yet).
-  repliedAt       DateTime? @map("replied_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId, connectionId])
-  @@index([commentId])
-  @@map("whatsapp_social_comments")
 }
 
 /// Progress of the Coexistence history / contacts import of one connection.

@@ -3,7 +3,6 @@ import type {
   WhatsAppCoexistenceSync,
   WhatsAppConnection,
   WhatsAppMetaChannelSettings,
-  WhatsAppSocialComment,
 } from '@prisma/client'
 import { createFakeWhatsAppConnection } from './whatsapp-connection.factory'
 
@@ -14,32 +13,11 @@ export function createFakeMetaChannelSettings(
   return {
     id: createId(),
     workspaceId: createId(),
-    instagramEnabled: false,
-    messengerEnabled: false,
-    commentsEnabled: false,
     coexistenceEnabled: false,
     createdAt: now,
     updatedAt: now,
     ...overrides,
   }
-}
-
-/** A Messenger / Instagram connection backed by a Page token. */
-export function createFakeSocialConnection(
-  overrides?: Partial<WhatsAppConnection>,
-): WhatsAppConnection {
-  return createFakeWhatsAppConnection({
-    provider: 'META',
-    channel: 'MESSENGER',
-    label: 'Messenger Loja',
-    phoneNumber: 'fb:100200',
-    status: 'CONNECTED',
-    zapiInstanceId: null,
-    encryptedZapiToken: null,
-    metaPageId: '100200',
-    encryptedMetaAccessToken: 'enc:page-token',
-    ...overrides,
-  })
 }
 
 /** A WhatsApp number connected through Coexistence. */
@@ -48,7 +26,6 @@ export function createFakeCoexistenceConnection(
 ): WhatsAppConnection {
   return createFakeWhatsAppConnection({
     provider: 'META',
-    channel: 'WHATSAPP',
     coexistence: true,
     status: 'CONNECTED',
     phoneNumber: '5511999990000',
@@ -78,24 +55,6 @@ export function createFakeCoexistenceSync(
     startedAt: now,
     finishedAt: null,
     updatedAt: now,
-    ...overrides,
-  }
-}
-
-export function createFakeSocialComment(
-  overrides?: Partial<WhatsAppSocialComment>,
-): WhatsAppSocialComment {
-  return {
-    id: createId(),
-    workspaceId: createId(),
-    connectionId: createId(),
-    messageId: createId(),
-    commentId: 'comment-1',
-    postId: 'post-1',
-    parentCommentId: null,
-    permalink: 'https://www.instagram.com/p/abc/',
-    repliedAt: null,
-    createdAt: new Date(),
     ...overrides,
   }
 }

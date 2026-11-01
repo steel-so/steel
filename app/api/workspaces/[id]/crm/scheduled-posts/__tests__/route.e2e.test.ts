@@ -42,14 +42,14 @@ describe('POST, PATCH & DELETE /api/workspaces/[id]/crm/scheduled-posts', () => 
         content: 'Olá',
         mode: 'schedule',
         scheduledFor,
-        // FACEBOOK/TWITTER accept text-only posts (no media required).
-        platforms: ['FACEBOOK', 'TWITTER'],
+        // FACEBOOK accepts text-only posts (no media required).
+        platforms: ['FACEBOOK'],
       },
       user.cookie,
     )
     expect(created.status).toBe(201)
     const createdBody = await created.json()
-    expect(createdBody.data.targets).toHaveLength(2)
+    expect(createdBody.data.targets).toHaveLength(1)
 
     const updated = await patchJson(
       `/api/workspaces/${workspace.id}/crm/scheduled-posts/${createdBody.data.id}`,
