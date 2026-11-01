@@ -1,0 +1,57 @@
+---
+title: Campanhas só com os contatos de hoje, log de acessos e arquivo de conversas
+slug: campanhas-de-hoje-log-de-acessos-e-arquivo-de-conversas
+date: 2026-10-27
+summary: Três novidades pensadas para operações reguladas, como bancos. Campanhas de IA ganham o filtro "Inseridos hoje", workspaces com rede permitida passam a guardar um registro exportável de quem entrou, e as conversas do WhatsApp podem ser arquivadas em PDF toda semana.
+tags: [COMUNICACAO, PLATAFORMA]
+cover: /changelog/2026-10-27/capa-bancos.jpg
+---
+
+## Campanhas de IA: só quem entrou hoje
+
+Quem importa contatos todo dia e dispara uma campanha para a lista nova não
+precisa mais caçar nome por nome. Em **Comunicação › Campanhas de IA**, no
+passo **Contatos** da campanha, a aba **Selecionar contatos** ganhou o botão
+**Inseridos hoje**. Ele mostra só os contatos cadastrados no dia, com data e
+hora de entrada ao lado do telefone.
+
+Depois é só clicar em **Marcar só os de hoje**: o Steel marca exatamente esses
+contatos e desmarca o resto. Quem pediu para não receber mensagens continua
+fora da seleção. O "hoje" segue o calendário de São Paulo, não o do seu
+navegador, então uma importação feita às 22h ainda conta como de hoje.
+
+![Passo Contatos de uma campanha de IA com o filtro Inseridos hoje ligado, três contatos marcados e a data de entrada ao lado de cada telefone](/changelog/2026-10-27/campanha-inseridos-hoje.webp)
+
+Na página da campanha, a tabela de destinatários também mostra quando cada
+contato foi inserido.
+
+## Registro de acessos para workspaces com rede permitida
+
+Se o seu workspace só abre a partir das redes da empresa, agora cada tentativa
+de entrada fica registrada, permitida ou bloqueada, com pessoa, IP, canal (app
+ou API), página acessada e navegador. O dono e os administradores consultam e
+exportam em CSV em **Ajustes › Segurança**, com filtros por período, resultado,
+canal e pessoa.
+
+O registro é guardado por 5 anos, não cresce a cada clique (entradas repetidas
+contam uma vez a cada 30 minutos) e cada exportação fica na auditoria, porque o
+IP é dado pessoal. Workspaces sem rede permitida continuam sem registro
+nenhum. Veja os detalhes em
+[Rede permitida e registro de acessos](/docs/seguranca/registro-de-acessos).
+
+![Ajustes de Segurança com os filtros do registro de acessos, o botão Exportar CSV e entradas permitidas e bloqueadas, com o IP de cada uma ocultado](/changelog/2026-10-27/log-de-acessos.webp)
+
+## Arquivo semanal das conversas do WhatsApp
+
+Para quem precisa entregar a auditoria uma cópia organizada das conversas, o
+Steel gera sozinho um pacote `.zip` com **um PDF por atendimento**, separado por
+dia, atendente e contato, e um **INDICE.csv** com a impressão digital de cada
+PDF para conferir a integridade.
+
+- **Semanal**: toda segunda-feira, com a semana anterior.
+- **Completo**: todo dia 1, com o histórico até o fim do mês anterior.
+
+O recurso vem desligado e é ativado pela equipe da Stratus, a pedido do
+cliente. Depois disso, o dono e os administradores baixam os pacotes em
+**Comunicação › Configurações › Atendimento**. Mais em
+[Arquivamento de conversas](/docs/comunicacao/arquivamento).

@@ -1,0 +1,50 @@
+---
+title: "Agentes sob controle: governança, delegação e servidores MCP"
+slug: ia-governanca-delegacao-e-mcp
+date: 2026-10-31
+summary: Um painel mostra quem responde por cada agente, o quanto ele acerta e custa, e permite pausar tudo numa emergência. Os agentes agora delegam tarefas entre si e usam ferramentas de servidores MCP externos, sempre com aprovação onde importa.
+tags: [IA]
+cover: /changelog/2026-10-31/capa-ia-governanca-delegacao-e-mcp.jpg
+---
+
+## Painel de governança
+
+Em **Steel AI › Agentes › Governança**, o administrador vê todos os agentes do
+workspace de uma vez: o **responsável** humano, as ferramentas liberadas (e
+quais rodam sozinhas), as taxas de aprovação e de rejeição das ações que cada
+agente propôs, o custo no período e o custo por escrita aplicada. Avisos
+destacam o agente que escreve sozinho, que usa servidor externo, que delega ou
+cujo responsável saiu do workspace. **Exportar CSV** gera o registro das
+atividades de tratamento para a LGPD.
+
+O botão **Pausar todos os agentes** é o desligamento de emergência: nada novo
+roda, a fila e as aprovações pendentes são canceladas e o que já foi feito
+continua valendo. **Retomar agentes** libera de novo.
+
+## Quem pode criar agentes e usar o modo automático
+
+Na aba **Permissões**, o administrador decide se Membro ou Leitor podem criar
+agentes e, para cada perfil, quais ferramentas podem rodar no modo automático.
+Se o perfil não libera uma ferramenta, a escrita vai para aprovação. O
+proprietário nunca é limitado e exclusões sempre pedem aprovação.
+
+## Delegação entre agentes
+
+No editor do agente, a seção **Delegação a outros agentes** deixa um agente
+entregar uma tarefa a outro como se fosse uma ferramenta: o outro age com o
+próprio responsável e as próprias ferramentas e devolve um resumo. Há limites
+para não sair do controle: até 3 níveis, nenhum agente repete na cadeia e até 5
+delegações por execução. O custo do agente delegado é somado à execução
+principal.
+
+## Servidores MCP externos
+
+Na aba **Servidores MCP**, conecte servidores externos (Slack, GitHub, Google)
+por HTTPS. A credencial fica cifrada e nunca volta para a tela. Depois de
+cadastrar, você escolhe **uma a uma** as ferramentas que os agentes podem usar:
+nenhuma vem liberada. Ferramentas que só leem rodam como as demais; as que
+alteram algo pedem aprovação.
+
+![Painel de governança dos agentes com o desligamento de emergência, os totais do período e a aba Servidores MCP com o formulário para adicionar um servidor](/changelog/2026-10-31/governanca-mcp.webp)
+
+Veja o passo a passo em [Governança dos agentes](/docs/steel-ai/governanca-dos-agentes).

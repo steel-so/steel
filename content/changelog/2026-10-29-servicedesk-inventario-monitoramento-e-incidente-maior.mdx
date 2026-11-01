@@ -1,0 +1,78 @@
+---
+title: ServiceDesk com inventário SNMP, monitoramento que abre chamado, swarming e incidente maior
+slug: servicedesk-inventario-monitoramento-e-incidente-maior
+date: 2026-10-29
+summary: O ServiceDesk descobre equipamentos por SNMP e alimenta a CMDB, abre chamados a partir de Zabbix, Grafana e PRTG sem duplicar, chama especialistas direto para o chamado, declara incidentes maiores com página de status e mede a IA contra o técnico.
+tags: [SERVICEDESK, IA]
+cover: /changelog/2026-10-29/capa-servicedesk.jpg
+---
+
+## Inventário e descoberta de ativos
+
+A CMDB deixa de depender de cadastro manual. Em **ServiceDesk › Configurações ›
+Inventário** você cadastra um **alvo de varredura SNMP** (faixas como
+`10.0.0.0/24`, a community ou o usuário SNMP v3 e a frequência) e o Steel
+percorre a rede, descobre switches, impressoras, firewalls e servidores sem
+instalar nada neles e mantém os **Itens de configuração** em dia: série,
+fabricante, modelo e IP.
+
+Em **ServiceDesk › Inventário** a equipe vê os equipamentos, o catálogo de
+software e os **alertas de disco e memória**, com limiares que você configura
+(90% por padrão). Os alertas abrem, atualizam e se resolvem sozinhos. O
+inventário nunca sobrescreve nome, status, responsável ou criticidade do item
+na CMDB, só os dados técnicos.
+
+## Monitoramento que abre chamado, sem duplicar
+
+Zabbix, Grafana (Alertmanager) e PRTG agora abrem chamados direto no
+ServiceDesk, além do webhook genérico. O mesmo alerta repetido não vira outro
+chamado: o Steel soma as ocorrências no chamado que já existe.
+
+- **Correlação por máquina:** um alerta novo para a mesma máquina entra no
+  chamado aberto dela, com uma nota interna, em vez de gerar uma enxurrada de
+  chamados. Dá para desligar por fonte.
+- **Vínculo com a CMDB:** o chamado herda o item de configuração do equipamento.
+  Quando o nome do host não bate com nenhum item, ele cai na fila **Hosts sem
+  item na CMDB**, em Configurações, e o agente vincula e pede para o Steel
+  lembrar daquele nome.
+
+![Configurações de monitoramento com a origem Zabbix cadastrada e a fila de hosts sem item na CMDB para o agente vincular](/changelog/2026-10-29/monitoramento-origens.webp)
+
+## Swarming de especialistas
+
+Em vez de subir o chamado pelos níveis N1, N2 e N3, o agente **chama os
+especialistas direto** na aba **Swarming** do chamado. Cada convidado recebe um
+aviso (no Steel e por e-mail), entra ou recusa, e o agente pode convidar mais
+gente ou encerrar registrando o resultado. Se o Slack estiver integrado, o
+Steel cria um canal privado temporário para a conversa e o arquiva no fim.
+
+## Incidente maior com página de status para o cliente
+
+Quando um incidente derruba vários clientes, declare um **incidente maior** na
+aba do próprio chamado: título e resumo escritos para o cliente, impacto,
+comandante, chamados filhos agrupados (o Steel sugere os incidentes das últimas
+24 horas com a mesma categoria, item ou cliente) e, se quiser, uma sala de
+guerra.
+
+- A linha do tempo recebe as atualizações (investigando, identificado,
+  monitorando) e o encerramento público.
+- **Páginas de status públicas** por cliente ou serviço mostram o estado atual
+  e os últimos 30 dias, só com o texto escrito para o cliente.
+- Cada atualização publicada avisa os assinantes por **e-mail** (com dupla
+  confirmação) e pelo **WhatsApp** do ServiceDesk, uma única vez.
+
+![Tela do incidente maior com a nova atualização para o cliente, a linha do tempo pública, as páginas de status e os chamados filhos](/changelog/2026-10-29/incidente-maior.webp)
+
+![Página de status pública com o estado geral, a manutenção programada, os componentes e o incidente em andamento](/changelog/2026-10-29/pagina-de-status.webp)
+
+Fica em **ServiceDesk › Incidentes maiores** e **Páginas de status**.
+
+## A IA contra o técnico
+
+O painel **ServiceDesk › IA vs. técnico** compara o que a IA sugeriu na triagem e
+no copiloto com o que o técnico realmente decidiu, nos chamados já resolvidos.
+Mostra a acurácia por campo (categoria, serviço, impacto, urgência e outros), a
+calibração da confiança, quantas respostas e soluções do copiloto foram
+adotadas, editadas ou ignoradas, o custo por sugestão aproveitada e as
+divergências mais recentes, cada uma com link para o chamado. É um painel só de
+leitura, para medir o valor da IA e justificar a franquia.

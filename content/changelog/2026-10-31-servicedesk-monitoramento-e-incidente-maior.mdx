@@ -1,0 +1,51 @@
+---
+title: Monitoramento e incidente maior mais completos no ServiceDesk
+slug: servicedesk-monitoramento-e-incidente-maior
+date: 2026-10-31
+summary: Alertas mais graves sobem a prioridade do chamado, entram sozinhos no incidente maior, os chamados filhos são resolvidos em lote e a página de status ganha componentes por serviço e manutenção programada com aviso aos assinantes.
+tags: [SERVICEDESK]
+cover: /changelog/2026-10-31/capa-servicedesk-monitoramento-e-incidente-maior.jpg
+---
+
+## Alerta mais grave sobe a prioridade
+
+Quando um alerta do monitoramento entra num chamado que já está aberto e é
+**mais grave** que a prioridade atual, o Steel sobe a prioridade do chamado, recalcula o SLA e
+registra uma nota interna. A prioridade nunca baixa por esse caminho, e um
+alerta mais leve não muda nada. Em cada origem de monitoramento, a opção
+**Subir a prioridade quando o alerta correlacionado for mais grave** vem
+ligada e pode ser desligada.
+
+## Vínculo automático com o incidente maior
+
+O chamado que um alerta abre, reabre ou recebe é vinculado ao **incidente
+maior** ativo cujo chamado principal está no mesmo item da CMDB. Os filhos
+aparecem sem que ninguém precise vinculá-los à mão. Alertas sem item da CMDB
+não são vinculados.
+
+## Resolver os filhos junto
+
+Ao resolver um incidente maior, o Steel lista os chamados filhos ainda
+abertos. Ligue **Resolver também os chamados filhos abertos**, confirme a lista
+e cada filho vai para a fase de resolvido com o texto do incidente. Um filho
+que falhe não bloqueia os outros nem o incidente: ao final, uma janela mostra o
+resultado de cada um (resolvido, ignorado ou com erro e o motivo).
+
+## Componentes e manutenção na página de status
+
+Em **ServiceDesk › Páginas de status**, o administrador cadastra os
+**componentes** que o cliente acompanha (por exemplo, "Telefonia" ou "Portal")
+e quem atende o incidente troca o estado de cada um entre Operacional,
+Desempenho degradado e Indisponível. A página pública mostra cada componente e
+o estado geral considera o pior entre incidentes e componentes.
+
+![Página de status pública com a manutenção programada, os componentes por serviço e o estado de cada um](/changelog/2026-10-31/pagina-de-status-componentes.webp)
+
+Também dá para agendar **manutenções programadas**: a janela aparece como aviso
+na página pública a partir de 14 dias antes, e os assinantes confirmados
+recebem e-mail e WhatsApp, com novo aviso se o horário mudar ou a janela for
+cancelada. Se você escolher itens da CMDB, os alertas deles não abrem chamado
+durante a janela, mas continuam registrados.
+
+Os detalhes estão em [Incidente maior](/docs/servicedesk/incidente-maior) e
+[Monitoramento](/docs/servicedesk/monitoramento).

@@ -1,0 +1,56 @@
+---
+title: Agenda no WhatsApp, chat no seu site e coexistência com o app
+slug: zap-agenda-chat-do-site-e-coexistencia
+date: 2026-10-31
+summary: A Comunicação ganha uma agenda com confirmação e lembrete pelo WhatsApp, um chat para o site da empresa que cai no mesmo inbox e a coexistência, que mantém o número no aplicativo WhatsApp Business enquanto ele roda na API.
+tags: [COMUNICACAO]
+cover: /changelog/2026-10-31/capa-zap-agenda-chat-do-site-e-coexistencia.jpg
+---
+
+Os três recursos vêm **desligados** em todo workspace; um administrador liga
+quando quiser.
+
+## Agenda com confirmação e lembrete
+
+Em **WhatsApp › Agenda**, cadastre **Serviços** (duração e intervalo) e
+**Profissionais** (dias, horários e serviços que atendem). Ao marcar um horário
+para um contato, ele recebe a confirmação e, antes do horário, o lembrete, e
+responde **CONFIRMAR** ou **CANCELAR** na própria conversa. Você também
+confirma, cancela, conclui, registra falta e remarca pela tela. Um formulário
+do WhatsApp com o modelo **Agendamento** já reserva o primeiro horário livre
+quando o cliente responde.
+
+![Agenda do dia com dois atendimentos aguardando confirmação e os botões de confirmar e cancelar](/changelog/2026-10-31/agenda.webp)
+
+O Steel calcula os horários livres no fuso certo e não deixa dois
+atendimentos ocuparem o mesmo horário, respeitando o intervalo entre eles. Por
+baixo, a agenda usa um **único motor de horários**, o mesmo que serve de base
+para qualquer agendamento da plataforma.
+
+## Chat no seu site
+
+Em **WhatsApp › Configurações › Chat do site**, liste os endereços onde o chat
+pode abrir, ligue o recurso e cole o **código gerado** no HTML do seu site. O
+visitante clica no botão do canto da página, escreve, e a conversa aparece no
+inbox da Comunicação ao lado das de WhatsApp, com as mesmas equipes, SLA,
+chatbot e resposta automática da IA. Dá para escolher título, cor, mensagem de
+boas-vindas, canto da tela, a equipe que recebe, pedir nome, e-mail ou telefone
+antes de começar, avisar quando está fora do horário de atendimento, mostrar o
+link do portal do solicitante e pedir a avaliação (NPS, CSAT ou CES) quando a
+conversa for fechada. O chat só abre nos sites da lista e é só de texto.
+
+![Configurações do chat do site com as chaves de ligar, os sites autorizados, o título, a cor, a mensagem de boas-vindas, a posição e a equipe que recebe](/changelog/2026-10-31/chat-do-site.webp)
+
+## Coexistência com o aplicativo WhatsApp Business
+
+Em **Configurações › Conexões**, com a **Coexistência** ligada, o botão
+**Conectar número em uso no aplicativo** abre a janela da Meta e conecta o
+número que sua equipe já usa no celular, sem migrá-lo e sem QR Code. O que a
+equipe digita no aplicativo aparece no Steel, e o que sai pelo Steel aparece no
+aplicativo. Se você aceitar compartilhar o histórico no celular, o Steel
+importa contatos e conversas, que entram **fechadas**, sem acionar a IA nem
+contar SLA. A coexistência depende de a Meta liberar o aplicativo do Steel
+para esse fluxo.
+
+Veja [Agenda](/docs/comunicacao/agenda), [Chat no seu site](/docs/comunicacao/chat-do-site)
+e [Coexistência do WhatsApp](/docs/comunicacao/coexistencia).

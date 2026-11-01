@@ -1,0 +1,55 @@
+---
+title: Proposta com assinatura, sala de negociação e renovações
+slug: crm-proposta-assinatura-sala-e-renovacoes
+date: 2026-10-31
+summary: O cliente aceita a proposta com assinatura digital, negocia numa sala só dele e o contrato volta como renovação na hora certa. A cobrança por Pix ou boleto na proposta está pronta, aguardando a chave de produção.
+tags: [CRM]
+cover: /changelog/2026-10-31/capa-crm-proposta-assinatura-sala-e-renovacoes.jpg
+---
+
+O que acontece depois que a proposta sai ganhou três ferramentas no CRM.
+
+## Aceite com assinatura digital
+
+Em **CRM › Configurações › Assinatura, cobrança e renovações**, um
+administrador liga o aceite com assinatura. Na página pública da proposta, o
+cliente informa o nome, **desenha a assinatura** e aceita. O Steel guarda a
+imagem e o código de verificação (SHA-256) dela e do conteúdo da proposta no
+momento do aceite, como prova do que foi assinado. Com a chave ligada, o
+aceite só pelo nome deixa de valer.
+
+## Cobrança por Pix ou boleto na proposta
+
+Na proposta enviada, **Cobrança e assinatura** gera um Pix ou um boleto para o
+valor do negócio. O cliente vê o código na própria página, com botão de
+copiar, e a tela muda para "paga" sozinha. Quando o pagamento é confirmado, a
+oportunidade vai para a primeira etapa de ganho, entra uma nota no negócio e o
+responsável é avisado.
+
+A integração com o AbacatePay está **pronta, aguardando a chave de produção**.
+Por isso a cobrança vem **desligada** e, enquanto isso, usa um provedor de
+teste. Veja a nota de 01/11, [Boleto na conversa e na proposta](/changelog/boleto-na-conversa-e-na-proposta).
+
+## Sala de negociação
+
+Em uma oportunidade, o bloco **Sala de negociação** cria uma página só daquele
+negócio, com um link para enviar ao cliente. Nela ficam a proposta, os
+materiais (links), um **plano de ação conjunto** com passos do vendedor e do
+cliente e um chat. A equipe vê quem abriu o quê e quando, e o visitante se
+identifica com nome e e-mail.
+
+![Painel de uma oportunidade com a Sala de negociação: link para o cliente, mensagem de boas-vindas, materiais e plano de ação conjunto](/changelog/2026-10-31/saude-negocio-e-sala.webp)
+
+## Renovações e expansão
+
+Em **CRM › Renovações**, cadastre os contratos dos clientes (valor, início, fim
+e se renova sozinho). Todo dia o Steel confere a janela de renovação: avisa o
+responsável, abre sozinho a oportunidade de renovação no mesmo funil da venda
+original, avança o prazo dos contratos que renovam sozinhos e encerra os
+vencidos. **Ver expansão** mostra o que clientes parecidos compraram e este
+ainda não, levando em conta a última pesquisa de satisfação e a saúde do
+cliente.
+
+![Tela de Renovações com um contrato de renovação automática, a contagem de dias que faltam e os botões Ver expansão e Abrir renovação](/changelog/2026-10-31/renovacoes.webp)
+
+Os detalhes estão em [Assinatura, sala de negociação e renovações](/docs/crm/assinatura-sala-e-renovacoes).

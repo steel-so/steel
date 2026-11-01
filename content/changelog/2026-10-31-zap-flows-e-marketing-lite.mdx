@@ -1,0 +1,49 @@
+---
+title: Formulários do WhatsApp em transmissões e chatbots, e preço do Marketing Lite
+slug: zap-flows-e-marketing-lite
+date: 2026-10-31
+summary: Os formulários (Flows) do WhatsApp saem em transmissões e em chatbots já preenchidos com os dados do contato, o status deles passa a vir da Meta sozinho, e a tabela de custos ganha o preço do Marketing Messages Lite.
+tags: [COMUNICACAO]
+cover: /changelog/2026-10-31/capa-zap-flows-e-marketing-lite.jpg
+---
+
+## Formulário em transmissões
+
+Um template com **botão de formulário** agora pode ser usado numa
+transmissão como qualquer outro. Cada destinatário recebe o formulário já
+preenchido com o **nome e o telefone** dele, com um código próprio, e a
+resposta cai na aba **Respostas** do formulário, no contato e no CRM. Só em
+conexões da API oficial da Meta.
+
+![Editor de formulário do WhatsApp com a tela de agendamento, os campos e onde cada resposta é guardada](/changelog/2026-10-31/formulario-editor.webp)
+
+## Bloco "Enviar formulário" no chatbot
+
+No editor de chatbots, o novo bloco **Enviar formulário** escolhe um formulário
+publicado, uma mensagem e o texto do botão (aceitam variáveis) e envia para o
+cliente já preenchido. O fluxo segue para o próximo bloco sem esperar a
+resposta. Se o formulário não puder sair (conexão Z-API, por exemplo, ou
+formulário descontinuado depois da publicação), o bot manda um **texto
+alternativo**, e a publicação do chatbot só passa com um formulário válido.
+
+## Status que vem da Meta
+
+O Steel passou a escutar os avisos da Meta sobre cada formulário: quando ele é
+publicado, **descontinuado**, **bloqueado** ou **limitado**, o status e o
+aviso no editor mudam sozinhos, sem você precisar conferir no painel da Meta.
+Formulários publicados antes desta versão abrem em branco até serem publicados
+de novo, porque o preenchimento depende de uma pequena declaração na primeira
+tela.
+
+## Preço do Marketing Messages Lite
+
+Em **Transmissões**, as campanhas de templates de Marketing podem sair pela
+Marketing Messages Lite da Meta. Na aba **Custos**, a tabela de preços da Meta
+ganhou a coluna **Marketing Lite (R$)**: se você preencher, essas mensagens
+usam esse preço no cálculo de custo; em branco, valem o mesmo preço da
+categoria. As métricas da transmissão ficaram mais robustas: se a Meta não
+responder, o painel mostra os números do Steel e diz o motivo, em vez de
+zeros.
+
+Veja [Formulários (Flows)](/docs/comunicacao/formularios-flows),
+[Chatbots](/docs/comunicacao/chatbots) e [Transmissões](/docs/comunicacao/transmissoes).

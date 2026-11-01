@@ -1,0 +1,85 @@
+---
+title: Cadências com rastreio, pesquisas e chatbot mais completos, IA do CRM e inventário SNMP v3
+slug: cadencias-pesquisas-chatbot-e-inventario
+date: 2026-10-30
+summary: As cadências de vendas mostram abertura e clique e nunca enviam duas vezes, as pesquisas de satisfação avisam sobre detratores, o chatbot salva sozinho e mostra métricas por bloco, a IA do CRM busca em leads, pessoas e empresas, e o inventário passa a falar SNMP v3 e descobrir equipamentos por ping.
+tags: [CRM, COMUNICACAO, SERVICEDESK, IA]
+cover: /changelog/2026-10-30/capa-cadencias.jpg
+---
+
+## Cadências de vendas: abertura, clique e envio sem duplicar
+
+Os e-mails das cadências agora são rastreados. Em **CRM › Cadências**, abra uma
+cadência para ver a página de **Estatísticas**: quantos leads entraram, estão
+ativos, pausados, responderam, concluíram ou foram encerrados, e um **funil por
+passo** com alcançados, enviados, pulados, com falha, abertos e clicados.
+
+Dá para ligar **Parar quando o lead clicar em um link**. Cliques que chegam nos
+primeiros segundos depois do envio (programas de segurança que abrem os links
+sozinhos) são contados, mas não encerram a cadência. Abertura e clique são
+estimativas, porque alguns programas de e-mail bloqueiam imagens.
+
+Também fechamos uma brecha: antes de cada e-mail ou WhatsApp sair, o passo é
+reservado, e se algo cair no meio do caminho o Steel retoma sem mandar a mesma
+mensagem duas vezes. Mais em
+[Cadências de vendas](/docs/crm/cadencias-de-vendas).
+
+![Página de Estatísticas de uma cadência com os totais de inscritos, o funil por passo e a lista de inscritos com os botões Pausar, Respondeu e Parar](/changelog/2026-10-30/cadencia-estatisticas.webp)
+
+## Pesquisas de satisfação, copiloto e chatbot
+
+- **Alerta de detrator**: quando uma nota chega abaixo do limite definido na
+  regra, o dono e os administradores recebem um aviso na caixa de entrada com
+  cliente, nota, atendente e o link para a conversa. A regra define o limite,
+  e o alerta pode ser desligado por regra.
+- **Envio manual**: um botão no cabeçalho da conversa do WhatsApp e no menu do
+  chamado envia a pesquisa na hora.
+- **Resumo na transferência**: em **Configurações › IA › Copiloto do
+  atendente**, o novo interruptor (desligado por padrão) faz o copiloto gravar
+  na conversa um resumo e os pendentes quando ela passa de um atendente para
+  outro.
+- **Chatbot com salvamento automático**: o fluxo é salvo sozinho, e uma linha
+  abaixo do nome mostra se está salvo, salvando ou com falha.
+- **Métricas por bloco**: o canvas mostra, em cada bloco, quantas vezes ele foi
+  percorrido nos últimos 30 dias.
+- **Menus em lista no WhatsApp da Meta**: menus com mais de 3 opções saem como
+  lista interativa, com até 10 itens, em vez de texto numerado.
+- **Menos alertas falsos**: enquanto um chatbot está atendendo, a conversa não
+  conta como "esperando" para lembretes e avisos da fila.
+
+Mais em [Pesquisas](/docs/comunicacao/pesquisas) e
+[Chatbots](/docs/comunicacao/chatbots).
+
+## IA do CRM e agentes
+
+- **Busca em linguagem natural** em leads, pessoas e empresas: pergunte
+  "empresas do setor de transportes enriquecidas" e a barra de busca filtra a
+  lista. A IA só vê a sua pergunta e a data de hoje, nunca os dados dos
+  registros.
+- **Enriquecimento por CNPJ em lote** pode ser **cancelado** pelo dono ou
+  administrador: o Steel termina a empresa em andamento e para. Quem iniciou
+  recebe um aviso quando a execução termina, é cancelada ou falha.
+- **Versões de agentes**: o dono do agente e quem editou são avisados quando a
+  verificação da nova versão termina, com link direto para a aba Versões.
+- **Simulações como parte da verificação**: em **Configuração › Versões e
+  avaliação** há um novo interruptor (desligado por padrão). Ligado, a versão só
+  é publicada se passar também nas simulações salvas, com taxa mínima de acerto
+  configurável.
+
+![Lista de empresas do CRM com a barra de busca em linguagem natural, as sugestões de pergunta e o botão Enriquecer base](/changelog/2026-10-30/empresas-busca-e-enriquecer.webp)
+
+## Inventário: SNMP v3 e descoberta por ping
+
+Em **ServiceDesk › Configurações › Inventário**, a varredura SNMP passa a aceitar
+**SNMP v3**, com usuário, protocolos de autenticação e de privacidade. As
+chaves ficam criptografadas e nunca são mostradas depois de salvas.
+
+Uma nova seção, **Descoberta por ping e ARP**, acha computadores e equipamentos
+sem SNMP nas redes que você liberar. Cada faixa só é varrida com a opção ligada,
+só aceita redes privadas e o que for encontrado espera a sua adoção na lista do
+inventário. O mesmo equipamento visto por mais de um caminho é juntado em um só
+item, com opção de **Juntar** ou **Separar** à mão.
+
+![Configurações do inventário com limiares de alerta, varredura SNMP e a nova seção de descoberta por ping e ARP](/changelog/2026-10-30/inventario-snmp-descoberta.webp)
+
+Mais em [Inventário de ativos](/docs/servicedesk/inventario-de-ativos).
