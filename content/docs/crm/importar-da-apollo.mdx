@@ -1,0 +1,58 @@
+---
+title: Importar leads da Apollo.io
+description: Conecte a sua conta da Apollo.io, busque pessoas com filtros ou traga uma lista, revele telefones e importe tudo como leads.
+section: crm
+order: 3
+---
+
+O **Steel** busca pessoas na sua conta da **Apollo.io** e importa o resultado
+como **leads**, sem sair do CRM.
+
+<Callout type='admin'>
+  A chave da Apollo é da **sua empresa**. Cada workspace conecta a própria conta
+  em **Ajustes › Integrações**, e a importação consome os créditos dela, nunca
+  de outra conta.
+</Callout>
+
+## Conectar a conta
+
+1. Na Apollo.io, gere uma chave de API.
+2. No Steel, abra **Ajustes › Integrações › Apollo** e cole a chave.
+3. Salve. A chave fica criptografada e não volta a aparecer na tela.
+
+## Buscar e importar
+
+No quadro de **Leads**, clique em **Importar da Apollo**:
+
+- **Filtros**: cargo, empresa, localização e tamanho da empresa.
+- **Listas**: traga uma das suas listas da Apollo inteira.
+- Marque quem interessa e confirme a importação.
+
+Pessoas sem e-mail entram **desmarcadas**, a menos que os telefones tenham sido
+revelados.
+
+## Revelar telefones
+
+Marque **Revelar telefones** antes de importar. A Apollo devolve os números
+depois de alguns minutos e o Steel completa os leads sozinho. Os resultados
+mostram se a pessoa **tem telefone direto** (sim, talvez ou não), e o painel
+lateral do lead lista todos os e-mails e telefones encontrados.
+
+## Acompanhar o resultado
+
+Ao final, quem criou a importação recebe um aviso com o resumo. Quem ficou de
+fora aparece com o **motivo** (já existia, sem e-mail e sem telefone, entre
+outros). O **histórico de importações** guarda cada lote.
+
+Se a Apollo limitar o ritmo, a importação pausa e continua sozinha mais tarde,
+sem repetir o lote que já gastou crédito.
+
+## Do lead para o WhatsApp
+
+Os leads importados podem ser alvo de **campanhas do WhatsApp**.
+
+<Callout>
+  A importação respeita as permissões do CRM e a LGPD: use a Apollo para
+  prospecção B2B e registre o pedido de descadastro de quem não quiser receber
+  mensagens.
+</Callout>
