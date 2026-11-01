@@ -4,13 +4,6 @@ import { useState } from 'react'
 import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -20,23 +13,16 @@ import {
 import { notify } from '@/lib/notify'
 import {
   type UpdateMetaChannelSettingsInput,
-  useConnectMetaChannel,
   useConnectWhatsAppCoexistence,
-  useListMetaChannelPages,
   useMetaChannelConnections,
   useMetaChannelSettings,
   useUpdateMetaChannelSettings,
   useWhatsAppCoexistenceSync,
 } from '@/src/hooks/use-whatsapp-meta-channels'
-import {
-  launchEmbeddedSignup,
-  launchMetaChannelsLogin,
-} from '@/src/lib/whatsapp/embedded-signup-client'
+import { launchEmbeddedSignup } from '@/src/lib/whatsapp/embedded-signup-client'
 import type {
   MetaChannelConnectionDTO,
-  MetaChannelPageDTO,
   WhatsAppCoexistenceStatusDTO,
-  WhatsAppMetaChannelSettingsDTO,
 } from '@/types/whatsapp-meta-channel'
 
 const SYNC_STATUS_LABEL: Record<WhatsAppCoexistenceStatusDTO, string> = {
@@ -46,19 +32,6 @@ const SYNC_STATUS_LABEL: Record<WhatsAppCoexistenceStatusDTO, string> = {
   DECLINED: 'O cliente não compartilhou o histórico',
   FAILED: 'A importação falhou',
 }
-
-/**
- * Instagram Direct and Messenger are hidden until 2027 (owner decision of
- * 2026-10-31). The code, the API and the stored data stay; flip this to `true`
- * to bring the toggles, the Page picker and the connected Pages back.
- */
-const SOCIAL_CHANNELS_VISIBLE = false
-
-const CHANNEL_LABEL = {
-  WHATSAPP: 'WhatsApp',
-  INSTAGRAM: 'Instagram',
-  MESSENGER: 'Messenger',
-} as const
 
 interface SwitchRowProps {
   id: keyof UpdateMetaChannelSettingsInput
@@ -139,98 +112,9 @@ function CoexistenceRow({
   )
 }
 
-function PagesDialog({
-  workspaceId,
-  pages,
-  accessToken,
-  settings,
-  onClose,
-}: {
-  workspaceId: string
-  pages: MetaChannelPageDTO[]
-  accessToken: string
-  settings: WhatsAppMetaChannelSettingsDTO
-  onClose: () => void
-}) {
-  const connect = useConnectMetaChannel(workspaceId)
-
-  function handleConnect(page: MetaChannelPageDTO) {
-    const channels: ('MESSENGER' | 'INSTAGRAM')[] = []
-    if (settings.messengerEnabled) channels.push('MESSENGER')
-    if (settings.instagramEnabled && page.instagramAccountId) {
-      channels.push('INSTAGRAM')
-    }
-    if (channels.length === 0) {
-      notify.warning('Esta Página não tem um canal ativo para conectar')
-      return
-    }
-    connect.mutate(
-      { accessToken, pageId: page.pageId, channels },
-      {
-        onSuccess: () => {
-          notify.success('Página conectada')
-          onClose()
-        },
-        onError: (error) => notify.error(error, 'Não foi possível conectar'),
-      },
-    )
-  }
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='max-w-lg'>
-        <DialogHeader>
-          <DialogTitle>Escolha a Página</DialogTitle>
-          <DialogDescription>
-            O Messenger usa a Página; o Instagram usa a conta profissional
-            vinculada a ela.
-          </DialogDescription>
-        </DialogHeader>
-        <div className='space-y-2'>
-          {pages.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>
-              Nenhuma Página encontrada nesta conta da Meta.
-            </p>
-          ) : (
-            pages.map((page) => (
-              <div
-                key={page.pageId}
-                className='flex items-center justify-between gap-3 rounded-md border p-3'
-              >
-                <div className='min-w-0'>
-                  <p className='truncate font-medium text-sm'>{page.name}</p>
-                  <p className='text-muted-foreground text-xs'>
-                    {page.instagramUsername
-                      ? `Instagram @${page.instagramUsername}`
-                      : 'Sem Instagram vinculado'}
-                    {page.connectedChannels.length > 0
-                      ? ` · Conectado: ${page.connectedChannels
-                          .map((channel) => CHANNEL_LABEL[channel])
-                          .join(', ')}`
-                      : ''}
-                  </p>
-                </div>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  disabled={connect.isPending}
-                  onClick={() => handleConnect(page)}
-                >
-                  {page.connectedChannels.length > 0 ? 'Renovar' : 'Conectar'}
-                </Button>
-              </div>
-            ))
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 /**
- * Instagram Direct, Messenger e Coexistência (OWNER/ADMIN). Tudo desligado
- * por padrão: os botões só aparecem com a chave ligada e o app da Meta
- * configurado no ambiente.
+ * Coexistência do WhatsApp (OWNER/ADMIN). Desligada por padrão: o botão só
+ * aparece com a chave ligada e o app da Meta configurado no ambiente.
  */
 export function WhatsappSettingsMetaChannels({
   workspaceId,
@@ -241,53 +125,20 @@ export function WhatsappSettingsMetaChannels({
   const settings = useMetaChannelSettings(workspaceId, isAdmin)
   const update = useUpdateMetaChannelSettings(workspaceId)
   const connections = useMetaChannelConnections(workspaceId, isAdmin)
-  const listPages = useListMetaChannelPages(workspaceId)
   const coexistence = useConnectWhatsAppCoexistence(workspaceId)
   const [pending, setPending] = useState(false)
-  const [picker, setPicker] = useState<{
-    accessToken: string
-    pages: MetaChannelPageDTO[]
-  } | null>(null)
 
   if (!isAdmin || !settings.data) return null
   const current = settings.data
   const appId = NEXT_PUBLIC_META_APP_ID
   const configId = NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID
   const metaReady = Boolean(appId && configId)
-  const socialEnabled =
-    SOCIAL_CHANNELS_VISIBLE &&
-    (current.instagramEnabled || current.messengerEnabled)
 
   function save(patch: UpdateMetaChannelSettingsInput) {
     update.mutate(patch, {
       onSuccess: () => notify.success('Configuração salva'),
       onError: (error) => notify.error(error, 'Não foi possível salvar'),
     })
-  }
-
-  async function handleConnectPages() {
-    if (!appId) return
-    setPending(true)
-    const login = await launchMetaChannelsLogin({ appId })
-    if (!login.ok) {
-      setPending(false)
-      if (login.reason === 'error') notify.error(login.message)
-      else notify.info(login.message)
-      return
-    }
-    listPages.mutate(
-      { accessToken: login.accessToken },
-      {
-        onSuccess: (pages) => {
-          setPending(false)
-          setPicker({ accessToken: login.accessToken, pages })
-        },
-        onError: (error) => {
-          setPending(false)
-          notify.error(error, 'Não foi possível listar as Páginas')
-        },
-      },
-    )
   }
 
   async function handleConnectCoexistence() {
@@ -326,54 +177,18 @@ export function WhatsappSettingsMetaChannels({
   }
 
   const rows = connections.data ?? []
-  const social = rows.filter((row) => row.channel !== 'WHATSAPP')
   const coexisting = rows.filter((row) => row.coexistence)
 
   return (
     <div className='space-y-4 rounded-lg border p-4'>
       <div>
-        <h3 className='font-medium text-sm'>
-          {SOCIAL_CHANNELS_VISIBLE
-            ? 'Instagram, Messenger e Coexistência'
-            : 'Coexistência'}
-        </h3>
+        <h3 className='font-medium text-sm'>Coexistência</h3>
         <p className='text-muted-foreground text-xs'>
-          {SOCIAL_CHANNELS_VISIBLE
-            ? 'Atenda Direct, Messenger e comentários na mesma caixa do WhatsApp, com equipes, SLA e IA. Os canais da Meta dependem da aprovação do app na Meta e ficam desligados até você ligá-los.'
-            : 'Atenda o número que já usa no aplicativo WhatsApp Business na mesma caixa, com equipes, SLA e IA. Fica desligado até você ligá-lo.'}
+          Atenda o número que já usa no aplicativo WhatsApp Business na mesma
+          caixa, com equipes, SLA e IA. Fica desligado até você ligá-lo.
         </p>
       </div>
 
-      {SOCIAL_CHANNELS_VISIBLE ? (
-        <>
-          <SwitchRow
-            id='messengerEnabled'
-            title='Messenger'
-            description='Recebe e responde as mensagens da Página do Facebook.'
-            checked={current.messengerEnabled}
-            disabled={update.isPending}
-            onChange={(checked) => save({ messengerEnabled: checked })}
-          />
-          <SwitchRow
-            id='instagramEnabled'
-            title='Instagram Direct'
-            description='Recebe e responde as mensagens da conta profissional do Instagram.'
-            checked={current.instagramEnabled}
-            disabled={update.isPending}
-            onChange={(checked) => save({ instagramEnabled: checked })}
-          />
-        </>
-      ) : null}
-      {socialEnabled ? (
-        <SwitchRow
-          id='commentsEnabled'
-          title='Comentários nas publicações'
-          description='Os comentários chegam como conversas, e você responde em público ou por mensagem privada.'
-          checked={current.commentsEnabled}
-          disabled={update.isPending}
-          onChange={(checked) => save({ commentsEnabled: checked })}
-        />
-      ) : null}
       <SwitchRow
         id='coexistenceEnabled'
         title='Coexistência do WhatsApp'
@@ -383,42 +198,16 @@ export function WhatsappSettingsMetaChannels({
         onChange={(checked) => save({ coexistenceEnabled: checked })}
       />
 
-      {metaReady && (socialEnabled || current.coexistenceEnabled) ? (
+      {metaReady && current.coexistenceEnabled ? (
         <div className='flex flex-wrap gap-2 border-t pt-3'>
-          {socialEnabled ? (
-            <Button
-              size='sm'
-              variant='outline'
-              disabled={pending}
-              onClick={handleConnectPages}
-            >
-              {pending ? 'Aguarde...' : 'Conectar Página da Meta'}
-            </Button>
-          ) : null}
-          {current.coexistenceEnabled ? (
-            <Button
-              size='sm'
-              variant='outline'
-              disabled={pending}
-              onClick={handleConnectCoexistence}
-            >
-              {pending ? 'Aguarde...' : 'Conectar número em uso no aplicativo'}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {SOCIAL_CHANNELS_VISIBLE && social.length > 0 ? (
-        <div className='space-y-2 border-t pt-3'>
-          {social.map((row) => (
-            <div
-              key={row.id}
-              className='flex items-center justify-between gap-2 rounded-md border p-3'
-            >
-              <p className='truncate font-medium text-sm'>{row.label}</p>
-              <Badge variant='outline'>{CHANNEL_LABEL[row.channel]}</Badge>
-            </div>
-          ))}
+          <Button
+            size='sm'
+            variant='outline'
+            disabled={pending}
+            onClick={handleConnectCoexistence}
+          >
+            {pending ? 'Aguarde...' : 'Conectar número em uso no aplicativo'}
+          </Button>
         </div>
       ) : null}
 
@@ -432,16 +221,6 @@ export function WhatsappSettingsMetaChannels({
             />
           ))}
         </div>
-      ) : null}
-
-      {picker ? (
-        <PagesDialog
-          workspaceId={workspaceId}
-          pages={picker.pages}
-          accessToken={picker.accessToken}
-          settings={current}
-          onClose={() => setPicker(null)}
-        />
       ) : null}
     </div>
   )

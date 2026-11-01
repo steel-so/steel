@@ -256,7 +256,7 @@ export const crmPage: ProductPage = {
       {
         title: 'Redes sociais e concorrentes',
         description:
-          'Contas de Facebook, Instagram, TikTok, X, LinkedIn, YouTube, Google Ads e Analytics, e o acompanhamento de concorrentes.',
+          'Contas de Facebook, Instagram, TikTok, YouTube, Google Ads e Analytics, e o acompanhamento de concorrentes.',
         icon: Globe02Icon,
       },
       {

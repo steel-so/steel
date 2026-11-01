@@ -7,7 +7,6 @@ import { parseCrmPlatformSlug } from '@/src/schemas/crm-social.schema'
 import * as CrmSocialFacebookService from '@/src/services/crm-social-facebook.service'
 import * as CrmSocialInstagramService from '@/src/services/crm-social-instagram.service'
 import * as CrmSocialTiktokService from '@/src/services/crm-social-tiktok.service'
-import * as CrmSocialTwitterService from '@/src/services/crm-social-twitter.service'
 import * as CrmSocialYoutubeService from '@/src/services/crm-social-youtube.service'
 import {
   handleError,
@@ -23,7 +22,6 @@ type Params = { params: Promise<{ id: string; platform: string }> }
  * - INSTAGRAM  → Graph API (/{id}/media)
  * - YOUTUBE    → Data API (playlistItems da playlist de uploads)
  * - TIKTOK     → Display API (video/list)
- * - TWITTER    → API v2 (GET /users/:id/tweets)
  */
 export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()
@@ -68,11 +66,6 @@ export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
     }
     case 'TIKTOK': {
       const result = await CrmSocialTiktokService.getVideos(actorId, id)
-      if (!result.ok) return handleError(result.error)
-      return successResponse(result.value)
-    }
-    case 'TWITTER': {
-      const result = await CrmSocialTwitterService.getRecentTweets(actorId, id)
       if (!result.ok) return handleError(result.error)
       return successResponse(result.value)
     }

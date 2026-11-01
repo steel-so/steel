@@ -111,18 +111,6 @@ const SUBPROCESSORS: Subprocessor[] = [
     location: 'Estados Unidos / Singapura',
   },
   {
-    name: 'LinkedIn Corporation (Microsoft)',
-    purpose: 'Conexão de rede social do CRM',
-    data: 'Dados de conexão OAuth, conteúdo publicado/agendado',
-    location: 'Estados Unidos',
-  },
-  {
-    name: 'X Corp.',
-    purpose: 'Conexão de rede social do CRM',
-    data: 'Dados de conexão OAuth, conteúdo publicado/agendado',
-    location: 'Estados Unidos',
-  },
-  {
     name: 'YouTube (Google LLC)',
     purpose: 'Conexão de rede social do CRM',
     data: 'Dados de conexão OAuth, métricas de canal',

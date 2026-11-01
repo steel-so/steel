@@ -1575,16 +1575,6 @@ export const ERROR_CODES = {
   WIDGET_NOT_AVAILABLE: { code: 'WIDGET_NOT_AVAILABLE', status: 404 },
   WIDGET_ORIGIN_NOT_ALLOWED: { code: 'WIDGET_ORIGIN_NOT_ALLOWED', status: 403 },
   WIDGET_VISITOR_INVALID: { code: 'WIDGET_VISITOR_INVALID', status: 401 },
-
-  // nov: meta-channels (Z5 Instagram/Messenger, Z6 Coexistence)
-  META_CHANNEL_PAGE_NOT_FOUND: {
-    code: 'META_CHANNEL_PAGE_NOT_FOUND',
-    status: 404,
-  },
-  META_CHANNEL_COMMENT_NOT_FOUND: {
-    code: 'META_CHANNEL_COMMENT_NOT_FOUND',
-    status: 404,
-  },
   // nov: zap-ecom
   WHATSAPP_CATALOG_DISABLED: { code: 'WHATSAPP_CATALOG_DISABLED', status: 409 },
   WHATSAPP_CATALOG_PRODUCT_NOT_FOUND: {

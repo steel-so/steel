@@ -4,22 +4,16 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('../crm-social-facebook.service', () => ({ publishPost: vi.fn() }))
 vi.mock('../crm-social-instagram.service', () => ({ publishPost: vi.fn() }))
-vi.mock('../crm-social-linkedin.service', () => ({ publishPost: vi.fn() }))
 vi.mock('../crm-social-tiktok.service', () => ({ publishVideo: vi.fn() }))
-vi.mock('../crm-social-twitter.service', () => ({
-  publishTweetPost: vi.fn(),
-}))
 vi.mock('../crm-social-youtube.service', () => ({ publishVideo: vi.fn() }))
 
 import * as Facebook from '../crm-social-facebook.service'
 import * as Instagram from '../crm-social-instagram.service'
-import * as Linkedin from '../crm-social-linkedin.service'
 import {
   type CrmSocialPublishContext,
   publishToSocialPlatform,
 } from '../crm-social-publisher'
 import * as Tiktok from '../crm-social-tiktok.service'
-import * as Twitter from '../crm-social-twitter.service'
 import * as Youtube from '../crm-social-youtube.service'
 
 const IMAGE = { bytes: new Uint8Array([1]).buffer, contentType: 'image/png' }
@@ -113,62 +107,6 @@ describe('publishToSocialPlatform()', () => {
       expect(result).toEqual({
         ok: false,
         error: crmSocialScopeMissing().message,
-      })
-    })
-  })
-
-  describe('TWITTER', () => {
-    it('should tweet the content with the optional image', async () => {
-      vi.mocked(Twitter.publishTweetPost).mockResolvedValue(
-        ok({ tweetId: 't1', permalink: '' }),
-      )
-
-      expect(
-        await publishToSocialPlatform('TWITTER', ctx({ image: IMAGE })),
-      ).toEqual({ ok: true, externalPostId: 't1' })
-      expect(Twitter.publishTweetPost).toHaveBeenCalledWith(
-        'u1',
-        'ws1',
-        { text: 'Olá mundo' },
-        IMAGE,
-      )
-    })
-
-    it('should surface the service error message', async () => {
-      vi.mocked(Twitter.publishTweetPost).mockResolvedValue(
-        err(crmSocialOauthFailed('Duplicado')),
-      )
-      expect(await publishToSocialPlatform('TWITTER', ctx())).toEqual({
-        ok: false,
-        error: 'Duplicado',
-      })
-    })
-  })
-
-  describe('LINKEDIN', () => {
-    it('should publish and return the post URN', async () => {
-      vi.mocked(Linkedin.publishPost).mockResolvedValue(
-        ok({ postUrn: 'urn:li:share:1' }),
-      )
-      expect(await publishToSocialPlatform('LINKEDIN', ctx())).toEqual({
-        ok: true,
-        externalPostId: 'urn:li:share:1',
-      })
-      expect(Linkedin.publishPost).toHaveBeenCalledWith(
-        'u1',
-        'ws1',
-        { text: 'Olá mundo' },
-        null,
-      )
-    })
-
-    it('should surface the service error message', async () => {
-      vi.mocked(Linkedin.publishPost).mockResolvedValue(
-        err(crmSocialOauthFailed('Falhou')),
-      )
-      expect(await publishToSocialPlatform('LINKEDIN', ctx())).toEqual({
-        ok: false,
-        error: 'Falhou',
       })
     })
   })

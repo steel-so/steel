@@ -371,7 +371,7 @@ describe('CrmSocialConnectionRepository — reads and mutations', () => {
       await CrmSocialConnectionRepository.upsertOAuthConnection({
         workspaceId: workspace.id,
         createdById: 'missing',
-        platform: 'LINKEDIN',
+        platform: 'GOOGLE_ADS',
         externalAccountId: 'x',
         accessToken: 'enc',
         isPrimary: true,
@@ -668,7 +668,7 @@ describe('CrmScheduledPostTargetRepository', () => {
       expectOk(
         await CrmScheduledPostTargetRepository.createMany(post.id, [
           'INSTAGRAM',
-          'TWITTER',
+          'FACEBOOK',
         ]),
       ),
     ).toBe(2)
@@ -676,8 +676,8 @@ describe('CrmScheduledPostTargetRepository', () => {
       await CrmScheduledPostTargetRepository.listByPost(post.id),
     )
     expect(targets.map((t) => t.platform).sort()).toEqual([
+      'FACEBOOK',
       'INSTAGRAM',
-      'TWITTER',
     ])
 
     const published = expectOk(
