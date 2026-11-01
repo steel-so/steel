@@ -1,184 +1,18 @@
 import { createId } from '@paralleldrive/cuid2'
 import type {
-  WhatsAppCatalogOrder,
-  WhatsAppCatalogProduct,
-  WhatsAppCommerceSettings,
   WhatsAppContact,
-  WhatsAppEcomEvent,
-  WhatsAppEcomTrigger,
   WhatsAppSchedAppointment,
   WhatsAppSchedProfessional,
   WhatsAppSchedService,
   WhatsAppSchedulingSettings,
-  WhatsAppStoreIntegration,
 } from '@prisma/client'
-import { Prisma } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import type {
   SchedAppointmentFull,
   SchedProfessionalWithServices,
 } from '@/src/repositories/whatsapp-scheduling.repository'
-import type { EcomEventWithStore } from '@/src/repositories/whatsapp-store.repository'
 
 const now = () => new Date()
-
-export function createFakeCommerceSettings(
-  overrides?: Partial<WhatsAppCommerceSettings>,
-): WhatsAppCommerceSettings {
-  return {
-    id: createId(),
-    workspaceId: createId(),
-    catalogEnabled: true,
-    metaCatalogId: '1234567890',
-    catalogSource: 'CRM',
-    catalogIntegrationId: null,
-    storeSyncEnabled: false,
-    lastCatalogSyncAt: null,
-    orderCreatesOpportunity: true,
-    orderPipelineId: null,
-    orderPixEnabled: false,
-    ownerUserId: createId(),
-    triggersEnabled: true,
-    throttleHours: 24,
-    createdAt: now(),
-    updatedAt: now(),
-    ...overrides,
-  }
-}
-
-export function createFakeCatalogProduct(
-  overrides?: Partial<WhatsAppCatalogProduct>,
-): WhatsAppCatalogProduct {
-  const id = createId()
-  return {
-    id,
-    workspaceId: createId(),
-    source: 'CRM',
-    externalId: createId(),
-    retailerId: `SKU-${id.slice(0, 6)}`,
-    name: 'Camiseta',
-    description: null,
-    price: new Prisma.Decimal('59.90'),
-    currency: 'BRL',
-    imageUrl: null,
-    url: null,
-    available: true,
-    syncedAt: now(),
-    createdAt: now(),
-    updatedAt: now(),
-    ...overrides,
-  }
-}
-
-export function createFakeCatalogOrder(
-  overrides?: Partial<WhatsAppCatalogOrder>,
-): WhatsAppCatalogOrder {
-  return {
-    id: createId(),
-    workspaceId: createId(),
-    contactId: createId(),
-    conversationId: createId(),
-    providerMessageId: `wamid.${createId()}`,
-    metaCatalogId: null,
-    note: null,
-    items: [
-      { retailerId: 'SKU-1', name: 'Camiseta', quantity: 2, unitPrice: 59.9 },
-    ],
-    total: new Prisma.Decimal('119.80'),
-    currency: 'BRL',
-    leadId: null,
-    opportunityId: null,
-    pixChargeId: null,
-    createdAt: now(),
-    ...overrides,
-  }
-}
-
-export function createFakeStoreIntegration(
-  overrides?: Partial<WhatsAppStoreIntegration>,
-): WhatsAppStoreIntegration {
-  return {
-    id: createId(),
-    workspaceId: createId(),
-    provider: 'TRAY',
-    name: 'Loja Tray',
-    connectionId: createId(),
-    enabled: true,
-    storeUrl: null,
-    encryptedWebhookSecret: 'enc-secret',
-    encryptedCredentials: null,
-    lastEventAt: null,
-    createdById: createId(),
-    createdAt: now(),
-    updatedAt: now(),
-    ...overrides,
-  }
-}
-
-export function createFakeEcomTrigger(
-  overrides?: Partial<WhatsAppEcomTrigger>,
-): WhatsAppEcomTrigger {
-  return {
-    id: createId(),
-    workspaceId: createId(),
-    kind: 'ABANDONED_CART',
-    enabled: true,
-    templateId: createId(),
-    delayMinutes: 60,
-    variables: ['{nome}', '{link_carrinho}'],
-    createdAt: now(),
-    updatedAt: now(),
-    ...overrides,
-  }
-}
-
-export function createFakeEcomEvent(
-  overrides?: Partial<WhatsAppEcomEvent>,
-): WhatsAppEcomEvent {
-  return {
-    id: createId(),
-    workspaceId: createId(),
-    integrationId: createId(),
-    kind: 'CART_ABANDONED',
-    externalId: createId(),
-    waId: '5511988887777',
-    contactName: 'Maria Souza',
-    data: {
-      kind: 'CART_ABANDONED',
-      externalId: 'c1',
-      waId: '5511988887777',
-      name: 'Maria Souza',
-      orderNumber: null,
-      total: 99.9,
-      cartUrl: 'https://loja/cart',
-      trackingCode: null,
-      trackingUrl: null,
-      items: ['Camiseta'],
-    },
-    status: 'PENDING',
-    skipReason: null,
-    scheduledAt: now(),
-    claimedAt: null,
-    processedAt: null,
-    providerMessageId: null,
-    createdAt: now(),
-    ...overrides,
-  }
-}
-
-export function createFakeEcomEventWithStore(
-  overrides?: Partial<EcomEventWithStore>,
-): EcomEventWithStore {
-  const integration = overrides?.integration ?? createFakeStoreIntegration()
-  return {
-    ...createFakeEcomEvent({
-      workspaceId: integration.workspaceId,
-      integrationId: integration.id,
-    }),
-    integration,
-    ...overrides,
-  }
-}
 
 export function createFakeSchedulingSettings(
   overrides?: Partial<WhatsAppSchedulingSettings>,
@@ -314,13 +148,13 @@ export function createFakeSchedAppointmentFull(
 }
 
 /** Workspace + user + connection + contact rows for integration tests. */
-export async function seedEcomFixtures(workspaceId: string, userId: string) {
+export async function seedSchedulingFixtures(workspaceId: string, userId: string) {
   const connection = await prisma.whatsAppConnection.create({
     data: {
       workspaceId,
       provider: 'META',
       module: 'COMMUNICATION',
-      label: 'Loja',
+      label: 'Agenda',
       phoneNumber: `55119${Math.floor(Math.random() * 1e8)}`,
       status: 'CONNECTED',
       metaPhoneNumberId: 'phone1',

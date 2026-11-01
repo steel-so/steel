@@ -648,10 +648,7 @@ export async function scheduleCrmCadencesJobs(): Promise<void> {
 
 export async function scheduleWhatsappAutomationsJobs(): Promise<void> {
   const queue = getWhatsappAutomationsQueue()
-  for (const name of [
-    WhatsappAutomationsJob.EcomTick,
-    WhatsappAutomationsJob.SchedulingTick,
-  ]) {
+  for (const name of [WhatsappAutomationsJob.SchedulingTick]) {
     await queue.upsertJobScheduler(
       name,
       { pattern: WhatsappAutomationsCron, tz: RetentionTimezone },

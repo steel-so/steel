@@ -10,7 +10,6 @@ import {
   Folder01Icon,
   Mic01Icon,
   SentIcon,
-  ShoppingBag01Icon,
   SmileIcon,
   Task01Icon,
   Video01Icon,
@@ -96,7 +95,6 @@ import type {
 import type { WhatsAppQuickReplyDTO } from '@/types/whatsapp-quick-reply'
 import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
 import { WhatsappButtonsSummary } from './buttons/whatsapp-buttons-editor'
-import { CatalogSendDialog } from './commerce/catalog-send-dialog'
 import { FlowSendDialog } from './flows/flow-send-dialog'
 import {
   QUICK_REPLY_LIST_ID,
@@ -224,7 +222,6 @@ export function WhatsappComposer({
   const [variablesDialogOpen, setVariablesDialogOpen] = useState(false)
   const [shareContactOpen, setShareContactOpen] = useState(false)
   const [flowOpen, setFlowOpen] = useState(false)
-  const [catalogOpen, setCatalogOpen] = useState(false)
   // A quick reply with buttons goes as-is through its own endpoint (a text
   // send would drop the buttons), so it is staged instead of filling the box.
   const [stagedQuickReply, setStagedQuickReply] =
@@ -732,10 +729,6 @@ export function WhatsappComposer({
               <SteelIcon icon={Contact01Icon} size={16} />
               Contato
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCatalogOpen(true)}>
-              <SteelIcon icon={ShoppingBag01Icon} size={16} />
-              Produtos do catálogo
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setFlowOpen(true)}>
               <SteelIcon icon={Task01Icon} size={16} />
               Formulário (Flow)
@@ -827,12 +820,6 @@ export function WhatsappComposer({
         }}
       />
 
-      <CatalogSendDialog
-        workspaceId={workspaceId}
-        conversationId={conversationId}
-        open={catalogOpen}
-        onOpenChange={setCatalogOpen}
-      />
       <FlowSendDialog
         workspaceId={workspaceId}
         conversationId={conversationId}
