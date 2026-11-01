@@ -23,7 +23,6 @@ import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-compet
 import { processCrmDuplicates } from '../src/lib/queue/processors/crm-duplicates'
 import { processCrmDeals } from '../src/lib/queue/processors/crm-deals'
 import { processCrmHealth } from '../src/lib/queue/processors/crm-health'
-import { processCrmMeetings } from '../src/lib/queue/processors/crm-meetings'
 import { processCrmNewsletter } from '../src/lib/queue/processors/crm-newsletter'
 import { processCrmNewsletterAutomation } from '../src/lib/queue/processors/crm-newsletter-automation'
 import { processCrmProposalExpiry } from '../src/lib/queue/processors/crm-proposal-expiry'
@@ -80,7 +79,6 @@ import {
   scheduleCrmDuplicatesJobs,
   scheduleCrmDealsJobs,
   scheduleCrmHealthJobs,
-  scheduleCrmMeetingsJobs,
   scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
   scheduleCrmProposalExpiryJobs,
@@ -296,7 +294,6 @@ async function main(): Promise<void> {
   workers.push(registerWorker(QueueName.CrmHealth, processCrmHealth))
   workers.push(registerWorker(QueueName.CrmDeals, processCrmDeals))
   workers.push(registerWorker(QueueName.CrmDuplicates, processCrmDuplicates))
-  workers.push(registerWorker(QueueName.CrmMeetings, processCrmMeetings))
   workers.push(registerWorker(QueueName.SteelAgents, processSteelAgents))
   workers.push(registerWorker(QueueName.Notifications, processNotifications))
   workers.push(registerWorker(QueueName.SearchReindex, processSearchReindex))
@@ -368,7 +365,6 @@ async function main(): Promise<void> {
   await scheduleCrmHealthJobs()
   await scheduleCrmDealsJobs()
   await scheduleCrmDuplicatesJobs()
-  await scheduleCrmMeetingsJobs()
   await scheduleServicedeskTaskRemindersJobs()
   await scheduleSteelAgentsJobs()
   await scheduleNotificationsJobs()

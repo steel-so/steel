@@ -11,7 +11,6 @@ const SEGMENTS = [
   'cadences',
   'duplicates',
   'renewals',
-  'meetings',
   'opportunities',
   'companies',
   'people',

@@ -87,7 +87,6 @@ export const CrmFormRepository = {
       successMessage?: string
       redirectUrl?: string
       newsletterId?: string | null
-      bookingPageId?: string | null
       updatedById?: string
     },
   ): Promise<Result<CrmForm>> {

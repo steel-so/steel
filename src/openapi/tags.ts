@@ -504,11 +504,6 @@ export const TAG_GROUPS = [
           'Painel do CRM no telão da equipe de vendas: link somente leitura, sem login (o token é o acesso; revogar corta a tela).',
       },
       {
-        name: 'CRM público · Agendamento',
-        description:
-          'Página pública de agendamento de reuniões: horários livres, reserva e cancelamento pelo convidado (o `slug` da página e o token do agendamento são o acesso).',
-      },
-      {
         name: 'CRM público · Sala de negociação',
         description:
           'Sala de negociação compartilhada de uma oportunidade: proposta, materiais, plano de ação conjunto e conversa com o cliente (o token do link é o acesso).',

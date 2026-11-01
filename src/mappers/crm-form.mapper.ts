@@ -6,7 +6,6 @@ import type {
   CrmFormPublicDTO,
   CrmFormSubmissionDTO,
 } from '@/types/crm-form'
-import type { PublicMeetingPageDTO } from '@/types/crm-meeting'
 
 export function toCrmFormDTO(form: CrmForm): CrmFormDTO {
   return {
@@ -22,7 +21,6 @@ export function toCrmFormDTO(form: CrmForm): CrmFormDTO {
     redirectUrl: form.redirectUrl,
     submissionCount: form.submissionCount,
     newsletterId: form.newsletterId,
-    bookingPageId: form.bookingPageId,
     workspaceId: form.workspaceId,
     createdById: form.createdById,
     updatedById: form.updatedById,
@@ -36,7 +34,6 @@ export function toCrmFormDTO(form: CrmForm): CrmFormDTO {
 export function toCrmFormPublicDTO(
   form: CrmForm,
   newsletter?: { name: string; consentText: string } | null,
-  booking?: PublicMeetingPageDTO | null,
 ): CrmFormPublicDTO {
   return {
     id: form.id,
@@ -47,7 +44,6 @@ export function toCrmFormPublicDTO(
     successMessage: form.successMessage,
     redirectUrl: form.redirectUrl,
     ...(newsletter !== undefined && { newsletter }),
-    ...(booking ? { booking } : {}),
   }
 }
 

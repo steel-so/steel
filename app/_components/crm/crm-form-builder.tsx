@@ -30,7 +30,6 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { saveCrmForm, useCrmForm } from '@/src/hooks/use-crm-form'
-import { useCrmMeetingPages } from '@/src/hooks/use-crm-meetings'
 import { useCrmNewsletters } from '@/src/hooks/use-crm-newsletters'
 import {
   ACTION_TARGETS,
@@ -130,7 +129,6 @@ function defaultMapping(action: CrmFormActionDTO): {
   return { target: first.target, attribute: first.attribute }
 }
 
-const NO_BOOKING = 'NONE'
 const NO_NEWSLETTER = 'NONE'
 
 function toPublicForm(
@@ -234,13 +232,6 @@ function CrmFormBuilderInner({
   const newsletterName = newsletterOptions.find(
     (n) => n.id === newsletterId,
   )?.name
-  const [bookingPageId, setBookingPageId] = useState(
-    initial.bookingPageId ?? NO_BOOKING,
-  )
-  const bookingPages = useCrmMeetingPages(workspaceId)
-  const bookingOptions = (bookingPages.data ?? []).filter(
-    (page) => page.active || page.id === bookingPageId,
-  )
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
@@ -264,7 +255,6 @@ function CrmFormBuilderInner({
       phases,
       successMessage: successMessage.trim() ? successMessage.trim() : undefined,
       newsletterId: newsletterId === NO_NEWSLETTER ? null : newsletterId,
-      bookingPageId: bookingPageId === NO_BOOKING ? null : bookingPageId,
     }
   }
 
@@ -516,37 +506,6 @@ function CrmFormBuilderInner({
                 <p className='text-muted-foreground text-xs'>
                   O formulário ganha uma caixa opcional de autorização. Só quem
                   marcar e informar o e-mail entra na newsletter.
-                </p>
-              </div>
-
-              <div className='flex flex-col gap-1.5'>
-                <Label htmlFor='form-booking'>Oferecer agendamento</Label>
-                <Select
-                  value={bookingPageId}
-                  onValueChange={(v) => setBookingPageId(String(v))}
-                >
-                  <SelectTrigger id='form-booking' className='w-full'>
-                    <SelectValue>
-                      {(value: string) =>
-                        value === NO_BOOKING
-                          ? 'Não oferecer'
-                          : (bookingOptions.find((page) => page.id === value)
-                              ?.title ?? 'Página de agendamento')
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_BOOKING}>Não oferecer</SelectItem>
-                    {bookingOptions.map((page) => (
-                      <SelectItem key={page.id} value={page.id}>
-                        {page.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className='text-muted-foreground text-xs'>
-                  Depois de enviar, a pessoa já escolhe um horário livre de
-                  reunião, com nome, e-mail e telefone preenchidos.
                 </p>
               </div>
             </section>

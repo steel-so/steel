@@ -1,4 +1,3 @@
-import type { PublicMeetingPageDTO } from './crm-meeting'
 
 export type CrmFormStatusDTO = 'DRAFT' | 'PUBLISHED'
 export type CrmFormActionDTO = 'COMPANY' | 'PERSON' | 'LEAD'
@@ -55,8 +54,6 @@ export interface CrmFormDTO {
   submissionCount: number
   /** Newsletter the consent box subscribes to (ADR 0054). */
   newsletterId: string | null
-  /** Booking page offered after the submission (crm-ops C5). */
-  bookingPageId: string | null
   workspaceId: string
   createdById: string
   updatedById: string | null
@@ -77,8 +74,6 @@ export interface CrmFormPublicDTO {
   /** Set when the form subscribes to a newsletter: the public form shows
    * an optional consent box with this text (ADR 0054). */
   newsletter?: { name: string; consentText: string } | null
-  /** Live booking page: the public form offers it after the submission. */
-  booking?: PublicMeetingPageDTO | null
 }
 
 export interface CrmFormSubmissionDTO {
