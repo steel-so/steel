@@ -146,7 +146,7 @@ export const CrmDealsCron = '30 6 * * *' as const
 /** Sales cadences: due steps run every minute. */
 export const CrmCadencesCron = '* * * * *' as const
 
-/** WhatsApp automations: store events and appointment messages, each minute. */
+/** WhatsApp automations: appointment messages, each minute. */
 export const WhatsappAutomationsCron = '* * * * *' as const
 
 /**

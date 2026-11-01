@@ -731,12 +731,10 @@ export type CrmDuplicatesJobPayload = {
 }
 
 /**
- * WhatsApp automations (zap-ecom): every minute the worker sends the store
- * events (abandoned cart, shipped, post-purchase) whose time has come and the
+ * WhatsApp automations (appointments): every minute the worker sends the
  * appointment confirmations and reminders that are due.
  */
 export const WhatsappAutomationsJob = {
-  EcomTick: 'ecom-tick',
   SchedulingTick: 'scheduling-tick',
 } as const
 
@@ -744,7 +742,6 @@ export type WhatsappAutomationsJob =
   (typeof WhatsappAutomationsJob)[keyof typeof WhatsappAutomationsJob]
 
 export type WhatsappAutomationsJobPayload = {
-  [WhatsappAutomationsJob.EcomTick]: Record<string, never>
   [WhatsappAutomationsJob.SchedulingTick]: Record<string, never>
 }
 

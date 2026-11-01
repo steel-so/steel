@@ -79,7 +79,7 @@ const input = (over = {}) => ({
   templateId: 'tpl1',
   waId: '5511988887777',
   contactName: 'Maria',
-  variables: ['Maria', 'https://loja/cart'],
+  variables: ['Maria', 'https://exemplo.com/x'],
   ...over,
 })
 
@@ -114,7 +114,7 @@ describe('sendAutomationTemplate', () => {
           type: 'body',
           parameters: [
             { type: 'text', text: 'Maria' },
-            { type: 'text', text: 'https://loja/cart' },
+            { type: 'text', text: 'https://exemplo.com/x' },
           ],
         },
       ],
@@ -126,7 +126,7 @@ describe('sendAutomationTemplate', () => {
     expect(messageRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'TEMPLATE',
-        text: 'Oi Maria, volte em https://loja/cart',
+        text: 'Oi Maria, volte em https://exemplo.com/x',
         direction: 'OUT',
       }),
     )

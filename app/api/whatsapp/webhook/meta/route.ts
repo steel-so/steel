@@ -7,7 +7,6 @@ import {
 } from '@/lib/env/server'
 import { consume, whatsappWebhookLimiter } from '@/src/lib/rate-limit'
 import { parseMetaReferral } from '@/src/lib/whatsapp/ad-referral'
-import type { MetaOrderBlock } from '@/src/lib/whatsapp/catalog/order'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { assertModuleEnabled } from '@/src/services/authz'
 import {
@@ -70,8 +69,6 @@ interface MetaMessage {
   location?: unknown
   reaction?: { message_id?: string; emoji?: string }
   button?: { text?: string; payload?: string }
-  // Cart sent from the catalog (Z8).
-  order?: MetaOrderBlock
   interactive?: {
     type?: string
     button_reply?: { id?: string; title?: string }
@@ -117,7 +114,6 @@ function extractMessageContent(message: MetaMessage): {
   contactPayload?: { name: string; waId: string }
   buttonPayload?: string
   flowResponseJson?: string
-  orderBlock?: MetaOrderBlock
 } {
   switch (message.type) {
     case 'text':
@@ -145,13 +141,6 @@ function extractMessageContent(message: MetaMessage): {
       return {
         type: 'AUDIO',
         rawMediaUrl: message.audio?.id ?? message.voice?.id,
-      }
-    // Cart from the catalog: the service turns it into a lead / deal.
-    case 'order':
-      return {
-        type: 'TEXT',
-        text: '[Carrinho do catálogo]',
-        orderBlock: message.order,
       }
     case 'sticker':
       return { type: 'STICKER' }

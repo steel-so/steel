@@ -69,7 +69,7 @@ export type AutomationSendOutcome =
   | { kind: 'not_ready'; reason: string }
 
 /**
- * Sends an approved template to a phone on behalf of an automation (store
+ * Sends an approved template to a phone on behalf of an automation (appointment
  * triggers, appointment messages) and files it in the contact's conversation.
  * Respects the LGPD opt-out and the connection state; the caller decides what
  * `not_ready` means (retry later, or skip).
