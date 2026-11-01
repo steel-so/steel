@@ -14,12 +14,11 @@ de uma chave que o dono liga depois de cumprir os passos abaixo.
   profissional). O cliente responde CONFIRMAR ou CANCELAR (texto ou botão do template).
 - Reuso do Z3: o formulário com o modelo "Agendamento" marca o primeiro horário livre do dia e
   período escolhidos (títulos das opções iguais aos nomes dos serviços).
-- Reuso do C5: o cálculo de horários livres e de fuso usa `src/lib/scheduling/slots.ts` e `tz.ts` (motor único, ADR 0059)
-  por meio de adaptadores finos em `src/lib/whatsapp/scheduling/`. Não coube reaproveitar: as
-  reservas (tabelas, links públicos, e-mail e .ics do C5 são por vendedor e por reunião) e o
-  limite de conflito, que o C5 aplica com o intervalo do serviço oferecido nos dois lados,
-  enquanto a reserva do WhatsApp confere cada agendamento com o intervalo do seu próprio
-  serviço no banco (`createIfFree`), porque aqui vários profissionais e serviços dividem a agenda.
+- Motor de agenda: o cálculo de horários livres e de fuso usa `src/lib/scheduling/slots.ts` e `tz.ts`
+  (motor único, ADR 0059) por meio de adaptadores finos em `src/lib/whatsapp/scheduling/`. O agendamento
+  público de reuniões do CRM (C5) foi removido em 31/10/2026; este módulo é o único consumidor. A reserva
+  confere cada agendamento com o intervalo do seu próprio serviço no banco (`createIfFree`), porque
+  vários profissionais e serviços dividem a agenda.
 - Fora desta entrega: aviso ao cliente quando o atendente cancela, folgas e feriados por
   profissional, sincronização com calendário externo.
 
