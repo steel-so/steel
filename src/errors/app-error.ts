@@ -2369,49 +2369,6 @@ export const aiActionInProgress = (): AppError =>
     'Esta mesma ação já está em andamento. Aguarde alguns instantes.',
   )
 
-// ─── nov-prospecting-agent ──────────────────────────────────────────────────
-
-export const crmProspectingDisabled = (): AppError =>
-  appError(
-    'CRM_PROSPECTING_DISABLED',
-    'A prospecção com IA está desligada neste workspace. Ligue em CRM > Prospecção.',
-  )
-
-export const crmProspectLimitReached = (what: 'web' | 'draft'): AppError =>
-  appError(
-    'CRM_PROSPECT_LIMIT_REACHED',
-    what === 'web'
-      ? 'O limite mensal de pesquisas na web da prospecção foi atingido'
-      : 'O limite mensal de rascunhos da prospecção foi atingido',
-  )
-
-export const crmProspectDraftNotFound = (): AppError =>
-  appError('CRM_PROSPECT_DRAFT_NOT_FOUND', 'Rascunho não encontrado')
-
-export const crmProspectDraftInvalid = (message: string): AppError =>
-  appError('CRM_PROSPECT_DRAFT_INVALID', message)
-
-export const crmProspectDraftDuplicate = (): AppError =>
-  appError(
-    'CRM_PROSPECT_DRAFT_DUPLICATE',
-    'Já existe um rascunho pendente de revisão para este contato',
-  )
-
-export const crmProspectDraftNotPending = (): AppError =>
-  appError(
-    'CRM_PROSPECT_DRAFT_NOT_PENDING',
-    'Este rascunho já foi decidido e não pode mais ser alterado',
-  )
-
-export const crmProspectWebFailed = (message: string): AppError =>
-  appError('CRM_PROSPECT_WEB_FAILED', message)
-
-export const crmProspectSearchNotConfigured = (): AppError =>
-  appError(
-    'CRM_PROSPECT_SEARCH_NOT_CONFIGURED',
-    'A busca na web não está configurada neste ambiente. Peça ao administrador da plataforma.',
-  )
-
 
 // ─── nov: crm-deals ─────────────────────────────────────────────────────────
 
@@ -2459,15 +2416,6 @@ export const widgetOriginNotAllowed = (): AppError =>
 
 export const widgetVisitorInvalid = (): AppError =>
   appError('WIDGET_VISITOR_INVALID', 'Sessão do chat inválida')
-
-export const metaChannelPageNotFound = (): AppError =>
-  appError(
-    'META_CHANNEL_PAGE_NOT_FOUND',
-    'A Página escolhida não foi encontrada na sua conta da Meta',
-  )
-
-export const metaChannelCommentNotFound = (): AppError =>
-  appError('META_CHANNEL_COMMENT_NOT_FOUND', 'Comentário não encontrado')
 
 export const qaReviewNotFound = (): AppError =>
   appError('QA_REVIEW_NOT_FOUND', 'Avaliação não encontrada')

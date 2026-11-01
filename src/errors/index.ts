@@ -492,16 +492,6 @@ export {
   workspaceSuspended,
 } from './app-error'
 
-export {
-  crmProspectDraftDuplicate,
-  crmProspectDraftInvalid,
-  crmProspectDraftNotFound,
-  crmProspectDraftNotPending,
-  crmProspectingDisabled,
-  crmProspectLimitReached,
-  crmProspectSearchNotConfigured,
-  crmProspectWebFailed,
-} from './app-error'
 
 
 // nov: crm-deals
@@ -520,9 +510,4 @@ export {
   widgetNotAvailable,
   widgetOriginNotAllowed,
   widgetVisitorInvalid,
-} from './app-error'
-// nov: meta-channels
-export {
-  metaChannelCommentNotFound,
-  metaChannelPageNotFound,
 } from './app-error'

@@ -33,7 +33,7 @@ BullMQ · MinIO (S3) · Better Auth · Axiom (logs) · pnpm.
                └───────────┘
  Externos: Resend (e-mail) · AbacatePay (pagamento, desligado*) · Meta Cloud
  API / Z-API (WhatsApp) · OpenAI/Anthropic (IA) · Google/GitHub OAuth · redes
- sociais (Meta, TikTok, X, LinkedIn, YouTube, Google Ads) · Axiom (logs)
+ sociais (Meta, TikTok, YouTube, Google Ads) · Axiom (logs)
 ```
 
 \* A cobrança está desligada por decisão de produto (06/10/2026): a flag
@@ -329,8 +329,8 @@ global de atalhos — ver [`docs/shortcuts.md`](../shortcuts.md).
   `localStorage` é só cache). Saem do mesmo SSE, só com a aba em segundo
   plano e só para tipos urgentes (SLA violado/em risco, aprovação
   solicitada, aprovação de agente, chamado ou conversa atribuída, ação da IA
-  expirando). Sem service worker nem Web Push por enquanto — com o app
-  fechado não há aviso; fica como evolução.
+  expirando). Não há service worker nem Web Push — com o app
+  fechado não há aviso.
 
 - **Modelo**: `Notification` (workspace, usuário, `kind`, título, corpo,
   `href`, `readAt`, `archivedAt`, `deletedAt`). Arquivar e excluir são

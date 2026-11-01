@@ -306,7 +306,7 @@ export const TAG_GROUPS = [
       {
         name: 'Comunicação · Canais da Meta',
         description:
-          'Instagram Direct e Messenger na mesma caixa do WhatsApp (mensagens e comentários) e número em Coexistência (aplicativo e API juntos, com importação do histórico). Tudo desligado por padrão: a revisão do app na Meta é um passo à parte.',
+          'Número em Coexistência (aplicativo WhatsApp Business e API juntos, com importação do histórico). Desligado por padrão: a revisão do app na Meta é um passo à parte.',
       },
     ],
   },

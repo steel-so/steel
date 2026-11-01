@@ -1557,34 +1557,6 @@ export const ERROR_CODES = {
   AI_ACTION_IN_PROGRESS: { code: 'AI_ACTION_IN_PROGRESS', status: 409 },
 
 
-  // nov-prospecting-agent: prospecting agent (T5).
-  CRM_PROSPECTING_DISABLED: { code: 'CRM_PROSPECTING_DISABLED', status: 403 },
-  CRM_PROSPECT_LIMIT_REACHED: {
-    code: 'CRM_PROSPECT_LIMIT_REACHED',
-    status: 429,
-  },
-  CRM_PROSPECT_DRAFT_NOT_FOUND: {
-    code: 'CRM_PROSPECT_DRAFT_NOT_FOUND',
-    status: 404,
-  },
-  CRM_PROSPECT_DRAFT_INVALID: {
-    code: 'CRM_PROSPECT_DRAFT_INVALID',
-    status: 422,
-  },
-  CRM_PROSPECT_DRAFT_DUPLICATE: {
-    code: 'CRM_PROSPECT_DRAFT_DUPLICATE',
-    status: 409,
-  },
-  CRM_PROSPECT_DRAFT_NOT_PENDING: {
-    code: 'CRM_PROSPECT_DRAFT_NOT_PENDING',
-    status: 409,
-  },
-  CRM_PROSPECT_WEB_FAILED: { code: 'CRM_PROSPECT_WEB_FAILED', status: 502 },
-  CRM_PROSPECT_SEARCH_NOT_CONFIGURED: {
-    code: 'CRM_PROSPECT_SEARCH_NOT_CONFIGURED',
-    status: 503,
-  },
-
   // nov: crm-deals (C6 proposal signature/payment, C8 deal room, C9 contracts)
   CRM_DEALS_PAYMENT_DISABLED: {
     code: 'CRM_DEALS_PAYMENT_DISABLED',
@@ -1614,16 +1586,6 @@ export const ERROR_CODES = {
   WIDGET_NOT_AVAILABLE: { code: 'WIDGET_NOT_AVAILABLE', status: 404 },
   WIDGET_ORIGIN_NOT_ALLOWED: { code: 'WIDGET_ORIGIN_NOT_ALLOWED', status: 403 },
   WIDGET_VISITOR_INVALID: { code: 'WIDGET_VISITOR_INVALID', status: 401 },
-
-  // nov: meta-channels (Z5 Instagram/Messenger, Z6 Coexistence)
-  META_CHANNEL_PAGE_NOT_FOUND: {
-    code: 'META_CHANNEL_PAGE_NOT_FOUND',
-    status: 404,
-  },
-  META_CHANNEL_COMMENT_NOT_FOUND: {
-    code: 'META_CHANNEL_COMMENT_NOT_FOUND',
-    status: 404,
-  },
   // nov: zap-ecom (scheduling)
   WHATSAPP_SCHED_DISABLED: { code: 'WHATSAPP_SCHED_DISABLED', status: 409 },
   WHATSAPP_SCHED_SERVICE_NOT_FOUND: {

@@ -77,7 +77,7 @@ describe('PreviewCrmCompetitorSchema', () => {
   it('should reject a non-syncable platform', () => {
     expect(
       PreviewCrmCompetitorSchema.safeParse({
-        platform: 'LINKEDIN',
+        platform: 'GOOGLE_ADS',
         handle: '@concorrente',
       }).success,
     ).toBe(false)

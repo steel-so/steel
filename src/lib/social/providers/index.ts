@@ -3,9 +3,7 @@ import { facebookProvider } from './facebook'
 import { googleAdsProvider } from './google-ads'
 import { googleAnalyticsProvider } from './google-analytics'
 import { instagramProvider } from './instagram'
-import { linkedinProvider } from './linkedin'
 import { tiktokProvider } from './tiktok'
-import { twitterProvider } from './twitter'
 import type { SocialProvider } from './types'
 import { youtubeProvider } from './youtube'
 
@@ -17,9 +15,7 @@ const PROVIDERS: Record<(typeof CRM_SOCIAL_PLATFORMS)[number], SocialProvider> =
     TIKTOK: tiktokProvider,
     YOUTUBE: youtubeProvider,
     GOOGLE_ANALYTICS: googleAnalyticsProvider,
-    TWITTER: twitterProvider,
     GOOGLE_ADS: googleAdsProvider,
-    LINKEDIN: linkedinProvider,
   }
 
 /** Provedor de uma plataforma (sempre existe — o enum é fechado). */

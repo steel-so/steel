@@ -29,21 +29,12 @@ import {
   CrmPublishInstagramPostResultSchema,
 } from '@/src/schemas/crm-social-instagram.schema'
 import {
-  CrmLinkedinOverviewSchema,
-  CrmLinkedinPublishResultSchema,
-} from '@/src/schemas/crm-social-linkedin.schema'
-import {
   CrmPublishTiktokVideoResultSchema,
   CrmTiktokCreatorOverviewSchema,
   CrmTiktokVideosSchema,
   CrmTiktokWeeklyEngagementSchema,
 } from '@/src/schemas/crm-social-tiktok.schema'
 import { TrendingItemSchema } from '@/src/schemas/crm-social-trending.schema'
-import {
-  CrmPublishTweetResultSchema,
-  CrmTweetsSchema,
-  CrmTwitterProfileOverviewSchema,
-} from '@/src/schemas/crm-social-twitter.schema'
 import {
   CrmSocialYoutubeInsightsSchema,
   CrmSocialYoutubeOverviewSchema,
@@ -394,13 +385,11 @@ export const CrmSocialOverviewDTO = dto(
       dto('CrmYoutubeOverview', CrmSocialYoutubeOverviewSchema),
       dto('CrmGoogleAnalyticsOverview', CrmSocialGoogleAnalyticsOverviewSchema),
       dto('CrmGoogleAdsOverview', CrmSocialGoogleAdsOverviewSchema),
-      dto('CrmTwitterProfileOverview', CrmTwitterProfileOverviewSchema),
-      dto('CrmLinkedinOverview', CrmLinkedinOverviewSchema),
       dto('CrmTiktokCreatorOverview', CrmTiktokCreatorOverviewSchema),
     ])
     .meta({
       description:
-        'Formato específico da plataforma do path (Facebook → página, Instagram → perfil, YouTube → canal, Google Analytics → propriedade, Google Ads → conta, X → perfil, LinkedIn → perfil/organização, TikTok → criador).',
+        'Formato específico da plataforma do path (Facebook → página, Instagram → perfil, YouTube → canal, Google Analytics → propriedade, Google Ads → conta, TikTok → criador).',
     }),
 )
 
@@ -441,11 +430,10 @@ export const CrmSocialRecentContentDTO = dto(
       dto('CrmInstagramMediaList', CrmInstagramMediaListSchema),
       dto('CrmYoutubeVideos', CrmSocialYoutubeVideosSchema),
       dto('CrmTiktokVideos', CrmTiktokVideosSchema),
-      dto('CrmTweets', CrmTweetsSchema),
     ])
     .meta({
       description:
-        'Conteúdo recente da conta: Facebook → `posts`, Instagram → mídias, YouTube → uploads, TikTok → vídeos, X → tweets.',
+        'Conteúdo recente da conta: Facebook → `posts`, Instagram → mídias, YouTube → uploads, TikTok → vídeos.',
     }),
 )
 
@@ -464,13 +452,11 @@ export const CrmSocialPublishResultDTO = dto(
   z
     .union([
       CrmFacebookPublishResultDTO,
-      dto('CrmTwitterPublishResult', CrmPublishTweetResultSchema),
-      dto('CrmLinkedinPublishResult', CrmLinkedinPublishResultSchema),
       dto('CrmTiktokPublishResult', CrmPublishTiktokVideoResultSchema),
     ])
     .meta({
       description:
-        'Resultado da publicação síncrona: Facebook (texto/imagem), X, LinkedIn ou TikTok.',
+        'Resultado da publicação síncrona: Facebook (texto/imagem) ou TikTok.',
     }),
 )
 
@@ -517,7 +503,7 @@ export const CrmSocialDeletedPostDTO = dto(
   'CrmSocialDeletedPost',
   z.object({
     deletedId: z.string().meta({
-      description: 'ID (ou URN, no LinkedIn) da publicação excluída.',
+      description: 'ID da publicação excluída.',
     }),
   }),
 )

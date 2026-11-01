@@ -14,14 +14,12 @@ import {
   GoogleIcon,
   InstagramIcon,
   Key01Icon,
-  Linkedin01Icon,
   Mail01Icon,
   MailReceive01Icon,
   MailSend01Icon,
   Megaphone01Icon,
   MegaphoneIcon,
   NewsIcon,
-  NewTwitterIcon,
   PackageIcon,
   QuoteUpIcon,
   RepeatIcon,
@@ -78,9 +76,6 @@ export default async function CrmLayout({
           </NavItem>
           <NavItem href={`${base}/cadences`} icon={Route01Icon}>
             Cadências
-          </NavItem>
-          <NavItem href={`${base}/prospecting`} icon={UserSearch02Icon}>
-            Prospecção
           </NavItem>
           <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
             Oportunidades
@@ -178,12 +173,6 @@ export default async function CrmLayout({
             </NavItem>
             <NavItem href={`${base}/social/google_analytics`} icon={GoogleIcon}>
               Google Analytics
-            </NavItem>
-            <NavItem href={`${base}/social/twitter`} icon={NewTwitterIcon}>
-              X (Twitter)
-            </NavItem>
-            <NavItem href={`${base}/social/linkedin`} icon={Linkedin01Icon}>
-              LinkedIn
             </NavItem>
             <NavItem href={`${base}/social/google_ads`} icon={Megaphone01Icon}>
               Google Ads

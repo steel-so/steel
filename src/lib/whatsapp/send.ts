@@ -7,7 +7,6 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { WhatsAppCostService } from '@/src/services/whatsapp-cost.service'
 import { WhatsAppUsageService } from '@/src/services/whatsapp-usage.service'
 import { createMetaClient } from './meta-client'
-import { createMetaSocialClient, isSocialChannel } from './meta-social'
 import type {
   WhatsAppCostContext,
   WhatsAppOutboundButtons,
@@ -43,19 +42,6 @@ async function resolveClient(
   }
 
   if (connection.provider === 'WIDGET') return createWidgetClient()
-
-  // Instagram Direct / Messenger: a Page token, no phone number.
-  if (isSocialChannel(connection.channel)) {
-    if (!connection.metaPageId || !connection.encryptedMetaAccessToken) {
-      throw new Error('Conexão social sem credenciais configuradas')
-    }
-    return createMetaSocialClient({
-      pageId: connection.metaPageId,
-      accessToken: await decryptConnectionSecret(
-        connection.encryptedMetaAccessToken,
-      ),
-    })
-  }
 
   if (
     !connection.metaPhoneNumberId ||

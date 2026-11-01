@@ -71,4 +71,3 @@ redirecionamento, 8 s).
 - Envio de arquivos/PDF como passo (só texto).
 - Chamar outro procedimento a partir de um passo (A7).
 - Edição visual em grafo; o editor é uma lista ordenada com condições.
-- Executar procedimentos nos canais Instagram/Messenger (Z5).
