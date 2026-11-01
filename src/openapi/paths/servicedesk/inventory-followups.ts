@@ -2,21 +2,17 @@ import { z } from 'zod'
 import {
   CreateSdInventoryDiscoveryRangeSchema,
   MergeSdInventoryDeviceSchema,
-  SdInventoryAgentDownloadQuerySchema,
-  SdInventoryAgentVersionQuerySchema,
   UpdateSdInventoryDiscoveryRangeSchema,
 } from '@/src/schemas/sd-inventory.schema'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   SdInventoryAdoptResultDTO,
-  SdInventoryAgentReleaseDTO,
-  SdInventoryAgentVersionDTO,
   SdInventoryDiscoveryRangeDTO,
 } from '../../schemas/servicedesk/inventory'
 
 /**
  * ServiceDesk · inventário (S1), complementos: descoberta por ping/ARP,
- * adoção e mescla de equipamentos e atualização automática do agente.
+ * adoção e mescla de equipamentos.
  */
 
 const TAG = 'ServiceDesk · Inventário' as const
@@ -42,17 +38,6 @@ const DEVICE_ERRORS: ErrorEntry[] = [
   'SD_INVENTORY_DEVICE_NOT_FOUND',
   'SD_INVENTORY_DEVICE_STATE_INVALID',
 ]
-const AGENT_HEADERS = {
-  Authorization: {
-    description: 'Token do agente: `Bearer <token>`.',
-    required: true,
-  },
-}
-const AGENT_TOKEN_ERROR: ErrorEntry = {
-  code: 'SD_INVENTORY_TOKEN_INVALID',
-  when: 'Token ausente, malformado, desconhecido ou revogado',
-}
-
 export const sdInventoryFollowupRoutes: RouteConfig[] = [
   {
     method: 'get',
@@ -186,63 +171,5 @@ export const sdInventoryFollowupRoutes: RouteConfig[] = [
     params: { ...WS, deviceId: 'Id da ficha secundária.' },
     responses: { 200: { description: 'Mescla desfeita.', schema: null } },
     errors: DEVICE_ERRORS,
-  },
-  {
-    method: 'get',
-    path: `${BASE}/agent-releases`,
-    tags: [TAG],
-    summary: 'Versões do agente publicadas',
-    description: `A última versão ativa de cada sistema e arquitetura, para a tela de ajustes. ${ADMIN}`,
-    params: WS,
-    responses: {
-      200: {
-        description: 'Versões.',
-        schema: z.array(SdInventoryAgentReleaseDTO),
-      },
-    },
-    errors: ADMIN_ERRORS,
-  },
-  {
-    method: 'get',
-    path: '/servicedesk/inventory/agent/version',
-    tags: [TAG],
-    auth: 'public',
-    rateLimit: 'ip',
-    summary: 'Consultar a versão do agente (público)',
-    description:
-      'Sem sessão: o token do workspace vai em `Authorization: Bearer <token>`. O agente informa sistema, arquitetura e a versão que roda; a resposta diz se há versão nova publicada, o SHA-256 e o caminho do download. Só responde `updateAvailable: true` quando o workspace ligou a atualização automática (desligada por padrão); builds `dev` nunca se atualizam.',
-    headers: AGENT_HEADERS,
-    query: SdInventoryAgentVersionQuerySchema,
-    responses: {
-      200: {
-        description: 'Versão disponível (ou não).',
-        schema: SdInventoryAgentVersionDTO,
-      },
-    },
-    errors: [
-      AGENT_TOKEN_ERROR,
-      { code: 'MODULE_DISABLED', when: 'Módulo ServiceDesk desabilitado' },
-    ],
-  },
-  {
-    method: 'get',
-    path: '/servicedesk/inventory/agent/download',
-    tags: [TAG],
-    auth: 'public',
-    rateLimit: 'ip',
-    summary: 'Baixar o binário do agente (público)',
-    description:
-      'Mesmo acesso da consulta de versão. Devolve o binário (`application/octet-stream`) com o SHA-256 em `X-Content-SHA256`; o servidor só entrega arquivos que batem com o hash publicado. Exige a atualização automática ligada no workspace.',
-    headers: AGENT_HEADERS,
-    query: SdInventoryAgentDownloadQuerySchema,
-    responses: { 200: { description: 'Binário do agente.', schema: null } },
-    errors: [
-      AGENT_TOKEN_ERROR,
-      {
-        code: 'SD_INVENTORY_RELEASE_INVALID',
-        when: 'Atualização automática desligada, versão inexistente ou binário corrompido',
-      },
-      { code: 'MODULE_DISABLED', when: 'Módulo ServiceDesk desabilitado' },
-    ],
   },
 ]

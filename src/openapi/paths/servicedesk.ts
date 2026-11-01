@@ -18,7 +18,6 @@ import { sdNlConfigRoutes } from './servicedesk/nl-config'
 import { sdNotificationRoutes } from './servicedesk/notifications'
 import { sdOnCallRoutes } from './servicedesk/oncall'
 import { sdRecurringRoutes } from './servicedesk/recurring'
-import { sdRemoteRoutes } from './servicedesk/remote'
 import { sdReportRoutes } from './servicedesk/reports'
 import { sdRiskRoutes } from './servicedesk/risk'
 import { sdSwarmRoutes } from './servicedesk/swarm'
@@ -58,7 +57,6 @@ const routes: RouteConfig[] = [
   ...sdInventoryFollowupRoutes,
   ...sdLicenseRoutes,
   ...sdNlConfigRoutes,
-  ...sdRemoteRoutes,
 ]
 
 export function registerServiceDeskPaths(registry: OpenApiRegistry): void {

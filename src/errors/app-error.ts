@@ -1363,17 +1363,6 @@ export const sdMonitorPayloadInvalid = (
   message = 'Alerta em formato inválido',
 ): AppError => appError('SD_MONITOR_PAYLOAD_INVALID', message)
 
-export const sdInventoryTokenNotFound = (): AppError =>
-  appError('SD_INVENTORY_TOKEN_NOT_FOUND', 'Token de inventário não encontrado')
-
-export const sdInventoryTokenInvalid = (
-  message = 'Token de inventário inválido ou revogado',
-): AppError => appError('SD_INVENTORY_TOKEN_INVALID', message)
-
-export const sdInventoryPayloadInvalid = (
-  message = 'Relatório de inventário em formato inválido',
-): AppError => appError('SD_INVENTORY_PAYLOAD_INVALID', message)
-
 export const sdInventoryTargetNotFound = (): AppError =>
   appError(
     'SD_INVENTORY_TARGET_NOT_FOUND',
@@ -1400,10 +1389,6 @@ export const sdInventoryDeviceStateInvalid = (
 export const sdInventorySnmpCredentialsInvalid = (
   message = 'Credenciais SNMP inválidas',
 ): AppError => appError('SD_INVENTORY_SNMP_CREDENTIALS_INVALID', message)
-
-export const sdInventoryReleaseInvalid = (
-  message = 'Versão do agente inválida',
-): AppError => appError('SD_INVENTORY_RELEASE_INVALID', message)
 
 export const sdPortalLinkInvalid = (
   message = 'Link de acesso inválido ou já utilizado',
@@ -2282,21 +2267,6 @@ export const crmHealthNotApplicable = (): AppError =>
     'CRM_HEALTH_NOT_APPLICABLE',
     'A saúde só é calculada para negócios em andamento',
   )
-
-export const sdRemoteDisabled = (): AppError =>
-  appError(
-    'SD_REMOTE_DISABLED',
-    'O acesso remoto não está habilitado neste workspace',
-  )
-
-export const sdRemoteEndpointNotFound = (): AppError =>
-  appError(
-    'SD_REMOTE_ENDPOINT_NOT_FOUND',
-    'Este ativo não tem um ID de acesso remoto cadastrado',
-  )
-
-export const sdRemoteEndpointInvalid = (message: string): AppError =>
-  appError('SD_REMOTE_ENDPOINT_INVALID', message)
 
 export const sdLicenseNotFound = (): AppError =>
   appError('SD_LICENSE_NOT_FOUND', 'Licença não encontrada')

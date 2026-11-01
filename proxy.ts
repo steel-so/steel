@@ -81,9 +81,6 @@ const PUBLIC_ROUTES = [
   // Página de status do cliente (incidente maior): pública, o endereço é o
   // acesso; a inscrição por e-mail usa token (double opt-in)
   '/status-page', '/api/status-page',
-  // Agente de inventário de ativos: relatório sem sessão, token por workspace
-  // no cabeçalho `Authorization: Bearer`
-  '/api/servicedesk/inventory',
   // Integrações do ServiceDesk: webhooks sem sessão, verificados por
   // assinatura (Slack: X-Slack-Signature; GitHub: X-Hub-Signature-256). O
   // callback OAuth (`/oauth/slack`) fica de fora de propósito: ele exige a

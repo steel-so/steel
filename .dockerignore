@@ -63,6 +63,3 @@ Thumbs.db
 
 # local-only roadmap
 ROADMAP.md
-
-# Inventory agent (Go, built by its own workflow)
-inventory-agent

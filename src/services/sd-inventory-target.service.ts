@@ -504,7 +504,6 @@ function toDeviceInput(
     ipAddresses: [info.ip],
     macAddresses: info.macAddresses,
     disks: info.disks,
-    agentVersion: null,
     software:
       info.software.length > 0
         ? info.software.map((name) => ({
@@ -513,7 +512,6 @@ function toDeviceInput(
             publisher: null,
           }))
         : null,
-    tokenId: null,
     snmpTargetId: target.id,
     customerId: target.customerId,
   }

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  sdInventoryToken,
   seedSdInventoryDevice,
-  seedSdInventoryToken,
 } from '@/src/__tests__/factories/nov-s1-asset-inventory.factory'
 import {
   seedSdConfigItem,
@@ -16,7 +14,6 @@ import { SdInventoryAlertRepository } from '../sd-inventory-alert.repository'
 import { SdInventoryDeviceRepository } from '../sd-inventory-device.repository'
 import { SdInventorySettingsRepository } from '../sd-inventory-settings.repository'
 import { SdInventoryTargetRepository } from '../sd-inventory-target.repository'
-import { SdInventoryTokenRepository } from '../sd-inventory-token.repository'
 
 async function setup() {
   const [workspace, other, user] = await Promise.all([
@@ -43,90 +40,9 @@ const writeData = (overrides: Record<string, unknown> = {}) => ({
   ipAddresses: ['10.0.0.20'],
   macAddresses: ['aa:bb:cc:dd:ee:ff'],
   disks: [{ mount: 'C:', totalMb: 1000, usedMb: 500 }],
-  agentVersion: '1.0.0',
   snmpTargetId: null,
-  tokenId: null,
   lastSeenAt: new Date('2026-10-20T00:00:00Z'),
   ...overrides,
-})
-
-describe('SdInventoryTokenRepository', () => {
-  it('creates, lists, finds and revokes within the workspace', async () => {
-    const { workspace, other, user } = await setup()
-    const { hash } = sdInventoryToken('tok-a')
-    const created = expectOk(
-      await SdInventoryTokenRepository.create({
-        workspaceId: workspace.id,
-        name: 'Matriz',
-        tokenHash: hash,
-        createdById: user.id,
-      }),
-    )
-    expect(created.revokedAt).toBeNull()
-
-    expect(
-      expectOk(await SdInventoryTokenRepository.list(workspace.id)),
-    ).toHaveLength(1)
-    expect(
-      expectOk(await SdInventoryTokenRepository.list(other.id)),
-    ).toHaveLength(0)
-    expectOk(
-      await SdInventoryTokenRepository.findById(created.id, workspace.id),
-    )
-    expectErr(
-      await SdInventoryTokenRepository.findById(created.id, other.id),
-      'SD_INVENTORY_TOKEN_NOT_FOUND',
-    )
-
-    expect(
-      expectOk(await SdInventoryTokenRepository.findActiveByHash(hash))?.id,
-    ).toBe(created.id)
-    expectOk(await SdInventoryTokenRepository.revoke(created.id, workspace.id))
-    expect(
-      expectOk(await SdInventoryTokenRepository.findActiveByHash(hash)),
-    ).toBeNull()
-  })
-
-  it('does not revoke a token of another workspace', async () => {
-    const { workspace, other, user } = await setup()
-    const token = await seedSdInventoryToken({
-      workspaceId: workspace.id,
-      createdById: user.id,
-    })
-    expectErr(
-      await SdInventoryTokenRepository.revoke(token.id, other.id),
-      'SD_CONFIG_NOT_FOUND',
-    )
-  })
-
-  it('stamps the last use', async () => {
-    const { workspace, user } = await setup()
-    const token = await seedSdInventoryToken({
-      workspaceId: workspace.id,
-      createdById: user.id,
-    })
-    const at = new Date('2026-10-20T10:00:00Z')
-    expectOk(await SdInventoryTokenRepository.touch(token.id, at))
-    const reloaded = expectOk(
-      await SdInventoryTokenRepository.findById(token.id, workspace.id),
-    )
-    expect(reloaded.lastUsedAt).toEqual(at)
-  })
-
-  it('refuses a duplicated hash', async () => {
-    const { workspace, user } = await setup()
-    const data = {
-      workspaceId: workspace.id,
-      name: 'a',
-      tokenHash: 'same-hash',
-      createdById: user.id,
-    }
-    expectOk(await SdInventoryTokenRepository.create(data))
-    expectErr(
-      await SdInventoryTokenRepository.create(data),
-      'SD_CONFIG_CONFLICT',
-    )
-  })
 })
 
 describe('SdInventorySettingsRepository', () => {

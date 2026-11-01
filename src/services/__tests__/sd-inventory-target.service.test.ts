@@ -506,7 +506,6 @@ describe('runScan', () => {
         ipAddresses: ['10.0.0.1'],
         snmpTargetId: 'tgt-1',
         software: null,
-        tokenId: null,
       }),
       NOW,
     )

@@ -51,10 +51,8 @@ export interface SdInventoryDeviceInput {
   ipAddresses: string[]
   macAddresses: string[]
   disks: SdInventoryDiskUsage[]
-  agentVersion: string | null
   /** `null` = não mexe na lista de software (o SNMP não a substitui). */
   software: SdInventorySoftwareInput[] | null
-  tokenId: string | null
   snmpTargetId: string | null
   /** Cliente do item da CMDB criado (alvo SNMP com cliente). */
   customerId: string | null
@@ -212,9 +210,7 @@ export async function syncInventoryDevice(
         totalMb: disk.totalMb,
         usedMb: disk.usedMb,
       })),
-      agentVersion: input.agentVersion,
       snmpTargetId: input.snmpTargetId,
-      tokenId: input.tokenId,
       lastSeenAt: now,
     },
     {
@@ -307,9 +303,7 @@ export function deviceInputFromRow(
     ipAddresses: device.ipAddresses,
     macAddresses: device.macAddresses,
     disks: parseSdInventoryDisks(device.disks),
-    agentVersion: device.agentVersion,
     software: null,
-    tokenId: device.tokenId,
     snmpTargetId: device.snmpTargetId,
     customerId: null,
     managed: device.managed,

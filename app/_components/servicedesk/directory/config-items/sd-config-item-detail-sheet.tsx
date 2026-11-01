@@ -26,7 +26,6 @@ import { SdInfoRow } from '@/app/_components/servicedesk/directory/shared/sd-for
 import { SdConfigItemLicenses } from '@/app/_components/servicedesk/licenses/sd-config-item-licenses'
 import { SdConfigItemAlerts } from '@/app/_components/servicedesk/monitoring/sd-monitor-alert-list'
 import { SdConfigItemRoutines } from '@/app/_components/servicedesk/recurring/sd-recurring-bits'
-import { SdRemotePanel } from '@/app/_components/servicedesk/remote/sd-remote-panel'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -221,10 +220,6 @@ export function SdConfigItemDetailSheet({
                 <SdConfigItemLicenses
                   workspaceId={workspaceId}
                   slug={slug}
-                  configItemId={item.id}
-                />
-                <SdRemotePanel
-                  workspaceId={workspaceId}
                   configItemId={item.id}
                 />
               </TabsContent>

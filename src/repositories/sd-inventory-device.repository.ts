@@ -48,9 +48,7 @@ export interface SdInventoryDeviceWriteData {
   ipAddresses: string[]
   macAddresses: string[]
   disks: Prisma.InputJsonValue
-  agentVersion: string | null
   snmpTargetId: string | null
-  tokenId: string | null
   lastSeenAt: Date
 }
 
