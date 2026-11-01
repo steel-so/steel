@@ -1,0 +1,55 @@
+---
+title: IA que age nos seus sistemas, procedimentos obrigatórios e QA automático
+slug: ia-acoes-procedimentos-e-qa
+date: 2026-10-31
+summary: A IA consulta e age em sistemas da sua empresa por conectores aprovados, segue roteiros com passos que não pode pular, ganha agentes prontos para vendas e passa a dar nota a cada atendimento.
+tags: [IA, CRM, COMUNICACAO]
+cover: /changelog/2026-10-31/capa-ia-acoes-procedimentos-e-qa.jpg
+---
+
+## Ações da IA em sistemas externos
+
+Em **Ajustes › Steel IA › Ações da IA**, o administrador cadastra
+**conectores**: endereços HTTPS da sua empresa que a IA pode chamar, como
+consultar um pedido, redefinir uma senha ou liberar um acesso. Cada conector
+diz quando usar, se é **Consulta** (só lê, roda sem aprovação) ou **Ação**
+(altera dados, passa pela regra de aprovação), e quais dados a IA preenche. A
+IA só alcança o que estiver na lista. Segredos ficam cifrados, a mesma ação não
+roda duas vezes e tudo entra na auditoria.
+
+Os conectores servem à resposta automática do WhatsApp, ao assistente e aos
+Steel Agents. O recurso vem **desligado** em todo workspace.
+
+## Agentes de vendas sem código
+
+A galeria de agentes ganhou três modelos para o CRM, que você liga em poucos
+cliques: **qualificar lead novo** (quando o lead é criado), **follow-up de
+vendas** (nos dias úteis) e **atualizar a oportunidade quando a proposta é
+vista**. Quem prefere começar do zero usa **Criar com ajuda**, um passo a passo
+de quatro etapas que monta o agente a partir do que você quer automatizar.
+
+## Procedimentos com passos obrigatórios
+
+Em **Steel AI › Procedimentos**, escreva um roteiro com condições e passos
+obrigatórios, como "segunda via de boleto: validar o CPF, consultar e enviar".
+Quem decide a ordem é o sistema, não a IA: ela pede cada dado, o Steel valida
+(CPF, CNPJ, e-mail, data...), consulta uma API sua, usa ferramentas de leitura
+ou envia uma mensagem fixa, e **não pula nem reordena passos**. Se um passo
+obrigatório falha, um atendente assume. Cada edição guarda uma versão que dá
+para restaurar, e a pré-visualização mostra quais passos rodariam sem gastar
+IA.
+
+## QA automático dos atendimentos
+
+Em **Steel AI › Qualidade**, o Steel dá uma nota de 0 a 100 a toda conversa do
+zap encerrada e a todo chamado resolvido, seja de um atendente, do chatbot ou
+da resposta automática. A nota segue **critérios que você define** (já vêm
+tom, resolução, conformidade e empatia, cada um com um peso) e cita o trecho
+que justifica. A aba **Coaching** resume cada atendente, e quando uma nota fica
+baixa o dono e os administradores são avisados. O QA vem desligado e a
+avaliação consome a cota mensal de IA do workspace.
+
+![Aba Configuração da Qualidade do atendimento com as chaves de conversas do zap, chamados e atendimentos só do bot, a nota baixa e o mínimo de mensagens](/changelog/2026-10-31/qa-configuracao.webp)
+
+Mais detalhes em [Ações da IA](/docs/steel-ai/acoes-da-ia),
+[Procedimentos](/docs/steel-ai/procedimentos) e [QA automático](/docs/steel-ai/qa-automatico).
