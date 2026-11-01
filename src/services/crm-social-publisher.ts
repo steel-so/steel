@@ -2,9 +2,7 @@ import { CrmScheduledPostOptionsSchema } from '@/src/schemas/crm-social.schema'
 import type { CrmSocialPlatformDTO } from '@/types/crm-social'
 import * as CrmSocialFacebookService from './crm-social-facebook.service'
 import * as CrmSocialInstagramService from './crm-social-instagram.service'
-import * as CrmSocialLinkedinService from './crm-social-linkedin.service'
 import * as CrmSocialTiktokService from './crm-social-tiktok.service'
-import { publishTweetPost } from './crm-social-twitter.service'
 import * as CrmSocialYoutubeService from './crm-social-youtube.service'
 
 export type CrmSocialPublishResult =
@@ -28,8 +26,8 @@ export type CrmSocialPublishContext = {
 }
 
 /**
- * Publica UM alvo na plataforma, escolhendo o service certo. Facebook/X/
- * LinkedIn aceitam mídia opcional (imagem); Instagram/TikTok/YouTube exigem
+ * Publica UM alvo na plataforma, escolhendo o service certo. Facebook
+ * aceita mídia opcional (imagem); Instagram/TikTok/YouTube exigem
  * mídia (imagem ou vídeo conforme o caso) — retornam erro com "exige mídia"
  * quando ausente, sem sequer tentar a chamada real à plataforma.
  */
@@ -57,26 +55,6 @@ export async function publishToSocialPlatform(
       )
       if (!result.ok) return { ok: false, error: result.error.message }
       return { ok: true, externalPostId: result.value.postId }
-    }
-    case 'TWITTER': {
-      const result = await publishTweetPost(
-        ctx.actorId,
-        ctx.workspaceId,
-        { text: ctx.content },
-        ctx.image,
-      )
-      if (!result.ok) return { ok: false, error: result.error.message }
-      return { ok: true, externalPostId: result.value.tweetId }
-    }
-    case 'LINKEDIN': {
-      const result = await CrmSocialLinkedinService.publishPost(
-        ctx.actorId,
-        ctx.workspaceId,
-        { text: ctx.content },
-        ctx.image,
-      )
-      if (!result.ok) return { ok: false, error: result.error.message }
-      return { ok: true, externalPostId: result.value.postUrn }
     }
     case 'INSTAGRAM': {
       const postType = options?.instagram?.postType ?? 'FEED'

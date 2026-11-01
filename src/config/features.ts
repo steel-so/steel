@@ -48,7 +48,7 @@ export const FEATURE_CATALOG = {
     module: 'CRM',
     label: 'Publicação em redes sociais',
     description:
-      'Agendar e publicar posts nas redes sociais conectadas (Facebook, Instagram, TikTok, X, LinkedIn, YouTube).',
+      'Agendar e publicar posts nas redes sociais conectadas (Facebook, Instagram, TikTok, YouTube).',
     planDefaults: ALL_PLANS_ON,
   },
   'communication.broadcasts': {

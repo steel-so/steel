@@ -11,10 +11,8 @@ import { CrmFacebookStudio } from './crm-facebook-studio'
 import { CrmGoogleAdsStudio } from './crm-google-ads-studio'
 import { CrmGoogleAnalyticsStudio } from './crm-google-analytics-studio'
 import { CrmInstagramStudio } from './crm-instagram-studio'
-import { CrmLinkedinStudio } from './crm-linkedin-studio'
 import { CrmSocialAccountSwitcher } from './crm-social-account-switcher'
 import { CrmTiktokStudio } from './crm-tiktok-studio'
-import { CrmTwitterStudio } from './crm-twitter-studio'
 import { CrmYoutubeStudio } from './crm-youtube-studio'
 import type { CrmSocialPlatformMeta } from './social-platform-meta'
 
@@ -88,14 +86,8 @@ export function CrmSocialPlatformView({
         {meta.platform === 'GOOGLE_ANALYTICS' && (
           <CrmGoogleAnalyticsStudio workspaceId={workspaceId} />
         )}
-        {meta.platform === 'TWITTER' && (
-          <CrmTwitterStudio workspaceId={workspaceId} />
-        )}
         {meta.platform === 'GOOGLE_ADS' && (
           <CrmGoogleAdsStudio workspaceId={workspaceId} />
-        )}
-        {meta.platform === 'LINKEDIN' && (
-          <CrmLinkedinStudio workspaceId={workspaceId} />
         )}
       </div>
     </div>

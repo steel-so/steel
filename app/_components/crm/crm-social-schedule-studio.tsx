@@ -166,12 +166,6 @@ function Composer({
       if (req === 'image' && !hasImage) return `${label} exige uma imagem.`
       if (req === 'video' && !hasVideo) return `${label} exige um vídeo.`
     }
-    if (
-      (platforms.includes('TWITTER') || platforms.includes('LINKEDIN')) &&
-      !content.trim()
-    ) {
-      return 'X e LinkedIn exigem um texto.'
-    }
     if (mode === 'schedule') {
       if (!scheduledFor) return 'Informe a data e hora do agendamento.'
       if (new Date(scheduledFor).getTime() <= Date.now()) {

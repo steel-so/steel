@@ -12,9 +12,7 @@ export const CRM_SOCIAL_PLATFORMS = [
   'TIKTOK',
   'YOUTUBE',
   'GOOGLE_ANALYTICS',
-  'TWITTER',
   'GOOGLE_ADS',
-  'LINKEDIN',
 ] as const
 
 /** Nome legível da plataforma (legenda de gráfico, opções de UI). */
@@ -27,9 +25,7 @@ export const CRM_SOCIAL_PLATFORM_LABELS: Record<
   TIKTOK: 'TikTok',
   YOUTUBE: 'YouTube',
   GOOGLE_ANALYTICS: 'Google Analytics',
-  TWITTER: 'X (Twitter)',
   GOOGLE_ADS: 'Google Ads',
-  LINKEDIN: 'LinkedIn',
 }
 
 /** Enum → slug minúsculo usado nas rotas/URLs (ex.: "FACEBOOK" → "facebook"). */
@@ -64,8 +60,6 @@ export type CreateCrmSocialConnectionDTO = z.infer<
 export const CRM_PUBLISHABLE_PLATFORMS = [
   'INSTAGRAM',
   'FACEBOOK',
-  'TWITTER',
-  'LINKEDIN',
   'TIKTOK',
   'YOUTUBE',
 ] as const
@@ -82,8 +76,6 @@ export const CRM_PLATFORM_MEDIA_REQUIREMENT: Record<
 > = {
   INSTAGRAM: 'image',
   FACEBOOK: 'optional',
-  TWITTER: 'optional',
-  LINKEDIN: 'optional',
   TIKTOK: 'video',
   YOUTUBE: 'video',
 }
@@ -106,8 +98,6 @@ export const CRM_INSTAGRAM_POST_TYPE_MEDIA: Record<
 export const CRM_PLATFORM_TEXT_LIMIT: Record<CrmPublishablePlatform, number> = {
   INSTAGRAM: 2200,
   FACEBOOK: 5000,
-  TWITTER: 280,
-  LINKEDIN: 3000,
   TIKTOK: 2200,
   YOUTUBE: 5000,
 }

@@ -129,12 +129,6 @@ function validateScheduledPostRequirements(
       )
     }
 
-    const needsText = platform === 'TWITTER' || platform === 'LINKEDIN'
-    if (needsText && content.trim().length === 0) {
-      return err(
-        crmScheduledPostInvalid(`${platform} exige um texto.`, { platform }),
-      )
-    }
     if (
       platform === 'FACEBOOK' &&
       content.trim().length === 0 &&

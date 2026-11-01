@@ -66,7 +66,7 @@ function asMember(role: Role = 'MEMBER') {
 
 function provider(overrides: Partial<SocialProvider> = {}): SocialProvider {
   return {
-    platform: 'TWITTER',
+    platform: 'TIKTOK',
     isConfigured: () => true,
     buildAuthorizeUrl: vi.fn(() => 'https://x.test/authorize'),
     exchangeCode: vi.fn(async () =>
@@ -93,7 +93,7 @@ beforeEach(() => {
     ok({
       workspaceId: 'ws1',
       slug: 'acme',
-      platform: 'TWITTER' as const,
+      platform: 'TIKTOK' as const,
     }) as ReturnType<typeof verifyOauthState>,
   )
 })
@@ -269,13 +269,13 @@ describe('CrmSocialConnectionService.beginConnect()', () => {
 
     expect(
       expectOk(
-        await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TWITTER'),
+        await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TIKTOK'),
       ),
     ).toEqual({
       authorizeUrl: 'https://x.test/authorize',
       pkceVerifier: 'verifier',
     })
-    expect(createOauthState).toHaveBeenCalledWith('ws1', 'acme', 'TWITTER')
+    expect(createOauthState).toHaveBeenCalledWith('ws1', 'acme', 'TIKTOK')
     expect(p.buildAuthorizeUrl).toHaveBeenCalledWith({
       redirectUri: 'https://app.test/api/social/callback/x',
       state: 'state-token',
@@ -300,7 +300,7 @@ describe('CrmSocialConnectionService.beginConnect()', () => {
   it('should return CRM_SOCIAL_NOT_CONFIGURED without token encryption', async () => {
     vi.mocked(isTokenCryptoConfigured).mockReturnValueOnce(false)
     expectErr(
-      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TWITTER'),
+      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TIKTOK'),
       'CRM_SOCIAL_NOT_CONFIGURED',
     )
     expect(mockedGetProvider).not.toHaveBeenCalled()
@@ -309,7 +309,7 @@ describe('CrmSocialConnectionService.beginConnect()', () => {
   it('should return CRM_SOCIAL_NOT_CONFIGURED when the provider lacks credentials', async () => {
     mockedGetProvider.mockReturnValue(provider({ isConfigured: () => false }))
     expectErr(
-      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TWITTER'),
+      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TIKTOK'),
       'CRM_SOCIAL_NOT_CONFIGURED',
     )
   })
@@ -318,7 +318,7 @@ describe('CrmSocialConnectionService.beginConnect()', () => {
     mockedGetProvider.mockReturnValue(provider())
     mockedWorkspaceRepo.findById.mockResolvedValue(err(databaseError()))
     expectErr(
-      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TWITTER'),
+      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TIKTOK'),
       'DATABASE_ERROR',
     )
   })
@@ -329,7 +329,7 @@ describe('CrmSocialConnectionService.beginConnect()', () => {
       ok(null as unknown as ReturnType<typeof createFakeWorkspace>),
     )
     expectErr(
-      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TWITTER'),
+      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TIKTOK'),
       'CRM_SOCIAL_OAUTH_FAILED',
     )
   })
@@ -337,7 +337,7 @@ describe('CrmSocialConnectionService.beginConnect()', () => {
   it('should return FORBIDDEN for a VIEWER', async () => {
     asMember('VIEWER')
     expectErr(
-      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TWITTER'),
+      await CrmSocialConnectionService.beginConnect('u1', 'ws1', 'TIKTOK'),
       'FORBIDDEN',
     )
   })
@@ -404,7 +404,7 @@ describe('CrmSocialConnectionService.completeConnect()', () => {
           'pkce-verifier',
         ),
       ),
-    ).toEqual({ workspaceSlug: 'acme', platform: 'TWITTER', connected: 1 })
+    ).toEqual({ workspaceSlug: 'acme', platform: 'TIKTOK', connected: 1 })
 
     expect(p.exchangeCode).toHaveBeenCalledWith({
       code: 'code',
@@ -414,7 +414,7 @@ describe('CrmSocialConnectionService.completeConnect()', () => {
     expect(mockedConnectionRepo.upsertOAuthConnection).toHaveBeenCalledWith({
       workspaceId: 'ws1',
       createdById: 'u1',
-      platform: 'TWITTER',
+      platform: 'TIKTOK',
       externalAccountId: 'page-1',
       accountName: 'Page',
       accessToken: 'enc:page-token',
@@ -427,7 +427,7 @@ describe('CrmSocialConnectionService.completeConnect()', () => {
       expect.objectContaining({
         targetId: 'c1',
         meta: {
-          platform: 'TWITTER',
+          platform: 'TIKTOK',
           via: 'oauth',
           externalAccountId: 'page-1',
         },

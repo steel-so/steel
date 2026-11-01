@@ -18,8 +18,6 @@ const PLATFORMS: CrmSocialPlatformDTO[] = [
   'INSTAGRAM',
   'TIKTOK',
   'YOUTUBE',
-  'TWITTER',
-  'LINKEDIN',
 ]
 
 const PLATFORM_LABELS = CRM_SOCIAL_PLATFORM_LABELS

@@ -6,8 +6,6 @@ import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import { parseCrmPlatformSlug } from '@/src/schemas/crm-social.schema'
 import * as CrmSocialFacebookService from '@/src/services/crm-social-facebook.service'
 import * as CrmSocialInstagramService from '@/src/services/crm-social-instagram.service'
-import * as CrmSocialLinkedinService from '@/src/services/crm-social-linkedin.service'
-import * as CrmSocialTwitterService from '@/src/services/crm-social-twitter.service'
 import * as CrmSocialYoutubeService from '@/src/services/crm-social-youtube.service'
 import { handleError, successResponse } from '@/utils/http-response'
 
@@ -17,8 +15,7 @@ type Params = {
 
 /**
  * Exclui uma publicação já feita na plataforma. `postId` é o identificador
- * devolvido no publish (id do post/mídia/vídeo/tweet, ou — no LinkedIn — o
- * URN completo, com `:` preservados pois o Next decodifica o segmento).
+ * devolvido no publish (id do post/mídia/vídeo).
  *
  * TIKTOK fica fora: a Content Posting API não expõe endpoint de exclusão —
  * só é possível apagar pelo próprio app do TikTok.
@@ -63,24 +60,6 @@ export const DELETE = withAxiom(async (request: NextRequest, ctx: Params) => {
     }
     case 'YOUTUBE': {
       const result = await CrmSocialYoutubeService.deleteVideo(
-        actorId,
-        id,
-        postId,
-      )
-      if (!result.ok) return handleError(result.error)
-      return successResponse(result.value)
-    }
-    case 'TWITTER': {
-      const result = await CrmSocialTwitterService.deleteTweet(
-        actorId,
-        id,
-        postId,
-      )
-      if (!result.ok) return handleError(result.error)
-      return successResponse(result.value)
-    }
-    case 'LINKEDIN': {
-      const result = await CrmSocialLinkedinService.deletePost(
         actorId,
         id,
         postId,

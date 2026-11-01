@@ -37,7 +37,7 @@ export type SocialProvider = {
   /**
    * Provedor exige PKCE (RFC 7636)? Quando `true`, o service gera um par e
    * passa `codeChallenge` para `buildAuthorizeUrl` e `codeVerifier` para
-   * `exchangeCode` (ex.: Twitter/X). Demais provedores ignoram ambos.
+   * `exchangeCode` (RFC 7636). Demais provedores ignoram ambos.
    */
   usesPkce?: boolean
   buildAuthorizeUrl(args: {

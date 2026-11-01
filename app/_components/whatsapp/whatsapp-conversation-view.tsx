@@ -114,7 +114,6 @@ import { WhatsappConversationEventChip } from './whatsapp-conversation-event-chi
 import { WhatsappHandoffBanner } from './whatsapp-handoff-banner'
 import { WhatsappPhoneCallBanner } from './whatsapp-phone-call-banner'
 import { WhatsappSlaChip } from './whatsapp-sla-chip'
-import { WhatsappSocialCommentsBanner } from './whatsapp-social-comments-banner'
 import {
   canAssignTo,
   canMoveToTeam,
@@ -819,14 +818,6 @@ export function WhatsappConversationView({
       <WhatsappAdReferralBanner
         workspaceId={workspaceId}
         conversationId={conversation.id}
-      />
-
-      <WhatsappSocialCommentsBanner
-        workspaceId={workspaceId}
-        conversationId={conversation.id}
-        contactWaId={conversation.contactWaId}
-        messages={messages.data ?? []}
-        disabled={conversation.aiActive || isClosed || outsideHours}
       />
 
       {!isClosed && conversation.aiActive && (
