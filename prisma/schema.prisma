@@ -475,12 +475,6 @@ model Workspace {
   whatsappChatbotSessions      WhatsAppChatbotSession[]
   whatsappFlows                WhatsAppFlow[]
   whatsappFlowResponses        WhatsAppFlowResponse[]
-  whatsappCommerceSettings     WhatsAppCommerceSettings?
-  whatsappCatalogProducts      WhatsAppCatalogProduct[]
-  whatsappCatalogOrders        WhatsAppCatalogOrder[]
-  whatsappStoreIntegrations    WhatsAppStoreIntegration[]
-  whatsappEcomTriggers         WhatsAppEcomTrigger[]
-  whatsappEcomEvents           WhatsAppEcomEvent[]
   whatsappSchedulingSettings   WhatsAppSchedulingSettings?
   whatsappSchedServices        WhatsAppSchedService[]
   whatsappSchedProfessionals   WhatsAppSchedProfessional[]
@@ -1300,7 +1294,6 @@ model WhatsAppContact {
   broadcastRecipients  WhatsAppBroadcastRecipient[]
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
   flowResponses        WhatsAppFlowResponse[]
-  catalogOrders        WhatsAppCatalogOrder[]
   schedAppointments    WhatsAppSchedAppointment[]
   widgetVisitors       WhatsAppWidgetVisitor[]
 
@@ -13086,39 +13079,7 @@ model WhatsAppCoexistenceSync {
 }
 
 // nov: zap-ecom ──────────────────────────────────────────────────────────────
-// Z8 catalog and cart, Z9 e-commerce triggers, Z10 native scheduling.
-
-enum WhatsAppCatalogSource {
-  CRM
-  TRAY
-  NUVEMSHOP
-}
-
-enum WhatsAppStoreProvider {
-  TRAY
-  NUVEMSHOP
-  VTEX
-}
-
-enum WhatsAppEcomEventKind {
-  CART_ABANDONED
-  ORDER_CREATED
-  ORDER_SHIPPED
-  ORDER_DELIVERED
-}
-
-enum WhatsAppEcomTriggerKind {
-  ABANDONED_CART
-  ORDER_SHIPPED
-  POST_PURCHASE
-}
-
-enum WhatsAppEcomEventStatus {
-  PENDING
-  SENT
-  SKIPPED
-  FAILED
-}
+// Z10 native scheduling.
 
 enum WhatsAppSchedAppointmentStatus {
   PENDING
@@ -13132,174 +13093,6 @@ enum WhatsAppSchedAppointmentSource {
   AGENT
   FLOW
   CONTACT
-}
-
-/// Commerce switches of a workspace (Z8 + Z9). Everything is off by default:
-/// the catalog needs a Meta catalog linked to the WABA and the triggers need
-/// approved templates, so nothing starts before an admin turns it on.
-model WhatsAppCommerceSettings {
-  id                      String                @id @default(cuid())
-  workspaceId             String                @unique @map("workspace_id")
-  /// Z8 product messages and order intake.
-  catalogEnabled          Boolean               @default(false) @map("catalog_enabled")
-  /// Catalog id at Meta Commerce Manager (linked to the WABA by the owner).
-  metaCatalogId           String?               @map("meta_catalog_id")
-  catalogSource           WhatsAppCatalogSource @default(CRM) @map("catalog_source")
-  /// Store integration the TRAY / NUVEMSHOP source reads from.
-  catalogIntegrationId    String?               @map("catalog_integration_id")
-  /// Pulls products from the store adapter (off: only the CRM source runs).
-  storeSyncEnabled        Boolean               @default(false) @map("store_sync_enabled")
-  lastCatalogSyncAt       DateTime?             @map("last_catalog_sync_at")
-  /// An order message creates a lead + opportunity.
-  orderCreatesOpportunity Boolean               @default(true) @map("order_creates_opportunity")
-  orderPipelineId         String?               @map("order_pipeline_id")
-  /// Sends a Pix charge (mock provider only) when an order arrives.
-  orderPixEnabled         Boolean               @default(false) @map("order_pix_enabled")
-  /// Member that owns what the automation creates (leads, deals, notes).
-  ownerUserId             String?               @map("owner_user_id")
-  /// Z9 store triggers.
-  triggersEnabled         Boolean               @default(false) @map("triggers_enabled")
-  /// Minimum hours between two automatic messages to the same contact.
-  throttleHours           Int                   @default(24) @map("throttle_hours")
-  createdAt               DateTime              @default(now()) @map("created_at")
-  updatedAt               DateTime              @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("whatsapp_commerce_settings")
-}
-
-/// A product offered in the WhatsApp catalog (mirror of the CRM products or
-/// of a store). `retailerId` is the id Meta's catalog knows it by.
-model WhatsAppCatalogProduct {
-  id          String                @id @default(cuid())
-  workspaceId String                @map("workspace_id")
-  source      WhatsAppCatalogSource
-  /// Id in the source (CRM product id or store product id).
-  externalId  String                @map("external_id")
-  retailerId  String                @map("retailer_id")
-  name        String
-  description String?
-  price       Decimal               @db.Decimal(14, 2)
-  currency    String                @default("BRL")
-  imageUrl    String?               @map("image_url")
-  url         String?
-  available   Boolean               @default(true)
-  syncedAt    DateTime              @default(now()) @map("synced_at")
-  createdAt   DateTime              @default(now()) @map("created_at")
-  updatedAt   DateTime              @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, retailerId])
-  @@index([workspaceId, available])
-  @@map("whatsapp_catalog_products")
-}
-
-/// Cart the contact sent from the catalog (Meta `order` message).
-model WhatsAppCatalogOrder {
-  id                String   @id @default(cuid())
-  workspaceId       String   @map("workspace_id")
-  contactId         String   @map("contact_id")
-  conversationId    String?  @map("conversation_id")
-  providerMessageId String   @unique @map("provider_message_id")
-  metaCatalogId     String?  @map("meta_catalog_id")
-  note              String?
-  /// `[{ retailerId, name, quantity, unitPrice }]`.
-  items             Json
-  total             Decimal  @db.Decimal(14, 2)
-  currency          String   @default("BRL")
-  leadId            String?  @map("lead_id")
-  opportunityId     String?  @map("opportunity_id")
-  pixChargeId       String?  @map("pix_charge_id")
-  createdAt         DateTime @default(now()) @map("created_at")
-
-  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId, createdAt])
-  @@index([conversationId])
-  @@map("whatsapp_catalog_orders")
-}
-
-/// A connected store (Z9; Z8 reads the catalog from it). Secrets are
-/// encrypted with `CONNECTION_SECRETS`; the webhook secret signs every call.
-model WhatsAppStoreIntegration {
-  id                     String                @id @default(cuid())
-  workspaceId            String                @map("workspace_id")
-  provider               WhatsAppStoreProvider
-  name                   String
-  /// WhatsApp connection the automatic messages leave through.
-  connectionId           String                @map("connection_id")
-  enabled                Boolean               @default(false)
-  /// Public host of the store API (`https://loja.com.br`, VTEX account...).
-  storeUrl               String?               @map("store_url")
-  encryptedWebhookSecret String                @map("encrypted_webhook_secret")
-  /// Store API credentials, only for the catalog adapters (optional).
-  encryptedCredentials   String?               @map("encrypted_credentials")
-  lastEventAt            DateTime?             @map("last_event_at")
-  createdById            String?               @map("created_by_id")
-  createdAt              DateTime              @default(now()) @map("created_at")
-  updatedAt              DateTime              @updatedAt @map("updated_at")
-
-  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  events    WhatsAppEcomEvent[]
-
-  @@index([workspaceId])
-  @@map("whatsapp_store_integrations")
-}
-
-/// One automatic template message per kind of store event (Z9).
-model WhatsAppEcomTrigger {
-  id           String                  @id @default(cuid())
-  workspaceId  String                  @map("workspace_id")
-  kind         WhatsAppEcomTriggerKind
-  enabled      Boolean                 @default(false)
-  /// Approved Meta template sent when the trigger fires.
-  templateId   String?                 @map("template_id")
-  /// Wait before sending: abandoned cart (minutes since the cart), post
-  /// purchase (minutes after delivery). Shipped notices go out at once.
-  delayMinutes Int                     @default(0) @map("delay_minutes")
-  /// Body variables in order, tokens such as `{nome}` / `{pedido}`.
-  variables    Json                    @default("[]")
-  createdAt    DateTime                @default(now()) @map("created_at")
-  updatedAt    DateTime                @updatedAt @map("updated_at")
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, kind])
-  @@map("whatsapp_ecom_triggers")
-}
-
-/// A store event waiting for (or already past) its automatic message. The
-/// unique key makes the store's webhook retries harmless.
-model WhatsAppEcomEvent {
-  id                String                  @id @default(cuid())
-  workspaceId       String                  @map("workspace_id")
-  integrationId     String                  @map("integration_id")
-  kind              WhatsAppEcomEventKind
-  /// Cart / order id in the store.
-  externalId        String                  @map("external_id")
-  waId              String                  @map("wa_id")
-  contactName       String?                 @map("contact_name")
-  /// Normalized fields the template variables read.
-  data              Json
-  status            WhatsAppEcomEventStatus @default(PENDING)
-  skipReason        String?                 @map("skip_reason")
-  scheduledAt       DateTime                @map("scheduled_at")
-  claimedAt         DateTime?               @map("claimed_at")
-  processedAt       DateTime?               @map("processed_at")
-  providerMessageId String?                 @map("provider_message_id")
-  createdAt         DateTime                @default(now()) @map("created_at")
-
-  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  integration WhatsAppStoreIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-
-  @@unique([integrationId, kind, externalId])
-  @@index([status, scheduledAt])
-  @@index([workspaceId, createdAt])
-  @@index([workspaceId, waId])
-  @@map("whatsapp_ecom_events")
 }
 
 /// Scheduling switches and defaults of a workspace (Z10), off by default.
