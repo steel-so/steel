@@ -106,3 +106,24 @@ Sintoma: CD verde, mas o [health check](./health-check.md) falha ou
 3. Em paralelo, **reverta o commit** em `main` ([passo 2](#2-ci-vermelho-por-código))
    para que o próximo deploy não reinstale a versão quebrada.
 4. Confirme com o [health check](./health-check.md) e registre o incidente.
+
+## Runner do CI indisponível (Avrea sem créditos ou fora do ar)
+
+Sintoma: jobs falham em poucos segundos ou nem iniciam, e o check
+`Avrea runner assignment` aparece vermelho ("no credits available").
+
+Os workflows leem o runner de duas variáveis do repositório
+(*Settings › Secrets and variables › Actions › Variables*). Sem elas, o padrão
+é o Avrea:
+
+| Variável | Padrão | Usada por |
+| --- | --- | --- |
+| `CI_RUNNER` | `avrea-ubuntu-26.04` | jobs leves |
+| `CI_RUNNER_4VCPU` | `avrea-ubuntu-latest-4-vcpu` | jobs pesados (testes, build, E2E) |
+
+Contingência (sem commit): defina as duas como `ubuntu-latest` (runner
+hospedado do GitHub, 16 GB) e rode `gh run rerun <id> --failed`. Para voltar ao
+Avrea, apague as variáveis.
+
+O runner self-hosted `steel-homologacao` **não serve** de contingência: é o
+runner de deploy, tem cerca de 3,8 GB e roda um job por vez (ADR 0009).

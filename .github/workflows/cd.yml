@@ -62,7 +62,7 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch == 'main'
-    runs-on: avrea-ubuntu-26.04
+    runs-on: ${{ vars.CI_RUNNER || 'avrea-ubuntu-26.04' }}
     timeout-minutes: 5
     outputs:
       version: ${{ steps.calver.outputs.version }}
@@ -301,7 +301,7 @@ jobs:
   release:
     name: Tag & Release
     needs: [version, deploy]
-    runs-on: avrea-ubuntu-26.04
+    runs-on: ${{ vars.CI_RUNNER || 'avrea-ubuntu-26.04' }}
     timeout-minutes: 5
     permissions:
       contents: write
@@ -333,7 +333,7 @@ jobs:
     name: Notify Slack
     needs: [version, build, migrate, deploy]
     if: always() && needs.version.result == 'success'
-    runs-on: avrea-ubuntu-26.04
+    runs-on: ${{ vars.CI_RUNNER || 'avrea-ubuntu-26.04' }}
     timeout-minutes: 5
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
