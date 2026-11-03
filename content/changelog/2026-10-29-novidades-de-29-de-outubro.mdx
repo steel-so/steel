@@ -1,0 +1,370 @@
+---
+title: "29 de outubro de 2026: newsletter no CRM, agentes de IA, WhatsApp e ServiceDesk"
+slug: novidades-de-29-de-outubro
+date: 2026-10-29
+summary: Newsletter no CRM com domínio próprio, segmentos, automação e IA; agentes de IA com versões e simulações; cadências de vendas; chatbot visual, Flows, pesquisas e anúncios no WhatsApp; inventário SNMP, monitoramento e incidente maior no ServiceDesk.
+tags: [CRM, IA, COMUNICACAO, SERVICEDESK]
+cover: /changelog/2026-10-29/capa-newsletter.jpg
+---
+
+## Newsletter no CRM, enviada do domínio da sua empresa
+
+O CRM ganha newsletters com assinantes próprios, confirmação de inscrição, central de preferências, editor visual, relatório por link e um arquivo público com RSS, tudo enviado do domínio da sua empresa.
+
+### Newsletters com assinantes próprios
+
+Em **CRM › Newsletters** você cria quantas publicações quiser — um boletim
+mensal para clientes, um aviso de novidades do produto — e cada uma tem os
+próprios assinantes, remetente e frequência. O cartão mostra quantas pessoas
+assinam, quantas ainda não confirmaram e quando saiu a última edição.
+
+![Lista de newsletters com o Boletim Smoke ativo, 5 assinantes, uma pessoa aguardando confirmação e o aviso de domínio não verificado](/changelog/2026-10-29/newsletters-lista.webp)
+
+### Assinantes com consentimento
+
+Assinantes entram pelo formulário do arquivo público, por um formulário do
+CRM, por importação de CSV ou à mão. Com a **confirmação dupla** (ligada por
+padrão), quem se inscreve recebe um e-mail para confirmar antes de entrar na
+lista. O Steel guarda a prova do consentimento: data, origem e o texto que a
+pessoa aceitou.
+
+Cada e-mail traz **Descadastrar** e **Preferências**. Na central de
+preferências o leitor escolhe de quais newsletters quer sair, ou sai de
+tudo. Endereços que retornam erro deixam de receber sozinhos, e quem marca
+como spam sai daquela newsletter.
+
+![Aba Assinantes com busca, filtros por situação e origem, exportação, importação e a lista de pessoas com situação, origem e data](/changelog/2026-10-29/newsletter-assinantes.webp)
+
+### Edições no editor visual
+
+Cada edição é montada no mesmo editor de arrastar e soltar dos e-mails do
+CRM. Dá para enviar um teste, enviar agora ou agendar. Antes do envio, o Steel
+confere remetente, conteúdo, assinantes e o saldo do mês. Depois, o relatório
+mostra entregas, aberturas, cliques por link e a lista de destinatários.
+
+![Editor da edição com a paleta de blocos à esquerda, o e-mail no centro e o painel do documento à direita, com Testar e Enviar no topo](/changelog/2026-10-29/newsletter-editor.webp)
+
+### Enviada do domínio da sua empresa
+
+As newsletters saem do domínio da sua empresa, não do Steel. Em **Ajustes ›
+Domínios de e-mail** você cadastra um subdomínio como
+`news.suaempresa.com.br`, copia os registros DNS e o Steel verifica sozinho.
+Assim os provedores reconhecem o remetente, a entrega melhora e um envio em
+massa nunca atrapalha o e-mail do dia a dia da equipe.
+
+![Janela Adicionar domínio de e-mail explicando por que usar um subdomínio dedicado e com a região de envio São Paulo recomendada](/changelog/2026-10-29/dominio-de-email.webp)
+
+### Arquivo público e RSS
+
+Cada newsletter tem uma página pública com descrição, frequência, formulário
+de inscrição e todas as edições enviadas, com feed RSS. No construtor de
+Sites, dois blocos novos levam a inscrição e as últimas edições para o site da
+empresa.
+
+![Página pública do Boletim Smoke com frequência mensal, descrição, formulário de inscrição com consentimento e a seção de edições](/changelog/2026-10-29/newsletter-arquivo.webp)
+
+### Limite mensal
+
+Cada plano tem um limite de e-mails de newsletter por mês: 3.000 no Free,
+30.000 no Pro, 150.000 no Business e sem limite no Enterprise. Envios de teste
+não contam, e o Steel avisa quando o uso chega a 50%, 80% e 100%.
+
+## Newsletter mais esperta: público, automação e IA
+
+As newsletters do CRM ganham segmentos, série de boas-vindas, reengajamento, resumo automático do blog, escrita com IA, teste A/B de assunto, enquetes no e-mail, versão no WhatsApp e integração com a pessoa, a pontuação e os workflows do CRM.
+
+### Para quem vai cada edição
+
+Uma edição pode ir para todos os assinantes ou só para um **segmento**:
+quem abriu ou clicou nas últimas edições, quem nunca abriu, a origem da
+inscrição ou dados da pessoa no CRM, como empresa, cargo, cidade, campos
+personalizados, oportunidade aberta e etapa do lead. A janela de envio mostra
+quantas pessoas vão receber e uma amostra. Segmentos podem ser salvos e
+reaproveitados, e o limite do mês conta só quem recebe.
+
+### IA, teste A/B e WhatsApp no editor
+
+O editor da edição ganhou três botões:
+
+- **IA** escreve a edição a partir de um resumo seu e das fontes que você
+  marcar (posts do blog, artigos da base de conhecimento, produtos) e sugere
+  assuntos. Usa a cota de IA do CRM.
+- **A/B** testa dois assuntos numa parte da lista. Depois de algumas horas, o
+  vencedor por abertura ou clique vai para o resto.
+- **WhatsApp** envia também um resumo e o link da versão web para os
+  assinantes com WhatsApp no CRM, usando a conexão e os limites do módulo
+  Comunicação.
+
+O e-mail também ganhou o bloco **Enquete**: o leitor vota com um clique e o
+relatório mostra o resultado, quem votou e um CSV.
+
+![Editor da edição com os botões IA, A/B, Testar e WhatsApp no topo e o rodapé da newsletter com Preferências e Descadastrar](/changelog/2026-10-29/newsletter-editor-ia-ab-whatsapp.webp)
+
+![Janela Enviar também no WhatsApp explicando que, ao fim do envio por e-mail, os assinantes com WhatsApp recebem o link da versão web e um resumo](/changelog/2026-10-29/newsletter-whatsapp.webp)
+
+### Resumo automático do blog
+
+Na aba **Resumo**, a newsletter junta os posts novos do blog do Sites ou de
+um feed RSS numa edição, toda semana ou todo mês, no horário que você
+escolher. Ela pode ficar como rascunho para você revisar ou sair sozinha
+quando há posts novos.
+
+![Aba Resumo com a escolha do blog ou feed, frequência semanal às 9h, máximo de posts e a opção entre criar rascunho e enviar automaticamente](/changelog/2026-10-29/newsletter-resumo-automatico.webp)
+
+### Boas-vindas e reengajamento
+
+A aba **Boas-vindas** monta uma série de e-mails enviados depois que a pessoa
+confirma a inscrição, por exemplo no mesmo dia, três e sete dias depois. Em
+**Configurações**, o reengajamento manda uma vez por mês um e-mail para quem
+parou de abrir, com o botão "Quero continuar recebendo", e tira da lista quem
+não responder.
+
+![Aba Boas-vindas com a explicação da série e o botão para criar a primeira etapa](/changelog/2026-10-29/newsletter-boas-vindas.webp)
+
+### Integrada ao CRM
+
+Inscrição, confirmação, abertura e clique aparecem na linha do tempo da
+pessoa. A pontuação de leads ganhou regras para quem assina, abre ou clica, e
+os workflows ganharam gatilhos para os mesmos eventos. Na página da pessoa, o
+cartão **Newsletters** mostra as assinaturas e permite inscrever ou
+descadastrar.
+
+### Também nesta versão
+
+- Campanhas de e-mail passam a sair só de um domínio verificado do workspace
+  ou do domínio do Steel. O assistente lista os remetentes disponíveis.
+- Formulários do CRM dentro de um site mostram a caixa de consentimento da
+  newsletter.
+- Edições novas começam com um layout pronto, e o rodapé diz qual newsletter
+  a pessoa assinou.
+
+## Agentes de IA que explicam, versionam e simulam, cadências de vendas e dados da Receita
+
+Os Steel Agents mostram o porquê de cada execução, ganham gatilhos novos, versões com teste automático e simulações com personas. O CRM ganha cadências de vendas, busca de oportunidades em linguagem natural e enriquecimento por CNPJ.
+
+### Por que o agente fez isso
+
+Na tela de cada execução de um Steel Agent, a linha do tempo agora mostra o
+**raciocínio do modelo**, o **contexto que ele consultou** (um trecho do que
+cada leitura devolveu) e as **regras de proteção** que dispararam. O botão
+**Reexecutar como teste** repete a execução com o mesmo gatilho e os mesmos
+dados, sem efeito real, e deixa o link para a original. O contexto consultado só
+aparece para quem pode aprovar as ações do agente, para não expor registros que
+a pessoa não abriria no módulo.
+
+### Mais gatilhos e agente por menção
+
+Os agentes passam a reagir também a: mudança de etapa de oportunidade, proposta
+visualizada, SLA em risco, chamado reaberto e mensagem recebida no WhatsApp.
+
+Você pode **atribuir um agente a um chamado ou a um lead** (na lateral do chamado
+e no painel do lead) e **marcar um agente com @** nas mensagens do chamado e nas
+notas do CRM. Em ambos os casos o agente recebe o registro como contexto e roda
+na hora. Agentes pausados não são acionados.
+
+### Versões com portão de qualidade e teste A/B
+
+Cada edição das instruções, ferramentas ou rodadas de um agente cria uma
+**versão numerada** na aba **Versões**. Você pode ligar um **portão**: um
+conjunto de avaliação e uma nota mínima (80% por padrão). Enquanto a nova versão
+não passa, ela fica aguardando e o agente continua rodando a anterior. Também dá
+para soltar a edição para só uma parte das execuções (**teste A/B**) e comparar
+taxa de sucesso, custo, rodadas e aprovação das ações entre as versões, para
+promover, descartar ou restaurar.
+
+![Aba Versões de um Steel Agent com três versões numeradas, a publicada em destaque, a nota de cada mudança e o botão Restaurar como nova versão](/changelog/2026-10-29/agente-versoes.webp)
+
+### Simulações com personas
+
+Na aba **Simulações** do agente você monta cenários, e uma IA faz o papel do
+cliente, de ponta a ponta, contra o agente de verdade. Há oito personas prontas e
+o botão **Gerar com IA** sugere cenários. Um juiz dá nota de 0 a 100 e confere
+cada critério, mostrando a evidência. O cenário só passa com nota acima do mínimo
+e todos os critérios cumpridos. Dá para repetir uma simulação depois de ajustar
+o agente.
+
+### Cadências de vendas
+
+Em **CRM › Cadências** você monta sequências por lead de **e-mail, WhatsApp e
+tarefas** com intervalos entre os passos. Diferente de uma campanha em massa,
+cada lead tem o próprio relógio e a cadência **para sozinha quando o lead
+responde**, por WhatsApp ou e-mail. Os envios respeitam a janela comercial
+(9h às 18h em dias úteis), as listas de descadastro e o remetente verificado. No
+WhatsApp da Meta cada passo usa um template aprovado. O painel do lead mostra em
+que passo ele está, e dá para pausar, retomar ou marcar como respondido.
+
+### Buscar oportunidades escrevendo a pergunta
+
+Acima da lista de **Oportunidades** há uma barra de busca em linguagem natural,
+como "propostas acima de 50 mil paradas há 30 dias". Os filtros que o Steel
+entendeu aparecem como etiquetas, para você conferir como a pergunta foi lida.
+Usa a cota de IA do CRM.
+
+![Lista de oportunidades com a barra de busca em linguagem natural e as sugestões de pergunta](/changelog/2026-10-29/busca-em-linguagem-natural.webp)
+
+### Conectar a sua IA ao Steel
+
+Em **Ajustes › Apps conectados** há um guia para ligar o Steel ao Claude,
+ao ChatGPT e ao Gemini pelo MCP: o endereço do servidor com botão de copiar, o
+passo a passo de cada um e a indicação de quais já estão conectados.
+
+![Página Apps conectados com o endereço do servidor MCP, o botão Copiar endereço e o passo a passo para Claude, ChatGPT e Gemini](/changelog/2026-10-29/conectar-ia-mcp.webp)
+
+### Dados da Receita por CNPJ
+
+No painel de uma empresa do CRM, o bloco **Dados da Receita** traz razão social,
+situação, atividade, endereço e sócios a partir do CNPJ. Administradores também
+podem usar **Enriquecer base** na lista de empresas para percorrer a base inteira
+em segundo plano, com acompanhamento do andamento. Nome e endereço só são
+preenchidos quando estão vazios, a menos que você escolha sobrescrever, e dos
+sócios o Steel guarda apenas nome, qualificação e data de entrada, nunca o CPF.
+
+![Painel de uma empresa do CRM com o bloco Saúde do cliente e o bloco Dados da Receita, que pede o CNPJ para preencher razão social, CNAE, porte e sócios](/changelog/2026-10-29/saude-cliente-e-receita.webp)
+
+## WhatsApp com chatbot visual, Flows, pesquisas de satisfação, anúncios e Pix
+
+A Comunicação ganha construtor visual de chatbot, formulários nativos do WhatsApp (Flows), pesquisas NPS, CSAT e CES, atribuição e ROI de anúncios que abrem conversa, copiloto do atendente, Marketing Messages Lite e cobrança Pix dentro da conversa.
+
+### Construtor visual de chatbot
+
+Em **Comunicação › Chatbots** você monta, sem código, um fluxo que atende o
+contato antes de um atendente ou da IA: menus, perguntas com validação,
+condições, chamadas HTTP e transferência para uma equipe, um atendente ou a IA.
+O editor é um canvas de arrastar blocos, com **simulador** para testar o rascunho
+sem enviar nada, lista de sessões em andamento e estatísticas dos últimos 30
+dias.
+
+- O fluxo começa em conversa nova, fora do horário comercial ou por palavra-chave.
+- Menus saem como botões de resposta e, se o provedor recusar, viram uma lista
+  numerada.
+- Rascunho e publicado são separados: republicar nunca muda uma conversa que já
+  está em andamento. Quando uma pessoa assume a conversa, o bot sai de cena.
+
+![Editor visual do chatbot com os blocos de início, menu de opções e as três saídas de transferência](/changelog/2026-10-29/chatbot-editor.webp)
+
+### Flows: formulários nativos dentro do WhatsApp
+
+Em **Comunicação › Formulários**, monte telas nativas do WhatsApp (cadastro,
+agendamento, pesquisa), publique na sua conta da Meta e envie pelo menu de anexos
+da conversa ou por template. A resposta fica guardada, preenche o contato e,
+se você quiser, cria lead, pessoa e empresa no CRM. Dá para partir de um
+formulário do CRM já existente. Disponível nas conexões da Meta.
+
+### Pesquisas NPS, CSAT e CES
+
+Em **Comunicação › Pesquisas** você liga o envio automático de uma pesquisa de
+satisfação quando uma conversa é encerrada ou um chamado do ServiceDesk é
+resolvido. Pelo WhatsApp a pessoa responde por botão (CSAT e CES) ou digitando
+uma nota (NPS), e o e-mail é a alternativa. A aba **Resultados** mostra os
+indicadores por atendente e por período, **Envios** lista cada convite e
+**Regras** controla quando disparar. As regras vêm desligadas, e quem pediu para
+não receber mensagens fica de fora.
+
+### Anúncios que abrem conversa: origem e ROI
+
+Quando o contato chega por um anúncio de clique para o WhatsApp da Meta, o Steel
+guarda de qual anúncio ele veio e mostra uma faixa de origem na conversa. Com a
+opção ligada, cada conversa cria também um lead no CRM com o canal e o anúncio.
+
+Em **Comunicação › Relatórios › Anúncios** você informa o gasto por anúncio e
+período e vê conversas, contatos, leads, leads ganhos, receita, custo por
+conversa e por lead e o **ROI** de cada anúncio, com exportação em CSV. Fica
+desligado até você ativar, e vale apenas para conexões da Meta.
+
+### Copiloto do atendente
+
+No campo de mensagem de qualquer conversa, o botão do copiloto sugere uma
+resposta (com uma dica opcional), faz um **resumo da conversa e dos pendentes**
+para quem recebe uma transferência e **ajusta o tom** do rascunho: amigável,
+formal, direto, empático ou só corrigir o texto. Nada é enviado sozinho: o
+resultado cai no campo para você revisar.
+
+### Marketing Messages Lite nas transmissões
+
+Para transmissões de templates de marketing em conexões da Meta, você pode ligar
+o **Marketing Messages Lite** em **Comunicação › Transmissões**. O envio passa a
+usar a entrega otimizada da Meta, e o botão **Métricas** mostra enviadas,
+entregues, lidas e cliques. Fica desligado por padrão, porque o aceite dos
+termos da Meta é por conta de negócios.
+
+### Pix dentro da conversa
+
+O atendente (ou a IA de uma campanha) envia uma cobrança Pix com **copia e
+cola** e QR direto na conversa pelo botão **Cobrar via Pix**. Quando o pagamento
+cai, a conversa mostra o aviso **Pix recebido** e a oportunidade ligada no CRM
+ganha a anotação. A funcionalidade está pronta e aguardando a chave de produção
+da AbacatePay para ser ligada; enquanto isso, ela não cobra de verdade.
+
+## ServiceDesk com inventário SNMP, monitoramento que abre chamado, swarming e incidente maior
+
+O ServiceDesk descobre equipamentos por SNMP e alimenta a CMDB, abre chamados a partir de Zabbix, Grafana e PRTG sem duplicar, chama especialistas direto para o chamado, declara incidentes maiores com página de status e mede a IA contra o técnico.
+
+### Inventário e descoberta de ativos
+
+A CMDB deixa de depender de cadastro manual. Em **ServiceDesk › Configurações ›
+Inventário** você cadastra um **alvo de varredura SNMP** (faixas como
+`10.0.0.0/24`, a community ou o usuário SNMP v3 e a frequência) e o Steel
+percorre a rede, descobre switches, impressoras, firewalls e servidores sem
+instalar nada neles e mantém os **Itens de configuração** em dia: série,
+fabricante, modelo e IP.
+
+Em **ServiceDesk › Inventário** a equipe vê os equipamentos, o catálogo de
+software e os **alertas de disco e memória**, com limiares que você configura
+(90% por padrão). Os alertas abrem, atualizam e se resolvem sozinhos. O
+inventário nunca sobrescreve nome, status, responsável ou criticidade do item
+na CMDB, só os dados técnicos.
+
+### Monitoramento que abre chamado, sem duplicar
+
+Zabbix, Grafana (Alertmanager) e PRTG agora abrem chamados direto no
+ServiceDesk, além do webhook genérico. O mesmo alerta repetido não vira outro
+chamado: o Steel soma as ocorrências no chamado que já existe.
+
+- **Correlação por máquina:** um alerta novo para a mesma máquina entra no
+  chamado aberto dela, com uma nota interna, em vez de gerar uma enxurrada de
+  chamados. Dá para desligar por fonte.
+- **Vínculo com a CMDB:** o chamado herda o item de configuração do equipamento.
+  Quando o nome do host não bate com nenhum item, ele cai na fila **Hosts sem
+  item na CMDB**, em Configurações, e o agente vincula e pede para o Steel
+  lembrar daquele nome.
+
+![Configurações de monitoramento com a origem Zabbix cadastrada e a fila de hosts sem item na CMDB para o agente vincular](/changelog/2026-10-29/monitoramento-origens.webp)
+
+### Swarming de especialistas
+
+Em vez de subir o chamado pelos níveis N1, N2 e N3, o agente **chama os
+especialistas direto** na aba **Swarming** do chamado. Cada convidado recebe um
+aviso (no Steel e por e-mail), entra ou recusa, e o agente pode convidar mais
+gente ou encerrar registrando o resultado. Se o Slack estiver integrado, o
+Steel cria um canal privado temporário para a conversa e o arquiva no fim.
+
+### Incidente maior com página de status para o cliente
+
+Quando um incidente derruba vários clientes, declare um **incidente maior** na
+aba do próprio chamado: título e resumo escritos para o cliente, impacto,
+comandante, chamados filhos agrupados (o Steel sugere os incidentes das últimas
+24 horas com a mesma categoria, item ou cliente) e, se quiser, uma sala de
+guerra.
+
+- A linha do tempo recebe as atualizações (investigando, identificado,
+  monitorando) e o encerramento público.
+- **Páginas de status públicas** por cliente ou serviço mostram o estado atual
+  e os últimos 30 dias, só com o texto escrito para o cliente.
+- Cada atualização publicada avisa os assinantes por **e-mail** (com dupla
+  confirmação) e pelo **WhatsApp** do ServiceDesk, uma única vez.
+
+![Tela do incidente maior com a nova atualização para o cliente, a linha do tempo pública, as páginas de status e os chamados filhos](/changelog/2026-10-29/incidente-maior.webp)
+
+![Página de status pública com o estado geral, a manutenção programada, os componentes e o incidente em andamento](/changelog/2026-10-29/pagina-de-status.webp)
+
+Fica em **ServiceDesk › Incidentes maiores** e **Páginas de status**.
+
+### A IA contra o técnico
+
+O painel **ServiceDesk › IA vs. técnico** compara o que a IA sugeriu na triagem e
+no copiloto com o que o técnico realmente decidiu, nos chamados já resolvidos.
+Mostra a acurácia por campo (categoria, serviço, impacto, urgência e outros), a
+calibração da confiança, quantas respostas e soluções do copiloto foram
+adotadas, editadas ou ignoradas, o custo por sugestão aproveitada e as
+divergências mais recentes, cada uma com link para o chamado. É um painel só de
+leitura, para medir o valor da IA e justificar a franquia.

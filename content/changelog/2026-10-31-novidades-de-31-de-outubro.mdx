@@ -1,0 +1,407 @@
+---
+title: "31 de outubro de 2026: CRM, agentes de IA, ServiceDesk e WhatsApp"
+slug: novidades-de-31-de-outubro
+date: 2026-10-31
+summary: Duplicados e saúde do cliente no CRM; proposta com assinatura, sala de negociação e renovações; governança, delegação e MCP nos agentes; ações da IA, procedimentos e QA automático; licenças, demanda e configuração por texto no ServiceDesk; Flows, agenda, chat do site e coexistência no WhatsApp.
+tags: [CRM, IA, COMUNICACAO, SERVICEDESK]
+cover: /changelog/2026-10-31/capa-crm-duplicados-e-saude.jpg
+---
+
+## Duplicados no CRM e nota de saúde do cliente e do negócio
+
+O CRM encontra pessoas e empresas repetidas e deixa você mesclar (com desfazer em 24 horas), e passa a mostrar uma nota de risco explicada para cada cliente e cada negócio, com a próxima ação sugerida.
+
+### Duplicados e mesclagem
+
+Cadastro repetido faz a mesma pessoa receber duas campanhas e divide o
+histórico em dois. Agora o Steel procura esses pares sozinho, todo dia de
+madrugada, e também confere na hora cada pessoa ou empresa que chega por
+formulário, por um fluxo do WhatsApp ou por cadastro manual.
+
+Os pares aparecem em **CRM › Duplicados**, com uma pontuação de chance e o
+motivo: mesmo e-mail, mesmo telefone, nome parecido, e, nas empresas, mesmo
+CNPJ ou mesmo domínio. Cada par mostra os dois cadastros lado a lado. Você
+escolhe **Manter este** para mesclar ou **Não são duplicados** para o Steel
+nunca mais propor aquele par.
+
+![Fila de duplicados do CRM com dois pares de pessoas, as chances de 100% e 90% e os motivos mesmo e-mail, nome parecido e mesmo telefone](/changelog/2026-10-31/duplicados-fila.webp)
+
+Na mesclagem, o cadastro que fica mantém os próprios dados e recebe o que
+estava em branco. Notas, tarefas, oportunidades, e-mails, propostas e listas
+do outro cadastro passam para ele. Se você mudar de ideia, a mesclagem pode
+ser **desfeita em até 24 horas**. O dono e os administradores recebem no
+máximo uma notificação por dia com a contagem de pares novos.
+
+### Saúde do cliente
+
+Em **CRM › Empresas**, abra uma empresa e veja o bloco **Saúde do cliente**:
+uma nota de 0 a 100 e a faixa (baixo, médio ou alto risco). A nota não é um
+palpite da IA. Ela soma sinais que você confere, como "última interação há 52
+dias", negócios abertos em risco, tarefas atrasadas, o sentimento das
+conversas de WhatsApp dos últimos 90 dias e os chamados do ServiceDesk com SLA
+estourado. Cada sinal vem com a frase que o explica, e o Steel sugere a
+**próxima melhor ação**.
+
+![Painel de uma oportunidade com a nota de risco 38/100, os sinais que explicam a nota, a próxima melhor ação sugerida e a Sala de negociação logo abaixo](/changelog/2026-10-31/saude-negocio-e-sala.webp)
+
+### Saúde do negócio
+
+Em **CRM › Oportunidades**, o bloco **Saúde do negócio** segue o mesmo
+raciocínio: negócio parado, sem contato com o cliente, data de fechamento
+vencida, sem próximo passo, tarefas atrasadas. Na visão **Kanban**, cada
+cartão em risco médio ou alto mostra um selo com a faixa e a **próxima ação**
+sugerida, para você puxar primeiro o que está esfriando.
+
+Quando um cliente ou um negócio entra em risco alto, o responsável pela conta
+recebe um aviso. Negócios ganhos ou perdidos não têm nota.
+
+Veja o passo a passo em [Duplicados e mesclagem](/docs/crm/duplicados-e-mesclagem)
+e em [Saúde do cliente e do negócio](/docs/crm/saude-do-cliente-e-do-negocio).
+
+## Proposta com assinatura, sala de negociação e renovações
+
+O cliente aceita a proposta com assinatura digital, negocia numa sala só dele e o contrato volta como renovação na hora certa. A cobrança por Pix ou boleto na proposta está pronta, aguardando a chave de produção.
+
+O que acontece depois que a proposta sai ganhou três ferramentas no CRM.
+
+### Aceite com assinatura digital
+
+Em **CRM › Configurações › Assinatura, cobrança e renovações**, um
+administrador liga o aceite com assinatura. Na página pública da proposta, o
+cliente informa o nome, **desenha a assinatura** e aceita. O Steel guarda a
+imagem e o código de verificação (SHA-256) dela e do conteúdo da proposta no
+momento do aceite, como prova do que foi assinado. Com a chave ligada, o
+aceite só pelo nome deixa de valer.
+
+### Cobrança por Pix ou boleto na proposta
+
+Na proposta enviada, **Cobrança e assinatura** gera um Pix ou um boleto para o
+valor do negócio. O cliente vê o código na própria página, com botão de
+copiar, e a tela muda para "paga" sozinha. Quando o pagamento é confirmado, a
+oportunidade vai para a primeira etapa de ganho, entra uma nota no negócio e o
+responsável é avisado.
+
+A integração com o AbacatePay está **pronta, aguardando a chave de produção**.
+Por isso a cobrança vem **desligada** e, enquanto isso, usa um provedor de
+teste. Veja a nota de 01/11, [Boleto na conversa e na proposta](/changelog/boleto-na-conversa-e-na-proposta).
+
+### Sala de negociação
+
+Em uma oportunidade, o bloco **Sala de negociação** cria uma página só daquele
+negócio, com um link para enviar ao cliente. Nela ficam a proposta, os
+materiais (links), um **plano de ação conjunto** com passos do vendedor e do
+cliente e um chat. A equipe vê quem abriu o quê e quando, e o visitante se
+identifica com nome e e-mail.
+
+![Painel de uma oportunidade com a Sala de negociação: link para o cliente, mensagem de boas-vindas, materiais e plano de ação conjunto](/changelog/2026-10-31/saude-negocio-e-sala.webp)
+
+### Renovações e expansão
+
+Em **CRM › Renovações**, cadastre os contratos dos clientes (valor, início, fim
+e se renova sozinho). Todo dia o Steel confere a janela de renovação: avisa o
+responsável, abre sozinho a oportunidade de renovação no mesmo funil da venda
+original, avança o prazo dos contratos que renovam sozinhos e encerra os
+vencidos. **Ver expansão** mostra o que clientes parecidos compraram e este
+ainda não, levando em conta a última pesquisa de satisfação e a saúde do
+cliente.
+
+![Tela de Renovações com um contrato de renovação automática, a contagem de dias que faltam e os botões Ver expansão e Abrir renovação](/changelog/2026-10-31/renovacoes.webp)
+
+Os detalhes estão em [Assinatura, sala de negociação e renovações](/docs/crm/assinatura-sala-e-renovacoes).
+
+## Agentes sob controle: governança, delegação e servidores MCP
+
+Um painel mostra quem responde por cada agente, o quanto ele acerta e custa, e permite pausar tudo numa emergência. Os agentes agora delegam tarefas entre si e usam ferramentas de servidores MCP externos, sempre com aprovação onde importa.
+
+### Painel de governança
+
+Em **Steel AI › Agentes › Governança**, o administrador vê todos os agentes do
+workspace de uma vez: o **responsável** humano, as ferramentas liberadas (e
+quais rodam sozinhas), as taxas de aprovação e de rejeição das ações que cada
+agente propôs, o custo no período e o custo por escrita aplicada. Avisos
+destacam o agente que escreve sozinho, que usa servidor externo, que delega ou
+cujo responsável saiu do workspace. **Exportar CSV** gera o registro das
+atividades de tratamento para a LGPD.
+
+O botão **Pausar todos os agentes** é o desligamento de emergência: nada novo
+roda, a fila e as aprovações pendentes são canceladas e o que já foi feito
+continua valendo. **Retomar agentes** libera de novo.
+
+### Quem pode criar agentes e usar o modo automático
+
+Na aba **Permissões**, o administrador decide se Membro ou Leitor podem criar
+agentes e, para cada perfil, quais ferramentas podem rodar no modo automático.
+Se o perfil não libera uma ferramenta, a escrita vai para aprovação. O
+proprietário nunca é limitado e exclusões sempre pedem aprovação.
+
+### Delegação entre agentes
+
+No editor do agente, a seção **Delegação a outros agentes** deixa um agente
+entregar uma tarefa a outro como se fosse uma ferramenta: o outro age com o
+próprio responsável e as próprias ferramentas e devolve um resumo. Há limites
+para não sair do controle: até 3 níveis, nenhum agente repete na cadeia e até 5
+delegações por execução. O custo do agente delegado é somado à execução
+principal.
+
+### Servidores MCP externos
+
+Na aba **Servidores MCP**, conecte servidores externos (Slack, GitHub, Google)
+por HTTPS. A credencial fica cifrada e nunca volta para a tela. Depois de
+cadastrar, você escolhe **uma a uma** as ferramentas que os agentes podem usar:
+nenhuma vem liberada. Ferramentas que só leem rodam como as demais; as que
+alteram algo pedem aprovação.
+
+![Painel de governança dos agentes com o desligamento de emergência, os totais do período e a aba Servidores MCP com o formulário para adicionar um servidor](/changelog/2026-10-31/governanca-mcp.webp)
+
+Veja o passo a passo em [Governança dos agentes](/docs/steel-ai/governanca-dos-agentes).
+
+## IA que age nos seus sistemas, procedimentos obrigatórios e QA automático
+
+A IA consulta e age em sistemas da sua empresa por conectores aprovados, segue roteiros com passos que não pode pular, ganha agentes prontos para vendas e passa a dar nota a cada atendimento.
+
+### Ações da IA em sistemas externos
+
+Em **Ajustes › Steel IA › Ações da IA**, o administrador cadastra
+**conectores**: endereços HTTPS da sua empresa que a IA pode chamar, como
+consultar um pedido, redefinir uma senha ou liberar um acesso. Cada conector
+diz quando usar, se é **Consulta** (só lê, roda sem aprovação) ou **Ação**
+(altera dados, passa pela regra de aprovação), e quais dados a IA preenche. A
+IA só alcança o que estiver na lista. Segredos ficam cifrados, a mesma ação não
+roda duas vezes e tudo entra na auditoria.
+
+Os conectores servem à resposta automática do WhatsApp, ao assistente e aos
+Steel Agents. O recurso vem **desligado** em todo workspace.
+
+### Agentes de vendas sem código
+
+A galeria de agentes ganhou três modelos para o CRM, que você liga em poucos
+cliques: **qualificar lead novo** (quando o lead é criado), **follow-up de
+vendas** (nos dias úteis) e **atualizar a oportunidade quando a proposta é
+vista**. Quem prefere começar do zero usa **Criar com ajuda**, um passo a passo
+de quatro etapas que monta o agente a partir do que você quer automatizar.
+
+### Procedimentos com passos obrigatórios
+
+Em **Steel AI › Procedimentos**, escreva um roteiro com condições e passos
+obrigatórios, como "segunda via de boleto: validar o CPF, consultar e enviar".
+Quem decide a ordem é o sistema, não a IA: ela pede cada dado, o Steel valida
+(CPF, CNPJ, e-mail, data...), consulta uma API sua, usa ferramentas de leitura
+ou envia uma mensagem fixa, e **não pula nem reordena passos**. Se um passo
+obrigatório falha, um atendente assume. Cada edição guarda uma versão que dá
+para restaurar, e a pré-visualização mostra quais passos rodariam sem gastar
+IA.
+
+![Editor de um procedimento com o roteiro de segunda via de boleto, o primeiro passo obrigatório pedindo o CPF com validação e as abas Pré-visualizar, Versões e Execuções](/changelog/2026-10-31/procedimento-roteiro.webp)
+
+### QA automático dos atendimentos
+
+Em **Steel AI › Qualidade**, o Steel dá uma nota de 0 a 100 a toda conversa do
+zap encerrada e a todo chamado resolvido, seja de um atendente, do chatbot ou
+da resposta automática. A nota segue **critérios que você define** (já vêm
+tom, resolução, conformidade e empatia, cada um com um peso) e cita o trecho
+que justifica. A aba **Coaching** resume cada atendente, e quando uma nota fica
+baixa o dono e os administradores são avisados. O QA vem desligado e a
+avaliação consome a cota mensal de IA do workspace.
+
+![Aba Configuração da Qualidade do atendimento com as chaves de conversas do zap, chamados e atendimentos só do bot, a nota baixa e o mínimo de mensagens](/changelog/2026-10-31/qa-configuracao.webp)
+
+Mais detalhes em [Ações da IA](/docs/steel-ai/acoes-da-ia),
+[Procedimentos](/docs/steel-ai/procedimentos) e [QA automático](/docs/steel-ai/qa-automatico).
+
+## Monitoramento e incidente maior mais completos no ServiceDesk
+
+Alertas mais graves sobem a prioridade do chamado, entram sozinhos no incidente maior, os chamados filhos são resolvidos em lote e a página de status ganha componentes por serviço e manutenção programada com aviso aos assinantes.
+
+### Alerta mais grave sobe a prioridade
+
+Quando um alerta do monitoramento entra num chamado que já está aberto e é
+**mais grave** que a prioridade atual, o Steel sobe a prioridade do chamado, recalcula o SLA e
+registra uma nota interna. A prioridade nunca baixa por esse caminho, e um
+alerta mais leve não muda nada. Em cada origem de monitoramento, a opção
+**Subir a prioridade quando o alerta correlacionado for mais grave** vem
+ligada e pode ser desligada.
+
+### Vínculo automático com o incidente maior
+
+O chamado que um alerta abre, reabre ou recebe é vinculado ao **incidente
+maior** ativo cujo chamado principal está no mesmo item da CMDB. Os filhos
+aparecem sem que ninguém precise vinculá-los à mão. Alertas sem item da CMDB
+não são vinculados.
+
+### Resolver os filhos junto
+
+Ao resolver um incidente maior, o Steel lista os chamados filhos ainda
+abertos. Ligue **Resolver também os chamados filhos abertos**, confirme a lista
+e cada filho vai para a fase de resolvido com o texto do incidente. Um filho
+que falhe não bloqueia os outros nem o incidente: ao final, uma janela mostra o
+resultado de cada um (resolvido, ignorado ou com erro e o motivo).
+
+### Componentes e manutenção na página de status
+
+Em **ServiceDesk › Páginas de status**, o administrador cadastra os
+**componentes** que o cliente acompanha (por exemplo, "Telefonia" ou "Portal")
+e quem atende o incidente troca o estado de cada um entre Operacional,
+Desempenho degradado e Indisponível. A página pública mostra cada componente e
+o estado geral considera o pior entre incidentes e componentes.
+
+![Página de status pública com a manutenção programada, os componentes por serviço e o estado de cada um](/changelog/2026-10-31/pagina-de-status-componentes.webp)
+
+Também dá para agendar **manutenções programadas**: a janela aparece como aviso
+na página pública a partir de 14 dias antes, e os assinantes confirmados
+recebem e-mail e WhatsApp, com novo aviso se o horário mudar ou a janela for
+cancelada. Se você escolher itens da CMDB, os alertas deles não abrem chamado
+durante a janela, mas continuam registrados.
+
+Os detalhes estão em [Incidente maior](/docs/servicedesk/incidente-maior) e
+[Monitoramento](/docs/servicedesk/monitoramento).
+
+## Licenças de software, demanda e escala, e configuração por texto
+
+O ServiceDesk compara as licenças compradas com o software instalado, prevê quantos chamados esperar e quantos atendentes cada turno precisa, e deixa o administrador descrever SLA, automações e escalonamentos em português para a IA montar.
+
+### Licenças de software
+
+Em **ServiceDesk › Licenças de software**, cadastre cada produto que a empresa
+licencia: fornecedor, quantidade de licenças, vencimento e custo. O Steel
+cruza o nome do programa com o **software instalado** que o
+[Inventário](/docs/servicedesk/inventario-de-ativos) já conhece e mostra a
+situação de cada licença: em conformidade, **faltam licenças** (risco em uma
+auditoria), **licenças sobrando** (dá para reduzir na renovação), perto de
+vencer ou vencida. Os cartões no topo resumem tudo.
+
+Dentro de uma licença, o administrador marca quais itens da CMDB estão
+cobertos, e quem tem o programa e não foi marcado aparece como sem atribuição.
+Todo dia, às 7h, donos e administradores recebem no sino um aviso das licenças
+que entraram no prazo de vencimento. A chave de ativação **não é guardada**.
+
+![Lista de licenças de software com os cartões de resumo e a situação de cada licença: vencida, perto de vencer e licenças sobrando](/changelog/2026-10-31/licencas-de-software.webp)
+
+### Demanda e escala
+
+**ServiceDesk › Demanda e escala** olha o histórico de chamados e mostra o que
+esperar:
+
+- um **mapa de calor** com o volume médio de cada hora da semana;
+- a **previsão dos próximos 14 dias**, com a faixa entre o cenário baixo e o
+  alto;
+- a **escala sugerida por turno**: quantos chamados esperar e quantos
+  atendentes cada turno precisa, comparado com o plantão e o tamanho do time.
+
+Não é IA: é uma média das últimas semanas, com mais peso às recentes, e a conta
+é explicada na própria documentação. Com pouco histórico, a tela avisa que os
+números são só indicativos, como no exemplo abaixo, de um workspace com uma
+semana de uso.
+
+![Tela de demanda e escala com a previsão para os próximos 7 dias, o mapa de calor por hora da semana e a previsão de 14 dias com o aviso de pouco histórico](/changelog/2026-10-31/demanda-e-escala.webp)
+
+### Configuração em linguagem natural
+
+Nas abas **SLA**, **Automações** e **Escalonamento** das configurações, o
+administrador tem o botão **Descrever com IA**. Basta escrever, por exemplo,
+"para chamados de prioridade Alta, primeira resposta em 15 minutos e resolução
+em 4 horas, no horário comercial". O Steel mostra uma **prévia** em português,
+com avisos e, ao ajustar uma regra existente, o que muda campo a campo. Nada é
+salvo sozinho: só vale quando você clica em **Aplicar**. A IA vê apenas o seu
+texto e os nomes de prioridades, calendários e departamentos, nunca dados de
+chamados ou de clientes.
+
+Veja também [Licenças de software](/docs/servicedesk/licencas-de-software),
+[Demanda e escala](/docs/servicedesk/demanda-e-escala) e
+[Configuração em linguagem natural](/docs/servicedesk/configuracao-em-linguagem-natural).
+
+## Formulários do WhatsApp em transmissões e chatbots, e preço do Marketing Lite
+
+Os formulários (Flows) do WhatsApp saem em transmissões e em chatbots já preenchidos com os dados do contato, o status deles passa a vir da Meta sozinho, e a tabela de custos ganha o preço do Marketing Messages Lite.
+
+### Formulário em transmissões
+
+Um template com **botão de formulário** agora pode ser usado numa
+transmissão como qualquer outro. Cada destinatário recebe o formulário já
+preenchido com o **nome e o telefone** dele, com um código próprio, e a
+resposta cai na aba **Respostas** do formulário, no contato e no CRM. Só em
+conexões da API oficial da Meta.
+
+![Editor de formulário do WhatsApp com a tela de agendamento, os campos e onde cada resposta é guardada](/changelog/2026-10-31/formulario-editor.webp)
+
+### Bloco "Enviar formulário" no chatbot
+
+No editor de chatbots, o novo bloco **Enviar formulário** escolhe um formulário
+publicado, uma mensagem e o texto do botão (aceitam variáveis) e envia para o
+cliente já preenchido. O fluxo segue para o próximo bloco sem esperar a
+resposta. Se o formulário não puder sair (conexão Z-API, por exemplo, ou
+formulário descontinuado depois da publicação), o bot manda um **texto
+alternativo**, e a publicação do chatbot só passa com um formulário válido.
+
+### Status que vem da Meta
+
+O Steel passou a escutar os avisos da Meta sobre cada formulário: quando ele é
+publicado, **descontinuado**, **bloqueado** ou **limitado**, o status e o
+aviso no editor mudam sozinhos, sem você precisar conferir no painel da Meta.
+Formulários publicados antes desta versão abrem em branco até serem publicados
+de novo, porque o preenchimento depende de uma pequena declaração na primeira
+tela.
+
+### Preço do Marketing Messages Lite
+
+Em **Transmissões**, as campanhas de templates de Marketing podem sair pela
+Marketing Messages Lite da Meta. Na aba **Custos**, a tabela de preços da Meta
+ganhou a coluna **Marketing Lite (R$)**: se você preencher, essas mensagens
+usam esse preço no cálculo de custo; em branco, valem o mesmo preço da
+categoria. As métricas da transmissão ficaram mais robustas: se a Meta não
+responder, o painel mostra os números do Steel e diz o motivo, em vez de
+zeros.
+
+Veja [Formulários (Flows)](/docs/comunicacao/formularios-flows),
+[Chatbots](/docs/comunicacao/chatbots) e [Transmissões](/docs/comunicacao/transmissoes).
+
+## Agenda no WhatsApp, chat no seu site e coexistência com o app
+
+A Comunicação ganha uma agenda com confirmação e lembrete pelo WhatsApp, um chat para o site da empresa que cai no mesmo inbox e a coexistência, que mantém o número no aplicativo WhatsApp Business enquanto ele roda na API.
+
+Os três recursos vêm **desligados** em todo workspace; um administrador liga
+quando quiser.
+
+### Agenda com confirmação e lembrete
+
+Em **WhatsApp › Agenda**, cadastre **Serviços** (duração e intervalo) e
+**Profissionais** (dias, horários e serviços que atendem). Ao marcar um horário
+para um contato, ele recebe a confirmação e, antes do horário, o lembrete, e
+responde **CONFIRMAR** ou **CANCELAR** na própria conversa. Você também
+confirma, cancela, conclui, registra falta e remarca pela tela. Um formulário
+do WhatsApp com o modelo **Agendamento** já reserva o primeiro horário livre
+quando o cliente responde.
+
+![Agenda do dia com dois atendimentos aguardando confirmação e os botões de confirmar e cancelar](/changelog/2026-10-31/agenda.webp)
+
+O Steel calcula os horários livres no fuso certo e não deixa dois
+atendimentos ocuparem o mesmo horário, respeitando o intervalo entre eles. Por
+baixo, a agenda usa um **único motor de horários**, o mesmo que serve de base
+para qualquer agendamento da plataforma.
+
+### Chat no seu site
+
+Em **WhatsApp › Configurações › Chat do site**, liste os endereços onde o chat
+pode abrir, ligue o recurso e cole o **código gerado** no HTML do seu site. O
+visitante clica no botão do canto da página, escreve, e a conversa aparece no
+inbox da Comunicação ao lado das de WhatsApp, com as mesmas equipes, SLA,
+chatbot e resposta automática da IA. Dá para escolher título, cor, mensagem de
+boas-vindas, canto da tela, a equipe que recebe, pedir nome, e-mail ou telefone
+antes de começar, avisar quando está fora do horário de atendimento, mostrar o
+link do portal do solicitante e pedir a avaliação (NPS, CSAT ou CES) quando a
+conversa for fechada. O chat só abre nos sites da lista e é só de texto.
+
+![Configurações do chat do site com as chaves de ligar, os sites autorizados, o título, a cor, a mensagem de boas-vindas, a posição e a equipe que recebe](/changelog/2026-10-31/chat-do-site.webp)
+
+### Coexistência com o aplicativo WhatsApp Business
+
+Em **Configurações › Conexões**, com a **Coexistência** ligada, o botão
+**Conectar número em uso no aplicativo** abre a janela da Meta e conecta o
+número que sua equipe já usa no celular, sem migrá-lo e sem QR Code. O que a
+equipe digita no aplicativo aparece no Steel, e o que sai pelo Steel aparece no
+aplicativo. Se você aceitar compartilhar o histórico no celular, o Steel
+importa contatos e conversas, que entram **fechadas**, sem acionar a IA nem
+contar SLA. A coexistência depende de a Meta liberar o aplicativo do Steel
+para esse fluxo.
+
+Veja [Agenda](/docs/comunicacao/agenda), [Chat no seu site](/docs/comunicacao/chat-do-site)
+e [Coexistência do WhatsApp](/docs/comunicacao/coexistencia).
