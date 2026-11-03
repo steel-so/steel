@@ -24,7 +24,7 @@ jobs:
   regenerate:
     name: Regenerate the OpenAPI documents
     if: github.ref_name != 'main'
-    runs-on: avrea-ubuntu-latest-4-vcpu
+    runs-on: ${{ vars.CI_RUNNER_4VCPU || 'avrea-ubuntu-latest-4-vcpu' }}
     timeout-minutes: 15
     env:
       DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
