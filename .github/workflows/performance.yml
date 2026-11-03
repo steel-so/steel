@@ -188,7 +188,7 @@ jobs:
   k6-homolog-smoke:
     name: k6 Homologação Smoke Test
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: avrea-ubuntu-26.04
+    runs-on: ${{ vars.CI_RUNNER || 'avrea-ubuntu-26.04' }}
     env:
       BASE_URL: https://homologacao.stratustelecom.com.br
       # GitHub runners (US) -> homologação (BR): the body transfer of the
