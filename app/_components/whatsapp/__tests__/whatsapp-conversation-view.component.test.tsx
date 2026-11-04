@@ -1105,11 +1105,16 @@ describe('<WhatsappConversationView /> · Equipes', () => {
   })
 
   it('lets a scoped agent only take a queue item', async () => {
-    setupScope({ mode: 'SCOPED', leadsTeamIds: [], memberTeamIds: [] }, [], [])
+    // An agent only sees the queue of the team they belong to.
+    setupScope(
+      { mode: 'SCOPED', leadsTeamIds: [], memberTeamIds: ['t1'] },
+      [],
+      [team('t1', 'Vendas', [['u_1', 'AGENT']])],
+    )
     renderWithQuery(
       <WhatsappConversationView
         workspaceId='ws_1'
-        conversation={conversation({ assignedUserId: null })}
+        conversation={conversation({ assignedUserId: null, teamId: 't1' })}
       />,
     )
     await screen.findByText(/Conversa tirada da equipe/)
