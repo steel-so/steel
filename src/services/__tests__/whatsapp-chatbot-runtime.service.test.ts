@@ -132,6 +132,7 @@ function conversation(overrides = {}) {
       id: 'cv1',
       workspaceId: 'ws',
       connectionId: 'c1',
+      assignedUserId: null,
       contactId: 'ct1',
       ...overrides,
     }),
