@@ -605,6 +605,7 @@ describe('WhatsAppDistributionService.distributeConversation()', () => {
           ok(
             createFakeWhatsAppConversationWithPreview({
               id: 'conv1',
+              assignedUserId: null,
               workspaceId: 'ws1',
             }),
           ),
@@ -744,6 +745,7 @@ describe('WhatsAppDistributionService.drainQueue()', () => {
       ok(
         createFakeWhatsAppConversationWithPreview({
           id,
+          assignedUserId: null,
           workspaceId: 'ws1',
           teamId: null,
         }),
@@ -781,6 +783,7 @@ describe('WhatsAppDistributionService.drainQueue()', () => {
         ok(
           createFakeWhatsAppConversationWithPreview({
             id: 'c3',
+            assignedUserId: null,
             workspaceId: 'ws1',
           }),
         ),
@@ -789,6 +792,7 @@ describe('WhatsAppDistributionService.drainQueue()', () => {
         ok(
           createFakeWhatsAppConversationWithPreview({
             id: 'c3',
+            assignedUserId: null,
             workspaceId: 'ws1',
           }),
         ),
@@ -852,6 +856,7 @@ describe('WhatsAppDistributionService.drainEnabledWorkspaces()', () => {
       ok(
         createFakeWhatsAppConversationWithPreview({
           id: 'c1',
+          assignedUserId: null,
           workspaceId: 'wsA',
         }),
       ),

@@ -189,9 +189,9 @@ describe('WhatsAppWebhookService', () => {
 
       expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
 
-      expect(mockedConversationRepo.create.mock.lastCall?.[0]).not.toHaveProperty(
-        'teamId',
-      )
+      expect(
+        mockedConversationRepo.create.mock.lastCall?.[0],
+      ).not.toHaveProperty('teamId')
     })
 
     it('should keep the AI quiet when a chatbot owns the message', async () => {
@@ -360,9 +360,9 @@ describe('WhatsAppWebhookService', () => {
         ),
       )
 
-      expect(mockedConversationRepo.update.mock.lastCall?.[1]).not.toHaveProperty(
-        'teamId',
-      )
+      expect(
+        mockedConversationRepo.update.mock.lastCall?.[1],
+      ).not.toHaveProperty('teamId')
     })
 
     it('should reopen the closed conversation instead of creating a new one', async () => {
@@ -588,6 +588,7 @@ describe('WhatsAppWebhookService', () => {
         id: 'conv1',
         contactId: 'contact1',
         aiActive: true,
+        assignedUserId: null,
       })
       mockedConversationRepo.create.mockResolvedValue(ok(created))
       mockedConversationRepo.findById.mockResolvedValue(ok(created))
@@ -796,6 +797,7 @@ describe('WhatsAppWebhookService', () => {
         id: 'conv1',
         aiActive: false,
         aiHandoff: false,
+        assignedUserId: null,
       })
       mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(existing))
       mockedConversationRepo.update.mockResolvedValue(ok(existing))
