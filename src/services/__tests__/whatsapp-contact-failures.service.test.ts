@@ -60,6 +60,7 @@ describe('WhatsAppContactService — list/create/findOrCreate failures', () => {
       'ana',
       undefined,
       undefined,
+      undefined,
     )
   })
 

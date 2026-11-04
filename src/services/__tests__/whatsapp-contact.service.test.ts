@@ -51,6 +51,28 @@ describe('WhatsAppContactService', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+      )
+    })
+
+    it('should pass the description filter to the repository', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      mockedContactRepo.listByWorkspace.mockResolvedValue(ok([]))
+
+      expectOk(
+        await WhatsAppContactService.list('u1', 'ws1', {
+          description: 'Itaú',
+        }),
+      )
+
+      expect(mockedContactRepo.listByWorkspace).toHaveBeenCalledWith(
+        'ws1',
+        undefined,
+        undefined,
+        undefined,
+        'Itaú',
       )
     })
 
@@ -69,6 +91,7 @@ describe('WhatsAppContactService', () => {
         'ws1',
         'ana',
         'no',
+        undefined,
         undefined,
       )
     })
@@ -90,6 +113,7 @@ describe('WhatsAppContactService', () => {
         undefined,
         undefined,
         new Date('2026-10-27T03:00:00Z'),
+        undefined,
       )
     })
 

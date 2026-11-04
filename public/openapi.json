@@ -135124,6 +135124,10 @@
                           "type": "string",
                           "maxLength": 200
                         },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
                         "values": {
                           "default": {},
                           "type": "object",
@@ -138886,7 +138890,7 @@
         "tags": ["Comunicação · Contatos"],
         "summary": "Listar contatos",
         "operationId": "getWorkspacesByIdWhatsappContacts",
-        "description": "Contatos do workspace em ordem alfabética, com o número de conversas. `search` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. `whatsapp` (`yes` | `no` | `unknown`) filtra pelo resultado da checagem \"tem WhatsApp?\". `created` = `today` devolve só os contatos inseridos hoje (dia civil de São Paulo, a partir da meia-noite em America/Sao_Paulo). Sem paginação. Módulo **Comunicação** habilitado e permissão `contacts` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Contatos do workspace em ordem alfabética, com o número de conversas. `search` filtra por nome (sem diferenciar maiúsculas) ou trecho do número. `whatsapp` (`yes` | `no` | `unknown`) filtra pelo resultado da checagem \"tem WhatsApp?\". `created` = `today` devolve só os contatos inseridos hoje (dia civil de São Paulo, a partir da meia-noite em America/Sao_Paulo). `description` filtra pelo texto livre da descrição do contato (contém, sem diferenciar maiúsculas). Sem paginação. Módulo **Comunicação** habilitado e permissão `contacts` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -138916,6 +138920,15 @@
             "schema": {
               "type": "string",
               "enum": ["today"]
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
             }
           }
         ],
