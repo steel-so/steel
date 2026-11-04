@@ -478,7 +478,8 @@ describe('WhatsAppSlaService.listOpen()', () => {
     const cycles = expectOk(
       await WhatsAppSlaService.listOpen('u1', 'ws1', {}, now),
     )
-    expect(cycles.map((c) => c.conversationId)).toEqual(['mine', 'queue'])
+    // The teamless queue belongs to the leaders: a plain member does not see it.
+    expect(cycles.map((c) => c.conversationId)).toEqual(['mine'])
   })
 
   it('should refuse a non-member and propagate errors', async () => {

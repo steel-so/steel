@@ -347,7 +347,7 @@ describe('WhatsAppConversationService.reopen()', () => {
   })
 
   it('should reopen as NEW when nobody is assigned and announce it waits', async () => {
-    asRole('MEMBER')
+    asRole('ADMIN')
     const conversation = arrangeConversation({
       status: 'CLOSED',
       assignedUserId: null,

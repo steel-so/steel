@@ -43,7 +43,7 @@ describe('filterSupervisorRecipients()', () => {
     const result = filterSupervisorRecipients({
       members: MEMBERS,
       configuredIds: ['ana', 'owner'],
-      target: { assignedUserId: null, teamId: null },
+      target: { assignedUserId: null, teamId: 'sales' },
       teams: TEAMS,
     })
     expect(ids(result)).toEqual(['owner', 'ana'])

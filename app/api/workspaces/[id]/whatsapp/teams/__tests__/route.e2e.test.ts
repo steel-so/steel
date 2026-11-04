@@ -144,7 +144,7 @@ describe('/api/workspaces/[id]/whatsapp/teams', () => {
 })
 
 describe('Comunicação conversations · Equipes visibility', () => {
-  it('scopes a member to their conversations and the queue', async () => {
+  it('scopes a member to their conversations and their team queue', async () => {
     const { user, workspace } = await authenticatedOwner()
     const agent = await addMember(workspace.id)
     const base = `/api/workspaces/${workspace.id}/whatsapp/conversations`
@@ -152,10 +152,21 @@ describe('Comunicação conversations · Equipes visibility', () => {
     const owners = await seedConversation(workspace.id, user.id, {
       assignedUserId: user.id,
     })
-    const queue = await seedConversation(workspace.id, user.id)
+    const team = await prisma.whatsAppTeam.create({
+      data: {
+        workspaceId: workspace.id,
+        name: 'Vendas',
+        members: { create: [{ userId: agent.id, role: 'AGENT' }] },
+      },
+    })
+    const queue = await seedConversation(workspace.id, user.id, {
+      teamId: team.id,
+    })
+    // The queue without a team is for leaders: the agent never sees it.
+    await seedConversation(workspace.id, user.id)
 
     const ownerList = (await (await getJson(base, user.cookie)).json()).data
-    expect(ownerList).toHaveLength(2)
+    expect(ownerList).toHaveLength(3)
 
     const agentList = (await (await getJson(base, agent.cookie)).json()).data
     expect(agentList.map((c: { id: string }) => c.id)).toEqual([queue.id])

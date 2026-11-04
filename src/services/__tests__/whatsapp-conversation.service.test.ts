@@ -282,12 +282,13 @@ describe('WhatsAppConversationService', () => {
   describe('removeFromAi()', () => {
     it('should deactivate the AI and set the handoff flag', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
-        ok(createFakeMembership({ role: 'MEMBER' })),
+        ok(createFakeMembership({ role: 'ADMIN' })),
       )
       const conversation = createFakeWhatsAppConversationWithPreview({
         id: 'conv1',
         aiActive: true,
         aiHandoff: false,
+        assignedUserId: null,
       })
       mockedConversationRepo.findById.mockResolvedValue(ok(conversation))
       mockedConversationRepo.update.mockResolvedValue(ok(conversation))
@@ -420,6 +421,7 @@ describe('WhatsAppConversationService', () => {
       )
       const conversation = createFakeWhatsAppConversationWithPreview({
         id: 'conv1',
+        assignedUserId: 'u2',
       })
       mockedConversationRepo.findById.mockResolvedValue(ok(conversation))
       mockedConversationRepo.update.mockResolvedValue(ok(conversation))
@@ -432,11 +434,14 @@ describe('WhatsAppConversationService', () => {
       )
 
       expectOk(result)
-      expect(mockedConversationRepo.update).toHaveBeenCalledWith('conv1', {
-        assignedUserId: null,
-        // Back to the queue.
-        status: 'NEW',
-      })
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'conv1',
+        expect.objectContaining({
+          assignedUserId: null,
+          // Back to the queue.
+          status: 'NEW',
+        }),
+      )
     })
 
     it('should announce a conversation handed back to the queue', async () => {

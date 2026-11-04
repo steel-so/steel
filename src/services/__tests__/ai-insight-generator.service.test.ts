@@ -211,7 +211,6 @@ describe('AiInsightGeneratorService.runTick', () => {
       'admin:crm-forecast:2026-10',
       'agent:crm-stale:owner:agent',
       'admin:zap-waiting:queue',
-      'agent:zap-waiting:queue',
     ])
     expect(lastPlan().create[1].title).toBe(
       'O chamado INC-000007 deve estourar o SLA às 12:30',
@@ -219,7 +218,7 @@ describe('AiInsightGeneratorService.runTick', () => {
     expect(result).toMatchObject({
       workspaces: 1,
       evaluated: 1,
-      created: 7,
+      created: 6,
       errors: 0,
       events: 3,
     })

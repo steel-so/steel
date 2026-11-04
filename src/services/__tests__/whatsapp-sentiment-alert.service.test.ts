@@ -199,6 +199,7 @@ describe('WhatsAppSentimentAlertService.evaluate()', () => {
 
   it('should e-mail only the selected members when configured', async () => {
     arrange({
+      assignedUserId: 'agent1',
       settings: {
         sentimentAlertRecipientIds: ['agent1'],
         sentimentAlertNotifyInApp: false,

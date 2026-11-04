@@ -426,18 +426,18 @@ describe('buildZapInsights', () => {
 
     expect(drafts.map((d) => [d.userId, d.title])).toEqual([
       ['owner', '2 conversas aguardam atendente há mais de 30 min'],
-      ['agent', '2 conversas aguardam atendente há mais de 30 min'],
-      ['outsider', '1 conversa aguarda atendente há mais de 30 min'],
+      // The teamless queue is for leaders: the agent only sees their team's.
+      ['agent', '1 conversa aguarda atendente há mais de 30 min'],
     ])
     expect(drafts[0]).toMatchObject({
       severity: 'CRITICAL',
       body: 'A mais antiga, de um contato, espera há 2 h 30 min.',
       href: '/acme/zap',
     })
-    expect(drafts[2]).toMatchObject({
-      severity: 'WARNING',
-      body: 'A mais antiga, de Maria, espera há 45 min.',
-      href: '/acme/zap?conversa=c1',
+    expect(drafts[1]).toMatchObject({
+      severity: 'CRITICAL',
+      body: 'A mais antiga, de um contato, espera há 2 h 30 min.',
+      href: '/acme/zap?conversa=c2',
     })
   })
 

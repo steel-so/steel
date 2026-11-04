@@ -14,7 +14,7 @@ export function createFakeWhatsAppConversation(
     connectionId: createId(),
     contactId: createId(),
     status: 'NEW',
-    assignedUserId: null,
+    assignedUserId: 'u1',
     teamId: null,
     aiActive: false,
     aiHandoff: false,
