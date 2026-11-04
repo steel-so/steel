@@ -78,7 +78,9 @@ describe('createRealtimeScopeFilter()', () => {
     })
     expect(await filter(updated('c1', 'bia'))).toBeNull()
     // Visible again (back to the queue): forwarded and forgotten as hidden.
-    expect(await filter(updated('c1', null))).toEqual(updated('c1', null))
+    expect(await filter(updated('c1', null, 'sales'))).toEqual(
+      updated('c1', null, 'sales'),
+    )
     expect(await filter(updated('c1', 'bia'))).toEqual({
       type: 'conversation.deleted',
       conversationId: 'c1',

@@ -92,8 +92,9 @@ describe('canSeeConversation() — authz matrix', () => {
     ['agent: teammate', agent, conv('adm-in', 'sales'), false],
     ['agent: own team queue', agent, conv(null, 'sales'), true],
     ['agent: other team queue', agent, conv(null, 'support'), false],
-    ['agent: queue without team', supportAgent, conv(null, null), true],
-    ['member without team: queue', teamless, conv(null, null), true],
+    ['agent: queue without team', supportAgent, conv(null, null), false],
+    ['leader: queue without team', leader, conv(null, null), true],
+    ['member without team: queue', teamless, conv(null, null), false],
     ['member without team: team queue', teamless, conv(null, 'sales'), false],
     ['member without team: someone else', teamless, conv('ana', null), false],
   ])('%s → %s', (_label, scope, target, expected) => {

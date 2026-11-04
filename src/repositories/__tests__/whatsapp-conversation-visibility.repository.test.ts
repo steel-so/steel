@@ -99,9 +99,9 @@ describe('WhatsAppConversationRepository · Equipes visibility', () => {
 
     const expected: Record<string, string[]> = {
       lia: ['mine-ana', 'zed-sales', 'queue', 'queue-sales'],
-      ana: ['mine-ana', 'queue', 'queue-sales'],
-      bia: ['bia-support', 'queue', 'queue-support'],
-      zed: ['zed-sales', 'queue'],
+      ana: ['mine-ana', 'queue-sales'],
+      bia: ['bia-support', 'queue-support'],
+      zed: ['zed-sales'],
     }
 
     for (const [name, user] of Object.entries(users)) {

@@ -10,8 +10,8 @@ import type { WhatsAppConversationScopeDTO } from '@/types/whatsapp-team'
  * - ADMIN sees everything unless they belong to some team;
  * - everyone else ("scoped") sees: conversations assigned to them; the ones
  *   assigned to agents of the teams they lead and the ones whose team they
- *   lead; and the queue — unassigned conversations without a team or with a
- *   team they belong to.
+ *   lead; and the queue — unassigned conversations with a team they belong
+ *   to (and, for team leaders only, the ones without a team).
  */
 
 /** Team membership of a workspace, as cached for the scope resolution. */
@@ -97,7 +97,10 @@ export function canSeeConversation(
       (teamId !== null && scope.leadsTeamIds.includes(teamId))
     )
   }
-  return teamId === null || scope.memberTeamIds.includes(teamId)
+  // The queue without a team is routed by nobody yet, so it belongs to the
+  // leaders; an agent only sees the queue of the teams they belong to.
+  if (teamId === null) return scope.leadsTeamIds.length > 0
+  return scope.memberTeamIds.includes(teamId)
 }
 
 /** `undefined` = no restriction (the viewer sees every conversation). */

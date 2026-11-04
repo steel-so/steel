@@ -22,8 +22,11 @@ export function conversationVisibilityWhere(
 ): Prisma.WhatsAppConversationWhereInput {
   const or: Prisma.WhatsAppConversationWhereInput[] = [
     { assignedUserId: visibility.userId },
-    { assignedUserId: null, teamId: null },
   ]
+  // Teamless queue: leaders only (agents would see other teams' chats).
+  if (visibility.leadsTeamIds.length > 0) {
+    or.push({ assignedUserId: null, teamId: null })
+  }
   if (visibility.ledAgentIds.length > 0) {
     or.push({ assignedUserId: { in: visibility.ledAgentIds } })
   }
