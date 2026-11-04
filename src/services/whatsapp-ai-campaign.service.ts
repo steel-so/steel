@@ -618,7 +618,11 @@ export const WhatsAppAiCampaignService = {
       rejected = dto.rows.length - valid.length
       const contacts = await WhatsAppAiCampaignRepository.ensureContacts(
         workspaceId,
-        valid.map((row) => ({ waId: row.waId, name: row.name })),
+        valid.map((row) => ({
+          waId: row.waId,
+          name: row.name,
+          description: row.description,
+        })),
       )
       if (!contacts.ok) return contacts
       for (const row of valid) {

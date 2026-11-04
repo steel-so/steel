@@ -22,6 +22,7 @@ const PHONE_HEADERS = [
   'número',
 ]
 const NAME_HEADERS = ['nome', 'name', 'cliente', 'contato']
+const DESCRIPTION_HEADERS = ['descricao', 'description']
 
 function splitLine(line: string, separator: string): string[] {
   const cells: string[] = []
@@ -86,24 +87,37 @@ function guess(columns: string[], candidates: string[]): string | null {
   return null
 }
 
-/** Best guess of the phone and name columns from the header. */
+/** Best guess of the phone, name and description columns from the header. */
 export function guessAiCampaignSheetColumns(columns: string[]): {
   phone: string | null
   name: string | null
+  description: string | null
 } {
   const phone = guess(columns, PHONE_HEADERS)
   const name = guess(
     columns.filter((column) => column !== phone),
     NAME_HEADERS,
   )
-  return { phone, name }
+  const description = guess(
+    columns.filter((column) => column !== phone && column !== name),
+    DESCRIPTION_HEADERS,
+  )
+  return { phone, name, description }
 }
 
-/** Rows as the API takes them: phone, name and the other columns as values. */
+/**
+ * Rows as the API takes them: phone, name, description (saved on the contact)
+ * and the other columns as values.
+ */
 export function toAiCampaignImportRows(
   sheet: ParsedAiCampaignSheet,
-  mapping: { phone: string; name: string | null },
-): { phone: string; name?: string; values: Record<string, string> }[] {
+  mapping: { phone: string; name: string | null; description?: string | null },
+): {
+  phone: string
+  name?: string
+  description?: string
+  values: Record<string, string>
+}[] {
   return sheet.rows
     .map((row) => {
       const values = Object.fromEntries(
@@ -113,9 +127,13 @@ export function toAiCampaignImportRows(
         ),
       )
       const name = mapping.name ? row[mapping.name]?.trim() : ''
+      const description = mapping.description
+        ? row[mapping.description]?.trim()
+        : ''
       return {
         phone: row[mapping.phone]?.trim() ?? '',
         ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
         values,
       }
     })

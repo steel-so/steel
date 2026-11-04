@@ -129,6 +129,37 @@ describe('WhatsAppAiCampaignRepository', () => {
     expect(contact?.name).toBe('Nova')
   })
 
+  it('should save the sheet description on new and existing contacts, never clearing one', async () => {
+    const { workspace } = await seedFixtures()
+    const existing = await seedContact(workspace.id)
+    await prisma.whatsAppContact.update({
+      where: { id: existing.id },
+      data: { description: 'Antiga' },
+    })
+    const kept = await seedContact(workspace.id)
+    await prisma.whatsAppContact.update({
+      where: { id: kept.id },
+      data: { description: 'Manual' },
+    })
+
+    expectOk(
+      await WhatsAppAiCampaignRepository.ensureContacts(workspace.id, [
+        { waId: existing.waId, description: 'Banco Itaú' },
+        { waId: kept.waId },
+        { waId: '5511977776666', description: 'Banco Itaú' },
+      ]),
+    )
+
+    const rows = await prisma.whatsAppContact.findMany({
+      where: { workspaceId: workspace.id },
+      orderBy: { waId: 'asc' },
+    })
+    const byWaId = Object.fromEntries(rows.map((r) => [r.waId, r.description]))
+    expect(byWaId[existing.waId]).toBe('Banco Itaú')
+    expect(byWaId[kept.waId]).toBe('Manual')
+    expect(byWaId['5511977776666']).toBe('Banco Itaú')
+  })
+
   it('should compute the funnel from the queue, the replies and the closed conversations', async () => {
     const { workspace, connection, campaign } = await seedFixtures()
     const [a, b, c] = await Promise.all([

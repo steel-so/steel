@@ -65,6 +65,8 @@ export const ListWhatsAppContactsSchema = z.object({
   whatsapp: z.enum(['yes', 'no', 'unknown']).optional(),
   /** Only contacts inserted today (São Paulo calendar day). */
   created: z.enum(['today']).optional(),
+  /** Case-insensitive "contains" match on the free-form description. */
+  description: z.string().trim().max(120).optional(),
 })
 
 export type ListWhatsAppContactsDTO = z.infer<typeof ListWhatsAppContactsSchema>

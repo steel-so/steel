@@ -292,7 +292,7 @@ describe('<AiCampaignStepContacts /> "Inseridos hoje"', () => {
     expect(screen.getAllByText('27/10/2026 09:15')).toHaveLength(3)
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Marcar só os de hoje (2)' }),
+      screen.getByRole('button', { name: 'Marcar só os filtrados (2)' }),
     )
     fireEvent.click(
       screen.getByRole('button', { name: 'Adicionar 2 selecionado(s)' }),

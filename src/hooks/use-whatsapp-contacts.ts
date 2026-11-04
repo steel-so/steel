@@ -8,6 +8,7 @@ const CONTACTS_KEY = (
   search?: string,
   whatsapp?: WhatsAppCheckFilter,
   created?: WhatsAppCreatedFilter,
+  description?: string,
 ) =>
   [
     'whatsapp-contacts',
@@ -15,6 +16,7 @@ const CONTACTS_KEY = (
     search ?? '',
     whatsapp ?? '',
     created ?? '',
+    description ?? '',
   ] as const
 
 /** Filtro "tem zap?" da lista: com, sem ou ainda não verificado. */
@@ -42,15 +44,17 @@ export function useWhatsAppContacts(
   search?: string,
   whatsapp?: WhatsAppCheckFilter,
   created?: WhatsAppCreatedFilter,
+  description?: string,
 ) {
   const params = new URLSearchParams()
   if (search) params.set('search', search)
   if (whatsapp) params.set('whatsapp', whatsapp)
   if (created) params.set('created', created)
+  if (description) params.set('description', description)
   const query = params.toString()
 
   return useQuery({
-    queryKey: CONTACTS_KEY(workspaceId, search, whatsapp, created),
+    queryKey: CONTACTS_KEY(workspaceId, search, whatsapp, created, description),
     queryFn: () =>
       apiFetch<WhatsAppContactDTO[]>(
         `/api/workspaces/${workspaceId}/whatsapp/contacts${query ? `?${query}` : ''}`,

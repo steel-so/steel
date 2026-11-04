@@ -44,10 +44,19 @@ describe('guessAiCampaignSheetColumns()', () => {
         'Celular',
         'Número do pedido',
       ]),
-    ).toEqual({ phone: 'Celular', name: 'Nome do Cliente' })
+    ).toEqual({
+      phone: 'Celular',
+      name: 'Nome do Cliente',
+      description: null,
+    })
+    expect(
+      guessAiCampaignSheetColumns(['Telefone', 'Nome', 'Descrição'])
+        .description,
+    ).toBe('Descrição')
     expect(guessAiCampaignSheetColumns(['valor'])).toEqual({
       phone: null,
       name: null,
+      description: null,
     })
   })
 })
@@ -61,6 +70,26 @@ describe('toAiCampaignImportRows()', () => {
       toAiCampaignImportRows(sheet, { phone: 'Telefone', name: 'Nome' }),
     ).toEqual([
       { phone: '11999990000', name: 'Maria', values: { Valor: 'R$ 10' } },
+    ])
+  })
+
+  it('should carry the description column on the row and keep it as a value', () => {
+    const sheet = parseAiCampaignSheet(
+      'Telefone;Descrição\n11999990000;Banco Itaú\n11988880000;',
+    )
+    expect(
+      toAiCampaignImportRows(sheet, {
+        phone: 'Telefone',
+        name: null,
+        description: 'Descrição',
+      }),
+    ).toEqual([
+      {
+        phone: '11999990000',
+        description: 'Banco Itaú',
+        values: { Descrição: 'Banco Itaú' },
+      },
+      { phone: '11988880000', values: {} },
     ])
   })
 })

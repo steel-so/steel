@@ -37,6 +37,7 @@ import { formatContactCreatedAt } from '@/src/lib/whatsapp/contact-created-today
 import type { WhatsAppAiCampaignDTO } from '@/types/whatsapp-ai-campaign'
 
 const NO_NAME = '__none__'
+const NO_DESCRIPTION = '__none__'
 
 function queuedMessage(result: {
   added: number
@@ -60,6 +61,7 @@ function SelectContacts({
   pending: boolean
 }) {
   const [search, setSearch] = useState('')
+  const [description, setDescription] = useState('')
   const [onlyToday, setOnlyToday] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const contacts = useWhatsAppContacts(
@@ -67,13 +69,16 @@ function SelectContacts({
     search || undefined,
     undefined,
     onlyToday ? 'today' : undefined,
+    description.trim() || undefined,
   )
   const list = contacts.data ?? []
   const selectable = list.filter((c) => !c.broadcastOptedOutAt)
   const allVisible =
     selectable.length > 0 && selectable.every((c) => selected.has(c.id))
 
-  /** Marca exatamente os inseridos hoje (descadastrados ficam de fora). */
+  const filtered = onlyToday || description.trim().length > 0
+
+  /** Marca exatamente os contatos listados (descadastrados ficam de fora). */
   function markToday() {
     setSelected(new Set(selectable.map((c) => c.id)))
   }
@@ -96,6 +101,13 @@ function SelectContacts({
           onChange={(event) => setSearch(event.target.value)}
           className='max-w-xs'
         />
+        <Input
+          placeholder='Filtrar por descrição (ex.: banco, campanha)'
+          aria-label='Filtrar por descrição'
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          className='max-w-xs'
+        />
         <Button
           size='sm'
           variant={onlyToday ? 'default' : 'outline'}
@@ -104,14 +116,14 @@ function SelectContacts({
         >
           Inseridos hoje
         </Button>
-        {onlyToday ? (
+        {filtered ? (
           <Button
             size='sm'
             variant='outline'
             disabled={selectable.length === 0 || contacts.isFetching}
             onClick={markToday}
           >
-            Marcar só os de hoje ({selectable.length})
+            Marcar só os filtrados ({selectable.length})
           </Button>
         ) : null}
         <Button
@@ -156,6 +168,11 @@ function SelectContacts({
                 />
                 <span className='min-w-0 flex-1 truncate'>
                   {contact.name ?? 'Sem nome'}
+                  {contact.description ? (
+                    <span className='ml-2 text-muted-foreground text-xs'>
+                      {contact.description}
+                    </span>
+                  ) : null}
                 </span>
                 <span className='flex shrink-0 flex-col items-end text-muted-foreground text-xs sm:flex-row sm:gap-2'>
                   <span>{contact.waId}</span>
@@ -200,6 +217,8 @@ function ImportSheet({
   const [fileName, setFileName] = useState('')
   const [phoneColumn, setPhoneColumn] = useState<string | null>(null)
   const [nameColumn, setNameColumn] = useState<string>(NO_NAME)
+  const [descriptionColumn, setDescriptionColumn] =
+    useState<string>(NO_DESCRIPTION)
 
   const rows = useMemo(
     () =>
@@ -207,12 +226,16 @@ function ImportSheet({
         ? toAiCampaignImportRows(sheet, {
             phone: phoneColumn,
             name: nameColumn === NO_NAME ? null : nameColumn,
+            description:
+              descriptionColumn === NO_DESCRIPTION ? null : descriptionColumn,
           })
         : [],
-    [sheet, phoneColumn, nameColumn],
+    [sheet, phoneColumn, nameColumn, descriptionColumn],
   )
   const extraColumns = sheet
-    ? sheet.columns.filter((c) => c !== phoneColumn && c !== nameColumn)
+    ? sheet.columns.filter(
+        (c) => c !== phoneColumn && c !== nameColumn && c !== descriptionColumn,
+      )
     : []
   const columnItems = (sheet?.columns ?? []).map((c) => ({
     value: c,
@@ -235,6 +258,7 @@ function ImportSheet({
     setFileName(file.name)
     setPhoneColumn(guess.phone)
     setNameColumn(guess.name ?? NO_NAME)
+    setDescriptionColumn(guess.description ?? NO_DESCRIPTION)
   }
 
   return (
@@ -278,7 +302,7 @@ function ImportSheet({
 
       {sheet ? (
         <div className='space-y-3'>
-          <div className='grid gap-3 sm:grid-cols-2'>
+          <div className='grid gap-3 sm:grid-cols-3'>
             <div className='space-y-1.5'>
               <Label htmlFor='sheetPhone'>Coluna do telefone</Label>
               <Select
@@ -317,6 +341,35 @@ function ImportSheet({
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
                     <SelectItem value={NO_NAME}>Sem nome</SelectItem>
+                    {columnItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className='space-y-1.5'>
+              <Label htmlFor='sheetDescription'>Coluna da descrição</Label>
+              <Select
+                items={[
+                  { value: NO_DESCRIPTION, label: 'Sem descrição' },
+                  ...columnItems,
+                ]}
+                value={descriptionColumn}
+                onValueChange={(value) =>
+                  setDescriptionColumn((value as string) ?? NO_DESCRIPTION)
+                }
+              >
+                <SelectTrigger id='sheetDescription' className='w-full'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    <SelectItem value={NO_DESCRIPTION}>
+                      Sem descrição
+                    </SelectItem>
                     {columnItems.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}

@@ -29,6 +29,7 @@ export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
     search: searchParams.get('search') ?? undefined,
     whatsapp: searchParams.get('whatsapp') ?? undefined,
     created: searchParams.get('created') ?? undefined,
+    description: searchParams.get('description') ?? undefined,
   })
 
   if (!parsed.success) {

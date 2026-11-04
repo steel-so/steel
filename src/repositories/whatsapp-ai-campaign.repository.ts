@@ -263,12 +263,13 @@ export const WhatsAppAiCampaignRepository = {
   },
 
   /**
-   * Creates the spreadsheet's new contacts (existing ones are kept as they
-   * are) and returns the id of every phone.
+   * Creates the spreadsheet's new contacts (existing ones keep their name) and
+   * returns the id of every phone. A description in the sheet is saved on the
+   * contact, new or existing; a blank cell never clears one.
    */
   async ensureContacts(
     workspaceId: string,
-    rows: { waId: string; name?: string }[],
+    rows: { waId: string; name?: string; description?: string }[],
   ): Promise<Result<Map<string, { id: string; optedOut: boolean }>>> {
     try {
       await prisma.whatsAppContact.createMany({
@@ -276,9 +277,23 @@ export const WhatsAppAiCampaignRepository = {
           workspaceId,
           waId: row.waId,
           name: row.name || null,
+          description: row.description || null,
         })),
         skipDuplicates: true,
       })
+      const byDescription = new Map<string, string[]>()
+      for (const row of rows) {
+        if (!row.description) continue
+        const waIds = byDescription.get(row.description) ?? []
+        waIds.push(row.waId)
+        byDescription.set(row.description, waIds)
+      }
+      for (const [description, waIds] of byDescription) {
+        await prisma.whatsAppContact.updateMany({
+          where: { workspaceId, waId: { in: waIds } },
+          data: { description },
+        })
+      }
       const contacts = await prisma.whatsAppContact.findMany({
         where: { workspaceId, waId: { in: rows.map((row) => row.waId) } },
         select: { id: true, waId: true, broadcastOptedOutAt: true },

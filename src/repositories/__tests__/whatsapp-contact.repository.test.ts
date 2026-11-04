@@ -99,6 +99,34 @@ describe('WhatsAppContactRepository', () => {
       expect(list[0].name).toBe('Maria Silva')
     })
 
+    it('should filter by description, case-insensitively', async () => {
+      const workspace = await seedWorkspace()
+      await WhatsAppContactRepository.create({
+        workspaceId: workspace.id,
+        waId: '5511988887777',
+        name: 'Maria',
+        description: 'Banco Itaú',
+      })
+      await WhatsAppContactRepository.create({
+        workspaceId: workspace.id,
+        waId: '5511977776666',
+        name: 'João',
+        description: 'Banco Bradesco',
+      })
+
+      const list = expectOk(
+        await WhatsAppContactRepository.listByWorkspace(
+          workspace.id,
+          undefined,
+          undefined,
+          undefined,
+          'itaú',
+        ),
+      )
+
+      expect(list.map((contact) => contact.name)).toEqual(['Maria'])
+    })
+
     it('should keep only contacts created from the given instant', async () => {
       const workspace = await seedWorkspace()
       const old = expectOk(

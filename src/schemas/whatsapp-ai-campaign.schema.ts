@@ -281,6 +281,8 @@ export type UpdateWhatsAppAiCampaignDTO = z.infer<
 export const AiCampaignImportRowSchema = z.object({
   phone: z.string().trim().min(8, 'Telefone inválido').max(30),
   name: z.string().trim().max(200).optional(),
+  /** Saved on the contact (same 500-char limit as the contact form). */
+  description: z.string().trim().max(500).optional(),
   /** Colunas extras (nome da coluna → valor), usadas nas variáveis. */
   values: z.record(z.string().max(100), z.string().max(1000)).default({}),
 })

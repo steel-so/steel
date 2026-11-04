@@ -42,6 +42,7 @@ export const WhatsAppContactService = {
       options.search,
       options.whatsapp,
       options.created === 'today' ? startOfSaoPauloDay() : undefined,
+      options.description,
     )
     if (!result.ok) return result
 
