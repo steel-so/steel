@@ -26,9 +26,10 @@ import { scrubBreadcrumb, scrubEvent } from './scrub'
  *   `handleError` nunca vira issue no Sentry, e é exatamente esse o ponto: a
  *   lista de issues continua sendo uma lista de bugs.
  *
- * Tracing amostra 10% em produção e fica desligado em todo o resto. Tempo de
- * requisição e web vitals já moram no Axiom, e pagar por uma segunda cópia
- * disso não compra nada.
+ * Tracing: o Axiom guarda os traces (`lib/otel/axiom-traces.ts`) e o Sentry só
+ * os erros. Com `AXIOM_TRACES_TOKEN` o servidor amostra `TRACES_SAMPLE_RATE` e
+ * descarta as transações antes de chegarem ao Sentry; sem o token, o Sentry
+ * amostra 10% em produção e fica desligado em todo o resto.
  */
 function baseOptions(dsn: string) {
   return {

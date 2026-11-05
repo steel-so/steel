@@ -1,6 +1,12 @@
 import { type Job, Worker } from 'bullmq'
 import { processTrialLifecycle } from '@/src/lib/queue/processors/trial-lifecycle'
 import { logger } from '../lib/axiom/logger'
+import {
+  AXIOM_TRACES_DATASET,
+  AXIOM_TRACES_TOKEN,
+  TRACES_SAMPLE_RATE,
+} from '../lib/env/server'
+import { createJobTracing, installJobContext } from '../lib/otel/job-tracing'
 import { getQueueConnection } from '../src/lib/queue/connection'
 import { createJobFailureAlarm } from '../src/lib/queue/failure-alarm'
 import {
@@ -16,12 +22,11 @@ import { processAiUsageWeeklyEmail } from '../src/lib/queue/processors/ai-usage-
 import { processChangelog } from '../src/lib/queue/processors/changelog'
 import { processCrmApolloImport } from '../src/lib/queue/processors/crm-apollo-import'
 import { processCrmCadences } from '../src/lib/queue/processors/crm-cadences'
-import { processWhatsappAutomations } from '../src/lib/queue/processors/whatsapp-automations'
 import { processCrmCampaigns } from '../src/lib/queue/processors/crm-campaigns'
 import { processCrmCnpjEnrichment } from '../src/lib/queue/processors/crm-cnpj-enrichment'
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
-import { processCrmDuplicates } from '../src/lib/queue/processors/crm-duplicates'
 import { processCrmDeals } from '../src/lib/queue/processors/crm-deals'
+import { processCrmDuplicates } from '../src/lib/queue/processors/crm-duplicates'
 import { processCrmHealth } from '../src/lib/queue/processors/crm-health'
 import { processCrmNewsletter } from '../src/lib/queue/processors/crm-newsletter'
 import { processCrmNewsletterAutomation } from '../src/lib/queue/processors/crm-newsletter-automation'
@@ -59,6 +64,7 @@ import { processUsageRollup } from '../src/lib/queue/processors/usage-rollup'
 import { processWebhooksDelivery } from '../src/lib/queue/processors/webhooks-delivery'
 import { processWhatsappAiReply } from '../src/lib/queue/processors/whatsapp-ai-reply'
 import { processWhatsappArchive } from '../src/lib/queue/processors/whatsapp-archive'
+import { processWhatsappAutomations } from '../src/lib/queue/processors/whatsapp-automations'
 import { processWhatsappBroadcast } from '../src/lib/queue/processors/whatsapp-broadcast'
 import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsapp-button-actions'
 import { processWhatsappChatbot } from '../src/lib/queue/processors/whatsapp-chatbot'
@@ -73,11 +79,10 @@ import {
   scheduleAiProactiveJobs,
   scheduleAiUsageWeeklyEmailJobs,
   scheduleCrmCadencesJobs,
-  scheduleWhatsappAutomationsJobs,
   scheduleCrmCampaignsJobs,
   scheduleCrmCompetitorSyncJobs,
-  scheduleCrmDuplicatesJobs,
   scheduleCrmDealsJobs,
+  scheduleCrmDuplicatesJobs,
   scheduleCrmHealthJobs,
   scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
@@ -107,6 +112,7 @@ import {
   scheduleTrialLifecycleJobs,
   scheduleUsageRollupJobs,
   scheduleWhatsappArchiveJobs,
+  scheduleWhatsappAutomationsJobs,
   scheduleWhatsappBroadcastJobs,
   scheduleWhatsappConversationLifecycleJobs,
   scheduleWorkspaceExportJobs,
@@ -125,12 +131,21 @@ let voiceAgentServer: Awaited<ReturnType<typeof startVoiceAgentServer>> = null
 
 type Processor = (job: Job) => Promise<unknown>
 
+// One trace per job, shipped to Axiom. Without AXIOM_TRACES_TOKEN `wrap`
+// returns the processor untouched and nothing is exported.
+installJobContext()
+const tracing = createJobTracing({
+  token: AXIOM_TRACES_TOKEN,
+  dataset: AXIOM_TRACES_DATASET,
+  sampleRate: TRACES_SAMPLE_RATE,
+})
+
 function registerWorker(
   name: QueueName,
   processor: Processor,
   options: { concurrency?: number } = {},
 ): Worker {
-  const worker = new Worker(name, processor, {
+  const worker = new Worker(name, tracing.wrap(name, processor), {
     connection: getQueueConnection(),
     ...(options.concurrency ? { concurrency: options.concurrency } : {}),
   })
@@ -187,6 +202,8 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
     // dialplan then sends the caller to a person).
     voiceAgentServer?.close()
     await closeWorkerResources({ workers, failureListener, failureAlarm })
+    // Flush the spans still buffered for Axiom before the process goes away.
+    await tracing.shutdown()
   } catch (err) {
     const e = err as Error
     logger.error('queue.worker.shutdown_error', {

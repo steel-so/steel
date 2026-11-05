@@ -2,6 +2,7 @@ import { Logger } from '@axiomhq/logging'
 import axiomClient from '@/lib/axiom/axiom'
 import { capFieldKeys, flattenNestedFields } from '@/lib/axiom/log-fields'
 import { buildLogTransports } from '@/lib/axiom/transports'
+import { withTraceContext } from '@/lib/otel/trace-context'
 import {
   NEXT_PUBLIC_AXIOM_DATASET,
   NEXT_PUBLIC_AXIOM_TOKEN,
@@ -20,5 +21,5 @@ const transports = buildLogTransports({
 // set of columns (limit: 257) whatever new code logs.
 export const logger = new Logger({
   transports,
-  formatters: [flattenNestedFields, capFieldKeys],
+  formatters: [withTraceContext, flattenNestedFields, capFieldKeys],
 })

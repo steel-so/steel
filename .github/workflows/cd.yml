@@ -276,7 +276,9 @@ jobs:
           # PABX click-to-call (WhatsApp "Ligar" button): read access to the
           # central steel.device table. Same reason as above; sops wins if it
           # ever defines the variable itself.
-          for var in PABX_DEVICE_DB_URL; do
+          # AXIOM_TRACES_TOKEN (ingest-only, traces dataset) follows the same
+          # rule: without it the exporters stay off and the app boots as before.
+          for var in PABX_DEVICE_DB_URL AXIOM_TRACES_TOKEN; do
             if [ -n "${!var}" ] && ! grep -q "^${var}=" "${DEPLOY_DIR}/.env"; then
               printf '%s=%s\n' "${var}" "${!var}" >> "${DEPLOY_DIR}/.env"
             fi
@@ -286,6 +288,7 @@ jobs:
           AXIOM_QUERY_TOKEN: ${{ secrets.AXIOM_QUERY_TOKEN }}
           SLACK_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_ALERTS_WEBHOOK_URL }}
           PABX_DEVICE_DB_URL: ${{ secrets.PABX_DEVICE_DB_URL }}
+          AXIOM_TRACES_TOKEN: ${{ secrets.AXIOM_TRACES_TOKEN }}
 
       # scripts/deploy.sh rolls the app replicas one at a time (steel-app,
       # steel-app-2, steel-app-3), each healthy before the next goes down, so

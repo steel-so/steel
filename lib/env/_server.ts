@@ -64,6 +64,9 @@ const serverEnv = {
   WORKBENCH_PASS: process.env.WORKBENCH_PASS,
   STATUS_APP_PROBE_URL: process.env.STATUS_APP_PROBE_URL,
   SLACK_ALERTS_WEBHOOK_URL: process.env.SLACK_ALERTS_WEBHOOK_URL,
+  AXIOM_TRACES_TOKEN: process.env.AXIOM_TRACES_TOKEN,
+  AXIOM_TRACES_DATASET: process.env.AXIOM_TRACES_DATASET,
+  TRACES_SAMPLE_RATE: process.env.TRACES_SAMPLE_RATE,
   BACKUP_OFFSITE_ENDPOINT: process.env.BACKUP_OFFSITE_ENDPOINT,
   BACKUP_OFFSITE_REGION: process.env.BACKUP_OFFSITE_REGION,
   BACKUP_OFFSITE_BUCKET: process.env.BACKUP_OFFSITE_BUCKET,
@@ -334,6 +337,28 @@ export const serverEnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  // Request and job traces shipped to Axiom (lib/otel/axiom-traces.ts).
+  // Optional: unset or blank means no exporter and the app boots exactly as
+  // before. The token is ingest-only and scoped to the traces dataset.
+  AXIOM_TRACES_TOKEN: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  AXIOM_TRACES_DATASET: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : 'steel-traces')),
+  // Share of requests/jobs that produce a trace, 0 to 1. Defaults to 0.9: a
+  // trace you can open for the slow request is the point, so the floor is
+  // high. An out-of-range or non-numeric value falls back to the default
+  // instead of stopping the boot.
+  TRACES_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .transform((v) => {
+      const rate = v === undefined || v.trim() === '' ? Number.NaN : Number(v)
+      return rate >= 0 && rate <= 1 ? rate : 0.9
+    }),
   // Cópia offsite (fora do servidor) do backup FULL diário, em qualquer
   // storage S3-compatível (Backblaze B2, Cloudflare R2, AWS S3, Wasabi...).
   // Tudo opcional: sem ENDPOINT/BUCKET/chaves a cópia offsite fica inerte (só
@@ -546,6 +571,9 @@ export const {
   WORKBENCH_PASS,
   STATUS_APP_PROBE_URL,
   SLACK_ALERTS_WEBHOOK_URL,
+  AXIOM_TRACES_TOKEN,
+  AXIOM_TRACES_DATASET,
+  TRACES_SAMPLE_RATE,
   BACKUP_OFFSITE_ENDPOINT,
   BACKUP_OFFSITE_REGION,
   BACKUP_OFFSITE_BUCKET,
