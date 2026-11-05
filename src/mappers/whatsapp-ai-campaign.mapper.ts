@@ -5,7 +5,7 @@ import type {
 } from '@/src/repositories/whatsapp-ai-campaign.repository'
 import {
   type AiCampaignAction,
-  AiCampaignActionsSchema,
+  AiCampaignActionSchema,
   type AiCampaignVariables,
   AiCampaignVariablesSchema,
 } from '@/src/schemas/whatsapp-ai-campaign.schema'
@@ -22,10 +22,34 @@ export function parseAiCampaignVariables(raw: unknown): AiCampaignVariables {
   return parsed.success ? parsed.data : { header: {}, body: {}, buttons: {} }
 }
 
-/** Stored JSON → typed actions (a corrupt value reads as "no actions"). */
+/**
+ * Stored JSON → typed actions, one by one: an invalid action is dropped (and
+ * counted) instead of taking every other action of the campaign with it, and
+ * a repeated id keeps its first occurrence.
+ */
+export function parseAiCampaignActionsDetailed(raw: unknown): {
+  actions: AiCampaignAction[]
+  invalid: number
+} {
+  if (!Array.isArray(raw)) return { actions: [], invalid: 0 }
+  const actions: AiCampaignAction[] = []
+  const ids = new Set<string>()
+  let invalid = 0
+  for (const item of raw) {
+    const parsed = AiCampaignActionSchema.safeParse(item)
+    if (!parsed.success || ids.has(parsed.data.id)) {
+      invalid += 1
+      continue
+    }
+    ids.add(parsed.data.id)
+    actions.push(parsed.data)
+  }
+  return { actions, invalid }
+}
+
+/** Stored JSON → typed actions (invalid ones are left out). */
 export function parseAiCampaignActions(raw: unknown): AiCampaignAction[] {
-  const parsed = AiCampaignActionsSchema.safeParse(raw ?? [])
-  return parsed.success ? parsed.data : []
+  return parseAiCampaignActionsDetailed(raw).actions
 }
 
 function iso(date: Date | null): string | null {

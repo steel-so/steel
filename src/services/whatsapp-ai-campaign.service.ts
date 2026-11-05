@@ -30,7 +30,7 @@ import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import {
-  parseAiCampaignActions,
+  parseAiCampaignActionsDetailed,
   parseAiCampaignVariables,
   recipientValuesOf,
   toWhatsAppAiCampaignActionRunDTO,
@@ -1032,9 +1032,18 @@ export const WhatsAppAiCampaignService = {
     if (!found.ok) return found
     if (!found.value || found.value.status === 'ARCHIVED') return ok(null)
     if (!found.value.aiReplies) return ok(null)
-    return ok({
-      campaign: found.value,
-      actions: parseAiCampaignActions(found.value.actions),
-    })
+    const { actions, invalid } = parseAiCampaignActionsDetailed(
+      found.value.actions,
+    )
+    if (invalid > 0) {
+      // The AI would silently lose these actions (never close/transfer).
+      logger.warn('whatsapp.ai_campaign.invalid_actions', {
+        component: 'WhatsAppAiCampaignService',
+        campaignId,
+        workspaceId: found.value.workspaceId,
+        invalid,
+      })
+    }
+    return ok({ campaign: found.value, actions })
   },
 }

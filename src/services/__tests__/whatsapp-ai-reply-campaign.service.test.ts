@@ -288,19 +288,37 @@ describe('WhatsAppAiReplyService.generateReply() — AI campaigns', () => {
     expect(WhatsAppAiCampaignActionService.run).toHaveBeenCalledTimes(1)
   })
 
-  it('should fall back to the workspace AI rules for an archived campaign', async () => {
-    arrange(false)
-    vi.mocked(WhatsAppAiCampaignService.findForReply).mockResolvedValue(
-      ok(null),
-    )
+  it.each([
+    ['workspace AI off', false],
+    ['workspace AI on', true],
+  ])(
+    'should hand an archived campaign thread to a person (%s)',
+    async (_label, aiConfigActive) => {
+      arrange(aiConfigActive)
+      vi.mocked(WhatsAppAiCampaignService.findForReply).mockResolvedValue(
+        ok(null),
+      )
 
-    const outcome = expectOk(
-      await WhatsAppAiReplyService.generateReply({
-        conversationId: CONV,
-        messageId: 'm1',
-      }),
-    )
+      const outcome = expectOk(
+        await WhatsAppAiReplyService.generateReply({
+          conversationId: CONV,
+          messageId: 'm1',
+        }),
+      )
 
-    expect(outcome).toEqual({ status: 'skipped', reason: 'ai_config_inactive' })
-  })
+      expect(outcome).toEqual({
+        status: 'skipped',
+        reason: 'campaign_unavailable',
+      })
+      expect(WhatsAppSend.text).not.toHaveBeenCalled()
+      expect(WhatsAppConversationRepository.update).toHaveBeenCalledWith(
+        CONV,
+        expect.objectContaining({
+          aiActive: false,
+          aiHandoff: true,
+          status: 'IN_PROGRESS',
+        }),
+      )
+    },
+  )
 })

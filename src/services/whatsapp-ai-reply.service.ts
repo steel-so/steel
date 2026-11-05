@@ -105,6 +105,7 @@ export type WhatsAppAiReplyOutcome =
         | 'empty_completion'
         | 'contact_not_found'
         | 'outside_business_hours'
+        | 'campaign_unavailable'
     }
   | {
       /** Outside the WhatsApp business hours: answer at `retryAt`. */
@@ -326,6 +327,28 @@ export const WhatsAppAiReplyService = {
       : null
     if (campaign && !campaign.ok) return campaign
     const campaignContext = campaign?.ok ? campaign.value : null
+    // The campaign of this conversation is gone (archived or AI replies
+    // off): the generic assistant must not take over a campaign thread with
+    // no actions to close or transfer it — a person does.
+    if (conversation.aiCampaignId && !campaignContext && !instruction) {
+      logger.warn('queue.whatsapp_ai_reply.campaign_unavailable', {
+        component: 'WhatsappAiReply',
+        workspaceId,
+        conversationId,
+        campaignId: conversation.aiCampaignId,
+      })
+      const handedOff = await WhatsAppConversationRepository.update(
+        conversationId,
+        {
+          aiActive: false,
+          aiHandoff: true,
+          status: 'IN_PROGRESS',
+          ...(conversation.assignedUserId ? {} : queueEntry()),
+        },
+      )
+      if (!handedOff.ok) return handedOff
+      return ok({ status: 'skipped', reason: 'campaign_unavailable' })
+    }
     if (!aiConfig.value?.active && !instruction && !campaignContext) {
       return ok({ status: 'skipped', reason: 'ai_config_inactive' })
     }
