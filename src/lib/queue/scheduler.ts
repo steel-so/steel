@@ -630,6 +630,13 @@ export async function scheduleCrmCadencesJobs(): Promise<void> {
 
 export async function scheduleWhatsappAutomationsJobs(): Promise<void> {
   const queue = getWhatsappAutomationsQueue()
+
+  // 'ecom-tick' was removed with the e-commerce triggers (Z8/Z9); drop the
+  // orphaned repeatable so it stops producing dead jobs.
+  for (const legacy of ['ecom-tick']) {
+    await queue.removeJobScheduler(legacy)
+  }
+
   for (const name of [WhatsappAutomationsJob.SchedulingTick]) {
     await queue.upsertJobScheduler(
       name,
