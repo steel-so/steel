@@ -16,20 +16,39 @@ export const CONTACT_IMPORT_TEMPLATE_FILENAME = 'modelo-importacao-contatos.csv'
 export const CONTACT_IMPORT_TEMPLATE_CSV =
   '﻿Nome;Telefone;Descrição\r\nMaria Silva;5511999998888;Cliente desde 2024\r\n'
 
-const NAME_ALIASES = ['nome', 'name', 'contato'] as const
-const PHONE_ALIASES = [
-  'telefone',
-  'celular',
-  'whatsapp',
-  'numero',
-  'phone',
+/**
+ * Accepted header sets. The three columns are mandatory and must carry one of
+ * these exact names (case, accents and spacing are ignored): our template
+ * (Nome | Telefone | Descrição) or the short sheet (Nome | Número | Detalhes).
+ */
+const HEADER_FORMATS = [
+  {
+    label: 'Nome, Telefone e Descrição',
+    name: 'nome',
+    phone: 'telefone',
+    description: 'descricao',
+  },
+  {
+    label: 'Nome, Número e Detalhes',
+    name: 'nome',
+    phone: 'numero',
+    description: 'detalhes',
+  },
 ] as const
-const DESCRIPTION_ALIASES = [
-  'descricao',
-  'observacoes',
-  'observacao',
-  'description',
-] as const
+
+type HeaderFormat = (typeof HEADER_FORMATS)[number]
+
+function detectHeaderFormat(headers: string[]): HeaderFormat | null {
+  const normalized = new Set(headers.map(normalizeCsvHeader))
+  return (
+    HEADER_FORMATS.find(
+      (format) =>
+        normalized.has(format.name) &&
+        normalized.has(format.phone) &&
+        normalized.has(format.description),
+    ) ?? null
+  )
+}
 
 const PHONE_PATTERN = /^\d{10,15}$/
 const NAME_MAX = 120
@@ -68,12 +87,13 @@ export function parseContactImportCsv(csv: string): ParsedContactImport {
       fileError: 'A planilha não tem linhas de dados.',
     }
   }
-  const known = new Set<string>(PHONE_ALIASES)
-  if (!headers.some((h) => known.has(normalizeCsvHeader(h)))) {
+  const format = detectHeaderFormat(headers)
+  if (!format) {
     return {
       valid: [],
       rejected: [],
-      fileError: 'A planilha precisa ter a coluna "Telefone".',
+      fileError:
+        'A planilha precisa ter os cabeçalhos "Nome", "Telefone" e "Descrição" ou "Nome", "Número" e "Detalhes", exatamente nesses nomes.',
     }
   }
   if (records.length > CONTACT_IMPORT_MAX_ROWS) {
@@ -90,7 +110,7 @@ export function parseContactImportCsv(csv: string): ParsedContactImport {
 
   records.forEach((record, index) => {
     const line = index + 2
-    const rawPhone = pickCsvValue(record, PHONE_ALIASES) ?? ''
+    const rawPhone = pickCsvValue(record, [format.phone]) ?? ''
     const waId = normalizeContactPhone(rawPhone)
     if (!PHONE_PATTERN.test(waId)) {
       rejected.push({
@@ -101,8 +121,8 @@ export function parseContactImportCsv(csv: string): ParsedContactImport {
       })
       return
     }
-    const name = pickCsvValue(record, NAME_ALIASES)
-    const description = pickCsvValue(record, DESCRIPTION_ALIASES)
+    const name = pickCsvValue(record, [format.name])
+    const description = pickCsvValue(record, [format.description])
     if (name && name.length > NAME_MAX) {
       rejected.push({
         line,

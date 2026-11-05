@@ -117,9 +117,10 @@ export function WhatsAppContactImportDialog({
           <DialogTitle>Importar contatos</DialogTitle>
           <DialogDescription>
             Envie um arquivo CSV (separado por vírgula ou ponto e vírgula) com
-            as colunas Nome, Telefone e Descrição. O telefone é obrigatório e
-            deve ter DDI + DDD (ex.: 5511999998888). Contatos que já existem são
-            atualizados, sem duplicar.
+            os cabeçalhos Nome, Telefone e Descrição (ou Nome, Número e
+            Detalhes), exatamente assim. O telefone é obrigatório e deve ter DDI
+            + DDD (ex.: 5511999998888). Contatos que já existem são atualizados,
+            sem duplicar.
           </DialogDescription>
         </DialogHeader>
 

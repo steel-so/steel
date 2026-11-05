@@ -14,6 +14,28 @@ uma descrição ou recado e, se quiser, a URL de uma foto. Com uma conexão Z-AP
 A coluna **Transmissões** mostra se o contato recebe transmissões, e a coluna
 **WhatsApp** mostra se o número foi conferido (veja abaixo).
 
+### Importar contatos por planilha
+
+Em **Contatos**, use **Importar** e envie um arquivo CSV (separado por vírgula
+ou ponto e vírgula) de até 1.000 linhas. A primeira linha precisa ter os três
+cabeçalhos, com estes nomes, em um dos dois formatos:
+
+| Modelo do Steel | Planilha simples |
+| --------------- | ---------------- |
+| Nome            | Nome             |
+| Telefone        | Número           |
+| Descrição       | Detalhes         |
+
+- Maiúsculas, acentos e a ordem das colunas não importam, e colunas extras são
+  ignoradas.
+- Não misture os formatos (por exemplo, **Nome**, **Número** e **Descrição**):
+  se faltar um cabeçalho ou ele tiver outro nome, a planilha inteira é
+  recusada e nada é importado.
+- O telefone é obrigatório e deve ter DDI + DDD (ex.: 5511999998888). Linhas
+  com telefone inválido, em branco ou repetido são listadas com o motivo; as
+  demais entram.
+- Contatos que já existem são atualizados, sem duplicar.
+
 ### Tem WhatsApp? (validar a base)
 
 Com uma conexão **Z-API**, o Steel confere quais números da sua base têm

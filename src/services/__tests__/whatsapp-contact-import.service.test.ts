@@ -66,7 +66,7 @@ describe('WhatsAppContactImportService.import()', () => {
   it('returns FORBIDDEN for a non-member', async () => {
     membershipRepo.findByUserAndWorkspace.mockResolvedValue(ok(null))
     const result = await WhatsAppContactImportService.import('u1', 'ws1', {
-      csv: 'Telefone\n5511999998888',
+      csv: 'Nome;Telefone;Descrição\nAna;5511999998888;',
     })
     expectErr(result, 'FORBIDDEN')
   })
@@ -83,7 +83,7 @@ describe('WhatsAppContactImportService.import()', () => {
     asMember()
     contactRepo.findManyByWaIds.mockResolvedValue(err(databaseError('x')))
     const result = await WhatsAppContactImportService.import('u1', 'ws1', {
-      csv: 'Telefone\n5511999998888',
+      csv: 'Nome;Telefone;Descrição\nAna;5511999998888;',
     })
     expectErr(result, 'DATABASE_ERROR')
   })
@@ -93,7 +93,7 @@ describe('WhatsAppContactImportService.import()', () => {
     contactRepo.findManyByWaIds.mockResolvedValue(ok([]))
     contactRepo.create.mockResolvedValue(err(databaseError('x')))
     const result = await WhatsAppContactImportService.import('u1', 'ws1', {
-      csv: 'Telefone\n5511999998888',
+      csv: 'Nome;Telefone;Descrição\nAna;5511999998888;',
     })
     expect(expectOk(result)).toMatchObject({
       created: 0,
@@ -114,7 +114,7 @@ describe('WhatsAppContactImportService.import()', () => {
     it('does not validate unless asked', async () => {
       arrange()
       const result = await WhatsAppContactImportService.import('u1', 'ws1', {
-        csv: 'Telefone\n5511999998888',
+        csv: 'Nome;Telefone;Descrição\nAna;5511999998888;',
       })
       expect(validation.startInternal).not.toHaveBeenCalled()
       expect(expectOk(result).validation).toBeUndefined()
@@ -127,7 +127,7 @@ describe('WhatsAppContactImportService.import()', () => {
       )
 
       const result = await WhatsAppContactImportService.import('u1', 'ws1', {
-        csv: 'Telefone\n5511999998888',
+        csv: 'Nome;Telefone;Descrição\nAna;5511999998888;',
         validateWhatsapp: true,
       })
 
@@ -153,7 +153,7 @@ describe('WhatsAppContactImportService.import()', () => {
       )
 
       const result = await WhatsAppContactImportService.import('u1', 'ws1', {
-        csv: 'Telefone\n5511999998888',
+        csv: 'Nome;Telefone;Descrição\nAna;5511999998888;',
         validateWhatsapp: true,
       })
 

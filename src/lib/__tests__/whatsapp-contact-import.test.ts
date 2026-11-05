@@ -21,18 +21,59 @@ describe('parseContactImportCsv', () => {
     ])
   })
 
-  it('accepts comma separated files and column aliases', () => {
+  it('accepts the short sheet (Nome | Número | Detalhes)', () => {
     const result = parseContactImportCsv(
-      'Celular,Nome\n+55 (11) 98888-7777,Ana',
+      'Nome;Número;Detalhes\nAna;+55 (11) 98888-7777;VIP\nBia;5511977776666;',
     )
+    expect(result.fileError).toBeUndefined()
+    expect(result.rejected).toEqual([])
     expect(result.valid).toEqual([
-      { line: 2, waId: '5511988887777', name: 'Ana', description: undefined },
+      { line: 2, waId: '5511988887777', name: 'Ana', description: 'VIP' },
+      { line: 3, waId: '5511977776666', name: 'Bia', description: undefined },
     ])
+  })
+
+  it.each([
+    ['comma separated', 'Nome,Telefone,Descrição\nAna,5511988887777,x'],
+    [
+      'lowercase and no accents',
+      'nome;telefone;descricao\nAna;5511988887777;x',
+    ],
+    ['spaces around names', ' Nome ; NÚMERO ; Detalhes \nAna;5511988887777;x'],
+    ['BOM and CRLF', '\ufeffNome;Número;Detalhes\r\nAna;5511988887777;x\r\n'],
+    ['columns out of order', 'Detalhes;Número;Nome\nx;5511988887777;Ana'],
+    ['extra columns', 'Nome;Telefone;Descrição;Cidade\nAna;5511988887777;x;SP'],
+  ])('accepts headers: %s', (_label, csv) => {
+    const result = parseContactImportCsv(csv)
+    expect(result.fileError).toBeUndefined()
+    expect(result.valid).toHaveLength(1)
+    expect(result.valid[0]).toMatchObject({
+      waId: '5511988887777',
+      name: 'Ana',
+    })
+  })
+
+  it.each([
+    ['missing description', 'Nome;Telefone\nAna;5511988887777'],
+    ['missing name', 'Telefone;Descrição\n5511988887777;x'],
+    ['missing phone', 'Nome;Descrição\nAna;x'],
+    ['missing details', 'Nome;Número\nAna;5511988887777'],
+    ['wrong phone name', 'Nome;Celular;Descrição\nAna;5511988887777;x'],
+    ['wrong name header', 'Contato;Telefone;Descrição\nAna;5511988887777;x'],
+    ['mixed formats', 'Nome;Número;Descrição\nAna;5511988887777;x'],
+    ['mixed formats (reverse)', 'Nome;Telefone;Detalhes\nAna;5511988887777;x'],
+    ['no header row', 'Ana;5511988887777;x\nBia;5511977776666;y'],
+    ['phone only', 'Telefone\n5511988887777'],
+  ])('rejects the whole file when headers are wrong: %s', (_label, csv) => {
+    const result = parseContactImportCsv(csv)
+    expect(result.fileError).toMatch(/cabeçalhos/)
+    expect(result.valid).toEqual([])
+    expect(result.rejected).toEqual([])
   })
 
   it('rejects invalid, blank and duplicated phones per row', () => {
     const result = parseContactImportCsv(
-      'Nome;Telefone\nA;123\nB;\nC;5511999998888\nD;5511999998888',
+      'Nome;Telefone;Descrição\nA;123;\nB;;\nC;5511999998888;\nD;5511999998888;',
     )
     expect(result.valid.map((r) => r.line)).toEqual([4])
     expect(result.rejected).toEqual([
@@ -50,12 +91,11 @@ describe('parseContactImportCsv', () => {
     expect(result.rejected.map((r) => r.line)).toEqual([2, 3])
   })
 
-  it('returns a file error for empty files, missing phone column and too many rows', () => {
-    expect(parseContactImportCsv('Nome;Telefone').fileError).toMatch(
+  it('returns a file error for empty files and too many rows', () => {
+    expect(parseContactImportCsv('Nome;Telefone;Descrição').fileError).toMatch(
       /não tem linhas/,
     )
-    expect(parseContactImportCsv('Nome\nAna').fileError).toMatch(/Telefone/)
-    const many = `Telefone\n${Array.from({ length: CONTACT_IMPORT_MAX_ROWS + 1 }, (_, i) => `55119${String(i).padStart(8, '0')}`).join('\n')}`
+    const many = `Nome;Telefone;Descrição\n${Array.from({ length: CONTACT_IMPORT_MAX_ROWS + 1 }, (_, i) => `55119${String(i).padStart(8, '0')}`).join('\n')}`
     expect(parseContactImportCsv(many).fileError).toMatch(/no máximo/)
   })
 
