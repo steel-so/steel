@@ -74,6 +74,10 @@ services:
       # own external IP, the router does not hairpin it, and every probe timed
       # out — the page showed a permanent outage. The .env still wins if set.
       STATUS_APP_PROBE_URL: ${STATUS_APP_PROBE_URL:-http://nextjs-app:3000}
+      # The worker logs to its own Axiom dataset: app and worker share one
+      # code base (and logger), and together their distinct `fields.*` keys
+      # blew past Axiom's 257-column limit, which rejects whole batches.
+      NEXT_PUBLIC_AXIOM_DATASET: steel-worker
     # AudioSocket do atendente de voz (ADR 0046). Fica no loopback até o TI
     # definir VOICE_AGENT_AUDIOSOCKET_BIND com o IP privado que o PABX alcança
     # (e liberar só esse IP no firewall) — docs/runbooks/pabx-voice-agent.md.
