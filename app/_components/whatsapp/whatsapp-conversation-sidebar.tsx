@@ -306,6 +306,7 @@ export function WhatsappConversationSidebar({
   const slaByConversation = useWhatsAppSlaByConversation(workspaceId)
   const slaNow = useSlaClock()
   const currentUser = useUser()
+  const teams = useWhatsAppTeams(workspaceId)
   const [clearTargetId, setClearTargetId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const conversations = useWhatsAppConversations(
@@ -322,7 +323,14 @@ export function WhatsappConversationSidebar({
   const canDeleteConversation = useCan('conversations', 'DELETE')
 
   const filtered = (conversations.data ?? []).filter((conversation) => {
-    if (!matchesInboxFilter(conversation, inboxFilter, currentUser.data?.id)) {
+    if (
+      !matchesInboxFilter(
+        conversation,
+        inboxFilter,
+        currentUser.data?.id,
+        teams.data,
+      )
+    ) {
       return false
     }
     if (

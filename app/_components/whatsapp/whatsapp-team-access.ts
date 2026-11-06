@@ -55,13 +55,28 @@ export function canMoveToTeam(
 /** Inbox filter: everything, mine, the queue (unassigned) or one team. */
 export type WhatsAppInboxFilter = 'all' | 'mine' | 'queue' | `team:${string}`
 
+/**
+ * A team filter shows the conversations placed in the team and the ones
+ * assigned to one of its members — most workspaces assign agents directly and
+ * never set a team on the conversation, so matching `teamId` alone left the
+ * filter empty.
+ */
 export function matchesInboxFilter(
   conversation: Pick<WhatsAppConversationDTO, 'assignedUserId' | 'teamId'>,
   filter: WhatsAppInboxFilter,
   userId: string | undefined,
+  teams: Pick<WhatsAppTeamDTO, 'id' | 'members'>[] = [],
 ): boolean {
   if (filter === 'all') return true
   if (filter === 'mine') return conversation.assignedUserId === userId
   if (filter === 'queue') return conversation.assignedUserId === null
-  return conversation.teamId === filter.slice('team:'.length)
+  const teamId = filter.slice('team:'.length)
+  if (conversation.teamId === teamId) return true
+  if (!conversation.assignedUserId) return false
+  const team = teams.find((candidate) => candidate.id === teamId)
+  return Boolean(
+    team?.members.some(
+      (member) => member.userId === conversation.assignedUserId,
+    ),
+  )
 }
