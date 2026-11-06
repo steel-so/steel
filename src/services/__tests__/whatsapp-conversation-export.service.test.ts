@@ -11,7 +11,22 @@ vi.mock('@/src/repositories/whatsapp-conversation.repository')
 vi.mock('@/src/repositories/whatsapp-message.repository')
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 
+vi.mock(
+  '@/src/lib/whatsapp/conversation-export-pdf',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/src/lib/whatsapp/conversation-export-pdf')
+      >()
+    return {
+      ...actual,
+      buildWhatsAppConversationPdf: vi.fn(actual.buildWhatsAppConversationPdf),
+    }
+  },
+)
+
 import { auditMutation } from '@/lib/axiom/audit'
+import { buildWhatsAppConversationPdf } from '@/src/lib/whatsapp/conversation-export-pdf'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
@@ -121,13 +136,13 @@ describe('WhatsAppConversationService.exportTranscript()', () => {
           }),
         ),
       )
+      // One fake reused: building thousands is slow under coverage.
+      const message = {
+        ...createFakeWhatsAppMessage({ text: 'Mensagem' }),
+        senderUser: null,
+      }
       mockedMessageRepo.listForExport.mockResolvedValue(
-        ok(
-          Array.from({ length: messageCount }, (_, i) => ({
-            ...createFakeWhatsAppMessage({ text: `Mensagem ${i}` }),
-            senderUser: null,
-          })),
-        ),
+        ok(Array.from({ length: messageCount }, () => message)),
       )
     }
 
@@ -177,10 +192,16 @@ describe('WhatsAppConversationService.exportTranscript()', () => {
       )
 
       expect(error.message).toMatch(/\.txt/)
-    })
+    }, 30_000)
 
     it('should accept a conversation exactly at the PDF cap', async () => {
       arrangePdf(2000)
+      // The render itself is covered above; here only the cap matters.
+      vi.mocked(buildWhatsAppConversationPdf).mockResolvedValueOnce({
+        fileName: 'conversa-maria.pdf',
+        contentType: 'application/pdf',
+        body: new Uint8Array(0),
+      })
 
       expectOk(
         await WhatsAppConversationService.exportTranscript(
@@ -190,6 +211,6 @@ describe('WhatsAppConversationService.exportTranscript()', () => {
           'pdf',
         ),
       )
-    }, 60_000)
+    })
   })
 })

@@ -78,7 +78,7 @@ describe('buildWhatsAppConversationPdf', () => {
     const bytes = file.body as Uint8Array
     expect(Buffer.from(bytes).subarray(0, 5).toString()).toBe('%PDF-')
     expect(bytes.length).toBeGreaterThan(500)
-  })
+  }, 30_000)
 
   it('renders a conversation without messages', async () => {
     const file = await buildWhatsAppConversationPdf({
@@ -90,5 +90,5 @@ describe('buildWhatsAppConversationPdf', () => {
         .subarray(0, 5)
         .toString(),
     ).toBe('%PDF-')
-  })
+  }, 30_000)
 })

@@ -114,7 +114,7 @@ export function fileSlug(input: WhatsAppConversationExportInput): string {
 export function buildWhatsAppConversationExport(
   input: WhatsAppConversationExportInput,
   format: Exclude<WhatsAppConversationExportFormat, 'pdf'>,
-): WhatsAppConversationExportFile {
+): WhatsAppConversationExportFile & { body: string } {
   const contactLabel = input.contactName ?? input.contactWaId
   const fileName = `conversa-${fileSlug(input)}.${format}`
 
