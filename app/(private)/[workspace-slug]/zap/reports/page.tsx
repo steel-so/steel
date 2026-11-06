@@ -4,6 +4,7 @@ import { WhatsappReportsTabs } from '@/app/_components/whatsapp/whatsapp-reports
 import { getAuthSession } from '@/src/lib/auth-session'
 import { isPrivilegedRole } from '@/src/services/authz'
 import { MembershipService } from '@/src/services/membership.service'
+import { WhatsAppAgentReportService } from '@/src/services/whatsapp-agent-report.service'
 
 export const metadata: Metadata = {
   title: 'Relatórios | WhatsApp | Steel',
@@ -31,6 +32,10 @@ export default async function WhatsappReportsPage({
   )
   if (!membership.ok || !membership.value) notFound()
 
+  const agentReportEnabled = await WhatsAppAgentReportService.isEnabled(
+    membership.value.workspaceId,
+  )
+
   return (
     <div className='flex h-full w-full min-h-0 flex-col'>
       <div className='min-h-0 flex-1 overflow-y-auto'>
@@ -38,6 +43,7 @@ export default async function WhatsappReportsPage({
           workspaceId={membership.value.workspaceId}
           slug={slug}
           canSeeCosts={isPrivilegedRole(membership.value.role)}
+          agentReportEnabled={agentReportEnabled}
           initialTab={aba}
         />
       </div>

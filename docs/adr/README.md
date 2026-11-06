@@ -78,3 +78,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0059 | [Um só motor de horários para o agendamento do CRM e do WhatsApp](./0059-motor-unico-de-horarios-crm-e-whatsapp.md) | Aceita | 2026-10-31 |
 | 0060 | [Remoção do Instagram e do Messenger da caixa do zap](./0060-remocao-do-instagram-e-messenger-da-caixa-do-zap.md) | Aceita | 2026-10-31 |
 | 0061 | [Poda de escopo do arco de novembro (Q1)](./0061-poda-de-escopo-do-arco-de-novembro.md) | Aceita | 2026-10-31 |
+| 0062 | [Relatório de desempenho dos atendentes do zap, ligado por workspace pelo admin global](./0062-relatorio-de-desempenho-dos-atendentes-do-zap.md) | Aceita | 2026-11-06 |

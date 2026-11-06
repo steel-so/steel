@@ -648,6 +648,7 @@ model Workspace {
   accessLogs                WorkspaceAccessLog[]
   whatsappArchives          WhatsAppArchive[]
   whatsappArchiveSettings   WhatsAppArchiveSettings?
+  whatsappAgentReportSettings WhatsAppAgentReportSettings?
   whatsappAdSettings        WhatsAppAdSettings?
   whatsappAdReferrals       WhatsAppAdReferral[]
   whatsappAdSpends          WhatsAppAdSpend[]
@@ -9896,6 +9897,21 @@ model WhatsAppArchiveSettings {
 
   @@index([enabled])
   @@map("whatsapp_archive_settings")
+}
+
+/// Per-workspace opt-in of the agent performance report (ADR 0062). Off by
+/// default; toggled only by the platform admin.
+model WhatsAppAgentReportSettings {
+  workspaceId String   @id @map("workspace_id")
+  enabled     Boolean  @default(false)
+  updatedById String?  @map("updated_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([enabled])
+  @@map("whatsapp_agent_report_settings")
 }
 
 model WhatsAppArchive {

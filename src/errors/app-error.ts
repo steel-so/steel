@@ -1841,6 +1841,12 @@ export const whatsappArchiveInProgress = (): AppError =>
     'Já existe um pacote deste tipo sendo gerado. Aguarde terminar.',
   )
 
+export const whatsappAgentReportDisabled = (): AppError =>
+  appError(
+    'WHATSAPP_AGENT_REPORT_DISABLED',
+    'O relatório de atendentes não está disponível neste workspace',
+  )
+
 // ─── Sending domains + CRM newsletter (ADR 0054) ───────────────────────────
 
 export const sendingDomainNotFound = (): AppError =>

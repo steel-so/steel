@@ -19,6 +19,7 @@ import {
   UpdateProfileSchema,
 } from '@/src/schemas/profile.schema'
 import { ReleaseDraftRequestSchema } from '@/src/schemas/release-notes.schema'
+import { UpdateWhatsAppAgentReportSettingsSchema } from '@/src/schemas/whatsapp-agent-report.schema'
 import {
   TriggerWhatsAppArchiveSchema,
   UpdateWhatsAppArchiveSettingsSchema,
@@ -50,6 +51,7 @@ import {
   WorkspaceMemberDTO,
 } from '../schemas/core'
 import { CrmNewsletterUsageDTO } from '../schemas/crm/newsletter-issues'
+import { WhatsAppAgentReportSettingsDTO } from '../schemas/whatsapp-agent-report'
 import {
   WhatsAppArchiveDTO,
   WhatsAppArchiveOverviewDTO,
@@ -668,6 +670,41 @@ const routes: RouteConfig[] = [
         schema: PlatformAiSettingsDTO,
       },
     },
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/workspaces/{id}/whatsapp-agent-report',
+    tags: ['Admin · Workspaces'],
+    summary: 'Relatório de atendentes do workspace',
+    description:
+      'Se o relatório de desempenho dos atendentes (ADR 0062) está ligado no workspace.',
+    responses: {
+      200: {
+        description: 'Ajuste do workspace.',
+        schema: WhatsAppAgentReportSettingsDTO,
+      },
+    },
+    errors: [WORKSPACE_NOT_FOUND],
+  }),
+  admin({
+    method: 'patch',
+    path: '/admin/workspaces/{id}/whatsapp-agent-report',
+    tags: ['Admin · Workspaces'],
+    summary: 'Ligar/desligar o relatório de atendentes',
+    description:
+      'Liga ou desliga a aba Atendentes em Comunicação › Relatórios. Desligado por padrão. Auditado.',
+    consent: true,
+    body: {
+      schema: UpdateWhatsAppAgentReportSettingsSchema,
+      example: { enabled: true },
+    },
+    responses: {
+      200: {
+        description: 'Ajuste salvo.',
+        schema: WhatsAppAgentReportSettingsDTO,
+      },
+    },
+    errors: [WORKSPACE_NOT_FOUND, 'VALIDATION_ERROR'],
   }),
   admin({
     method: 'get',

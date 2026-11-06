@@ -1197,6 +1197,12 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_ARCHIVE_IN_PROGRESS',
     status: 409,
   },
+  // WhatsApp agent performance report (ADR 0062). 404 on purpose: with the
+  // report off, the feature does not exist for the workspace.
+  WHATSAPP_AGENT_REPORT_DISABLED: {
+    code: 'WHATSAPP_AGENT_REPORT_DISABLED',
+    status: 404,
+  },
   // Sending domains + CRM newsletter (ADR 0054).
   SENDING_DOMAIN_NOT_FOUND: { code: 'SENDING_DOMAIN_NOT_FOUND', status: 404 },
   // The domain is already registered by some workspace (Resend keeps one

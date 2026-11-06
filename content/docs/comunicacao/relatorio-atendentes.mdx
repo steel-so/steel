@@ -1,0 +1,68 @@
+---
+title: Relatório de atendentes
+description: Desempenho de cada atendente na tabulação das conversas encerradas - sucesso, insucesso, taxa de sucesso, tempo médio e status escolhidos.
+section: comunicacao
+order: 12
+---
+
+<Callout type='admin'>
+  O relatório de atendentes é ligado pela equipe da Stratus, a pedido do
+  cliente. Enquanto não estiver ligado, a aba **Atendentes** não aparece em
+  **Comunicação › Relatórios**.
+</Callout>
+
+Quando um atendente encerra uma conversa, ele **tabula**: escolhe um ou mais
+**status de fechamento** (por exemplo, "Venda realizada" ou "Sem interesse"),
+cada um com resultado de **sucesso** ou **insucesso**. O relatório de atendentes
+mostra, para cada pessoa, como foram essas conversas num período.
+
+## Quem vê o quê
+
+- **Dono e administradores** veem todos os atendentes.
+- **Líderes de equipe** veem os atendentes das equipes que lideram (e a si
+  mesmos), além da fila sem atendente dessas equipes.
+- **Os demais atendentes** veem só o próprio desempenho.
+
+## Filtros
+
+Em **Comunicação › Relatórios › Atendentes**:
+
+- **Período**: *Hoje*, *Últimos 7 dias* (o padrão), *Últimos 30 dias*, *Este
+  mês* ou datas de início e fim à sua escolha. Os dias seguem o horário de
+  Brasília e incluem o primeiro e o último dia. O limite é de um ano.
+- **Equipe** e **Conexão**: restringem o relatório às conversas daquela equipe
+  ou daquele número.
+
+## O que cada coluna significa
+
+O relatório conta as conversas **encerradas dentro do período**, para o
+atendente que era o responsável **no momento do encerramento**. Conversas
+encerradas sem responsável aparecem na linha **Sem atendente**.
+
+| Coluna | O que mostra |
+| --- | --- |
+| Encerradas | Conversas encerradas no período, tabuladas ou não. |
+| Sucesso / Insucesso | Quantas foram tabuladas com resultado de sucesso e de insucesso. Se alguma das opções escolhidas é de insucesso, a conversa conta como insucesso. |
+| Taxa de sucesso | Sucesso dividido pelas conversas **tabuladas**, em porcentagem. Fica em branco (—) quando nada foi tabulado. |
+| Sem tabulação | Encerradas sem nenhum status escolhido. |
+| Tempo médio | Média do tempo entre a criação da conversa e o encerramento. Uma conversa reaberta conta a vida inteira, desde a primeira criação, e não só o último atendimento. |
+| Em aberto | Conversas ainda não encerradas no momento em que você abre o relatório. Não depende do período. |
+
+Abaixo do nome de cada atendente aparece a contagem por **status de
+fechamento**. Uma conversa com mais de um status conta uma vez em **cada** um
+deles; por isso a soma dos status pode passar do número de conversas. A última
+linha da tabela traz o **total**, e o **Resumo por status de fechamento** soma
+cada status de todos os atendentes.
+
+<Callout>
+  Conversas apagadas não entram no relatório. Se um status for removido ou
+  renomeado depois, as conversas antigas continuam com o nome que tinham quando
+  foram encerradas.
+</Callout>
+
+## Exportar
+
+**Exportar CSV** baixa a mesma tabela, com os mesmos filtros: uma linha por
+atendente, uma linha de total e uma coluna por status de fechamento. O arquivo
+usa ponto e vírgula como separador e abre direto no Excel. Cada exportação fica
+registrada na auditoria.

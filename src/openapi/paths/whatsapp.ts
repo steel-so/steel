@@ -1,4 +1,5 @@
 import type { OpenApiRegistry, RouteConfig } from '../registry'
+import { agentReportRoutes } from './whatsapp/agent-report'
 import { aiRoutes } from './whatsapp/ai'
 import { aiCampaignRoutes } from './whatsapp/ai-campaigns'
 import { archiveRoutes } from './whatsapp/archives'
@@ -49,6 +50,7 @@ const routes: RouteConfig[] = [
   ...voiceAgentRoutes,
   ...slaRoutes,
   ...archiveRoutes,
+  ...agentReportRoutes,
   ...chatbotRoutes,
   ...flowRoutes,
   ...surveyRoutes,
