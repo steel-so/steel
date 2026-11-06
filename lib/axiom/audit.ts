@@ -278,6 +278,8 @@ export type AuditEntity =
   // IP-restricted workspace entry log (ADR 0053): CSV exports
   | 'workspace_access_log'
   // WhatsApp archive for banks (ADR 0052)
+  | 'whatsapp_agent_report'
+  | 'whatsapp_agent_report_settings'
   | 'whatsapp_archive'
   | 'whatsapp_archive_settings'
   // Sending domains of the CRM newsletter (ADR 0054)
@@ -334,6 +336,7 @@ export type AuditAction =
   | 'prune'
   | 'grant'
   | 'revoke'
+  | 'export'
   | 'export_requested'
   | 'export_completed'
   | 'archive'

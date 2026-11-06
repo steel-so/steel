@@ -65,7 +65,7 @@ export function matchesInboxFilter(
   conversation: Pick<WhatsAppConversationDTO, 'assignedUserId' | 'teamId'>,
   filter: WhatsAppInboxFilter,
   userId: string | undefined,
-  teams: Pick<WhatsAppTeamDTO, 'id' | 'members'>[] = [],
+  teams: { id: string; members: { userId: string }[] }[] = [],
 ): boolean {
   if (filter === 'all') return true
   if (filter === 'mine') return conversation.assignedUserId === userId
