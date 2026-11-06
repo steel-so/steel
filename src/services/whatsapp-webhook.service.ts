@@ -59,6 +59,10 @@ import { WhatsAppChatbotRuntimeService } from './whatsapp-chatbot-runtime.servic
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppFlowResponseService } from './whatsapp-flow-response.service'
+import {
+  notifyWhatsAppUsers,
+  whatsAppConversationPath,
+} from './whatsapp-notify'
 import { WhatsAppSchedulingReplyService } from './whatsapp-scheduling-reply.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
 import { WhatsAppTeamService } from './whatsapp-team.service'
@@ -295,6 +299,8 @@ export const WhatsAppWebhookService = {
       conversation: WhatsAppConversation
       reason: ConversationWaitingReason
     } | null = null
+    /** A conversation a button action closed came back to its assignee. */
+    let buttonReopenAssigneeId: string | null = null
 
     if (existingConversation.value) {
       const conversation = existingConversation.value
@@ -370,6 +376,10 @@ export const WhatsAppWebhookService = {
         slaOwner = reopened.value
         if (!closed.value.assignedUserId) {
           waiting = { conversation: reopened.value, reason: 'reopened' }
+        } else if (closedByButton) {
+          // The AI stays off, so only a person can answer: tell the assignee.
+          // (Unassigned ones reach the queue notices below.)
+          buttonReopenAssigneeId = closed.value.assignedUserId
         }
         if (!serviceDesk) {
           await WhatsAppUsageService.record(workspaceId, 'conversations')
@@ -637,6 +647,18 @@ export const WhatsAppWebhookService = {
           ...waiting,
           contact: contact.value,
           actorId: null,
+        })
+      }
+      if (buttonReopenAssigneeId) {
+        await notifyWhatsAppUsers({
+          workspaceId,
+          kind: 'WHATSAPP_AI_HANDOFF',
+          userIds: [buttonReopenAssigneeId],
+          title:
+            'Cliente respondeu depois de um atendimento encerrado por botão',
+          body: `${contact.value.name ?? contact.value.waId} escreveu de novo e a IA não vai responder.`,
+          path: whatsAppConversationPath(conversationId),
+          meta: { conversationId },
         })
       }
       // Unassigned conversation of a team: the team queue hears about it.

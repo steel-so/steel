@@ -26,6 +26,10 @@ vi.mock('@/src/services/satisfaction-survey.service', () => ({
 vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
   emitWhatsAppConversationWaiting: vi.fn(),
 }))
+vi.mock('@/src/services/whatsapp-notify', () => ({
+  notifyWhatsAppUsers: vi.fn(async () => 0),
+  whatsAppConversationPath: (id: string) => `/zap?conversation=${id}`,
+}))
 vi.mock('@/src/services/whatsapp-usage.service', () => ({
   WhatsAppUsageService: {
     assertCanSend: vi.fn(async () => ({ ok: true, value: undefined })),
@@ -94,6 +98,7 @@ import { dispatchSteelAgentEvent } from '@/src/services/steel-agent-dispatcher'
 import { WhatsAppChatbotRuntimeService } from '@/src/services/whatsapp-chatbot-runtime.service'
 import { CrmNewsletterWhatsAppReceiptsService } from '../crm-newsletter-whatsapp-receipts.service'
 import { emitWhatsAppConversationWaiting } from '../whatsapp-conversation-waiting'
+import { notifyWhatsAppUsers } from '../whatsapp-notify'
 import { WhatsAppSlaService } from '../whatsapp-sla.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 import { WhatsAppWebhookService } from '../whatsapp-webhook.service'
@@ -496,6 +501,60 @@ describe('WhatsAppWebhookService', () => {
         reason: 'reopened',
         actorId: null,
       })
+    })
+
+    it('should notify the assignee when a button-closed conversation is reopened by the contact', async () => {
+      arrangeClosed({ aiConfigActive: true })
+      mockedEventRepo.latestCloseSource.mockResolvedValue(ok('BUTTON_ACTION'))
+      vi.mocked(notifyWhatsAppUsers).mockClear()
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(notifyWhatsAppUsers).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws1',
+          kind: 'WHATSAPP_AI_HANDOFF',
+          userIds: ['agent1'],
+          title:
+            'Cliente respondeu depois de um atendimento encerrado por botão',
+        }),
+      )
+    })
+
+    it('should not notify the assignee when the conversation was closed by an agent', async () => {
+      arrangeClosed({ aiConfigActive: true })
+      mockedEventRepo.latestCloseSource.mockResolvedValue(ok('AGENT'))
+      vi.mocked(notifyWhatsAppUsers).mockClear()
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
+    })
+
+    it('should leave a button-closed unassigned reopen to the queue notices', async () => {
+      arrangeClosed({ aiConfigActive: false })
+      mockedEventRepo.latestCloseSource.mockResolvedValue(ok('BUTTON_ACTION'))
+      const closed = createFakeWhatsAppConversation({
+        id: 'closed1',
+        workspaceId: 'ws1',
+        contactId: 'contact1',
+        status: 'CLOSED',
+        assignedUserId: null,
+      })
+      mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
+        ok(closed),
+      )
+      mockedConversationRepo.update.mockResolvedValue(
+        ok({ ...closed, status: 'NEW' as const }),
+      )
+      vi.mocked(notifyWhatsAppUsers).mockClear()
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
+      expect(emitWhatsAppConversationWaiting).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'reopened' }),
+      )
     })
 
     it('should reopen without AI when the workspace AI is off', async () => {
