@@ -6,12 +6,22 @@ import { toCsv } from '@/src/lib/crm-export'
 import { formatWaId } from '@/src/lib/whatsapp/phone'
 
 /** Formats a conversation can be downloaded in. */
-export const WHATSAPP_CONVERSATION_EXPORT_FORMATS = ['txt', 'csv'] as const
+export const WHATSAPP_CONVERSATION_EXPORT_FORMATS = [
+  'txt',
+  'csv',
+  'pdf',
+] as const
 export type WhatsAppConversationExportFormat =
   (typeof WHATSAPP_CONVERSATION_EXPORT_FORMATS)[number]
 
 /** Hard cap of messages in one download — keeps the response bounded. */
 export const WHATSAPP_CONVERSATION_EXPORT_MAX_MESSAGES = 20_000
+
+/**
+ * Cap for the PDF: it is rendered in memory, so a very long conversation is
+ * refused (the TXT/CSV downloads have no such limit below the general cap).
+ */
+export const WHATSAPP_CONVERSATION_EXPORT_PDF_MAX_MESSAGES = 2_000
 
 const EXPORT_TIME_ZONE = 'America/Sao_Paulo'
 
@@ -34,7 +44,7 @@ export interface WhatsAppConversationExportInput {
 export interface WhatsAppConversationExportFile {
   fileName: string
   contentType: string
-  body: string
+  body: string | Uint8Array<ArrayBuffer>
 }
 
 export const TYPE_PLACEHOLDER: Record<WhatsAppMessageType, string> = {
@@ -60,7 +70,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
   hour12: false,
 })
 
-function formatDateTime(date: Date): string {
+export function formatDateTime(date: Date): string {
   return dateTimeFormatter.format(date).replace(',', '')
 }
 
@@ -85,7 +95,7 @@ function messageContent(message: ExportableWhatsAppMessage): string {
   return parts.join(' ')
 }
 
-function fileSlug(input: WhatsAppConversationExportInput): string {
+export function fileSlug(input: WhatsAppConversationExportInput): string {
   const base = (input.contactName ?? input.contactWaId)
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -98,11 +108,12 @@ function fileSlug(input: WhatsAppConversationExportInput): string {
 /**
  * Builds the downloadable transcript of a conversation: a WhatsApp-like
  * `.txt` (`[dd/mm/aaaa hh:mm] Nome: mensagem`) or a `.csv` with one row per
- * message. Times are in America/Sao_Paulo.
+ * message. Times are in America/Sao_Paulo. The PDF is built by
+ * `conversation-export-pdf.tsx` (async, loads the PDF engine only when asked).
  */
 export function buildWhatsAppConversationExport(
   input: WhatsAppConversationExportInput,
-  format: WhatsAppConversationExportFormat,
+  format: Exclude<WhatsAppConversationExportFormat, 'pdf'>,
 ): WhatsAppConversationExportFile {
   const contactLabel = input.contactName ?? input.contactWaId
   const fileName = `conversa-${fileSlug(input)}.${format}`

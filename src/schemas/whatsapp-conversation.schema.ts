@@ -34,7 +34,7 @@ export type CloseWhatsAppConversationDTO = z.input<
 export const ExportWhatsAppConversationSchema = z.object({
   format: z
     .enum(WHATSAPP_CONVERSATION_EXPORT_FORMATS, {
-      message: 'Formato deve ser txt ou csv',
+      message: 'Formato deve ser txt, csv ou pdf',
     })
     .default('txt'),
 })

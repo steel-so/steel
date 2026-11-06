@@ -55,6 +55,10 @@ import {
   usePhoneCalls,
 } from '@/src/hooks/use-phone-calls'
 import { useUser } from '@/src/hooks/use-user'
+import {
+  useWhatsAppBoletoCharges,
+  useWhatsAppBoletoSettings,
+} from '@/src/hooks/use-whatsapp-boleto'
 import { useWhatsAppBusinessHours } from '@/src/hooks/use-whatsapp-business-hours'
 import { useFindOrCreateWhatsAppContact } from '@/src/hooks/use-whatsapp-contacts'
 import {
@@ -81,21 +85,17 @@ import {
   useWhatsAppPixSettings,
 } from '@/src/hooks/use-whatsapp-pix'
 import {
-  useWhatsAppBoletoCharges,
-  useWhatsAppBoletoSettings,
-} from '@/src/hooks/use-whatsapp-boleto'
-import {
   useSetWhatsAppConversationTeam,
   useWhatsAppConversationScope,
   useWhatsAppTeams,
 } from '@/src/hooks/use-whatsapp-teams'
+import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type {
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
 } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
-import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 import { WhatsappBoletoChargeCard } from './boleto/whatsapp-boleto-charge-card'
 import { WhatsappBoletoChargeDialog } from './boleto/whatsapp-boleto-charge-dialog'
@@ -355,7 +355,13 @@ export function WhatsappConversationView({
         pixCharges.data ?? [],
         boletoCharges.data ?? [],
       ),
-    [messages.data, events.data, calls.data, pixCharges.data, boletoCharges.data],
+    [
+      messages.data,
+      events.data,
+      calls.data,
+      pixCharges.data,
+      boletoCharges.data,
+    ],
   )
 
   function handleClose(reason: string | undefined, statusIds: string[]) {
@@ -375,7 +381,7 @@ export function WhatsappConversationView({
 
   // Plain navigation to the attachment route: the browser keeps the page and
   // saves the file (Content-Disposition), with the session cookie attached.
-  function handleDownload(format: 'txt' | 'csv') {
+  function handleDownload(format: 'txt' | 'csv' | 'pdf') {
     const link = document.createElement('a')
     link.href = `/api/workspaces/${workspaceId}/whatsapp/conversations/${conversation.id}/export?format=${format}`
     link.download = ''
@@ -729,6 +735,9 @@ export function WhatsappConversationView({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDownload('csv')}>
                   Planilha (.csv)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                  PDF só com o texto (.pdf)
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>

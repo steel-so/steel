@@ -141823,7 +141823,7 @@
         "tags": ["Comunicação · Conversas"],
         "summary": "Baixar conversa",
         "operationId": "getWorkspacesByIdWhatsappConversationsByConversationIdExport",
-        "description": "Devolve a transcrição da conversa para download (fora do envelope JSON), desde a última limpeza, em horário de Brasília. `format=txt` (padrão) gera o texto no estilo do WhatsApp (`[dd/mm/aaaa hh:mm] Nome: mensagem`); `format=csv` gera uma linha por mensagem. Mídias aparecem como marcador + URL. Até 20.000 mensagens. Erros continuam no envelope JSON. Auditado (LGPD). Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Devolve a transcrição da conversa para download (fora do envelope JSON), desde a última limpeza, em horário de Brasília. `format=txt` (padrão) gera o texto no estilo do WhatsApp (`[dd/mm/aaaa hh:mm] Nome: mensagem`); `format=csv` gera uma linha por mensagem; `format=pdf` gera um PDF só com o texto (mídias aparecem apenas como marcador, sem arquivo nem link; até 2.000 mensagens, acima disso devolve 400). Em txt e csv as mídias aparecem como marcador + URL, até 20.000 mensagens. Erros continuam no envelope JSON. Auditado (LGPD). Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -141844,13 +141844,13 @@
             "description": "Formato do arquivo (padrão txt).",
             "schema": {
               "type": "string",
-              "enum": ["txt", "csv"]
+              "enum": ["txt", "csv", "pdf"]
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Arquivo de texto (`text/plain`) ou CSV (`text/csv`), com `Content-Disposition: attachment`.",
+            "description": "Arquivo de texto (`text/plain`), CSV (`text/csv`) ou PDF (`application/pdf`), com `Content-Disposition: attachment`.",
             "headers": {
               "Content-Disposition": {
                 "description": "`attachment; filename=\"conversa-<contato>.txt\"`.",

@@ -8,6 +8,7 @@ import { logger } from '@/lib/axiom/logger'
 import {
   badRequest,
   forbidden,
+  validationError,
   whatsappConnectionNotFound,
   whatsappContactNotFound,
   whatsappConversationAlreadyClosed,
@@ -21,6 +22,7 @@ import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import {
   buildWhatsAppConversationExport,
   WHATSAPP_CONVERSATION_EXPORT_MAX_MESSAGES,
+  WHATSAPP_CONVERSATION_EXPORT_PDF_MAX_MESSAGES,
   type WhatsAppConversationExportFile,
   type WhatsAppConversationExportFormat,
 } from '@/src/lib/whatsapp/conversation-export'
@@ -1087,7 +1089,7 @@ export const WhatsAppConversationService = {
   },
 
   /**
-   * Downloadable transcript of the conversation (TXT or CSV), from the last
+   * Downloadable transcript of the conversation (TXT, CSV or text-only PDF), from the last
    * "clear" on. Audited — it takes personal data out of the platform (LGPD).
    */
   async exportTranscript(
@@ -1101,28 +1103,45 @@ export const WhatsAppConversationService = {
     const conversation = access.value.conversation
     if (conversation.deletedAt) return err(whatsappConversationNotFound())
 
+    const isPdf = format === 'pdf'
     const messages = await WhatsAppMessageRepository.listForExport(id, {
-      limit: WHATSAPP_CONVERSATION_EXPORT_MAX_MESSAGES,
+      // One extra row tells a PDF that is over its cap from one exactly at it.
+      limit: isPdf
+        ? WHATSAPP_CONVERSATION_EXPORT_PDF_MAX_MESSAGES + 1
+        : WHATSAPP_CONVERSATION_EXPORT_MAX_MESSAGES,
       after: conversation.clearedAt,
     })
     if (!messages.ok) return messages
+    if (
+      isPdf &&
+      messages.value.length > WHATSAPP_CONVERSATION_EXPORT_PDF_MAX_MESSAGES
+    ) {
+      return err(
+        validationError(
+          `A conversa tem mais de ${WHATSAPP_CONVERSATION_EXPORT_PDF_MAX_MESSAGES} mensagens e é grande demais para PDF. Baixe em texto (.txt) ou planilha (.csv).`,
+        ),
+      )
+    }
 
-    const file = buildWhatsAppConversationExport(
-      {
-        contactName: conversation.contact.name,
-        contactWaId: conversation.contact.waId,
-        messages: messages.value.map((message) => ({
-          direction: message.direction,
-          type: message.type,
-          text: message.text,
-          mediaUrl: message.mediaUrl,
-          sentByAi: message.sentByAi,
-          senderName: message.senderUser?.name ?? null,
-          createdAt: message.createdAt,
-        })),
-      },
-      format,
-    )
+    const exportInput = {
+      contactName: conversation.contact.name,
+      contactWaId: conversation.contact.waId,
+      messages: messages.value.map((message) => ({
+        direction: message.direction,
+        type: message.type,
+        text: message.text,
+        mediaUrl: message.mediaUrl,
+        sentByAi: message.sentByAi,
+        senderName: message.senderUser?.name ?? null,
+        createdAt: message.createdAt,
+      })),
+    }
+    // The PDF engine is heavy: loaded only when a PDF is asked for.
+    const file = isPdf
+      ? await (
+          await import('@/src/lib/whatsapp/conversation-export-pdf')
+        ).buildWhatsAppConversationPdf(exportInput)
+      : buildWhatsAppConversationExport(exportInput, format)
 
     auditMutation({
       entity: 'whatsapp_conversation',

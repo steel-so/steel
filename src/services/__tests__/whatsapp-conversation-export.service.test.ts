@@ -105,4 +105,91 @@ describe('WhatsAppConversationService.exportTranscript()', () => {
       'WHATSAPP_CONVERSATION_NOT_FOUND',
     )
   })
+
+  describe('pdf', () => {
+    function arrangePdf(messageCount: number) {
+      asRole('ADMIN')
+      mockedConversationRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppConversationWithPreview({
+            id: 'conv1',
+            workspaceId: 'ws1',
+            contact: createFakeWhatsAppContact({
+              name: 'Maria',
+              waId: '5511999990000',
+            }),
+          }),
+        ),
+      )
+      mockedMessageRepo.listForExport.mockResolvedValue(
+        ok(
+          Array.from({ length: messageCount }, (_, i) => ({
+            ...createFakeWhatsAppMessage({ text: `Mensagem ${i}` }),
+            senderUser: null,
+          })),
+        ),
+      )
+    }
+
+    it('should render a real PDF and audit it', async () => {
+      arrangePdf(2)
+
+      const file = expectOk(
+        await WhatsAppConversationService.exportTranscript(
+          'u1',
+          'ws1',
+          'conv1',
+          'pdf',
+        ),
+      )
+
+      expect(file.fileName).toBe('conversa-maria.pdf')
+      expect(file.contentType).toBe('application/pdf')
+      expect(file.body).toBeInstanceOf(Uint8Array)
+      expect(
+        Buffer.from(file.body as Uint8Array)
+          .subarray(0, 5)
+          .toString(),
+      ).toBe('%PDF-')
+      expect(mockedMessageRepo.listForExport).toHaveBeenCalledWith('conv1', {
+        limit: 2001,
+        after: null,
+      })
+      expect(auditMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'download',
+          meta: { workspaceId: 'ws1', format: 'pdf', messages: 2 },
+        }),
+      )
+    })
+
+    it('should refuse a conversation too long for a PDF, pointing to txt/csv', async () => {
+      arrangePdf(2001)
+
+      const error = expectErr(
+        await WhatsAppConversationService.exportTranscript(
+          'u1',
+          'ws1',
+          'conv1',
+          'pdf',
+        ),
+        'VALIDATION_ERROR',
+      )
+
+      expect(error.message).toMatch(/\.txt/)
+    })
+
+    it('should accept a conversation exactly at the PDF cap', async () => {
+      arrangePdf(2000)
+
+      expectOk(
+        await WhatsAppConversationService.exportTranscript(
+          'u1',
+          'ws1',
+          'conv1',
+          'pdf',
+        ),
+      )
+    }, 60_000)
+  })
 })

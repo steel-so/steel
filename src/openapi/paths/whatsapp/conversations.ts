@@ -444,14 +444,14 @@ export const conversationRoutes: RouteConfig[] = [
     path: `${BASE}/export`,
     tags: [TAG],
     summary: 'Baixar conversa',
-    description: `Devolve a transcrição da conversa para download (fora do envelope JSON), desde a última limpeza, em horário de Brasília. \`format=txt\` (padrão) gera o texto no estilo do WhatsApp (\`[dd/mm/aaaa hh:mm] Nome: mensagem\`); \`format=csv\` gera uma linha por mensagem. Mídias aparecem como marcador + URL. Até 20.000 mensagens. Erros continuam no envelope JSON. Auditado (LGPD). ${perm('conversations', 'VIEW')}`,
+    description: `Devolve a transcrição da conversa para download (fora do envelope JSON), desde a última limpeza, em horário de Brasília. \`format=txt\` (padrão) gera o texto no estilo do WhatsApp (\`[dd/mm/aaaa hh:mm] Nome: mensagem\`); \`format=csv\` gera uma linha por mensagem; \`format=pdf\` gera um PDF só com o texto (mídias aparecem apenas como marcador, sem arquivo nem link; até 2.000 mensagens, acima disso devolve 400). Em txt e csv as mídias aparecem como marcador + URL, até 20.000 mensagens. Erros continuam no envelope JSON. Auditado (LGPD). ${perm('conversations', 'VIEW')}`,
     params: PARAMS,
     query: {
       type: 'object',
       properties: {
         format: {
           type: 'string',
-          enum: ['txt', 'csv'],
+          enum: ['txt', 'csv', 'pdf'],
           description: 'Formato do arquivo (padrão txt).',
         },
       },
@@ -459,7 +459,7 @@ export const conversationRoutes: RouteConfig[] = [
     responses: {
       200: {
         description:
-          'Arquivo de texto (`text/plain`) ou CSV (`text/csv`), com `Content-Disposition: attachment`.',
+          'Arquivo de texto (`text/plain`), CSV (`text/csv`) ou PDF (`application/pdf`), com `Content-Disposition: attachment`.',
         envelope: false,
         contentType: 'text/plain',
         schema: { type: 'string' },
