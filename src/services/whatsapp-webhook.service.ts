@@ -41,6 +41,7 @@ import {
   WhatsAppConversationRepository,
   type WhatsAppConversationScope,
 } from '@/src/repositories/whatsapp-conversation.repository'
+import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp-conversation-event.repository'
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
@@ -337,7 +338,18 @@ export const WhatsAppWebhookService = {
       if (closed.value) {
         // A campaign conversation keeps its AI (the campaign decides
         // whether it still answers).
-        const reopenAi = aiConfigActive || closed.value.aiCampaignId !== null
+        // A conversation a button action closed ("Outro horário" and the
+        // like) ended on purpose: the contact's next message goes to a
+        // person, never back to the workspace AI.
+        const closeSource =
+          await WhatsAppConversationEventRepository.latestCloseSource(
+            closed.value.id,
+          )
+        const closedByButton =
+          closeSource.ok && closeSource.value === 'BUTTON_ACTION'
+        const reopenAi =
+          !closedByButton &&
+          (aiConfigActive || closed.value.aiCampaignId !== null)
         const reopened = await reopenWhatsAppConversation(closed.value, {
           actorUserId: null,
           source: 'CONTACT',
@@ -345,7 +357,7 @@ export const WhatsAppWebhookService = {
             unreadCount: { increment: 1 },
             lastMessageAt: new Date(),
             aiActive: reopenAi,
-            aiHandoff: false,
+            aiHandoff: closedByButton,
             ...(input.routeTeamId && !closed.value.teamId
               ? { teamId: input.routeTeamId }
               : {}),

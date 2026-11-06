@@ -136,6 +136,8 @@ describe('WhatsAppWebhookService', () => {
     )
     // Padrão: contato sem conversa fechada para reabrir.
     mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(ok(null))
+    // Padrão: a conversa fechada não foi fechada por um botão.
+    mockedEventRepo.latestCloseSource.mockResolvedValue(ok('AGENT'))
     // Padrão: nenhum chatbot assume a mensagem.
     vi.mocked(WhatsAppChatbotRuntimeService.claimInbound).mockResolvedValue(
       ok({ engaged: false }),
@@ -363,6 +365,56 @@ describe('WhatsAppWebhookService', () => {
       expect(
         mockedConversationRepo.update.mock.lastCall?.[1],
       ).not.toHaveProperty('teamId')
+    })
+
+    it.each([
+      ['workspace AI on', true],
+      ['workspace AI off', false],
+    ])(
+      'should keep the AI off when a button action closed the conversation (%s)',
+      async (_label, aiConfigActive) => {
+        arrangeClosed({ aiConfigActive })
+        mockedEventRepo.latestCloseSource.mockResolvedValue(ok('BUTTON_ACTION'))
+
+        expectOk(
+          await WhatsAppWebhookService.ingestInboundMessage(baseInbound()),
+        )
+
+        expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+          'closed1',
+          expect.objectContaining({
+            status: 'IN_PROGRESS',
+            aiActive: false,
+            aiHandoff: true,
+          }),
+        )
+      },
+    )
+
+    it('should still bring the AI back when a person closed the conversation', async () => {
+      arrangeClosed({ aiConfigActive: true })
+      mockedEventRepo.latestCloseSource.mockResolvedValue(ok('AGENT'))
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'closed1',
+        expect.objectContaining({ aiActive: true, aiHandoff: false }),
+      )
+    })
+
+    it('should not break the reopening when the close source cannot be read', async () => {
+      arrangeClosed({ aiConfigActive: true })
+      mockedEventRepo.latestCloseSource.mockResolvedValue(
+        err({ code: 'DATABASE_ERROR', message: 'x' } as never),
+      )
+
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
+
+      expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+        'closed1',
+        expect.objectContaining({ aiActive: true, aiHandoff: false }),
+      )
     })
 
     it('should reopen the closed conversation instead of creating a new one', async () => {

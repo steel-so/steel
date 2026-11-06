@@ -197,6 +197,7 @@ describe.each(directMessageFlows)(
       mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
         ok(closedConversation()),
       )
+      _mockedEventRepo.latestCloseSource.mockResolvedValue(ok(null))
       mockedConversationRepo.update.mockResolvedValue(err(DB_ERROR))
 
       expectErr(await ingest(baseInbound()), 'DATABASE_ERROR')

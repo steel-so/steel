@@ -22,6 +22,24 @@ export const WhatsAppConversationEventRepository = {
     }
   },
 
+  /** Source of the most recent CLOSED event (`null` = never closed). */
+  async latestCloseSource(
+    conversationId: string,
+  ): Promise<Result<WhatsAppConversationEvent['source'] | null>> {
+    try {
+      const event = await prisma.whatsAppConversationEvent.findFirst({
+        where: { conversationId, kind: 'CLOSED' },
+        orderBy: { createdAt: 'desc' },
+        select: { source: true },
+      })
+      return ok(event?.source ?? null)
+    } catch (error) {
+      return err(
+        dbError('Failed to read the last close of a conversation', error),
+      )
+    }
+  },
+
   async listByConversation(
     conversationId: string,
     workspaceId: string,
