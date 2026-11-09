@@ -14,6 +14,35 @@ uma descrição ou recado e, se quiser, a URL de uma foto. Com uma conexão Z-AP
 A coluna **Transmissões** mostra se o contato recebe transmissões, e a coluna
 **WhatsApp** mostra se o número foi conferido (veja abaixo).
 
+### Campos extras dos contatos (CPF, CNPJ e outros)
+
+Além da descrição, cada workspace pode criar campos próprios para os contatos,
+como **CPF** ou **CNPJ**. Quem é proprietário ou administrador cria em
+**Configurações do WhatsApp › Atendimento › Campos dos contatos**, com **Novo
+campo**: informe o nome e escolha o tipo.
+
+| Tipo            | O que valida                                              |
+| --------------- | --------------------------------------------------------- |
+| CPF e CNPJ      | Confere os dígitos verificadores; aceita com ou sem pontos |
+| E-mail          | Formato de e-mail                                         |
+| Telefone        | De 8 a 15 dígitos, com DDD                                |
+| CEP             | 8 dígitos                                                 |
+| Link (URL)      | Precisa começar com http:// ou https://                   |
+| Número e Data   | Número (aceita vírgula) e data (dd/mm/aaaa)               |
+| Sim/Não         | Marcação de sim ou não                                    |
+| Lista de opções | Uma das opções que você definir                           |
+| Texto           | Texto livre                                               |
+
+- Os campos aparecem ao criar e editar um contato (marque **Obrigatório no
+  cadastro** para exigir o preenchimento) e viram colunas na lista de contatos.
+- A busca de contatos também encontra pelo valor dos campos: digitar um CPF,
+  com ou sem pontuação, traz o contato.
+- O tipo não muda depois de criado; para trocar, crie outro campo. Remover um
+  campo o esconde das telas, e os valores já preenchidos ficam guardados.
+- Cada workspace pode ter até 30 campos.
+- CPF e CNPJ são dados pessoais: o Steel guarda só os dígitos, registra na
+  auditoria quem alterou, e os valores não vão para os logs.
+
 ### Importar contatos por planilha
 
 Em **Contatos**, use **Importar** e envie um arquivo CSV (separado por vírgula
@@ -27,7 +56,10 @@ cabeçalhos, com estes nomes, em um dos dois formatos:
 | Descrição       | Detalhes         |
 
 - Maiúsculas, acentos e a ordem das colunas não importam, e colunas extras são
-  ignoradas.
+  ignoradas — exceto as que têm o mesmo nome de um campo extra dos contatos
+  (por exemplo, uma coluna **CPF**): essas são lidas e validadas. Um valor
+  inválido recusa só aquela linha, e uma célula em branco não apaga o dado já
+  salvo. O botão **Baixar modelo** já traz as colunas dos seus campos.
 - Não misture os formatos (por exemplo, **Nome**, **Número** e **Descrição**):
   se faltar um cabeçalho ou ele tiver outro nome, a planilha inteira é
   recusada e nada é importado.
