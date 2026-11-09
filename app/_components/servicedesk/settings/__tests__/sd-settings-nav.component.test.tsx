@@ -82,7 +82,7 @@ describe('<SdSettingsNav />', () => {
       expect(hrefs).toContain(`${BASE}/settings?tab=${tab.id}`)
     }
     for (const group of sdSettingsNavGroups()) {
-      expect(screen.getByText(group.label)).toBeTruthy()
+      expect(screen.getAllByText(group.label).length).toBeGreaterThan(0)
     }
   })
 
