@@ -1,4 +1,5 @@
 import z from 'zod'
+import type { CrmCustomFieldTypeDTO } from '@/types/crm-custom-field'
 import { CRM_NEWSLETTER_SUBSCRIBER_SOURCES } from './crm-newsletter.schema'
 
 /**
@@ -306,7 +307,7 @@ export type CrmNewsletterSegmentOptionsDTO = {
   customFields: {
     id: string
     label: string
-    type: 'TEXT' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'SELECT'
+    type: CrmCustomFieldTypeDTO
     options: string[]
   }[]
 }

@@ -74,6 +74,7 @@ describe('WhatsAppContactService — list/create/findOrCreate failures', () => {
       undefined,
       undefined,
       undefined,
+      [],
     )
   })
 
@@ -193,7 +194,7 @@ describe('WhatsAppContactService.update()', () => {
       expect.objectContaining({
         action: 'update',
         targetId: 'ct1',
-        meta: { fields: ['name'] },
+        meta: { fields: ['name'], customFieldIds: [] },
       }),
     )
   })
@@ -264,7 +265,6 @@ describe('WhatsAppContactService.setBroadcastOptOut() failures', () => {
           broadcastOptedOutAt: null,
           broadcastOptOutSource: null,
         }),
-        [],
       ),
     )
     mockedContactRepo.setBroadcastOptOut.mockResolvedValue(ok(contact()))

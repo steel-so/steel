@@ -311,8 +311,48 @@ export const WhatsAppContactDTO = dto(
       description: 'Quando a checagem "tem WhatsApp?" foi feita.',
     }),
     conversationCount: z.number().int(),
+    customFields: z
+      .record(
+        z.string(),
+        z.union([z.string(), z.number(), z.boolean(), z.null()]),
+      )
+      .optional()
+      .meta({
+        description:
+          'Campos extras do contato (`idDoCampo` → valor), definidos em `/whatsapp/contact-fields`. CPF, CNPJ, CEP e telefone voltam só com dígitos.',
+      }),
     createdAt: dateTime(),
     updatedAt: dateTime(),
+  }),
+)
+
+export const WhatsAppContactFieldDTO = dto(
+  'WhatsAppContactField',
+  z.object({
+    id: id('ckv9x2p0h0000cf7d3k1e5abc'),
+    key: z.string().meta({ example: 'cpf' }),
+    label: z.string().meta({ example: 'CPF' }),
+    type: z
+      .enum([
+        'TEXT',
+        'NUMBER',
+        'DATE',
+        'BOOLEAN',
+        'SELECT',
+        'CPF',
+        'CNPJ',
+        'EMAIL',
+        'PHONE',
+        'URL',
+        'CEP',
+      ])
+      .meta({
+        description:
+          '`CPF` e `CNPJ` são conferidos pelos dígitos verificadores; CPF, CNPJ, CEP e telefone são guardados só com dígitos.',
+      }),
+    options: z.array(z.string()),
+    required: z.boolean(),
+    position: z.number().int(),
   }),
 )
 
@@ -1697,10 +1737,12 @@ export const WhatsAppBoletoChargeDTO = dto(
       description: 'Link do PSP para ver ou imprimir o boleto.',
     }),
     dueAt: dateTime(),
-    status: z.enum(['PENDING', 'PAID', 'EXPIRED', 'CANCELED', 'REFUNDED']).meta({
-      description:
-        '`EXPIRED` é derivado: boleto `PENDING` depois do `dueAt`. Um pagamento que chega depois do vencimento ou do cancelamento ainda o marca como `PAID`.',
-    }),
+    status: z
+      .enum(['PENDING', 'PAID', 'EXPIRED', 'CANCELED', 'REFUNDED'])
+      .meta({
+        description:
+          '`EXPIRED` é derivado: boleto `PENDING` depois do `dueAt`. Um pagamento que chega depois do vencimento ou do cancelamento ainda o marca como `PAID`.',
+      }),
     paidAt: nullableDateTime(),
     paidAmount: z.number().nullable(),
     canceledAt: nullableDateTime(),
@@ -1756,7 +1798,8 @@ export const WhatsAppWidgetSettingsDTO = dto(
     showPortal: z.boolean(),
     showSurvey: z.boolean(),
     snippet: z.string().meta({
-      description: '`<script>` para colar no site (vazio até a primeira gravação).',
+      description:
+        '`<script>` para colar no site (vazio até a primeira gravação).',
     }),
     portalUrl: z.string(),
   }),
@@ -1812,4 +1855,3 @@ export const WidgetSendResultDTO = dto(
     }),
   }),
 )
-

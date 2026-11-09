@@ -79,6 +79,7 @@ export async function applyCustomFieldValues(
     values,
   )
   if (!writes.ok) return writes
+  if (writes.value.length === 0) return ok(undefined)
   return CrmCustomFieldValueRepository.applyForRecord(writes.value)
 }
 

@@ -6,11 +6,16 @@ import {
   UpdateWhatsAppContactBroadcastOptOutSchema,
   UpdateWhatsAppContactSchema,
 } from '@/src/schemas/whatsapp-contact.schema'
+import {
+  CreateWhatsAppContactFieldSchema,
+  UpdateWhatsAppContactFieldSchema,
+} from '@/src/schemas/whatsapp-contact-field.schema'
 import { ImportWhatsAppContactsSchema } from '@/src/schemas/whatsapp-contact-import.schema'
 import { StartWhatsAppNumberValidationSchema } from '@/src/schemas/whatsapp-number-validation.schema'
 import type { RouteConfig } from '../../registry'
 import {
   WhatsAppContactDTO,
+  WhatsAppContactFieldDTO,
   WhatsAppContactImportResultDTO,
   WhatsAppNumberValidationDTO,
 } from '../../schemas/whatsapp'
@@ -25,8 +30,82 @@ import {
 const TAG = 'Comunicação · Contatos' as const
 const BASE = '/workspaces/{id}/whatsapp/contacts/{contactId}'
 const PARAMS = { contactId: CONTACT_PARAM }
+const FIELD_BASE = '/workspaces/{id}/whatsapp/contact-fields/{fieldId}'
+const FIELD_PARAMS = { fieldId: 'Id do campo extra dos contatos.' }
 
 export const contactRoutes: RouteConfig[] = [
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/contact-fields',
+    tags: [TAG],
+    summary: 'Listar campos extras dos contatos',
+    description: `Campos que o workspace definiu para os contatos (CPF, CNPJ, e-mail...), na ordem de criação. ${perm('contacts', 'VIEW')}`,
+    responses: {
+      200: {
+        description: 'Campos.',
+        schema: z.array(WhatsAppContactFieldDTO),
+      },
+    },
+    errors: permErrors('contacts', 'VIEW'),
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/contact-fields',
+    tags: [TAG],
+    summary: 'Criar campo extra dos contatos',
+    description: `Cria um campo (até 30 por workspace). O tipo não muda depois; \`SELECT\` exige ao menos uma opção. A chave é derivada do nome. Auditado. ${PRIVILEGED}`,
+    consent: true,
+    body: CreateWhatsAppContactFieldSchema,
+    responses: {
+      201: { description: 'Campo criado.', schema: WhatsAppContactFieldDTO },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      {
+        code: 'CRM_CUSTOM_FIELD_CONFLICT',
+        when: 'Já existe um campo com este nome',
+      },
+      {
+        code: 'CRM_CUSTOM_FIELD_INVALID',
+        when: 'Limite de 30 campos atingido',
+      },
+    ],
+  },
+  {
+    method: 'patch',
+    path: FIELD_BASE,
+    tags: [TAG],
+    summary: 'Atualizar campo extra dos contatos',
+    description: `Altera nome, obrigatoriedade e (em campos de lista) as opções. O tipo não pode ser trocado. Auditado. ${PRIVILEGED}`,
+    consent: true,
+    params: FIELD_PARAMS,
+    body: UpdateWhatsAppContactFieldSchema,
+    responses: {
+      200: {
+        description: 'Campo atualizado.',
+        schema: WhatsAppContactFieldDTO,
+      },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      'CRM_CUSTOM_FIELD_NOT_FOUND',
+      {
+        code: 'CRM_CUSTOM_FIELD_INVALID',
+        when: 'Campo de outro tipo de registro',
+      },
+    ],
+  },
+  {
+    method: 'delete',
+    path: FIELD_BASE,
+    tags: [TAG],
+    summary: 'Remover campo extra dos contatos',
+    description: `Esconde o campo das telas e da importação; os valores já preenchidos ficam guardados. Auditado. ${PRIVILEGED}`,
+    consent: true,
+    params: FIELD_PARAMS,
+    responses: { 200: { description: 'Campo removido.', schema: null } },
+    errors: [...PRIVILEGED_ERRORS, 'CRM_CUSTOM_FIELD_NOT_FOUND'],
+  },
   {
     method: 'get',
     path: '/workspaces/{id}/whatsapp/contacts',
@@ -101,7 +180,7 @@ export const contactRoutes: RouteConfig[] = [
     path: BASE,
     tags: [TAG],
     summary: 'Atualizar contato',
-    description: `Atualização parcial de nome, avatar e descrição. Campo omitido = sem alteração; \`null\` ou \`""\` apaga o valor. O número não muda. Auditado. ${perm('contacts', 'EDIT')}`,
+    description: `Atualização parcial de nome, avatar, descrição e campos extras (\`customFields\`, mapa \`idDoCampo\` → valor, validado pelo tipo do campo). Campo omitido = sem alteração; \`null\` ou \`""\` apaga o valor. O número não muda. Auditado. ${perm('contacts', 'EDIT')}`,
     params: PARAMS,
     body: UpdateWhatsAppContactSchema,
     responses: {

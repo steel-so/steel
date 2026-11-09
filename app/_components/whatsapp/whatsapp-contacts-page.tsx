@@ -186,7 +186,9 @@ function CreateContactDialog({ workspaceId }: { workspaceId: string }) {
         name: form.name || undefined,
         avatarUrl: form.avatarUrl || undefined,
         description: form.description || undefined,
-        customFields: contactFieldsToPayload(fields, customValues),
+        ...(fields.length > 0
+          ? { customFields: contactFieldsToPayload(fields, customValues) }
+          : {}),
       },
       {
         onSuccess: () => {
@@ -262,7 +264,9 @@ function EditContactDialog({
         name: form.name.trim() || null,
         avatarUrl: form.avatarUrl.trim() || null,
         description: form.description.trim() || null,
-        customFields: contactFieldsToPayload(fields, customValues),
+        ...(fields.length > 0
+          ? { customFields: contactFieldsToPayload(fields, customValues) }
+          : {}),
       },
       {
         onSuccess: () => {
