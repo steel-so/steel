@@ -72,6 +72,7 @@ export async function applyCustomFieldValues(
   recordId: string,
   values: CustomFieldMap,
 ): Promise<Result<void>> {
+  if (Object.keys(values).length === 0) return ok(undefined)
   const writes = await resolveCustomFieldWrites(
     workspaceId,
     entity,
@@ -79,7 +80,6 @@ export async function applyCustomFieldValues(
     values,
   )
   if (!writes.ok) return writes
-  if (writes.value.length === 0) return ok(undefined)
   return CrmCustomFieldValueRepository.applyForRecord(writes.value)
 }
 
