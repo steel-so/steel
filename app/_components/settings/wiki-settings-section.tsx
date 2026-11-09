@@ -64,7 +64,7 @@ export function WikiSettingsSection({ workspaceId }: { workspaceId: string }) {
   )
 }
 
-function WikiToggleCard({
+export function WikiToggleCard({
   workspaceId,
   canEdit,
 }: {
@@ -121,7 +121,7 @@ function WikiToggleCard({
   )
 }
 
-function WikiLabelsCard({
+export function WikiLabelsCard({
   workspaceId,
   canEdit,
 }: {

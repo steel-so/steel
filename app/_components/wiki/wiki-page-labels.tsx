@@ -90,7 +90,7 @@ export function WikiPageLabels({
                   Nenhuma etiqueta criada ainda.
                 </Muted>
                 <Link
-                  href={`/${workspaceSlug}/settings/wiki`}
+                  href={`/${workspaceSlug}/settings/workspace`}
                   className='text-xs underline-offset-2 hover:underline'
                 >
                   Criar em Ajustes › Wiki
