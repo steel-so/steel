@@ -516,6 +516,7 @@ describe('CrmReportService — authz, persistence and data sources', () => {
         mockedReportRepo.findById.mockResolvedValue(
           ok(report({ source, columns: ['name'], query: null })),
         )
+        mockedMembershipRepo.listWithUserByWorkspace.mockResolvedValue(ok([]))
         const list = getList()
         list.mockResolvedValue(ok([{ id: 'x1', name: 'Conversa' }]))
 
@@ -524,6 +525,36 @@ describe('CrmReportService — authz, persistence and data sources', () => {
         expect(list).toHaveBeenCalledWith('u1', 'ws1')
       },
     )
+
+    it('should report the agent name, not the id, for WhatsApp conversations', async () => {
+      asRole('VIEWER')
+      mockedReportRepo.findById.mockResolvedValue(
+        ok(
+          report({
+            source: 'whatsapp_conversation',
+            columns: ['assignedUserName'],
+            query: null,
+          }),
+        ),
+      )
+      mockedMembershipRepo.listWithUserByWorkspace.mockResolvedValue(
+        ok([{ userId: 'u9', user: { name: 'Ana Souza' } }] as never),
+      )
+      vi.mocked(WhatsAppConversationService.list).mockResolvedValue(
+        ok([
+          { id: 'c1', assignedUserId: 'u9' },
+          { id: 'c2', assignedUserId: 'gone' },
+          { id: 'c3', assignedUserId: null },
+        ] as never),
+      )
+
+      const data = expectOk(await CrmReportService.runData('u1', 'ws1', 'r1'))
+      expect(data.rows).toEqual([
+        { 'whatsapp_conversation.assignedUserName': 'Ana Souza' },
+        { 'whatsapp_conversation.assignedUserName': 'Ex-membro' },
+        { 'whatsapp_conversation.assignedUserName': 'Sem atendente' },
+      ])
+    })
 
     it('should contribute no rows for a stored dataset whose source no longer exists', async () => {
       asRole('VIEWER')

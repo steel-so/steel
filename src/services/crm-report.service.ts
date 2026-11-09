@@ -5,6 +5,7 @@ import { runCrmReportQuery } from '@/src/lib/crm-report-runner'
 import { err, ok, type Result } from '@/src/lib/result'
 import { toCrmReportDTO } from '@/src/mappers/crm-report.mapper'
 import { CrmReportRepository } from '@/src/repositories/crm-report.repository'
+import { MembershipRepository } from '@/src/repositories/membership.repository'
 import type {
   CreateCrmReportDTO,
   CrmReportData,
@@ -22,6 +23,33 @@ import { WhatsAppBroadcastService } from '@/src/services/whatsapp-broadcast.serv
 import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import type { CrmReportDTO } from '@/types/crm-report'
 import { assertMember, assertModuleEnabled, assertModuleMember } from './authz'
+
+/**
+ * Conversation rows carry only `assignedUserId`; a report (and its CSV/Excel
+ * export) must show the agent's name, so each row gets `assignedUserName`
+ * from the workspace members. An agent who left the workspace keeps a label
+ * instead of a raw id.
+ */
+async function withAssigneeNames(
+  workspaceId: string,
+  conversations: Result<{ assignedUserId: string | null }[]>,
+): Promise<Result<CrmReportRow[]>> {
+  if (!conversations.ok) return conversations
+  const members =
+    await MembershipRepository.listWithUserByWorkspace(workspaceId)
+  if (!members.ok) return members
+  const names = new Map(
+    members.value.map((member) => [member.userId, member.user.name]),
+  )
+  return ok(
+    conversations.value.map((conversation) => ({
+      ...conversation,
+      assignedUserName: conversation.assignedUserId
+        ? (names.get(conversation.assignedUserId) ?? 'Ex-membro')
+        : 'Sem atendente',
+    })) as unknown as CrmReportRow[],
+  )
+}
 
 /** Busca as linhas brutas da fonte via o service correspondente (com VIEW). */
 async function fetchSourceRows(
@@ -59,9 +87,10 @@ async function fetchSourceRows(
         active: undefined,
       }) as Promise<Result<CrmReportRow[]>>
     case 'whatsapp_conversation':
-      return WhatsAppConversationService.list(actorId, workspaceId) as Promise<
-        Result<CrmReportRow[]>
-      >
+      return withAssigneeNames(
+        workspaceId,
+        await WhatsAppConversationService.list(actorId, workspaceId),
+      )
     case 'whatsapp_broadcast':
       return WhatsAppBroadcastService.list(actorId, workspaceId) as Promise<
         Result<CrmReportRow[]>
