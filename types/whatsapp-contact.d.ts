@@ -16,6 +16,30 @@ export interface WhatsAppContactDTO {
   hasWhatsapp: boolean | null
   whatsappCheckedAt: string | null
   conversationCount: number
+  /** `definitionId -> value` of the workspace's contact fields (list/update). */
+  customFields?: Record<string, string | number | boolean | null>
   createdAt: string
   updatedAt: string
+}
+
+/** A custom field a workspace defined on its WhatsApp contacts. */
+export interface WhatsAppContactFieldDTO {
+  id: string
+  key: string
+  label: string
+  type:
+    | 'TEXT'
+    | 'NUMBER'
+    | 'DATE'
+    | 'BOOLEAN'
+    | 'SELECT'
+    | 'CPF'
+    | 'CNPJ'
+    | 'EMAIL'
+    | 'PHONE'
+    | 'URL'
+    | 'CEP'
+  options: string[]
+  required: boolean
+  position: number
 }

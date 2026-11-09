@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { clearableText, clearableUrl } from '@/src/schemas/clearable.schema'
+import { ContactCustomFieldsInputSchema } from '@/src/schemas/whatsapp-contact-field.schema'
 
 const WaIdField = z
   .string()
@@ -12,6 +13,7 @@ export const CreateWhatsAppContactSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   avatarUrl: z.url().max(2048).optional(),
   description: z.string().max(500).optional(),
+  customFields: ContactCustomFieldsInputSchema.optional(),
 })
 
 export type CreateWhatsAppContactDTO = z.infer<
@@ -23,6 +25,7 @@ export const UpdateWhatsAppContactSchema = z.object({
   name: clearableText(120),
   avatarUrl: clearableUrl(2048),
   description: clearableText(500),
+  customFields: ContactCustomFieldsInputSchema.optional(),
 })
 
 export type UpdateWhatsAppContactDTO = z.infer<

@@ -61,10 +61,21 @@ import {
   useSetWhatsAppContactBroadcastOptOut,
   useSyncWhatsAppContactAvatar,
   useUpdateWhatsAppContact,
+  useWhatsAppContactFields,
   useWhatsAppContacts,
   type WhatsAppCheckFilter,
 } from '@/src/hooks/use-whatsapp-contacts'
-import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
+import { formatCustomFieldValue } from '@/src/lib/custom-field-value'
+import type {
+  WhatsAppContactDTO,
+  WhatsAppContactFieldDTO,
+} from '@/types/whatsapp-contact'
+import {
+  type ContactFieldFormValues,
+  ContactFieldInputs,
+  contactFieldsToForm,
+  contactFieldsToPayload,
+} from './contact-field-inputs'
 import { WhatsappNumberBadge } from './number-validation/whatsapp-number-badge'
 import { WhatsappNumberValidationDialog } from './number-validation/whatsapp-number-validation-dialog'
 import { WhatsAppContactImportDialog } from './whatsapp-contact-import-dialog'
@@ -96,10 +107,16 @@ function ContactFormFields({
   form,
   onChange,
   lockWaId,
+  fields,
+  customValues,
+  onCustomChange,
 }: {
   form: ContactFormState
   onChange: (form: ContactFormState) => void
   lockWaId?: boolean
+  fields: WhatsAppContactFieldDTO[]
+  customValues: ContactFieldFormValues
+  onCustomChange: (values: ContactFieldFormValues) => void
 }) {
   return (
     <div className='space-y-3'>
@@ -145,6 +162,11 @@ function ContactFormFields({
           }
         />
       </div>
+      <ContactFieldInputs
+        fields={fields}
+        values={customValues}
+        onChange={onCustomChange}
+      />
     </div>
   )
 }
@@ -152,6 +174,8 @@ function ContactFormFields({
 function CreateContactDialog({ workspaceId }: { workspaceId: string }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<ContactFormState>(EMPTY_FORM)
+  const [customValues, setCustomValues] = useState<ContactFieldFormValues>({})
+  const fields = useWhatsAppContactFields(workspaceId).data ?? []
   const createContact = useCreateWhatsAppContact(workspaceId)
 
   function handleSubmit(event: FormEvent) {
@@ -162,11 +186,13 @@ function CreateContactDialog({ workspaceId }: { workspaceId: string }) {
         name: form.name || undefined,
         avatarUrl: form.avatarUrl || undefined,
         description: form.description || undefined,
+        customFields: contactFieldsToPayload(fields, customValues),
       },
       {
         onSuccess: () => {
           notify.success('Contato cadastrado')
           setForm(EMPTY_FORM)
+          setCustomValues({})
           setOpen(false)
         },
         onError: (error) => notify.error(error, 'Não foi possível cadastrar'),
@@ -177,12 +203,18 @@ function CreateContactDialog({ workspaceId }: { workspaceId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size='sm'>Novo contato</Button>} />
-      <DialogContent className='max-w-sm'>
+      <DialogContent className='max-h-[90vh] max-w-sm overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>Novo contato</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-3'>
-          <ContactFormFields form={form} onChange={setForm} />
+          <ContactFormFields
+            form={form}
+            onChange={setForm}
+            fields={fields}
+            customValues={customValues}
+            onCustomChange={setCustomValues}
+          />
           <DialogFooter>
             <Button type='submit' disabled={createContact.isPending}>
               {createContact.isPending ? 'Salvando...' : 'Salvar'}
@@ -211,6 +243,15 @@ function EditContactDialog({
     avatarUrl: contact.avatarUrl ?? '',
     description: contact.description ?? '',
   })
+  const fields = useWhatsAppContactFields(workspaceId).data ?? []
+  const [customValues, setCustomValues] = useState<ContactFieldFormValues>({})
+  const [customReady, setCustomReady] = useState(false)
+  // The definitions arrive after the dialog opens: fill the inputs once.
+  useEffect(() => {
+    if (customReady || fields.length === 0) return
+    setCustomValues(contactFieldsToForm(fields, contact.customFields))
+    setCustomReady(true)
+  }, [fields, contact.customFields, customReady])
   const updateContact = useUpdateWhatsAppContact(workspaceId, contact.id)
 
   function handleSubmit(event: FormEvent) {
@@ -221,6 +262,7 @@ function EditContactDialog({
         name: form.name.trim() || null,
         avatarUrl: form.avatarUrl.trim() || null,
         description: form.description.trim() || null,
+        customFields: contactFieldsToPayload(fields, customValues),
       },
       {
         onSuccess: () => {
@@ -234,12 +276,19 @@ function EditContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-sm'>
+      <DialogContent className='max-h-[90vh] max-w-sm overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>Editar contato</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-3'>
-          <ContactFormFields form={form} onChange={setForm} lockWaId />
+          <ContactFormFields
+            form={form}
+            onChange={setForm}
+            lockWaId
+            fields={fields}
+            customValues={customValues}
+            onCustomChange={setCustomValues}
+          />
           <DialogFooter>
             <Button type='submit' disabled={updateContact.isPending}>
               {updateContact.isPending ? 'Salvando...' : 'Salvar'}
@@ -403,6 +452,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
     search,
     checkFilter === 'ALL' ? undefined : checkFilter,
   )
+  const fields = useWhatsAppContactFields(workspaceId).data ?? []
   const deleteContact = useDeleteWhatsAppContact(workspaceId)
   const canDelete = useCan('contacts', 'DELETE')
   const canCreate = useCan('contacts', 'CREATE')
@@ -497,6 +547,9 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
               <TableHead>Número</TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Descrição</TableHead>
+              {fields.map((field) => (
+                <TableHead key={field.id}>{field.label}</TableHead>
+              ))}
               <TableHead>Conversas</TableHead>
               <TableHead>Transmissões</TableHead>
               <TableHead>Cadastrado em</TableHead>
@@ -552,6 +605,14 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
                 >
                   {contact.description ?? '—'}
                 </TableCell>
+                {fields.map((field) => (
+                  <TableCell key={field.id} className='whitespace-nowrap'>
+                    {formatCustomFieldValue(
+                      field.type,
+                      contact.customFields?.[field.id],
+                    ) || '—'}
+                  </TableCell>
+                ))}
                 <TableCell>
                   <Badge variant='secondary'>{contact.conversationCount}</Badge>
                 </TableCell>
@@ -599,7 +660,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
             {contacts.data?.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={9 + fields.length}
                   className='text-muted-foreground text-sm'
                 >
                   Nenhum contato cadastrado.

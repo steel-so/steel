@@ -1,4 +1,8 @@
 import {
+  type CustomFieldDefinitionLike,
+  coerceCustomFieldValue,
+} from '@/src/lib/custom-field-value'
+import {
   csvToRecords,
   normalizeCsvHeader,
   pickCsvValue,
@@ -15,6 +19,19 @@ export const CONTACT_IMPORT_TEMPLATE_FILENAME = 'modelo-importacao-contatos.csv'
 /** Standard template: `;` separated with BOM so Excel-BR opens it correctly. */
 export const CONTACT_IMPORT_TEMPLATE_CSV =
   '﻿Nome;Telefone;Descrição\r\nMaria Silva;5511999998888;Cliente desde 2024\r\n'
+
+/** The template with one extra column per contact field (CPF, CNPJ...). */
+export function contactImportTemplateCsv(fieldLabels: string[]): string {
+  if (fieldLabels.length === 0) return CONTACT_IMPORT_TEMPLATE_CSV
+  const header = ['Nome', 'Telefone', 'Descrição', ...fieldLabels].join(';')
+  const example = [
+    'Maria Silva',
+    '5511999998888',
+    'Cliente desde 2024',
+    ...fieldLabels.map(() => ''),
+  ].join(';')
+  return `﻿${header}\r\n${example}\r\n`
+}
 
 /**
  * Accepted header sets. The three columns are mandatory and must carry one of
@@ -54,12 +71,19 @@ const PHONE_PATTERN = /^\d{10,15}$/
 const NAME_MAX = 120
 const DESCRIPTION_MAX = 500
 
+/** A contact field the sheet may carry as an extra column (header = label). */
+export interface ContactImportField extends CustomFieldDefinitionLike {
+  id: string
+}
+
 export interface ContactImportRow {
   /** 1-based spreadsheet line (header is line 1). */
   line: number
   waId: string
   name?: string
   description?: string
+  /** Validated values by field id; blank cells are left out. */
+  customFields?: Record<string, string | number | boolean>
 }
 
 export interface ContactImportRejectedRow {
@@ -78,7 +102,10 @@ export function normalizeContactPhone(raw: string): string {
   return raw.replace(/\D/g, '')
 }
 
-export function parseContactImportCsv(csv: string): ParsedContactImport {
+export function parseContactImportCsv(
+  csv: string,
+  fields: ContactImportField[] = [],
+): ParsedContactImport {
   const { headers, records } = csvToRecords(csv)
   if (records.length === 0) {
     return {
@@ -137,6 +164,24 @@ export function parseContactImportCsv(csv: string): ParsedContactImport {
       })
       return
     }
+    const customFields: Record<string, string | number | boolean> = {}
+    let fieldError: string | null = null
+    for (const field of fields) {
+      const raw = pickCsvValue(record, [normalizeCsvHeader(field.label)])
+      if (raw === undefined || raw === '') continue
+      // A blank cell never erases, and "required" is a form rule: neither
+      // applies to a spreadsheet, which only fills what it carries.
+      const coerced = coerceCustomFieldValue({ ...field, required: false }, raw)
+      if (!coerced.ok) {
+        fieldError = coerced.message
+        break
+      }
+      if (coerced.value !== null) customFields[field.id] = coerced.value
+    }
+    if (fieldError) {
+      rejected.push({ line, message: fieldError })
+      return
+    }
     const firstLine = seen.get(waId)
     if (firstLine !== undefined) {
       rejected.push({
@@ -146,7 +191,13 @@ export function parseContactImportCsv(csv: string): ParsedContactImport {
       return
     }
     seen.set(waId, line)
-    valid.push({ line, waId, name, description })
+    valid.push({
+      line,
+      waId,
+      name,
+      description,
+      ...(Object.keys(customFields).length > 0 ? { customFields } : {}),
+    })
   })
 
   return { valid, rejected }

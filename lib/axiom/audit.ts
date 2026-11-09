@@ -280,6 +280,8 @@ export type AuditEntity =
   // WhatsApp archive for banks (ADR 0052)
   | 'whatsapp_agent_report'
   | 'whatsapp_agent_report_settings'
+  // Custom fields of WhatsApp contacts (CPF, CNPJ...)
+  | 'whatsapp_contact_field'
   | 'whatsapp_archive'
   | 'whatsapp_archive_settings'
   // Sending domains of the CRM newsletter (ADR 0054)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CONTACT_IMPORT_MAX_ROWS,
   CONTACT_IMPORT_TEMPLATE_CSV,
+  contactImportTemplateCsv,
   normalizeContactPhone,
   parseContactImportCsv,
 } from '../whatsapp/contact-import'
@@ -101,5 +102,50 @@ describe('parseContactImportCsv', () => {
 
   it('normalizes phones to digits', () => {
     expect(normalizeContactPhone('+55 (11) 9999-8888')).toBe('551199998888')
+  })
+})
+
+describe('parseContactImportCsv with contact fields', () => {
+  const fields = [
+    { id: 'f_cpf', label: 'CPF', type: 'CPF' as const },
+    { id: 'f_cnpj', label: 'CNPJ', type: 'CNPJ' as const },
+  ]
+
+  it('reads extra columns by field label and stores digits only', () => {
+    const result = parseContactImportCsv(
+      'Nome;Telefone;Descrição;CPF;CNPJ\nAna;5511988887777;x;529.982.247-25;11.222.333/0001-81',
+      fields,
+    )
+    expect(result.rejected).toEqual([])
+    expect(result.valid[0].customFields).toEqual({
+      f_cpf: '52998224725',
+      f_cnpj: '11222333000181',
+    })
+  })
+
+  it('rejects only the row with an invalid document', () => {
+    const result = parseContactImportCsv(
+      'Nome;Telefone;Descrição;CPF\nAna;5511988887777;x;111.111.111-11\nBia;5511977776666;x;529.982.247-25',
+      fields,
+    )
+    expect(result.valid.map((row) => row.waId)).toEqual(['5511977776666'])
+    expect(result.rejected).toEqual([
+      { line: 2, message: '"CPF" tem um CPF inválido' },
+    ])
+  })
+
+  it('leaves blank cells out so they never erase stored data', () => {
+    const result = parseContactImportCsv(
+      'Nome;Telefone;Descrição;CPF\nAna;5511988887777;x;',
+      fields,
+    )
+    expect(result.valid[0].customFields).toBeUndefined()
+  })
+
+  it('builds the template with one column per field', () => {
+    expect(contactImportTemplateCsv([])).toBe(CONTACT_IMPORT_TEMPLATE_CSV)
+    expect(contactImportTemplateCsv(['CPF', 'CNPJ'])).toContain(
+      'Nome;Telefone;Descrição;CPF;CNPJ',
+    )
   })
 })

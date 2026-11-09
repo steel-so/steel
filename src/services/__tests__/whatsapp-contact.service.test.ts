@@ -9,6 +9,19 @@ import { err, ok } from '@/src/lib/result'
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
+vi.mock('@/src/repositories/crm-custom-field.repository', async () => {
+  const { ok } = await import('@/src/lib/result')
+  return {
+    CrmCustomFieldDefinitionRepository: {
+      listByWorkspace: vi.fn(async () => ok([])),
+    },
+    CrmCustomFieldValueRepository: {
+      listByRecords: vi.fn(async () => ok([])),
+      searchContactIds: vi.fn(async () => ok([])),
+      applyForRecord: vi.fn(async () => ok(undefined)),
+    },
+  }
+})
 vi.mock('@/src/lib/crypto', () => ({
   decryptConnectionSecret: vi.fn(async (envelope: string) =>
     envelope.replace(/^enc:/, ''),
@@ -52,6 +65,7 @@ describe('WhatsAppContactService', () => {
         undefined,
         undefined,
         undefined,
+        [],
       )
     })
 
@@ -73,6 +87,7 @@ describe('WhatsAppContactService', () => {
         undefined,
         undefined,
         'Itaú',
+        [],
       )
     })
 
@@ -93,6 +108,7 @@ describe('WhatsAppContactService', () => {
         'no',
         undefined,
         undefined,
+        [],
       )
     })
 
@@ -114,6 +130,7 @@ describe('WhatsAppContactService', () => {
         undefined,
         new Date('2026-10-27T03:00:00Z'),
         undefined,
+        [],
       )
     })
 

@@ -9,6 +9,19 @@ import { err, ok } from '@/src/lib/result'
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
+vi.mock('@/src/repositories/crm-custom-field.repository', async () => {
+  const { ok } = await import('@/src/lib/result')
+  return {
+    CrmCustomFieldDefinitionRepository: {
+      listByWorkspace: vi.fn(async () => ok([])),
+    },
+    CrmCustomFieldValueRepository: {
+      listByRecords: vi.fn(async () => ok([])),
+      searchContactIds: vi.fn(async () => ok([])),
+      applyForRecord: vi.fn(async () => ok(undefined)),
+    },
+  }
+})
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/src/lib/crypto', () => ({
   decryptConnectionSecret: vi.fn(async (envelope: string) =>
@@ -251,6 +264,7 @@ describe('WhatsAppContactService.setBroadcastOptOut() failures', () => {
           broadcastOptedOutAt: null,
           broadcastOptOutSource: null,
         }),
+        [],
       ),
     )
     mockedContactRepo.setBroadcastOptOut.mockResolvedValue(ok(contact()))

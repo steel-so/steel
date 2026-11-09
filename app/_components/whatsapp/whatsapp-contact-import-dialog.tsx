@@ -20,18 +20,21 @@ import {
 import { Input } from '@/components/ui/input'
 import { notify } from '@/lib/notify'
 import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
-import { useImportWhatsAppContacts } from '@/src/hooks/use-whatsapp-contacts'
+import {
+  useImportWhatsAppContacts,
+  useWhatsAppContactFields,
+} from '@/src/hooks/use-whatsapp-contacts'
 import {
   CONTACT_IMPORT_MAX_CSV_CHARS,
   CONTACT_IMPORT_MAX_ROWS,
-  CONTACT_IMPORT_TEMPLATE_CSV,
   CONTACT_IMPORT_TEMPLATE_FILENAME,
+  contactImportTemplateCsv,
 } from '@/src/lib/whatsapp/contact-import'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
 import { WhatsappNumberValidationProgress } from './number-validation/whatsapp-number-validation-dialog'
 
-function downloadTemplate() {
-  const blob = new Blob([CONTACT_IMPORT_TEMPLATE_CSV], {
+function downloadTemplate(fieldLabels: string[]) {
+  const blob = new Blob([contactImportTemplateCsv(fieldLabels)], {
     type: 'text/csv;charset=utf-8',
   })
   const url = URL.createObjectURL(blob)
@@ -57,6 +60,9 @@ export function WhatsAppContactImportDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const importContacts = useImportWhatsAppContacts(workspaceId)
+  const fieldLabels = (useWhatsAppContactFields(workspaceId).data ?? []).map(
+    (field) => field.label,
+  )
   const connections = useWhatsAppConnections(workspaceId)
   const hasZapi = (connections.data ?? []).some(
     (connection) => connection.provider === 'ZAPI',
@@ -121,6 +127,9 @@ export function WhatsAppContactImportDialog({
             Detalhes), exatamente assim. O telefone é obrigatório e deve ter DDI
             + DDD (ex.: 5511999998888). Contatos que já existem são atualizados,
             sem duplicar.
+            {fieldLabels.length > 0
+              ? ` Colunas extras reconhecidas pelo nome do campo: ${fieldLabels.join(', ')}. Valores inválidos (ex.: CPF) recusam só aquela linha, e célula em branco não apaga o dado salvo.`
+              : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -129,7 +138,7 @@ export function WhatsAppContactImportDialog({
           variant='outline'
           size='sm'
           className='w-fit'
-          onClick={downloadTemplate}
+          onClick={() => downloadTemplate(fieldLabels)}
         >
           <SteelIcon icon={Download01Icon} strokeWidth={2} />
           Baixar modelo

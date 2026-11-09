@@ -1,13 +1,8 @@
 import z from 'zod'
+import { CUSTOM_FIELD_TYPES } from '@/src/lib/custom-field-value'
 
 const CustomFieldEntityEnum = z.enum(['COMPANY', 'PERSON', 'OPPORTUNITY'])
-const CustomFieldTypeEnum = z.enum([
-  'TEXT',
-  'NUMBER',
-  'DATE',
-  'BOOLEAN',
-  'SELECT',
-])
+const CustomFieldTypeEnum = z.enum(CUSTOM_FIELD_TYPES)
 
 const keyRegex = /^[a-z][a-z0-9_]*$/
 

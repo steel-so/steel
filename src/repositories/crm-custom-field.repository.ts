@@ -20,7 +20,9 @@ export const CrmCustomFieldDefinitionRepository = {
         where: {
           workspaceId,
           deletedAt: null,
-          ...(filters?.entity ? { entity: filters.entity } : {}),
+          // Without a filter the CRM view: WhatsApp contact fields are
+          // managed by Comunicação and never leak into CRM screens.
+          entity: filters?.entity ?? { not: 'WHATSAPP_CONTACT' },
         },
         orderBy: { position: 'asc' },
       })
@@ -141,6 +143,38 @@ export const CrmCustomFieldValueRepository = {
       return ok(values)
     } catch (error) {
       return err(dbError('Failed to list CRM custom field values', error))
+    }
+  },
+
+  /**
+   * Ids of the WhatsApp contacts whose custom field values contain `term`
+   * (case-insensitive, on the stored text). Backs the contacts search, so a
+   * CPF/CNPJ typed with or without punctuation finds the contact.
+   */
+  async searchContactIds(
+    workspaceId: string,
+    terms: string[],
+  ): Promise<Result<string[]>> {
+    const patterns = terms
+      .map((term) => term.replace(/[\\%_]/g, ''))
+      .filter((term) => term.length > 0)
+      .map((term) => `%${term}%`)
+    if (patterns.length === 0) return ok([])
+    try {
+      const rows = await prisma.$queryRaw<{ record_id: string }[]>`
+        SELECT DISTINCT v.record_id
+        FROM crm_custom_field_values v
+        JOIN crm_custom_field_definitions d ON d.id = v.definition_id
+        WHERE d.workspace_id = ${workspaceId}
+          AND d.entity = 'WHATSAPP_CONTACT'
+          AND d.deleted_at IS NULL
+          AND v.value::text ILIKE ANY (${patterns}::text[])
+        LIMIT 500`
+      return ok(rows.map((row) => row.record_id))
+    } catch (error) {
+      return err(
+        dbError('Failed to search WhatsApp contact field values', error),
+      )
     }
   },
 

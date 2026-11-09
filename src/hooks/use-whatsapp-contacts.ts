@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
+import type {
+  WhatsAppContactDTO,
+  WhatsAppContactFieldDTO,
+} from '@/types/whatsapp-contact'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
 import { apiFetch, apiSend } from './_fetch'
 
@@ -30,6 +33,8 @@ interface CreateWhatsAppContactInput {
   name?: string
   avatarUrl?: string
   description?: string
+  /** `definitionId -> valor`, validado pelo tipo do campo. */
+  customFields?: Record<string, string | number | boolean | null>
 }
 
 /** `null` limpa o campo; omitido = sem alteração. */
@@ -37,6 +42,7 @@ interface UpdateWhatsAppContactInput {
   name?: string | null
   avatarUrl?: string | null
   description?: string | null
+  customFields?: Record<string, string | number | boolean | null>
 }
 
 export function useWhatsAppContacts(
@@ -221,6 +227,99 @@ export function useImportWhatsAppContacts(workspaceId: string) {
         'Erro ao importar contatos',
       ),
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['whatsapp-contacts', workspaceId],
+      })
+    },
+  })
+}
+
+const CONTACT_FIELDS_KEY = (workspaceId: string) =>
+  ['whatsapp-contact-fields', workspaceId] as const
+
+/** Campos extras que o workspace definiu para os contatos (CPF, CNPJ...). */
+export function useWhatsAppContactFields(workspaceId: string) {
+  return useQuery({
+    queryKey: CONTACT_FIELDS_KEY(workspaceId),
+    queryFn: () =>
+      apiFetch<WhatsAppContactFieldDTO[]>(
+        `/api/workspaces/${workspaceId}/whatsapp/contact-fields`,
+        undefined,
+        'Erro ao buscar os campos dos contatos',
+      ),
+    enabled: !!workspaceId,
+    staleTime: 60 * 1000,
+  })
+}
+
+interface ContactFieldInput {
+  label: string
+  type: WhatsAppContactFieldDTO['type']
+  options: string[]
+  required: boolean
+}
+
+export function useCreateWhatsAppContactField(workspaceId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: ContactFieldInput) =>
+      apiFetch<WhatsAppContactFieldDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/contact-fields`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        },
+        'Erro ao criar o campo',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CONTACT_FIELDS_KEY(workspaceId),
+      })
+    },
+  })
+}
+
+export function useUpdateWhatsAppContactField(workspaceId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      fieldId,
+      data,
+    }: {
+      fieldId: string
+      data: Partial<Pick<ContactFieldInput, 'label' | 'options' | 'required'>>
+    }) =>
+      apiFetch<WhatsAppContactFieldDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/contact-fields/${fieldId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        },
+        'Erro ao salvar o campo',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CONTACT_FIELDS_KEY(workspaceId),
+      })
+    },
+  })
+}
+
+export function useDeleteWhatsAppContactField(workspaceId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (fieldId: string) =>
+      apiSend(
+        `/api/workspaces/${workspaceId}/whatsapp/contact-fields/${fieldId}`,
+        { method: 'DELETE' },
+        'Erro ao remover o campo',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: CONTACT_FIELDS_KEY(workspaceId),
+      })
       queryClient.invalidateQueries({
         queryKey: ['whatsapp-contacts', workspaceId],
       })

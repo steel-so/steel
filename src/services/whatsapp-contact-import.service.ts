@@ -3,6 +3,10 @@ import { badRequest } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import { parseContactImportCsv } from '@/src/lib/whatsapp/contact-import'
+import {
+  CrmCustomFieldDefinitionRepository,
+  CrmCustomFieldValueRepository,
+} from '@/src/repositories/crm-custom-field.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import type { ImportWhatsAppContactsDTO } from '@/src/schemas/whatsapp-contact-import.schema'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
@@ -23,7 +27,22 @@ export const WhatsAppContactImportService = {
     )
     if (!membership.ok) return membership
 
-    const parsed = parseContactImportCsv(dto.csv)
+    // The contact fields the sheet may carry as extra columns (header = label).
+    const definitions =
+      await CrmCustomFieldDefinitionRepository.listByWorkspace(workspaceId, {
+        entity: 'WHATSAPP_CONTACT',
+      })
+    if (!definitions.ok) return definitions
+
+    const parsed = parseContactImportCsv(
+      dto.csv,
+      definitions.value.map((definition) => ({
+        id: definition.id,
+        label: definition.label,
+        type: definition.type,
+        options: definition.options,
+      })),
+    )
     if (parsed.fileError) return err(badRequest(parsed.fileError))
 
     const rejected = [...parsed.rejected]
@@ -57,6 +76,21 @@ export const WhatsAppContactImportService = {
       }
       if (current) updated++
       else created++
+      if (row.customFields) {
+        const written = await CrmCustomFieldValueRepository.applyForRecord(
+          Object.entries(row.customFields).map(([definitionId, value]) => ({
+            definitionId,
+            recordId: saved.value.id,
+            value,
+          })),
+        )
+        if (!written.ok) {
+          rejected.push({
+            line: row.line,
+            message: 'Contato salvo, mas falhou ao gravar os campos extras.',
+          })
+        }
+      }
       savedIds.push(saved.value.id)
       void indexSearchDocument('zap-contact', workspaceId, saved.value.id)
     }

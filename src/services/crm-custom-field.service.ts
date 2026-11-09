@@ -29,6 +29,7 @@ const CUSTOM_FIELD_ENTITY_RESOURCE: Record<
   COMPANY: 'companies',
   PERSON: 'people',
   OPPORTUNITY: 'opportunities',
+  WHATSAPP_CONTACT: 'contacts',
 }
 
 export const CrmCustomFieldDefinitionService = {

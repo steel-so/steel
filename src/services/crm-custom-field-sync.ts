@@ -1,5 +1,6 @@
 import type { CrmCustomFieldDefinition } from '@prisma/client'
 import { crmCustomFieldInvalid } from '@/src/errors'
+import { coerceCustomFieldValue } from '@/src/lib/custom-field-value'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
   CrmCustomFieldDefinitionRepository,
@@ -21,54 +22,30 @@ function coerceValue(
   def: CrmCustomFieldDefinition,
   raw: unknown,
 ): Result<string | number | boolean | null> {
-  if (raw === null || raw === undefined || raw === '') {
-    if (def.required) {
-      return err(crmCustomFieldInvalid(`"${def.label}" é obrigatório`))
-    }
-    return ok(null)
-  }
+  const coerced = coerceCustomFieldValue(def, raw)
+  return coerced.ok
+    ? ok(coerced.value)
+    : err(crmCustomFieldInvalid(coerced.message))
+}
 
-  switch (def.type) {
-    case 'NUMBER': {
-      const n = typeof raw === 'number' ? raw : Number(raw)
-      if (!Number.isFinite(n)) {
-        return err(crmCustomFieldInvalid(`"${def.label}" deve ser numérico`))
-      }
-      return ok(n)
-    }
-    case 'BOOLEAN':
-      return ok(Boolean(raw))
-    case 'DATE': {
-      const d = new Date(String(raw))
-      if (Number.isNaN(d.getTime())) {
-        return err(crmCustomFieldInvalid(`"${def.label}" tem data inválida`))
-      }
-      return ok(d.toISOString())
-    }
-    case 'SELECT': {
-      const s = String(raw)
-      if (!def.options.includes(s)) {
-        return err(crmCustomFieldInvalid(`"${def.label}": opção inválida`))
-      }
-      return ok(s)
-    }
-    default:
-      return ok(String(raw))
-  }
+export interface CustomFieldWrite {
+  definitionId: string
+  recordId: string
+  value: unknown
 }
 
 /**
- * Aplica os valores recebidos (mapa `definitionId → valor`) a um registro.
- * Ignora chaves que não correspondem a definições vivas da entidade.
+ * Valida e normaliza os valores recebidos (mapa `definitionId → valor`) sem
+ * gravar nada. Ignora chaves que não correspondem a definições vivas da
+ * entidade. Permite validar antes de criar o registro dono.
  */
-export async function applyCustomFieldValues(
+export async function resolveCustomFieldWrites(
   workspaceId: string,
   entity: CrmCustomFieldEntityDTO,
   recordId: string,
   values: CustomFieldMap,
-): Promise<Result<void>> {
-  const keys = Object.keys(values)
-  if (keys.length === 0) return ok(undefined)
+): Promise<Result<CustomFieldWrite[]>> {
+  if (Object.keys(values).length === 0) return ok([])
 
   const defsResult = await CrmCustomFieldDefinitionRepository.listByWorkspace(
     workspaceId,
@@ -77,8 +54,7 @@ export async function applyCustomFieldValues(
   if (!defsResult.ok) return defsResult
   const byId = new Map(defsResult.value.map((d) => [d.id, d]))
 
-  const writes: { definitionId: string; recordId: string; value: unknown }[] =
-    []
+  const writes: CustomFieldWrite[] = []
   for (const [definitionId, raw] of Object.entries(values)) {
     const def = byId.get(definitionId)
     if (!def) continue // definição inexistente/desativada — ignora
@@ -86,8 +62,24 @@ export async function applyCustomFieldValues(
     if (!coerced.ok) return coerced
     writes.push({ definitionId, recordId, value: coerced.value })
   }
+  return ok(writes)
+}
 
-  return CrmCustomFieldValueRepository.applyForRecord(writes)
+/** Aplica os valores recebidos (mapa `definitionId → valor`) a um registro. */
+export async function applyCustomFieldValues(
+  workspaceId: string,
+  entity: CrmCustomFieldEntityDTO,
+  recordId: string,
+  values: CustomFieldMap,
+): Promise<Result<void>> {
+  const writes = await resolveCustomFieldWrites(
+    workspaceId,
+    entity,
+    recordId,
+    values,
+  )
+  if (!writes.ok) return writes
+  return CrmCustomFieldValueRepository.applyForRecord(writes.value)
 }
 
 /**

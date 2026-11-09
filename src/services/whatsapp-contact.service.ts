@@ -11,6 +11,7 @@ import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import { startOfSaoPauloDay } from '@/src/lib/whatsapp/contact-created-today'
 import { getZapiContactProfilePicture } from '@/src/lib/whatsapp/zapi-client'
 import { toWhatsAppContactDTO } from '@/src/mappers/whatsapp-contact.mapper'
+import { CrmCustomFieldValueRepository } from '@/src/repositories/crm-custom-field.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import type {
@@ -22,6 +23,57 @@ import type {
 } from '@/src/schemas/whatsapp-contact.schema'
 import type { WhatsAppContactDTO } from '@/types/whatsapp-contact'
 import { assertModuleMember, assertModulePrivileged } from './authz'
+import {
+  CUSTOM_FIELD_PREFIX,
+  loadCustomFieldMaps,
+  resolveCustomFieldWrites,
+} from './crm-custom-field-sync'
+
+type ContactFieldValues = NonNullable<WhatsAppContactDTO['customFields']>
+
+/** Attaches `customFields` (`definitionId -> value`) to contact DTOs, in batch. */
+async function withContactFields(
+  dtos: WhatsAppContactDTO[],
+): Promise<Result<WhatsAppContactDTO[]>> {
+  if (dtos.length === 0) return ok(dtos)
+  const maps = await loadCustomFieldMaps(dtos.map((dto) => dto.id))
+  if (!maps.ok) return maps
+  return ok(
+    dtos.map((dto) => {
+      const flat = maps.value.get(dto.id) ?? {}
+      const customFields: ContactFieldValues = {}
+      for (const [key, value] of Object.entries(flat)) {
+        customFields[key.slice(CUSTOM_FIELD_PREFIX.length)] =
+          value as ContactFieldValues[string]
+      }
+      return { ...dto, customFields }
+    }),
+  )
+}
+
+async function withContactField(
+  dto: WhatsAppContactDTO,
+): Promise<Result<WhatsAppContactDTO>> {
+  const withFields = await withContactFields([dto])
+  return withFields.ok ? ok(withFields.value[0]) : withFields
+}
+
+/** Writes already-validated field values for a contact. */
+async function writeContactFields(
+  workspaceId: string,
+  contactId: string,
+  values: Record<string, unknown> | undefined,
+): Promise<Result<void>> {
+  if (!values || Object.keys(values).length === 0) return ok(undefined)
+  const writes = await resolveCustomFieldWrites(
+    workspaceId,
+    'WHATSAPP_CONTACT',
+    contactId,
+    values,
+  )
+  if (!writes.ok) return writes
+  return CrmCustomFieldValueRepository.applyForRecord(writes.value)
+}
 
 export const WhatsAppContactService = {
   async list(
@@ -37,16 +89,30 @@ export const WhatsAppContactService = {
     )
     if (!membership.ok) return membership
 
+    // A search also matches the contacts' custom field values (a CPF typed
+    // with or without punctuation finds the contact).
+    let extraIds: string[] = []
+    if (options.search) {
+      const digits = options.search.replace(/\D/g, '')
+      const byField = await CrmCustomFieldValueRepository.searchContactIds(
+        workspaceId,
+        digits.length >= 3 ? [options.search, digits] : [options.search],
+      )
+      if (!byField.ok) return byField
+      extraIds = byField.value
+    }
+
     const result = await WhatsAppContactRepository.listByWorkspace(
       workspaceId,
       options.search,
       options.whatsapp,
       options.created === 'today' ? startOfSaoPauloDay() : undefined,
       options.description,
+      extraIds,
     )
     if (!result.ok) return result
 
-    return ok(result.value.map(toWhatsAppContactDTO))
+    return withContactFields(result.value.map(toWhatsAppContactDTO))
   },
 
   async create(
@@ -61,6 +127,15 @@ export const WhatsAppContactService = {
       { resource: 'contacts', action: 'CREATE' },
     )
     if (!membership.ok) return membership
+
+    // Validate the field values before creating anything.
+    const checked = await resolveCustomFieldWrites(
+      workspaceId,
+      'WHATSAPP_CONTACT',
+      '',
+      dto.customFields ?? {},
+    )
+    if (!checked.ok) return checked
 
     const result = await WhatsAppContactRepository.create({
       workspaceId,
@@ -87,8 +162,15 @@ export const WhatsAppContactService = {
       targetId: result.value.id,
     })
 
+    const written = await writeContactFields(
+      workspaceId,
+      result.value.id,
+      dto.customFields,
+    )
+    if (!written.ok) return written
+
     void indexSearchDocument('zap-contact', workspaceId, result.value.id)
-    return ok(toWhatsAppContactDTO(result.value))
+    return withContactField(toWhatsAppContactDTO(result.value))
   },
 
   async findOrCreate(
@@ -205,19 +287,36 @@ export const WhatsAppContactService = {
     if (!existing.ok) return existing
     if (!existing.value) return err(whatsappContactNotFound())
 
-    const result = await WhatsAppContactRepository.update(id, dto)
+    const { customFields, ...columns } = dto
+    // Validate the field values before touching the contact.
+    const checked = await resolveCustomFieldWrites(
+      workspaceId,
+      'WHATSAPP_CONTACT',
+      id,
+      customFields ?? {},
+    )
+    if (!checked.ok) return checked
+
+    const result = await WhatsAppContactRepository.update(id, columns)
     if (!result.ok) return result
+
+    const written = await writeContactFields(workspaceId, id, customFields)
+    if (!written.ok) return written
 
     auditMutation({
       entity: 'whatsapp_contact',
       action: 'update',
       actorId,
       targetId: id,
-      meta: { fields: Object.keys(dto) },
+      // Field ids only: CPF/CNPJ values never go to the log.
+      meta: {
+        fields: Object.keys(columns),
+        customFieldIds: Object.keys(customFields ?? {}),
+      },
     })
 
     void indexSearchDocument('zap-contact', workspaceId, id)
-    return ok(toWhatsAppContactDTO(result.value))
+    return withContactField(toWhatsAppContactDTO(result.value))
   },
 
   /**

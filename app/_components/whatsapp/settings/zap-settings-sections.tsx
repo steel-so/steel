@@ -4,6 +4,7 @@ import {
   BotIcon,
   Call02Icon,
   Clock01Icon,
+  ContactBookIcon,
   Invoice01Icon,
   MessageMultiple01Icon,
   WebDesign01Icon,
@@ -16,6 +17,7 @@ import { WhatsappSettingsBoleto } from './whatsapp-settings-boleto'
 import { WhatsappSettingsBusinessHours } from './whatsapp-settings-business-hours'
 import { WhatsappSettingsCallRecording } from './whatsapp-settings-call-recording'
 import { WhatsappSettingsCloseStatuses } from './whatsapp-settings-close-statuses'
+import { WhatsappSettingsContactFields } from './whatsapp-settings-contact-fields'
 import { WhatsappSettingsCopilot } from './whatsapp-settings-copilot'
 import { WhatsappSettingsDistribution } from './whatsapp-settings-distribution'
 import { WhatsappSettingsNumberCheck } from './whatsapp-settings-number-check'
@@ -83,6 +85,14 @@ export const ZAP_SETTINGS_SECTIONS: ZapSettingsSection[] = [
         <WhatsappSettingsBoleto workspaceId={id} />
       </div>
     ),
+  },
+  {
+    id: 'contact-fields',
+    label: 'Campos dos contatos',
+    group: 'Atendimento',
+    icon: ContactBookIcon,
+    description: 'Campos próprios dos contatos, como CPF e CNPJ.',
+    render: (id) => <WhatsappSettingsContactFields workspaceId={id} />,
   },
   {
     id: 'contacts',

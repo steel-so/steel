@@ -1,10 +1,20 @@
-export type CrmCustomFieldEntityDTO = 'COMPANY' | 'PERSON' | 'OPPORTUNITY'
+export type CrmCustomFieldEntityDTO =
+  | 'COMPANY'
+  | 'PERSON'
+  | 'OPPORTUNITY'
+  | 'WHATSAPP_CONTACT'
 export type CrmCustomFieldTypeDTO =
   | 'TEXT'
   | 'NUMBER'
   | 'DATE'
   | 'BOOLEAN'
   | 'SELECT'
+  | 'CPF'
+  | 'CNPJ'
+  | 'EMAIL'
+  | 'PHONE'
+  | 'URL'
+  | 'CEP'
 
 export interface CrmCustomFieldDefinitionDTO {
   id: string

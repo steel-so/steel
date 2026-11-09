@@ -3064,6 +3064,8 @@ enum CrmCustomFieldEntity {
   COMPANY
   PERSON
   OPPORTUNITY
+  /// Comunicação: contatos do WhatsApp (definidos em Configurações do WhatsApp).
+  WHATSAPP_CONTACT
 }
 
 enum CrmCustomFieldType {
@@ -3072,6 +3074,13 @@ enum CrmCustomFieldType {
   DATE
   BOOLEAN
   SELECT
+  /// Tipos com validação: guardam só os dígitos e são formatados na tela.
+  CPF
+  CNPJ
+  EMAIL
+  PHONE
+  URL
+  CEP
 }
 
 /// Definição de um campo customizado (no-code) por workspace e entidade.

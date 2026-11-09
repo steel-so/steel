@@ -7,6 +7,19 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
+vi.mock('@/src/repositories/crm-custom-field.repository', async () => {
+  const { ok } = await import('@/src/lib/result')
+  return {
+    CrmCustomFieldDefinitionRepository: {
+      listByWorkspace: vi.fn(async () => ok([])),
+    },
+    CrmCustomFieldValueRepository: {
+      listByRecords: vi.fn(async () => ok([])),
+      searchContactIds: vi.fn(async () => ok([])),
+      applyForRecord: vi.fn(async () => ok(undefined)),
+    },
+  }
+})
 vi.mock('../whatsapp-contact-validation.service')
 vi.mock('@/src/lib/search/index-hooks', () => ({
   indexSearchDocument: vi.fn(),

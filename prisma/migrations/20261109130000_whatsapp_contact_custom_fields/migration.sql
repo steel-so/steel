@@ -1,0 +1,8 @@
+-- Custom fields for WhatsApp contacts and validated field types (CPF, CNPJ...).
+ALTER TYPE "CrmCustomFieldEntity" ADD VALUE IF NOT EXISTS 'WHATSAPP_CONTACT';
+ALTER TYPE "CrmCustomFieldType" ADD VALUE IF NOT EXISTS 'CPF';
+ALTER TYPE "CrmCustomFieldType" ADD VALUE IF NOT EXISTS 'CNPJ';
+ALTER TYPE "CrmCustomFieldType" ADD VALUE IF NOT EXISTS 'EMAIL';
+ALTER TYPE "CrmCustomFieldType" ADD VALUE IF NOT EXISTS 'PHONE';
+ALTER TYPE "CrmCustomFieldType" ADD VALUE IF NOT EXISTS 'URL';
+ALTER TYPE "CrmCustomFieldType" ADD VALUE IF NOT EXISTS 'CEP';

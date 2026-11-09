@@ -15,6 +15,7 @@ export const WhatsAppContactRepository = {
     whatsapp?: 'yes' | 'no' | 'unknown',
     createdFrom?: Date,
     description?: string,
+    extraIds: string[] = [],
   ): Promise<Result<WhatsAppContactWithCount[]>> {
     try {
       const contacts = await prisma.whatsAppContact.findMany({
@@ -32,6 +33,7 @@ export const WhatsAppContactRepository = {
                 OR: [
                   { name: { contains: search, mode: 'insensitive' } },
                   { waId: { contains: search } },
+                  ...(extraIds.length > 0 ? [{ id: { in: extraIds } }] : []),
                 ],
               }
             : {}),
