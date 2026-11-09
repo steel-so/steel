@@ -53,7 +53,7 @@ export function metaConnectionError(
 function settingsPath(connection: WhatsAppConnection): string {
   return connection.module === 'SERVICE_DESK'
     ? '/servicedesk/settings?tab=whatsapp'
-    : '/zap/configuracoes'
+    : '/settings/whatsapp'
 }
 
 export const WhatsAppConnectionHealthService = {

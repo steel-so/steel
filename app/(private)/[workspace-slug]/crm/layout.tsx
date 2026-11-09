@@ -39,6 +39,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { ModuleRail } from '@/app/_components/navigation/module-rail'
 import {
   ContextHeader,
   ContextSidebar,
@@ -67,139 +68,147 @@ export default async function CrmLayout({
 
   return (
     <>
-      <ContextSidebar>
-        <ContextHeader title='CRM' />
-        <NavGroup>
-          <NavItem href={`${base}/leads`} icon={UserSearch01Icon}>
-            Leads
-          </NavItem>
-          <NavItem href={`${base}/cadences`} icon={Route01Icon}>
-            Cadências
-          </NavItem>
-          <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
-            Oportunidades
-          </NavItem>
-          <NavItem href={`${base}/companies`} icon={Building03Icon}>
-            Empresas
-          </NavItem>
-          <NavItem href={`${base}/renewals`} icon={RepeatIcon}>
-            Renovações
-          </NavItem>
-          <NavItem href={`${base}/people`} icon={UserMultipleIcon}>
-            Pessoas
-          </NavItem>
-          <NavItem href={`${base}/duplicates`} icon={GitMergeIcon}>
-            Duplicados
-          </NavItem>
-          <NavItem href={`${base}/pipelines`} icon={FunnelIcon}>
-            Pipelines
-          </NavItem>
-          <NavItem href={`${base}/products`} icon={PackageIcon}>
-            Produtos
-          </NavItem>
-          <NavItem href={`${base}/forecast`} icon={ChartLineData01Icon}>
-            Previsão
-          </NavItem>
-        </NavGroup>
-        <NavGroup>
-          <NavItem href={`${base}/tasks`} icon={TaskDone01Icon}>
-            Tarefas
-          </NavItem>
-          <NavItem href={`${base}/tasks/calendar`} icon={Calendar01Icon}>
-            Calendário
-          </NavItem>
-          <NavItem href={`${base}/notes`} icon={StickyNote01Icon}>
-            Notas
-          </NavItem>
-          <NavItem href={`${base}/proposals`} icon={DocumentValidationIcon}>
-            Documentos
-          </NavItem>
-          <NavItem href={`${base}/forms`} icon={FormIcon}>
-            Formulários
-          </NavItem>
-        </NavGroup>
-        <NavGroup>
-          <NavGroupAccordion label='Marketing' icon={MegaphoneIcon}>
-            <NavItem href={`${base}/campaigns`} icon={Megaphone01Icon}>
-              Campanhas
+      <ModuleRail base={base} ownRail={['/settings']}>
+        <ContextSidebar>
+          <ContextHeader title='CRM' />
+          <NavGroup>
+            <NavItem href={`${base}/leads`} icon={UserSearch01Icon}>
+              Leads
             </NavItem>
-            <NavItem href={`${base}/email-campaigns`} icon={MailSend01Icon}>
-              E-mail avulso
+            <NavItem href={`${base}/cadences`} icon={Route01Icon}>
+              Cadências
             </NavItem>
-            <NavItem href={`${base}/email-templates`} icon={Mail01Icon}>
-              Templates
+            <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
+              Oportunidades
             </NavItem>
-            <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
-              Listas
+            <NavItem href={`${base}/companies`} icon={Building03Icon}>
+              Empresas
             </NavItem>
-            <NavItem href={`${base}/newsletters`} icon={NewsIcon}>
-              Newsletters
+            <NavItem href={`${base}/renewals`} icon={RepeatIcon}>
+              Renovações
             </NavItem>
-            <NavItem href={`${base}/sites`} icon={WebDesign01Icon}>
-              Sites
+            <NavItem href={`${base}/people`} icon={UserMultipleIcon}>
+              Pessoas
             </NavItem>
-          </NavGroupAccordion>
-          <NavGroupAccordion label='Social' icon={Share08Icon}>
-            <NavItem href={`${base}/social`} icon={Calendar01Icon}>
-              Agendar posts
+            <NavItem href={`${base}/duplicates`} icon={GitMergeIcon}>
+              Duplicados
             </NavItem>
-            <NavItem href={`${base}/social/hook-vault`} icon={QuoteUpIcon}>
-              Hook Vault
+            <NavItem href={`${base}/pipelines`} icon={FunnelIcon}>
+              Pipelines
             </NavItem>
-            <NavItem
-              href={`${base}/social/competitors`}
-              icon={UserSearch02Icon}
-            >
-              Concorrentes
+            <NavItem href={`${base}/products`} icon={PackageIcon}>
+              Produtos
             </NavItem>
-            <NavItem href={`${base}/social/trending`} icon={FireIcon}>
-              Em Alta
+            <NavItem href={`${base}/forecast`} icon={ChartLineData01Icon}>
+              Previsão
             </NavItem>
-            <NavItem href={`${base}/social/instagram`} icon={InstagramIcon}>
-              Instagram
+          </NavGroup>
+          <NavGroup>
+            <NavItem href={`${base}/tasks`} icon={TaskDone01Icon}>
+              Tarefas
             </NavItem>
-            <NavItem href={`${base}/social/facebook`} icon={Facebook01Icon}>
-              Facebook
+            <NavItem href={`${base}/tasks/calendar`} icon={Calendar01Icon}>
+              Calendário
             </NavItem>
-            <NavItem href={`${base}/social/tiktok`} icon={TiktokIcon}>
-              TikTok
+            <NavItem href={`${base}/notes`} icon={StickyNote01Icon}>
+              Notas
             </NavItem>
-            <NavItem href={`${base}/social/youtube`} icon={YoutubeIcon}>
-              YouTube
+            <NavItem href={`${base}/proposals`} icon={DocumentValidationIcon}>
+              Documentos
             </NavItem>
-            <NavItem href={`${base}/social/google_analytics`} icon={GoogleIcon}>
-              Google Analytics
+            <NavItem href={`${base}/forms`} icon={FormIcon}>
+              Formulários
             </NavItem>
-            <NavItem href={`${base}/social/google_ads`} icon={Megaphone01Icon}>
-              Google Ads
+          </NavGroup>
+          <NavGroup>
+            <NavGroupAccordion label='Marketing' icon={MegaphoneIcon}>
+              <NavItem href={`${base}/campaigns`} icon={Megaphone01Icon}>
+                Campanhas
+              </NavItem>
+              <NavItem href={`${base}/email-campaigns`} icon={MailSend01Icon}>
+                E-mail avulso
+              </NavItem>
+              <NavItem href={`${base}/email-templates`} icon={Mail01Icon}>
+                Templates
+              </NavItem>
+              <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
+                Listas
+              </NavItem>
+              <NavItem href={`${base}/newsletters`} icon={NewsIcon}>
+                Newsletters
+              </NavItem>
+              <NavItem href={`${base}/sites`} icon={WebDesign01Icon}>
+                Sites
+              </NavItem>
+            </NavGroupAccordion>
+            <NavGroupAccordion label='Social' icon={Share08Icon}>
+              <NavItem href={`${base}/social`} icon={Calendar01Icon}>
+                Agendar posts
+              </NavItem>
+              <NavItem href={`${base}/social/hook-vault`} icon={QuoteUpIcon}>
+                Hook Vault
+              </NavItem>
+              <NavItem
+                href={`${base}/social/competitors`}
+                icon={UserSearch02Icon}
+              >
+                Concorrentes
+              </NavItem>
+              <NavItem href={`${base}/social/trending`} icon={FireIcon}>
+                Em Alta
+              </NavItem>
+              <NavItem href={`${base}/social/instagram`} icon={InstagramIcon}>
+                Instagram
+              </NavItem>
+              <NavItem href={`${base}/social/facebook`} icon={Facebook01Icon}>
+                Facebook
+              </NavItem>
+              <NavItem href={`${base}/social/tiktok`} icon={TiktokIcon}>
+                TikTok
+              </NavItem>
+              <NavItem href={`${base}/social/youtube`} icon={YoutubeIcon}>
+                YouTube
+              </NavItem>
+              <NavItem
+                href={`${base}/social/google_analytics`}
+                icon={GoogleIcon}
+              >
+                Google Analytics
+              </NavItem>
+              <NavItem
+                href={`${base}/social/google_ads`}
+                icon={Megaphone01Icon}
+              >
+                Google Ads
+              </NavItem>
+            </NavGroupAccordion>
+          </NavGroup>
+          <NavGroup>
+            <NavItem href={`${base}/workflows`} icon={WorkflowCircle01Icon}>
+              Workflows
             </NavItem>
-          </NavGroupAccordion>
-        </NavGroup>
-        <NavGroup>
-          <NavItem href={`${base}/workflows`} icon={WorkflowCircle01Icon}>
-            Workflows
-          </NavItem>
-          <NavItem href={`${base}/dashboards`} icon={DashboardSquare01Icon}>
-            Painéis
-          </NavItem>
-          <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
-            Relatórios
-          </NavItem>
-        </NavGroup>
-        <NavGroup>
-          <NavItem href={`${base}/email-sync`} icon={MailReceive01Icon}>
-            E-mail e agenda
-          </NavItem>
-          {canManageKeys ? (
-            <NavItem href={`${base}/integration-keys`} icon={Key01Icon}>
-              Chaves de API
+            <NavItem href={`${base}/dashboards`} icon={DashboardSquare01Icon}>
+              Painéis
             </NavItem>
-          ) : null}
-          <NavItem href={`${base}/settings`} icon={Settings02Icon}>
-            Configurações
-          </NavItem>
-        </NavGroup>
-      </ContextSidebar>
+            <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
+              Relatórios
+            </NavItem>
+          </NavGroup>
+          <NavGroup>
+            <NavItem href={`${base}/email-sync`} icon={MailReceive01Icon}>
+              E-mail e agenda
+            </NavItem>
+            {canManageKeys ? (
+              <NavItem href={`${base}/integration-keys`} icon={Key01Icon}>
+                Chaves de API
+              </NavItem>
+            ) : null}
+            <NavItem href={`${base}/settings`} icon={Settings02Icon}>
+              Configurações
+            </NavItem>
+          </NavGroup>
+        </ContextSidebar>
+      </ModuleRail>
       <RouteShortcuts
         routes={[
           { id: 'crm.go-leads', href: `${base}/leads` },

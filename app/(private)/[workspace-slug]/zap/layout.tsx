@@ -17,6 +17,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { notFound } from 'next/navigation'
 import { type ReactNode, Suspense } from 'react'
+import { ModuleRail } from '@/app/_components/navigation/module-rail'
 import {
   ContextHeader,
   ContextSidebar,
@@ -39,65 +40,67 @@ export default async function ZapLayout({
 
   return (
     <>
-      <ContextSidebar>
-        <ContextHeader title='WhatsApp' />
-        <Suspense fallback={null}>
-          <WhatsappPresenceSlot slug={slug} />
-        </Suspense>
-        <NavGroup>
-          <NavItem href={base} icon={Chatting01Icon}>
-            Conversas
-          </NavItem>
-          <NavItem href={`${base}/grupos`} icon={UserGroupIcon}>
-            Grupos
-          </NavItem>
-          <NavItem href={`${base}/equipes`} icon={UserGroup03Icon}>
-            Equipes
-          </NavItem>
-        </NavGroup>
-        <NavGroup>
-          <NavItem href={`${base}/contatos`} icon={UserMultipleIcon}>
-            Contatos
-          </NavItem>
-          <NavItem href={`${base}/templates`} icon={Shapes01Icon}>
-            Templates
-          </NavItem>
-          <NavItem href={`${base}/mensagens-rapidas`} icon={FlashIcon}>
-            Mensagens rápidas
-          </NavItem>
-          <NavItem href={`${base}/transmissoes`} icon={Megaphone01Icon}>
-            Transmissões
-          </NavItem>
-          <NavItem href={`${base}/campanhas-ia`} icon={AiMagicIcon}>
-            Campanhas de IA
-          </NavItem>
-          <NavItem href={`${base}/chatbots`} icon={BotIcon}>
-            Chatbots
-          </NavItem>
-          <NavItem href={`${base}/flows`} icon={Task01Icon}>
-            Formulários
-          </NavItem>
-          <NavItem href={`${base}/agenda`} icon={Calendar03Icon}>
-            Agenda
-          </NavItem>
-        </NavGroup>
-        <NavGroup>
-          <NavItem href={`${base}/dashboards`} icon={DashboardSquare01Icon}>
-            Painéis
-          </NavItem>
-          <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
-            Relatórios
-          </NavItem>
-          <NavItem href={`${base}/pesquisas`} icon={StarIcon}>
-            Pesquisas
-          </NavItem>
-        </NavGroup>
-        <NavGroup>
-          <NavItem href={`${base}/configuracoes`} icon={Settings02Icon}>
-            Configurações
-          </NavItem>
-        </NavGroup>
-      </ContextSidebar>
+      <ModuleRail base={base} ownRail={['/configuracoes']}>
+        <ContextSidebar>
+          <ContextHeader title='WhatsApp' />
+          <Suspense fallback={null}>
+            <WhatsappPresenceSlot slug={slug} />
+          </Suspense>
+          <NavGroup>
+            <NavItem href={base} icon={Chatting01Icon}>
+              Conversas
+            </NavItem>
+            <NavItem href={`${base}/grupos`} icon={UserGroupIcon}>
+              Grupos
+            </NavItem>
+            <NavItem href={`${base}/equipes`} icon={UserGroup03Icon}>
+              Equipes
+            </NavItem>
+          </NavGroup>
+          <NavGroup>
+            <NavItem href={`${base}/contatos`} icon={UserMultipleIcon}>
+              Contatos
+            </NavItem>
+            <NavItem href={`${base}/templates`} icon={Shapes01Icon}>
+              Templates
+            </NavItem>
+            <NavItem href={`${base}/mensagens-rapidas`} icon={FlashIcon}>
+              Mensagens rápidas
+            </NavItem>
+            <NavItem href={`${base}/transmissoes`} icon={Megaphone01Icon}>
+              Transmissões
+            </NavItem>
+            <NavItem href={`${base}/campanhas-ia`} icon={AiMagicIcon}>
+              Campanhas de IA
+            </NavItem>
+            <NavItem href={`${base}/chatbots`} icon={BotIcon}>
+              Chatbots
+            </NavItem>
+            <NavItem href={`${base}/flows`} icon={Task01Icon}>
+              Formulários
+            </NavItem>
+            <NavItem href={`${base}/agenda`} icon={Calendar03Icon}>
+              Agenda
+            </NavItem>
+          </NavGroup>
+          <NavGroup>
+            <NavItem href={`${base}/dashboards`} icon={DashboardSquare01Icon}>
+              Painéis
+            </NavItem>
+            <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
+              Relatórios
+            </NavItem>
+            <NavItem href={`${base}/pesquisas`} icon={StarIcon}>
+              Pesquisas
+            </NavItem>
+          </NavGroup>
+          <NavGroup>
+            <NavItem href={`${base}/configuracoes`} icon={Settings02Icon}>
+              Configurações
+            </NavItem>
+          </NavGroup>
+        </ContextSidebar>
+      </ModuleRail>
       {children}
     </>
   )

@@ -9,7 +9,8 @@ import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
   title: 'Monitoramento | Integrações | Steel',
-  description: 'Zabbix, Grafana, PRTG ou webhook: origens que abrem chamados no ServiceDesk.',
+  description:
+    'Zabbix, Grafana, PRTG ou webhook: origens que abrem chamados no ServiceDesk.',
 }
 
 export default async function SettingsMonitoringPage({

@@ -61,7 +61,7 @@ describe('WhatsAppConnectionHealthService.markDown', () => {
       title: 'Conexão do WhatsApp caiu: Atendimento',
     })
     expect(input.body).toContain('(phone offline)')
-    expect(input.path).toBe('/zap/configuracoes')
+    expect(input.path).toBe('/settings/whatsapp')
   })
 
   it('links ServiceDesk connections to their settings tab and spares the actor', async () => {

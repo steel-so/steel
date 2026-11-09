@@ -9,7 +9,8 @@ import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
   title: 'Redes sociais | Integrações | Steel',
-  description: 'Facebook, Instagram, TikTok, YouTube, Google Ads e Analytics usados pelo CRM.',
+  description:
+    'Facebook, Instagram, TikTok, YouTube, Google Ads e Analytics usados pelo CRM.',
 }
 
 export default async function SettingsSocialPage({

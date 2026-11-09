@@ -50,7 +50,9 @@ export default async function SettingsWorkspacePage({
       <div className='w-full max-w-3xl space-y-6 p-6'>
         <div>
           <H3>Workspace</H3>
-          <Muted>Ative ou desative os recursos de colaboração do workspace.</Muted>
+          <Muted>
+            Ative ou desative os recursos de colaboração do workspace.
+          </Muted>
         </div>
         <WorkspaceFeaturesSection workspaceId={membership.value.workspaceId} />
       </div>

@@ -13,7 +13,7 @@ function redirectToSettings(
   reason?: string,
 ) {
   const url = slug
-    ? new URL(`/${slug}/crm/settings`, BETTER_AUTH_URL)
+    ? new URL(`/${slug}/settings/social`, BETTER_AUTH_URL)
     : new URL('/', BETTER_AUTH_URL)
   url.searchParams.set('social', status)
   if (reason) url.searchParams.set('reason', reason)
