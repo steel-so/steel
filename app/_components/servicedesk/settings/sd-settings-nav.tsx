@@ -7,7 +7,6 @@ import {
   ContextHeader,
   ContextSidebar,
   NavGroup,
-  NavGroupAccordion,
   NavItem,
 } from '@/app/_components/navigation/sidebar-context'
 import { SteelIcon } from '@/components/icon/icon'
@@ -24,8 +23,8 @@ import { SD_SETTINGS_TABS, type SdSettingsTabDefinition } from './settings-tabs'
  * screen in the app does this — CRM and Comunicação put their settings
  * navigation in the module `ContextSidebar` and let the content breathe. Here
  * the module rail shows the sections while the route is
- * `/servicedesk/settings`, grouped into accordions (`NavGroupAccordion`, the
- * same device CRM uses for Marketing and Social).
+ * `/servicedesk/settings`, grouped under titled headings (`NavGroup label`),
+ * the same menu the workspace settings use — no accordions.
  *
  * The active section stays in `?tab=` rather than a route segment: e-mails
  * already sent, an in-app notification and an OAuth redirect point at
@@ -57,7 +56,7 @@ const GROUPS: { label: string; ids: string[] }[] = [
     ids: ['sla', 'escalation', 'oncall', 'automations', 'changes'],
   },
   { label: 'Recursos', ids: ['parts', 'contracts'] },
-  { label: 'Operação', ids: ['reports', 'monitoring', 'inventory'] },
+  { label: 'Operação', ids: ['reports', 'inventory'] },
   { label: 'Canais e integrações', ids: ['mail', 'whatsapp', 'integrations'] },
   { label: 'Preferências', ids: ['notifications', 'ai'] },
 ]
@@ -119,11 +118,7 @@ export function SdSettingsNav({ base }: { base: string }) {
         </NavItem>
       </NavGroup>
       {sdSettingsNavGroups().map((group) => (
-        <NavGroupAccordion
-          key={group.label}
-          label={group.label}
-          defaultOpen={group.tabs.some((tab) => tab.id === activeId)}
-        >
+        <NavGroup key={group.label} label={group.label}>
           {group.tabs.map((tab) => (
             <SdSettingsNavItem
               key={tab.id}
@@ -132,7 +127,7 @@ export function SdSettingsNav({ base }: { base: string }) {
               active={tab.id === activeId}
             />
           ))}
-        </NavGroupAccordion>
+        </NavGroup>
       ))}
     </ContextSidebar>
   )

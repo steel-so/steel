@@ -101,13 +101,9 @@ beforeEach(() => {
 })
 
 describe('SD_SETTINGS_TABS', () => {
-  it('registers the monitoring tab before the WhatsApp one', () => {
+  it('no longer registers monitoring: it is a global integration', () => {
     const ids = SD_SETTINGS_TABS.map((tab) => tab.id)
-    expect(ids).toContain('monitoring')
-    expect(ids.indexOf('monitoring')).toBeLessThan(ids.indexOf('whatsapp'))
-    const tab = SD_SETTINGS_TABS.find((item) => item.id === 'monitoring')
-    expect(tab?.label).toBe('Monitoramento')
-    expect(tab?.component).toBe(SdMonitoringTab)
+    expect(ids).not.toContain('monitoring')
   })
 
   it('labels both kinds in pt-BR and builds the public url', () => {

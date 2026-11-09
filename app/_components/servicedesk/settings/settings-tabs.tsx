@@ -19,7 +19,6 @@ import {
   Message01Icon,
   Notification03Icon,
   PieChartIcon,
-  RadarIcon,
   RepeatIcon,
   Settings02Icon,
   ShieldKeyIcon,
@@ -43,7 +42,6 @@ import { SdGeneralTab } from './general-tab'
 import { SdIntegrationsTab } from './integrations-tab'
 import { SdInventoryTab } from './inventory-tab'
 import { SdMailSettingsTab } from './mail-tab'
-import { SdMonitoringTab } from './monitoring-tab'
 import { SdNotificationsTab } from './notifications-tab'
 import { SdOnCallTab } from './oncall-tab'
 import { SdPartsTab } from './parts-tab'
@@ -216,14 +214,6 @@ export const SD_SETTINGS_TABS: SdSettingsTabDefinition[] = [
     description:
       'Relatórios de SLA agendados: recorte (clientes, departamentos, tipos), período apurado, formatos (PDF/CSV), dia, hora e fuso do envio, destinatários — e o histórico de execuções com os arquivos para baixar.',
     component: SdReportsTab,
-  },
-  {
-    id: 'monitoring',
-    label: 'Monitoramento',
-    icon: RadarIcon,
-    description:
-      'Origens que abrem chamado sozinhas (Zabbix ou webhook genérico): URL com token, mapa severidade → prioridade, encerramento automático na normalização e alertas recebidos.',
-    component: SdMonitoringTab,
   },
   {
     id: 'inventory',

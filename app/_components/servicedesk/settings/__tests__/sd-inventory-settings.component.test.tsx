@@ -116,9 +116,9 @@ describe('formatting helpers', () => {
 })
 
 describe('SD_SETTINGS_TABS', () => {
-  it('registers the inventory tab after monitoring', () => {
+  it('registers the inventory tab after reports', () => {
     const ids = SD_SETTINGS_TABS.map((item) => item.id)
-    expect(ids.indexOf('inventory')).toBeGreaterThan(ids.indexOf('monitoring'))
+    expect(ids.indexOf('inventory')).toBeGreaterThan(ids.indexOf('reports'))
     const tab = SD_SETTINGS_TABS.find((item) => item.id === 'inventory')
     expect(tab?.label).toBe('Inventário')
     expect(tab?.component).toBe(SdInventoryTab)

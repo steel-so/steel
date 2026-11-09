@@ -60,9 +60,6 @@ describe('<SdSettingsNav />', () => {
         .getAttribute('href'),
     ).toBe(BASE)
 
-    // A collapsed group does not mount its items, so what is checked here is
-    // the open group; that no section is left out of every group is what
-    // `sdSettingsNavGroups()` above guarantees.
     const hrefs = [...container.querySelectorAll('a')].map((a) =>
       a.getAttribute('href'),
     )
@@ -75,16 +72,18 @@ describe('<SdSettingsNav />', () => {
     }
   })
 
-  it('opens only the group of the active section', () => {
-    renderWithQuery(<SdSettingsNav base={BASE} />)
+  it('lists every section under a titled group, none collapsed', () => {
+    const { container } = renderWithQuery(<SdSettingsNav base={BASE} />)
 
-    // `?tab=sla` sits in "Atendimento": only that one opens, so the rail does
-    // not become the same 24-item wall the second bar was.
-    const open = screen
-      .getAllByRole('button', { expanded: true })
-      .map((node) => node.textContent)
-    expect(open).toHaveLength(1)
-    expect(open[0]).toContain('Atendimento')
+    const hrefs = [...container.querySelectorAll('a')].map((a) =>
+      a.getAttribute('href'),
+    )
+    for (const tab of SD_SETTINGS_TABS) {
+      expect(hrefs).toContain(`${BASE}/settings?tab=${tab.id}`)
+    }
+    for (const group of sdSettingsNavGroups()) {
+      expect(screen.getByText(group.label)).toBeTruthy()
+    }
   })
 
   it('marks the section from the query string as the current one', () => {
