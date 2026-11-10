@@ -1119,6 +1119,18 @@ export const WhatsAppPresenceDTO = dto(
   }),
 )
 
+export const WhatsAppContactSyncResultDTO = dto(
+  'WhatsAppContactSyncResult',
+  z.object({
+    created: z.number().int(),
+    updated: z.number().int(),
+    skipped: z.number().int().meta({
+      description:
+        'Entradas sem número válido (grupos, duplicadas) ou que falharam.',
+    }),
+  }),
+)
+
 export const WhatsAppContactImportResultDTO = dto(
   'WhatsAppContactImportResult',
   z.object({

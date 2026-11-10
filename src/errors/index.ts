@@ -415,6 +415,7 @@ export {
   whatsappConnectionNotFound,
   whatsappContactNotFound,
   whatsappContactPhotoUnavailable,
+  whatsappContactSyncUnavailable,
   whatsappConversationAiHandling,
   whatsappConversationAlreadyClosed,
   whatsappConversationLimitReached,

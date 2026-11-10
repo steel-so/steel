@@ -4,6 +4,7 @@ import type {
   WhatsAppContactFieldDTO,
 } from '@/types/whatsapp-contact'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
+import type { WhatsAppContactSyncResultDTO } from '@/types/whatsapp-contact-sync'
 import { apiFetch, apiSend } from './_fetch'
 
 const CONTACTS_KEY = (
@@ -225,6 +226,24 @@ export function useImportWhatsAppContacts(workspaceId: string) {
           ),
         },
         'Erro ao importar contatos',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['whatsapp-contacts', workspaceId],
+      })
+    },
+  })
+}
+
+export function useSyncWhatsAppPhonebook(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<WhatsAppContactSyncResultDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/contacts/sync`,
+        { method: 'POST' },
+        'Erro ao sincronizar a agenda',
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({

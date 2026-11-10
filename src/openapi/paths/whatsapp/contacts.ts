@@ -17,6 +17,7 @@ import {
   WhatsAppContactDTO,
   WhatsAppContactFieldDTO,
   WhatsAppContactImportResultDTO,
+  WhatsAppContactSyncResultDTO,
   WhatsAppNumberValidationDTO,
 } from '../../schemas/whatsapp'
 import {
@@ -157,6 +158,28 @@ export const contactRoutes: RouteConfig[] = [
         code: 'BAD_REQUEST',
         message: 'A planilha precisa ter a coluna "Telefone".',
         when: 'CSV sem a coluna de telefone, vazio ou com mais de 1000 linhas',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/contacts/sync',
+    tags: [TAG],
+    summary: 'Sincronizar agenda do WhatsApp',
+    description: `Lê a agenda do telefone pareado na conexão Z-API e cadastra os contatos no workspace (número novo vira contato; número que já existe é atualizado, nunca duplicado). Grupos e entradas sem número válido são ignorados. A API oficial da Meta não permite ler os contatos do telefone: sem conexão Z-API a chamada é recusada. Auditado. ${perm('contacts', 'CREATE')}`,
+    consent: true,
+    responses: {
+      200: {
+        description: 'Resultado da sincronização.',
+        schema: WhatsAppContactSyncResultDTO,
+      },
+    },
+    errors: [
+      ...permErrors('contacts', 'CREATE'),
+      {
+        code: 'WHATSAPP_CONTACT_SYNC_UNAVAILABLE',
+        message: 'Sincronizar a agenda exige uma conexão Z-API',
+        when: 'O workspace não tem conexão Z-API (só Meta ou nenhuma)',
       },
     ],
   },

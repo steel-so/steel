@@ -300,6 +300,35 @@ export async function getZapiContactInfo(
   return result
 }
 
+export interface ZapiPhonebookEntry {
+  name?: string
+  short?: string
+  vname?: string
+  notify?: string
+  phone?: string
+}
+
+const ZAPI_PHONEBOOK_PAGE_SIZE = 100
+const ZAPI_PHONEBOOK_MAX_PAGES = 500
+
+// Z-API-only: every contact saved in the paired phone's address book.
+// Meta's Cloud API cannot list a phone's contacts.
+export async function listZapiPhonebook(
+  credentials: ZapiCredentials,
+): Promise<ZapiPhonebookEntry[]> {
+  const all: ZapiPhonebookEntry[] = []
+  for (let page = 1; page <= ZAPI_PHONEBOOK_MAX_PAGES; page++) {
+    const batch = await zapiRequest<ZapiPhonebookEntry[] | null>(
+      credentials,
+      `/contacts?page=${page}&pageSize=${ZAPI_PHONEBOOK_PAGE_SIZE}`,
+    )
+    if (!batch || batch.length === 0) break
+    all.push(...batch)
+    if (batch.length < ZAPI_PHONEBOOK_PAGE_SIZE) break
+  }
+  return all
+}
+
 // Z-API-only: returns a fresh (non-expired) URL for the contact's current
 // WhatsApp profile photo. This is the endpoint Z-API's own docs point to
 // specifically for refreshing a photo link once the one from

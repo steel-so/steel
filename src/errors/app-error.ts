@@ -425,6 +425,10 @@ export const whatsappContactPhotoUnavailable = (
   message = 'Buscar foto de perfil exige uma conexão Z-API — a API oficial da Meta não expõe fotos de contato',
 ): AppError => appError('WHATSAPP_CONTACT_PHOTO_UNAVAILABLE', message)
 
+export const whatsappContactSyncUnavailable = (
+  message = 'Sincronizar a agenda exige uma conexão Z-API — a API oficial da Meta não permite ler os contatos do telefone',
+): AppError => appError('WHATSAPP_CONTACT_SYNC_UNAVAILABLE', message)
+
 export const whatsappAiKnowledgeDocumentNotFound = (): AppError =>
   appError(
     'WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND',

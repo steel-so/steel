@@ -60,6 +60,7 @@ import {
   useDeleteWhatsAppContact,
   useSetWhatsAppContactBroadcastOptOut,
   useSyncWhatsAppContactAvatar,
+  useSyncWhatsAppPhonebook,
   useUpdateWhatsAppContact,
   useWhatsAppContactFields,
   useWhatsAppContacts,
@@ -467,6 +468,7 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
   // Opt-out de transmissões é só OWNER/ADMIN (assertModulePrivileged).
   const canManageOptOut = useIsPrivileged()
   const syncAvatar = useSyncWhatsAppContactAvatar(workspaceId)
+  const syncPhonebook = useSyncWhatsAppPhonebook(workspaceId)
 
   return (
     <div className='space-y-4'>
@@ -506,6 +508,30 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
               onClick={() => setValidateOpen(true)}
             >
               Validar números
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button
+              size='sm'
+              variant='outline'
+              disabled={syncPhonebook.isPending}
+              onClick={() =>
+                syncPhonebook.mutate(undefined, {
+                  onSuccess: (result) =>
+                    notify.success(
+                      `Agenda sincronizada: ${result.created} novos, ${result.updated} atualizados`,
+                    ),
+                  onError: (error) =>
+                    notify.error(
+                      error,
+                      'Não foi possível sincronizar a agenda',
+                    ),
+                })
+              }
+            >
+              {syncPhonebook.isPending
+                ? 'Sincronizando…'
+                : 'Sincronizar agenda'}
             </Button>
           ) : null}
           {canCreate ? (
