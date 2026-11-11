@@ -8,7 +8,6 @@ import {
   documentLinkUnavailable,
   storageError,
 } from '@/src/errors/app-error'
-import { resolveDocumentToken } from '@/src/lib/document-export/backend-adapter'
 import { parseDocumentSettings } from '@/src/lib/document-export/settings'
 import {
   DOCUMENTS_BUCKET,
@@ -27,6 +26,7 @@ import {
 import type { CreateDocumentExportSchema } from '@/src/schemas/document.schema'
 import type { DocumentExportDTO } from '@/types/document'
 import { assertModuleEnabled, assertModuleMember } from './authz'
+import { resolveDocumentToken } from './document-access'
 
 /**
  * PDF export of CRM > Documentos (ADR 0063). The owner side exports the

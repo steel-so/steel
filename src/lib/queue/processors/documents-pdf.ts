@@ -9,7 +9,6 @@ import {
 } from '@/lib/env/server'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { renderDocumentHtml } from '@/src/lib/canvas-document/render'
-import { DocumentVariablesService } from '@/src/lib/document-export/backend-adapter'
 import {
   hostOf,
   isAllowedPrintRequest,
@@ -24,6 +23,7 @@ import { ensureBucket, putObject } from '@/src/lib/storage/s3'
 import { DocumentExportRepository } from '@/src/repositories/document-export.repository'
 import type { DocumentSettingsDTO } from '@/src/schemas/document.schema'
 import { DocumentExportService } from '@/src/services/document-export.service'
+import { DocumentVariablesService } from '@/src/services/document-variables.service'
 import { DocumentsPdfJob, type DocumentsPdfJobPayload } from '../jobs'
 import { DocumentExportRetentionMs } from '../retention'
 
