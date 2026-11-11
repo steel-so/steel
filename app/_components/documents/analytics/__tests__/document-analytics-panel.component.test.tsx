@@ -1,3 +1,4 @@
+import '@/src/__tests__/helpers/dom-matchers'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { mockFetch, renderWithQuery } from '@/src/__tests__/component-utils'
