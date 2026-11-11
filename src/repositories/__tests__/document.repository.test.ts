@@ -388,12 +388,22 @@ describe('DocumentLookupRepository', () => {
       data: { ...base, provider: 'META', status: 'CONNECTED' },
     })
     await prisma.whatsAppConnection.create({
-      data: { ...base, provider: 'ZAPI', status: 'DISCONNECTED' },
+      data: {
+        ...base,
+        provider: 'ZAPI',
+        status: 'DISCONNECTED',
+        phoneNumber: '5511999990001',
+      },
     })
     expect(expectOk(await find())?.id).toBe(meta.id)
 
     const zapi = await prisma.whatsAppConnection.create({
-      data: { ...base, provider: 'ZAPI', status: 'CONNECTED' },
+      data: {
+        ...base,
+        provider: 'ZAPI',
+        status: 'CONNECTED',
+        phoneNumber: '5511999990002',
+      },
     })
     expect(expectOk(await find())?.id).toBe(zapi.id)
   })

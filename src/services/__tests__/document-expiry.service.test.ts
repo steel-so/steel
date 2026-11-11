@@ -130,7 +130,6 @@ describe('DocumentExpiryService.expireDue()', () => {
     settings.resolve
       .mockResolvedValueOnce(err(databaseError()))
       .mockResolvedValueOnce(crmSettings(true))
-      .mockResolvedValueOnce(crmSettings(false))
     sendEmail.mockRejectedValueOnce(new Error('smtp down'))
 
     expect(expectOk(await DocumentExpiryService.expireDue(NOW))).toEqual({
@@ -148,7 +147,7 @@ describe('DocumentExpiryService.expireDue()', () => {
     )
   })
 
-  it('caches the settings per workspace', async () => {
+  it('caches the settings per workspace and honors the e-mail switch', async () => {
     const past = new Date('2026-11-01T12:00:00.000Z')
     documentRepo.listExpirationCandidates.mockResolvedValue(
       ok([
@@ -159,6 +158,12 @@ describe('DocumentExpiryService.expireDue()', () => {
     expectOk(await DocumentExpiryService.expireDue(NOW))
     expect(settings.resolve).toHaveBeenCalledTimes(1)
     expect(sendEmail).toHaveBeenCalledTimes(2)
+
+    sendEmail.mockClear()
+    settings.resolve.mockResolvedValue(crmSettings(false))
+    const muted = expectOk(await DocumentExpiryService.expireDue(NOW))
+    expect(muted.notified).toBe(0)
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('propagates a failed batch read', async () => {
