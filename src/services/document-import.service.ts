@@ -3,7 +3,7 @@ import { createId } from '@paralleldrive/cuid2'
 import type { DocumentImport, DocumentKind } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
-import { storageError } from '@/src/errors'
+import { conflict, storageError } from '@/src/errors'
 import {
   documentImportFailed,
   documentImportNotFound,
@@ -93,6 +93,8 @@ const PROGRESS_INTERVAL_MS = 2_500
 /** Characters the answer usually has per page (moves the progress bar). */
 const CHARS_PER_PAGE = 2_500
 const PROMPT_EXPECTED_CHARS = 14_000
+/** Imports one user may have queued or running at once (cost guard). */
+export const MAX_ACTIVE_IMPORTS = 3
 
 export interface DocumentImportFile {
   buffer: Buffer
@@ -463,6 +465,19 @@ export const DocumentImportService = {
       const result = await checkFile(input.mode, file)
       if (!result.ok) return result
       checked = result.value
+    }
+
+    const active = await DocumentImportRepository.countActive(
+      workspaceId,
+      actorId,
+    )
+    if (!active.ok) return active
+    if (active.value >= MAX_ACTIVE_IMPORTS) {
+      return err(
+        conflict(
+          `Você já tem ${MAX_ACTIVE_IMPORTS} documentos sendo montados. Espere um terminar para começar outro.`,
+        ),
+      )
     }
 
     const call = await prepareCall(actorId, workspaceId)

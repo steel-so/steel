@@ -265,6 +265,7 @@ beforeEach(() => {
     return ok({ ...row, ...(data as unknown as Partial<DocumentImport>) })
   })
   imports.findForRun.mockResolvedValue(ok(stored()))
+  imports.countActive.mockResolvedValue(ok(0))
   imports.findById.mockResolvedValue(ok(stored()))
   imports.complete.mockImplementation(async (id, document, result) =>
     ok({
@@ -539,6 +540,23 @@ describe('DocumentImportService.create()', () => {
     expectErr(
       await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
       'AI_QUOTA_EXCEEDED',
+    )
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('should cap the imports a user runs at once', async () => {
+    imports.countActive.mockResolvedValueOnce(ok(3))
+    const error = expectErr(
+      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+      'CONFLICT',
+    )
+    expect(error.message).toMatch(/3 documentos sendo montados/)
+    expect(imports.countActive).toHaveBeenCalledWith(WS, ACTOR)
+
+    imports.countActive.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(
+      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+      'DATABASE_ERROR',
     )
     expect(upload).not.toHaveBeenCalled()
   })
