@@ -271,7 +271,7 @@ describe('downloadDocumentPdf', () => {
       calls += 1
       return calls === 1
         ? new Response(null, { status: 202 })
-        : new Response(new Blob(['%PDF']), {
+        : new Response('%PDF', {
             status: 200,
             headers: {
               'content-disposition': 'attachment; filename="proposta.pdf"',
