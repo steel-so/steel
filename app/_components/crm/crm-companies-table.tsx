@@ -12,6 +12,7 @@ import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { CustomerHealthPanel } from '@/app/_components/crm/health/health-panel'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import {
   useCan,
   useIsPrivileged,
@@ -154,6 +155,12 @@ export function CrmCompaniesTable({
                 cnpj={record.cnpj}
                 canEdit={canEdit}
                 onApplied={refetch}
+              />
+              <RecordDocumentsSection
+                workspaceId={workspaceId}
+                slug={slug}
+                link={{ companyId: record.id }}
+                listBy='companyId'
               />
               <CrmRecordTimeline
                 workspaceId={workspaceId}

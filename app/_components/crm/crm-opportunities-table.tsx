@@ -16,6 +16,7 @@ import {
 } from '@/app/_components/crm/health/health-parts'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import {
   Select,
@@ -265,6 +266,18 @@ export function CrmOpportunitiesTable({
                 opportunityId={record.id}
                 productOptions={lookups.options.products}
                 onChanged={refetch}
+              />
+              <RecordDocumentsSection
+                workspaceId={workspaceId}
+                slug={slug}
+                link={{
+                  opportunityId: record.id,
+                  companyId: record.companyId,
+                  personId: record.pointOfContactId,
+                }}
+                listBy='opportunityId'
+                defaultKind='PROPOSAL'
+                defaultTitle={record.name ? `Proposta — ${record.name}` : ''}
               />
               <CrmRecordTimeline
                 workspaceId={workspaceId}

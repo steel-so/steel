@@ -10,6 +10,7 @@ import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { CrmPersonNewslettersCard } from '@/app/_components/crm/newsletters/bridge/crm-person-newsletters-card'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import {
   customFieldColumns,
   useCrmCustomFields,
@@ -134,6 +135,12 @@ export function CrmPeopleTable({
               <CrmPersonNewslettersCard
                 workspaceId={workspaceId}
                 personId={record.id}
+              />
+              <RecordDocumentsSection
+                workspaceId={workspaceId}
+                slug={slug}
+                link={{ personId: record.id, companyId: record.companyId }}
+                listBy='personId'
               />
               <CrmRecordTimeline
                 workspaceId={workspaceId}
