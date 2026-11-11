@@ -280,14 +280,10 @@ function acceptSection(
   const validity: DocumentOutlineLeafBlock[] = hasValidity
     ? [{ type: 'validity' }]
     : []
+  // No heading: the catalog's accept card brings its own title.
   return {
     name: LEGACY_SECTION_NAMES.SIGNATURE,
-    blocks: [
-      heading(LEGACY_SECTION_NAMES.SIGNATURE),
-      ...intro,
-      ...validity,
-      acceptBlock(),
-    ],
+    blocks: [...intro, ...validity, acceptBlock()],
   }
 }
 

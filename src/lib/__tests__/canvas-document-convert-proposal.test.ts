@@ -446,7 +446,6 @@ describe('proposalToOutline', () => {
     expect(accept).toEqual({
       name: 'Aceite',
       blocks: [
-        { type: 'heading', text: 'Aceite', level: 2 },
         {
           type: 'text',
           html: '<p>Responsável: <strong>Marina Lima — Diretora</strong></p>',
@@ -470,7 +469,7 @@ describe('proposalToOutline', () => {
         }),
       ],
     }).sections
-    expect(accept?.blocks.map((b) => b.type)).toEqual(['heading', 'accept'])
+    expect(accept?.blocks.map((b) => b.type)).toEqual(['accept'])
   })
 
   it('skips disabled, empty, invalid and mismatched sections', () => {
@@ -499,7 +498,6 @@ describe('proposalToOutline', () => {
     expect(outline.sections.at(-1)).toEqual({
       name: 'Aceite',
       blocks: [
-        { type: 'heading', text: 'Aceite', level: 2 },
         {
           type: 'accept',
           buttonLabel: ACCEPT_BUTTON_LABEL,
@@ -582,7 +580,6 @@ describe('newProposalOutline', () => {
       items: [{ id: 'l1' }],
     })
     expect(outline.sections[2]?.blocks.map((b) => b.type)).toEqual([
-      'heading',
       'validity',
       'accept',
     ])
