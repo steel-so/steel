@@ -2,9 +2,11 @@ import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { DEFAULT_DOCUMENT_SETTINGS } from '@/src/schemas/document.schema'
 import { buildDocumentCatalog } from './catalog'
 import type { DocumentRenderContext, DocumentRenderMode } from './context'
+import { documentSections } from './sections'
 import { type DocumentLayoutSettings, documentCss } from './styles'
 import { parseDocumentTheme } from './theme'
 import { DocumentTree, isCoverFirst } from './tree'
+import { substituteVariables } from './variables'
 
 /**
  * React renderer of a document outside the editor (public link). Functional
@@ -27,11 +29,39 @@ export function DocumentView({ content, theme, context }: DocumentViewProps) {
     settings,
     coverFirst: isCoverFirst(content),
   })
+  const floatingToc = context.mode === 'public' && settings.showToc
   return (
     <>
       <style data-document-css='' dangerouslySetInnerHTML={{ __html: css }} />
+      {floatingToc ? <FloatingToc content={content} context={context} /> : null}
       <DocumentTree doc={content} catalog={catalog} />
     </>
+  )
+}
+
+/** `settings.showToc`: the sections as a side menu on wide screens. */
+function FloatingToc({
+  content,
+  context,
+}: {
+  content: CanvasDocument
+  context: DocumentRenderContext
+}) {
+  const sections = documentSections(content)
+  if (sections.length < 2) return null
+  return (
+    <nav className='d-root d-float-toc' aria-label='Sumário do documento'>
+      <p className='d-float-toc-title'>Sumário</p>
+      <ol>
+        {sections.map((info) => (
+          <li key={info.id}>
+            <a href={`#d-sec-${info.id}`}>
+              {substituteVariables(info.name, context.variables ?? {})}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
   )
 }
 

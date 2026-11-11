@@ -255,6 +255,20 @@ describe('editor and public renders', () => {
     expect(out).toContain('id="d-field-f"')
     expect(out).toContain('Pré-visualização')
     expect(out).toContain(`${DOC_TRACK_ATTR}="video"`)
+    expect(out).not.toContain('d-float-toc')
+  })
+
+  it('adds the floating table of contents when the settings ask', () => {
+    const settings = { ...DEFAULT_DOCUMENT_SETTINGS, showToc: true }
+    const out = renderToStaticMarkup(
+      createElement(DocumentView, {
+        content: SAMPLE,
+        theme: {},
+        context: context({ mode: 'public', settings }),
+      }),
+    )
+    expect(out).toContain('aria-label="Sumário do documento"')
+    expect(out).toContain('href="#d-sec-s2"')
   })
 })
 

@@ -321,6 +321,14 @@ const BASE_CSS = `
 
 .d-root .d-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;min-height:7em;padding:1.25em;border:1.5px dashed color-mix(in srgb,var(--canvas-muted) 45%,transparent);border-radius:var(--d-radius);background:color-mix(in srgb,var(--canvas-border) 22%,transparent);color:var(--canvas-muted);font-size:.875em;text-align:center}
 .d-root .d-placeholder svg{width:1.8em;height:1.8em}
+.d-float-toc{display:none}
+@media (min-width:1280px){
+.d-root.d-float-toc{position:fixed;top:96px;left:max(16px,calc(50% - var(--d-width) / 2 - 260px));z-index:20;display:block;width:200px;max-height:calc(100vh - 128px);overflow:auto;padding:0;background:transparent;font-size:13px;line-height:1.4}
+.d-float-toc-title{margin:0 0 .6em;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--canvas-muted)}
+.d-float-toc ol{margin:0;padding:0;list-style:none;border-left:1px solid var(--canvas-border)}
+.d-float-toc a{display:block;padding:.35em 0 .35em .9em;margin-left:-1px;border-left:2px solid transparent;color:var(--canvas-muted);text-decoration:none}
+.d-float-toc a:hover,.d-float-toc a:focus-visible{border-left-color:var(--canvas-primary);color:var(--canvas-heading)}
+}
 .d-root .d-var{padding:0 .15em;border-radius:4px;background:color-mix(in srgb,var(--canvas-primary) 13%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--canvas-primary) 28%,transparent)}
 .d-root .d-section--cover .d-var{background:rgba(255,255,255,.18);box-shadow:0 0 0 1px rgba(255,255,255,.4)}
 
