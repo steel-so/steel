@@ -121,6 +121,10 @@ function authorize(actorId: string, workspaceId: string) {
   })
 }
 
+/** The model reads up to 60 pages before it writes: wait that long for
+ * the first chunk before failing over to another model. */
+const FIRST_CHUNK_TIMEOUT_MS = 10 * 60 * 1000
+
 /** Plan feature + model + quota (the same gate as the site generator). */
 async function prepareCall(
   actorId: string,
@@ -128,7 +132,9 @@ async function prepareCall(
 ): Promise<Result<PreparedAiCall>> {
   const feature = await assertFeature(workspaceId, 'crm.aiAssistant')
   if (!feature.ok) return feature
-  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId)
+  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId, [], {
+    timeoutMs: FIRST_CHUNK_TIMEOUT_MS,
+  })
 }
 
 interface CheckedFile {
