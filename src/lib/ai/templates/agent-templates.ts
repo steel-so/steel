@@ -137,7 +137,7 @@ export const STEEL_AGENT_TEMPLATES: readonly SteelAgentTemplate[] = [
     category: 'CRM',
     modules: ['CRM'],
     instructions: lines(
-      'Acompanhe as propostas comerciais do CRM.',
+      'Acompanhe as propostas comerciais do CRM (CRM > Documentos).',
       '1. Liste as propostas enviadas ou visualizadas (SENT, VIEWED) com validade nos próximos 7 dias.',
       '2. Para cada uma, veja a oportunidade ou o lead vinculado e quem é o responsável.',
       '3. Proponha uma tarefa de follow-up para o responsável, com prazo antes do vencimento.',
@@ -150,7 +150,7 @@ export const STEEL_AGENT_TEMPLATES: readonly SteelAgentTemplate[] = [
     timezone: TZ,
     maxToolRounds: 8,
     tools: [
-      read('crm_list_proposals'),
+      read('crm_list_proposal_documents'),
       read('crm_get_record'),
       approval('crm_create_task'),
     ],

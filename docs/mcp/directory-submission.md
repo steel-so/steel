@@ -315,6 +315,7 @@ cada deploy; regere esta tabela antes de enviar.
 | --- | --- | --- | --- | --- |
 | `crm_list_pipelines` | Consultando pipelines | leitura | sim |  |
 | `crm_list_proposals` | Consultando propostas | leitura | sim |  |
+| `crm_list_proposal_documents` | Consultando propostas em Documentos | leitura | sim |  |
 | `crm_get_forecast` | Consultando previsão de receita | leitura | sim |  |
 | `crm_get_record` | Consultando registro | leitura | sim |  |
 | `crm_get_record_timeline` | Consultando histórico do registro | leitura | sim |  |
@@ -351,7 +352,7 @@ cada deploy; regere esta tabela antes de enviar.
 | `crm_get_trending_posts` | Consultando posts em alta | leitura | sim |  |
 | `crm_create_dashboard` | Criando dashboard | escrita (criar) | com `mcp:write` |  |
 | `crm_create_form` | Criando formulário | escrita (criar) | com `mcp:write` |  |
-| `crm_create_proposal_template` | Criando modelo de proposta | escrita (criar) | com `mcp:write` |  |
+| `crm_create_proposal` | Criando proposta | escrita (criar) | com `mcp:write` |  |
 
 **Comunicação**
 

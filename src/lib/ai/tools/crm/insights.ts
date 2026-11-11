@@ -122,7 +122,7 @@ export const crmListProposalsTool: SteelAiTool<
   module: 'CRM',
   kind: 'READ',
   description:
-    'Lista as propostas comerciais com filtros e paginação — nome, status (DRAFT, SENT, VIEWED, ACCEPTED, REJECTED, EXPIRED), validade, visualizações e vínculos (oportunidade, lead, empresa), com link.',
+    'Lista as propostas do construtor antigo (anteriores a CRM > Documentos) com filtros e paginação — nome, status (DRAFT, SENT, VIEWED, ACCEPTED, REJECTED, EXPIRED), validade, visualizações e vínculos (oportunidade, lead, empresa), com link. As propostas atuais são documentos: use crm_list_proposal_documents.',
   parameters: {
     type: 'object',
     properties: {
