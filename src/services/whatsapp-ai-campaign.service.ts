@@ -79,6 +79,8 @@ const ACTION_RUNS_LIMIT = 100
 const PAUSING_ERRORS = new Set([
   'WHATSAPP_MESSAGE_LIMIT_REACHED',
   'WHATSAPP_CONVERSATION_LIMIT_REACHED',
+  // The number's spending cap (ADR 0064): resumes once an admin raises it.
+  'WHATSAPP_SPEND_CAP_REACHED',
 ])
 
 /** Fields that only change with the campaign stopped. */

@@ -56,6 +56,8 @@ export const QueueName = {
   AiProactive: 'ai-proactive',
   WhatsappArchive: 'whatsapp-archive',
   SendingDomains: 'sending-domains',
+  // zap-spend-cap (ADR 0064)
+  WhatsappMetaSpend: 'whatsapp-meta-spend',
   CrmNewsletter: 'crm-newsletter',
   CrmNewsletterAutomation: 'crm-newsletter-automation',
   WhatsappChatbot: 'whatsapp-chatbot',
@@ -1093,6 +1095,22 @@ export type SendingDomainsJob =
 
 export type SendingDomainsJobPayload = {
   [SendingDomainsJob.CheckTick]: Record<string, never>
+}
+
+/**
+ * zap-spend-cap (ADR 0064): `refresh-tick` every 15 min re-reads Meta's spend
+ * of every number with a monthly cap, so the block works when nobody opens
+ * the costs page.
+ */
+export const WhatsappMetaSpendJob = {
+  RefreshTick: 'refresh-tick',
+} as const
+
+export type WhatsappMetaSpendJob =
+  (typeof WhatsappMetaSpendJob)[keyof typeof WhatsappMetaSpendJob]
+
+export type WhatsappMetaSpendJobPayload = {
+  [WhatsappMetaSpendJob.RefreshTick]: Record<string, never>
 }
 
 /**

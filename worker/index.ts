@@ -76,6 +76,7 @@ import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsa
 import { processWhatsappChatbot } from '../src/lib/queue/processors/whatsapp-chatbot'
 import { processWhatsappConversationLifecycle } from '../src/lib/queue/processors/whatsapp-conversation-lifecycle'
 import { processWhatsappMedia } from '../src/lib/queue/processors/whatsapp-media'
+import { processWhatsappMetaSpend } from '../src/lib/queue/processors/whatsapp-meta-spend'
 import { processWhatsappSentiment } from '../src/lib/queue/processors/whatsapp-sentiment'
 import { processWorkspaceExport } from '../src/lib/queue/processors/workspace-export'
 import { processWorkspaceIntegrations } from '../src/lib/queue/processors/workspace-integrations'
@@ -123,6 +124,7 @@ import {
   scheduleWhatsappAutomationsJobs,
   scheduleWhatsappBroadcastJobs,
   scheduleWhatsappConversationLifecycleJobs,
+  scheduleWhatsappMetaSpendJobs,
   scheduleWorkspaceExportJobs,
   scheduleWorkspaceIntegrationsJobs,
   unscheduleCrmProposalExpiryJobs,
@@ -353,6 +355,10 @@ async function main(): Promise<void> {
     registerWorker(QueueName.WhatsappArchive, processWhatsappArchive),
   )
   workers.push(registerWorker(QueueName.SendingDomains, processSendingDomains))
+  // zap-spend-cap (ADR 0064): Meta spend of capped numbers.
+  workers.push(
+    registerWorker(QueueName.WhatsappMetaSpend, processWhatsappMetaSpend),
+  )
   workers.push(registerWorker(QueueName.CrmNewsletter, processCrmNewsletter))
   workers.push(
     registerWorker(
@@ -428,6 +434,7 @@ async function main(): Promise<void> {
   await scheduleSitePostsJobs()
   await scheduleWhatsappArchiveJobs()
   await scheduleSendingDomainsJobs()
+  await scheduleWhatsappMetaSpendJobs()
   await scheduleCrmNewsletterJobs()
   await scheduleCrmNewsletterAutomationJobs()
   await scheduleDocumentsPdfJobs()

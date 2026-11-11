@@ -659,6 +659,26 @@ export const WhatsAppBroadcastService = {
           )
     }
 
+    // The number's spending cap (ADR 0064) blocks every paid send left: the
+    // remaining recipients fail now with the same reason instead of one by one.
+    if (
+      !sendResult.ok &&
+      sendResult.error.code === 'WHATSAPP_SPEND_CAP_REACHED'
+    ) {
+      const stopped = await WhatsAppBroadcastRepository.failPendingRecipients(
+        broadcastListId,
+        sendResult.error.message,
+      )
+      if (!stopped.ok) return stopped
+      logger.warn('whatsapp.broadcast.spend_cap_reached', {
+        component: 'WhatsAppBroadcastService',
+        broadcastListId,
+        recipients: stopped.value,
+      })
+      await completeIfDrained(broadcastListId)
+      return ok({ status: 'failed', reason: sendResult.error.code })
+    }
+
     const recorded = sendResult.ok
       ? await WhatsAppBroadcastRepository.updateRecipientStatus(recipientId, {
           status: 'SENT',

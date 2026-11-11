@@ -197,6 +197,13 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_MESSAGE_LIMIT_REACHED',
     status: 402,
   },
+  // zap-spend-cap (ADR 0064): the number's monthly spending cap (BLOCK mode)
+  // refuses a paid template send. Like the usage limits, retrying won't help
+  // until an admin raises the cap, switches to WARN or the month turns.
+  WHATSAPP_SPEND_CAP_REACHED: {
+    code: 'WHATSAPP_SPEND_CAP_REACHED',
+    status: 402,
+  },
   // Click-to-call: the actor has no PABX extension/device in the profile.
   PABX_EXTENSION_REQUIRED: { code: 'PABX_EXTENSION_REQUIRED', status: 422 },
   // Browser calling: the extension/device of the profile was not approved by an

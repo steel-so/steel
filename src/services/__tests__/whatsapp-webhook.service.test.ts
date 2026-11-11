@@ -1245,6 +1245,35 @@ describe('WhatsAppWebhookService', () => {
         error: '131026: Message undeliverable',
       })
     })
+
+    it('should zero the ledger entry of a failed message (zap-spend-cap)', async () => {
+      const { WhatsAppSpendCapRepository } = await import(
+        '@/src/repositories/whatsapp-spend-cap.repository'
+      )
+      mockedMessageRepo.updateStatusByProviderMessageId.mockResolvedValue(
+        ok(null),
+      )
+
+      expectOk(
+        await WhatsAppWebhookService.ingestStatusUpdate({
+          providerMessageId: 'wamid.paid',
+          status: 'FAILED',
+        }),
+      )
+      expectOk(
+        await WhatsAppWebhookService.ingestStatusUpdate({
+          providerMessageId: 'wamid.ok',
+          status: 'DELIVERED',
+        }),
+      )
+
+      expect(
+        vi.mocked(WhatsAppSpendCapRepository).reverseFailedEntries,
+      ).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(WhatsAppSpendCapRepository).reverseFailedEntries,
+      ).toHaveBeenCalledWith('wamid.paid', expect.any(Date))
+    })
   })
 
   describe('ingestInboundGroupMessage()', () => {

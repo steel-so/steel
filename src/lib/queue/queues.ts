@@ -126,6 +126,8 @@ import {
   type WhatsappConversationLifecycleJobPayload,
   type WhatsappMediaJob,
   type WhatsappMediaJobPayload,
+  type WhatsappMetaSpendJob,
+  type WhatsappMetaSpendJobPayload,
   type WhatsappSentimentJob,
   type WhatsappSentimentJobPayload,
   type WhatsappTemplateSyncJob,
@@ -1429,6 +1431,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.AiProactive]: getAiProactiveQueue,
   [QueueName.WhatsappArchive]: getWhatsappArchiveQueue,
   [QueueName.SendingDomains]: getSendingDomainsQueue,
+  [QueueName.WhatsappMetaSpend]: getWhatsappMetaSpendQueue,
   [QueueName.CrmNewsletter]: getCrmNewsletterQueue,
   [QueueName.CrmNewsletterAutomation]: getCrmNewsletterAutomationQueue,
   [QueueName.WhatsappChatbot]: getWhatsappChatbotQueue,
@@ -1551,6 +1554,34 @@ export function getSendingDomainsQueue(): Queue<
     SendingDomainsJobPayload[SendingDomainsJob],
     unknown,
     SendingDomainsJob
+  >
+}
+
+let whatsappMetaSpendQueue: Queue | null = null
+
+/**
+ * zap-spend-cap (ADR 0064): the 15-minute Meta spend refresh. One attempt:
+ * the next tick redoes it.
+ */
+export function getWhatsappMetaSpendQueue(): Queue<
+  WhatsappMetaSpendJobPayload[WhatsappMetaSpendJob],
+  unknown,
+  WhatsappMetaSpendJob
+> {
+  if (!whatsappMetaSpendQueue) {
+    whatsappMetaSpendQueue = new Queue(QueueName.WhatsappMetaSpend, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        removeOnComplete: { age: 60 * 60 * 24 * 7, count: 200 },
+        removeOnFail: { age: 60 * 60 * 24 * 7 },
+        attempts: 1,
+      },
+    })
+  }
+  return whatsappMetaSpendQueue as Queue<
+    WhatsappMetaSpendJobPayload[WhatsappMetaSpendJob],
+    unknown,
+    WhatsappMetaSpendJob
   >
 }
 

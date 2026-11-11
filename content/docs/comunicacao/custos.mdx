@@ -1,6 +1,6 @@
 ---
 title: Custos do WhatsApp
-description: Veja quanto o WhatsApp custa por conexão, categoria, transmissão, campanha de IA e atendente, compare Meta e Z-API e defina um orçamento mensal.
+description: Veja quanto o WhatsApp custa por conexão, categoria, transmissão, campanha de IA e atendente, compare Meta e Z-API, defina um orçamento mensal e trave o gasto de cada número com os dados reais da Meta.
 section: comunicacao
 order: 10
 ---
@@ -33,6 +33,47 @@ orçamento que você definiu.
   workspace.
 </Callout>
 
+## Gasto real e limite por número
+
+No topo da aba, **Gasto real por número (Meta)** mostra, para cada número da
+API oficial da Meta, quanto ele gastou no mês **pelos dados da própria Meta**:
+
+- **Gasto no mês**: os dias já encerrados informados pela Meta (em UTC) mais o
+  dia de hoje, que vem dos envios registrados pelo Steel.
+- **Origem**: **Custo da Meta** quando a Meta informa o valor cobrado; **Volume
+  da Meta × tabela** quando ela informa só a quantidade de mensagens pagas e o
+  Steel multiplica pela sua tabela de preços.
+- **Por categoria**, **projeção do mês** e a barra de consumo do limite.
+- **Atualizado há X min, direto da Meta**: o Steel consulta a Meta sempre que
+  você abre a página (no máximo uma vez por minuto por número) e, para os
+  números com limite, a cada 15 minutos, mesmo sem ninguém na página. Se a
+  Meta estiver fora do ar, aparece o motivo e o último valor lido.
+
+### Definir o limite de gasto
+
+1. Clique em **Definir limite** (ou **Alterar limite**) no número.
+2. Informe o **Limite mensal (R$)**, por exemplo `1.500,00`.
+3. Em **Ao atingir o limite**, escolha:
+   - **Bloquear envios pagos**: templates (mensagens pagas) deixam de sair
+     quando o próximo envio passaria do limite. O número fica **Bloqueado**.
+   - **Só avisar**: nada é bloqueado.
+4. Clique em **Salvar limite**.
+
+O mesmo botão aparece em **Ajustes > Integrações > WhatsApp**, no cartão de
+cada número da Meta.
+
+Os administradores recebem um aviso no Steel a **80%** e a **100%** do limite
+(uma vez por mês e por nível).
+
+<Callout type='aviso'>
+  Com **Bloquear envios pagos**, transmissões param e marcam os contatos
+  restantes como falha com o motivo, campanhas de IA ficam pausadas e
+  newsletters por WhatsApp deixam de enviar o restante. Respostas dentro da
+  janela de atendimento de 24 horas **nunca** são bloqueadas. Para liberar na
+  hora, aumente o limite, troque para **Só avisar** ou clique em **Remover
+  limite**. No mês seguinte o número volta a enviar sozinho.
+</Callout>
+
 ## Tabela de preços da Meta
 
 Na parte de baixo da aba, **Tabela de preços da Meta** guarda o preço por
@@ -57,8 +98,10 @@ Em **Orçamento e mensalidades**:
 
 - **Orçamento mensal (R$)**: quando o gasto do mês chega a **80%** e a
   **100%**, os administradores recebem um aviso no Steel (uma vez por mês e por
-  nível). O orçamento **não bloqueia envios**. Para limitar envios, use o limite
-  mensal de mensagens em **Ajustes > Comunicação**.
+  nível). O orçamento **não bloqueia envios**. Para travar o gasto de um
+  número, use o [limite de gasto por número](#definir-o-limite-de-gasto); para
+  limitar a quantidade de mensagens, use o limite mensal em **Ajustes >
+  Comunicação**.
 - **Mensalidade** de cada conexão: o valor fixo que você paga pela linha (a
   instância da Z-API, por exemplo). Ela entra no gasto do mês e no custo por
   mensagem.

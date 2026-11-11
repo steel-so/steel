@@ -29,6 +29,7 @@ import {
 import { CostProviders } from './whatsapp-costs-providers'
 import { WhatsAppCostsSettings } from './whatsapp-costs-settings'
 import { CostBudgetCard, CostTotals, CostTrend } from './whatsapp-costs-summary'
+import { WhatsAppSpendCapsCard } from './whatsapp-spend-caps'
 
 const ALL_CONNECTIONS = 'all'
 const PRESETS = Object.keys(COST_PRESET_LABELS) as CostPreset[]
@@ -75,6 +76,8 @@ export function WhatsAppCostsTab({ workspaceId }: { workspaceId: string }) {
           histórico começa na data em que este recurso foi ativado.
         </p>
       </div>
+
+      <WhatsAppSpendCapsCard workspaceId={workspaceId} />
 
       <div className='flex flex-wrap items-end gap-3'>
         <fieldset className='m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0'>

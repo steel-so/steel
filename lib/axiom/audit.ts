@@ -51,6 +51,8 @@ export type AuditEntity =
   | 'whatsapp_usage_limits'
   | 'whatsapp_cost_price'
   | 'whatsapp_cost_settings'
+  // zap-spend-cap: monthly spending cap per WhatsApp number (ADR 0064)
+  | 'whatsapp_spend_cap'
   | 'whatsapp_ad_settings'
   | 'whatsapp_ad_spend'
   | 'notification'

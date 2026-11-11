@@ -668,6 +668,22 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
     )
   })
 
+  it('should pause when the number reaches its spending cap (zap-spend-cap)', async () => {
+    repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+    repo.findNextPending.mockResolvedValue(ok(pendingRecipient()))
+    send.template.mockResolvedValueOnce(
+      err(appError('WHATSAPP_SPEND_CAP_REACHED', 'Limite de gasto atingido')),
+    )
+
+    expect(
+      expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok')),
+    ).toEqual({ status: 'paused', reason: 'Limite de gasto atingido' })
+    expect(repo.updateRecipient).not.toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({ status: 'FAILED' }),
+    )
+  })
+
   it('should pause when a variable lost its mapping', async () => {
     repo.findByIdRaw.mockResolvedValue(ok(campaign({ variables: {} })))
 

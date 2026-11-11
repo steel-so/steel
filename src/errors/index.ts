@@ -449,6 +449,7 @@ export {
   whatsappSignupPaymentRequired,
   whatsappSignupPermissionDenied,
   whatsappSlaPolicyNotFound,
+  whatsappSpendCapReached,
   whatsappTeamConflict,
   whatsappTeamNotFound,
   whatsappTemplateNotApproved,

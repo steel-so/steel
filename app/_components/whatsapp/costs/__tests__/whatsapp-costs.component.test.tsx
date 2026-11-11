@@ -147,6 +147,7 @@ const prices: WhatsAppPriceDTO[] = [
 function setup(extra: Parameters<typeof mockFetch>[0] = []) {
   return mockFetch([
     ...extra,
+    { match: `${BASE}/costs/spend-caps`, data: [] },
     { match: `${BASE}/costs/settings`, data: settings },
     { match: `${BASE}/costs/prices`, data: prices },
     { match: `${BASE}/costs?`, data: report },
@@ -280,6 +281,8 @@ describe('<WhatsAppCostsTab />', () => {
     expect(
       screen.getByRole('progressbar', { name: 'Consumo do orçamento mensal' }),
     ).toBeTruthy()
+    // zap-spend-cap: the real spend per number sits on top of the estimate.
+    expect(screen.getByText('Gasto real por número (Meta)')).toBeTruthy()
   })
 
   it('sends the chosen period and connection to the API', async () => {

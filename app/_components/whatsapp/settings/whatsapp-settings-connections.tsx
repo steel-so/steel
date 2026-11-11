@@ -2,6 +2,7 @@
 
 import { QrCodeIcon, TradeMarkIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { type FormEvent, useState } from 'react'
+import { ConnectionSpendCapButton } from '@/app/_components/whatsapp/costs/whatsapp-spend-caps'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -421,7 +422,7 @@ export function WhatsappSettingsConnections({
                 <p className='text-destructive'>{connection.statusError}</p>
               )}
             </CardContent>
-            <CardFooter className='flex gap-2'>
+            <CardFooter className='flex flex-wrap gap-2'>
               {connection.provider === 'ZAPI' && (
                 <ZapiQrCodeDialog
                   workspaceId={workspaceId}
@@ -442,6 +443,12 @@ export function WhatsappSettingsConnections({
                 >
                   Atualizar status
                 </Button>
+              )}
+              {connection.provider === 'META' && (
+                <ConnectionSpendCapButton
+                  workspaceId={workspaceId}
+                  connectionId={connection.id}
+                />
               )}
               <Button
                 size='xs'

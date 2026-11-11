@@ -44,6 +44,7 @@ import {
   WhatsappAutomationsJob,
   WhatsappBroadcastJob,
   WhatsappConversationLifecycleJob,
+  WhatsappMetaSpendJob,
   WorkspaceExportJob,
   WorkspaceIntegrationsJob,
 } from './jobs'
@@ -92,6 +93,7 @@ import {
   getWhatsappAutomationsQueue,
   getWhatsappBroadcastQueue,
   getWhatsappConversationLifecycleQueue,
+  getWhatsappMetaSpendQueue,
   getWorkspaceExportQueue,
   getWorkspaceIntegrationsQueue,
 } from './queues'
@@ -145,6 +147,7 @@ import {
   WhatsappBroadcastScheduleCron,
   WhatsappConversationAutoCloseCron,
   WhatsappDistributionTickCron,
+  WhatsappMetaSpendCron,
   WhatsappSlaTickCron,
   WorkspaceExportPruneCron,
 } from './retention'
@@ -909,6 +912,22 @@ export async function scheduleSendingDomainsJobs(): Promise<void> {
   logger.info('queue.scheduler.sending_domains_registered', {
     component: 'Worker',
     pattern: SendingDomainsCheckCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** zap-spend-cap (ADR 0064): Meta spend of capped numbers every 15 min. */
+export async function scheduleWhatsappMetaSpendJobs(): Promise<void> {
+  const queue = getWhatsappMetaSpendQueue()
+  await queue.upsertJobScheduler(
+    WhatsappMetaSpendJob.RefreshTick,
+    { pattern: WhatsappMetaSpendCron, tz: RetentionTimezone },
+    { name: WhatsappMetaSpendJob.RefreshTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.whatsapp_meta_spend_registered', {
+    component: 'Worker',
+    pattern: WhatsappMetaSpendCron,
     timezone: RetentionTimezone,
   })
 }

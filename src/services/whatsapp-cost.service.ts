@@ -15,16 +15,17 @@ import {
   monthBounds,
   multiplyMoney,
   normalizeTemplateCategory,
-  type PriceRow,
   projectMonthCost,
   proratedFee,
   REFERENCE_PRICES,
   REFERENCE_VALID_FROM,
   rangeBounds,
+  referencePriceRows,
   resolveUnitPrice,
   roundCents,
   safeRatio,
   saoPauloDay,
+  toPriceRows,
 } from '@/src/lib/whatsapp/cost'
 import type { WhatsAppCostContext } from '@/src/lib/whatsapp/types'
 import { whatsappUsagePeriod } from '@/src/lib/whatsapp/usage-period'
@@ -77,37 +78,6 @@ function toPriceDTO(row: {
     validFrom: row.validFrom.toISOString(),
     reference: row.reference,
   }
-}
-
-function toPriceRows(
-  rows: {
-    category: string
-    country: string
-    currency: string
-    unitPrice: { toString(): string } | number
-    liteUnitPrice?: { toString(): string } | number | null
-    validFrom: Date
-  }[],
-): PriceRow[] {
-  return rows.map((row) => ({
-    category: row.category as PriceRow['category'],
-    country: row.country,
-    currency: row.currency,
-    unitPrice: Number(row.unitPrice),
-    liteUnitPrice: row.liteUnitPrice == null ? null : Number(row.liteUnitPrice),
-    validFrom: row.validFrom,
-  }))
-}
-
-/** The labeled default, used while a workspace has no rows of its own. */
-function referenceRows(): PriceRow[] {
-  return BILLABLE_CATEGORIES.map((category) => ({
-    category,
-    country: DEFAULT_COUNTRY,
-    currency: DEFAULT_CURRENCY,
-    unitPrice: REFERENCE_PRICES[category],
-    validFrom: REFERENCE_VALID_FROM,
-  }))
 }
 
 function breakdown(
@@ -168,6 +138,8 @@ export const WhatsAppCostService = {
     kind: 'TEMPLATE' | 'SERVICE'
     to: string
     context?: WhatsAppCostContext
+    /** Provider id of the accepted message (lets a `failed` status reverse it). */
+    providerMessageId?: string | null
     now?: Date
   }): Promise<void> {
     const { connection } = input
@@ -191,7 +163,7 @@ export const WhatsAppCostService = {
         const rows =
           stored.ok && stored.value.length > 0
             ? toPriceRows(stored.value)
-            : referenceRows()
+            : referencePriceRows()
         const price = resolveUnitPrice(rows, category, country, now, {
           lite: context.viaMarketingLite === true,
         })
@@ -218,6 +190,7 @@ export const WhatsAppCostService = {
         unitPrice,
         estimatedCost,
         viaMarketingLite: paid && context.viaMarketingLite === true,
+        providerMessageId: input.providerMessageId ?? null,
       })
       if (!saved.ok) {
         logger.warn(

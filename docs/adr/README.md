@@ -66,7 +66,7 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0049 | [Protocolo de atendimento no Zap: um número por ciclo de atendimento](./0049-protocolo-de-atendimento-no-zap.md) | Proposta | 2026-10-22 |
 | 0047 | [Fila do WhatsApp: avisos de conversa sem atendente e distribuição automática](./0047-whatsapp-queue-alerts-and-automatic-distribution.md) | Aceita | 2026-10-22 |
 | 0048 | [SLA de primeira resposta e resolução no atendimento do WhatsApp](./0048-whatsapp-sla-first-response-and-resolution.md) | Aceita | 2026-10-22 |
-| 0050 | [Análise de custos do WhatsApp: razão por envio, tabela de preços por workspace e orçamento que só avisa](./0050-whatsapp-cost-analysis-meta-and-zapi.md) | Aceita | 2026-10-22 |
+| 0050 | [Análise de custos do WhatsApp: razão por envio, tabela de preços por workspace e orçamento que só avisa](./0050-whatsapp-cost-analysis-meta-and-zapi.md) | Aceita; item 4 substituído em parte por 0064 (números com limite em modo bloquear) | 2026-10-22 |
 | 0051 | [Identidade do contato WhatsApp: telefone ou BSUID](./0051-whatsapp-contact-identity-bsuid.md) | Aceita | 2026-10-22 |
 | 0052 | [Arquivamento de conversas do WhatsApp para bancos: pacote .zip com um PDF por atendimento](./0052-whatsapp-conversation-archive-for-banks.md) | Aceita | 2026-10-27 |
 | 0053 | [Registro de acessos de workspaces com IP restrito](./0053-registro-de-acessos-de-workspace-com-ip-restrito.md) | Aceita | 2026-10-27 |
@@ -80,3 +80,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0061 | [Poda de escopo do arco de novembro (Q1)](./0061-poda-de-escopo-do-arco-de-novembro.md) | Aceita | 2026-10-31 |
 | 0062 | [Relatório de desempenho dos atendentes do zap, ligado por workspace pelo admin global](./0062-relatorio-de-desempenho-dos-atendentes-do-zap.md) | Aceita | 2026-11-06 |
 | 0063 | [Construtor de documentos no Steel Canvas, com a proposta como um tipo de documento](./0063-construtor-de-documentos-no-steel-canvas.md) | Aceita | 2026-11-11 |
+| 0064 | [Limite de gasto mensal por número do WhatsApp, com o gasto real lido da Meta](./0064-limite-de-gasto-por-numero-do-whatsapp-com-dados-da-meta.md) | Aceita | 2026-11-11 |

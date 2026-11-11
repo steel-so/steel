@@ -554,6 +554,63 @@ describe('WhatsAppBroadcastRepository', () => {
     })
   })
 
+  describe('failPendingRecipients() (zap-spend-cap)', () => {
+    it('should fail only the PENDING recipients of the list', async () => {
+      const fx = await seedFixtures()
+      const second = await prisma.whatsAppContact.create({
+        data: { workspaceId: fx.workspace.id, waId: `5511955554${suffix()}` },
+      })
+      const list = expectOk(
+        await WhatsAppBroadcastRepository.create(
+          {
+            workspaceId: fx.workspace.id,
+            connectionId: fx.connection.id,
+            name: 'Limite',
+            messageBody: 'Oi',
+            createdById: fx.user.id,
+          },
+          [fx.contact.id, second.id],
+        ),
+      )
+      const [sent] = expectOk(
+        await WhatsAppBroadcastRepository.listRecipients(list.id),
+      )
+      expectOk(
+        await WhatsAppBroadcastRepository.updateRecipientStatus(sent.id, {
+          status: 'SENT',
+          providerMessageId: 'wamid.cap',
+        }),
+      )
+
+      expect(
+        expectOk(
+          await WhatsAppBroadcastRepository.failPendingRecipients(
+            list.id,
+            'Limite de gasto atingido',
+          ),
+        ),
+      ).toBe(1)
+      const rows = await prisma.whatsAppBroadcastRecipient.findMany({
+        where: { broadcastListId: list.id },
+      })
+      expect(rows.map((row) => row.status).sort()).toEqual(['FAILED', 'SENT'])
+      expect(rows.find((row) => row.status === 'FAILED')?.errorMessage).toBe(
+        'Limite de gasto atingido',
+      )
+    })
+
+    it('should map a thrown update to DATABASE_ERROR', async () => {
+      vi.spyOn(
+        prisma.whatsAppBroadcastRecipient,
+        'updateMany',
+      ).mockRejectedValueOnce(new Error('boom'))
+      expectErr(
+        await WhatsAppBroadcastRepository.failPendingRecipients('b', 'x'),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+
   describe('query failures', () => {
     it('should map thrown list lookups to DATABASE_ERROR', async () => {
       const list = prisma.whatsAppBroadcastList

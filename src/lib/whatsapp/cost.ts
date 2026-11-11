@@ -24,11 +24,15 @@ export type BillableCategory = (typeof BILLABLE_CATEGORIES)[number]
  * time an admin opens it. They are **reference values only** (BRL, Brazil):
  * Meta changes its rates, so the admin must check them against the Meta
  * account. The estimate never reads these constants once rows exist.
+ *
+ * Values of the BRL rate card in force since 2026-10 as quoted by third-party
+ * sources (ADR 0064). Meta's official "List rates" sheet is the source of
+ * truth; the admin edits the workspace table when it changes.
  */
 export const REFERENCE_PRICES: Record<BillableCategory, number> = {
-  MARKETING: 0.3625,
-  UTILITY: 0.04,
-  AUTHENTICATION: 0.195,
+  MARKETING: 0.3217,
+  UTILITY: 0.035,
+  AUTHENTICATION: 0.035,
 }
 
 /** Date from which the seeded reference rows count (before any send). */
@@ -125,6 +129,38 @@ export function resolveUnitPrice(
     }
   }
   return { unitPrice: 0, currency: DEFAULT_CURRENCY, source: 'none' }
+}
+
+/** A stored price row (Prisma decimals) as the pure `PriceRow`. */
+export function toPriceRows(
+  rows: {
+    category: string
+    country: string
+    currency: string
+    unitPrice: { toString(): string } | number
+    liteUnitPrice?: { toString(): string } | number | null
+    validFrom: Date
+  }[],
+): PriceRow[] {
+  return rows.map((row) => ({
+    category: row.category as PriceRow['category'],
+    country: row.country,
+    currency: row.currency,
+    unitPrice: Number(row.unitPrice),
+    liteUnitPrice: row.liteUnitPrice == null ? null : Number(row.liteUnitPrice),
+    validFrom: row.validFrom,
+  }))
+}
+
+/** The labeled default, used while a workspace has no rows of its own. */
+export function referencePriceRows(): PriceRow[] {
+  return BILLABLE_CATEGORIES.map((category) => ({
+    category,
+    country: DEFAULT_COUNTRY,
+    currency: DEFAULT_CURRENCY,
+    unitPrice: REFERENCE_PRICES[category],
+    validFrom: REFERENCE_VALID_FROM,
+  }))
 }
 
 /** Maps a Meta template category string onto the billable categories. */

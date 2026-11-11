@@ -18,6 +18,7 @@ import {
   rateLimited,
   whatsappMessageLimitReached,
   whatsappProviderError,
+  whatsappSpendCapReached,
 } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
@@ -695,6 +696,12 @@ describe('CrmNewsletterWhatsAppService', () => {
         skipped: 4,
       })
       expect(repo.markSkipped).toHaveBeenCalledWith(['w1'], 'LIMIT_REACHED')
+
+      // zap-spend-cap: the number's spending cap stops the issue the same way.
+      send.text.mockResolvedValueOnce(err(whatsappSpendCapReached(1500, 1500)))
+      expect(expectOk(await Service.dispatch('is1', NOW)).status).toBe(
+        'limit_reached',
+      )
 
       send.text.mockResolvedValueOnce(err(rateLimited(5)))
       expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({

@@ -82,6 +82,49 @@ describe('<WhatsappSettingsConnections />', () => {
     expect(screen.getAllByRole('button', { name: /QR Code/ })).toHaveLength(1)
   })
 
+  it('offers the spending cap on Meta numbers (zap-spend-cap)', async () => {
+    mockFetch([
+      {
+        match: '/whatsapp/costs/spend-caps',
+        data: [
+          {
+            connectionId: 'conn_2',
+            label: 'Vendas',
+            phoneNumber: '5511999999999',
+            period: '2026-11',
+            currency: 'BRL',
+            monthlyCapAmount: 1500,
+            capMode: 'BLOCK',
+            spent: 200,
+            metaSpent: 200,
+            ledgerSpent: 0,
+            source: 'META_VOLUME',
+            byCategory: [],
+            fetchedAt: null,
+            metaPeriodEnd: null,
+            stale: false,
+            staleReason: null,
+            percent: 13,
+            level: null,
+            status: 'ALLOWED',
+            projection: 600,
+            daysElapsed: 10,
+            daysInMonth: 30,
+          },
+        ],
+      },
+      {
+        match: BASE,
+        data: [connection(), connection({ id: 'conn_2', provider: 'META' })],
+      },
+    ])
+    renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByRole('button', { name: /Limite: R\$\s1\.500,00/ }),
+    ).toBeTruthy()
+  })
+
   it('shows the empty state', async () => {
     mockFetch([{ match: BASE, data: [] }])
     renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
