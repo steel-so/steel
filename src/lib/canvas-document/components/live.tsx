@@ -312,7 +312,7 @@ export function LiveField({
       label={label}
       value={value}
       error={error}
-      disabled={!runtime || runtime.status !== 'open'}
+      disabled={runtime?.status !== 'open'}
       onChange={(next: FieldValue) => {
         setLocalError(null)
         runtime?.setFieldValue(id, next)
