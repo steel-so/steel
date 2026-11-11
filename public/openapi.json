@@ -181,6 +181,10 @@
       "description": "Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público."
     },
     {
+      "name": "CRM · Documentos",
+      "description": "Construtor de documentos (ADR 0063): documentos e modelos no Steel Canvas, autosave, envio com versão congelada, destinatários, linha do tempo e respostas. A proposta é um tipo de documento."
+    },
+    {
       "name": "Comunicação · Conversas",
       "description": "Conversas e mensagens do WhatsApp, atribuição e fechamento."
     },
@@ -421,6 +425,10 @@
       "description": "Inscrição pública na newsletter, confirmação dupla, central de preferências e descadastro de um clique (RFC 8058). Sem sessão: o link assinado é o acesso."
     },
     {
+      "name": "CRM público · Documentos",
+      "description": "Link público de um documento (`/d/<token>`): leitura, identificação do leitor, aceite, recusa e envio de campos. Sem sessão: o token do link é o acesso."
+    },
+    {
       "name": "Status",
       "description": "Página de status pública e coleta de health checks dos componentes."
     },
@@ -529,7 +537,8 @@
         "CRM · Newsletter · Segmentos",
         "CRM · Newsletter · Engajamento",
         "CRM · Newsletter · Automação",
-        "CRM · Documentos · PDF"
+        "CRM · Documentos · PDF",
+        "CRM · Documentos"
       ]
     },
     {
@@ -604,7 +613,8 @@
         "CRM público · Sites",
         "CRM público · Modo TV",
         "CRM público · Sala de negociação",
-        "CRM público · Newsletter"
+        "CRM público · Newsletter",
+        "CRM público · Documentos"
       ]
     },
     {
@@ -6721,7 +6731,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -7743,7 +7753,7 @@
             "$ref": "#/components/responses/404_CRM_WORKFLOW_WEBHOOK_INVALID"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -7879,6 +7889,365 @@
         ]
       }
     },
+    "/documents/{token}": {
+      "get": {
+        "tags": ["CRM público · Documentos"],
+        "summary": "Obter documento pelo link",
+        "operationId": "getDocumentsByToken",
+        "description": "A versão enviada (nunca o rascunho) com as variáveis já resolvidas para o leitor, a marca do workspace e o que ele pode fazer (`canAccept`, `canDownload`). `status` vem `EXPIRED` quando a validade passou.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do link: o pessoal de um destinatário ou o genérico do documento (`publicToken`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "q3J0b2tlbi1kZS1leGVtcGxvLWRvLWxpbms"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentPublic"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/documents/{token}/accept": {
+      "post": {
+        "tags": ["CRM público · Documentos"],
+        "summary": "Aceitar documento",
+        "operationId": "postDocumentsByTokenAccept",
+        "description": "Aceite final: nome, e-mail, campos validados (obrigatórios, CPF, CNPJ, e-mail, telefone, data), seleção da tabela de preços e total, com a versão + hash, o hash do IP e o navegador. Uma proposta ligada a uma oportunidade a leva para a etapa ganha. Aceites simultâneos gravam uma única vez.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do link: o pessoal de um destinatário ou o genérico do documento (`publicToken`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "q3J0b2tlbi1kZS1leGVtcGxvLWRvLWxpbms"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email"
+                  },
+                  "agreed": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "fields": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 5000
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "selection": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "selected": {
+                          "type": "boolean"
+                        },
+                        "quantity": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": ["selected", "quantity"]
+                    }
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["name", "agreed", "versionId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento aceito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentPublic"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403_DOCUMENT_ACCEPT_NOT_ALLOWED"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_DOCUMENT_VERSION_STALE_DOCUMENT_ALREADY_ANSWERED"
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE_DOCUMENT_EXPIRED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_FIELDS_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/documents/{token}/decline": {
+      "post": {
+        "tags": ["CRM público · Documentos"],
+        "summary": "Recusar documento",
+        "operationId": "postDocumentsByTokenDecline",
+        "description": "Recusa final, com motivo opcional. O dono é avisado no Steel e por e-mail.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do link: o pessoal de um destinatário ou o genérico do documento (`publicToken`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "q3J0b2tlbi1kZS1leGVtcGxvLWRvLWxpbms"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["versionId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento recusado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentPublic"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403_DOCUMENT_ACCEPT_NOT_ALLOWED"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_DOCUMENT_VERSION_STALE_DOCUMENT_ALREADY_ANSWERED"
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE_DOCUMENT_EXPIRED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/documents/{token}/identify": {
+      "post": {
+        "tags": ["CRM público · Documentos"],
+        "summary": "Identificar leitor",
+        "operationId": "postDocumentsByTokenIdentify",
+        "description": "No link genérico com identificação: cria (ou reaproveita, pelo e-mail) um link pessoal para o leitor, para que leituras e respostas fiquem em nome dele. Um token pessoal responde com ele mesmo.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do link: o pessoal de um destinatário ou o genérico do documento (`publicToken`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "q3J0b2tlbi1kZS1leGVtcGxvLWRvLWxpbms"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email"
+                  }
+                },
+                "required": ["name", "email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Link pessoal do leitor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentIdentifyResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": []
+      }
+    },
     "/documents/{token}/pdf": {
       "get": {
         "tags": ["CRM · Documentos · PDF"],
@@ -7946,7 +8315,7 @@
             "$ref": "#/components/responses/404_DOCUMENT_EXPORT_NOT_FOUND"
           },
           "410": {
-            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -7959,6 +8328,143 @@
           },
           "502": {
             "$ref": "#/components/responses/502_DOCUMENT_EXPORT_FAILED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/documents/{token}/submit": {
+      "post": {
+        "tags": ["CRM público · Documentos"],
+        "summary": "Enviar campos",
+        "operationId": "postDocumentsByTokenSubmit",
+        "description": "Campos enviados sem aceitar (documentos que só coletam dados). Um destinatário envia uma vez.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do link: o pessoal de um destinatário ou o genérico do documento (`publicToken`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "q3J0b2tlbi1kZS1leGVtcGxvLWRvLWxpbms"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 5000
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "selection": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "selected": {
+                          "type": "boolean"
+                        },
+                        "quantity": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": ["selected", "quantity"]
+                    }
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["fields", "versionId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campos enviados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentPublic"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/409_DOCUMENT_VERSION_STALE_DOCUMENT_ALREADY_ANSWERED"
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE_DOCUMENT_EXPIRED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_FIELDS_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": []
@@ -16782,7 +17288,9 @@
                           "crm.proposal.viewed",
                           "sd.sla.at_risk",
                           "sd.ticket.reopened",
-                          "zap.message.received"
+                          "zap.message.received",
+                          "crm.document.accepted",
+                          "crm.document.declined"
                         ]
                       },
                       {
@@ -18098,7 +18606,9 @@
                           "crm.proposal.viewed",
                           "sd.sla.at_risk",
                           "sd.ticket.reopened",
-                          "zap.message.received"
+                          "zap.message.received",
+                          "crm.document.accepted",
+                          "crm.document.declined"
                         ]
                       },
                       {
@@ -26492,7 +27002,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_46"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -26999,7 +27509,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_CONNECTION_FORBIDDEN_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -27069,7 +27579,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_51"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -27288,7 +27798,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36149,7 +36659,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_33"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36358,6 +36868,898 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents": {
+      "get": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Listar documentos ou modelos",
+        "operationId": "getWorkspacesByIdCrmDocuments",
+        "description": "Paginado, do mais recente para o mais antigo. `isTemplate=true` lista os modelos; os filtros de vínculo (`companyId`, `personId`, `opportunityId`, `leadId`) alimentam as abas \"Documentos\" das telas do CRM. `viewCount` = sessões de leitura do link.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "isTemplate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "DECLINED", "EXPIRED", "ARCHIVED"]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "personId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "opportunityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "leadId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de documentos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentListPage"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Criar documento",
+        "operationId": "postWorkspacesByIdCrmDocuments",
+        "description": "Em branco, a partir de um modelo (`templateId`, copia conteúdo, tema e ajustes) ou de um modelo pronto da galeria (`starterId`). Sem `validUntil`, uma proposta nasce com a validade padrão do CRM. Nasce `DRAFT`, com um token genérico aleatório.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companyId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "personId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "opportunityId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "leadId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "kind": {
+                    "default": "OTHER",
+                    "type": "string",
+                    "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+                  },
+                  "isTemplate": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "starterId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "ownerId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "validUntil": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Documento criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Document"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_DOCUMENT_TEMPLATE_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_CONTENT_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}": {
+      "get": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Detalhe do documento",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentId",
+        "description": "Rascunho editável, versão atual, destinatários e se há mudanças não enviadas (`hasUnsentChanges`).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Document"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Atualizar documento",
+        "operationId": "patchWorkspacesByIdCrmDocumentsByDocumentId",
+        "description": "Atualização parcial; `null` desvincula ou limpa a validade. `settings` mescla só as chaves enviadas. `status: ARCHIVED` arquiva; `status: DRAFT` desarquiva (volta ao status da história). Mudar a validade de um documento `EXPIRED` o reabre — só OWNER/ADMIN e com data futura.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companyId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "personId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "opportunityId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "leadId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+                  },
+                  "ownerId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "validUntil": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "linkEnabled": {
+                    "type": "boolean"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "layout": {
+                        "default": "web",
+                        "type": "string",
+                        "enum": ["web", "paged"]
+                      },
+                      "pageSize": {
+                        "default": "A4",
+                        "type": "string",
+                        "enum": ["A4", "LETTER"]
+                      },
+                      "orientation": {
+                        "default": "portrait",
+                        "type": "string",
+                        "enum": ["portrait", "landscape"]
+                      },
+                      "allowDownload": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "requireIdentification": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "showToc": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "notifyOnView": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "acceptTerms": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  },
+                  "theme": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["ARCHIVED", "DRAFT"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Document"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_DOCUMENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Excluir documento",
+        "operationId": "deleteWorkspacesByIdCrmDocumentsByDocumentId",
+        "description": "Exclusão lógica: os links deixam de responder.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `DELETE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documento excluído.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/content": {
+      "put": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Salvar conteúdo (autosave)",
+        "operationId": "putWorkspacesByIdCrmDocumentsByDocumentIdContent",
+        "description": "Grava o rascunho validado pelo catálogo `document`. Com `baseUpdatedAt`, só grava se ninguém salvou depois; use o `updatedAt` devolvido (ou o do documento após enviar/editar) como próxima base.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "theme": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "baseUpdatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": ["content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Salvo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentSaved"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_DOCUMENT_SAVE_CONFLICT"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_CONTENT_INVALID"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/duplicate": {
+      "post": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Duplicar ou salvar como modelo",
+        "operationId": "postWorkspacesByIdCrmDocumentsByDocumentIdDuplicate",
+        "description": "Cópia em rascunho com token novo. `asTemplate: true` salva como modelo (sem vínculos do CRM); duplicar um modelo como documento o registra como origem (`templateId`).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asTemplate": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cópia criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Document"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/events": {
+      "get": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Linha do tempo",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdEvents",
+        "description": "Eventos do documento (criado, enviado, aberto, aceito, recusado, expirado...), do mais novo para o mais antigo (até 500).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eventos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DocumentEvent"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -36582,6 +37984,611 @@
           },
           "500": {
             "$ref": "#/components/responses/500_STORAGE_ERROR_4"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/recipients": {
+      "get": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Listar destinatários",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdRecipients",
+        "description": "Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destinatários.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DocumentRecipient"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Adicionar destinatários",
+        "operationId": "postWorkspacesByIdCrmDocumentsByDocumentIdRecipients",
+        "description": "Novos leitores da versão atual, entregues na hora (mesmas regras do envio).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipients": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "email": {
+                          "type": "string",
+                          "maxLength": 320,
+                          "format": "email"
+                        },
+                        "phone": {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        "personId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "role": {
+                          "default": "APPROVER",
+                          "type": "string",
+                          "enum": ["VIEWER", "APPROVER"]
+                        },
+                        "channel": {
+                          "default": "LINK",
+                          "type": "string",
+                          "enum": ["LINK", "EMAIL", "WHATSAPP"]
+                        }
+                      },
+                      "required": ["name"]
+                    }
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": ["recipients"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Destinatários criados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DocumentRecipientDelivery"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/recipients/{recipientId}": {
+      "delete": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Remover destinatário",
+        "operationId": "deleteWorkspacesByIdCrmDocumentsByDocumentIdRecipientsByRecipientId",
+        "description": "O link pessoal deixa de funcionar; as respostas dele ficam no histórico.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recipientId",
+            "in": "path",
+            "required": true,
+            "description": "ID do destinatário.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destinatário removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND_DOCUMENT_RECIPIENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/recipients/{recipientId}/resend": {
+      "post": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Reenviar link ao destinatário",
+        "operationId": "postWorkspacesByIdCrmDocumentsByDocumentIdRecipientsByRecipientIdResend",
+        "description": "Entrega de novo a versão atual pelo canal do destinatário.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recipientId",
+            "in": "path",
+            "required": true,
+            "description": "ID do destinatário.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link reenviado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentRecipientDelivery"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND_DOCUMENT_RECIPIENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/responses": {
+      "get": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Respostas",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdResponses",
+        "description": "Aceites, recusas e envios de campos, com a versão respondida, a seleção da tabela de preços e o total.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respostas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DocumentResponse"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/send": {
+      "post": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Enviar documento",
+        "operationId": "postWorkspacesByIdCrmDocumentsByDocumentIdSend",
+        "description": "Congela uma versão imutável (número sequencial, SHA-256 do JSON canônico de conteúdo + tema + ajustes), calcula o total pela tabela de preços, cria os destinatários com link pessoal e entrega por e-mail, WhatsApp (número conectado na Comunicação; sem ele, cai para `LINK` e `deliveries` avisa) ou só o link. O status vai para `SENT` (mantém `VIEWED` e `ACCEPTED`); reenviar um expirado ou recusado o reabre.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipients": {
+                    "default": [],
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "email": {
+                          "type": "string",
+                          "maxLength": 320,
+                          "format": "email"
+                        },
+                        "phone": {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        "personId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "role": {
+                          "default": "APPROVER",
+                          "type": "string",
+                          "enum": ["VIEWER", "APPROVER"]
+                        },
+                        "channel": {
+                          "default": "LINK",
+                          "type": "string",
+                          "enum": ["LINK", "EMAIL", "WHATSAPP"]
+                        }
+                      },
+                      "required": ["name"]
+                    }
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "validUntil": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento enviado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentSendResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_CONTENT_INVALID_DOCUMENT_EMPTY"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/versions": {
+      "get": {
+        "tags": ["CRM · Documentos"],
+        "summary": "Versões enviadas",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdVersions",
+        "description": "Versões congeladas, da mais nova para a mais antiga.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versões.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DocumentVersion"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": [
@@ -56034,7 +58041,7 @@
             "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_39"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -59956,7 +61963,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58"
           }
         },
         "security": [
@@ -63392,7 +65399,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_PROPOSAL_NOT_FOUND"
@@ -63401,7 +65408,7 @@
             "$ref": "#/components/responses/409_CRM_PROPOSAL_EXPIRED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_31"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -63875,7 +65882,7 @@
             "$ref": "#/components/responses/409_CONFLICT_8"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -66077,7 +68084,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_27"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_28"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -77380,7 +79387,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -77753,7 +79760,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_SOCIAL_CONNECTION_NOT_FOUND"
@@ -77762,7 +79769,7 @@
             "$ref": "#/components/responses/409_CRM_SOCIAL_SCOPE_MISSING"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -83311,7 +85318,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_49"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_52"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -84386,7 +86393,10 @@
                             "AI_ACTION_EXPIRING",
                             "WEBHOOK_ENDPOINT_DISABLED",
                             "CRM_SENDING_DOMAIN_VERIFIED",
-                            "CRM_SENDING_DOMAIN_FAILED"
+                            "CRM_SENDING_DOMAIN_FAILED",
+                            "CRM_DOCUMENT_ACCEPTED",
+                            "CRM_DOCUMENT_DECLINED",
+                            "CRM_DOCUMENT_EXPIRED"
                           ]
                         },
                         "inApp": {
@@ -85879,7 +87889,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_50"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_53"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88668,7 +90678,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_42"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_45"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -97023,7 +99033,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_47"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_50"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -99435,7 +101445,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_4"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_48"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_51"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -100566,7 +102576,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -105892,7 +107902,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -112792,7 +114802,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -115342,7 +117352,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_46"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_49"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -122425,7 +124435,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -134457,7 +136467,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -135224,7 +137234,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -140259,7 +142269,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONTACT_NOT_FOUND"
@@ -140572,7 +142582,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_CONVERSATION_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND"
@@ -141007,7 +143017,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -142624,7 +144634,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -143779,7 +145789,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64"
           },
           "404": {
             "$ref": "#/components/responses/404_PIX_CHARGE_NOT_FOUND"
@@ -143998,7 +146008,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_TEAM_NOT_FOUND"
@@ -145610,7 +147620,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
@@ -145729,7 +147739,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_34"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -148424,7 +150434,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -148598,7 +150608,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -148852,7 +150862,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59"
           },
           "409": {
             "$ref": "#/components/responses/409_WHATSAPP_QUICK_REPLY_CONFLICT"
@@ -149129,7 +151139,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -149201,7 +151211,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -152773,7 +154783,7 @@
             "$ref": "#/components/responses/409_WHATSAPP_TEAM_CONFLICT"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_30"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_32"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -153119,7 +155129,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -153485,7 +155495,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -153735,7 +155745,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_TEMPLATE_NOT_FOUND"
@@ -158405,7 +160415,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_41"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -158517,7 +160527,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_65"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -161299,6 +163309,29 @@
           }
         }
       },
+      "403_DOCUMENT_ACCEPT_NOT_ALLOWED": {
+        "description": "Acesso negado: `DOCUMENT_ACCEPT_NOT_ALLOWED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_ACCEPT_NOT_ALLOWED": {
+                "summary": "DOCUMENT_ACCEPT_NOT_ALLOWED — Destinatário com papel de leitor (`VIEWER`)",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Você pode ler este documento, mas não aceitá-lo",
+                  "error": {
+                    "code": "DOCUMENT_ACCEPT_NOT_ALLOWED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "403_FORBIDDEN": {
         "description": "Acesso negado: `FORBIDDEN`",
         "content": {
@@ -163959,6 +165992,73 @@
                 }
               },
               "FORBIDDEN_3": {
+                "summary": "FORBIDDEN — Documento expirado editado por quem não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Só administradores do CRM podem alterar a validade de um documento expirado",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — Módulo CRM desabilitado no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FORBIDDEN_3": {
                 "summary": "FORBIDDEN — Proposta expirada editada por quem não é OWNER/ADMIN",
                 "value": {
                   "success": false,
@@ -163973,7 +166073,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164040,7 +166140,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164096,7 +166196,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164141,7 +166241,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164186,7 +166286,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164231,7 +166331,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164287,7 +166387,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164343,7 +166443,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164399,7 +166499,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164455,7 +166555,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164500,7 +166600,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164545,7 +166645,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164590,7 +166690,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164635,7 +166735,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164680,7 +166780,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164725,7 +166825,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164770,7 +166870,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164815,7 +166915,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164860,7 +166960,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164916,7 +167016,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -164961,7 +167061,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_65": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -174603,6 +176703,40 @@
           }
         }
       },
+      "404_DOCUMENT_NOT_FOUND_DOCUMENT_RECIPIENT_NOT_FOUND": {
+        "description": "Não encontrado: `DOCUMENT_NOT_FOUND`, `DOCUMENT_RECIPIENT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_NOT_FOUND": {
+                "summary": "DOCUMENT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_RECIPIENT_NOT_FOUND": {
+                "summary": "DOCUMENT_RECIPIENT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Destinatário não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_RECIPIENT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_INTEGRATION_GRANT_NOT_FOUND": {
         "description": "Não encontrado: `INTEGRATION_GRANT_NOT_FOUND`",
         "content": {
@@ -176880,6 +179014,140 @@
                   "message": "Link da TV inválido ou revogado. Peça um novo link a quem administra o painel.",
                   "error": {
                     "code": "CRM_TV_LINK_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_DOCUMENT_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `DOCUMENT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — `companyId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmCompany not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND_2": {
+                "summary": "RESOURCE_NOT_FOUND — `personId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmPerson not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND_3": {
+                "summary": "RESOURCE_NOT_FOUND — `opportunityId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmOpportunity not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND_4": {
+                "summary": "RESOURCE_NOT_FOUND — `leadId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmLead not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_NOT_FOUND": {
+                "summary": "DOCUMENT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_DOCUMENT_TEMPLATE_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `DOCUMENT_TEMPLATE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — `companyId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmCompany not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND_2": {
+                "summary": "RESOURCE_NOT_FOUND — `personId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmPerson not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND_3": {
+                "summary": "RESOURCE_NOT_FOUND — `opportunityId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmOpportunity not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "RESOURCE_NOT_FOUND_4": {
+                "summary": "RESOURCE_NOT_FOUND — `leadId` não existe no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmLead not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_TEMPLATE_NOT_FOUND": {
+                "summary": "DOCUMENT_TEMPLATE_NOT_FOUND — `templateId` ou `starterId` desconhecido",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Modelo de documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_TEMPLATE_NOT_FOUND"
                   }
                 }
               }
@@ -184061,6 +186329,63 @@
           }
         }
       },
+      "409_DOCUMENT_SAVE_CONFLICT": {
+        "description": "Conflito com o estado atual: `DOCUMENT_SAVE_CONFLICT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_SAVE_CONFLICT": {
+                "summary": "DOCUMENT_SAVE_CONFLICT",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "O documento foi alterado em outra aba ou por outra pessoa. Recarregue para continuar.",
+                  "error": {
+                    "code": "DOCUMENT_SAVE_CONFLICT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_DOCUMENT_VERSION_STALE_DOCUMENT_ALREADY_ANSWERED": {
+        "description": "Conflito com o estado atual: `DOCUMENT_VERSION_STALE`, `DOCUMENT_ALREADY_ANSWERED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_ALREADY_ANSWERED": {
+                "summary": "DOCUMENT_ALREADY_ANSWERED — Já aceito ou recusado",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este documento já foi respondido",
+                  "error": {
+                    "code": "DOCUMENT_ALREADY_ANSWERED"
+                  }
+                }
+              },
+              "DOCUMENT_VERSION_STALE": {
+                "summary": "DOCUMENT_VERSION_STALE — `versionId` não é a versão atual (o dono enviou uma nova)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este documento foi atualizado. Recarregue a página para ver a versão mais recente.",
+                  "error": {
+                    "code": "DOCUMENT_VERSION_STALE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "409_INVITATION_DUPLICATE_INVITATION_ALREADY_MEMBER": {
         "description": "Conflito com o estado atual: `INVITATION_DUPLICATE`, `INVITATION_ALREADY_MEMBER`",
         "content": {
@@ -187282,6 +189607,29 @@
             },
             "examples": {
               "DOCUMENT_LINK_UNAVAILABLE": {
+                "summary": "DOCUMENT_LINK_UNAVAILABLE — Token desconhecido, documento nunca enviado, arquivado, excluído, link genérico desligado ou CRM desabilitado",
+                "value": {
+                  "success": false,
+                  "statusCode": 410,
+                  "message": "Este link não está mais disponível",
+                  "error": {
+                    "code": "DOCUMENT_LINK_UNAVAILABLE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "410_DOCUMENT_LINK_UNAVAILABLE_2": {
+        "description": "Expirado: `DOCUMENT_LINK_UNAVAILABLE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_LINK_UNAVAILABLE": {
                 "summary": "DOCUMENT_LINK_UNAVAILABLE",
                 "value": {
                   "success": false,
@@ -187289,6 +189637,40 @@
                   "message": "Este link não está mais disponível",
                   "error": {
                     "code": "DOCUMENT_LINK_UNAVAILABLE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "410_DOCUMENT_LINK_UNAVAILABLE_DOCUMENT_EXPIRED": {
+        "description": "Expirado: `DOCUMENT_LINK_UNAVAILABLE`, `DOCUMENT_EXPIRED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_LINK_UNAVAILABLE": {
+                "summary": "DOCUMENT_LINK_UNAVAILABLE — Token desconhecido, documento nunca enviado, arquivado, excluído, link genérico desligado ou CRM desabilitado",
+                "value": {
+                  "success": false,
+                  "statusCode": 410,
+                  "message": "Este link não está mais disponível",
+                  "error": {
+                    "code": "DOCUMENT_LINK_UNAVAILABLE"
+                  }
+                }
+              },
+              "DOCUMENT_EXPIRED": {
+                "summary": "DOCUMENT_EXPIRED — Validade vencida",
+                "value": {
+                  "success": false,
+                  "statusCode": 410,
+                  "message": "A validade deste documento terminou",
+                  "error": {
+                    "code": "DOCUMENT_EXPIRED"
                   }
                 }
               }
@@ -188841,6 +191223,47 @@
                 }
               },
               "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — Documento nunca enviado ou arquivado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Envie o documento antes de adicionar destinatários.",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_28": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
                 "summary": "VALIDATION_ERROR — Mídia acima de 64 MB (multipart)",
                 "value": {
                   "success": false,
@@ -188855,7 +191278,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_28": {
+      "422_VALIDATION_ERROR_29": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -188896,7 +191319,48 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_29": {
+      "422_VALIDATION_ERROR_30": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — Nova validade de documento expirado no passado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "A nova validade precisa ser uma data futura",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_31": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -188937,7 +191401,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_30": {
+      "422_VALIDATION_ERROR_32": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -188978,7 +191442,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_31": {
+      "422_VALIDATION_ERROR_33": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189026,7 +191490,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_32": {
+      "422_VALIDATION_ERROR_34": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189067,7 +191531,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_33": {
+      "422_VALIDATION_ERROR_35": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189108,7 +191572,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_34": {
+      "422_VALIDATION_ERROR_36": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189149,7 +191613,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_35": {
+      "422_VALIDATION_ERROR_37": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189197,7 +191661,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_36": {
+      "422_VALIDATION_ERROR_38": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189238,7 +191702,30 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_37": {
+      "422_VALIDATION_ERROR_39": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Documento nunca enviado ou arquivado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Envie o documento antes de reenviar o link.",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_40": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189268,7 +191755,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_38": {
+      "422_VALIDATION_ERROR_41": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189298,7 +191785,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_39": {
+      "422_VALIDATION_ERROR_42": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189328,7 +191815,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_40": {
+      "422_VALIDATION_ERROR_43": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189358,7 +191845,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_41": {
+      "422_VALIDATION_ERROR_44": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189399,7 +191886,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_42": {
+      "422_VALIDATION_ERROR_45": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189440,7 +191927,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_43": {
+      "422_VALIDATION_ERROR_46": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189481,7 +191968,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_44": {
+      "422_VALIDATION_ERROR_47": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189515,7 +192002,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_45": {
+      "422_VALIDATION_ERROR_48": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189549,7 +192036,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_46": {
+      "422_VALIDATION_ERROR_49": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189572,7 +192059,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_47": {
+      "422_VALIDATION_ERROR_50": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189602,7 +192089,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_48": {
+      "422_VALIDATION_ERROR_51": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189625,7 +192112,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_49": {
+      "422_VALIDATION_ERROR_52": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189648,7 +192135,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_50": {
+      "422_VALIDATION_ERROR_53": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -189671,7 +192158,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_51": {
+      "422_VALIDATION_ERROR_54": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -191468,6 +193955,159 @@
                   "message": "Definição inválida",
                   "error": {
                     "code": "CRM_WORKFLOW_INVALID_DEFINITION"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_DOCUMENT_CONTENT_INVALID": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `DOCUMENT_CONTENT_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "DOCUMENT_CONTENT_INVALID": {
+                "summary": "DOCUMENT_CONTENT_INVALID",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "DOCUMENT_CONTENT_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_DOCUMENT_CONTENT_INVALID_DOCUMENT_EMPTY": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `DOCUMENT_CONTENT_INVALID`, `DOCUMENT_EMPTY`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "DOCUMENT_CONTENT_INVALID": {
+                "summary": "DOCUMENT_CONTENT_INVALID",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "DOCUMENT_CONTENT_INVALID"
+                  }
+                }
+              },
+              "DOCUMENT_EMPTY": {
+                "summary": "DOCUMENT_EMPTY",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Adicione conteúdo ao documento antes de enviar",
+                  "error": {
+                    "code": "DOCUMENT_EMPTY"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — Documento é um modelo",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Um modelo não é enviado: crie um documento a partir dele.",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_3": {
+                "summary": "VALIDATION_ERROR — Validade no passado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "A validade já passou: escolha hoje ou uma data futura antes de enviar.",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_DOCUMENT_FIELDS_INVALID": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `DOCUMENT_FIELDS_INVALID`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              },
+              "DOCUMENT_FIELDS_INVALID": {
+                "summary": "DOCUMENT_FIELDS_INVALID",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "DOCUMENT_FIELDS_INVALID"
                   }
                 }
               }
@@ -226356,6 +228996,493 @@
         },
         "required": ["visitorId", "name"]
       },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1doc00000ab7d3k1e5xyz"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "example": "Proposta — Implantação ServiceDesk"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "DECLINED", "EXPIRED", "ARCHIVED"]
+          },
+          "isTemplate": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["BLANK", "TEMPLATE", "DUPLICATE", "PDF_IMPORT", "AI_PROMPT", "LEGACY_PROPOSAL"]
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["id", "name", "image"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "person": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opportunity": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalValue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Total das tabelas de preço da versão atual (R$)."
+          },
+          "validUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vale até o fim deste dia (America/Sao_Paulo)."
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Sessões de leitura do link público."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Documento do Steel Canvas (catálogo `document`)."
+          },
+          "theme": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "layout": {
+                "default": "web",
+                "type": "string",
+                "enum": ["web", "paged"]
+              },
+              "pageSize": {
+                "default": "A4",
+                "type": "string",
+                "enum": ["A4", "LETTER"]
+              },
+              "orientation": {
+                "default": "portrait",
+                "type": "string",
+                "enum": ["portrait", "landscape"]
+              },
+              "allowDownload": {
+                "default": true,
+                "type": "boolean"
+              },
+              "requireIdentification": {
+                "default": false,
+                "type": "boolean"
+              },
+              "showToc": {
+                "default": false,
+                "type": "boolean"
+              },
+              "notifyOnView": {
+                "default": true,
+                "type": "boolean"
+              },
+              "acceptTerms": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "layout",
+              "pageSize",
+              "orientation",
+              "allowDownload",
+              "requireIdentification",
+              "showToc",
+              "notifyOnView"
+            ]
+          },
+          "templateId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currentVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasUnsentChanges": {
+            "type": "boolean",
+            "description": "O rascunho difere da versão atual (o link mostra a versão enviada)."
+          },
+          "publicToken": {
+            "type": "string"
+          },
+          "publicUrl": {
+            "type": "string",
+            "description": "Link genérico `/d/<publicToken>` (absoluto)."
+          },
+          "linkEnabled": {
+            "type": "boolean"
+          },
+          "acceptedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedByEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "declinedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "declineReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiredAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentRecipient"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "title",
+          "kind",
+          "status",
+          "isTemplate",
+          "source",
+          "owner",
+          "company",
+          "person",
+          "opportunity",
+          "lead",
+          "totalValue",
+          "validUntil",
+          "sentAt",
+          "firstViewedAt",
+          "lastViewedAt",
+          "acceptedAt",
+          "viewCount",
+          "createdAt",
+          "updatedAt",
+          "description",
+          "content",
+          "theme",
+          "settings",
+          "templateId",
+          "currentVersion",
+          "hasUnsentChanges",
+          "publicToken",
+          "publicUrl",
+          "linkEnabled",
+          "acceptedByName",
+          "acceptedByEmail",
+          "declinedAt",
+          "declineReason",
+          "expiredAt",
+          "paidAt",
+          "recipients"
+        ]
+      },
+      "DocumentEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "example": "SENT"
+          },
+          "recipient": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "type", "recipient", "actor", "data", "createdAt"]
+      },
       "DocumentExport": {
         "type": "object",
         "properties": {
@@ -226453,6 +229580,288 @@
           "finishedAt"
         ]
       },
+      "DocumentIdentifyResult": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "recipientId": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["token", "recipientId", "url"]
+      },
+      "DocumentListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1doc00000ab7d3k1e5xyz"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "example": "Proposta — Implantação ServiceDesk"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "DECLINED", "EXPIRED", "ARCHIVED"]
+          },
+          "isTemplate": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["BLANK", "TEMPLATE", "DUPLICATE", "PDF_IMPORT", "AI_PROMPT", "LEGACY_PROPOSAL"]
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["id", "name", "image"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "person": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opportunity": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalValue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Total das tabelas de preço da versão atual (R$)."
+          },
+          "validUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vale até o fim deste dia (America/Sao_Paulo)."
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Sessões de leitura do link público."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "title",
+          "kind",
+          "status",
+          "isTemplate",
+          "source",
+          "owner",
+          "company",
+          "person",
+          "opportunity",
+          "lead",
+          "totalValue",
+          "validUntil",
+          "sentAt",
+          "firstViewedAt",
+          "lastViewedAt",
+          "acceptedAt",
+          "viewCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DocumentListPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentListItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "page": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["items", "total", "page", "pageSize"]
+      },
       "DocumentPdfPending": {
         "type": "object",
         "properties": {
@@ -226465,6 +229874,1090 @@
           }
         },
         "required": ["status", "exportId"]
+      },
+      "DocumentPublic": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "document": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+              },
+              "status": {
+                "type": "string",
+                "enum": ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "DECLINED", "EXPIRED", "ARCHIVED"]
+              },
+              "validUntil": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "acceptedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "acceptedByName": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "declinedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "settings": {
+                "type": "object",
+                "properties": {
+                  "layout": {
+                    "default": "web",
+                    "type": "string",
+                    "enum": ["web", "paged"]
+                  },
+                  "pageSize": {
+                    "default": "A4",
+                    "type": "string",
+                    "enum": ["A4", "LETTER"]
+                  },
+                  "orientation": {
+                    "default": "portrait",
+                    "type": "string",
+                    "enum": ["portrait", "landscape"]
+                  },
+                  "allowDownload": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "requireIdentification": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "showToc": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "notifyOnView": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "acceptTerms": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "layout",
+                  "pageSize",
+                  "orientation",
+                  "allowDownload",
+                  "requireIdentification",
+                  "showToc",
+                  "notifyOnView"
+                ]
+              },
+              "theme": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "kind",
+              "status",
+              "validUntil",
+              "acceptedAt",
+              "acceptedByName",
+              "declinedAt",
+              "settings",
+              "theme"
+            ]
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": ["id", "number", "content"]
+          },
+          "recipient": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["VIEWER", "APPROVER"]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["PENDING", "VIEWED", "ACCEPTED", "DECLINED"]
+                  }
+                },
+                "required": ["id", "name", "role", "status"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "canAccept": {
+            "type": "boolean"
+          },
+          "canDownload": {
+            "type": "boolean"
+          },
+          "paymentEnabled": {
+            "type": "boolean"
+          },
+          "brand": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "logoUrl": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["name", "logoUrl"]
+          }
+        },
+        "required": [
+          "token",
+          "document",
+          "version",
+          "recipient",
+          "variables",
+          "canAccept",
+          "canDownload",
+          "paymentEnabled",
+          "brand"
+        ]
+      },
+      "DocumentRecipient": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": ["VIEWER", "APPROVER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "VIEWED", "ACCEPTED", "DECLINED"]
+          },
+          "channel": {
+            "type": "string",
+            "enum": ["LINK", "EMAIL", "WHATSAPP"]
+          },
+          "url": {
+            "type": "string",
+            "description": "Link pessoal `/d/<token>` (absoluto)."
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "respondedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "role",
+          "status",
+          "channel",
+          "url",
+          "sentAt",
+          "firstViewedAt",
+          "lastViewedAt",
+          "respondedAt"
+        ]
+      },
+      "DocumentRecipientDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": ["VIEWER", "APPROVER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "VIEWED", "ACCEPTED", "DECLINED"]
+          },
+          "channel": {
+            "type": "string",
+            "enum": ["LINK", "EMAIL", "WHATSAPP"]
+          },
+          "url": {
+            "type": "string",
+            "description": "Link pessoal `/d/<token>` (absoluto)."
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "respondedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delivery": {
+            "type": "object",
+            "properties": {
+              "recipientId": {
+                "type": "string"
+              },
+              "requested": {
+                "type": "string",
+                "enum": ["LINK", "EMAIL", "WHATSAPP"]
+              },
+              "channel": {
+                "type": "string",
+                "enum": ["LINK", "EMAIL", "WHATSAPP"],
+                "description": "Canal usado: sem número de WhatsApp conectado, cai para `LINK`."
+              },
+              "delivered": {
+                "type": "boolean"
+              },
+              "message": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["recipientId", "requested", "channel", "delivered", "message"]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "role",
+          "status",
+          "channel",
+          "url",
+          "sentAt",
+          "firstViewedAt",
+          "lastViewedAt",
+          "respondedAt",
+          "delivery"
+        ]
+      },
+      "DocumentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["ACCEPT", "DECLINE", "SUBMIT"]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recipientId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versionNumber": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "selection": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "selected": {
+                  "type": "boolean"
+                },
+                "quantity": {
+                  "type": "number"
+                }
+              },
+              "required": ["selected", "quantity"]
+            }
+          },
+          "totalValue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "name",
+          "email",
+          "recipientId",
+          "versionNumber",
+          "fields",
+          "selection",
+          "totalValue",
+          "reason",
+          "createdAt"
+        ]
+      },
+      "DocumentSaved": {
+        "type": "object",
+        "properties": {
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["updatedAt"]
+      },
+      "DocumentSendResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1doc00000ab7d3k1e5xyz"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "example": "Proposta — Implantação ServiceDesk"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "DECLINED", "EXPIRED", "ARCHIVED"]
+          },
+          "isTemplate": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["BLANK", "TEMPLATE", "DUPLICATE", "PDF_IMPORT", "AI_PROMPT", "LEGACY_PROPOSAL"]
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["id", "name", "image"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "person": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opportunity": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalValue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Total das tabelas de preço da versão atual (R$)."
+          },
+          "validUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vale até o fim deste dia (America/Sao_Paulo)."
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastViewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Sessões de leitura do link público."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Documento do Steel Canvas (catálogo `document`)."
+          },
+          "theme": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "layout": {
+                "default": "web",
+                "type": "string",
+                "enum": ["web", "paged"]
+              },
+              "pageSize": {
+                "default": "A4",
+                "type": "string",
+                "enum": ["A4", "LETTER"]
+              },
+              "orientation": {
+                "default": "portrait",
+                "type": "string",
+                "enum": ["portrait", "landscape"]
+              },
+              "allowDownload": {
+                "default": true,
+                "type": "boolean"
+              },
+              "requireIdentification": {
+                "default": false,
+                "type": "boolean"
+              },
+              "showToc": {
+                "default": false,
+                "type": "boolean"
+              },
+              "notifyOnView": {
+                "default": true,
+                "type": "boolean"
+              },
+              "acceptTerms": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "layout",
+              "pageSize",
+              "orientation",
+              "allowDownload",
+              "requireIdentification",
+              "showToc",
+              "notifyOnView"
+            ]
+          },
+          "templateId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currentVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasUnsentChanges": {
+            "type": "boolean",
+            "description": "O rascunho difere da versão atual (o link mostra a versão enviada)."
+          },
+          "publicToken": {
+            "type": "string"
+          },
+          "publicUrl": {
+            "type": "string",
+            "description": "Link genérico `/d/<publicToken>` (absoluto)."
+          },
+          "linkEnabled": {
+            "type": "boolean"
+          },
+          "acceptedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedByEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "declinedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "declineReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiredAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentRecipient"
+            }
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "recipientId": {
+                  "type": "string"
+                },
+                "requested": {
+                  "type": "string",
+                  "enum": ["LINK", "EMAIL", "WHATSAPP"]
+                },
+                "channel": {
+                  "type": "string",
+                  "enum": ["LINK", "EMAIL", "WHATSAPP"],
+                  "description": "Canal usado: sem número de WhatsApp conectado, cai para `LINK`."
+                },
+                "delivered": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["recipientId", "requested", "channel", "delivered", "message"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "title",
+          "kind",
+          "status",
+          "isTemplate",
+          "source",
+          "owner",
+          "company",
+          "person",
+          "opportunity",
+          "lead",
+          "totalValue",
+          "validUntil",
+          "sentAt",
+          "firstViewedAt",
+          "lastViewedAt",
+          "acceptedAt",
+          "viewCount",
+          "createdAt",
+          "updatedAt",
+          "description",
+          "content",
+          "theme",
+          "settings",
+          "templateId",
+          "currentVersion",
+          "hasUnsentChanges",
+          "publicToken",
+          "publicUrl",
+          "linkEnabled",
+          "acceptedByName",
+          "acceptedByEmail",
+          "declinedAt",
+          "declineReason",
+          "expiredAt",
+          "paidAt",
+          "recipients",
+          "deliveries"
+        ]
+      },
+      "DocumentVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "sha256": {
+            "type": "string",
+            "description": "SHA-256 do JSON canônico de conteúdo + tema + ajustes."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["id", "number", "sha256", "createdAt", "createdBy"]
       },
       "ErrorCode": {
         "type": "string",
@@ -227714,7 +232207,10 @@
                     "AGENT_VERSION_GATE_FINISHED",
                     "AGENT_SIMULATION_FINISHED",
                     "CRM_CNPJ_ENRICHMENT_FINISHED",
-                    "CRM_DUPLICATES_FOUND"
+                    "CRM_DUPLICATES_FOUND",
+                    "CRM_DOCUMENT_ACCEPTED",
+                    "CRM_DOCUMENT_DECLINED",
+                    "CRM_DOCUMENT_EXPIRED"
                   ]
                 },
                 "title": {
