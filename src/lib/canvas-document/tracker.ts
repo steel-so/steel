@@ -516,6 +516,8 @@ export function startDocumentTracker(
   }
 
   const send = () => {
+    // Account the time up to now, whatever timer fired first.
+    tick()
     const payload = takeBeacon(state, context)
     if (!payload) return
     postBeacon(endpoint, payload)
@@ -624,7 +626,6 @@ export function startDocumentTracker(
   }
 
   const onPageHide = () => {
-    tick()
     send()
   }
 
@@ -645,16 +646,15 @@ export function startDocumentTracker(
 
   updateScroll()
   send()
-  const tickTimer = window.setInterval(tick, TICK_MS)
-  const beaconTimer = window.setInterval(send, DOCUMENT_TRACK_INTERVAL_MS)
+  const tickTimer = setInterval(tick, TICK_MS)
+  const beaconTimer = setInterval(send, DOCUMENT_TRACK_INTERVAL_MS)
 
   return () => {
     if (stopped) return
     stopped = true
-    tick()
     send()
-    window.clearInterval(tickTimer)
-    window.clearInterval(beaconTimer)
+    clearInterval(tickTimer)
+    clearInterval(beaconTimer)
     sectionObserver?.disconnect()
     endObserver?.disconnect()
     mutationObserver?.disconnect()
