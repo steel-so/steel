@@ -41,6 +41,7 @@ import { processCrmWorkflowSchedule } from '../src/lib/queue/processors/crm-work
 import { processDataExport } from '../src/lib/queue/processors/data-export'
 import { processDataRetention } from '../src/lib/queue/processors/data-retention'
 import { processDatabaseBackup } from '../src/lib/queue/processors/database-backup'
+import { processDocumentsAi } from '../src/lib/queue/processors/documents-ai'
 import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
@@ -261,6 +262,12 @@ async function main(): Promise<void> {
     registerWorker(QueueName.SatisfactionSurvey, processSatisfactionSurvey),
   )
   workers.push(registerWorker(QueueName.QaReview, processQaReview))
+  // AI import: minutes of waiting on the provider each, so a few at once.
+  workers.push(
+    registerWorker(QueueName.DocumentsAi, processDocumentsAi, {
+      concurrency: 3,
+    }),
+  )
   workers.push(
     registerWorker(QueueName.CrmWorkflowSchedule, processCrmWorkflowSchedule),
   )
