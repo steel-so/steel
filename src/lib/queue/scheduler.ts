@@ -45,6 +45,7 @@ import {
   WorkspaceExportJob,
   WorkspaceIntegrationsJob,
 } from './jobs'
+import { clearFinishedJob } from './processors/clear-finished-job'
 import {
   getAiIndexQueue,
   getAiProactiveQueue,
@@ -339,7 +340,10 @@ export async function unscheduleCrmProposalExpiryJobs(): Promise<void> {
   })
 }
 
-/** Fixed id: the boot run is enqueued once while the last one is kept. */
+/**
+ * Fixed id: a boot while a run is still waiting or running does not add a
+ * second one; a finished run is cleared first, so every boot runs again.
+ */
 export const DOCUMENTS_LEGACY_IMPORT_JOB_ID = 'documents-legacy-import-run'
 
 /**
@@ -348,6 +352,7 @@ export const DOCUMENTS_LEGACY_IMPORT_JOB_ID = 'documents-legacy-import-run'
  */
 export async function enqueueDocumentsLegacyImport(): Promise<void> {
   const queue = getDocumentsLegacyImportQueue()
+  await clearFinishedJob(queue, DOCUMENTS_LEGACY_IMPORT_JOB_ID)
   await queue.add(
     DocumentsLegacyImportJob.Run,
     {},

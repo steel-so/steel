@@ -3,11 +3,12 @@ import { logger } from '@/lib/axiom/logger'
 import { DocumentLegacyImportService } from '@/src/services/document-legacy-import.service'
 import { DocumentsLegacyImportJob } from '../jobs'
 import { getDocumentsLegacyImportQueue } from '../queues'
+import { clearFinishedJob } from './clear-finished-job'
 
 type RunResult = { workspaces: number }
 type WorkspaceResult = { templates: number; proposals: number; failed: number }
 
-/** One job per workspace, deduplicated while a previous one is kept. */
+/** One job per workspace, deduplicated while a previous one is waiting. */
 export function workspaceJobId(workspaceId: string): string {
   return `documents-legacy-import-ws-${workspaceId}`
 }
@@ -30,6 +31,7 @@ export async function processDocumentsLegacyImport(
       }
       const queue = getDocumentsLegacyImportQueue()
       for (const workspaceId of workspaces.value) {
+        await clearFinishedJob(queue, workspaceJobId(workspaceId))
         await queue.add(
           DocumentsLegacyImportJob.ImportWorkspace,
           { workspaceId },

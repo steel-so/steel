@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { service, queue, loggerMock } = vi.hoisted(() => ({
   service: { listWorkspaces: vi.fn(), importWorkspace: vi.fn() },
-  queue: { add: vi.fn() },
+  queue: { add: vi.fn(), getJob: vi.fn() },
   loggerMock: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
@@ -31,6 +31,14 @@ beforeEach(() => {
 
 describe('processDocumentsLegacyImport', () => {
   it('fans out one deduplicated job per legacy workspace', async () => {
+    const finished = {
+      isCompleted: vi.fn(async () => true),
+      isFailed: vi.fn(async () => false),
+      remove: vi.fn(async () => undefined),
+    }
+    queue.getJob.mockImplementation(async (id: string) =>
+      id.endsWith('ws-a') ? finished : undefined,
+    )
     service.listWorkspaces.mockResolvedValue({
       ok: true,
       value: ['ws-a', 'ws-b'],
@@ -48,6 +56,8 @@ describe('processDocumentsLegacyImport', () => {
       { workspaceId: 'ws-a' },
       { jobId: 'documents-legacy-import-ws-ws-a' },
     )
+    // A finished job of a previous boot no longer blocks the fixed id.
+    expect(finished.remove).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith(
       'queue.documents_legacy_import.run_completed',
       expect.objectContaining({ workspaces: 2 }),
