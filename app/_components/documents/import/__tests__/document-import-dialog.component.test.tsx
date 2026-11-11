@@ -6,6 +6,7 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
+import { latestDocumentImport } from '@/src/hooks/use-document-imports'
 import type { DocumentImportDTO } from '@/types/document'
 import type { DocumentImportContextDTO } from '@/types/document-import'
 import {
@@ -331,5 +332,20 @@ describe('document import helpers', () => {
     expect(fileProblem(empty, 100)).toBe('O arquivo está vazio.')
     expect(fileProblem(large, 100)).toMatch(/o limite é/)
     expect(fileProblem(new File(['x'], 'a.pdf'), 100)).toBeNull()
+  })
+})
+
+describe('latestDocumentImport()', () => {
+  const at = (pct: number) =>
+    importDto({ status: 'RUNNING', progress: { step: 'sections', pct } })
+
+  it('should keep the most advanced snapshot', () => {
+    expect(latestDocumentImport(undefined, at(10)).progress.pct).toBe(10)
+    expect(latestDocumentImport(at(60), at(30)).progress.pct).toBe(60)
+    expect(latestDocumentImport(at(30), at(60)).progress.pct).toBe(60)
+    expect(latestDocumentImport(READY, at(90)).status).toBe('READY')
+    expect(latestDocumentImport(at(90), READY).status).toBe('READY')
+    const other = { ...at(5), id: 'imp2' }
+    expect(latestDocumentImport(at(90), other).id).toBe('imp2')
   })
 })
