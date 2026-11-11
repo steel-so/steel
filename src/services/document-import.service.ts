@@ -358,6 +358,39 @@ function assemble(
   return ok({ content: checked.value, theme: built.theme })
 }
 
+/** An unfinished import older than this is considered lost. */
+export const DOCUMENT_IMPORT_STALE_MS = 30 * 60 * 1000
+const STALE_MESSAGE =
+  'A montagem demorou demais e foi interrompida. Tente de novo.'
+
+function isStale(row: DocumentImport, now = Date.now()): boolean {
+  if (row.status === 'READY' || row.status === 'FAILED') return false
+  return now - row.createdAt.getTime() > DOCUMENT_IMPORT_STALE_MS
+}
+
+async function closeStale(row: DocumentImport): Promise<DocumentImport> {
+  const closed = await DocumentImportRepository.update(row.id, {
+    status: 'FAILED',
+    error: STALE_MESSAGE,
+    progress: failedProgress(STALE_MESSAGE),
+    finishedAt: new Date(),
+  })
+  logger.warn('documents.import.stale', {
+    component: COMPONENT,
+    workspaceId: row.workspaceId,
+    importId: row.id,
+    status: row.status,
+  })
+  return closed.ok
+    ? closed.value
+    : {
+        ...row,
+        status: 'FAILED',
+        error: STALE_MESSAGE,
+        progress: failedProgress(STALE_MESSAGE),
+      }
+}
+
 export const DocumentImportService = {
   /** Quota, model and cost estimate shown before an import. */
   async context(
@@ -534,6 +567,11 @@ export const DocumentImportService = {
     if (!row.ok) return row
     if (row.value.createdById !== actorId && !membership.value.isPrivileged) {
       return err(documentImportNotFound())
+    }
+    if (isStale(row.value)) {
+      // The worker died mid-build (deploy, OOM): close it so the dialog
+      // stops waiting. A late worker skips a FAILED import.
+      return ok(toDocumentImportDTO(await closeStale(row.value)))
     }
     return ok(toDocumentImportDTO(row.value))
   },

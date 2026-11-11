@@ -598,6 +598,43 @@ describe('DocumentImportService.get()', () => {
     expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
   })
 
+  it('should close an import the worker lost', async () => {
+    const old = new Date(Date.now() - 31 * 60 * 1000)
+    imports.findById.mockResolvedValue(
+      ok(stored({ status: 'RUNNING', createdAt: old })),
+    )
+
+    const dto = expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+
+    expect(dto.status).toBe('FAILED')
+    expect(dto.error).toMatch(/demorou demais/)
+    expect(imports.update).toHaveBeenCalledWith(
+      'imp1',
+      expect.objectContaining({ status: 'FAILED' }),
+    )
+  })
+
+  it('should report a lost import even when saving fails', async () => {
+    const old = new Date(Date.now() - 31 * 60 * 1000)
+    imports.findById.mockResolvedValue(ok(stored({ createdAt: old })))
+    imports.update.mockResolvedValueOnce(err(databaseError('x')))
+
+    const dto = expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+
+    expect(dto.status).toBe('FAILED')
+    expect(dto.progress.step).toBe('failed')
+  })
+
+  it('should leave a recent or finished import alone', async () => {
+    const old = new Date(Date.now() - 31 * 60 * 1000)
+    imports.findById.mockResolvedValue(
+      ok(stored({ status: 'READY', createdAt: old })),
+    )
+    const dto = expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+    expect(dto.status).toBe('READY')
+    expect(imports.update).not.toHaveBeenCalled()
+  })
+
   it('should propagate not found and authorization errors', async () => {
     imports.findById.mockResolvedValue(
       err({ code: 'DOCUMENT_IMPORT_NOT_FOUND', message: 'x' } as never),

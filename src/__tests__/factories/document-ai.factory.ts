@@ -23,7 +23,7 @@ export function createFakeDocumentImport(
     costUsd: null,
     error: null,
     createdById: createId(),
-    createdAt: new Date('2026-11-11T13:00:00.000Z'),
+    createdAt: new Date(),
     finishedAt: null,
     ...overrides,
   }
