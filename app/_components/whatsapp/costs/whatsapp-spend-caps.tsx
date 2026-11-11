@@ -320,7 +320,9 @@ function SpendCapRow({
           {status.stale && status.staleReason
             ? `${status.staleReason} `
             : null}
-          Atualizado {formatFetchedAgo(status.fetchedAt)}, direto da Meta.
+          {status.fetchedAt
+            ? `Atualizado ${formatFetchedAgo(status.fetchedAt)}, direto da Meta.`
+            : 'Ainda não lido na Meta neste mês; mostrando os envios registrados pelo Steel.'}
         </p>
         <Button
           type='button'
