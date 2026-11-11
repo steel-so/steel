@@ -1,17 +1,20 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchBody, mockFetch } from '@/src/__tests__/component-utils'
 import { useDocumentRuntime } from '@/src/lib/canvas-document/runtime-context'
 import { DEFAULT_DOCUMENT_SETTINGS } from '@/src/schemas/document.schema'
 import { DocumentViewer } from '../public/document-viewer'
 import {
-  downloadDocumentPdf,
   initialRuntimeStatus,
   validateDocumentFields,
 } from '../public/public-runtime'
 import { fakePublic } from './fixtures'
 
 const tracker = vi.hoisted(() => ({ stop: vi.fn(), start: vi.fn() }))
+const pdf = vi.hoisted(() => vi.fn())
+vi.mock('@/src/hooks/use-document-exports', () => ({
+  requestPublicDocumentPdf: pdf,
+}))
 vi.mock('@/src/lib/canvas-document/tracker', () => ({
   startDocumentTracker: (options: unknown) => {
     tracker.start(options)
@@ -86,10 +89,6 @@ beforeEach(() => {
   vi.clearAllMocks()
   window.localStorage.clear()
   delete document.body.dataset.result
-})
-
-afterEach(() => {
-  vi.useRealTimers()
 })
 
 describe('initialRuntimeStatus', () => {
@@ -261,46 +260,20 @@ describe('<DocumentViewer />', () => {
       (await screen.findAllByRole('button', { name: 'Investimento' })).length,
     ).toBeGreaterThan(0)
   })
-})
 
-describe('downloadDocumentPdf', () => {
-  it('waits while the PDF renders and saves the file', async () => {
-    vi.useFakeTimers()
-    let calls = 0
-    const spy = vi.fn(async () => {
-      calls += 1
-      return calls === 1
-        ? new Response(null, { status: 202 })
-        : new Response('%PDF', {
-            status: 200,
-            headers: {
-              'content-disposition': 'attachment; filename="proposta.pdf"',
-            },
-          })
-    })
-    vi.stubGlobal('fetch', spy)
-    const createObjectURL = vi.fn(() => 'blob:pdf')
-    const revokeObjectURL = vi.fn()
-    URL.createObjectURL = createObjectURL
-    URL.revokeObjectURL = revokeObjectURL
-    const click = vi
-      .spyOn(HTMLAnchorElement.prototype, 'click')
-      .mockImplementation(() => {})
-
-    const pending = downloadDocumentPdf('tok_maria', 'Proposta')
-    await vi.advanceTimersByTimeAsync(2000)
-    await expect(pending).resolves.toEqual({ ok: true })
-    expect(spy).toHaveBeenCalledTimes(2)
-    expect(createObjectURL).toHaveBeenCalled()
-    expect(click).toHaveBeenCalled()
-    click.mockRestore()
+  it('downloads the PDF from the header and explains a failure', async () => {
+    pdf.mockResolvedValueOnce({ ok: false, message: 'Download desativado' })
+    render(<DocumentViewer data={fakePublic()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Baixar PDF' }))
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Download desativado',
+    )
+    expect(pdf).toHaveBeenCalledWith('tok_maria')
   })
 
-  it('reports a failed export', async () => {
-    mockFetch([
-      { match: `${URL_BASE}/pdf`, status: 403, error: 'Download desativado' },
-    ])
-    const result = await downloadDocumentPdf('tok_maria', 'Proposta')
-    expect(result).toEqual({ ok: false, message: 'Download desativado' })
+  it('hides the download when the document does not allow it', async () => {
+    render(<DocumentViewer data={fakePublic({ canDownload: false })} />)
+    await screen.findByText('Stratus Telecom')
+    expect(screen.queryByRole('button', { name: 'Baixar PDF' })).toBeNull()
   })
 })
