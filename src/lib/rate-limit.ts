@@ -340,6 +340,21 @@ export const widgetSendLimiter = new RateLimiterRedis({
   duration: WIDGET_SEND_DURATION_SECONDS,
 })
 
+// Reading beacons of the public document link (ADR 0063): one every 15 s per
+// open tab, plus one on leave. Keyed by the hashed IP, with room for an
+// office NAT where several people read the same proposal.
+const DOCUMENT_TRACK_POINTS = 240
+const DOCUMENT_TRACK_DURATION_SECONDS = 60
+
+export const documentTrackLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:document:track',
+  points: DOCUMENT_TRACK_POINTS,
+  duration: DOCUMENT_TRACK_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -368,6 +383,7 @@ const limiterNames = new WeakMap<Limiter, string>([
   [widgetReadLimiter, 'widget_read'],
   [widgetSessionLimiter, 'widget_session'],
   [widgetSendLimiter, 'widget_send'],
+  [documentTrackLimiter, 'document_track'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

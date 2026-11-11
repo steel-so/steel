@@ -217,6 +217,11 @@ export const TAG_GROUPS = [
         description:
           'Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público.',
       },
+      {
+        name: 'CRM · Leitura de documentos',
+        description:
+          'Analytics de leitura de CRM > Documentos: tempo por seção, alcance, leitores, revisitas, encaminhamentos e dispositivos (no modelo, a soma dos documentos criados a partir dele).',
+      },
     ],
   },
   {
@@ -517,6 +522,11 @@ export const TAG_GROUPS = [
         name: 'CRM público · Newsletter',
         description:
           'Inscrição pública na newsletter, confirmação dupla, central de preferências e descadastro de um clique (RFC 8058). Sem sessão: o link assinado é o acesso.',
+      },
+      {
+        name: 'CRM público · Leitura de documentos',
+        description:
+          'Sinal de leitura do link público de um documento `/d/<token>` (sem sessão; o token do link é o acesso, limite por IP com hash).',
       },
     ],
   },

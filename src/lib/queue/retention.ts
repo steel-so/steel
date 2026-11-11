@@ -245,3 +245,5 @@ export const CrmNewsletterAbTickCron = '2-59/5 * * * *' as const
 export const DocumentsPdfPruneCron = '45 3 * * *' as const
 /** documents-pdf: a PDF export is kept (and reused) for 7 days. */
 export const DocumentExportRetentionMs = 7 * DAY_MS
+/** documents analytics: flush of the reading buffer, every minute. */
+export const DocumentsAnalyticsFlushCron = '* * * * *' as const

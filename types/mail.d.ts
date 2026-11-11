@@ -105,3 +105,14 @@ export interface WhatsAppUnassignedConversationEmailProps extends EmailProps {
   teamName: string | null
   redirectUrl: string
 }
+
+// documents analytics: "<Nome> abriu <documento> agora" e-mail to the owner.
+export interface CrmDocumentViewedEmailProps extends EmailProps {
+  /** "<Nome> abriu <documento> agora". */
+  title: string
+  /** First read, came back, forwarded… (pt-BR, one sentence). */
+  detail: string
+  documentTitle: string
+  workspaceName: string
+  documentUrl: string
+}

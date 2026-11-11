@@ -623,6 +623,13 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'mail',
     color: 'rose',
   },
+  // documents analytics: "<Nome> abriu <documento> agora".
+  CRM_DOCUMENT_VIEWED: {
+    module: 'CRM',
+    label: 'Documento aberto',
+    icon: 'proposal',
+    color: 'sky',
+  },
 }
 
 const MODULE_BY_PREFIX: [string, NotificationModule][] = [

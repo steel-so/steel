@@ -5688,6 +5688,8 @@ enum NotificationKind {
   /// nov ai-crm-followups: a bulk CNPJ enrichment run ended.
   CRM_CNPJ_ENRICHMENT_FINISHED
   CRM_DUPLICATES_FOUND
+  /// documents analytics: someone opened a document ("<Nome> abriu <documento> agora").
+  CRM_DOCUMENT_VIEWED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).

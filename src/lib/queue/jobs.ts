@@ -62,6 +62,7 @@ export const QueueName = {
   CrmCnpjEnrichment: 'crm-cnpj-enrichment',
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
+  DocumentsAnalytics: 'documents-analytics',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1246,4 +1247,16 @@ export type DocumentsPdfJob =
 export type DocumentsPdfJobPayload = {
   [DocumentsPdfJob.Render]: { exportId: string }
   [DocumentsPdfJob.PruneExpired]: Record<string, never>
+ * documents analytics (ADR 0063): every minute, the reading buffer of the
+ * public document links goes from Redis to Postgres.
+ */
+export const DocumentsAnalyticsJob = {
+  Flush: 'flush',
+} as const
+
+export type DocumentsAnalyticsJob =
+  (typeof DocumentsAnalyticsJob)[keyof typeof DocumentsAnalyticsJob]
+
+export type DocumentsAnalyticsJobPayload = {
+  [DocumentsAnalyticsJob.Flush]: Record<string, never>
 }
