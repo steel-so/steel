@@ -132,8 +132,8 @@ describe('createProposal', () => {
       content: CONTENT,
     })
     expect(data?.publicToken).toMatch(/^[\w-]{43}$/)
-    const days =
-      ((data?.validUntil as Date).getTime() - Date.now()) / 86_400_000
+    const validUntil = data?.validUntil as Date
+    const days = (validUntil.getTime() - Date.now()) / 86_400_000
     expect(days).toBeGreaterThan(29)
     expect(days).toBeLessThanOrEqual(31)
     expect(vi.mocked(outlineToDocument).mock.calls[0]?.[0]).toMatchObject({
