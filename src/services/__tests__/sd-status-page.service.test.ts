@@ -354,8 +354,11 @@ describe('SdStatusPageService public', () => {
         }),
       ]),
     )
+    // A window that has not started yet, whatever day the suite runs.
+    const startsAt = new Date(Date.now() + 86_400_000)
+    const endsAt = new Date(startsAt.getTime() + 4 * 3_600_000)
     maintenances.listForPage.mockResolvedValue(
-      ok([createFakeSdStatusMaintenance()]),
+      ok([createFakeSdStatusMaintenance({ startsAt, endsAt })]),
     )
     const out = expectOk(await SdStatusPageService.getPublic('acme-abc123'))
     expect(out.overall).toBe('PARTIAL_OUTAGE')

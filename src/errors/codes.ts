@@ -1599,6 +1599,54 @@ export const ERROR_CODES = {
     code: 'AI_PROCEDURE_LIMIT_REACHED',
     status: 409,
   },
+  // documents: CRM > Documentos (ADR 0063)
+  DOCUMENT_NOT_FOUND: { code: 'DOCUMENT_NOT_FOUND', status: 404 },
+  DOCUMENT_FORBIDDEN: { code: 'DOCUMENT_FORBIDDEN', status: 403 },
+  // The canvas content does not pass the `document` catalog validation.
+  DOCUMENT_CONTENT_INVALID: { code: 'DOCUMENT_CONTENT_INVALID', status: 422 },
+  // Autosave based on an older copy than the one stored.
+  DOCUMENT_SAVE_CONFLICT: { code: 'DOCUMENT_SAVE_CONFLICT', status: 409 },
+  DOCUMENT_TEMPLATE_NOT_FOUND: {
+    code: 'DOCUMENT_TEMPLATE_NOT_FOUND',
+    status: 404,
+  },
+  DOCUMENT_RECIPIENT_NOT_FOUND: {
+    code: 'DOCUMENT_RECIPIENT_NOT_FOUND',
+    status: 404,
+  },
+  DOCUMENT_VERSION_NOT_FOUND: {
+    code: 'DOCUMENT_VERSION_NOT_FOUND',
+    status: 404,
+  },
+  // Public link: answered with an older version than the current one.
+  DOCUMENT_VERSION_STALE: { code: 'DOCUMENT_VERSION_STALE', status: 409 },
+  // Public link: never sent, link disabled or document archived.
+  DOCUMENT_LINK_UNAVAILABLE: { code: 'DOCUMENT_LINK_UNAVAILABLE', status: 410 },
+  DOCUMENT_EXPIRED: { code: 'DOCUMENT_EXPIRED', status: 410 },
+  // Already accepted or declined: answers are final.
+  DOCUMENT_ALREADY_ANSWERED: { code: 'DOCUMENT_ALREADY_ANSWERED', status: 409 },
+  // A VIEWER recipient tried to accept or decline.
+  DOCUMENT_ACCEPT_NOT_ALLOWED: {
+    code: 'DOCUMENT_ACCEPT_NOT_ALLOWED',
+    status: 403,
+  },
+  // Required fields of the document missing or invalid on accept/submit.
+  DOCUMENT_FIELDS_INVALID: { code: 'DOCUMENT_FIELDS_INVALID', status: 422 },
+  // Sending a document with no content or no section.
+  DOCUMENT_EMPTY: { code: 'DOCUMENT_EMPTY', status: 422 },
+  DOCUMENT_DOWNLOAD_DISABLED: {
+    code: 'DOCUMENT_DOWNLOAD_DISABLED',
+    status: 403,
+  },
+  DOCUMENT_EXPORT_NOT_FOUND: { code: 'DOCUMENT_EXPORT_NOT_FOUND', status: 404 },
+  DOCUMENT_EXPORT_FAILED: { code: 'DOCUMENT_EXPORT_FAILED', status: 502 },
+  DOCUMENT_IMPORT_NOT_FOUND: { code: 'DOCUMENT_IMPORT_NOT_FOUND', status: 404 },
+  // File type, size or page count outside what the AI import accepts.
+  DOCUMENT_IMPORT_UNSUPPORTED: {
+    code: 'DOCUMENT_IMPORT_UNSUPPORTED',
+    status: 422,
+  },
+  DOCUMENT_IMPORT_FAILED: { code: 'DOCUMENT_IMPORT_FAILED', status: 502 },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

@@ -2465,3 +2465,91 @@ export const boletoChargeNotPending = (): AppError =>
     'BOLETO_CHARGE_NOT_PENDING',
     'Só um boleto aguardando pagamento pode ser cancelado',
   )
+
+// documents: CRM > Documentos (ADR 0063)
+export const documentNotFound = (): AppError =>
+  appError('DOCUMENT_NOT_FOUND', 'Documento não encontrado')
+
+export const documentForbidden = (): AppError =>
+  appError('DOCUMENT_FORBIDDEN', 'Você não tem permissão para este documento')
+
+export const documentContentInvalid = (message?: string): AppError =>
+  appError(
+    'DOCUMENT_CONTENT_INVALID',
+    message ?? 'O conteúdo do documento é inválido',
+  )
+
+export const documentSaveConflict = (): AppError =>
+  appError(
+    'DOCUMENT_SAVE_CONFLICT',
+    'O documento foi alterado em outra aba ou por outra pessoa. Recarregue para continuar.',
+  )
+
+export const documentTemplateNotFound = (): AppError =>
+  appError('DOCUMENT_TEMPLATE_NOT_FOUND', 'Modelo de documento não encontrado')
+
+export const documentRecipientNotFound = (): AppError =>
+  appError('DOCUMENT_RECIPIENT_NOT_FOUND', 'Destinatário não encontrado')
+
+export const documentVersionNotFound = (): AppError =>
+  appError('DOCUMENT_VERSION_NOT_FOUND', 'Versão do documento não encontrada')
+
+export const documentVersionStale = (): AppError =>
+  appError(
+    'DOCUMENT_VERSION_STALE',
+    'Este documento foi atualizado. Recarregue a página para ver a versão mais recente.',
+  )
+
+export const documentLinkUnavailable = (): AppError =>
+  appError('DOCUMENT_LINK_UNAVAILABLE', 'Este link não está mais disponível')
+
+export const documentExpired = (): AppError =>
+  appError('DOCUMENT_EXPIRED', 'A validade deste documento terminou')
+
+export const documentAlreadyAnswered = (): AppError =>
+  appError('DOCUMENT_ALREADY_ANSWERED', 'Este documento já foi respondido')
+
+export const documentAcceptNotAllowed = (): AppError =>
+  appError(
+    'DOCUMENT_ACCEPT_NOT_ALLOWED',
+    'Você pode ler este documento, mas não aceitá-lo',
+  )
+
+export const documentFieldsInvalid = (message?: string): AppError =>
+  appError(
+    'DOCUMENT_FIELDS_INVALID',
+    message ?? 'Preencha os campos obrigatórios do documento',
+  )
+
+export const documentEmpty = (): AppError =>
+  appError('DOCUMENT_EMPTY', 'Adicione conteúdo ao documento antes de enviar')
+
+export const documentDownloadDisabled = (): AppError =>
+  appError(
+    'DOCUMENT_DOWNLOAD_DISABLED',
+    'O download deste documento está desativado',
+  )
+
+export const documentExportNotFound = (): AppError =>
+  appError('DOCUMENT_EXPORT_NOT_FOUND', 'Exportação não encontrada')
+
+export const documentExportFailed = (message?: string): AppError =>
+  appError(
+    'DOCUMENT_EXPORT_FAILED',
+    message ?? 'Não foi possível gerar o PDF. Tente de novo em instantes.',
+  )
+
+export const documentImportNotFound = (): AppError =>
+  appError('DOCUMENT_IMPORT_NOT_FOUND', 'Importação não encontrada')
+
+export const documentImportUnsupported = (message?: string): AppError =>
+  appError(
+    'DOCUMENT_IMPORT_UNSUPPORTED',
+    message ?? 'Envie um PDF ou DOCX de até 20 MB e 60 páginas',
+  )
+
+export const documentImportFailed = (message?: string): AppError =>
+  appError(
+    'DOCUMENT_IMPORT_FAILED',
+    message ?? 'A IA não conseguiu montar o documento. Tente de novo.',
+  )
