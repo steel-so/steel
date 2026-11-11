@@ -144,7 +144,7 @@ describe('SearchService.resolveAccess()', () => {
     const access = expectOk(await SearchService.resolveAccess(USER, WS))
     expect(access.slug).toBe('agro')
     expect(access.isSdAgent).toBe(true)
-    expect(access.types).toHaveLength(14)
+    expect(access.types).toHaveLength(15)
   })
 
   it('should drop the types of disabled modules', async () => {
@@ -272,7 +272,7 @@ describe('SearchService.search()', () => {
         candidateLimit: 60,
       }),
     )
-    expect(docs.search.mock.calls[0][0].types).toHaveLength(14)
+    expect(docs.search.mock.calls[0][0].types).toHaveLength(15)
   })
 
   it('should narrow to the requested types the user may see', async () => {
