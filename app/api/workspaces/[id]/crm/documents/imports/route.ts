@@ -94,7 +94,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
 
   const input = await readInput(request)
   if (!input.ok) return handleError(input.error)
-  const parsed = CreateDocumentImportSchema.safeParse(input.body)
+  const parsed = CreateDocumentImportSchema.safeParse(input.value.body)
   if (!parsed.success) {
     return standardError(
       'VALIDATION_ERROR',
@@ -110,7 +110,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     userId,
     id,
     body,
-    input.file,
+    input.value.file,
   )
   if (!result.ok) return handleError(result.error)
 

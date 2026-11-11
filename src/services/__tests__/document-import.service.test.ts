@@ -259,7 +259,7 @@ beforeEach(() => {
     ),
   )
   imports.update.mockImplementation(async (id, data) =>
-    ok(stored({ id, ...(data as Partial<DocumentImport>) })),
+    ok(stored({ id, ...(data as unknown as Partial<DocumentImport>) })),
   )
   imports.findForRun.mockResolvedValue(ok(stored()))
   imports.findById.mockResolvedValue(ok(stored()))
