@@ -325,40 +325,42 @@ function afterAnswer(
   }
 }
 
+/**
+ * The document as the link shows it. `recordView` marks the first/last read
+ * (SENT → VIEWED) unless the user agent is a link preview.
+ */
+async function getPublicDocument(
+  token: string,
+  options: { recordView?: boolean; userAgent?: string | null } = {},
+): Promise<Result<DocumentPublicDTO>> {
+  if (options.recordView) {
+    const access = await resolveDocumentToken(token)
+    if (!access.ok) return access
+    const opened = await markOpened(access.value, options.userAgent)
+    if (!opened.ok) return opened
+  }
+
+  const link = await loadLink(token)
+  if (!link.ok) return link
+
+  const variables = await DocumentVariablesService.forDocument(
+    link.value.access.documentId,
+    link.value.access.recipientId,
+  )
+  if (!variables.ok) return variables
+
+  return ok(
+    toDocumentPublicDTO({
+      token,
+      context: link.value.context,
+      recipient: link.value.recipient,
+      variables: variables.value as Record<string, string>,
+    }),
+  )
+}
+
 export const DocumentPublicService = {
-  /**
-   * The document as the link shows it. `recordView` marks the first/last
-   * read (SENT → VIEWED) unless the user agent is a link preview.
-   */
-  async getByToken(
-    token: string,
-    options: { recordView?: boolean; userAgent?: string | null } = {},
-  ): Promise<Result<DocumentPublicDTO>> {
-    if (options.recordView) {
-      const access = await resolveDocumentToken(token)
-      if (!access.ok) return access
-      const opened = await markOpened(access.value, options.userAgent)
-      if (!opened.ok) return opened
-    }
-
-    const link = await loadLink(token)
-    if (!link.ok) return link
-
-    const variables = await DocumentVariablesService.forDocument(
-      link.value.access.documentId,
-      link.value.access.recipientId,
-    )
-    if (!variables.ok) return variables
-
-    return ok(
-      toDocumentPublicDTO({
-        token,
-        context: link.value.context,
-        recipient: link.value.recipient,
-        variables: variables.value as Record<string, string>,
-      }),
-    )
-  },
+  getByToken: getPublicDocument,
 
   /**
    * First/last read of a link, for callers outside the page (the analytics
@@ -476,7 +478,7 @@ export const DocumentPublicService = {
       reason: null,
       total: priced.total,
     })
-    return DocumentPublicService.getByToken(token)
+    return getPublicDocument(token)
   },
 
   async decline(
@@ -517,7 +519,7 @@ export const DocumentPublicService = {
       reason: input.reason || null,
       total: null,
     })
-    return DocumentPublicService.getByToken(token)
+    return getPublicDocument(token)
   },
 
   /** Fields sent without accepting (documents that only collect data). */
@@ -569,6 +571,6 @@ export const DocumentPublicService = {
     )
     if (!recorded.ok) return recorded
 
-    return DocumentPublicService.getByToken(token)
+    return getPublicDocument(token)
   },
 }
