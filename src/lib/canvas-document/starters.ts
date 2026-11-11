@@ -698,7 +698,7 @@ const TERMS: Starter = {
           },
           {
             type: 'callout',
-            tone: 'neutral',
+            tone: 'info',
             text: 'Pendências apontadas até a data do aceite seguem tratadas pelo suporte, sem custo adicional.',
           },
           {
