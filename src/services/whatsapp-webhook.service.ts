@@ -65,6 +65,7 @@ import {
 } from './whatsapp-notify'
 import { WhatsAppSchedulingReplyService } from './whatsapp-scheduling-reply.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
+import { WhatsAppSpendCapService } from './whatsapp-spend-cap.service'
 import { WhatsAppTeamService } from './whatsapp-team.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
@@ -977,6 +978,11 @@ export const WhatsAppWebhookService = {
       input.status,
       new Date(),
     )
+    // Meta does not bill a failed message: zero its ledger entry (ADR 0064).
+    // Never fails the webhook.
+    if (input.status === 'FAILED') {
+      await WhatsAppSpendCapService.onMessageFailed(input.providerMessageId)
+    }
     // Newsletter issues sent on WhatsApp (nl3): never fails the webhook.
     await CrmNewsletterWhatsAppReceiptsService.onWhatsAppStatus({
       providerMessageId: input.providerMessageId,

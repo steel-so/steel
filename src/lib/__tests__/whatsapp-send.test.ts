@@ -182,6 +182,7 @@ describe('WhatsAppSend — cost ledger (ADR 0050)', () => {
       kind: 'TEMPLATE',
       to: '5511999990000',
       context: cost,
+      providerMessageId: 'p1',
     })
   })
 

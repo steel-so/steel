@@ -5,6 +5,10 @@ import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { consume, whatsappSendLimiter } from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
 import { WhatsAppCostService } from '@/src/services/whatsapp-cost.service'
+import {
+  type SpendCapCheck,
+  WhatsAppSpendCapService,
+} from '@/src/services/whatsapp-spend-cap.service'
 import { WhatsAppUsageService } from '@/src/services/whatsapp-usage.service'
 import { createMetaClient } from './meta-client'
 import type {
@@ -73,6 +77,13 @@ export interface WhatsAppSendOptions {
   cost?: WhatsAppCostContext
 }
 
+/** Provider id of an accepted send, or null (reactions return nothing). */
+function acceptedId(result: unknown): string | null {
+  if (!result || typeof result !== 'object') return null
+  const id = (result as { providerMessageId?: unknown }).providerMessageId
+  return typeof id === 'string' && id.length > 0 ? id : null
+}
+
 async function withProvider<T>(
   connection: WhatsAppConnection,
   op: (client: WhatsAppProviderClient) => Promise<T>,
@@ -98,20 +109,42 @@ async function withProvider<T>(
     if (!allowed.ok) return allowed
   }
 
+  // Monthly spending cap of the number (ADR 0064): only paid sends — Meta
+  // templates of the Comunicação line. Service replies are never blocked.
+  let capCheck: SpendCapCheck | null = null
+  if (
+    options.costKind === 'TEMPLATE' &&
+    options.to &&
+    connection.provider === 'META' &&
+    connection.module === 'COMMUNICATION'
+  ) {
+    const checked = await WhatsAppSpendCapService.checkSend(connection, {
+      to: options.to,
+      templateCategory: options.cost?.templateCategory,
+      lite: options.cost?.viaMarketingLite,
+    })
+    if (!checked.ok) return checked
+    capCheck = checked.value
+  }
+
   try {
     const client = await resolveClient(connection)
     const result = await op(client)
     if (metered) {
       await WhatsAppUsageService.record(connection.workspaceId, 'messages')
     }
-    if (options.costKind && options.to) {
+    // Only a message the provider accepted (it returned an id) is recorded.
+    const providerMessageId = acceptedId(result)
+    if (options.costKind && options.to && providerMessageId) {
       // Never fails the send: the cost service swallows and logs its errors.
       await WhatsAppCostService.record({
         connection,
         kind: options.costKind,
         to: options.to,
         context: options.cost,
+        providerMessageId,
       })
+      if (capCheck) await WhatsAppSpendCapService.afterSend(capCheck)
     }
     return ok(result)
   } catch (error) {

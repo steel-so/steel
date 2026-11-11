@@ -365,6 +365,25 @@ export const WhatsAppBroadcastRepository = {
     }
   },
 
+  /**
+   * zap-spend-cap (ADR 0064): the number's spending cap blocked the send, so
+   * every recipient still PENDING fails with the same reason.
+   */
+  async failPendingRecipients(
+    broadcastListId: string,
+    errorMessage: string,
+  ): Promise<Result<number>> {
+    try {
+      const result = await prisma.whatsAppBroadcastRecipient.updateMany({
+        where: { broadcastListId, status: 'PENDING' },
+        data: { status: 'FAILED', errorMessage },
+      })
+      return ok(result.count)
+    } catch (error) {
+      return err(dbError('Failed to fail pending broadcast recipients', error))
+    }
+  },
+
   async countPendingRecipients(
     broadcastListId: string,
   ): Promise<Result<number>> {

@@ -97,6 +97,25 @@ vi.mock('@/src/services/webhook-emitter', () => ({
   webhookEventId: vi.fn(() => 'evt_test'),
 }))
 
+// zap-spend-cap (ADR 0064): every paid Meta send reads the number's cap and
+// every `failed` status zeroes its ledger entry. Unit default = no cap and
+// nothing to reverse; `whatsapp-spend-cap*.test.ts` re-mock it in the file.
+vi.mock('@/src/repositories/whatsapp-spend-cap.repository', () => ({
+  WhatsAppSpendCapRepository: {
+    findCap: vi.fn(async () => ok(null)),
+    listCaps: vi.fn(async () => ok([])),
+    upsertCap: vi.fn(),
+    deleteCap: vi.fn(async () => ok(false)),
+    findSnapshot: vi.fn(async () => ok(null)),
+    findLatestSnapshot: vi.fn(async () => ok(null)),
+    upsertSnapshot: vi.fn(),
+    sumLedgerSince: vi.fn(async () => ok(0)),
+    reverseFailedEntries: vi.fn(async () => ok(0)),
+    listMetaConnections: vi.fn(async () => ok([])),
+    listCappedConnections: vi.fn(async () => ok([])),
+  },
+}))
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.clearAllMocks()

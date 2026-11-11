@@ -656,8 +656,12 @@ export const CrmNewsletterWhatsAppService = {
       })
       if (!result.ok) {
         const rest = rows.slice(index).map((r) => r.id)
-        if (result.error.code === 'WHATSAPP_MESSAGE_LIMIT_REACHED') {
-          // Monthly Comunicação limit: nothing else goes out this month.
+        if (
+          result.error.code === 'WHATSAPP_MESSAGE_LIMIT_REACHED' ||
+          result.error.code === 'WHATSAPP_SPEND_CAP_REACHED'
+        ) {
+          // Monthly Comunicação limit or the number's spending cap (ADR
+          // 0064): nothing else goes out until an admin acts.
           const marked = await CrmNewsletterWhatsAppRepository.markSkipped(
             rest,
             'LIMIT_REACHED',
