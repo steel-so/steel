@@ -91,6 +91,11 @@ function StatusBadge({ status }: { status: WhatsAppSpendCapStatusDTO }) {
 function CapProgress({ status }: { status: WhatsAppSpendCapStatusDTO }) {
   if (status.monthlyCapAmount === null) return null
   const percent = Math.min(100, status.percent ?? 0)
+  const action =
+    status.capMode === 'BLOCK'
+      ? 'bloqueia envios pagos ao atingir'
+      : 'só avisa ao atingir'
+  const summary = `${formatBrl(status.spent)} de ${formatBrl(status.monthlyCapAmount)} (${status.percent ?? 0}%) · ${action}`
   return (
     <div className='space-y-1.5'>
       <div
@@ -113,13 +118,7 @@ function CapProgress({ status }: { status: WhatsAppSpendCapStatusDTO }) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className='text-muted-foreground text-xs'>
-        {formatBrl(status.spent)} de {formatBrl(status.monthlyCapAmount)} (
-        {status.percent ?? 0}%) ·{' '}
-        {status.capMode === 'BLOCK'
-          ? 'bloqueia envios pagos ao atingir'
-          : 'só avisa ao atingir'}
-      </p>
+      <p className='text-muted-foreground text-xs'>{summary}</p>
     </div>
   )
 }
@@ -174,8 +173,7 @@ export function SpendCapDialog({
         <DialogHeader>
           <DialogTitle>Limite de gasto — {status.label}</DialogTitle>
           <DialogDescription>
-            Gasto do mês até agora: {formatBrl(status.spent)}, pelos dados da
-            Meta. Respostas dentro da janela de 24 horas nunca são bloqueadas.
+            {`Gasto do mês até agora: ${formatBrl(status.spent)}, pelos dados da Meta. Respostas dentro da janela de 24 horas nunca são bloqueadas.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-4'>
@@ -249,6 +247,8 @@ function SpendCapRow({
   status: WhatsAppSpendCapStatusDTO
 }) {
   const [editing, setEditing] = useState(false)
+  const staleNote =
+    status.stale && status.staleReason ? `${status.staleReason} ` : null
   return (
     <li className='space-y-3 rounded-lg border p-4'>
       <div className='flex flex-wrap items-start justify-between gap-2'>
@@ -271,8 +271,7 @@ function SpendCapRow({
             {formatBrl(status.spent)}
           </p>
           <p className='text-muted-foreground text-xs'>
-            Meta {formatBrl(status.metaSpent)} + hoje{' '}
-            {formatBrl(status.ledgerSpent)}
+            {`Meta ${formatBrl(status.metaSpent)} + hoje ${formatBrl(status.ledgerSpent)}`}
           </p>
         </div>
         <div>
@@ -303,8 +302,7 @@ function SpendCapRow({
         <ul className='flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground text-xs'>
           {status.byCategory.map((row) => (
             <li key={row.category}>
-              {row.label}: {formatCount(row.volume)} msg ·{' '}
-              {formatBrl(row.cost)}
+              {`${row.label}: ${formatCount(row.volume)} msg · ${formatBrl(row.cost)}`}
             </li>
           ))}
         </ul>
@@ -317,9 +315,7 @@ function SpendCapRow({
             status.stale ? 'text-destructive' : 'text-muted-foreground',
           )}
         >
-          {status.stale && status.staleReason
-            ? `${status.staleReason} `
-            : null}
+          {staleNote}
           {status.fetchedAt
             ? `Atualizado ${formatFetchedAgo(status.fetchedAt)}, direto da Meta.`
             : 'Ainda não lido na Meta neste mês; mostrando os envios registrados pelo Steel.'}
