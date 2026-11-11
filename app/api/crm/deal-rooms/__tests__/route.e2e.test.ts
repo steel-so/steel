@@ -239,7 +239,7 @@ describe('deal proposals as documents', () => {
     const dealId = await seedDeal(workspace.id, user.cookie)
     const path = `/api/workspaces/${workspace.id}/crm/opportunities/${dealId}/proposal`
     const bad = await postJson(path, { title: 'x'.repeat(201) }, user.cookie)
-    expect(bad.status).toBe(400)
+    expect(bad.status).toBe(422)
     const anon = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
       headers: defaultHeaders,
