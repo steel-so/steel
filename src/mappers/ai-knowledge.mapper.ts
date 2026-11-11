@@ -18,6 +18,7 @@ import {
 } from '@/src/lib/servicedesk/ticket-code'
 import { plateToPlainText } from '@/src/lib/sites/blog/plate'
 import type {
+  KnowledgeCrmDocumentRow,
   KnowledgeCrmNoteRow,
   KnowledgeCrmProposalRow,
   KnowledgeKbArticleRow,
@@ -212,6 +213,34 @@ export function toCrmProposalKnowledge(
       ...row.sections.map((s) => jsonToKnowledgeText(s.content)),
     ]).slice(0, SOURCE_TEXT_MAX),
     path: `/crm/proposals/${row.id}`,
+    updatedAt: row.updatedAt,
+  }
+}
+
+/**
+ * CRM > Documentos (ADR 0063): the prose of the canvas nodes (texts,
+ * headings, lists, tables), without node ids, types or URLs.
+ */
+export function toCrmDocumentKnowledge(
+  workspaceId: string,
+  row: KnowledgeCrmDocumentRow,
+): KnowledgeDocument {
+  const client =
+    row.company?.name ?? row.lead?.name ?? row.person?.name ?? null
+  const nodes = (row.content as { nodes?: unknown } | null)?.nodes
+  return {
+    workspaceId,
+    sourceType: 'crm-document',
+    sourceId: row.id,
+    module: 'CRM',
+    audience: 'PUBLIC',
+    userIds: [],
+    title: row.title,
+    text: joinLines([
+      client ? `Cliente: ${client}` : null,
+      stripHtml(jsonToKnowledgeText(nodes ?? null, SOURCE_TEXT_MAX)),
+    ]).slice(0, SOURCE_TEXT_MAX),
+    path: `/crm/documents/${row.id}`,
     updatedAt: row.updatedAt,
   }
 }

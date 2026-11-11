@@ -6,6 +6,7 @@ import {
 import type { KnowledgeDocument } from '@/src/lib/ai/knowledge/types'
 import { ok, type Result } from '@/src/lib/result'
 import {
+  toCrmDocumentKnowledge,
   toCrmNoteKnowledge,
   toCrmProposalKnowledge,
   toKbArticleKnowledge,
@@ -82,6 +83,10 @@ const LOADERS: Record<KnowledgeSourceType, Loader> = {
   'crm-proposal': simple(
     (ws, o) => AiKnowledgeSourceRepository.crmProposals(ws, o),
     toCrmProposalKnowledge,
+  ),
+  'crm-document': simple(
+    (ws, o) => AiKnowledgeSourceRepository.crmDocuments(ws, o),
+    toCrmDocumentKnowledge,
   ),
 }
 

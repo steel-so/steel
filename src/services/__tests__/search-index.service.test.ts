@@ -38,6 +38,7 @@ function emptySources() {
     'crmCompanies',
     'crmTasks',
     'crmProposals',
+    'crmDocuments',
     'zapContacts',
     'zapConversations',
     'members',

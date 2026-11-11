@@ -27,6 +27,7 @@ const FROM_SEARCH_ENTITY: Partial<
   'sd-kb-article': 'sd-kb-article',
   'sd-ticket': 'sd-ticket',
   'crm-proposal': 'crm-proposal',
+  'crm-document': 'crm-document',
 }
 
 /** Knowledge source fed by a global-search entity type, if any. */

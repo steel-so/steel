@@ -135,6 +135,7 @@ describe('AiKnowledgeSearchService.resolveAccess', () => {
         'zap-knowledge-doc',
         'crm-note',
         'crm-proposal',
+        'crm-document',
       ],
       isSdAgent: true,
       slug: 'demo',
@@ -163,7 +164,11 @@ describe('AiKnowledgeSearchService.resolveAccess', () => {
     const access = expectOk(
       await AiKnowledgeSearchService.resolveAccess(USER, WS),
     )
-    expect(access.types).toEqual(['crm-note', 'crm-proposal'])
+    expect(access.types).toEqual([
+      'crm-note',
+      'crm-proposal',
+      'crm-document',
+    ])
     expect(access.isSdAgent).toBe(false)
     expect(sd.resolve).not.toHaveBeenCalled()
   })

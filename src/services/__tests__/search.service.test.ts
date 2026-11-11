@@ -159,6 +159,7 @@ describe('SearchService.resolveAccess()', () => {
       'crm-company',
       'crm-task',
       'crm-proposal',
+      'crm-document',
       'member',
     ])
     expect(sd.resolve).not.toHaveBeenCalled()
