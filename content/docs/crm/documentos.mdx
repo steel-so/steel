@@ -1,0 +1,148 @@
+---
+title: Documentos
+description: Crie propostas, contratos e orçamentos no editor visual, envie um link rastreado, acompanhe a leitura, receba o aceite e exporte em PDF.
+section: crm
+order: 4
+---
+
+Em **CRM › Documentos** você monta propostas, contratos, orçamentos,
+apresentações, termos e relatórios num editor de arrastar e soltar, envia um
+link que mostra quem leu e por quanto tempo, e recebe o aceite do cliente sem
+sair do Steel. A proposta é um tipo de documento: as propostas antigas foram
+trazidas para cá e os links que você já mandou continuam funcionando.
+
+A tela tem duas abas: **Documentos** e **Modelos**. Filtre por tipo, status e
+responsável, ou busque pelo título. A tabela mostra o cliente, a oportunidade,
+o valor, quantas vezes o documento foi lido e quando foi a última leitura.
+
+## Criar um documento
+
+Clique em **Novo documento** e escolha como começar:
+
+- **Em branco**: dê um título e escolha o tipo (proposta, contrato,
+  orçamento…).
+- **Modelos do workspace**: parte de um modelo salvo pela sua equipe, com o
+  mesmo conteúdo, tema e configurações.
+- **Galeria**: modelos prontos do Steel para cada tipo de documento.
+- **Importar PDF**: envie um PDF ou DOCX e a IA monta o documento editável.
+- **Gerar com IA**: descreva o que precisa e a IA monta as seções.
+
+Nas fichas de **oportunidade**, **empresa**, **pessoa** e **lead** há uma
+seção **Documentos** com os documentos vinculados e o botão **Novo
+documento**, que já cria o documento ligado ao registro. A partir de uma
+oportunidade, ele nasce como proposta.
+
+## Editar
+
+O editor abre em tela cheia. À esquerda ficam os blocos (títulos, textos,
+imagens, tabelas, vídeo, depoimentos, sumário…), os blocos funcionais e as
+camadas; no centro, o documento; à direita, as propriedades do bloco
+selecionado. Tudo é salvo sozinho enquanto você edita.
+
+O documento é dividido em **seções**. Elas formam o sumário, as quebras de
+página e a leitura por seção no Analytics, então dê nomes claros a elas.
+
+Blocos que o leitor usa no link:
+
+- **Aceite**: o botão que registra nome, e-mail, a versão aceita e o
+  navegador.
+- **Tabela de preços**: itens opcionais e quantidades que o leitor pode
+  ajustar; o total acompanha a escolha.
+- **Campos**: texto, e-mail, telefone, número, data, lista, caixa de
+  marcação, CPF e CNPJ. As respostas aparecem na página do documento.
+- **Anexos**, **validade** e **agendar reunião**.
+
+Use variáveis como `{{contato.nome}}`, `{{empresa.nome}}` e
+`{{oportunidade.valor}}` em qualquer texto: cada destinatário vê os próprios
+dados. No editor aparecem valores de exemplo.
+
+Sem nada selecionado, o painel da direita mostra as **configurações do
+documento**:
+
+- **Documento**: tipo e data de validade.
+- **Layout**: página web (rolagem contínua, ótima no celular) ou folhas A4 ou
+  Carta, em retrato ou paisagem.
+- **Leitura**: sumário flutuante, permitir baixar o PDF, pedir nome e e-mail
+  no link geral e avisar quando alguém abrir.
+- **Aceite**: o texto da confirmação que o leitor marca para aceitar.
+- **Tema**: cor principal, fontes e logo.
+
+Use **Pré-visualizar** para ver o documento como o cliente vai ver, no
+computador ou no celular.
+
+<Callout type='nota'>
+  Duas pessoas editando o mesmo documento ao mesmo tempo: se alguém salvar
+  antes, o editor avisa e você escolhe entre carregar a versão salva ou manter
+  a sua.
+</Callout>
+
+## Enviar
+
+Clique em **Enviar** (no editor ou na página do documento). Escolha os
+destinatários entre as pessoas do CRM ou digite nome, e-mail e WhatsApp. Para
+cada um defina:
+
+- **Papel**: **Aprovador** pode aceitar ou recusar; **Leitor** só lê.
+- **Enviar por**: **Link** (você copia e manda como quiser), **E-mail** ou
+  **WhatsApp**.
+
+Acrescente uma mensagem e a validade. Ao enviar, o documento é congelado
+numa **versão** e cada destinatário recebe um link pessoal, que mostra quem
+leu. Há também um **link geral** para colar onde quiser.
+
+Editou depois de enviar? O leitor continua vendo a versão enviada até você
+clicar em **Atualizar versão**. A página do documento avisa quando há
+alterações não enviadas.
+
+Situação: **Rascunho**, **Enviado**, **Visualizado**, **Aceito**,
+**Recusado**, **Expirado** ou **Arquivado**. Aceite e recusa são finais.
+
+## Acompanhar
+
+A página do documento tem quatro abas:
+
+- **Visão geral**: destinatários com situação e link pessoal (copiar,
+  reenviar, remover), o link geral (que pode ser desligado), os vínculos no
+  CRM, quem aceitou ou recusou e as respostas dos campos e da tabela de
+  preços.
+- **Analytics**: tempo total e médio de leitura, leitores, revisitas,
+  encaminhamentos, dispositivos, quanto do documento foi lido, tempo em cada
+  seção e onde as pessoas pararam. Nos modelos, a soma dos documentos criados
+  a partir deles.
+- **Atividade**: tudo o que aconteceu — envio, aberturas, cliques, downloads,
+  respostas, aceite.
+- **Versões**: cada versão enviada, com data e quem enviou.
+
+Pelo menu **⋯** você também pode **Duplicar**, **Salvar como modelo**,
+**Arquivar** e **Excluir**.
+
+## Exportar em PDF
+
+**Exportar PDF** gera o arquivo com o layout e o tema do documento: a versão
+enviada ou, antes do primeiro envio, o rascunho. O destinatário baixa o PDF
+pelo link quando a opção **Permitir baixar PDF** está ligada.
+
+## Importar com IA
+
+Em **Novo documento › Importar PDF**, envie um PDF ou DOCX de até 20 MB e 60
+páginas. A IA lê o arquivo e monta as seções com os blocos do editor: linhas
+como "Nome: \_\_\_\_" viram campos e valores e nomes viram sugestões de
+variáveis. Em **Gerar com IA**, basta descrever o documento. O progresso
+aparece na hora e o documento abre no editor para você revisar.
+
+<Callout type='info'>
+  A importação usa o provedor e a cota de IA do CRM do seu workspace.
+</Callout>
+
+## O que o cliente vê
+
+O link abre bem no celular: cabeçalho com sua marca, o título e o botão de
+baixar o PDF (quando permitido), o sumário flutuante (quando ligado) e um aviso
+no topo quando o documento já foi aceito, recusado ou expirou. Se o link geral
+pede identificação, o leitor informa nome e e-mail antes de ver o conteúdo.
+Não há assinatura: o aceite registra nome, e-mail, a versão e o momento.
+
+<Callout type='admin'>
+  Quem cria, edita e exclui documentos segue o recurso **Documentos** dos
+  perfis de acesso em **Configurações › Perfis de acesso**.
+</Callout>
