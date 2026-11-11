@@ -38,7 +38,8 @@ export const DocumentExpiryService = {
     let notified = 0
 
     for (const doc of candidates.value) {
-      if (!isProposalValidityPast(doc.validUntil, now)) continue
+      const validUntil = doc.validUntil
+      if (!validUntil || !isProposalValidityPast(validUntil, now)) continue
 
       const marked = await DocumentRepository.markExpired(doc.id, now)
       if (!marked.ok) {
@@ -80,9 +81,7 @@ export const DocumentExpiryService = {
           username: doc.owner.name,
           documentTitle: doc.title,
           workspaceName: doc.workspace.name,
-          validUntil: doc.validUntil
-            ? formatProposalValidity(doc.validUntil)
-            : '',
+          validUntil: formatProposalValidity(validUntil),
           documentUrl: `${baseEmailUrl}/${doc.workspace.slug}${documentPath(doc.id)}`,
         })
         notified += 1
