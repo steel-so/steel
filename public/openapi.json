@@ -47793,7 +47793,7 @@
         "tags": ["CRM · Leads"],
         "summary": "Obter proposta ativa do lead",
         "operationId": "getWorkspacesByIdCrmLeadsByLeadIdProposal",
-        "description": "A proposta mais recente vinculada ao lead; `data: null` se não houver.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "A proposta mais recente vinculada ao lead — um documento do tipo `PROPOSAL` (ADR 0063); `data: null` se não houver. Uma proposta antiga ainda não migrada é convertida na hora.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -47810,7 +47810,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Proposta (ou `null`).",
+            "description": "Documento da proposta (ou `null`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -47824,7 +47824,7 @@
                         "data": {
                           "anyOf": [
                             {
-                              "$ref": "#/components/schemas/CrmProposal"
+                              "$ref": "#/components/schemas/CrmDocumentSummary"
                             },
                             {
                               "type": "null"
@@ -47861,7 +47861,7 @@
         "tags": ["CRM · Leads"],
         "summary": "Criar proposta do lead",
         "operationId": "postWorkspacesByIdCrmLeadsByLeadIdProposal",
-        "description": "Transição `OPPORTUNITY` → `PROPOSAL`: exige o lead em `OPPORTUNITY` com ao menos uma reunião registrada. Cria a proposta (rascunho, sem seções; `templateId` opcional) com o usuário como responsável; sem `validUntil`, a validade é hoje + a validade padrão das configurações do CRM.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Transição `OPPORTUNITY` → `PROPOSAL`: exige o lead em `OPPORTUNITY` com ao menos uma reunião registrada. Cria a proposta como documento do tipo `PROPOSAL` em rascunho (`templateId` opcional: um modelo de documento) com o usuário como responsável; sem `validUntil`, a validade é hoje + a validade padrão das configurações do CRM.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -47903,7 +47903,7 @@
         },
         "responses": {
           "201": {
-            "description": "Lead (em `PROPOSAL`) e a proposta criada.",
+            "description": "Lead (em `PROPOSAL`) e o documento da proposta.",
             "content": {
               "application/json": {
                 "schema": {
@@ -47921,7 +47921,7 @@
                               "$ref": "#/components/schemas/CrmLead"
                             },
                             "proposal": {
-                              "$ref": "#/components/schemas/CrmProposal"
+                              "$ref": "#/components/schemas/CrmDocumentSummary"
                             }
                           },
                           "required": ["lead", "proposal"]
@@ -47940,7 +47940,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_2"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_DOCUMENT_TEMPLATE_NOT_FOUND"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_LEAD_STAGE_TRANSITION_INVALID"
@@ -47964,7 +47964,7 @@
         "tags": ["CRM · Leads"],
         "summary": "Listar apresentações de proposta",
         "operationId": "getWorkspacesByIdCrmLeadsByLeadIdProposalByProposalIdPresentations",
-        "description": "Apresentações da proposta `proposalId` (mais recentes primeiro). A proposta precisa ser do lead.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `leads` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Apresentações do documento da proposta `proposalId` (mais recentes primeiro). O documento precisa ser uma proposta do lead.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `leads` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -47982,7 +47982,7 @@
             "name": "proposalId",
             "in": "path",
             "required": true,
-            "description": "ID da proposta.",
+            "description": "ID do documento da proposta.",
             "schema": {
               "type": "string"
             }
@@ -48021,7 +48021,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_LEAD_PROPOSAL_NOT_FOUND_CRM_PROPOSAL_NOT_FOUND"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_LEAD_PROPOSAL_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -48055,7 +48055,7 @@
             "name": "proposalId",
             "in": "path",
             "required": true,
-            "description": "ID da proposta.",
+            "description": "ID do documento da proposta.",
             "schema": {
               "type": "string"
             }
@@ -48139,7 +48139,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_LEAD_PROPOSAL_NOT_FOUND_CRM_PROPOSAL_NOT_FOUND"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_LEAD_PROPOSAL_NOT_FOUND"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_LEAD_STAGE_TRANSITION_INVALID_3"
@@ -58524,6 +58524,95 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/opportunities/{opportunityId}/proposal": {
+      "post": {
+        "tags": ["CRM · Oportunidades"],
+        "summary": "Gerar proposta da oportunidade",
+        "operationId": "postWorkspacesByIdCrmOpportunitiesByOpportunityIdProposal",
+        "description": "Cria um documento do tipo `PROPOSAL` em rascunho (ADR 0063) vinculado à oportunidade, à empresa e ao ponto de contato dela. Sem `templateId`, o documento começa com capa, a tabela de preços com os itens da oportunidade e o bloco de aceite; a validade é hoje + a validade padrão do CRM.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "opportunityId",
+            "in": "path",
+            "required": true,
+            "description": "ID da oportunidade.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "example": {
+                "title": "Proposta — Implantação 2027"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Documento da proposta criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmDocumentSummary"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_OPPORTUNITY_NOT_FOUND_DOCUMENT_TEMPLATE_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/opportunities/{opportunityId}/room": {
       "get": {
         "tags": ["CRM · Oportunidades"],
@@ -58597,7 +58686,7 @@
         "tags": ["CRM · Oportunidades"],
         "summary": "Criar ou editar a sala de negociação",
         "operationId": "putWorkspacesByIdCrmOpportunitiesByOpportunityIdRoom",
-        "description": "Cria a sala no primeiro uso e depois edita: liga/desliga o link, proposta exibida, materiais (links) e plano de ação conjunto. Materiais e ações são substituídos pelo que vier (os ausentes saem; os com `id` são atualizados). `rotateToken` troca o link.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `opportunities` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Cria a sala no primeiro uso e depois edita: liga/desliga o link, documento exibido (`documentId`, um documento da oportunidade — normalmente a proposta; o cliente só vê depois do envio), materiais (links) e plano de ação conjunto. Materiais e ações são substituídos pelo que vier (os ausentes saem; os com `id` são atualizados). `rotateToken` troca o link.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `opportunities` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -58645,6 +58734,16 @@
                     ]
                   },
                   "proposalId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "documentId": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -174123,6 +174222,40 @@
           }
         }
       },
+      "404_CRM_OPPORTUNITY_NOT_FOUND_DOCUMENT_TEMPLATE_NOT_FOUND": {
+        "description": "Não encontrado: `CRM_OPPORTUNITY_NOT_FOUND`, `DOCUMENT_TEMPLATE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_OPPORTUNITY_NOT_FOUND": {
+                "summary": "CRM_OPPORTUNITY_NOT_FOUND — Oportunidade inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Oportunidade não encontrada",
+                  "error": {
+                    "code": "CRM_OPPORTUNITY_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_TEMPLATE_NOT_FOUND": {
+                "summary": "DOCUMENT_TEMPLATE_NOT_FOUND — `templateId` não é um modelo de documento do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Modelo de documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_TEMPLATE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_CRM_PROPOSAL_CHARGE_NOT_FOUND": {
         "description": "Não encontrado: `CRM_PROPOSAL_CHARGE_NOT_FOUND`",
         "content": {
@@ -176380,8 +176513,8 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_CRM_LEAD_PROPOSAL_NOT_FOUND_CRM_PROPOSAL_NOT_FOUND": {
-        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_LEAD_PROPOSAL_NOT_FOUND`, `CRM_PROPOSAL_NOT_FOUND`",
+      "404_RESOURCE_NOT_FOUND_CRM_LEAD_PROPOSAL_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_LEAD_PROPOSAL_NOT_FOUND`",
         "content": {
           "application/json": {
             "schema": {
@@ -176399,19 +176532,8 @@
                   }
                 }
               },
-              "CRM_PROPOSAL_NOT_FOUND": {
-                "summary": "CRM_PROPOSAL_NOT_FOUND — Proposta inexistente",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Proposta não encontrada",
-                  "error": {
-                    "code": "CRM_PROPOSAL_NOT_FOUND"
-                  }
-                }
-              },
               "CRM_LEAD_PROPOSAL_NOT_FOUND": {
-                "summary": "CRM_LEAD_PROPOSAL_NOT_FOUND — A proposta é de outro lead",
+                "summary": "CRM_LEAD_PROPOSAL_NOT_FOUND — Documento inexistente, de outro lead ou que não é proposta",
                 "value": {
                   "success": false,
                   "statusCode": 404,
@@ -176880,6 +177002,40 @@
                   "message": "Link da TV inválido ou revogado. Peça um novo link a quem administra o painel.",
                   "error": {
                     "code": "CRM_TV_LINK_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_DOCUMENT_TEMPLATE_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `DOCUMENT_TEMPLATE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Lead inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmLead not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_TEMPLATE_NOT_FOUND": {
+                "summary": "DOCUMENT_TEMPLATE_NOT_FOUND — `templateId` não é um modelo de documento do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Modelo de documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_TEMPLATE_NOT_FOUND"
                   }
                 }
               }
@@ -200575,7 +200731,8 @@
               "sd-ticket",
               "zap-knowledge-doc",
               "crm-note",
-              "crm-proposal"
+              "crm-proposal",
+              "crm-document"
             ],
             "example": "wiki-page"
           },
@@ -200897,7 +201054,8 @@
                           "sd-ticket",
                           "zap-knowledge-doc",
                           "crm-note",
-                          "crm-proposal"
+                          "crm-proposal",
+                          "crm-document"
                         ]
                       },
                       "label": {
@@ -209716,7 +209874,19 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Proposta antiga (antes do ADR 0063)."
+          },
+          "documentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Documento exibido na sala (ganha da proposta)."
           },
           "materials": {
             "type": "array",
@@ -209900,6 +210070,7 @@
           "title",
           "welcomeMessage",
           "proposalId",
+          "documentId",
           "materials",
           "actions",
           "visitors",
@@ -209934,6 +210105,183 @@
           "proposalSignatureEnabled",
           "renewalLeadDays",
           "renewalAutoCreate"
+        ]
+      },
+      "CrmDocumentSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "DECLINED", "EXPIRED", "ARCHIVED"]
+          },
+          "title": {
+            "type": "string"
+          },
+          "isTemplate": {
+            "type": "boolean"
+          },
+          "templateId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalValue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "companyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opportunityId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "leadId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "Página do documento no workspace (`/crm/documents/<id>`)."
+          },
+          "publicPath": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Link público (`/d/<token>`); null em modelos."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "kind",
+          "status",
+          "title",
+          "isTemplate",
+          "templateId",
+          "totalValue",
+          "validUntil",
+          "sentAt",
+          "acceptedAt",
+          "acceptedByName",
+          "companyId",
+          "personId",
+          "opportunityId",
+          "leadId",
+          "ownerId",
+          "path",
+          "publicPath",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "CrmDuplicate": {
@@ -215676,7 +216024,26 @@
             "type": "string"
           },
           "proposalId": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Proposta antiga (apresentações anteriores ao ADR 0063)."
+          },
+          "documentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Documento (proposta) apresentado."
           },
           "presentedAt": {
             "type": "string",
@@ -215712,6 +216079,7 @@
           "id",
           "leadId",
           "proposalId",
+          "documentId",
           "presentedAt",
           "format",
           "amount",
@@ -249639,6 +250007,7 @@
               "crm-company",
               "crm-task",
               "crm-proposal",
+              "crm-document",
               "zap-conversation",
               "zap-contact",
               "member",
