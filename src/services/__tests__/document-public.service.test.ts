@@ -388,7 +388,9 @@ describe('DocumentPublicService.accept()', () => {
   })
 
   it('logs a failed owner e-mail without failing the accept', async () => {
-    ownerEmail.mockRejectedValue(new Error('smtp down'))
+    ownerEmail.mockRejectedValueOnce('smtp down')
+    expectOk(await DocumentPublicService.accept('tok', EVIDENCE, input))
+    ownerEmail.mockRejectedValueOnce(new Error('smtp down'))
     expectOk(await DocumentPublicService.accept('tok', EVIDENCE, input))
     await vi.waitFor(() =>
       expect(logger.warn).toHaveBeenCalledWith(
@@ -536,12 +538,14 @@ describe('DocumentPublicService.decline()', () => {
   })
 
   it('names an anonymous reader of the generic link', async () => {
+    const noAgent = { ip: '198.51.100.1', userAgent: null }
     expectOk(
-      await DocumentPublicService.decline('tok', EVIDENCE, { versionId: 'v1' }),
+      await DocumentPublicService.decline('tok', noAgent, { versionId: 'v1' }),
     )
     expect(responseRepo.answer.mock.calls[0][0]).toMatchObject({
       name: null,
       reason: null,
+      userAgent: null,
     })
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ readerName: 'O leitor do link' }),
