@@ -46,7 +46,7 @@ function Unavailable({ title, body }: { title: string; body: string }) {
 /**
  * Public link of a document (`/d/<token>`, ADR 0063): the version sent to
  * the reader, rendered by the documents viewer. An expired document stays
- * readable, but can no longer be accepted.
+ * readable (the viewer says it can no longer be accepted).
  */
 export default async function PublicDocumentPage({ params }: PageProps) {
   // Live state (status, answers): never prerender.
@@ -71,20 +71,6 @@ export default async function PublicDocumentPage({ params }: PageProps) {
     )
   }
 
-  const data = result.value
-  return (
-    <>
-      {data.document.status === 'EXPIRED' ? (
-        <div
-          role='status'
-          className='border-border border-b bg-muted px-4 py-3 text-center text-muted-foreground text-sm'
-        >
-          A validade deste documento terminou. Você ainda pode lê-lo, mas não é
-          mais possível aceitá-lo. Fale com quem o enviou para receber uma
-          versão atualizada.
-        </div>
-      ) : null}
-      <DocumentViewer data={data} />
-    </>
-  )
+  // The viewer renders the expired, accepted and declined banners itself.
+  return <DocumentViewer data={result.value} />
 }
