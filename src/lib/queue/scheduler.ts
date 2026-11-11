@@ -19,6 +19,7 @@ import {
   CrmWorkflowScheduleJob,
   DatabaseBackupJob,
   DataRetentionJob,
+  DocumentsExpiryJob,
   NotificationsJob,
   SearchReindexJob,
   SendingDomainsJob,
@@ -63,6 +64,7 @@ import {
   getCrmWorkflowScheduleQueue,
   getDatabaseBackupQueue,
   getDataRetentionQueue,
+  getDocumentsExpiryQueue,
   getNotificationsQueue,
   getSearchReindexQueue,
   getSendingDomainsQueue,
@@ -110,6 +112,7 @@ import {
   CrmTaskRemindersCron,
   CrmWorkflowScheduleCron,
   DatabaseBackupCron,
+  DocumentsExpiryCron,
   NotificationsAiActionExpiryCron,
   RetentionCron,
   RetentionTimezone,
@@ -931,6 +934,22 @@ export async function scheduleCrmNewsletterAutomationJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_newsletter_automation_registered', {
     component: 'Worker',
     ...cron,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** documents backend (ADR 0063): daily expiry of sent documents (00:10). */
+export async function scheduleDocumentsExpiryJobs(): Promise<void> {
+  const queue = getDocumentsExpiryQueue()
+  await queue.upsertJobScheduler(
+    DocumentsExpiryJob.RunTick,
+    { pattern: DocumentsExpiryCron, tz: RetentionTimezone },
+    { name: DocumentsExpiryJob.RunTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.documents_expiry_registered', {
+    component: 'Worker',
+    pattern: DocumentsExpiryCron,
     timezone: RetentionTimezone,
   })
 }

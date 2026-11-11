@@ -62,6 +62,8 @@ export const QueueName = {
   CrmCnpjEnrichment: 'crm-cnpj-enrichment',
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
+  // documents backend (ADR 0063): daily expiry of sent documents
+  DocumentsExpiry: 'documents-expiry',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1246,4 +1248,19 @@ export type DocumentsPdfJob =
 export type DocumentsPdfJobPayload = {
   [DocumentsPdfJob.Render]: { exportId: string }
   [DocumentsPdfJob.PruneExpired]: Record<string, never>
+}
+
+/**
+ * documents backend (ADR 0063): daily tick that expires sent/viewed
+ * documents past their validity (`DocumentExpiryService.expireDue`).
+ */
+export const DocumentsExpiryJob = {
+  RunTick: 'run-tick',
+} as const
+
+export type DocumentsExpiryJob =
+  (typeof DocumentsExpiryJob)[keyof typeof DocumentsExpiryJob]
+
+export type DocumentsExpiryJobPayload = {
+  [DocumentsExpiryJob.RunTick]: Record<string, never>
 }
