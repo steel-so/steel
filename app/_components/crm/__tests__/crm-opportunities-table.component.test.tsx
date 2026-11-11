@@ -18,6 +18,7 @@ vi.mock('@/lib/notify', () => ({ notify }))
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
   usePathname: () => '/acme/crm/opportunities',
+  useParams: () => ({ 'workspace-slug': 'acme' }),
 }))
 
 const OPPORTUNITY = {
@@ -118,6 +119,7 @@ describe('<CrmOpportunitiesTable />', { timeout: 15_000 }, () => {
       ),
     ).toBeTruthy()
     expect(screen.getByText('Atividade')).toBeTruthy()
+    expect(screen.getByText('Gerar proposta')).toBeTruthy()
   })
 
   it('parses a pt-BR decimal amount typed inline', async () => {
