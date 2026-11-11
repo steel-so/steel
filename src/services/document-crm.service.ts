@@ -185,9 +185,9 @@ export const DocumentCrmService = {
       if (!template.ok) return template
       if (!template.value?.isTemplate) return err(documentTemplateNotFound())
       built = {
-        content: template.value.content as Prisma.InputJsonValue,
-        theme: template.value.theme as Prisma.InputJsonValue,
-        settings: template.value.settings as Prisma.InputJsonValue,
+        content: template.value.content as unknown as Prisma.InputJsonValue,
+        theme: template.value.theme as unknown as Prisma.InputJsonValue,
+        settings: template.value.settings as unknown as Prisma.InputJsonValue,
         templateId: template.value.id,
         totalValue:
           template.value.totalValue === null
@@ -215,8 +215,8 @@ export const DocumentCrmService = {
       )
       built = {
         content: outline.content as unknown as Prisma.InputJsonValue,
-        theme: outline.theme as Prisma.InputJsonValue,
-        settings: DEFAULT_DOCUMENT_SETTINGS as Prisma.InputJsonValue,
+        theme: outline.theme as unknown as Prisma.InputJsonValue,
+        settings: DEFAULT_DOCUMENT_SETTINGS as unknown as Prisma.InputJsonValue,
         templateId: null,
         totalValue: items.value.length > 0 ? round2(total) : null,
       }
