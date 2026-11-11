@@ -56,6 +56,8 @@ export const QueueName = {
   AiProactive: 'ai-proactive',
   WhatsappArchive: 'whatsapp-archive',
   SendingDomains: 'sending-domains',
+  // zap-spend-cap (ADR 0064)
+  WhatsappMetaSpend: 'whatsapp-meta-spend',
   CrmNewsletter: 'crm-newsletter',
   CrmNewsletterAutomation: 'crm-newsletter-automation',
   WhatsappChatbot: 'whatsapp-chatbot',
@@ -63,8 +65,6 @@ export const QueueName = {
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
   DocumentsAi: 'documents-ai',
-  // zap-spend-cap (ADR 0064)
-  WhatsappMetaSpend: 'whatsapp-meta-spend',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1094,6 +1094,22 @@ export type SendingDomainsJobPayload = {
 }
 
 /**
+ * zap-spend-cap (ADR 0064): `refresh-tick` every 15 min re-reads Meta's spend
+ * of every number with a monthly cap, so the block works when nobody opens
+ * the costs page.
+ */
+export const WhatsappMetaSpendJob = {
+  RefreshTick: 'refresh-tick',
+} as const
+
+export type WhatsappMetaSpendJob =
+  (typeof WhatsappMetaSpendJob)[keyof typeof WhatsappMetaSpendJob]
+
+export type WhatsappMetaSpendJobPayload = {
+  [WhatsappMetaSpendJob.RefreshTick]: Record<string, never>
+}
+
+/**
  * CRM newsletter issues (ADR 0054): `tick` (every minute) starts the due
  * SCHEDULED issues, gives stuck rows back and re-dispatches what is still
  * pending; `dispatch` claims one batch of recipients of an issue, sends it
@@ -1264,20 +1280,4 @@ export type DocumentsAiJob =
 
 export type DocumentsAiJobPayload = {
   [DocumentsAiJob.Import]: { importId: string; title?: string }
-}
-
-/**
- * zap-spend-cap (ADR 0064): `refresh-tick` every 15 min re-reads Meta's spend
- * of every number with a monthly cap, so the block works when nobody opens
- * the costs page.
- */
-export const WhatsappMetaSpendJob = {
-  RefreshTick: 'refresh-tick',
-} as const
-
-export type WhatsappMetaSpendJob =
-  (typeof WhatsappMetaSpendJob)[keyof typeof WhatsappMetaSpendJob]
-
-export type WhatsappMetaSpendJobPayload = {
-  [WhatsappMetaSpendJob.RefreshTick]: Record<string, never>
 }

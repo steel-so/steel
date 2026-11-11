@@ -349,6 +349,10 @@ async function main(): Promise<void> {
     registerWorker(QueueName.WhatsappArchive, processWhatsappArchive),
   )
   workers.push(registerWorker(QueueName.SendingDomains, processSendingDomains))
+  // zap-spend-cap (ADR 0064): Meta spend of capped numbers.
+  workers.push(
+    registerWorker(QueueName.WhatsappMetaSpend, processWhatsappMetaSpend),
+  )
   workers.push(registerWorker(QueueName.CrmNewsletter, processCrmNewsletter))
   workers.push(
     registerWorker(
@@ -366,10 +370,6 @@ async function main(): Promise<void> {
     registerWorker(QueueName.DocumentsPdf, processDocumentsPdf, {
       concurrency: 1,
     }),
-  )
-  // zap-spend-cap (ADR 0064): Meta spend of capped numbers.
-  workers.push(
-    registerWorker(QueueName.WhatsappMetaSpend, processWhatsappMetaSpend),
   )
 
   failureListener = startJobFailureListener(
@@ -417,10 +417,10 @@ async function main(): Promise<void> {
   await scheduleSitePostsJobs()
   await scheduleWhatsappArchiveJobs()
   await scheduleSendingDomainsJobs()
+  await scheduleWhatsappMetaSpendJobs()
   await scheduleCrmNewsletterJobs()
   await scheduleCrmNewsletterAutomationJobs()
   await scheduleDocumentsPdfJobs()
-  await scheduleWhatsappMetaSpendJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

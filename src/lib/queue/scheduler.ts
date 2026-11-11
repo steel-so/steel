@@ -885,6 +885,22 @@ export async function scheduleSendingDomainsJobs(): Promise<void> {
   })
 }
 
+/** zap-spend-cap (ADR 0064): Meta spend of capped numbers every 15 min. */
+export async function scheduleWhatsappMetaSpendJobs(): Promise<void> {
+  const queue = getWhatsappMetaSpendQueue()
+  await queue.upsertJobScheduler(
+    WhatsappMetaSpendJob.RefreshTick,
+    { pattern: WhatsappMetaSpendCron, tz: RetentionTimezone },
+    { name: WhatsappMetaSpendJob.RefreshTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.whatsapp_meta_spend_registered', {
+    component: 'Worker',
+    pattern: WhatsappMetaSpendCron,
+    timezone: RetentionTimezone,
+  })
+}
+
 /** CRM newsletter (ADR 0054): every minute. */
 export async function scheduleCrmNewsletterJobs(): Promise<void> {
   const queue = getCrmNewsletterQueue()
@@ -934,22 +950,6 @@ export async function scheduleCrmNewsletterAutomationJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_newsletter_automation_registered', {
     component: 'Worker',
     ...cron,
-    timezone: RetentionTimezone,
-  })
-}
-
-/** zap-spend-cap (ADR 0064): Meta spend of capped numbers every 15 min. */
-export async function scheduleWhatsappMetaSpendJobs(): Promise<void> {
-  const queue = getWhatsappMetaSpendQueue()
-  await queue.upsertJobScheduler(
-    WhatsappMetaSpendJob.RefreshTick,
-    { pattern: WhatsappMetaSpendCron, tz: RetentionTimezone },
-    { name: WhatsappMetaSpendJob.RefreshTick, data: {} },
-  )
-
-  logger.info('queue.scheduler.whatsapp_meta_spend_registered', {
-    component: 'Worker',
-    pattern: WhatsappMetaSpendCron,
     timezone: RetentionTimezone,
   })
 }
