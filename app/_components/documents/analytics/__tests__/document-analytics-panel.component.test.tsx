@@ -176,6 +176,23 @@ describe('DocumentAnalyticsPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('names the period when it has no reading', async () => {
+    const empty = createFakeDocumentAnalyticsDTO({
+      totals: {
+        ...createFakeDocumentAnalyticsDTO().totals,
+        sessions: 0,
+      },
+    })
+    setup(empty)
+    await screen.findByText(/Ninguém abriu este documento ainda/)
+
+    fireEvent.click(screen.getByRole('tab', { name: '30 dias' }))
+
+    expect(
+      await screen.findByText('Nenhuma leitura nos últimos 30 dias.'),
+    ).toBeInTheDocument()
+  })
+
   it('explains the empty state of a template', async () => {
     const empty = createFakeDocumentAnalyticsDTO({
       totals: {
