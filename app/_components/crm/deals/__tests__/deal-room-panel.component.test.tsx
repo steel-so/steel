@@ -16,7 +16,7 @@ const ROOM = {
   title: null,
   welcomeMessage: null,
   proposalId: null,
-  documentId: 'doc1',
+  documentId: 'doc1' as string | null,
   materials: [],
   actions: [],
   visitors: [],

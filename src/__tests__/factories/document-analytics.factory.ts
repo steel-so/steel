@@ -63,8 +63,14 @@ export interface SeedDocumentOptions {
 
 /** A document (sent by default, with a current version) and its owner. */
 export async function seedDocument(options: SeedDocumentOptions = {}) {
-  const workspaceId = options.workspaceId ?? (await seedWorkspace()).id
   const ownerId = options.ownerId ?? (await seedUser()).id
+  const workspaceId = options.workspaceId ?? (await seedWorkspace()).id
+  if (!options.workspaceId) {
+    // The public link answers only while the CRM module is on.
+    await prisma.workspaceModuleAccess.create({
+      data: { workspaceId, module: 'CRM', enabled: true, grantedById: ownerId },
+    })
+  }
   const content = options.content ?? documentContent(DEFAULT_SECTIONS)
   const sent = options.sent ?? !options.isTemplate
   const document = await prisma.document.create({

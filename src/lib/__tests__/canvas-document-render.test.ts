@@ -271,7 +271,7 @@ describe('editor and public renders', () => {
     expect(out).toContain('id="d-field-f"')
     expect(out).toContain('Pré-visualização')
     expect(out).toContain(`${DOC_TRACK_ATTR}="video"`)
-    expect(out).not.toContain('d-float-toc')
+    expect(out).not.toContain('aria-label="Sumário do documento"')
   })
 
   it('adds the floating table of contents when the settings ask', () => {
