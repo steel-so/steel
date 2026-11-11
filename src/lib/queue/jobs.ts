@@ -63,6 +63,8 @@ export const QueueName = {
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
   DocumentsAi: 'documents-ai',
+  // zap-spend-cap (ADR 0064)
+  WhatsappMetaSpend: 'whatsapp-meta-spend',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1262,4 +1264,20 @@ export type DocumentsAiJob =
 
 export type DocumentsAiJobPayload = {
   [DocumentsAiJob.Import]: { importId: string; title?: string }
+}
+
+/**
+ * zap-spend-cap (ADR 0064): `refresh-tick` every 15 min re-reads Meta's spend
+ * of every number with a monthly cap, so the block works when nobody opens
+ * the costs page.
+ */
+export const WhatsappMetaSpendJob = {
+  RefreshTick: 'refresh-tick',
+} as const
+
+export type WhatsappMetaSpendJob =
+  (typeof WhatsappMetaSpendJob)[keyof typeof WhatsappMetaSpendJob]
+
+export type WhatsappMetaSpendJobPayload = {
+  [WhatsappMetaSpendJob.RefreshTick]: Record<string, never>
 }

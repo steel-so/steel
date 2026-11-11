@@ -73,6 +73,7 @@ import { processWhatsappButtonActions } from '../src/lib/queue/processors/whatsa
 import { processWhatsappChatbot } from '../src/lib/queue/processors/whatsapp-chatbot'
 import { processWhatsappConversationLifecycle } from '../src/lib/queue/processors/whatsapp-conversation-lifecycle'
 import { processWhatsappMedia } from '../src/lib/queue/processors/whatsapp-media'
+import { processWhatsappMetaSpend } from '../src/lib/queue/processors/whatsapp-meta-spend'
 import { processWhatsappSentiment } from '../src/lib/queue/processors/whatsapp-sentiment'
 import { processWorkspaceExport } from '../src/lib/queue/processors/workspace-export'
 import { processWorkspaceIntegrations } from '../src/lib/queue/processors/workspace-integrations'
@@ -118,6 +119,7 @@ import {
   scheduleWhatsappAutomationsJobs,
   scheduleWhatsappBroadcastJobs,
   scheduleWhatsappConversationLifecycleJobs,
+  scheduleWhatsappMetaSpendJobs,
   scheduleWorkspaceExportJobs,
   scheduleWorkspaceIntegrationsJobs,
 } from '../src/lib/queue/scheduler'
@@ -365,6 +367,10 @@ async function main(): Promise<void> {
       concurrency: 1,
     }),
   )
+  // zap-spend-cap (ADR 0064): Meta spend of capped numbers.
+  workers.push(
+    registerWorker(QueueName.WhatsappMetaSpend, processWhatsappMetaSpend),
+  )
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -414,6 +420,7 @@ async function main(): Promise<void> {
   await scheduleCrmNewsletterJobs()
   await scheduleCrmNewsletterAutomationJobs()
   await scheduleDocumentsPdfJobs()
+  await scheduleWhatsappMetaSpendJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {
