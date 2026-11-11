@@ -10,6 +10,7 @@ import {
   crmWorkflowInvalidDefinition,
   whatsappConversationLimitReached,
   whatsappMessageLimitReached,
+  whatsappSpendCapReached,
   workspaceStatusConflict,
 } from '@/src/errors/app-error'
 import { ERROR_CODES } from '@/src/errors/codes'
@@ -44,6 +45,7 @@ describe('AppError factories — registry contract', () => {
     aiQuotaExceeded: [1, 2],
     whatsappConversationLimitReached: [1, 2],
     whatsappMessageLimitReached: [1, 2],
+    whatsappSpendCapReached: [1500, 1499.9],
     workspaceExportLimitReached: [
       'Mensagem de teste',
       new Date('2026-10-09T03:00:00.000Z'),
@@ -112,6 +114,15 @@ describe('AppError factories — parametrized messages', () => {
     expect(messages.code).toBe('WHATSAPP_MESSAGE_LIMIT_REACHED')
     expect(messages.message).toContain('20.000 de 20.000')
     expect(messages.details).toEqual({ used: 20000, limit: 20000 })
+  })
+
+  it('formats the WhatsApp spend cap in BRL and keeps the raw numbers', () => {
+    const error = whatsappSpendCapReached(1500, 1499.8)
+    expect(error.code).toBe('WHATSAPP_SPEND_CAP_REACHED')
+    expect(error.message).toContain('1.499,80')
+    expect(error.message).toContain('1.500,00')
+    expect(error.message).toContain('só avisar')
+    expect(error.details).toEqual({ cap: 1500, spent: 1499.8 })
   })
 
   it('passes required messages through unchanged', () => {

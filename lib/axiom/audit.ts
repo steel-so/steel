@@ -330,6 +330,8 @@ export type AuditEntity =
   | 'document_export'
   // CRM > Documentos (ADR 0063): AI import of a PDF/DOCX or a prompt
   | 'document_import'
+  // zap-spend-cap: monthly spending cap per WhatsApp number (ADR 0064)
+  | 'whatsapp_spend_cap'
 
 export type AuditAction =
   | 'create'

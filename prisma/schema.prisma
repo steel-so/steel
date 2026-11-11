@@ -1253,6 +1253,9 @@ model WhatsAppConnection {
   costEntries    WhatsAppCostEntry[]
   chatbots       WhatsAppChatbot[]
   coexistenceSync WhatsAppCoexistenceSync?
+  // zap-spend-cap: monthly spending cap and Meta spend snapshots (ADR 0064)
+  spendCap           WhatsAppSpendCap?
+  metaSpendSnapshots WhatsAppMetaSpendSnapshot[]
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
@@ -1808,12 +1811,19 @@ model WhatsAppCostEntry {
   estimatedCost  Decimal              @map("estimated_cost") @db.Decimal(14, 6)
   /// Sent through Marketing Messages Lite (nov: meta-followups).
   viaMarketingLite Boolean            @default(false) @map("via_marketing_lite")
+  /// zap-spend-cap: provider message id (Meta `wamid`) of the accepted send,
+  /// so a `failed` status webhook can reverse the entry (ADR 0064).
+  providerMessageId String?           @map("provider_message_id")
+  /// zap-spend-cap: the provider reported the message as failed; the cost was
+  /// zeroed at this instant (Meta does not bill failed messages).
+  reversedAt        DateTime?         @map("reversed_at")
 
   workspace  Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, occurredAt])
   @@index([connectionId, occurredAt])
+  @@index([providerMessageId])
   @@map("whatsapp_cost_entries")
 }
 
@@ -13720,4 +13730,65 @@ model DocumentImport {
 
   @@index([workspaceId, createdAt])
   @@map("document_imports")
+}
+
+// zap-spend-cap: monthly spending cap per WhatsApp number, fed by Meta's real
+// numbers (ADR 0064).
+
+enum WhatsAppSpendCapMode {
+  /// Only notifies admins at 80% and 100%.
+  WARN
+  /// Also refuses paid (template) sends that would cross the cap.
+  BLOCK
+}
+
+enum WhatsAppMetaSpendSource {
+  /// Meta's own `COST` metric (pricing_analytics).
+  META_COST
+  /// Meta's `VOLUME` metric x the workspace price table (COST refused).
+  META_VOLUME
+}
+
+/// Monthly spending cap of one Comunicação Meta connection, in BRL. No row =
+/// no cap. Editable by OWNER/ADMIN (ADR 0064).
+model WhatsAppSpendCap {
+  id               String               @id @default(cuid())
+  workspaceId      String               @map("workspace_id")
+  connectionId     String               @unique @map("connection_id")
+  monthlyCapAmount Decimal              @map("monthly_cap_amount") @db.Decimal(12, 2)
+  capMode          WhatsAppSpendCapMode @default(WARN) @map("cap_mode")
+  updatedById      String?              @map("updated_by_id")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("whatsapp_spend_caps")
+}
+
+/// Last successful read of a number's month spend from Meta (closed UTC days
+/// `[periodStart, periodEnd)`), kept so a Meta outage never zeroes the spend.
+/// One row per connection and usage month (`YYYY-MM`, America/Sao_Paulo).
+model WhatsAppMetaSpendSnapshot {
+  id           String                  @id @default(cuid())
+  workspaceId  String                  @map("workspace_id")
+  connectionId String                  @map("connection_id")
+  month        String                  @db.VarChar(7)
+  cost         Decimal                 @db.Decimal(14, 6)
+  currency     String                  @default("BRL") @db.VarChar(3)
+  source       WhatsAppMetaSpendSource
+  /// `[{ category, volume, billableVolume, cost }]` as Meta reported it.
+  byCategory   Json                    @map("by_category")
+  periodStart  DateTime                @map("period_start")
+  periodEnd    DateTime                @map("period_end")
+  fetchedAt    DateTime                @map("fetched_at")
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+
+  connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, month])
+  @@index([workspaceId])
+  @@map("whatsapp_meta_spend_snapshots")
 }

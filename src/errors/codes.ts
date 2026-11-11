@@ -1647,6 +1647,13 @@ export const ERROR_CODES = {
     status: 422,
   },
   DOCUMENT_IMPORT_FAILED: { code: 'DOCUMENT_IMPORT_FAILED', status: 502 },
+  // zap-spend-cap (ADR 0064): the number's monthly spending cap (BLOCK mode)
+  // refuses a paid template send. Like the usage limits, retrying won't help
+  // until an admin raises the cap, switches to WARN or the month turns.
+  WHATSAPP_SPEND_CAP_REACHED: {
+    code: 'WHATSAPP_SPEND_CAP_REACHED',
+    status: 402,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

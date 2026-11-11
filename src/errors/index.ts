@@ -504,3 +504,5 @@ export {
   widgetOriginNotAllowed,
   widgetVisitorInvalid,
 } from './app-error'
+// zap-spend-cap
+export { whatsappSpendCapReached } from './app-error'

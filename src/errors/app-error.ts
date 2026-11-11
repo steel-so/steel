@@ -2553,3 +2553,19 @@ export const documentImportFailed = (message?: string): AppError =>
     'DOCUMENT_IMPORT_FAILED',
     message ?? 'A IA não conseguiu montar o documento. Tente de novo.',
   )
+
+const SPEND_BRL = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+})
+
+/** zap-spend-cap (ADR 0064): paid send refused by the number's monthly cap. */
+export const whatsappSpendCapReached = (
+  cap: number,
+  spent: number,
+): AppError =>
+  appError(
+    'WHATSAPP_SPEND_CAP_REACHED',
+    `O limite de gasto mensal deste número foi atingido (${SPEND_BRL.format(spent)} de ${SPEND_BRL.format(cap)} neste mês, pelos dados da Meta). Mensagens de template (pagas) estão bloqueadas; respostas dentro da janela de 24 horas continuam liberadas. Para liberar agora, um administrador pode aumentar o limite ou mudar o modo para "só avisar" em Comunicação > Relatórios > Custos.`,
+    { cap, spent },
+  )
