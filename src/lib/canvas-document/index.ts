@@ -22,6 +22,17 @@ export type {
 } from './context'
 export { type DocumentFieldInfo, documentFields } from './fields'
 export {
+  type DocumentOutline,
+  type DocumentOutlineBlock,
+  DocumentOutlineBlockSchema,
+  type DocumentOutlineLeafBlock,
+  DocumentOutlineSchema,
+  type DocumentOutlineSection,
+  DocumentOutlineSectionSchema,
+  type OutlineToDocumentResult,
+  outlineToDocument,
+} from './outline'
+export {
   DOCUMENT_PRICING_TYPE,
   type DocumentPricingTotals,
   documentPricingItems,
@@ -30,3 +41,9 @@ export {
 } from './pricing'
 export { type RenderDocumentHtmlInput, renderDocumentHtml } from './render'
 export { type DocumentSectionInfo, documentSections } from './sections'
+export {
+  DOCUMENT_STARTERS,
+  type DocumentStarterMeta,
+  getDocumentStarter,
+} from './starters'
+export { DocumentView, type DocumentViewProps } from './view'
