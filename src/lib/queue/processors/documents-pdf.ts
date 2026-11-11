@@ -176,7 +176,7 @@ export async function renderDocumentExport(
 ): Promise<RenderResult> {
   const now = deps.now ?? (() => new Date())
   const job = unwrap(await DocumentExportRepository.findRenderJob(exportId))
-  if (!job || job.status !== 'PENDING') {
+  if (job?.status !== 'PENDING') {
     logger.warn('queue.documents_pdf.skipped', {
       component: 'Worker',
       exportId,
