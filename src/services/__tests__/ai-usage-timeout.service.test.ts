@@ -41,6 +41,7 @@ import { AI_TASK_TIMEOUT_MS } from '@/src/lib/ai/models'
 import { WorkspaceAiGuardrailsRepository } from '@/src/repositories/ai-guardrails.repository'
 import {
   AiUsageRepository,
+  UserAiPreferenceRepository,
   WorkspaceAiSettingsRepository,
 } from '@/src/repositories/ai-settings.repository'
 import { AiUsageService } from '../ai-usage.service'
@@ -51,6 +52,7 @@ function setup() {
   vi.mocked(WorkspaceAiSettingsRepository.findByWorkspace).mockResolvedValue(
     ok(createFakeWorkspaceAiSettings()),
   )
+  vi.mocked(UserAiPreferenceRepository.find).mockResolvedValue(ok(null))
   vi.mocked(AiUsageRepository.sumSince).mockResolvedValue(
     ok({ inputTokens: 0, outputTokens: 0, costUsd: 0 }),
   )
