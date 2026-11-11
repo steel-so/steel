@@ -28,7 +28,7 @@ import {
   toCrmLeadReopeningDTO,
 } from '@/src/mappers/crm-lead.mapper'
 import { toCrmPersonDTO } from '@/src/mappers/crm-person.mapper'
-import { toCrmProposalDTO } from '@/src/mappers/crm-proposal.mapper'
+import { toCrmDocumentSummaryDTO } from '@/src/mappers/document-crm.mapper'
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmLeadRoutingRuleRepository } from '@/src/repositories/crm-lead-routing-rule.repository'
 import { CrmLeadScoringRuleRepository } from '@/src/repositories/crm-lead-scoring-rule.repository'
@@ -58,17 +58,18 @@ import type {
   CrmLeadQualificationDTO,
   CrmLeadReopeningDTO,
 } from '@/types/crm-lead'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type { CrmPersonDTO } from '@/types/crm-person'
-import type { CrmProposalDTO } from '@/types/crm-proposal'
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import {
   notifyCrmDealClosed,
   notifyCrmLeadAssigned,
   notifyCrmLeadCreated,
 } from './crm-notifications'
-import { resolveProposalValidUntil } from './crm-proposal.service'
 import { CrmSettingsService } from './crm-settings.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
+import { DocumentCrmService } from './document-crm.service'
+import { DocumentLegacyImportService } from './document-legacy-import.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 import { emitWebhookEvent } from './webhook-emitter'
 
@@ -183,16 +184,20 @@ async function furthestReachableStage(
   workspaceId: string,
   leadId: string,
 ): Promise<Result<CrmLeadStage>> {
-  const [attempts, qualification, proposal] = await Promise.all([
+  const [attempts, qualification, document, legacy] = await Promise.all([
     CrmLeadRepository.listContactAttempts(leadId),
     CrmLeadRepository.findQualification(leadId),
+    DocumentCrmService.latestProposalForLead(workspaceId, leadId),
+    // Until the migration reaches it, a legacy proposal still counts.
     CrmProposalRepository.findLatestByLeadId(leadId, workspaceId),
   ])
   if (!attempts.ok) return attempts
   if (!qualification.ok) return qualification
-  if (!proposal.ok) return proposal
+  if (!document.ok) return document
+  if (!legacy.ok) return legacy
 
-  if (proposal.value && qualification.value) return ok('PROPOSAL')
+  const hasProposal = Boolean(document.value ?? legacy.value)
+  if (hasProposal && qualification.value) return ok('PROPOSAL')
   if (qualification.value) return ok('OPPORTUNITY')
   if (attempts.value.some((a) => a.outcome === 'REACHED')) {
     return ok('QUALIFIED')
@@ -224,6 +229,27 @@ function emitLeadUpdated(
     changedFields,
     leadEvents,
   })
+}
+
+/**
+ * The proposal document `documentId` of the lead (ADR 0063); not found
+ * when it is gone, belongs to another lead or is not a proposal.
+ */
+async function leadProposalDocument(
+  workspaceId: string,
+  leadId: string,
+  documentId: string,
+): Promise<Result<true>> {
+  const document = await DocumentCrmService.findInWorkspace(
+    workspaceId,
+    documentId,
+  )
+  if (!document.ok) return document
+  const doc = document.value
+  if (!doc || doc.leadId !== leadId || doc.kind !== 'PROPOSAL') {
+    return err(crmLeadProposalNotFound())
+  }
+  return ok(true)
 }
 
 export const CrmLeadService = {
@@ -628,11 +654,15 @@ export const CrmLeadService = {
     return ok(toCrmPersonDTO(resolved.value.person))
   },
 
+  /**
+   * The lead's proposal document (ADR 0063). A legacy proposal the
+   * migration hasn't reached yet is converted now.
+   */
   async getActiveProposal(
     actorId: string,
     workspaceId: string,
     leadId: string,
-  ): Promise<Result<CrmProposalDTO | null>> {
+  ): Promise<Result<CrmDocumentSummaryDTO | null>> {
     const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
       resource: 'documents',
       action: 'VIEW',
@@ -642,13 +672,30 @@ export const CrmLeadService = {
     const lead = await CrmLeadRepository.findById(leadId, workspaceId)
     if (!lead.ok) return lead
 
-    const result = await CrmProposalRepository.findLatestByLeadId(
+    const document = await DocumentCrmService.latestProposalForLead(
+      workspaceId,
+      leadId,
+    )
+    if (!document.ok) return document
+    if (document.value) return ok(toCrmDocumentSummaryDTO(document.value))
+
+    const legacy = await CrmProposalRepository.findLatestByLeadId(
       leadId,
       workspaceId,
     )
-    if (!result.ok) return result
+    if (!legacy.ok) return legacy
+    if (!legacy.value) return ok(null)
 
-    return ok(result.value ? toCrmProposalDTO(result.value) : null)
+    const imported = await DocumentLegacyImportService.importProposal(
+      legacy.value.id,
+    )
+    if (!imported.ok) return imported
+    const migrated = await DocumentCrmService.findInWorkspace(
+      workspaceId,
+      imported.value.documentId,
+    )
+    if (!migrated.ok) return migrated
+    return ok(migrated.value ? toCrmDocumentSummaryDTO(migrated.value) : null)
   },
 
   // --- 01 Recebido -> 02 Em Contato / 02 -> 03 Qualificado ---
@@ -929,13 +976,14 @@ export const CrmLeadService = {
     return ok(result.value.map(toCrmLeadMeetingDTO))
   },
 
-  // OPPORTUNITY -> PROPOSAL: criar a proposta é a transição.
+  // OPPORTUNITY -> PROPOSAL: criar a proposta é a transição. A proposta é
+  // um documento do tipo PROPOSAL (ADR 0063).
   async createProposal(
     actorId: string,
     workspaceId: string,
     leadId: string,
     dto: CreateCrmLeadProposalDTO,
-  ): Promise<Result<{ lead: CrmLeadDTO; proposal: CrmProposalDTO }>> {
+  ): Promise<Result<{ lead: CrmLeadDTO; proposal: CrmDocumentSummaryDTO }>> {
     const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
       resource: 'documents',
       action: 'CREATE',
@@ -962,22 +1010,16 @@ export const CrmLeadService = {
       )
     }
 
-    const validUntil = await resolveProposalValidUntil(
+    const proposal = await DocumentCrmService.createProposal(
+      actorId,
       workspaceId,
-      dto.validUntil,
+      {
+        title: dto.name,
+        templateId: dto.templateId,
+        leadId,
+        validUntil: dto.validUntil,
+      },
     )
-    if (!validUntil.ok) return validUntil
-
-    const proposal = await CrmProposalRepository.create({
-      workspaceId,
-      createdById: actorId,
-      name: dto.name,
-      templateId: dto.templateId,
-      leadId,
-      responsibleId: actorId,
-      validUntil: validUntil.value,
-      sections: [],
-    })
     if (!proposal.ok) return proposal
 
     const advanced = await CrmLeadRepository.update(leadId, {
@@ -991,17 +1033,13 @@ export const CrmLeadService = {
       action: 'update',
       actorId,
       targetId: leadId,
-      meta: { proposalCreated: proposal.value.id },
+      meta: { proposalDocumentCreated: proposal.value.id },
     })
 
     emitLeadUpdated(workspaceId, actorId, lead.value, advanced.value, ['stage'])
 
     void indexSearchDocument('crm-lead', workspaceId, leadId)
-    void indexSearchDocument('crm-proposal', workspaceId, proposal.value.id)
-    return ok({
-      lead: toCrmLeadDTO(advanced.value),
-      proposal: toCrmProposalDTO(proposal.value),
-    })
+    return ok({ lead: toCrmLeadDTO(advanced.value), proposal: proposal.value })
   },
 
   // --- 05 Proposta (inclui o Termômetro de Interesse) ---
@@ -1010,7 +1048,7 @@ export const CrmLeadService = {
     actorId: string,
     workspaceId: string,
     leadId: string,
-    proposalId: string,
+    documentId: string,
     dto: RegisterCrmLeadProposalPresentationDTO,
   ): Promise<
     Result<{ lead: CrmLeadDTO; presentation: CrmLeadProposalPresentationDTO }>
@@ -1031,18 +1069,12 @@ export const CrmLeadService = {
       )
     }
 
-    const proposal = await CrmProposalRepository.findById(
-      proposalId,
-      workspaceId,
-    )
-    if (!proposal.ok) return proposal
-    if (proposal.value.leadId !== leadId) {
-      return err(crmLeadProposalNotFound())
-    }
+    const document = await leadProposalDocument(workspaceId, leadId, documentId)
+    if (!document.ok) return document
 
     const presentation = await CrmLeadRepository.createProposalPresentation({
       leadId,
-      proposalId,
+      documentId,
       createdById: actorId,
       presentedAt: dto.presentedAt,
       format: dto.format,
@@ -1071,7 +1103,7 @@ export const CrmLeadService = {
     actorId: string,
     workspaceId: string,
     leadId: string,
-    proposalId: string,
+    documentId: string,
   ): Promise<Result<CrmLeadProposalPresentationDTO[]>> {
     const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
       resource: 'leads',
@@ -1082,18 +1114,12 @@ export const CrmLeadService = {
     const lead = await CrmLeadRepository.findById(leadId, workspaceId)
     if (!lead.ok) return lead
 
-    const proposal = await CrmProposalRepository.findById(
-      proposalId,
-      workspaceId,
-    )
-    if (!proposal.ok) return proposal
-    if (proposal.value.leadId !== leadId) {
-      return err(crmLeadProposalNotFound())
-    }
+    const document = await leadProposalDocument(workspaceId, leadId, documentId)
+    if (!document.ok) return document
 
     const result = await CrmLeadRepository.listProposalPresentations(
       leadId,
-      proposalId,
+      documentId,
     )
     if (!result.ok) return result
 

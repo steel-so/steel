@@ -86,10 +86,13 @@ describe('toCrmLeadProposalPresentationDTO()', () => {
     const presentation = createFakeCrmLeadProposalPresentation({
       id: 'pp-1',
       amount: new Prisma.Decimal(2500),
+      documentId: 'doc-1',
     })
     const dto = toCrmLeadProposalPresentationDTO(presentation)
     expect(dto.id).toBe('pp-1')
     expect(dto.amount).toBe(2500)
+    expect(dto.documentId).toBe('doc-1')
+    expect(dto.proposalId).toBeNull()
   })
 })
 

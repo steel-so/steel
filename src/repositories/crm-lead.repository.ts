@@ -405,7 +405,8 @@ export const CrmLeadRepository = {
 
   async createProposalPresentation(data: {
     leadId: string
-    proposalId: string
+    /** Proposal document (ADR 0063). */
+    documentId: string
     createdById: string
     presentedAt: Date
     format: CrmLeadProposalFormat
@@ -425,14 +426,14 @@ export const CrmLeadRepository = {
     }
   },
 
-  /** Apresentações do lead — só as da proposta `proposalId`, quando dado. */
+  /** Apresentações do lead — só as do documento `documentId`, quando dado. */
   async listProposalPresentations(
     leadId: string,
-    proposalId?: string,
+    documentId?: string,
   ): Promise<Result<CrmLeadProposalPresentation[]>> {
     try {
       const presentations = await prisma.crmLeadProposalPresentation.findMany({
-        where: proposalId ? { leadId, proposalId } : { leadId },
+        where: documentId ? { leadId, documentId } : { leadId },
         orderBy: { presentedAt: 'desc' },
       })
       return ok(presentations)

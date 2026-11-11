@@ -121,7 +121,10 @@ export interface CrmLeadMeetingDTO {
 export interface CrmLeadProposalPresentationDTO {
   id: string
   leadId: string
-  proposalId: string
+  /** Legacy proposal (presentations registered before ADR 0063). */
+  proposalId: string | null
+  /** Proposal document presented. */
+  documentId: string | null
   presentedAt: string
   format: CrmLeadProposalFormatDTO
   amount: number

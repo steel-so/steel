@@ -248,20 +248,10 @@ describe('CrmLeadRepository', () => {
     it('should list presentations for the lead', async () => {
       const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
       const lead = await seedCrmLead(workspace.id, user.id)
-      const proposal = await prisma.crmProposal.create({
-        data: {
-          name: 'Proposta X',
-          leadId: lead.id,
-          responsibleId: user.id,
-          workspaceId: workspace.id,
-          createdById: user.id,
-          shareToken: `${lead.id}-token`,
-        },
-      })
 
       await CrmLeadRepository.createProposalPresentation({
         leadId: lead.id,
-        proposalId: proposal.id,
+        documentId: 'doc-1',
         createdById: user.id,
         presentedAt: new Date(),
         format: 'ONLINE',
@@ -277,27 +267,13 @@ describe('CrmLeadRepository', () => {
       expect(Number(list[0]?.amount)).toBe(1500)
     })
 
-    it('should list only the given proposal presentations', async () => {
+    it('should list only the given proposal document presentations', async () => {
       const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
       const lead = await seedCrmLead(workspace.id, user.id)
-      const [first, second] = await Promise.all(
-        ['A', 'B'].map((suffix) =>
-          prisma.crmProposal.create({
-            data: {
-              name: `Proposta ${suffix}`,
-              leadId: lead.id,
-              responsibleId: user.id,
-              workspaceId: workspace.id,
-              createdById: user.id,
-              shareToken: `${lead.id}-${suffix}`,
-            },
-          }),
-        ),
-      )
-      for (const proposal of [first, second]) {
+      for (const documentId of ['doc-a', 'doc-b']) {
         await CrmLeadRepository.createProposalPresentation({
           leadId: lead.id,
-          proposalId: proposal.id,
+          documentId,
           createdById: user.id,
           presentedAt: new Date(),
           format: 'ONLINE',
@@ -308,9 +284,10 @@ describe('CrmLeadRepository', () => {
       }
 
       const list = expectOk(
-        await CrmLeadRepository.listProposalPresentations(lead.id, first.id),
+        await CrmLeadRepository.listProposalPresentations(lead.id, 'doc-a'),
       )
-      expect(list.map((p) => p.proposalId)).toEqual([first.id])
+      expect(list.map((p) => p.documentId)).toEqual(['doc-a'])
+      expect(list[0]?.proposalId).toBeNull()
     })
   })
 
@@ -554,7 +531,7 @@ describe('CrmLeadRepository (lifecycle and failures)', () => {
     expectErr(
       await CrmLeadRepository.createProposalPresentation({
         leadId: 'missing',
-        proposalId: 'missing',
+        documentId: 'missing',
         createdById: user.id,
         presentedAt: new Date(),
         format: 'ONLINE',

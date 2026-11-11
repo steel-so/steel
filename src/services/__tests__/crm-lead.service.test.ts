@@ -11,7 +11,8 @@ import {
 import { createFakeCrmSettings } from '@/src/__tests__/factories/crm-settings.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { ok } from '@/src/lib/result'
+import { documentTemplateNotFound } from '@/src/errors'
+import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/services/crm-notifications')
 vi.mock('@/src/repositories/membership.repository')
@@ -22,9 +23,23 @@ vi.mock('@/src/repositories/crm-person.repository')
 vi.mock('@/src/repositories/crm-proposal.repository')
 vi.mock('@/src/repositories/crm-settings.repository')
 vi.mock('@/src/services/crm-workflow-dispatcher')
+vi.mock('@/src/services/document-crm.service', () => ({
+  DocumentCrmService: {
+    createProposal: vi.fn(),
+    latestProposalForLead: vi.fn(),
+    findInWorkspace: vi.fn(),
+  },
+}))
+vi.mock('@/src/services/document-legacy-import.service', () => ({
+  DocumentLegacyImportService: { importProposal: vi.fn() },
+}))
 
 import { createFakeCrmPerson } from '@/src/__tests__/factories/crm-person.factory'
 import { createFakeCrmProposal } from '@/src/__tests__/factories/crm-proposal.factory'
+import {
+  createFakeCrmDocumentSummaryDTO,
+  createFakeDocument,
+} from '@/src/__tests__/factories/document-migration.factory'
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmLeadRoutingRuleRepository } from '@/src/repositories/crm-lead-routing-rule.repository'
 import { CrmLeadScoringRuleRepository } from '@/src/repositories/crm-lead-scoring-rule.repository'
@@ -36,6 +51,7 @@ import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-mo
 import { notifyCrmLeadCreated } from '@/src/services/crm-notifications'
 import { CrmLeadService } from '../crm-lead.service'
 import { dispatchCrmWorkflowRecordEvent } from '../crm-workflow-dispatcher'
+import { DocumentCrmService } from '../document-crm.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
 const mockedLeadRepo = vi.mocked(CrmLeadRepository)
@@ -45,8 +61,10 @@ const mockedPersonRepo = vi.mocked(CrmPersonRepository)
 const mockedProposalRepo = vi.mocked(CrmProposalRepository)
 const mockedDispatch = vi.mocked(dispatchCrmWorkflowRecordEvent)
 const mockedSettingsRepo = vi.mocked(CrmSettingsRepository)
+const mockedDocuments = vi.mocked(DocumentCrmService)
 
 beforeEach(() => {
+  mockedDocuments.latestProposalForLead.mockResolvedValue(ok(null))
   // Sem configurações salvas -> valores padrão (reabre em RECEIVED, 15 dias).
   mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
 })
@@ -478,7 +496,7 @@ describe('CrmLeadService', () => {
   })
 
   describe('createProposal()', () => {
-    it('should advance OPPORTUNITY -> PROPOSAL when a meeting exists', async () => {
+    it('should create a proposal document and advance OPPORTUNITY -> PROPOSAL', async () => {
       mockMember()
       mockedLeadRepo.findById.mockResolvedValue(
         ok(createFakeCrmLead({ id: 'l1', stage: 'OPPORTUNITY' })),
@@ -486,54 +504,49 @@ describe('CrmLeadService', () => {
       mockedLeadRepo.listMeetings.mockResolvedValue(
         ok([createFakeCrmLeadMeeting({ leadId: 'l1' })]),
       )
-      mockedProposalRepo.create.mockResolvedValue(
-        ok({
-          ...createFakeCrmProposal({ id: 'p1', leadId: 'l1' }),
-          sections: [],
-        }),
+      mockedDocuments.createProposal.mockResolvedValue(
+        ok(createFakeCrmDocumentSummaryDTO({ id: 'd1', leadId: 'l1' })),
       )
       mockedLeadRepo.update.mockResolvedValue(
         ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
       )
+      const validUntil = new Date('2026-12-31T12:00:00.000Z')
 
       const result = expectOk(
         await CrmLeadService.createProposal('u1', 'ws1', 'l1', {
           name: 'Proposta X',
+          templateId: 'tpl-1',
+          validUntil,
         }),
       )
       expect(result.lead.stage).toBe('PROPOSAL')
-      expect(result.proposal.id).toBe('p1')
+      expect(result.proposal.id).toBe('d1')
+      expect(mockedDocuments.createProposal).toHaveBeenCalledWith(
+        'u1',
+        'ws1',
+        { title: 'Proposta X', templateId: 'tpl-1', leadId: 'l1', validUntil },
+      )
     })
 
-    it('should default the validity to the workspace setting', async () => {
+    it('should keep the stage when the document cannot be created', async () => {
       mockMember()
-      mockedSettingsRepo.findByWorkspace.mockResolvedValue(
-        ok(createFakeCrmSettings({ proposalValidityDays: 30 })),
-      )
       mockedLeadRepo.findById.mockResolvedValue(
         ok(createFakeCrmLead({ id: 'l1', stage: 'OPPORTUNITY' })),
       )
       mockedLeadRepo.listMeetings.mockResolvedValue(
         ok([createFakeCrmLeadMeeting({ leadId: 'l1' })]),
       )
-      mockedProposalRepo.create.mockResolvedValue(
-        ok({ ...createFakeCrmProposal({ id: 'p1' }), sections: [] }),
-      )
-      mockedLeadRepo.update.mockResolvedValue(
-        ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
+      mockedDocuments.createProposal.mockResolvedValue(
+        err(documentTemplateNotFound()),
       )
 
-      expectOk(
+      expectErr(
         await CrmLeadService.createProposal('u1', 'ws1', 'l1', {
           name: 'Proposta X',
         }),
+        'DOCUMENT_TEMPLATE_NOT_FOUND',
       )
-
-      const validUntil = mockedProposalRepo.create.mock.calls[0]?.[0]
-        .validUntil as Date
-      const days = (validUntil.getTime() - Date.now()) / 86_400_000
-      expect(days).toBeGreaterThan(29)
-      expect(days).toBeLessThanOrEqual(31)
+      expect(mockedLeadRepo.update).not.toHaveBeenCalled()
     })
 
     it('should reject creating a proposal with no meeting registered', async () => {
@@ -553,22 +566,27 @@ describe('CrmLeadService', () => {
   })
 
   describe('registerProposalPresentation()', () => {
-    it('should register a presentation for the lead proposal', async () => {
+    const input = {
+      presentedAt: new Date(),
+      format: 'ONLINE' as const,
+      amount: 1500,
+      interestLevel: 'HIGH' as const,
+      interactionsCount: 2,
+    }
+
+    it('should register a presentation for the lead proposal document', async () => {
       mockMember()
       mockedLeadRepo.findById.mockResolvedValue(
         ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
       )
-      mockedProposalRepo.findById.mockResolvedValue(
-        ok({
-          ...createFakeCrmProposal({ id: 'p1', leadId: 'l1' }),
-          sections: [],
-        }),
+      mockedDocuments.findInWorkspace.mockResolvedValue(
+        ok(createFakeDocument({ id: 'd1', leadId: 'l1' })),
       )
       mockedLeadRepo.createProposalPresentation.mockResolvedValue(
         ok(
           createFakeCrmLeadProposalPresentation({
             leadId: 'l1',
-            proposalId: 'p1',
+            documentId: 'd1',
           }),
         ),
       )
@@ -578,47 +596,43 @@ describe('CrmLeadService', () => {
           'u1',
           'ws1',
           'l1',
-          'p1',
-          {
-            presentedAt: new Date(),
-            format: 'ONLINE',
-            amount: 1500,
-            interestLevel: 'HIGH',
-            interactionsCount: 2,
-          },
+          'd1',
+          input,
         ),
       )
       expect(result.presentation.leadId).toBe('l1')
+      expect(result.presentation.documentId).toBe('d1')
+      expect(mockedDocuments.findInWorkspace).toHaveBeenCalledWith('ws1', 'd1')
+      expect(mockedLeadRepo.createProposalPresentation).toHaveBeenCalledWith(
+        expect.objectContaining({ leadId: 'l1', documentId: 'd1' }),
+      )
     })
 
-    it('should reject a proposal that belongs to another lead', async () => {
-      mockMember()
-      mockedLeadRepo.findById.mockResolvedValue(
-        ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
-      )
-      mockedProposalRepo.findById.mockResolvedValue(
-        ok({
-          ...createFakeCrmProposal({ id: 'p1', leadId: 'other-lead' }),
-          sections: [],
-        }),
-      )
+    it('should reject a document of another lead, not a proposal or gone', async () => {
+      const docs = [
+        createFakeDocument({ id: 'd1', leadId: 'other' }),
+        createFakeDocument({ id: 'd1', leadId: 'l1', kind: 'CONTRACT' }),
+        null,
+      ]
+      for (const doc of docs) {
+        mockMember()
+        mockedLeadRepo.findById.mockResolvedValue(
+          ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
+        )
+        mockedDocuments.findInWorkspace.mockResolvedValue(ok(doc))
 
-      expectErr(
-        await CrmLeadService.registerProposalPresentation(
-          'u1',
-          'ws1',
-          'l1',
-          'p1',
-          {
-            presentedAt: new Date(),
-            format: 'ONLINE',
-            amount: 1500,
-            interestLevel: 'HIGH',
-            interactionsCount: 2,
-          },
-        ),
-        'CRM_LEAD_PROPOSAL_NOT_FOUND',
-      )
+        expectErr(
+          await CrmLeadService.registerProposalPresentation(
+            'u1',
+            'ws1',
+            'l1',
+            'd1',
+            input,
+          ),
+          'CRM_LEAD_PROPOSAL_NOT_FOUND',
+        )
+      }
+      expect(mockedLeadRepo.createProposalPresentation).not.toHaveBeenCalled()
     })
   })
 
@@ -854,7 +868,7 @@ describe('CrmLeadService', () => {
     function mockGateRecords(records: {
       attempts?: ('ATTEMPTED' | 'REACHED')[]
       qualified?: boolean
-      proposal?: boolean
+      proposal?: 'document' | 'legacy'
     }) {
       mockedLeadRepo.listContactAttempts.mockResolvedValue(
         ok(
@@ -872,12 +886,44 @@ describe('CrmLeadService', () => {
       )
       mockedProposalRepo.findLatestByLeadId.mockResolvedValue(
         ok(
-          records.proposal
+          records.proposal === 'legacy'
             ? { ...createFakeCrmProposal({ leadId: 'l1' }), sections: [] }
             : null,
         ),
       )
+      mockedDocuments.latestProposalForLead.mockResolvedValue(
+        ok(
+          records.proposal === 'document'
+            ? createFakeDocument({ leadId: 'l1' })
+            : null,
+        ),
+      )
     }
+
+    it('should reopen at PROPOSAL when a proposal document or legacy proposal exists', async () => {
+      for (const proposal of ['document', 'legacy'] as const) {
+        mockedLeadRepo.reopen.mockClear()
+        mockMember()
+        mockedSettingsRepo.findByWorkspace.mockResolvedValue(
+          ok(createFakeCrmSettings({ leadReopenStage: 'PROPOSAL' })),
+        )
+        mockedLeadRepo.findById.mockResolvedValue(
+          ok(createFakeLostCrmLead({ id: 'l1' })),
+        )
+        mockGateRecords({ attempts: ['REACHED'], qualified: true, proposal })
+        mockedLeadRepo.reopen.mockResolvedValue(
+          ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
+        )
+
+        expectOk(
+          await CrmLeadService.reopen('u1', 'ws1', 'l1', { reason: 'Retomou' }),
+        )
+        expect(mockedLeadRepo.reopen).toHaveBeenCalledWith(
+          'l1',
+          expect.objectContaining({ toStage: 'PROPOSAL' }),
+        )
+      }
+    })
 
     it('should move a lost lead back to the first stage by default', async () => {
       mockMember()
