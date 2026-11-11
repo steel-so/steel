@@ -282,6 +282,33 @@ describe('DocumentImportDialog', () => {
     expect(progress).toHaveTextContent('Entendendo a estrutura')
   })
 
+  it('should tell where the document goes when closed mid-build', async () => {
+    const running = importDto({
+      status: 'RUNNING',
+      progress: { step: 'structure', message: 'Entendendo', pct: 30 },
+    })
+    const { onOpenChange } = setup({ frames: [running], latest: running })
+    await screen.findByTestId('site-ai-cost')
+    pickFile(pdfFile())
+    fireEvent.click(screen.getByTestId('document-import-submit'))
+    await screen.findByTestId('document-import-progress')
+    await waitFor(() =>
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '30',
+      ),
+    )
+
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    })
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+    expect(notify.info).toHaveBeenCalledWith(
+      expect.stringContaining('continua montando'),
+    )
+  })
+
   it('should explain when the AI is unavailable', async () => {
     setup({
       ctx: context({
