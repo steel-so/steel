@@ -121,6 +121,20 @@ describe('POST /api/workspaces/[id]/crm/documents/imports', () => {
     expect(res.status).toBe(403)
   })
 
+  it('should refuse a fourth import while three are in flight', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    await Promise.all([1, 2, 3].map(() => seedImport(workspace.id, user.id)))
+
+    const res = await postJson(
+      imports(workspace.id),
+      { mode: 'PROMPT', kind: 'PROPOSAL', prompt: 'Proposta de PABX' },
+      user.cookie,
+    )
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error.code).toBe('CONFLICT')
+  })
+
   it('should start a prompt import or explain why the AI is off', async () => {
     const { user, workspace } = await authenticatedOwner()
 
