@@ -62,6 +62,7 @@ export const QueueName = {
   CrmCnpjEnrichment: 'crm-cnpj-enrichment',
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
+  DocumentsLegacyImport: 'documents-legacy-import',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1246,4 +1247,23 @@ export type DocumentsPdfJob =
 export type DocumentsPdfJobPayload = {
   [DocumentsPdfJob.Render]: { exportId: string }
   [DocumentsPdfJob.PruneExpired]: Record<string, never>
+}
+
+/**
+ * Migration of the legacy CRM proposals into documents (ADR 0063). `run` is
+ * enqueued once on worker boot (fixed job id) and fans out one
+ * `import-workspace` per workspace with legacy templates or proposals.
+ * Idempotent by `legacyTemplateId`/`legacyProposalId`.
+ */
+export const DocumentsLegacyImportJob = {
+  Run: 'run',
+  ImportWorkspace: 'import-workspace',
+} as const
+
+export type DocumentsLegacyImportJob =
+  (typeof DocumentsLegacyImportJob)[keyof typeof DocumentsLegacyImportJob]
+
+export type DocumentsLegacyImportJobPayload = {
+  [DocumentsLegacyImportJob.Run]: Record<string, never>
+  [DocumentsLegacyImportJob.ImportWorkspace]: { workspaceId: string }
 }

@@ -329,6 +329,9 @@ export type AuditEntity =
   // documents-pdf: PDF exports of CRM > Documentos (ADR 0063).
   | 'document_export'
 
+  // documents docs-migration (ADR 0063)
+  | 'document'
+
 export type AuditAction =
   | 'create'
   | 'update'
