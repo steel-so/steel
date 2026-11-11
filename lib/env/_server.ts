@@ -95,6 +95,7 @@ const serverEnv = {
   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:
     process.env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
   NEXT_CACHE_TAGS_TIMEOUT_MS: process.env.NEXT_CACHE_TAGS_TIMEOUT_MS,
+  CHROMIUM_PATH: process.env.CHROMIUM_PATH,
 }
 
 /** String opcional que trata `""` como ausente (não só `undefined`). */
@@ -501,6 +502,10 @@ export const serverEnvSchema = z.object({
       .regex(/^[1-9][0-9]{0,4}$/, 'NEXT_CACHE_TAGS_TIMEOUT_MS must be a positive integer')
       .optional(),
   ),
+  // documents-pdf (ADR 0063): Chromium binary the worker prints PDFs with
+  // (`/usr/bin/chromium` in the Docker image). Unset = Playwright's own
+  // download (`pnpm exec playwright install chromium`), for local runs.
+  CHROMIUM_PATH: blankOptional,
 }).superRefine(requireBillingCredentials)
 
 const validatedServerEnv =
@@ -601,6 +606,7 @@ export const {
   DB_POOL_MAX,
   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
   NEXT_CACHE_TAGS_TIMEOUT_MS,
+  CHROMIUM_PATH,
 } = validatedServerEnv
 
 /** The Steel Canvas playground opens in dev/test, and in production only

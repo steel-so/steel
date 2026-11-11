@@ -35,7 +35,7 @@
     "docker:start": "docker compose -f docker-compose.infra.yml start",
     "docker:stop": "docker compose -f docker-compose.infra.yml stop",
     "worker:dev": "tsx --tsconfig tsconfig.worker.json --env-file=.env --watch worker/index.ts",
-    "worker:build": "esbuild worker/index.ts --bundle --platform=node --target=node20 --alias:server-only=./worker/server-only.shim.ts --outfile=dist/worker.cjs --external:argon2 --external:@prisma/client --external:.prisma/client",
+    "worker:build": "esbuild worker/index.ts --bundle --platform=node --target=node20 --alias:server-only=./worker/server-only.shim.ts --outfile=dist/worker.cjs --external:argon2 --external:@prisma/client --external:.prisma/client --external:playwright-core",
     "worker": "node dist/worker.cjs",
     "realtime:dev": "tsx --tsconfig tsconfig.worker.json --env-file=.env --watch realtime/index.ts",
     "realtime:build": "esbuild realtime/index.ts --bundle --platform=node --target=node20 --alias:server-only=./realtime/server-only.shim.ts --outfile=dist/realtime.cjs --external:argon2 --external:@prisma/client --external:.prisma/client",
