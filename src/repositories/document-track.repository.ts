@@ -1,5 +1,6 @@
 import {
   type DocumentEventType,
+  type DocumentKind,
   type DocumentStatus,
   Prisma,
 } from '@prisma/client'
@@ -36,6 +37,9 @@ export interface DocumentTrackContext {
     id: string
     workspaceId: string
     title: string
+    kind: DocumentKind
+    /** Before this session marked it: `null` = first view ever. */
+    firstViewedAt: Date | null
     ownerId: string
     settings: Prisma.JsonValue
     owner: { id: string; name: string; email: string }
@@ -162,6 +166,8 @@ export const DocumentTrackRepository = {
             id: true,
             workspaceId: true,
             title: true,
+            kind: true,
+            firstViewedAt: true,
             ownerId: true,
             settings: true,
             owner: { select: { id: true, name: true, email: true } },

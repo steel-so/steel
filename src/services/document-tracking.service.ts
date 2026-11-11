@@ -18,6 +18,7 @@ import {
 import { assertModuleEnabled } from './authz'
 import { resolveDocumentToken } from './document-track-token'
 import { emitNotification } from './notification-emitter'
+import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
 
 /**
  * Beacons of the public link `/d/<token>` (ADR 0063). A beacon opens the
@@ -250,7 +251,31 @@ async function onSessionOpened(session: OpenedSession): Promise<void> {
 
   if (context.ok && context.value) {
     await notifyOwner(session, context.value, forwarded)
+    await dispatchFirstProposalView(context.value)
   }
+}
+
+/**
+ * Steel Agents: the first view ever of a proposal fires
+ * `crm.proposal.viewed`, as the legacy proposals did (same payload keys,
+ * plus `documentId`). Claimed in Redis so racing first sessions fire once.
+ */
+async function dispatchFirstProposalView(
+  context: DocumentTrackContext,
+): Promise<void> {
+  const { document } = context
+  if (document.kind !== 'PROPOSAL' || document.firstViewedAt) return
+  const claimed = await DocumentAnalyticsCache.claimViewNotification(
+    document.id,
+    'agent:first-view',
+  )
+  if (!claimed) return
+  await dispatchSteelAgentEvent(document.workspaceId, 'crm.proposal.viewed', {
+    proposalId: document.id,
+    documentId: document.id,
+    name: document.title,
+    responsibleId: document.ownerId,
+  })
 }
 
 async function recordBeaconEvents(input: {

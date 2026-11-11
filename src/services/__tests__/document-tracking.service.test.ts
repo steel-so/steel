@@ -10,6 +10,9 @@ vi.mock('../document-track-token', () => ({ resolveDocumentToken: vi.fn() }))
 vi.mock('../notification-emitter', () => ({
   emitNotification: vi.fn(async () => 1),
 }))
+vi.mock('../steel-agent-dispatcher', () => ({
+  dispatchSteelAgentEvent: vi.fn(async () => 1),
+}))
 vi.mock('@/src/lib/mail/crm/send-document-viewed', () => ({
   sendDocumentViewedEmail: vi.fn(async () => ({ id: 'mail-1' })),
 }))
@@ -41,6 +44,7 @@ import {
   referrerHost,
 } from '../document-tracking.service'
 import { emitNotification } from '../notification-emitter'
+import { dispatchSteelAgentEvent } from '../steel-agent-dispatcher'
 
 const repo = vi.mocked(DocumentTrackRepository)
 const cache = vi.mocked(DocumentAnalyticsCache)
@@ -48,6 +52,7 @@ const resolve = vi.mocked(resolveDocumentToken)
 const emit = vi.mocked(emitNotification)
 const sendEmail = vi.mocked(sendDocumentViewedEmail)
 const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
+const dispatch = vi.mocked(dispatchSteelAgentEvent)
 
 const NOW = new Date('2026-11-11T15:00:00Z')
 const META = { ip: '203.0.113.7', userAgent: 'Mozilla/5.0', now: NOW }
@@ -78,6 +83,8 @@ function context(
       id: 'doc-1',
       workspaceId: 'ws-1',
       title: 'Proposta comercial',
+      kind: 'PROPOSAL',
+      firstViewedAt: null,
       ownerId: 'owner-1',
       settings: {},
       owner: { id: 'owner-1', name: 'João', email: 'joao@empresa.com.br' },
@@ -225,6 +232,46 @@ describe('DocumentTrackingService.track', () => {
       reachedEnd: false,
       seenAt: NOW,
     })
+  })
+
+  it('fires crm.proposal.viewed once on the first view of a proposal', async () => {
+    await DocumentTrackingService.track('tok', beacon(), META)
+
+    expect(cache.claimViewNotification).toHaveBeenCalledWith(
+      'doc-1',
+      'agent:first-view',
+    )
+    expect(dispatch).toHaveBeenCalledWith('ws-1', 'crm.proposal.viewed', {
+      proposalId: 'doc-1',
+      documentId: 'doc-1',
+      name: 'Proposta comercial',
+      responsibleId: 'owner-1',
+    })
+  })
+
+  it('does not fire the agent event for later views or other kinds', async () => {
+    const viewed = context()
+    repo.findContext.mockResolvedValue(
+      ok({
+        ...viewed,
+        document: { ...viewed.document, firstViewedAt: new Date() },
+      }),
+    )
+    await DocumentTrackingService.track('tok', beacon(), META)
+    repo.findContext.mockResolvedValue(
+      ok({ ...viewed, document: { ...viewed.document, kind: 'CONTRACT' } }),
+    )
+    await DocumentTrackingService.track('tok', beacon(), META)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('fires the agent event once when first sessions race', async () => {
+    cache.claimViewNotification.mockImplementation(
+      async (_doc, reader) => reader !== 'agent:first-view',
+    )
+    await DocumentTrackingService.track('tok', beacon(), META)
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('logs FORWARDED when a new browser opens a personal link', async () => {
