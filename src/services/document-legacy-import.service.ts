@@ -5,8 +5,8 @@ import { logger } from '@/lib/axiom/logger'
 import {
   crmProposalNotFound,
   crmProposalTemplateNotFound,
-  documentContentInvalid,
 } from '@/src/errors'
+import { documentContentInvalid } from '@/src/errors/app-error'
 import {
   convertLegacyProposal,
   type LegacyProposalSection,

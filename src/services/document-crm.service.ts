@@ -4,7 +4,7 @@ import { auditMutation } from '@/lib/axiom/audit'
 import {
   documentContentInvalid,
   documentTemplateNotFound,
-} from '@/src/errors'
+} from '@/src/errors/app-error'
 import type { DocumentPricingItem } from '@/src/lib/canvas-document/context'
 import { buildNewProposal } from '@/src/lib/canvas-document/convert-proposal'
 import { pricingLineTotal } from '@/src/lib/canvas-document/pricing'

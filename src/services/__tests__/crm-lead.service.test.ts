@@ -11,7 +11,7 @@ import {
 import { createFakeCrmSettings } from '@/src/__tests__/factories/crm-settings.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { documentTemplateNotFound } from '@/src/errors'
+import { documentTemplateNotFound } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/services/crm-notifications')
