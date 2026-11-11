@@ -328,6 +328,9 @@ export type AuditEntity =
   | 'crm_contract'
   // documents-pdf: PDF exports of CRM > Documentos (ADR 0063).
   | 'document_export'
+  // documents backend: CRM > Documentos (ADR 0063)
+  | 'document'
+  | 'document_recipient'
 
 export type AuditAction =
   | 'create'

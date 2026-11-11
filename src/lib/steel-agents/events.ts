@@ -84,6 +84,19 @@ export const STEEL_AGENT_EVENTS = [
     label: 'Mensagem recebida',
     description: 'Quando um contato envia uma mensagem no WhatsApp.',
   },
+  {
+    key: 'crm.document.accepted',
+    module: 'CRM',
+    label: 'Documento aceito',
+    description:
+      'Quando um cliente aceita um documento (proposta, contrato...) pelo link.',
+  },
+  {
+    key: 'crm.document.declined',
+    module: 'CRM',
+    label: 'Documento recusado',
+    description: 'Quando um cliente recusa um documento pelo link.',
+  },
 ] as const satisfies readonly {
   key: string
   module: ModuleKind

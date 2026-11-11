@@ -5688,6 +5688,12 @@ enum NotificationKind {
   /// nov ai-crm-followups: a bulk CNPJ enrichment run ended.
   CRM_CNPJ_ENRICHMENT_FINISHED
   CRM_DUPLICATES_FOUND
+  /// documents backend: a reader accepted a document (owner is notified).
+  CRM_DOCUMENT_ACCEPTED
+  /// documents backend: a reader declined a document.
+  CRM_DOCUMENT_DECLINED
+  /// documents backend: a sent document expired unanswered.
+  CRM_DOCUMENT_EXPIRED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
