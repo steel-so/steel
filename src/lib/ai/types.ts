@@ -11,6 +11,21 @@ import type { AiProviderId } from './models'
 export type AiContentPart =
   | { type: 'text'; text: string }
   | { type: 'image'; url: string }
+  | AiDocumentPart
+
+/**
+ * A whole PDF sent natively (Anthropic `document` block, OpenAI
+ * `input_file`): the model reads the text and the page images. `data` is
+ * the file in base64, without the `data:` prefix. Callers that may hit a
+ * model without PDF input check `acceptsPdfInput` first and send the
+ * extracted text instead.
+ */
+export interface AiDocumentPart {
+  type: 'document'
+  mediaType: 'application/pdf'
+  data: string
+  filename?: string
+}
 
 export interface AiToolCall {
   id: string
