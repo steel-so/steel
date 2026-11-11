@@ -16,7 +16,7 @@ export const crmPage: ProductPage = {
   meta: {
     title: 'CRM com leads, funis e documentos | Steel',
     description:
-      'Leads com pontuação e roteamento, funis e oportunidades, propostas e documentos com aceite online e leitura rastreada, previsão de vendas, metas, campanhas e workflows num só CRM.',
+      'Leads pontuados e roteados, funis, propostas e documentos com aceite online e leitura rastreada, previsão, metas, campanhas e workflows num só CRM.',
   },
   hero: {
     eyebrow: 'CRM',

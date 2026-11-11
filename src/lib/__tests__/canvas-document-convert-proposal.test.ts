@@ -406,7 +406,8 @@ describe('proposalToOutline', () => {
   })
 
   it('maps terms & conditions to text, split under the HTML limit', () => {
-    const big = Array.from({ length: 3 }, () => 'y'.repeat(9000)).join('\n\n')
+    // Escaping makes each paragraph longer than the HTML limit of a block.
+    const big = Array.from({ length: 2 }, () => '&'.repeat(4500)).join('\n\n')
     const outline = proposalToOutline({
       title: 'X',
       sections: [
