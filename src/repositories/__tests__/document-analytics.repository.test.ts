@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   seedDocument,
   seedRecipient,
@@ -99,6 +99,10 @@ async function fixture() {
   }
   return { document, workspaceId, maria, all, today }
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('DocumentAnalyticsRepository', () => {
   it('sums sessions, visitors, time, scroll and completion', async () => {

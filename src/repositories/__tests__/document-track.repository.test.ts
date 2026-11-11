@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   seedDocument,
   seedRecipient,
@@ -31,6 +31,10 @@ function fail<T extends object>(target: T, method: keyof T) {
     .spyOn(target, method as never)
     .mockImplementation((() => Promise.reject(new Error('boom'))) as never)
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('DocumentTrackRepository.findLink', () => {
   it('resolves recipient tokens and the generic public token', async () => {
