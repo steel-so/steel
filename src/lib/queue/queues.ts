@@ -55,6 +55,8 @@ import {
   type DataExportJobPayload,
   type DataRetentionJob,
   type DataRetentionJobPayload,
+  type DocumentsExpiryJob,
+  type DocumentsExpiryJobPayload,
   type DocumentsPdfJob,
   type DocumentsPdfJobPayload,
   type DocumentsAiJob,
@@ -1428,6 +1430,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WhatsappChatbot]: getWhatsappChatbotQueue,
   [QueueName.DocumentsPdf]: getDocumentsPdfQueue,
   [QueueName.DocumentsAi]: getDocumentsAiQueue,
+  [QueueName.DocumentsExpiry]: getDocumentsExpiryQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1646,5 +1649,26 @@ export function getDocumentsAiQueue(): Queue<
     DocumentsAiJobPayload[DocumentsAiJob],
     unknown,
     DocumentsAiJob
+  >
+}
+
+let documentsExpiryQueue: Queue | null = null
+
+/** documents backend (ADR 0063): daily expiry of sent documents. */
+export function getDocumentsExpiryQueue(): Queue<
+  DocumentsExpiryJobPayload[DocumentsExpiryJob],
+  unknown,
+  DocumentsExpiryJob
+> {
+  if (!documentsExpiryQueue) {
+    documentsExpiryQueue = new Queue(QueueName.DocumentsExpiry, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return documentsExpiryQueue as Queue<
+    DocumentsExpiryJobPayload[DocumentsExpiryJob],
+    unknown,
+    DocumentsExpiryJob
   >
 }

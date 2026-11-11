@@ -109,6 +109,9 @@ const PUBLIC_ROUTES = [
   // CRM dashboard on a TV (sales room): read-only link, no session (the
   // random token in the URL is the credential; revoking it cuts the screen).
   '/tv', '/api/crm/tv',
+  // CRM > Documentos (ADR 0063): public page of a document (its API is
+  // listed above). No session: the random token in the URL is the credential.
+  '/d',
   // MCP server and OAuth discovery (ADR 0032/0033): authenticated by the
   // bearer token, never by the session cookie. The OAuth endpoints live under
   // `/api/auth/oauth2/*`, already public with the rest of `/api/auth`; the

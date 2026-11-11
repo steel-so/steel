@@ -249,6 +249,8 @@ describe('SteelAgentService — read', () => {
       'crm.proposal.viewed',
       'sd.sla.at_risk',
       'sd.ticket.reopened',
+      'crm.document.accepted',
+      'crm.document.declined',
     ])
     expect(catalog.agentModeEnabled).toBe(true)
     expect(catalog.canManage).toBe(true)

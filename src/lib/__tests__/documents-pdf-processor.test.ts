@@ -37,7 +37,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/src/repositories/document-export.repository', () => ({
   DocumentExportRepository: mocks.repo,
 }))
-vi.mock('@/src/lib/document-export/backend-adapter', () => ({
+vi.mock('@/src/services/document-variables.service', () => ({
   DocumentVariablesService: { forDocument: mocks.forDocument },
 }))
 vi.mock('@/src/lib/canvas-document/render', () => ({

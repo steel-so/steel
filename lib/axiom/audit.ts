@@ -330,6 +330,9 @@ export type AuditEntity =
   | 'document_export'
   // CRM > Documentos (ADR 0063): AI import of a PDF/DOCX or a prompt
   | 'document_import'
+  // documents backend: CRM > Documentos (ADR 0063)
+  | 'document'
+  | 'document_recipient'
 
 export type AuditAction =
   | 'create'

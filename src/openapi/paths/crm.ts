@@ -7,6 +7,7 @@ import { crmCnpjRoutes } from './crm/cnpj'
 import { crmDealsRoutes } from './crm/deals'
 import { crmDocumentExportsRoutes } from './crm/document-exports'
 import { crmDocumentImportRoutes } from './crm/document-imports'
+import { crmDocumentsRoutes } from './crm/documents'
 import { crmDuplicateRoutes } from './crm/duplicates'
 import { crmEmailRoutes } from './crm/email'
 import { crmEmailEditorRoutes } from './crm/email-editor'
@@ -86,6 +87,7 @@ const routes: RouteConfig[] = [
   ...crmNewsletterDigestAiRoutes,
   ...crmDocumentExportsRoutes,
   ...crmDocumentImportRoutes,
+  ...crmDocumentsRoutes,
 ]
 
 export function registerCrmPaths(registry: OpenApiRegistry): void {

@@ -223,3 +223,34 @@ export interface DocumentPublicDTO {
   paymentEnabled: boolean
   brand: { name: string; logoUrl: string | null }
 }
+
+// documents backend: additions to the contract.
+
+/** How one recipient was reached by a send/resend. */
+export interface DocumentDeliveryDTO {
+  recipientId: string
+  /** Channel asked for. */
+  requested: 'LINK' | 'EMAIL' | 'WHATSAPP'
+  /** Channel used (WhatsApp falls back to LINK without a connected number). */
+  channel: 'LINK' | 'EMAIL' | 'WHATSAPP'
+  delivered: boolean
+  /** pt-BR note for the sender when something did not go as asked. */
+  message: string | null
+}
+
+/** `POST .../send`: the document plus how each new recipient was reached. */
+export interface DocumentSendResultDTO extends DocumentDTO {
+  deliveries: DocumentDeliveryDTO[]
+}
+
+/** `POST .../recipients` and `.../resend`. */
+export interface DocumentRecipientDeliveryDTO extends DocumentRecipientDTO {
+  delivery: DocumentDeliveryDTO
+}
+
+/** `POST /api/documents/[token]/identify`: the reader's own link token. */
+export interface DocumentIdentifyResultDTO {
+  token: string
+  recipientId: string
+  url: string
+}
