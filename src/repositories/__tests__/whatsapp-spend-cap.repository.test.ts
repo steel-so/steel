@@ -331,9 +331,14 @@ describe('WhatsAppSpendCapRepository', () => {
         () => WhatsAppSpendCapRepository.listCappedConnections(),
         () => vi.spyOn(prisma.whatsAppConnection, 'findMany'),
       ],
-    ])('%s maps a thrown error to DATABASE_ERROR', async (_name, run, spy) => {
-      spy().mockRejectedValueOnce(new Error('boom'))
-      expectErr(await run(), 'DATABASE_ERROR')
-    })
+    ] as const)(
+      '%s maps a thrown error to DATABASE_ERROR',
+      async (_name, run, spy) => {
+        ;(
+          spy() as unknown as { mockRejectedValueOnce: (e: Error) => void }
+        ).mockRejectedValueOnce(new Error('boom'))
+        expectErr(await run(), 'DATABASE_ERROR')
+      },
+    )
   })
 })
