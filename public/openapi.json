@@ -177,6 +177,10 @@
       "description": "Série de boas-vindas (e-mails depois da confirmação, com estatística por etapa) e reengajamento de assinantes inativos."
     },
     {
+      "name": "CRM · Documentos · PDF",
+      "description": "Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público."
+    },
+    {
       "name": "Comunicação · Conversas",
       "description": "Conversas e mensagens do WhatsApp, atribuição e fechamento."
     },
@@ -524,7 +528,8 @@
         "CRM · Newsletter · Edições",
         "CRM · Newsletter · Segmentos",
         "CRM · Newsletter · Engajamento",
-        "CRM · Newsletter · Automação"
+        "CRM · Newsletter · Automação",
+        "CRM · Documentos · PDF"
       ]
     },
     {
@@ -1207,7 +1212,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_11"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_12"
           }
         },
         "security": [
@@ -4284,7 +4289,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_4"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_5"
           }
         },
         "security": [
@@ -7874,6 +7879,91 @@
         ]
       }
     },
+    "/documents/{token}/pdf": {
+      "get": {
+        "tags": ["CRM · Documentos · PDF"],
+        "summary": "Baixar o PDF pelo link público",
+        "operationId": "getDocumentsByTokenPdf",
+        "description": "Sem sessão: o token do link é o acesso. A primeira chamada enfileira o PDF da versão atual para este leitor e responde `202`; repita com `?exportId=` até a resposta ser o próprio arquivo. Cada download entra na linha do tempo do documento (`PDF_DOWNLOADED`). Bloqueado quando o documento desliga o download (`settings.allowDownload`).\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do destinatário ou o token público do documento.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "in": "query",
+            "required": false,
+            "description": "Exportação devolvida pela primeira chamada.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo PDF (`Content-Disposition: attachment`).",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "PDF em geração: repita com `exportId`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentPdfPending"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403_MODULE_DISABLED_DOCUMENT_DOWNLOAD_DISABLED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_EXPORT_NOT_FOUND"
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_STORAGE_ERROR_4"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_DOCUMENT_EXPORT_FAILED"
+          }
+        },
+        "security": []
+      }
+    },
     "/integrations/github/webhook": {
       "post": {
         "tags": ["Integrações"],
@@ -10489,7 +10579,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_7"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_8"
           }
         },
         "security": []
@@ -10657,7 +10747,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_6"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_7"
           }
         },
         "security": []
@@ -36271,6 +36361,227 @@
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/exports": {
+      "post": {
+        "tags": ["CRM · Documentos · PDF"],
+        "summary": "Exportar documento em PDF",
+        "operationId": "postWorkspacesByIdCrmDocumentsByDocumentIdExports",
+        "description": "Gera o PDF da versão enviada atual ou, com `draft: true` (ou se o documento nunca foi enviado), do rascunho. O worker imprime o mesmo HTML do link público com um Chromium headless; acompanhe com `GET .../exports/{exportId}` até `READY`. Reaproveita uma exportação pronta da mesma versão (7 dias) ou uma em andamento — o rascunho só reaproveita a exportação feita depois da última edição.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "draft": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Exportação criada ou reaproveitada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentExport"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_DOCUMENT_EXPORT_FAILED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/exports/{exportId}": {
+      "get": {
+        "tags": ["CRM · Documentos · PDF"],
+        "summary": "Situação da exportação em PDF",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdExportsByExportId",
+        "description": "Status, páginas e tamanho; `downloadUrl` aparece quando `READY`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "in": "path",
+            "required": true,
+            "description": "ID da exportação.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exportação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentExport"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND_DOCUMENT_EXPORT_NOT_FOUND_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/{documentId}/exports/{exportId}/download": {
+      "get": {
+        "tags": ["CRM · Documentos · PDF"],
+        "summary": "Baixar o PDF exportado",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdExportsByExportIdDownload",
+        "description": "Transmite o PDF do armazenamento (a API do MinIO não é pública). Só exportações `READY` dentro dos 7 dias de guarda. Auditado.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "in": "path",
+            "required": true,
+            "description": "ID da exportação.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo PDF (`Content-Disposition: attachment`).",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND_DOCUMENT_EXPORT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_STORAGE_ERROR_4"
           }
         },
         "security": [
@@ -67295,7 +67606,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_8"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_9"
           }
         },
         "security": [
@@ -77457,7 +77768,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_5"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_6"
           },
           "502": {
             "$ref": "#/components/responses/502_CRM_SOCIAL_OAUTH_FAILED"
@@ -80731,7 +81042,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_10"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_11"
           }
         },
         "security": [
@@ -107888,7 +108199,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_9"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_10"
           }
         },
         "security": [
@@ -135853,7 +136164,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "500": {
-            "$ref": "#/components/responses/500_STORAGE_ERROR_4"
+            "$ref": "#/components/responses/500_STORAGE_ERROR_5"
           }
         },
         "security": [
@@ -172065,6 +172376,40 @@
           }
         }
       },
+      "403_MODULE_DISABLED_DOCUMENT_DOWNLOAD_DISABLED": {
+        "description": "Acesso negado: `MODULE_DISABLED`, `DOCUMENT_DOWNLOAD_DISABLED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_DOWNLOAD_DISABLED": {
+                "summary": "DOCUMENT_DOWNLOAD_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "O download deste documento está desativado",
+                  "error": {
+                    "code": "DOCUMENT_DOWNLOAD_DISABLED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED — CRM desabilitado no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "403_MODULE_DISABLED_SD_NOT_AGENT": {
         "description": "Acesso negado: `MODULE_DISABLED`, `SD_NOT_AGENT`",
         "content": {
@@ -174137,6 +174482,120 @@
                   "message": "Código não encontrado ou expirado. Confira o código no terminal ou rode “steel login” de novo.",
                   "error": {
                     "code": "DEVICE_CODE_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_DOCUMENT_EXPORT_NOT_FOUND": {
+        "description": "Não encontrado: `DOCUMENT_EXPORT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_EXPORT_NOT_FOUND": {
+                "summary": "DOCUMENT_EXPORT_NOT_FOUND — `exportId` de outro leitor, de outra versão ou fora da guarda",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Exportação não encontrada",
+                  "error": {
+                    "code": "DOCUMENT_EXPORT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_DOCUMENT_NOT_FOUND": {
+        "description": "Não encontrado: `DOCUMENT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_NOT_FOUND": {
+                "summary": "DOCUMENT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_DOCUMENT_NOT_FOUND_DOCUMENT_EXPORT_NOT_FOUND": {
+        "description": "Não encontrado: `DOCUMENT_NOT_FOUND`, `DOCUMENT_EXPORT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_NOT_FOUND": {
+                "summary": "DOCUMENT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_EXPORT_NOT_FOUND": {
+                "summary": "DOCUMENT_EXPORT_NOT_FOUND — Não existe, ainda não está pronta, falhou ou passou da guarda",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Exportação não encontrada",
+                  "error": {
+                    "code": "DOCUMENT_EXPORT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_DOCUMENT_NOT_FOUND_DOCUMENT_EXPORT_NOT_FOUND_2": {
+        "description": "Não encontrado: `DOCUMENT_NOT_FOUND`, `DOCUMENT_EXPORT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_NOT_FOUND": {
+                "summary": "DOCUMENT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Documento não encontrado",
+                  "error": {
+                    "code": "DOCUMENT_NOT_FOUND"
+                  }
+                }
+              },
+              "DOCUMENT_EXPORT_NOT_FOUND": {
+                "summary": "DOCUMENT_EXPORT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Exportação não encontrada",
+                  "error": {
+                    "code": "DOCUMENT_EXPORT_NOT_FOUND"
                   }
                 }
               }
@@ -186814,6 +187273,29 @@
           }
         }
       },
+      "410_DOCUMENT_LINK_UNAVAILABLE": {
+        "description": "Expirado: `DOCUMENT_LINK_UNAVAILABLE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_LINK_UNAVAILABLE": {
+                "summary": "DOCUMENT_LINK_UNAVAILABLE",
+                "value": {
+                  "success": false,
+                  "statusCode": 410,
+                  "message": "Este link não está mais disponível",
+                  "error": {
+                    "code": "DOCUMENT_LINK_UNAVAILABLE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "410_EXPIRED_TOKEN": {
         "description": "Expirado: `EXPIRED_TOKEN`",
         "content": {
@@ -194940,7 +195422,7 @@
                 "value": {
                   "success": false,
                   "statusCode": 500,
-                  "message": "Arquivo do pacote indisponível",
+                  "message": "Arquivo do PDF indisponível",
                   "error": {
                     "code": "STORAGE_ERROR"
                   }
@@ -194951,6 +195433,29 @@
         }
       },
       "500_STORAGE_ERROR_5": {
+        "description": "Erro interno: `STORAGE_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "STORAGE_ERROR": {
+                "summary": "STORAGE_ERROR",
+                "value": {
+                  "success": false,
+                  "statusCode": 500,
+                  "message": "Arquivo do pacote indisponível",
+                  "error": {
+                    "code": "STORAGE_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "500_STORAGE_ERROR_6": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -194973,7 +195478,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_6": {
+      "500_STORAGE_ERROR_7": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -194996,7 +195501,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_7": {
+      "500_STORAGE_ERROR_8": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -195019,7 +195524,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_8": {
+      "500_STORAGE_ERROR_9": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -195042,7 +195547,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_9": {
+      "500_STORAGE_ERROR_10": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -195065,7 +195570,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_10": {
+      "500_STORAGE_ERROR_11": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -195088,7 +195593,7 @@
           }
         }
       },
-      "500_STORAGE_ERROR_11": {
+      "500_STORAGE_ERROR_12": {
         "description": "Erro interno: `STORAGE_ERROR`",
         "content": {
           "application/json": {
@@ -195329,6 +195834,28 @@
                   "message": "A IA não conseguiu responder agora — tente de novo em instantes",
                   "error": {
                     "code": "CRM_TEXT_AI_FAILED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_DOCUMENT_EXPORT_FAILED": {
+        "description": "Falha em serviço externo: `DOCUMENT_EXPORT_FAILED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_EXPORT_FAILED": {
+                "summary": "DOCUMENT_EXPORT_FAILED",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "error": {
+                    "code": "DOCUMENT_EXPORT_FAILED"
                   }
                 }
               }
@@ -225828,6 +226355,116 @@
           }
         },
         "required": ["visitorId", "name"]
+      },
+      "DocumentExport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "RUNNING", "READY", "FAILED"]
+          },
+          "versionNumber": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Versão enviada exportada; `null` = rascunho."
+          },
+          "sizeBytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Mensagem para o usuário quando `FAILED`."
+          },
+          "downloadUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rota do app que transmite o PDF, enquanto `READY` e dentro dos 7 dias de guarda."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "versionNumber",
+          "sizeBytes",
+          "pageCount",
+          "error",
+          "downloadUrl",
+          "createdAt",
+          "finishedAt"
+        ]
+      },
+      "DocumentPdfPending": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "RUNNING"]
+          },
+          "exportId": {
+            "type": "string"
+          }
+        },
+        "required": ["status", "exportId"]
       },
       "ErrorCode": {
         "type": "string",
