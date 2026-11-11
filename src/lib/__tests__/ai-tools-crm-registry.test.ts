@@ -75,7 +75,8 @@ describe('CRM_AI_TOOLS registry', () => {
         'crm_create_lead',
         'crm_create_dashboard',
         'crm_create_form',
-        'crm_create_proposal_template',
+        'crm_create_proposal',
+        'crm_list_proposal_documents',
       ]),
     )
   })
