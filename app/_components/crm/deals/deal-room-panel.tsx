@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import {
   useDealRoom,
+  useDealRoomDocuments,
   useDealRoomMessages,
   usePostDealRoomMessage,
   useUpsertDealRoom,
@@ -138,9 +139,69 @@ function RoomChat({
   )
 }
 
+const NO_DOCUMENT = 'none'
+
+/**
+ * Documento mostrado na sala (ADR 0063): um dos documentos da oportunidade,
+ * normalmente a proposta. O cliente só vê o link depois do envio.
+ */
+function RoomDocumentSelect({
+  workspaceId,
+  opportunityId,
+  room,
+  canEdit,
+  saving,
+  onChange,
+}: {
+  workspaceId: string
+  opportunityId: string
+  room: CrmDealRoomDTO
+  canEdit: boolean
+  saving: boolean
+  onChange: (documentId: string | null) => void
+}) {
+  const documents = useDealRoomDocuments(workspaceId, opportunityId)
+  const items = documents.data ?? []
+  const value = room.documentId ?? NO_DOCUMENT
+  const selected = items.find((doc) => doc.id === room.documentId)
+
+  return (
+    <div className='flex flex-col gap-1.5'>
+      <Label htmlFor='deal-room-document'>Documento da sala</Label>
+      <Select
+        value={value}
+        disabled={!canEdit || saving || documents.isLoading}
+        onValueChange={(next) =>
+          onChange(!next || next === NO_DOCUMENT ? null : String(next))
+        }
+      >
+        <SelectTrigger id='deal-room-document' className='w-full'>
+          <SelectValue placeholder='Nenhum documento'>
+            {selected?.title ??
+              (room.documentId ? 'Documento indisponível' : 'Nenhum documento')}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_DOCUMENT}>Nenhum documento</SelectItem>
+          {items.map((doc) => (
+            <SelectItem key={doc.id} value={doc.id}>
+              {doc.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className='text-muted-foreground text-xs'>
+        {items.length === 0 && !documents.isLoading
+          ? 'Crie a proposta em CRM > Documentos, vinculada a esta oportunidade.'
+          : 'O cliente vê o documento depois que ele for enviado.'}
+      </p>
+    </div>
+  )
+}
+
 /**
  * Sala de negociação da oportunidade: o vendedor liga o link público, escolhe
- * a proposta, junta materiais e monta o plano de ação com o cliente, vê quem
+ * o documento (a proposta), junta materiais e monta o plano de ação com o cliente, vê quem
  * abriu o quê e responde a conversa.
  */
 export function DealRoomPanel({
@@ -301,6 +362,17 @@ export function DealRoomPanel({
           }}
         />
       </div>
+
+      <RoomDocumentSelect
+        workspaceId={workspaceId}
+        opportunityId={opportunityId}
+        room={room}
+        canEdit={canEdit}
+        saving={upsert.isPending}
+        onChange={(documentId) =>
+          save({ documentId }, 'Documento da sala atualizado')
+        }
+      />
 
       <div className='flex flex-col gap-2'>
         <h4 className='font-medium text-muted-foreground text-xs uppercase tracking-wide'>

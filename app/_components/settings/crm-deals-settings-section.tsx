@@ -20,9 +20,10 @@ import {
 } from '@/src/hooks/use-crm-deals'
 
 /**
- * Assinatura digital e cobrança na proposta, e a janela de renovação dos
- * contratos. A cobrança nasce desligada e só tem o provedor de teste; os
- * demais membros só visualizam.
+ * Cobrança na proposta e a janela de renovação dos contratos. A cobrança
+ * nasce desligada e só tem o provedor de teste; os demais membros só
+ * visualizam. Os documentos não têm assinatura (ADR 0063): o aceite registra
+ * nome, e-mail e a versão aceita, então a antiga chave de assinatura saiu.
  */
 export function CrmDealsSettingsSection({
   workspaceId,
@@ -34,14 +35,12 @@ export function CrmDealsSettingsSection({
   const update = useUpdateCrmDealsSettings(workspaceId)
 
   const [payment, setPayment] = useState(false)
-  const [signature, setSignature] = useState(false)
   const [leadDays, setLeadDays] = useState('60')
   const [autoCreate, setAutoCreate] = useState(true)
 
   useEffect(() => {
     if (!settings) return
     setPayment(settings.proposalPaymentEnabled)
-    setSignature(settings.proposalSignatureEnabled)
     setLeadDays(String(settings.renewalLeadDays))
     setAutoCreate(settings.renewalAutoCreate)
   }, [settings])
@@ -51,7 +50,6 @@ export function CrmDealsSettingsSection({
   const dirty =
     !!settings &&
     (payment !== settings.proposalPaymentEnabled ||
-      signature !== settings.proposalSignatureEnabled ||
       days !== settings.renewalLeadDays ||
       autoCreate !== settings.renewalAutoCreate)
 
@@ -63,7 +61,6 @@ export function CrmDealsSettingsSection({
     try {
       await update.mutateAsync({
         proposalPaymentEnabled: payment,
-        proposalSignatureEnabled: signature,
         renewalLeadDays: days,
         renewalAutoCreate: autoCreate,
       })
@@ -76,7 +73,7 @@ export function CrmDealsSettingsSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Assinatura, cobrança e renovações</CardTitle>
+        <CardTitle>Cobrança e renovações</CardTitle>
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>
         {isLoading || !settings ? (
@@ -84,25 +81,6 @@ export function CrmDealsSettingsSection({
         ) : (
           <>
             <FieldGroup>
-              <Field orientation='horizontal'>
-                <Switch
-                  id='crm-deals-signature'
-                  checked={signature}
-                  onCheckedChange={(checked) => setSignature(checked === true)}
-                  disabled={!isPrivileged}
-                />
-                <div className='flex flex-col gap-1'>
-                  <FieldLabel htmlFor='crm-deals-signature'>
-                    Aceitar a proposta com assinatura digital
-                  </FieldLabel>
-                  <FieldDescription>
-                    O cliente desenha a assinatura na página pública. Guardamos
-                    a imagem e o SHA-256 dela e do conteúdo da proposta. Com a
-                    chave ligada, o aceite só pelo nome deixa de valer.
-                  </FieldDescription>
-                </div>
-              </Field>
-
               <Field orientation='horizontal'>
                 <Switch
                   id='crm-deals-payment'

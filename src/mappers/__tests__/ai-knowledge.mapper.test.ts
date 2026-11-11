@@ -16,6 +16,7 @@ import type {
 import {
   toAiCitationDTO,
   toAiKnowledgeResultDTO,
+  toCrmDocumentKnowledge,
   toCrmNoteKnowledge,
   toCrmProposalKnowledge,
   toEmbeddingInput,
@@ -227,6 +228,53 @@ describe('ai knowledge mapper — sources', () => {
     ).toBe('Cliente: ACME')
     expect(
       toCrmProposalKnowledge('ws1', { ...row, lead: null, sections: [] }).text,
+    ).toBe('')
+  })
+
+  it('should index the prose of a CRM document without ids, types or urls', () => {
+    const row = {
+      id: 'doc1',
+      title: 'Proposta Agro',
+      kind: 'PROPOSAL' as const,
+      isTemplate: false,
+      updatedAt: T,
+      company: null,
+      person: { name: 'Ana' },
+      lead: null,
+      content: {
+        version: 1,
+        rootId: 'root',
+        nodes: {
+          root: { id: 'root', type: 'document', props: {}, children: ['s1'] },
+          h1: {
+            id: 'h1',
+            type: 'heading',
+            props: { text: 'Escopo', level: 2 },
+          },
+          t1: {
+            id: 't1',
+            type: 'text',
+            props: { html: '<p>Instalação em <strong>3 lojas</strong></p>' },
+          },
+          img: {
+            id: 'img',
+            type: 'image',
+            props: { src: 'https://cdn.example.com/a.png' },
+          },
+          broken: null,
+        },
+      },
+    }
+    expect(toCrmDocumentKnowledge('ws1', row)).toMatchObject({
+      sourceType: 'crm-document',
+      sourceId: 'doc1',
+      title: 'Proposta Agro',
+      path: '/crm/documents/doc1',
+      text: 'Cliente: Ana\nEscopo\nInstalação em 3 lojas',
+    })
+    expect(
+      toCrmDocumentKnowledge('ws1', { ...row, person: null, content: null })
+        .text,
     ).toBe('')
   })
 })

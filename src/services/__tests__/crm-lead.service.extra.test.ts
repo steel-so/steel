@@ -24,10 +24,24 @@ vi.mock('@/src/repositories/crm-person.repository')
 vi.mock('@/src/repositories/crm-proposal.repository')
 vi.mock('@/src/repositories/crm-settings.repository')
 vi.mock('@/src/services/crm-workflow-dispatcher')
+vi.mock('@/src/services/document-crm.service', () => ({
+  DocumentCrmService: {
+    createProposal: vi.fn(),
+    latestProposalForLead: vi.fn(),
+    findInWorkspace: vi.fn(),
+  },
+}))
+vi.mock('@/src/services/document-legacy-import.service', () => ({
+  DocumentLegacyImportService: { importProposal: vi.fn() },
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { createFakeCrmPerson } from '@/src/__tests__/factories/crm-person.factory'
 import { createFakeCrmProposal } from '@/src/__tests__/factories/crm-proposal.factory'
+import {
+  createFakeCrmDocumentSummaryDTO,
+  createFakeDocument,
+} from '@/src/__tests__/factories/document-migration.factory'
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmLeadRoutingRuleRepository } from '@/src/repositories/crm-lead-routing-rule.repository'
 import { CrmLeadScoringRuleRepository } from '@/src/repositories/crm-lead-scoring-rule.repository'
@@ -42,6 +56,8 @@ import {
   notifyCrmLeadAssigned,
 } from '../crm-notifications'
 import { dispatchCrmWorkflowRecordEvent } from '../crm-workflow-dispatcher'
+import { DocumentCrmService } from '../document-crm.service'
+import { DocumentLegacyImportService } from '../document-legacy-import.service'
 
 const mockedMembershipRepo = vi.mocked(MembershipRepository)
 const mockedLeadRepo = vi.mocked(CrmLeadRepository)
@@ -52,6 +68,8 @@ const mockedProposalRepo = vi.mocked(CrmProposalRepository)
 const mockedSettingsRepo = vi.mocked(CrmSettingsRepository)
 const mockedDispatch = vi.mocked(dispatchCrmWorkflowRecordEvent)
 const mockedAudit = vi.mocked(auditMutation)
+const mockedDocuments = vi.mocked(DocumentCrmService)
+const mockedLegacyImport = vi.mocked(DocumentLegacyImportService)
 
 const dbErr = () => err(databaseError())
 
@@ -112,6 +130,8 @@ function proposalWithSections(
 
 beforeEach(() => {
   mockedSettingsRepo.findByWorkspace.mockResolvedValue(ok(null))
+  mockedDocuments.latestProposalForLead.mockResolvedValue(ok(null))
+  mockedProposalRepo.findLatestByLeadId.mockResolvedValue(ok(null))
 })
 
 describe('CrmLeadService — authorization gates', () => {
@@ -290,32 +310,96 @@ describe('CrmLeadService — reads', () => {
   it('getActiveProposal() should return null when the lead has no proposal', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
-    mockedProposalRepo.findLatestByLeadId.mockResolvedValue(ok(null))
     expect(
       expectOk(await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1')),
     ).toBeNull()
+    expect(mockedLegacyImport.importProposal).not.toHaveBeenCalled()
   })
 
-  it('getActiveProposal() should return the latest proposal of the lead', async () => {
+  it('getActiveProposal() should return the latest proposal document', async () => {
+    mockRole()
+    mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
+    mockedDocuments.latestProposalForLead.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd1', leadId: 'l1' })),
+    )
+    const dto = expectOk(
+      await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1'),
+    )
+    expect(dto?.id).toBe('d1')
+    expect(dto?.path).toBe('/crm/documents/d1')
+    expect(mockedDocuments.latestProposalForLead).toHaveBeenCalledWith(
+      'ws1',
+      'l1',
+    )
+    expect(mockedProposalRepo.findLatestByLeadId).not.toHaveBeenCalled()
+  })
+
+  it('getActiveProposal() should convert a legacy proposal not migrated yet', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
     mockedProposalRepo.findLatestByLeadId.mockResolvedValue(
       ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
     )
+    mockedLegacyImport.importProposal.mockResolvedValue(
+      ok({ documentId: 'd9', created: true }),
+    )
+    mockedDocuments.findInWorkspace.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd9', leadId: 'l1' })),
+    )
     const dto = expectOk(
       await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1'),
     )
-    expect(dto?.id).toBe('p1')
-    expect(mockedProposalRepo.findLatestByLeadId).toHaveBeenCalledWith(
-      'l1',
-      'ws1',
-    )
+    expect(dto?.id).toBe('d9')
+    expect(mockedLegacyImport.importProposal).toHaveBeenCalledWith('p1')
+    expect(mockedDocuments.findInWorkspace).toHaveBeenCalledWith('ws1', 'd9')
   })
 
-  it('getActiveProposal() should propagate repository errors', async () => {
+  it('getActiveProposal() should return null when the migrated document is gone', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
-    mockedProposalRepo.findLatestByLeadId.mockResolvedValue(dbErr())
+    mockedProposalRepo.findLatestByLeadId.mockResolvedValue(
+      ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
+    )
+    mockedLegacyImport.importProposal.mockResolvedValue(
+      ok({ documentId: 'd9', created: false }),
+    )
+    mockedDocuments.findInWorkspace.mockResolvedValue(ok(null))
+    expect(
+      expectOk(await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1')),
+    ).toBeNull()
+  })
+
+  it('getActiveProposal() should propagate lookup, legacy and import errors', async () => {
+    mockRole()
+    mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
+
+    mockedDocuments.latestProposalForLead.mockResolvedValueOnce(dbErr())
+    expectErr(
+      await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1'),
+      'DATABASE_ERROR',
+    )
+
+    mockedProposalRepo.findLatestByLeadId.mockResolvedValueOnce(dbErr())
+    expectErr(
+      await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1'),
+      'DATABASE_ERROR',
+    )
+
+    mockedProposalRepo.findLatestByLeadId.mockResolvedValue(
+      ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
+    )
+    mockedLegacyImport.importProposal.mockResolvedValueOnce(
+      err(crmProposalNotFound()),
+    )
+    expectErr(
+      await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1'),
+      'CRM_PROPOSAL_NOT_FOUND',
+    )
+
+    mockedLegacyImport.importProposal.mockResolvedValueOnce(
+      ok({ documentId: 'd9', created: true }),
+    )
+    mockedDocuments.findInWorkspace.mockResolvedValueOnce(dbErr())
     expectErr(
       await CrmLeadService.getActiveProposal('u1', 'ws1', 'l1'),
       'DATABASE_ERROR',
@@ -401,51 +485,51 @@ describe('CrmLeadService — reads', () => {
     )
   })
 
-  it('listProposalPresentations() should map only the proposal presentations', async () => {
+  it('listProposalPresentations() should map only the document presentations', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
-    mockedProposalRepo.findById.mockResolvedValue(
-      ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
+    mockedDocuments.findInWorkspace.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd1', leadId: 'l1' })),
     )
     mockedLeadRepo.listProposalPresentations.mockResolvedValue(
       ok([
         createFakeCrmLeadProposalPresentation({
           leadId: 'l1',
-          proposalId: 'p1',
+          documentId: 'd1',
         }),
       ]),
     )
     const list = expectOk(
-      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'p1'),
+      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'd1'),
     )
     expect(list[0]?.leadId).toBe('l1')
-    expect(mockedProposalRepo.findById).toHaveBeenCalledWith('p1', 'ws1')
+    expect(mockedDocuments.findInWorkspace).toHaveBeenCalledWith('ws1', 'd1')
     expect(mockedLeadRepo.listProposalPresentations).toHaveBeenCalledWith(
       'l1',
-      'p1',
+      'd1',
     )
   })
 
-  it('listProposalPresentations() should return CRM_LEAD_PROPOSAL_NOT_FOUND for a proposal of another lead', async () => {
+  it('listProposalPresentations() should return CRM_LEAD_PROPOSAL_NOT_FOUND for a document of another lead', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
-    mockedProposalRepo.findById.mockResolvedValue(
-      ok(proposalWithSections({ id: 'p1', leadId: 'other-lead' })),
+    mockedDocuments.findInWorkspace.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd1', leadId: 'other-lead' })),
     )
     expectErr(
-      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'p1'),
+      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'd1'),
       'CRM_LEAD_PROPOSAL_NOT_FOUND',
     )
     expect(mockedLeadRepo.listProposalPresentations).not.toHaveBeenCalled()
   })
 
-  it('listProposalPresentations() should propagate a missing proposal', async () => {
+  it('listProposalPresentations() should propagate a document lookup failure', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
-    mockedProposalRepo.findById.mockResolvedValue(err(crmProposalNotFound()))
+    mockedDocuments.findInWorkspace.mockResolvedValue(dbErr())
     expectErr(
-      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'p1'),
-      'CRM_PROPOSAL_NOT_FOUND',
+      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'd1'),
+      'DATABASE_ERROR',
     )
     expect(mockedLeadRepo.listProposalPresentations).not.toHaveBeenCalled()
   })
@@ -453,12 +537,12 @@ describe('CrmLeadService — reads', () => {
   it('listProposalPresentations() should propagate repository errors', async () => {
     mockRole()
     mockedLeadRepo.findById.mockResolvedValue(ok(createFakeCrmLead()))
-    mockedProposalRepo.findById.mockResolvedValue(
-      ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
+    mockedDocuments.findInWorkspace.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd1', leadId: 'l1' })),
     )
     mockedLeadRepo.listProposalPresentations.mockResolvedValue(dbErr())
     expectErr(
-      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'p1'),
+      await CrmLeadService.listProposalPresentations('u1', 'ws1', 'l1', 'd1'),
       'DATABASE_ERROR',
     )
   })
@@ -1180,11 +1264,11 @@ describe('CrmLeadService — pipeline stage gating', () => {
       )
     })
 
-    it('should honour an explicit validity date', async () => {
+    it('should create the proposal document with the explicit validity', async () => {
       mockOpportunityWithMeeting()
       const validUntil = new Date('2030-01-01T00:00:00Z')
-      mockedProposalRepo.create.mockResolvedValue(
-        ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
+      mockedDocuments.createProposal.mockResolvedValue(
+        ok(createFakeCrmDocumentSummaryDTO({ id: 'd1', leadId: 'l1' })),
       )
       mockedLeadRepo.update.mockResolvedValue(
         ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
@@ -1196,30 +1280,22 @@ describe('CrmLeadService — pipeline stage gating', () => {
           validUntil,
         }),
       )
-      expect(mockedSettingsRepo.findByWorkspace).not.toHaveBeenCalled()
-      expect(mockedProposalRepo.create).toHaveBeenCalledWith(
+      expect(mockedDocuments.createProposal).toHaveBeenCalledWith(
+        'u1',
+        'ws1',
+        expect.objectContaining({ title: 'P', validUntil, leadId: 'l1' }),
+      )
+      expect(mockedAudit).toHaveBeenCalledWith(
         expect.objectContaining({
-          validUntil,
-          leadId: 'l1',
-          responsibleId: 'u1',
-          sections: [],
+          entity: 'crm_lead',
+          meta: { proposalDocumentCreated: 'd1' },
         }),
       )
     })
 
-    it('should propagate a settings failure when resolving the default validity', async () => {
+    it('should propagate a document creation failure', async () => {
       mockOpportunityWithMeeting()
-      mockedSettingsRepo.findByWorkspace.mockResolvedValue(dbErr())
-      expectErr(
-        await CrmLeadService.createProposal('u1', 'ws1', 'l1', { name: 'P' }),
-        'DATABASE_ERROR',
-      )
-      expect(mockedProposalRepo.create).not.toHaveBeenCalled()
-    })
-
-    it('should propagate a proposal creation failure', async () => {
-      mockOpportunityWithMeeting()
-      mockedProposalRepo.create.mockResolvedValue(dbErr())
+      mockedDocuments.createProposal.mockResolvedValue(dbErr())
       expectErr(
         await CrmLeadService.createProposal('u1', 'ws1', 'l1', { name: 'P' }),
         'DATABASE_ERROR',
@@ -1229,8 +1305,8 @@ describe('CrmLeadService — pipeline stage gating', () => {
 
     it('should propagate a failure advancing to PROPOSAL', async () => {
       mockOpportunityWithMeeting()
-      mockedProposalRepo.create.mockResolvedValue(
-        ok(proposalWithSections({ id: 'p1' })),
+      mockedDocuments.createProposal.mockResolvedValue(
+        ok(createFakeCrmDocumentSummaryDTO({ id: 'd1' })),
       )
       mockedLeadRepo.update.mockResolvedValue(dbErr())
       expectErr(
@@ -1265,15 +1341,17 @@ describe('CrmLeadService — pipeline stage gating', () => {
         ),
         'CRM_LEAD_STAGE_TRANSITION_INVALID',
       )
-      expect(mockedProposalRepo.findById).not.toHaveBeenCalled()
+      expect(mockedDocuments.findInWorkspace).not.toHaveBeenCalled()
     })
 
-    it('should propagate a proposal lookup failure', async () => {
+    it('should propagate a document lookup failure', async () => {
       mockRole()
       mockedLeadRepo.findById.mockResolvedValue(
         ok(createFakeCrmLead({ stage: 'PROPOSAL' })),
       )
-      mockedProposalRepo.findById.mockResolvedValue(err(notFound('Proposal')))
+      mockedDocuments.findInWorkspace.mockResolvedValue(
+        err(notFound('Document')),
+      )
       expectErr(
         await CrmLeadService.registerProposalPresentation(
           'u1',
@@ -1291,8 +1369,8 @@ describe('CrmLeadService — pipeline stage gating', () => {
       mockedLeadRepo.findById.mockResolvedValue(
         ok(createFakeCrmLead({ id: 'l1', stage: 'PROPOSAL' })),
       )
-      mockedProposalRepo.findById.mockResolvedValue(
-        ok(proposalWithSections({ id: 'p1', leadId: 'l1' })),
+      mockedDocuments.findInWorkspace.mockResolvedValue(
+        ok(createFakeDocument({ id: 'p1', leadId: 'l1' })),
       )
       mockedLeadRepo.createProposalPresentation.mockResolvedValue(dbErr())
       expectErr(
@@ -1464,9 +1542,10 @@ describe('CrmLeadService.reopen() — gates and failures', () => {
           : null,
       ),
     )
-    mockedProposalRepo.findLatestByLeadId.mockResolvedValue(
-      ok(records.proposal ? proposalWithSections({ leadId: 'l1' }) : null),
+    mockedDocuments.latestProposalForLead.mockResolvedValue(
+      ok(records.proposal ? createFakeDocument({ leadId: 'l1' }) : null),
     )
+    mockedProposalRepo.findLatestByLeadId.mockResolvedValue(ok(null))
   }
 
   function mockLost(reopenStage?: 'PROPOSAL' | 'QUALIFIED' | 'OPPORTUNITY') {
@@ -1560,7 +1639,8 @@ describe('CrmLeadService.reopen() — gates and failures', () => {
   it.each([
     ['contact attempts', 'attempts'],
     ['qualification', 'qualification'],
-    ['proposal', 'proposal'],
+    ['proposal document', 'document'],
+    ['legacy proposal', 'proposal'],
   ] as const)(
     'should propagate a %s lookup failure while computing the gate',
     async (_, which) => {
@@ -1570,6 +1650,8 @@ describe('CrmLeadService.reopen() — gates and failures', () => {
         mockedLeadRepo.listContactAttempts.mockResolvedValue(dbErr())
       } else if (which === 'qualification') {
         mockedLeadRepo.findQualification.mockResolvedValue(dbErr())
+      } else if (which === 'document') {
+        mockedDocuments.latestProposalForLead.mockResolvedValue(dbErr())
       } else {
         mockedProposalRepo.findLatestByLeadId.mockResolvedValue(dbErr())
       }

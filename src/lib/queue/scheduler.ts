@@ -21,6 +21,7 @@ import {
   DataRetentionJob,
   DocumentsExpiryJob,
   DocumentsAnalyticsJob,
+  DocumentsLegacyImportJob,
   NotificationsJob,
   SearchReindexJob,
   SendingDomainsJob,
@@ -46,6 +47,7 @@ import {
   WorkspaceExportJob,
   WorkspaceIntegrationsJob,
 } from './jobs'
+import { clearFinishedJob } from './processors/clear-finished-job'
 import {
   getAiIndexQueue,
   getAiProactiveQueue,
@@ -67,6 +69,7 @@ import {
   getDataRetentionQueue,
   getDocumentsExpiryQueue,
   getDocumentsAnalyticsQueue,
+  getDocumentsLegacyImportQueue,
   getNotificationsQueue,
   getSearchReindexQueue,
   getSendingDomainsQueue,
@@ -108,7 +111,6 @@ import {
   CrmNewsletterAutomationCron,
   CrmNewsletterDigestTickCron,
   CrmNewsletterTickCron,
-  CrmProposalExpiryCron,
   CrmScheduledSendCron,
   CrmSocialPostsTickCron,
   CrmTaskRemindersCron,
@@ -331,18 +333,41 @@ export async function scheduleCrmCompetitorSyncJobs(): Promise<void> {
   })
 }
 
-export async function scheduleCrmProposalExpiryJobs(): Promise<void> {
+/**
+ * The legacy proposal expiry is replaced by `documents-expiry` (ADR 0063):
+ * drop its repeatable so the old daily tick stops running.
+ */
+export async function unscheduleCrmProposalExpiryJobs(): Promise<void> {
   const queue = getCrmProposalExpiryQueue()
-  await queue.upsertJobScheduler(
-    CrmProposalExpiryJob.RunTick,
-    { pattern: CrmProposalExpiryCron, tz: RetentionTimezone },
-    { name: CrmProposalExpiryJob.RunTick, data: {} },
+  await queue.removeJobScheduler(CrmProposalExpiryJob.RunTick)
+
+  logger.info('queue.scheduler.crm_proposal_expiry_removed', {
+    component: 'Worker',
+  })
+}
+
+/**
+ * Fixed id: a boot while a run is still waiting or running does not add a
+ * second one; a finished run is cleared first, so every boot runs again.
+ */
+export const DOCUMENTS_LEGACY_IMPORT_JOB_ID = 'documents-legacy-import-run'
+
+/**
+ * Legacy proposals → documents (ADR 0063), once per worker boot. Re-runs
+ * are harmless (idempotent) and pick up records an earlier run skipped.
+ */
+export async function enqueueDocumentsLegacyImport(): Promise<void> {
+  const queue = getDocumentsLegacyImportQueue()
+  await clearFinishedJob(queue, DOCUMENTS_LEGACY_IMPORT_JOB_ID)
+  await queue.add(
+    DocumentsLegacyImportJob.Run,
+    {},
+    { jobId: DOCUMENTS_LEGACY_IMPORT_JOB_ID },
   )
 
-  logger.info('queue.scheduler.crm_proposal_expiry_registered', {
+  logger.info('queue.scheduler.documents_legacy_import_enqueued', {
     component: 'Worker',
-    pattern: CrmProposalExpiryCron,
-    timezone: RetentionTimezone,
+    jobId: DOCUMENTS_LEGACY_IMPORT_JOB_ID,
   })
 }
 

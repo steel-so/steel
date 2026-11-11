@@ -66,6 +66,7 @@ export const QueueName = {
   // documents backend (ADR 0063): daily expiry of sent documents
   DocumentsExpiry: 'documents-expiry',
   DocumentsAnalytics: 'documents-analytics',
+  DocumentsLegacyImport: 'documents-legacy-import',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1295,4 +1296,23 @@ export type DocumentsAnalyticsJob =
 
 export type DocumentsAnalyticsJobPayload = {
   [DocumentsAnalyticsJob.Flush]: Record<string, never>
+}
+
+/**
+ * Migration of the legacy CRM proposals into documents (ADR 0063). `run` is
+ * enqueued once on worker boot (fixed job id) and fans out one
+ * `import-workspace` per workspace with legacy templates or proposals.
+ * Idempotent by `legacyTemplateId`/`legacyProposalId`.
+ */
+export const DocumentsLegacyImportJob = {
+  Run: 'run',
+  ImportWorkspace: 'import-workspace',
+} as const
+
+export type DocumentsLegacyImportJob =
+  (typeof DocumentsLegacyImportJob)[keyof typeof DocumentsLegacyImportJob]
+
+export type DocumentsLegacyImportJobPayload = {
+  [DocumentsLegacyImportJob.Run]: Record<string, never>
+  [DocumentsLegacyImportJob.ImportWorkspace]: { workspaceId: string }
 }

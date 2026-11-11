@@ -3,6 +3,7 @@ import {
   CreateCrmContractSchema,
   CreateCrmProposalChargeSchema,
   CreateDealRoomMessageSchema,
+  CreateOpportunityProposalSchema,
   IdentifyDealRoomVisitorSchema,
   ListCrmContractsQuerySchema,
   ListDealRoomMessagesQuerySchema,
@@ -28,6 +29,7 @@ import {
   DealRoomVisitorSessionDTO,
   PublicDealRoomDTO,
 } from '../../schemas/crm/deals'
+import { CrmDocumentSummaryDTO } from '../../schemas/crm/leads'
 import { CrmProposalPublicDTO } from '../../schemas/public'
 import {
   CRM_ERRORS,
@@ -305,7 +307,7 @@ export const crmDealsRoutes: RouteConfig[] = [
     tags: OPPORTUNITIES,
     summary: 'Criar ou editar a sala de negociação',
     description: describe(
-      'Cria a sala no primeiro uso e depois edita: liga/desliga o link, proposta exibida, materiais (links) e plano de ação conjunto. Materiais e ações são substituídos pelo que vier (os ausentes saem; os com `id` são atualizados). `rotateToken` troca o link.',
+      'Cria a sala no primeiro uso e depois edita: liga/desliga o link, documento exibido (`documentId`, um documento da oportunidade — normalmente a proposta; o cliente só vê depois do envio), materiais (links) e plano de ação conjunto. Materiais e ações são substituídos pelo que vier (os ausentes saem; os com `id` são atualizados). `rotateToken` troca o link.',
       crmAccess('opportunities', 'EDIT'),
     ),
     consent: true,
@@ -320,6 +322,36 @@ export const crmDealsRoutes: RouteConfig[] = [
     },
     responses: { 200: { description: 'Sala salva.', schema: CrmDealRoomDTO } },
     errors: [...CRM_ERRORS, OPPORTUNITY_NOT_FOUND, ROOM_INVALID],
+  },
+  {
+    method: 'post',
+    path: `${BASE}/opportunities/{opportunityId}/proposal`,
+    tags: OPPORTUNITIES,
+    summary: 'Gerar proposta da oportunidade',
+    description: describe(
+      'Cria um documento do tipo `PROPOSAL` em rascunho (ADR 0063) vinculado à oportunidade, à empresa e ao ponto de contato dela. Sem `templateId`, o documento começa com capa, a tabela de preços com os itens da oportunidade e o bloco de aceite; a validade é hoje + a validade padrão do CRM.',
+      crmAccess('documents', 'CREATE'),
+    ),
+    consent: true,
+    params: { opportunityId: OPPORTUNITY_ID },
+    body: {
+      schema: CreateOpportunityProposalSchema,
+      example: { title: 'Proposta — Implantação 2027' },
+    },
+    responses: {
+      201: {
+        description: 'Documento da proposta criado.',
+        schema: CrmDocumentSummaryDTO,
+      },
+    },
+    errors: [
+      ...CRM_ERRORS,
+      OPPORTUNITY_NOT_FOUND,
+      {
+        code: 'DOCUMENT_TEMPLATE_NOT_FOUND',
+        when: '`templateId` não é um modelo de documento do workspace',
+      },
+    ],
   },
   {
     method: 'get',

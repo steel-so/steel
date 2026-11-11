@@ -138,7 +138,10 @@ export interface CrmDealRoomDTO {
   publicPath: string
   title: string | null
   welcomeMessage: string | null
+  /** Legacy proposal (before ADR 0063). */
   proposalId: string | null
+  /** Document shown in the room (wins over the legacy proposal). */
+  documentId: string | null
   materials: DealRoomMaterialDTO[]
   actions: DealRoomActionDTO[]
   visitors: DealRoomVisitorDTO[]

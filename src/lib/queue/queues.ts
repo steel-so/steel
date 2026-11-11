@@ -63,6 +63,8 @@ import {
   type DocumentsPdfJobPayload,
   type DocumentsAiJob,
   type DocumentsAiJobPayload,
+  type DocumentsLegacyImportJob,
+  type DocumentsLegacyImportJobPayload,
   type NotificationsJob,
   type NotificationsJobPayload,
   type PhoneCallAiJob,
@@ -1434,6 +1436,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DocumentsAi]: getDocumentsAiQueue,
   [QueueName.DocumentsExpiry]: getDocumentsExpiryQueue,
   [QueueName.DocumentsAnalytics]: getDocumentsAnalyticsQueue,
+  [QueueName.DocumentsLegacyImport]: getDocumentsLegacyImportQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1701,5 +1704,26 @@ export function getDocumentsAnalyticsQueue(): Queue<
     DocumentsAnalyticsJobPayload[DocumentsAnalyticsJob],
     unknown,
     DocumentsAnalyticsJob
+  >
+}
+
+let documentsLegacyImportQueue: Queue | null = null
+
+/** Legacy proposals → documents (ADR 0063): boot run + one job per workspace. */
+export function getDocumentsLegacyImportQueue(): Queue<
+  DocumentsLegacyImportJobPayload[DocumentsLegacyImportJob],
+  unknown,
+  DocumentsLegacyImportJob
+> {
+  if (!documentsLegacyImportQueue) {
+    documentsLegacyImportQueue = new Queue(QueueName.DocumentsLegacyImport, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return documentsLegacyImportQueue as Queue<
+    DocumentsLegacyImportJobPayload[DocumentsLegacyImportJob],
+    unknown,
+    DocumentsLegacyImportJob
   >
 }

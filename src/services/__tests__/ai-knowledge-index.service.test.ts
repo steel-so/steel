@@ -67,6 +67,7 @@ beforeEach(() => {
     sources.zapDocuments,
     sources.crmNotes,
     sources.crmProposals,
+    sources.crmDocuments,
   ]) {
     load.mockResolvedValue(ok([]))
   }
@@ -159,6 +160,7 @@ describe('AiKnowledgeIndexService.refresh', () => {
     expect(sources.ticketPrefixes).toHaveBeenCalledWith(WS)
     expect(sources.zapDocuments).toHaveBeenCalled()
     expect(sources.crmProposals).toHaveBeenCalled()
+    expect(sources.crmDocuments).toHaveBeenCalled()
     const ticketWrite = chunks.replaceSources.mock.calls.find(
       ([, type]) => type === 'sd-ticket',
     )

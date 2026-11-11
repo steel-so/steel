@@ -9,6 +9,7 @@ import {
 import { CrmOpportunityLineItems } from '@/app/_components/crm/crm-opportunity-line-items'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { DealRoomPanel } from '@/app/_components/crm/deals/deal-room-panel'
+import { OpportunityProposalButton } from '@/app/_components/crm/deals/opportunity-proposal-button'
 import { OpportunityHealthPanel } from '@/app/_components/crm/health/health-panel'
 import {
   HealthBadge,
@@ -251,6 +252,10 @@ export function CrmOpportunitiesTable({
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-5'>
+              <OpportunityProposalButton
+                workspaceId={workspaceId}
+                opportunityId={record.id}
+              />
               <OpportunityHealthPanel
                 workspaceId={workspaceId}
                 opportunityId={record.id}

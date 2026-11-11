@@ -1,23 +1,20 @@
-import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { ProposalBuilder } from '@/app/_components/crm/proposal/proposal-builder'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { DocumentLegacyImportService } from '@/src/services/document-legacy-import.service'
 import { MembershipService } from '@/src/services/membership.service'
 
-export const metadata: Metadata = {
-  title: 'Proposta | CRM | Steel',
-  description: 'Editor de propostas comerciais de layout fixo',
-}
-
-export default async function CrmProposalBuilderPage({
+/**
+ * Old proposal link → its document (ADR 0063). A proposal the migration
+ * hasn't reached yet is converted now; anything else lands on the list.
+ */
+export default async function CrmProposalRedirect({
   params,
-  searchParams,
 }: {
   params: Promise<{ 'workspace-slug': string; id: string }>
-  searchParams: Promise<{ templateId?: string }>
 }) {
   const { 'workspace-slug': slug, id } = await params
-  const { templateId } = await searchParams
+  const list = `/${slug}/crm/documents?kind=PROPOSAL`
+  if (id === 'new') redirect(list)
 
   const session = await getAuthSession()
   if (!session.ok) redirect('/sign-in')
@@ -28,15 +25,10 @@ export default async function CrmProposalBuilderPage({
   )
   if (!membership.ok || !membership.value) notFound()
 
-  return (
-    <div className='h-full w-full'>
-      <ProposalBuilder
-        workspaceId={membership.value.workspaceId}
-        slug={slug}
-        proposalId={id}
-        currentUserId={session.value.user.id}
-        initialTemplateId={templateId}
-      />
-    </div>
+  const document = await DocumentLegacyImportService.documentForProposal(
+    session.value.user.id,
+    membership.value.workspaceId,
+    id,
   )
+  redirect(document.ok ? `/${slug}/crm/documents/${document.value}` : list)
 }

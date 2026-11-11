@@ -15,9 +15,7 @@ import {
 } from './report-sla'
 
 /**
- * PDF do relatório de SLA, com `@react-pdf/renderer` (o mesmo motor das
- * propostas do CRM — `app/_components/crm/proposal/proposal-pdf-document.tsx`),
- * renderizado no servidor com `renderToBuffer`. Fonte Helvetica (embutida no
+ * PDF do relatório de SLA, com `@react-pdf/renderer`, renderizado no servidor com `renderToBuffer`. Fonte Helvetica (embutida no
  * PDF), nada de rede: funciona igual no worker e numa rota.
  *
  * Toda data sai no **fuso do relatório**, não no do servidor.

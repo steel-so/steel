@@ -144,6 +144,7 @@ export function toCrmLeadProposalPresentationDTO(
     id: presentation.id,
     leadId: presentation.leadId,
     proposalId: presentation.proposalId,
+    documentId: presentation.documentId,
     presentedAt: presentation.presentedAt.toISOString(),
     format: presentation.format,
     amount: Number(presentation.amount),

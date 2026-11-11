@@ -46,6 +46,7 @@ import {
   UPSELL_TIMING_LABEL,
   UPSELL_TIMING_TONE,
 } from './deals-tone'
+import { OpportunityProposalButton } from './opportunity-proposal-button'
 
 const LOOKUP_KINDS = ['companies'] as ['companies']
 
@@ -317,7 +318,14 @@ function ContractRow({
         ) : contract.autoRenews ? (
           <span className='text-muted-foreground text-xs'>Renova sozinho</span>
         ) : null}
-        <div className='ml-auto flex gap-2'>
+        <div className='ml-auto flex flex-wrap gap-2'>
+          {contract.renewalOpportunityId ? (
+            <OpportunityProposalButton
+              workspaceId={workspaceId}
+              opportunityId={contract.renewalOpportunityId}
+              label='Proposta de renovação'
+            />
+          ) : null}
           <Button
             type='button'
             size='sm'

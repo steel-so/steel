@@ -334,6 +334,9 @@ export type AuditEntity =
   | 'document'
   | 'document_recipient'
 
+  // documents docs-migration (ADR 0063)
+  | 'document'
+
 export type AuditAction =
   | 'create'
   | 'update'

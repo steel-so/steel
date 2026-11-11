@@ -45,6 +45,7 @@ import { processDocumentsAi } from '../src/lib/queue/processors/documents-ai'
 import { processDocumentsExpiry } from '../src/lib/queue/processors/documents-expiry'
 import { processDocumentsAnalytics } from '../src/lib/queue/processors/documents-analytics'
 import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
+import { processDocumentsLegacyImport } from '../src/lib/queue/processors/documents-legacy-import'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
 import { processQaReview } from '../src/lib/queue/processors/qa-review'
@@ -80,6 +81,7 @@ import { processWorkspaceExport } from '../src/lib/queue/processors/workspace-ex
 import { processWorkspaceIntegrations } from '../src/lib/queue/processors/workspace-integrations'
 import '../src/lib/zod-locale'
 import {
+  enqueueDocumentsLegacyImport,
   scheduleAiIndexJobs,
   scheduleAiProactiveJobs,
   scheduleAiUsageWeeklyEmailJobs,
@@ -91,7 +93,6 @@ import {
   scheduleCrmHealthJobs,
   scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
-  scheduleCrmProposalExpiryJobs,
   scheduleCrmScheduledSendJobs,
   scheduleCrmSocialPostsTickJobs,
   scheduleCrmTaskRemindersJobs,
@@ -124,6 +125,7 @@ import {
   scheduleWhatsappConversationLifecycleJobs,
   scheduleWorkspaceExportJobs,
   scheduleWorkspaceIntegrationsJobs,
+  unscheduleCrmProposalExpiryJobs,
 } from '../src/lib/queue/scheduler'
 import { closeWorkerResources } from '../src/lib/queue/worker-shutdown'
 import { startVoiceAgentServer } from './voice-agent-server'
@@ -373,6 +375,13 @@ async function main(): Promise<void> {
     registerWorker(QueueName.DocumentsExpiry, processDocumentsExpiry),
     registerWorker(QueueName.DocumentsAnalytics, processDocumentsAnalytics),
   )
+  // Concurrency 1 (default): one workspace migrates at a time.
+  workers.push(
+    registerWorker(
+      QueueName.DocumentsLegacyImport,
+      processDocumentsLegacyImport,
+    ),
+  )
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -384,7 +393,7 @@ async function main(): Promise<void> {
   await scheduleCrmScheduledSendJobs()
   await scheduleCrmWorkflowScheduleJobs()
   await scheduleCrmCompetitorSyncJobs()
-  await scheduleCrmProposalExpiryJobs()
+  await unscheduleCrmProposalExpiryJobs()
   await scheduleCrmSocialPostsTickJobs()
   await scheduleWhatsappBroadcastJobs()
   await scheduleWhatsappConversationLifecycleJobs()
@@ -424,6 +433,7 @@ async function main(): Promise<void> {
   await scheduleDocumentsPdfJobs()
   await scheduleDocumentsExpiryJobs()
   await scheduleDocumentsAnalyticsJobs()
+  await enqueueDocumentsLegacyImport()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

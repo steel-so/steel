@@ -10,12 +10,12 @@ import type { AiToolPreviewDTO } from '@/types/steel-ai'
 const TARGET_LABEL: Record<string, string> = {
   crm_company: 'Empresa',
   crm_dashboard: 'Painel',
+  crm_document: 'Documento',
   crm_form: 'Formulário',
   crm_lead: 'Lead',
   crm_note: 'Nota',
   crm_opportunity: 'Oportunidade',
   crm_person: 'Contato',
-  crm_proposal_template: 'Modelo de proposta',
   crm_task: 'Tarefa',
   sd_config_item: 'Item de configuração',
   sd_kb_article: 'Artigo',

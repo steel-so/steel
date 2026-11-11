@@ -230,3 +230,40 @@ Regras:
   por workspace). O worker `documents-expiry` roda às 00:10, marca
   `EXPIRED`, avisa o dono no Steel e, se o aviso por e-mail das propostas
   estiver ligado nas configurações do CRM, por e-mail.
+
+- A migração é idempotente e roda no worker: `documents-legacy-import`
+  entra uma vez a cada boot (job id fixo), abre um job por workspace e migra
+  os modelos e depois as propostas, em lotes. O que falhar fica para o
+  próximo boot.
+- `/crm/proposals` vai para `/crm/documents?kind=PROPOSAL`,
+  `/crm/proposal-templates[/id]` para a aba Modelos, `/crm/proposals/<id>`
+  para o documento migrado e `/p/<token>` para `/d/<token>` (mesmo token).
+  Se o worker ainda não chegou na proposta, ela é convertida na hora.
+- Conversão (`src/lib/canvas-document/convert-proposal.ts`): capa → seção
+  `cover`; apresentação, necessidade, solução, escopo e termos → títulos,
+  textos, listas e imagens; produtos e valores → tabela de preços (o desconto
+  absoluto vira o mesmo percentual em cada linha); condições comerciais →
+  tabela (ou textos, se longas); assinatura → bloco de aceite. Sem seção de
+  assinatura, a proposta ganha um bloco de aceite no fim (a página antiga
+  sempre deixava aceitar). Seções desligadas ficam de fora.
+- Visualizações viram sessões de leitura (sem tempo por seção), o aceite vira
+  uma resposta `ACCEPT` na versão 1 e cada assinatura antiga vira um evento
+  `ACCEPTED` com `legacySignature: true`.
+- Continuam lendo as tabelas antigas: as rotas públicas
+  `/api/crm/proposals/<token>/**` (links antigos), as rotas autenticadas
+  `/api/workspaces/<id>/crm/proposals/**` e `proposal-templates/**`, e a
+  ferramenta `crm_list_proposals` do Steel AI/MCP.
+
+## Propostas a partir do CRM
+
+- **Funil de leads**: "Criar e avançar para Proposta" cria um documento
+  `PROPOSAL` ligado ao lead; as apresentações apontam para o documento.
+- **Oportunidade e renovação**: "Gerar proposta"
+  (`POST /api/workspaces/<id>/crm/opportunities/<id>/proposal`) cria a
+  proposta com a empresa, o contato e os itens da oportunidade na tabela de
+  preços.
+- **Sala de negociação**: mostra um documento da oportunidade
+  (`documentId`), só depois do envio.
+- **Steel AI**: `crm_create_proposal` e `crm_list_proposal_documents`.
+- O job `crm-proposal-expiry` foi desligado; `documents-expiry` cuida da
+  validade.

@@ -101,7 +101,10 @@ export const UpsertCrmDealRoomSchema = z.object({
   enabled: z.boolean().optional(),
   title: z.string().trim().max(120).nullable().optional(),
   welcomeMessage: z.string().trim().max(2000).nullable().optional(),
+  /** Legacy proposal (before ADR 0063); prefer `documentId`. */
   proposalId: z.string().nullable().optional(),
+  /** Document (usually a proposal) of the deal shown in the room. */
+  documentId: z.string().nullable().optional(),
   materials: z.array(DealRoomMaterialInputSchema).max(30).optional(),
   actions: z.array(DealRoomActionInputSchema).max(60).optional(),
   /** Issues a new token (the old link stops working). */
@@ -110,6 +113,16 @@ export const UpsertCrmDealRoomSchema = z.object({
 export type UpsertCrmDealRoomDTO = z.infer<typeof UpsertCrmDealRoomSchema>
 /** What a client sends (dates as ISO strings). */
 export type UpsertCrmDealRoomInput = z.input<typeof UpsertCrmDealRoomSchema>
+
+/** "Gerar proposta" of a deal: a PROPOSAL document (ADR 0063). */
+export const CreateOpportunityProposalSchema = z.object({
+  title: z.string().trim().max(200).optional(),
+  /** A document template of the workspace. */
+  templateId: z.string().min(1).optional(),
+})
+export type CreateOpportunityProposalDTO = z.infer<
+  typeof CreateOpportunityProposalSchema
+>
 
 export const CreateDealRoomMessageSchema = z.object({
   body: z.string().trim().min(1, 'Escreva a mensagem').max(2000),

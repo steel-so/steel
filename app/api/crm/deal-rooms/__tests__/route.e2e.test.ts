@@ -183,6 +183,72 @@ describe('deal room', () => {
   })
 })
 
+describe('deal proposals as documents', () => {
+  it('should generate the proposal of a deal and show it in the room', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const dealId = await seedDeal(workspace.id, user.cookie)
+    const base = `/api/workspaces/${workspace.id}/crm/opportunities/${dealId}`
+
+    const created = await postJson(`${base}/proposal`, {}, user.cookie)
+    expect(created.status).toBe(201)
+    const doc = (await created.json()).data
+    expect(doc).toMatchObject({
+      kind: 'PROPOSAL',
+      status: 'DRAFT',
+      title: 'Proposta — Plano anual',
+      opportunityId: dealId,
+      path: `/crm/documents/${doc.id}`,
+    })
+
+    const linked = await putJson(
+      `${base}/room`,
+      { enabled: true, documentId: doc.id },
+      user.cookie,
+    )
+    expect(linked.status).toBe(200)
+    const room = (await linked.json()).data
+    expect(room.documentId).toBe(doc.id)
+
+    // A draft is never shown to the customer.
+    const pub = await fetch(`${BASE_URL}/api/crm/deal-rooms/${room.token}`, {
+      headers: defaultHeaders,
+    })
+    expect((await pub.json()).data.proposal).toBeNull()
+  })
+
+  it('should refuse a document of another deal and an unknown deal', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const dealId = await seedDeal(workspace.id, user.cookie)
+    const res = await putJson(
+      `/api/workspaces/${workspace.id}/crm/opportunities/${dealId}/room`,
+      { documentId: 'nope' },
+      user.cookie,
+    )
+    expect(res.status).toBe(422)
+
+    const missing = await postJson(
+      `/api/workspaces/${workspace.id}/crm/opportunities/nope/proposal`,
+      {},
+      user.cookie,
+    )
+    expect(missing.status).toBe(404)
+  })
+
+  it('should validate the body and require a session', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const dealId = await seedDeal(workspace.id, user.cookie)
+    const path = `/api/workspaces/${workspace.id}/crm/opportunities/${dealId}/proposal`
+    const bad = await postJson(path, { title: 'x'.repeat(201) }, user.cookie)
+    expect(bad.status).toBe(422)
+    const anon = await fetch(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers: defaultHeaders,
+      body: '{}',
+    })
+    expect(anon.status).toBe(401)
+  })
+})
+
 describe('proposal payment', () => {
   it('should be off until an admin turns it on', async () => {
     const { user, workspace } = await authenticatedOwner()

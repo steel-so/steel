@@ -10,6 +10,8 @@ import {
   PlusSignIcon,
   Search01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
 import { LeadCadencePanel } from '@/app/_components/crm/cadences/lead-cadence-panel'
@@ -76,6 +78,7 @@ import {
 } from '@/src/hooks/use-crm-resource-list'
 import { useCrmSettings } from '@/src/hooks/use-crm-settings'
 import { useRecordParam } from '@/src/hooks/use-record-param'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type {
   CrmLeadContactAttemptDTO,
   CrmLeadDTO,
@@ -1292,7 +1295,10 @@ function ProposalStageForms({
   lead: CrmLeadDTO
   onChanged: () => void
 }) {
-  const [proposalId, setProposalId] = useState<string | null>(null)
+  const params = useParams<{ 'workspace-slug'?: string }>()
+  const slug = params?.['workspace-slug'] ?? ''
+  const [proposal, setProposal] = useState<CrmDocumentSummaryDTO | null>(null)
+  const proposalId = proposal?.id ?? null
   const [presentedAt, setPresentedAt] = useState('')
   const [format, setFormat] = useState<
     'IN_PERSON' | 'ONLINE' | 'EMAIL' | 'OTHER'
@@ -1315,11 +1321,11 @@ function ProposalStageForms({
   const [closedAmount, setClosedAmount] = useState('')
 
   useEffect(() => {
-    apiFetch<{ id: string } | null>(
+    apiFetch<CrmDocumentSummaryDTO | null>(
       `/api/workspaces/${workspaceId}/crm/leads/${lead.id}/proposal`,
     )
-      .then((proposal) => setProposalId(proposal?.id ?? null))
-      .catch(() => setProposalId(null))
+      .then(setProposal)
+      .catch(() => setProposal(null))
   }, [workspaceId, lead.id])
 
   useEffect(() => {
@@ -1383,6 +1389,21 @@ function ProposalStageForms({
 
   return (
     <div className='flex flex-col gap-6'>
+      {proposal ? (
+        <div className='flex items-center justify-between gap-3 rounded-md border p-3'>
+          <div className='min-w-0'>
+            <p className='text-muted-foreground text-xs'>Proposta</p>
+            <p className='truncate font-medium text-sm'>{proposal.title}</p>
+          </div>
+          <Button
+            size='sm'
+            variant='outline'
+            render={<Link href={`/${slug}${proposal.path}/edit`} />}
+          >
+            Editar proposta
+          </Button>
+        </div>
+      ) : null}
       <div className='flex flex-col gap-3'>
         <p className='font-medium text-sm'>Registrar apresentação</p>
         <div className='grid gap-1.5'>

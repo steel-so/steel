@@ -254,32 +254,52 @@ export const CrmSalesMetricsRepository = {
     }
   },
 
-  /** Proposals waiting for the customer (sent or viewed), by validity. */
+  /**
+   * Proposals waiting for the customer (sent or viewed), by validity: the
+   * PROPOSAL documents of CRM > Documentos (ADR 0063). The amount is the
+   * document total, else the deal amount.
+   */
   async listWaitingProposals(
     workspaceId: string,
   ): Promise<Result<WaitingProposalRow[]>> {
     try {
-      const rows = await prisma.crmProposal.findMany({
+      const rows = await prisma.document.findMany({
         where: {
           workspaceId,
+          kind: 'PROPOSAL',
+          isTemplate: false,
           deletedAt: null,
           status: { in: ['SENT', 'VIEWED'] },
         },
         select: {
           id: true,
-          name: true,
+          title: true,
           status: true,
           validUntil: true,
+          totalValue: true,
           company: { select: { name: true } },
           opportunity: { select: { amount: true } },
-          responsible: PERSON,
+          owner: PERSON,
         },
         orderBy: [
           { validUntil: { sort: 'asc', nulls: 'last' } },
           { id: 'asc' },
         ],
       })
-      return ok(rows as WaitingProposalRow[])
+      return ok(
+        rows.map((row) => ({
+          id: row.id,
+          name: row.title,
+          status: row.status as WaitingProposalRow['status'],
+          validUntil: row.validUntil,
+          company: row.company,
+          opportunity:
+            row.totalValue !== null
+              ? { amount: row.totalValue }
+              : row.opportunity,
+          responsible: row.owner,
+        })),
+      )
     } catch (error) {
       return err(dbError('Failed to list waiting CRM proposals', error))
     }

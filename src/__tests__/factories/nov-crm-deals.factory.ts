@@ -190,6 +190,7 @@ export function createFakeDealRoom(
     title: null,
     welcomeMessage: 'Bem-vindo',
     proposalId: null,
+    documentId: null,
     createdById: createId(),
     createdAt: NOW,
     updatedAt: NOW,
