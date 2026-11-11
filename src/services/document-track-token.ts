@@ -1,8 +1,4 @@
-import type { AppError } from '@/src/errors/app-error'
-import {
-  documentLinkUnavailable,
-  documentNotFound,
-} from '@/src/errors/app-error'
+import { type AppError, documentLinkUnavailable } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 import { DocumentTrackRepository } from '@/src/repositories/document-track.repository'
 
@@ -20,22 +16,30 @@ export interface ResolvedDocumentToken {
   versionId: string | null
 }
 
+const MAX_TOKEN_LENGTH = 128
+
+/**
+ * `DOCUMENT_LINK_UNAVAILABLE` when the token is unknown, the document was
+ * never sent, is a template, archived or deleted, or the generic link was
+ * turned off (`linkEnabled` governs the generic link only).
+ */
 export async function resolveDocumentToken(
   token: string,
 ): Promise<Result<ResolvedDocumentToken, AppError>> {
+  if (!token || token.length > MAX_TOKEN_LENGTH) {
+    return err(documentLinkUnavailable())
+  }
+
   const link = await DocumentTrackRepository.findLink(token)
   if (!link.ok) return link
-  if (!link.value) return err(documentNotFound())
-
   const row = link.value
-  // Never sent (no frozen version), link turned off, template, archived or
-  // deleted: the link no longer serves the document.
   if (
+    !row ||
     row.deleted ||
     row.isTemplate ||
-    !row.linkEnabled ||
     !row.versionId ||
-    row.status === 'ARCHIVED'
+    row.status === 'ARCHIVED' ||
+    (!row.recipientId && !row.linkEnabled)
   ) {
     return err(documentLinkUnavailable())
   }

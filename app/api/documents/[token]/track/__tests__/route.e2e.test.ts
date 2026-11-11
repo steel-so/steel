@@ -84,10 +84,10 @@ describe('POST /api/documents/[token]/track', () => {
     expect((await res.json()).error.code).toBe('VALIDATION_ERROR')
   })
 
-  it('answers 404 for an unknown token and 410 for a link that is off', async () => {
+  it('answers 410 for an unknown token and for a link that is off', async () => {
     const unknown = await track('does-not-exist', beacon())
-    expect(unknown.status).toBe(404)
-    expect((await unknown.json()).error.code).toBe('DOCUMENT_NOT_FOUND')
+    expect(unknown.status).toBe(410)
+    expect((await unknown.json()).error.code).toBe('DOCUMENT_LINK_UNAVAILABLE')
 
     const { document } = await seedDocument({ sent: false })
     const draft = await track(document.publicToken, beacon())

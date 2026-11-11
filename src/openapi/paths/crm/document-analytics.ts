@@ -67,10 +67,9 @@ export const crmDocumentAnalyticsRoutes: RouteConfig[] = [
     },
     responses: { 200: { description: 'Sinal registrado.', schema: null } },
     errors: [
-      'DOCUMENT_NOT_FOUND',
       {
         code: 'DOCUMENT_LINK_UNAVAILABLE',
-        when: 'Nunca enviado, link desligado, arquivado ou excluído',
+        when: 'Token desconhecido, documento nunca enviado, arquivado ou excluído, ou link genérico desligado',
       },
       {
         code: 'MODULE_DISABLED',

@@ -43,9 +43,20 @@ describe('resolveDocumentToken (local adapter)', () => {
     expect(mockedRepo.findLink).toHaveBeenCalledWith('tok')
   })
 
-  it('returns DOCUMENT_NOT_FOUND for an unknown token', async () => {
+  it('treats an unknown, empty or oversized token as unavailable', async () => {
     mockedRepo.findLink.mockResolvedValue(ok(null))
-    expectErr(await resolveDocumentToken('nope'), 'DOCUMENT_NOT_FOUND')
+    expectErr(await resolveDocumentToken('nope'), 'DOCUMENT_LINK_UNAVAILABLE')
+    expectErr(await resolveDocumentToken(''), 'DOCUMENT_LINK_UNAVAILABLE')
+    expectErr(
+      await resolveDocumentToken('x'.repeat(129)),
+      'DOCUMENT_LINK_UNAVAILABLE',
+    )
+    expect(mockedRepo.findLink).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps personal links working when the generic link is off', async () => {
+    mockedRepo.findLink.mockResolvedValue(ok(link({ linkEnabled: false })))
+    expectOk(await resolveDocumentToken('tok'))
   })
 
   it('propagates database errors', async () => {
@@ -56,7 +67,7 @@ describe('resolveDocumentToken (local adapter)', () => {
   it.each([
     ['deleted', { deleted: true }],
     ['a template', { isTemplate: true }],
-    ['with the link off', { linkEnabled: false }],
+    ['the generic link is off', { linkEnabled: false, recipientId: null }],
     ['never sent', { versionId: null }],
     ['archived', { status: 'ARCHIVED' }],
   ] as const)('is unavailable when %s', async (_label, overrides) => {
